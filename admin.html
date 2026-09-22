@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة التحكم الاحترافية | Dev Menu</title>
+
+<!-- Tailwind CSS & FontAwesome -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- مكتبة توليد الـ QR Code -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<script>
+tailwind.config = {
+  theme: { extend: {
+    colors: { darkBg: '#0b0b0b', cardDark: '#141414' }
+  }}
+}
+</script>
+
+<style>
+  body { font-family: 'Cairo', sans-serif; background-color: #0b0b0b; color: #ffffff; min-height: 100vh; }
+  .pro-card { background: rgba(20, 20, 20, 0.95); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; }
+  .input-pro {
+    width: 100%; background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 0.75rem;
+    padding: 0.65rem 0.85rem; font-size: 0.813rem; color: #ffffff; transition: all 0.2s;
+  }
+  .input-pro:focus { outline: none; border-color: #ffffff; background-color: rgba(255, 255, 255, 0.08); }
+  .tab-btn.active { background-color: #ffffff; color: #000000; font-weight: 800; }
+  #toast { transition: transform 0.3s ease, opacity 0.3s ease; }
+  #toast.show { transform: translateY(0); opacity: 1; }
+</style>
+</head>
+
+<body class="py-6 px-3 md:px-8">
+
+<!-- رسائل التنبيه Toast -->
+<div id="toast" class="fixed bottom-5 left-5 z-50 transform translate-y-10 opacity-0 pointer-events-none bg-white text-black px-5 py-3 rounded-2xl shadow-2xl border border-white/30 text-xs font-bold flex items-center gap-2">
+  <i id="toast-icon" class="fa-solid fa-circle-check text-green-600"></i>
+  <span id="toast-msg">تمت العملية بنجاح</span>
+</div>
+
+<div class="max-w-6xl mx-auto space-y-5">
+  
+  <!-- ترويسة اللوحة -->
+  <header class="pro-card p-4 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-white/10 text-white border border-white/20 flex items-center justify-center text-lg">
+        <i class="fa-solid fa-gauge-high"></i>
+      </div>
+      <div>
+        <h1 id="header-title" class="text-base font-black tracking-wide">لوحة تحكم المنشأة</h1>
+        <p class="text-[11px] text-gray-400">إدارة الهوية، المنتجات، الاشتراك، ورابط المنيو الرقمي</p>
+      </div>
+    </div>
+    <a id="preview-menu-btn" href="#" target="_blank" class="text-xs bg-white text-black font-bold px-4 py-2 rounded-xl transition hover:bg-gray-200 flex items-center gap-1.5 shadow-lg">
+      <span>معاينة المنيو الحي</span>
+      <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+    </a>
+  </header>
+
+  <!-- بطاقة معلومات الاشتراك، التنبيهات، و الـ QR Code -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- حالة الاشتراك -->
+    <div class="pro-card p-4 space-y-2 border-l-4 border-l-amber-400">
+      <h3 class="text-xs font-bold text-gray-300 flex items-center gap-1.5"><i class="fa-solid fa-id-card"></i> حالة الاشتراك</h3>
+      <div id="subscription-info" class="text-xs space-y-1 text-gray-200">
+        <p>جاري التحقق من الاشتراك...</p>
+      </div>
+    </div>
+
+    <!-- تنبيهات الإدارة -->
+    <div id="admin-notice-box" class="pro-card p-4 space-y-2 border-l-4 border-l-blue-400 hidden">
+      <h3 class="text-xs font-bold text-blue-300 flex items-center gap-1.5"><i class="fa-solid fa-bell"></i> تنبيه من الإدارة</h3>
+      <p id="admin-notice-text" class="text-xs text-gray-200"></p>
+    </div>
+
+    <!-- رابط المنيو والـ QR Code -->
+    <div class="pro-card p-4 flex items-center justify-between gap-3">
+      <div class="space-y-2">
+        <h3 class="text-xs font-bold text-white"><i class="fa-solid fa-qrcode text-amber-400"></i> باركود المنيو الخاص بك</h3>
+        <p class="text-[10px] text-gray-400">امسح الكود لفتح المنيو أو شاركه مع زملائك</p>
+        <button onclick="copyMenuLink()" class="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold border border-white/20 transition">
+          <i class="fa-solid fa-copy"></i> نسخ رابط المنيو
+        </button>
+      </div>
+      <div id="qrcode" class="bg-white p-2 rounded-xl shrink-0"></div>
+    </div>
+  </div>
+
+  <!-- الهوية والبصرية -->
+  <div class="pro-card p-5 space-y-4">
+    <h3 class="text-xs font-bold text-white border-b border-white/15 pb-2 flex items-center gap-2">
+      <i class="fa-solid fa-sliders text-gray-300"></i> إعدادات المنشأة والهوية البصرية
+    </h3>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
+        <label class="text-[11px] font-bold text-gray-300">اسم المطعم في المنيو</label>
+        <input type="text" id="setting-name" placeholder="اسم المطعم" class="input-pro text-xs">
+        <button onclick="updateRestaurantName()" class="w-full bg-white text-black hover:bg-gray-200 text-xs font-bold py-2 rounded-xl transition">حفظ الاسم</button>
+      </div>
+
+      <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
+        <div class="flex items-center justify-between">
+          <label class="text-[11px] font-bold text-gray-300">شعار المطعم (Logo)</label>
+          <img id="logo-preview" src="images/logo.jpeg" class="w-7 h-7 object-cover rounded-full border border-white/30" onerror="this.src='https://via.placeholder.com/50'">
+        </div>
+        <input type="file" id="logo-file" accept="image/*" class="input-pro text-[10px]">
+        <button onclick="uploadMedia('logo')" class="w-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-2 rounded-xl transition border border-white/20">تحديث الشعار</button>
+      </div>
+
+      <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
+        <label class="text-[11px] font-bold text-gray-300">صورة الخلفية للمنيو</label>
+        <input type="file" id="bg-img-file" accept="image/*" class="input-pro text-[10px]">
+        <button onclick="uploadMedia('bg_image')" class="w-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-2 rounded-xl transition border border-white/20">تحديث الخلفية</button>
+      </div>
+
+      <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
+        <label class="text-[11px] font-bold text-gray-300">فيديو الخلفية (MP4)</label>
+        <input type="file" id="bg-video-file" accept="video/*" class="input-pro text-[10px]">
+        <button onclick="uploadMedia('bg_video')" class="w-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-2 rounded-xl transition border border-white/20">تحديث الفيديو</button>
+      </div>
+    </div>
+
+    <!-- روابط التواصل الاجتماعي -->
+    <div class="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-3">
+      <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
+        <i class="fa-solid fa-share-nodes text-blue-400"></i> روابط منصات التواصل الاجتماعي وموقع المطعم
+      </h4>
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div>
+          <label class="text-[10px] text-gray-300 block mb-1">الموقع الإلكتروني</label>
+          <input type="url" id="social-web" placeholder="https://..." class="input-pro text-xs">
+        </div>
+        <div>
+          <label class="text-[10px] text-gray-300 block mb-1">رابط تيك توك</label>
+          <input type="url" id="social-tiktok" placeholder="https://tiktok.com/@..." class="input-pro text-xs">
+        </div>
+        <div>
+          <label class="text-[10px] text-gray-300 block mb-1">رابط انستجرام</label>
+          <input type="url" id="social-insta" placeholder="https://instagram.com/..." class="input-pro text-xs">
+        </div>
+        <div>
+          <label class="text-[10px] text-gray-300 block mb-1">رقم الواتساب</label>
+          <input type="text" id="social-whatsapp" placeholder="9665xxxxxxxx" class="input-pro text-xs">
+        </div>
+        <div>
+          <label class="text-[10px] text-gray-300 block mb-1">رابط سناب شات</label>
+          <input type="url" id="social-snap" placeholder="https://snapchat.com/..." class="input-pro text-xs">
+        </div>
+      </div>
+      <button onclick="updateSocialLinks()" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-2 rounded-xl text-xs transition shadow-md">حفظ روابط التواصل</button>
+    </div>
+
+    <!-- العروض والرسائل الترويجية -->
+    <div class="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-3">
+      <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
+        <i class="fa-solid fa-bullhorn text-amber-300"></i> الرسائل الترويجية والعروض (تظهر أعلى المنيو للعملاء)
+      </h4>
+      <div class="flex gap-2">
+        <input type="text" id="promo-message-input" placeholder="مثال: خصم 20% على جميع الأطباق الرئيسية اليوم!" class="input-pro text-xs flex-1">
+        <button onclick="updatePromoMessage()" class="bg-white text-black hover:bg-gray-200 px-5 py-2 rounded-xl font-bold text-xs shrink-0 transition">نشر العرض</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- التبويبات -->
+  <div class="flex gap-2 border-b border-white/15 pb-2">
+    <button onclick="switchTab('products')" id="tab-products" class="tab-btn active px-5 py-2.5 rounded-xl border border-white/20 text-xs font-bold transition flex items-center gap-2">
+      <i class="fa-solid fa-box"></i> المنتجات والأطباق
+    </button>
+    <button onclick="switchTab('categories')" id="tab-categories" class="tab-btn bg-white/5 hover:bg-white/10 text-gray-300 px-5 py-2.5 rounded-xl border border-white/20 text-xs font-bold transition flex items-center gap-2">
+      <i class="fa-solid fa-layer-group"></i> الأقسام والقوائم
+    </button>
+  </div>
+
+  <!-- قسم المنتجات -->
+  <div id="section-products" class="space-y-4">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <div class="lg:col-span-5">
+        <form id="add-product-form" class="pro-card p-5 space-y-3.5 sticky top-5">
+          <h3 class="text-xs font-bold text-white border-b border-white/15 pb-2 flex items-center gap-2">
+            <i class="fa-solid fa-plus text-white"></i> إضافة طبق أو منتج جديد
+          </h3>
+          <div>
+            <label class="text-[11px] text-gray-300 block mb-1">اسم الطبق / المنتج *</label>
+            <input type="text" id="prod-name" placeholder="مثال: ستيك لحم فاخر" required class="input-pro">
+          </div>
+          <div class="grid grid-cols-2 gap-2.5">
+            <div>
+              <label class="text-[11px] text-gray-300 block mb-1">القسم *</label>
+              <select id="prod-category" required class="input-pro bg-zinc-900"></select>
+            </div>
+            <div>
+              <label class="text-[11px] text-gray-300 block mb-1">السعر (ر.س) *</label>
+              <input type="number" step="0.5" id="prod-price" placeholder="0.00" required class="input-pro">
+            </div>
+          </div>
+          <div>
+            <label class="text-[11px] text-gray-300 block mb-1">صورة الطبق</label>
+            <input type="file" id="prod-image-file" accept="image/*" class="input-pro text-xs">
+          </div>
+          <div>
+            <label class="text-[11px] text-gray-300 block mb-1">وصف المكونات</label>
+            <textarea id="prod-desc" placeholder="وصف موجز للمكونات..." class="input-pro h-16 resize-none"></textarea>
+          </div>
+          <div class="flex items-center gap-2 bg-white/5 p-2.5 rounded-xl border border-white/10">
+            <input type="checkbox" id="prod-bestseller" class="w-4 h-4 accent-black cursor-pointer">
+            <label for="prod-bestseller" class="text-xs font-bold text-white cursor-pointer flex items-center gap-1.5">
+              <i class="fa-solid fa-fire text-amber-400"></i> تمييز كـ "طبق مميز / الأكثر مبيعاً"
+            </label>
+          </div>
+          <button type="submit" id="submit-btn" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-2.5 rounded-xl text-xs transition shadow-lg">حفظ وإضافة الطبق</button>
+        </form>
+      </div>
+
+      <div class="lg:col-span-7 space-y-3.5">
+        <div class="pro-card p-3.5 flex flex-wrap items-center justify-between gap-3">
+          <div class="relative flex-1 min-w-[180px]">
+            <i class="fa-solid fa-magnifying-glass absolute right-3.5 top-3 text-gray-400 text-xs"></i>
+            <input type="text" id="search-input" oninput="filterProducts()" placeholder="بحث في الأطباق..." class="input-pro pr-9 text-xs">
+          </div>
+          <select id="filter-category" onchange="filterProducts()" class="input-pro bg-zinc-900 w-auto text-xs">
+            <option value="all">جميع الأقسام</option>
+          </select>
+        </div>
+        <div class="pro-card p-4 space-y-3">
+          <div class="flex items-center justify-between border-b border-white/15 pb-2">
+            <h3 class="text-xs font-bold text-white">الأطباق المتاحة في القائمة</h3>
+            <span id="products-count" class="text-[10px] font-bold text-black bg-white px-2.5 py-0.5 rounded-full">0 طبق</span>
+          </div>
+          <div id="admin-products-list" class="space-y-2.5 max-h-[550px] overflow-y-auto pr-1">
+            <p class="text-xs text-gray-400 text-center py-6">جاري التحميل...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- قسم الأقسام -->
+  <div id="section-categories" class="space-y-4 hidden">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
+      <div class="md:col-span-5">
+        <form id="add-category-form" class="pro-card p-5 space-y-3.5">
+          <h3 class="text-xs font-bold text-white border-b border-white/15 pb-2">إضافة قسم جديد للمنيو</h3>
+          <div>
+            <label class="text-[11px] text-gray-300 block mb-1">اسم القسم (عربي) *</label>
+            <input type="text" id="cat-name" placeholder="مثال: المقبلات الساخنة" required class="input-pro">
+          </div>
+          <div>
+            <label class="text-[11px] text-gray-300 block mb-1">المعرف الإنجليزي (Key) *</label>
+            <input type="text" id="cat-key" placeholder="مثال: appetizers" required class="input-pro">
+          </div>
+          <button type="submit" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-2.5 rounded-xl text-xs transition shadow-lg">حفظ القسم</button>
+        </form>
+      </div>
+      <div class="md:col-span-7">
+        <div class="pro-card p-5 space-y-3">
+          <h3 class="text-xs font-bold text-white border-b border-white/15 pb-2">الأقسام الحالية</h3>
+          <div id="categories-list" class="space-y-2.5">
+            <p class="text-xs text-gray-400 text-center py-4">لا توجد أقسام بعد.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- JavaScript البرمجي المنظم -->
+<script>
+  // استخراج معرف العميل (slug) من الرابط
+  const urlParams = new URLSearchParams(window.location.search);
+  const clientSlugFromUrl = urlParams.get('client') || 'alqarya-restaurant';
+
+  const THIS_PROJECT = { 
+    slug: clientSlugFromUrl, 
+    name: 'Dev Menu' 
+  };
+
+  const SUPABASE_URL = 'https://czdoamcgxgkicrbufpcn.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZG9hbWNneGdraWNyYnVmcGNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwMTA5MzAsImV4cCI6MjEwNTU4NjkzMH0.45zKx4ljXJ27SS-ukc62qiu52movhDgSoC9OEnK9NHk';
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let currentClientId = null;
+  let loadedProducts = [];
+  let loadedCategories = [];
+
+  function showToast(msg, isError = false) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    document.getElementById('toast-icon').className = isError ? 'fa-solid fa-circle-xmark text-red-500' : 'fa-solid fa-circle-check text-green-600';
+    toast.className = `fixed bottom-5 left-5 z-50 px-5 py-3 rounded-2xl shadow-2xl border text-xs font-bold flex items-center gap-2 transition-all ${isError ? 'bg-zinc-900 border-red-500 text-white' : 'bg-white border-white text-black'} show`;
+    setTimeout(() => { toast.classList.remove('show'); }, 3000);
+  }
+
+  function switchTab(tab) {
+    document.getElementById('section-products').classList.toggle('hidden', tab !== 'products');
+    document.getElementById('section-categories').classList.toggle('hidden', tab !== 'categories');
+    document.getElementById('tab-products').classList.toggle('active', tab === 'products');
+    document.getElementById('tab-categories').classList.toggle('active', tab === 'categories');
+  }
+
+  async function getOrFetchClientId() {
+    if (currentClientId) return currentClientId;
+
+    let { data: client } = await supabaseClient
+      .from('clients')
+      .select('*')
+      .eq('client_slug', THIS_PROJECT.slug)
+      .maybeSingle();
+
+    if (!client) {
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + 7); // فترة تجريبية 7 أيام افتراضياً
+      const { data: inserted } = await supabaseClient
+        .from('clients')
+        .insert([{
+          client_slug: THIS_PROJECT.slug,
+          name: THIS_PROJECT.slug,
+          subscription_status: 'trial',
+          is_active: true,
+          trial_ends_at: endDate.toISOString()
+        }])
+        .select('*');
+      if (inserted && inserted.length > 0) client = inserted[0];
+    }
+
+    if (client && client.id) {
+      currentClientId = client.id;
+      document.getElementById('header-title').textContent = `لوحة تحكم | ${client.name || 'المنشأة'}`;
+      document.getElementById('setting-name').value = client.name || '';
+      document.getElementById('promo-message-input').value = client.promo_message || '';
+      
+      // ضبط رابط المعاينة الحي ليتضمن slug العميل تماماً
+     // استبدال index.html بـ menu.html في رابط المعاينة والـ QR Code
+const menuUrl = `${window.location.origin}/menu.html?client=${client.client_slug}`;
+document.getElementById('preview-menu-btn').href = menuUrl;
+
+// توليد الـ QR Code لرابط المنيو الصحيح
+document.getElementById('qrcode').innerHTML = '';
+new QRCode(document.getElementById('qrcode'), {
+  text: menuUrl,
+  width: 80,
+  height: 80
+});
+      // عرض حالة الاشتراك وتنبيهات الأدمن
+      renderSubscriptionStatus(client);
+
+      // تعبئة روابط التواصل الحالية
+      document.getElementById('social-web').value = client.website_url || '';
+      document.getElementById('social-tiktok').value = client.tiktok_url || '';
+      document.getElementById('social-insta').value = client.instagram_url || '';
+      document.getElementById('social-whatsapp').value = client.whatsapp_number || '';
+      document.getElementById('social-snap').value = client.snapchat_url || '';
+
+      if (client.logo_url) document.getElementById('logo-preview').src = client.logo_url;
+      return client.id;
+    }
+    return null;
+  }
+
+  function renderSubscriptionStatus(client) {
+    const infoBox = document.getElementById('subscription-info');
+    let badgeText = '';
+    if (client.subscription_status === 'trial') badgeText = '<span class="text-blue-400 font-bold">باقة تجريبية (7 أيام)</span>';
+    else if (client.subscription_status === 'active') badgeText = '<span class="text-green-400 font-bold">مشترك مدفوع نشط</span>';
+    else badgeText = '<span class="text-red-400 font-bold">الاشتراك منتهي</span>';
+
+    infoBox.innerHTML = `
+      <p>الحالة: ${badgeText}</p>
+      <p class="text-[10px] text-gray-400">معرف المتجر: ${client.client_slug}</p>
+    `;
+
+    // عرض تنبيه الإدارة إن وجد
+    if (client.admin_notification && client.admin_notification.trim() !== '') {
+      document.getElementById('admin-notice-text').textContent = client.admin_notification;
+      document.getElementById('admin-notice-box').classList.remove('hidden');
+    }
+  }
+
+  function copyMenuLink() {
+    const menuUrl = `${window.location.origin}/index.html?client=${THIS_PROJECT.slug}`;
+    navigator.clipboard.writeText(menuUrl);
+    showToast('تم نسخ رابط المنيو بنجاح!');
+  }
+
+  async function updateRestaurantName() {
+    const clientId = await getOrFetchClientId();
+    const newName = document.getElementById('setting-name').value.trim();
+    if (!newName) return showToast('يرجى كتابة اسم المطعم', true);
+
+    const { error } = await supabaseClient.from('clients').update({ name: newName }).eq('id', clientId);
+    if (!error) {
+      showToast('تم تحديث اسم المطعم بنجاح');
+      document.getElementById('header-title').textContent = `لوحة تحكم | ${newName}`;
+    } else {
+      showToast('حدث خطأ أثناء التحديث', true);
+    }
+  }
+
+  async function updatePromoMessage() {
+    const clientId = await getOrFetchClientId();
+    const msg = document.getElementById('promo-message-input').value.trim();
+
+    const { error } = await supabaseClient.from('clients').update({ promo_message: msg }).eq('id', clientId);
+    if (!error) {
+      showToast('تم نشر العرض الترويجي في المنيو بنجاح!');
+    } else {
+      showToast('خطأ أثناء نشر العرض', true);
+    }
+  }
+
+  async function updateSocialLinks() {
+    const clientId = await getOrFetchClientId();
+    const payload = {
+      website_url: document.getElementById('social-web').value.trim(),
+      tiktok_url: document.getElementById('social-tiktok').value.trim(),
+      instagram_url: document.getElementById('social-insta').value.trim(),
+      whatsapp_number: document.getElementById('social-whatsapp').value.trim(),
+      snapchat_url: document.getElementById('social-snap').value.trim()
+    };
+
+    const { error } = await supabaseClient.from('clients').update(payload).eq('id', clientId);
+    if (!error) {
+      showToast('تم حفظ روابط التواصل بنجاح وتحديثها في المنيو!');
+    } else {
+      showToast('حدث خطأ أثناء الحفظ', true);
+    }
+  }
+
+  async function uploadMedia(type) {
+    const clientId = await getOrFetchClientId();
+    if (!clientId) return;
+
+    let fileInput, dbField, updatePayload;
+    if (type === 'logo') { fileInput = document.getElementById('logo-file'); dbField = 'logo_url'; }
+    else if (type === 'bg_image') { fileInput = document.getElementById('bg-img-file'); dbField = 'bg_image_url'; }
+    else if (type === 'bg_video') { fileInput = document.getElementById('bg-video-file'); dbField = 'bg_video_url'; }
+
+    const file = fileInput.files[0];
+    if (!file) return showToast('يرجى اختيار الملف أولاً', true);
+
+    showToast('جاري رفع الملف وتحديث النظام...');
+
+    const fileName = `${type}_${clientId}_${Date.now()}.${file.name.split('.').pop()}`;
+    const { error: uploadError } = await supabaseClient.storage.from('menu-images').upload(fileName, file);
+
+    if (!uploadError) {
+      const { data } = supabaseClient.storage.from('menu-images').getPublicUrl(fileName);
+      const mediaUrl = data.publicUrl;
+
+      if (type === 'bg_image') {
+        updatePayload = { bg_image_url: mediaUrl, bg_video_url: null };
+      } else if (type === 'bg_video') {
+        updatePayload = { bg_video_url: mediaUrl, bg_image_url: null };
+      } else {
+        updatePayload = { [dbField]: mediaUrl };
+      }
+
+      const { error: updateErr } = await supabaseClient.from('clients').update(updatePayload).eq('id', clientId);
+      
+      if (!updateErr) {
+        if (type === 'logo') document.getElementById('logo-preview').src = mediaUrl;
+        showToast('تم تحديث الملف وتطبيقه في المنيو بنجاح!');
+        fileInput.value = '';
+      } else {
+        showToast('فشل تحديث قاعدة البيانات', true);
+      }
+    } else {
+      showToast('فشل الرفع، تأكد من صلاحيات Storage', true);
+    }
+  }
+
+  async function loadCategories() {
+    const clientId = await getOrFetchClientId();
+    if (!clientId) return;
+
+    const { data } = await supabaseClient.from('categories').select('*').eq('client_id', clientId).order('id', { ascending: true });
+    loadedCategories = data || [];
+
+    const optionsHtml = loadedCategories.length > 0 
+      ? loadedCategories.map(c => `<option value="${c.key}">${c.name}</option>`).join('')
+      : `<option value="">لا توجد أقسام مسجلة</option>`;
+
+    document.getElementById('prod-category').innerHTML = optionsHtml;
+    document.getElementById('filter-category').innerHTML = `<option value="all">جميع الأقسام</option>` + optionsHtml;
+
+    const catListContainer = document.getElementById('categories-list');
+    if (loadedCategories.length === 0) {
+      catListContainer.innerHTML = `<p class="text-xs text-gray-400 text-center py-4">لا توجد أقسام بعد.</p>`;
+      return;
+    }
+
+    catListContainer.innerHTML = loadedCategories.map(c => `
+      <div class="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 text-xs">
+        <div><span class="font-bold text-white">${c.name}</span> <span class="text-gray-400 text-[10px]">(${c.key})</span></div>
+        <button onclick="deleteCategory(${c.id})" class="text-red-400 bg-red-500/10 px-3 py-1.5 rounded-lg">حذف</button>
+      </div>
+    `).join('');
+  }
+
+  document.getElementById('add-category-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const clientId = await getOrFetchClientId();
+    const name = document.getElementById('cat-name').value;
+    const key = document.getElementById('cat-key').value.toLowerCase().replace(/\s+/g, '-');
+
+    if (!clientId) {
+      return showToast('خطأ: لم يتم التعرف على معرّف المنشأة', true);
+    }
+
+    const { error } = await supabaseClient.from('categories').insert([{ name, key, client_id: clientId }]);
+    
+    if (!error) {
+      showToast('تم إضافة القسم بنجاح');
+      document.getElementById('add-category-form').reset();
+      loadCategories();
+    } else {
+      console.error("Supabase Error:", error); // طباعة الخطأ الفعلي في الكونسول
+      showToast('خطأ: ' + (error.message || 'فشل إضافة القسم'), true);
+    }
+  });
+
+  async function deleteCategory(id) {
+    if (confirm('تأكيد حذف القسم؟')) {
+      await supabaseClient.from('categories').delete().eq('id', id);
+      showToast('تم حذف القسم');
+      loadCategories();
+    }
+  }
+
+  async function loadAdminData() {
+    const clientId = await getOrFetchClientId();
+    if (!clientId) return;
+
+    const { data } = await supabaseClient.from('products').select('*').eq('client_id', clientId).order('id', { ascending: false });
+    loadedProducts = data || [];
+    filterProducts();
+  }
+
+  function filterProducts() {
+    const search = document.getElementById('search-input').value.toLowerCase();
+    const category = document.getElementById('filter-category').value;
+
+    const filtered = loadedProducts.filter(p => {
+      const matchName = p.name.toLowerCase().includes(search);
+      const matchCat = category === 'all' || p.category === category || p.category === (loadedCategories.find(c => c.key === category)?.name);
+      return matchName && matchCat;
+    });
+
+    renderProductsList(filtered);
+  }
+
+  function renderProductsList(products) {
+    const list = document.getElementById('admin-products-list');
+    document.getElementById('products-count').textContent = `${products.length} طبق`;
+
+    if (products.length === 0) {
+      list.innerHTML = `<p class="text-xs text-gray-400 text-center py-6">لا توجد أطباق مسجلة حالياً.</p>`;
+      return;
+    }
+
+    list.innerHTML = products.map(p => {
+      const isAvailable = p.is_available !== false;
+      const isBestseller = p.is_bestseller === true;
+
+      return `
+        <div class="flex items-center justify-between bg-white/5 p-2.5 rounded-xl border border-white/10 text-xs">
+          <div class="flex items-center gap-2.5 min-w-0">
+            ${p.image_url ? `<img src="${p.image_url}" class="w-10 h-10 object-cover rounded-xl border border-white/20 shrink-0">` : `<div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0"><i class="fa-solid fa-utensils text-gray-400 text-xs"></i></div>`}
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5">
+                <p class="font-bold text-white truncate ${!isAvailable ? 'line-through text-gray-500' : ''}">${p.name}</p>
+                ${isBestseller ? `<span class="bg-white/20 text-white text-[9px] px-1.5 py-0.5 rounded font-bold border border-white/30"><i class="fa-solid fa-fire text-amber-400"></i> مميز</span>` : ''}
+              </div>
+              <p class="text-gray-300 font-semibold text-[11px]">${p.price} ر.س</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button onclick="toggleBestseller(${p.id}, ${isBestseller})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border ${isBestseller ? 'bg-white text-black border-white' : 'bg-white/5 text-gray-300 border-white/10'}">تمييز</button>
+            <button onclick="toggleStock(${p.id}, ${isAvailable})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border ${isAvailable ? 'bg-green-500/20 text-green-300 border-green-500/30' : 'bg-red-500/20 text-red-300 border-red-500/30'}">${isAvailable ? 'متوفر' : 'نفذت'}</button>
+            <button onclick="deleteProduct(${p.id})" class="text-red-400 bg-red-500/10 p-2 rounded-lg border border-red-500/20"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function toggleStock(id, currentStatus) {
+    await supabaseClient.from('products').update({ is_available: !currentStatus }).eq('id', id);
+    showToast(currentStatus ? 'تم تحويل الطبق إلى غير متوفر' : 'تم تفعيل الطبق');
+    loadAdminData();
+  }
+
+  async function toggleBestseller(id, currentStatus) {
+    await supabaseClient.from('products').update({ is_bestseller: !currentStatus }).eq('id', id);
+    showToast(!currentStatus ? 'تم تعيين الطبق كمميز' : 'تم إزالة التمييز');
+    loadAdminData();
+  }
+
+  document.getElementById('add-product-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const clientId = await getOrFetchClientId();
+    const name = document.getElementById('prod-name').value;
+    const category = document.getElementById('prod-category').value;
+    const price = parseFloat(document.getElementById('prod-price').value) || 0;
+    const description = document.getElementById('prod-desc').value;
+    const isBestseller = document.getElementById('prod-bestseller').checked;
+    const imageFile = document.getElementById('prod-image-file').files[0];
+
+    let imageUrl = '';
+    if (imageFile) {
+      showToast('جاري رفع صورة الطبق...');
+      const cleanFileName = `prod_${clientId}_${Date.now()}.${imageFile.name.split('.').pop()}`;
+      const { error: uploadError } = await supabaseClient.storage.from('menu-images').upload(cleanFileName, imageFile);
+      if (!uploadError) {
+        imageUrl = supabaseClient.storage.from('menu-images').getPublicUrl(cleanFileName).data.publicUrl;
+      }
+    }
+
+    const { error: insertError } = await supabaseClient.from('products').insert([{ 
+      name, category, price, description, image_url: imageUrl, is_available: true, is_bestseller: isBestseller, client_id: clientId 
+    }]);
+
+    if (!insertError) {
+      document.getElementById('add-product-form').reset();
+      showToast('تمت إضافة الطبق بنجاح');
+      loadAdminData();
+    } else {
+      showToast('فشل إضافة الطبق', true);
+    }
+  });
+
+  async function deleteProduct(id) {
+    if (confirm('تأكيد حذف هذا الطبق؟')) {
+      await supabaseClient.from('products').delete().eq('id', id);
+      showToast('تم حذف الطبق');
+      loadAdminData();
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadCategories();
+    await loadAdminData();
+  });
+</script>
+</body>
+</html>
