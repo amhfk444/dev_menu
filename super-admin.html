@@ -21,7 +21,31 @@
     <span>جاري التحقق من الصلاحية...</span>
   </div>
 
-  <div id="toast" class="fixed bottom-5 left-5 z-50 hidden px-5 py-3 rounded-2xl shadow-2xl border text-xs font-bold"></div>
+  <div id="toast" class="fixed bottom-5 left-5 z-[60] hidden px-5 py-3 rounded-2xl shadow-2xl border text-xs font-bold"></div>
+
+  <!-- نافذة التأكيد -->
+  <div id="dlg" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+    <div role="dialog" aria-modal="true" aria-labelledby="dlg-title" class="w-full max-w-md bg-zinc-950 border border-white/15 rounded-2xl shadow-2xl overflow-hidden">
+      <div class="p-6 space-y-4">
+        <div class="flex items-start gap-3.5">
+          <div id="dlg-icon" class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"></div>
+          <div class="space-y-1.5 min-w-0 pt-0.5">
+            <h2 id="dlg-title" class="text-sm font-black text-white leading-snug"></h2>
+            <p id="dlg-message" class="text-xs text-gray-400 leading-relaxed"></p>
+          </div>
+        </div>
+        <ul id="dlg-list" class="hidden text-xs text-gray-200 bg-white/[0.04] border border-white/10 rounded-xl p-3.5 space-y-2"></ul>
+        <div id="dlg-confirm-wrap" class="hidden space-y-2">
+          <label for="dlg-input" class="text-[11px] text-gray-400 block">للتأكيد، اكتب رابط المتجر: <b id="dlg-expected" class="text-white font-mono select-all" dir="ltr"></b></label>
+          <input id="dlg-input" type="text" dir="ltr" autocomplete="off" spellcheck="false" class="input-pro font-mono !text-sm !py-2.5 focus:outline-none focus:border-red-500/60">
+        </div>
+      </div>
+      <div class="flex gap-2 justify-end px-6 py-4 bg-white/[0.03] border-t border-white/10">
+        <button id="dlg-cancel" type="button" class="px-4 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/15 text-white transition">إلغاء</button>
+        <button id="dlg-ok" type="button"></button>
+      </div>
+    </div>
+  </div>
 
   <div id="app" class="space-y-6" style="visibility:hidden">
     <header class="pro-card p-4 flex flex-wrap gap-3 justify-between items-center">
@@ -78,6 +102,55 @@
     t.className = `fixed bottom-5 left-5 z-50 px-5 py-3 rounded-2xl shadow-2xl border text-xs font-bold ${isError ? 'bg-zinc-900 border-red-500 text-white' : 'bg-white border-white text-black'}`;
     clearTimeout(showToast.timer);
     showToast.timer = setTimeout(() => t.classList.add('hidden'), 3200);
+  }
+
+  // نافذة تأكيد بتصميم اللوحة بدل نوافذ المتصفح
+  function confirmDialog({ title, message, items = [], confirmText = 'تأكيد', tone = 'danger', expected = '' }) {
+    return new Promise(resolve => {
+      const $ = (id) => document.getElementById(id);
+      const dlg = $('dlg'), ok = $('dlg-ok'), cancel = $('dlg-cancel'), input = $('dlg-input');
+      const tones = {
+        danger:  { icon: 'fa-trash-can',   box: 'bg-red-500/15 text-red-400 border border-red-500/30',             btn: 'bg-red-600 hover:bg-red-500',         item: 'fa-xmark text-red-400' },
+        success: { icon: 'fa-circle-check', box: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30', btn: 'bg-emerald-600 hover:bg-emerald-500', item: 'fa-check text-emerald-400' },
+        warning: { icon: 'fa-pause',        box: 'bg-amber-500/15 text-amber-400 border border-amber-500/30',       btn: 'bg-amber-600 hover:bg-amber-500',     item: 'fa-minus text-amber-400' }
+      };
+      const t = tones[tone] || tones.danger;
+
+      $('dlg-icon').className = `w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${t.box}`;
+      $('dlg-icon').innerHTML = `<i class="fa-solid ${t.icon}"></i>`;
+      $('dlg-title').textContent = title;
+      $('dlg-message').textContent = message;
+      const list = $('dlg-list');
+      list.innerHTML = items.map(x => `<li class="flex items-center gap-2.5"><i class="fa-solid ${t.item} text-[10px] w-3"></i><span>${esc(x)}</span></li>`).join('');
+      list.classList.toggle('hidden', items.length === 0);
+      $('dlg-confirm-wrap').classList.toggle('hidden', !expected);
+      $('dlg-expected').textContent = expected;
+      input.value = '';
+      ok.textContent = confirmText;
+      ok.className = `px-4 py-2 rounded-xl text-xs font-bold text-white transition disabled:opacity-40 disabled:cursor-not-allowed ${t.btn}`;
+
+      const valid = () => !expected || input.value.trim().toLowerCase() === expected.toLowerCase();
+      ok.disabled = !valid();
+
+      const close = (result) => {
+        dlg.classList.add('hidden'); dlg.classList.remove('flex');
+        document.removeEventListener('keydown', onKey);
+        ok.onclick = cancel.onclick = dlg.onclick = input.oninput = null;
+        resolve(result);
+      };
+      const onKey = (e) => {
+        if (e.key === 'Escape') close(false);
+        if (e.key === 'Enter' && valid() && (expected ? document.activeElement === input : true)) { e.preventDefault(); close(true); }
+      };
+      input.oninput = () => { ok.disabled = !valid(); };
+      ok.onclick = () => { if (valid()) close(true); };
+      cancel.onclick = () => close(false);
+      dlg.onclick = (e) => { if (e.target === dlg) close(false); };
+      document.addEventListener('keydown', onKey);
+
+      dlg.classList.remove('hidden'); dlg.classList.add('flex');
+      (expected ? input : tone === 'danger' ? cancel : ok).focus();
+    });
   }
 
   async function logout() {
@@ -168,7 +241,18 @@
   async function activate(id, period) {
     const c = clients.find(x => x.id === id);
     const label = period === 'year' ? 'سنة' : 'شهر';
-    if (!confirm(`تفعيل ${label} لـ "${c ? c.name : id}"؟ (تُضاف المدة على الاشتراك الحالي إن كان سارياً)`)) return;
+    const confirmed = await confirmDialog({
+      title: `تفعيل اشتراك ${label}`,
+      message: `سيتم تفعيل اشتراك ${label} لمتجر "${c ? (c.name || c.client_slug) : id}".`,
+      items: [
+        period === 'year' ? 'المبلغ: 1149 ر.س' : 'المبلغ: 99 ر.س',
+        'إذا كان الاشتراك سارياً، تُضاف المدة على تاريخ انتهائه الحالي',
+        'يعود المنيو للظهور فوراً إذا كان متوقفاً'
+      ],
+      confirmText: `تفعيل ${label}`,
+      tone: 'success'
+    });
+    if (!confirmed) return;
     const { error } = await supabaseClient.rpc('admin_activate', { p_client_id: id, p_period: period });
     if (error) { console.error(error); return showToast('تعذر التفعيل', true); }
     showToast(`تم تفعيل ${label}`);
@@ -176,7 +260,13 @@
   }
 
   async function setActive(id, active) {
-    if (!active && !confirm('إيقاف هذا المتجر؟ سيختفي منيوه عن الزبائن.')) return;
+    const c = clients.find(x => x.id === id);
+    const name = c ? (c.name || c.client_slug) : id;
+    const confirmed = await confirmDialog(active
+      ? { title: 'إعادة تشغيل المتجر', message: `سيعود منيو "${name}" للظهور للزبائن (إذا كان اشتراكه سارياً).`, confirmText: 'إعادة تشغيل', tone: 'success' }
+      : { title: 'إيقاف المتجر', message: `سيختفي منيو "${name}" عن الزبائن فوراً، ويمكنك إعادة تشغيله في أي وقت.`,
+          items: ['لا تُحذف أي بيانات', 'صاحب المتجر يرى تنبيه الإيقاف في لوحته'], confirmText: 'إيقاف المتجر', tone: 'warning' });
+    if (!confirmed) return;
     const { error } = await supabaseClient.rpc('admin_set_active', { p_client_id: id, p_active: active });
     if (error) { console.error(error); return showToast('تعذر تنفيذ العملية', true); }
     showToast(active ? 'تمت إعادة تشغيل المتجر' : 'تم إيقاف المتجر');
@@ -203,21 +293,32 @@
   async function deleteClient(id) {
     const c = clients.find(x => x.id === id);
     if (!c) return;
-    const typed = prompt(
-      `سيتم حذف متجر "${c.name || c.client_slug}" نهائياً:\n` +
-      `الأطباق، الأقسام، الصور، وحساب دخول صاحبه.\n` +
-      `لا يمكن التراجع عن هذا.\n\n` +
-      `للتأكيد اكتب رابط المتجر: ${c.client_slug}`);
-    if (typed === null) return;
-    if (typed.trim().toLowerCase() !== String(c.client_slug).toLowerCase()) {
-      return showToast('الرابط غير مطابق، لم يتم الحذف', true);
-    }
+    // تجميع ما سيُحذف لعرضه في نافذة التأكيد
+    const [{ data: prods }, { count: catCount }] = await Promise.all([
+      supabaseClient.from('products').select('image_url').eq('client_id', id),
+      supabaseClient.from('categories').select('id', { count: 'exact', head: true }).eq('client_id', id)
+    ]);
+    const items = [
+      `${(prods || []).length} طبق و ${catCount || 0} قسم`,
+      'الشعار والخلفيات وصور الأطباق',
+      'حالة الاشتراك والإشعارات'
+    ];
+    if (c.email) items.push(`حساب الدخول: ${c.email}`);
+
+    const confirmed = await confirmDialog({
+      title: `حذف متجر "${c.name || c.client_slug}" نهائياً`,
+      message: 'لا يمكن التراجع عن هذا الإجراء. سيتم حذف:',
+      items,
+      confirmText: 'حذف نهائي',
+      tone: 'danger',
+      expected: c.client_slug
+    });
+    if (!confirmed) return;
 
     showToast('جاري حذف المتجر...');
 
     // 1) تجميع مسارات الصور قبل حذف البيانات
     const paths = new Set();
-    const { data: prods } = await supabaseClient.from('products').select('image_url').eq('client_id', id);
     [c.logo_url, c.bg_image_url, c.bg_video_url, ...(prods || []).map(p => p.image_url)]
       .forEach(u => { const p = storagePath(u); if (p) paths.add(p); });
     const { data: files } = await supabaseClient.storage.from('menu-images').list(String(id), { limit: 1000 });
