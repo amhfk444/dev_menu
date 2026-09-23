@@ -229,6 +229,7 @@
               <button onclick="activate(${id}, 'month')" class="bg-amber-600 hover:bg-amber-500 text-white px-2 py-1.5 rounded text-[10px] font-bold">+ شهر (99)</button>
               <button onclick="activate(${id}, 'year')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1.5 rounded text-[10px] font-bold">+ سنة (1149)</button>
               <button onclick="setActive(${id}, ${c.is_active === false})" class="${c.is_active === false ? 'bg-green-700 hover:bg-green-600' : 'bg-red-600/50 hover:bg-red-600'} text-white px-2 py-1.5 rounded text-[10px]">${c.is_active === false ? 'إعادة تشغيل' : 'إيقاف'}</button>
+              <button onclick="setFeatured(${id}, ${!c.is_featured})" title="عرض المتجر كمثال في الصفحة الرئيسية" class="${c.is_featured ? 'bg-[#c9a227] text-black hover:bg-[#d8b13a]' : 'bg-white/10 text-white hover:bg-white/20'} px-2 py-1.5 rounded text-[10px] font-bold"><i class="fa-solid fa-star text-[9px]"></i> ${c.is_featured ? 'معروض كمثال' : 'اعرضه كمثال'}</button>
               <a href="admin.html?client=${slug}" target="_blank" class="bg-white/10 hover:bg-white/20 text-white px-2 py-1.5 rounded text-[10px]">لوحته</a>
               <a href="menu.html?client=${slug}" target="_blank" class="bg-white/10 hover:bg-white/20 text-white px-2 py-1.5 rounded text-[10px]">المنيو</a>
               <button onclick="deleteClient(${id})" class="bg-red-900/60 hover:bg-red-700 text-red-100 px-2 py-1.5 rounded text-[10px] border border-red-500/40"><i class="fa-solid fa-trash text-[9px]"></i> حذف</button>
@@ -278,6 +279,16 @@
     const { error } = await supabaseClient.rpc('admin_notify', { p_client_id: id, p_message: msg });
     if (error) { console.error(error); return showToast('تعذر حفظ الإشعار', true); }
     showToast(msg.trim() ? 'سيظهر الإشعار في لوحة العميل' : 'تم حذف الإشعار');
+    loadClients();
+  }
+
+  // ─── عرض المتجر كمثال حقيقي في الصفحة الرئيسية ───
+  async function setFeatured(id, featured) {
+    const c = clients.find(x => x.id === id);
+    const { error } = await supabaseClient.rpc('admin_set_featured', { p_client_id: id, p_featured: featured });
+    if (error) { console.error(error); return showToast('تعذر التحديث', true); }
+    if (featured && c && !statusOf(c).live) showToast('تم، لكنه لن يظهر في الرئيسية حتى يكون اشتراكه سارياً');
+    else showToast(featured ? 'سيظهر المتجر في أمثلة الصفحة الرئيسية' : 'تمت إزالة المتجر من الأمثلة');
     loadClients();
   }
 
