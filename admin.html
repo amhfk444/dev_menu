@@ -63,7 +63,7 @@ tailwind.config = {
     </a>
   </header>
 
-  <!-- بطاقة معلومات الاشتراك، التنبيهات، و الـ QR Code -->
+  <!-- بطاقة معلومات الاشتراك والتنبيهات والـ QR Code -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <!-- حالة الاشتراك -->
     <div class="pro-card p-4 space-y-2 border-l-4 border-l-amber-400">
@@ -274,7 +274,6 @@ tailwind.config = {
 
 <!-- JavaScript البرمجي المنظم -->
 <script>
-  // استخراج معرف العميل (slug) من الرابط
   const urlParams = new URLSearchParams(window.location.search);
   const clientSlugFromUrl = urlParams.get('client') || 'alqarya-restaurant';
 
@@ -317,7 +316,7 @@ tailwind.config = {
 
     if (!client) {
       const endDate = new Date();
-      endDate.setDate(endDate.getDate() + 7); // فترة تجريبية 7 أيام افتراضياً
+      endDate.setDate(endDate.getDate() + 7);
       const { data: inserted } = await supabaseClient
         .from('clients')
         .insert([{
@@ -337,22 +336,18 @@ tailwind.config = {
       document.getElementById('setting-name').value = client.name || '';
       document.getElementById('promo-message-input').value = client.promo_message || '';
       
-      // ضبط رابط المعاينة الحي ليتضمن slug العميل تماماً
-     // استبدال index.html بـ menu.html في رابط المعاينة والـ QR Code
-const menuUrl = `${window.location.origin}/menu.html?client=${client.client_slug}`;
-document.getElementById('preview-menu-btn').href = menuUrl;
+      const menuUrl = `${window.location.origin}/menu.html?client=${client.client_slug}`;
+      document.getElementById('preview-menu-btn').href = menuUrl;
 
-// توليد الـ QR Code لرابط المنيو الصحيح
-document.getElementById('qrcode').innerHTML = '';
-new QRCode(document.getElementById('qrcode'), {
-  text: menuUrl,
-  width: 80,
-  height: 80
-});
-      // عرض حالة الاشتراك وتنبيهات الأدمن
+      document.getElementById('qrcode').innerHTML = '';
+      new QRCode(document.getElementById('qrcode'), {
+        text: menuUrl,
+        width: 80,
+        height: 80
+      });
+
       renderSubscriptionStatus(client);
 
-      // تعبئة روابط التواصل الحالية
       document.getElementById('social-web').value = client.website_url || '';
       document.getElementById('social-tiktok').value = client.tiktok_url || '';
       document.getElementById('social-insta').value = client.instagram_url || '';
@@ -377,7 +372,6 @@ new QRCode(document.getElementById('qrcode'), {
       <p class="text-[10px] text-gray-400">معرف المتجر: ${client.client_slug}</p>
     `;
 
-    // عرض تنبيه الإدارة إن وجد
     if (client.admin_notification && client.admin_notification.trim() !== '') {
       document.getElementById('admin-notice-text').textContent = client.admin_notification;
       document.getElementById('admin-notice-box').classList.remove('hidden');
@@ -385,7 +379,7 @@ new QRCode(document.getElementById('qrcode'), {
   }
 
   function copyMenuLink() {
-    const menuUrl = `${window.location.origin}/index.html?client=${THIS_PROJECT.slug}`;
+    const menuUrl = `${window.location.origin}/menu.html?client=${THIS_PROJECT.slug}`;
     navigator.clipboard.writeText(menuUrl);
     showToast('تم نسخ رابط المنيو بنجاح!');
   }
@@ -522,7 +516,7 @@ new QRCode(document.getElementById('qrcode'), {
       document.getElementById('add-category-form').reset();
       loadCategories();
     } else {
-      console.error("Supabase Error:", error); // طباعة الخطأ الفعلي في الكونسول
+      console.error("Supabase Error:", error);
       showToast('خطأ: ' + (error.message || 'فشل إضافة القسم'), true);
     }
   });
