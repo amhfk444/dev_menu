@@ -217,7 +217,9 @@
     if (session) goToDashboard();
   })();
 
-  // 1. إرسال الرمز — للمسجلين فقط (لا ينشئ حسابات جديدة)
+  // 1. إرسال الرمز
+  // shouldCreateUser: true حتى تقدر المتاجر القديمة تدخل بدون إضافتها يدوياً.
+  // هذا آمن: الدخول وحده لا يعطي أي صلاحية، الصلاحية مربوطة ببريد المتجر في جدول clients
   document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     inputEmail = document.getElementById('identifier-input').value.trim().toLowerCase();
@@ -226,7 +228,7 @@
     setBusy('send-otp-btn', 'btn-spinner', true);
     const { error } = await supabaseClient.auth.signInWithOtp({
       email: inputEmail,
-      options: { shouldCreateUser: false }
+      options: { shouldCreateUser: true }
     });
     setBusy('send-otp-btn', 'btn-spinner', false);
 
