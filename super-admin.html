@@ -16,27 +16,44 @@
 </head>
 <body class="py-6 px-4 max-w-6xl mx-auto space-y-6">
 
-  <header class="pro-card p-4 flex justify-between items-center">
-    <h1 class="text-base font-black text-amber-400"><i class="fa-solid fa-crown"></i> إدارة مشتركي DEV MENU</h1>
-    <span class="text-xs bg-white/10 px-3 py-1 rounded-xl">إجمالي العملاء: <span id="count-clients">0</span></span>
-  </header>
+  <div id="auth-loading" class="fixed inset-0 z-40 flex flex-col items-center justify-center gap-3 text-xs text-gray-400 text-center px-6">
+    <i class="fa-solid fa-spinner fa-spin text-lg"></i>
+    <span>جاري التحقق من الصلاحية...</span>
+  </div>
 
-  <div class="pro-card p-5 space-y-4">
-    <h3 class="text-xs font-bold text-white border-b border-white/10 pb-2">قائمة العملاء والمطاعم</h3>
-    <div class="overflow-x-auto">
-      <table class="w-full text-right text-xs">
-        <thead class="bg-white/5 text-gray-300 border-b border-white/10">
-          <tr>
-            <th class="p-3">اسم المطعم / المتجر</th>
-            <th class="p-3">الحالة والنوع</th>
-            <th class="p-3">إرسال إشعار تنبيه</th>
-            <th class="p-3 text-center">تفعيل باقة (شهر 99 / سنة 1149) وإجراءات</th>
-          </tr>
-        </thead>
-        <tbody id="admin-clients-list" class="divide-y divide-white/10">
-          <tr><td colspan="4" class="text-center py-6 text-gray-400">جاري التحميل...</td></tr>
-        </tbody>
-      </table>
+  <div id="toast" class="fixed bottom-5 left-5 z-50 hidden px-5 py-3 rounded-2xl shadow-2xl border text-xs font-bold"></div>
+
+  <div id="app" class="space-y-6" style="visibility:hidden">
+    <header class="pro-card p-4 flex flex-wrap gap-3 justify-between items-center">
+      <h1 class="text-base font-black text-amber-400"><i class="fa-solid fa-crown"></i> إدارة مشتركي DEV MENU</h1>
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+        <span class="bg-white/10 px-3 py-1 rounded-xl">الكل: <b id="count-all">0</b></span>
+        <span class="bg-green-500/15 text-green-300 px-3 py-1 rounded-xl">ساري: <b id="count-live">0</b></span>
+        <span class="bg-red-500/15 text-red-300 px-3 py-1 rounded-xl">منتهي/موقوف: <b id="count-dead">0</b></span>
+        <button onclick="logout()" class="bg-white/10 hover:bg-white/20 px-3 py-1 rounded-xl border border-white/20"><i class="fa-solid fa-right-from-bracket text-[10px]"></i> خروج</button>
+      </div>
+    </header>
+
+    <div class="pro-card p-5 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
+        <h3 class="text-xs font-bold text-white">قائمة العملاء والمطاعم</h3>
+        <input type="text" id="search" oninput="renderClients()" placeholder="بحث بالاسم أو الرابط أو البريد..." class="input-pro max-w-xs">
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-right text-xs">
+          <thead class="bg-white/5 text-gray-300 border-b border-white/10">
+            <tr>
+              <th class="p-3">المتجر والتواصل</th>
+              <th class="p-3">الاشتراك</th>
+              <th class="p-3">إشعار للعميل</th>
+              <th class="p-3 text-center">الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="admin-clients-list" class="divide-y divide-white/10">
+            <tr><td colspan="4" class="text-center py-6 text-gray-400">جاري التحميل...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -45,65 +62,135 @@
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZG9hbWNneGdraWNyYnVmcGNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwMTA5MzAsImV4cCI6MjEwNTU4NjkzMH0.45zKx4ljXJ27SS-ukc62qiu52movhDgSoC9OEnK9NHk';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  async function loadClients() {
-    let { data: clients } = await supabaseClient.from('clients').select('*').order('id', { ascending: false });
-    if (!clients) return;
+  // حماية من حقن الكود: أي نص قادم من قاعدة البيانات يمر من هنا قبل عرضه
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // يقبل روابط http/https فقط (يمنع روابط javascript:)
+  function safeUrl(u) {
+    if (!u) return '';
+    try { const x = new URL(u); return (x.protocol === 'https:' || x.protocol === 'http:') ? x.href : ''; }
+    catch { return ''; }
+  }
+  let clients = [];
 
-    document.getElementById('count-clients').textContent = clients.length;
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `fixed bottom-5 left-5 z-50 px-5 py-3 rounded-2xl shadow-2xl border text-xs font-bold ${isError ? 'bg-zinc-900 border-red-500 text-white' : 'bg-white border-white text-black'}`;
+    clearTimeout(showToast.timer);
+    showToast.timer = setTimeout(() => t.classList.add('hidden'), 3200);
+  }
+
+  async function logout() {
+    await supabaseClient.auth.signOut();
+    window.location.replace('login.html');
+  }
+
+  function statusOf(c) {
+    const end = c.subscription_status === 'active' ? c.subscription_end_date : c.trial_ends_at;
+    const left = end ? Math.ceil((new Date(end) - Date.now()) / 86400000) : null;
+    const endText = end ? new Date(end).toLocaleDateString('ar-SA-u-ca-gregory') : 'بدون تاريخ';
+    if (c.is_active === false) return { live: false, badge: 'bg-red-500/20 text-red-300', label: 'موقوف', endText, left };
+    if (c.subscription_status === 'trial' && (left === null || left > 0)) return { live: true, badge: 'bg-blue-500/20 text-blue-300', label: 'تجريبي', endText, left };
+    if (c.subscription_status === 'active' && (left === null || left > 0)) return { live: true, badge: 'bg-green-500/20 text-green-300', label: 'مشترك مدفوع', endText, left };
+    return { live: false, badge: 'bg-red-500/20 text-red-300', label: 'منتهي', endText, left };
+  }
+
+  async function init() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) return window.location.replace('login.html');
+
+    const { data: isAdmin } = await supabaseClient.rpc('is_super_admin');
+    if (isAdmin !== true) {
+      document.getElementById('auth-loading').innerHTML = `
+        <i class="fa-solid fa-lock text-lg"></i><span>هذه الصفحة للمدير العام فقط.</span>
+        <a href="admin.html" class="bg-white text-black font-bold px-4 py-2 rounded-xl mt-2">لوحة متجري</a>`;
+      return;
+    }
+    document.getElementById('auth-loading').remove();
+    document.getElementById('app').style.visibility = 'visible';
+    loadClients();
+  }
+
+  async function loadClients() {
+    const { data, error } = await supabaseClient.from('clients').select('*').order('id', { ascending: false });
+    if (error) { console.error(error); return showToast('تعذر تحميل العملاء', true); }
+    clients = data || [];
+    const liveCount = clients.filter(c => statusOf(c).live).length;
+    document.getElementById('count-all').textContent = clients.length;
+    document.getElementById('count-live').textContent = liveCount;
+    document.getElementById('count-dead').textContent = clients.length - liveCount;
+    renderClients();
+  }
+
+  function renderClients() {
+    const q = document.getElementById('search').value.trim().toLowerCase();
+    const list = clients.filter(c => !q || [c.name, c.client_slug, c.email, c.phone].some(v => v && String(v).toLowerCase().includes(q)));
     const tbody = document.getElementById('admin-clients-list');
 
-    tbody.innerHTML = clients.map(c => {
-      let statusBadge = '';
-      if (c.subscription_status === 'trial') statusBadge = '<span class="bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full text-[10px] font-bold">تجريبي (7 أيام)</span>';
-      else if (c.subscription_status === 'active') statusBadge = '<span class="bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full text-[10px] font-bold">مشترك مدفوع</span>';
-      else statusBadge = '<span class="bg-red-500/20 text-red-300 px-2 py-0.5 rounded-full text-[10px] font-bold">منتهي الاشتراك</span>';
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-gray-400">${clients.length ? 'لا توجد نتائج' : 'لا يوجد عملاء بعد'}</td></tr>`;
+      return;
+    }
 
+    tbody.innerHTML = list.map(c => {
+      const id = Number(c.id), st = statusOf(c);
+      const slug = encodeURIComponent(c.client_slug || '');
       return `
-        <tr class="hover:bg-white/5">
-          <td class="p-3 font-bold text-white">${c.name || 'بدون اسم'} <br><span class="text-[10px] text-gray-400 font-mono">${c.client_slug}</span></td>
-          <td class="p-3">${statusBadge}</td>
+        <tr class="hover:bg-white/5 align-top">
+          <td class="p-3 space-y-0.5">
+            <p class="font-bold text-white">${esc(c.name || 'بدون اسم')}</p>
+            <p class="text-[10px] text-gray-400 font-mono" dir="ltr">${esc(c.client_slug)}</p>
+            <p class="text-[10px] text-gray-400" dir="ltr">${esc(c.email || '— بدون بريد —')}</p>
+            ${c.phone ? `<a href="https://wa.me/${esc(String(c.phone).replace(/\D/g, ''))}" target="_blank" rel="noopener" class="text-[10px] text-green-300" dir="ltr">${esc(c.phone)}</a>` : ''}
+          </td>
           <td class="p-3 space-y-1">
-            <input type="text" id="notif-${c.id}" placeholder="اكتب إشعاراً للعميل..." class="input-pro" value="${c.admin_notification || ''}">
-            <button onclick="sendNotification(${c.id})" class="bg-blue-600 hover:bg-blue-500 text-white text-[10px] px-2.5 py-1 rounded">إرسال إشعار</button>
+            <span class="${st.badge} px-2 py-0.5 rounded-full text-[10px] font-bold">${st.label}</span>
+            <p class="text-[10px] text-gray-400">ينتهي: ${esc(st.endText)}${st.left !== null && st.left > 0 ? ` (${st.left} يوم)` : ''}</p>
           </td>
-          <td class="p-3 text-center space-x-1 space-x-reverse">
-            <button onclick="activateSubscription(${c.id}, 'month')" class="bg-amber-600 hover:bg-amber-500 text-white px-2 py-1.5 rounded text-[10px] font-bold">تفعيل شهر (99 ر.س)</button>
-            <button onclick="activateSubscription(${c.id}, 'year')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1.5 rounded text-[10px] font-bold">تفعيل سنة (1149 ر.س)</button>
-            <button onclick="toggleSuspend(${c.id}, ${c.is_active})" class="bg-red-600/50 hover:bg-red-600 text-white px-2 py-1.5 rounded text-[10px]">ايقاف</button>
+          <td class="p-3 space-y-1 min-w-[180px]">
+            <input type="text" id="notif-${id}" placeholder="اكتب إشعاراً للعميل..." class="input-pro" value="${esc(c.admin_notification || '')}">
+            <button onclick="sendNotification(${id})" class="bg-blue-600 hover:bg-blue-500 text-white text-[10px] px-2.5 py-1 rounded">حفظ الإشعار</button>
           </td>
-        </tr>
-      `;
+          <td class="p-3">
+            <div class="flex flex-wrap justify-center gap-1">
+              <button onclick="activate(${id}, 'month')" class="bg-amber-600 hover:bg-amber-500 text-white px-2 py-1.5 rounded text-[10px] font-bold">+ شهر (99)</button>
+              <button onclick="activate(${id}, 'year')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1.5 rounded text-[10px] font-bold">+ سنة (1149)</button>
+              <button onclick="setActive(${id}, ${c.is_active === false})" class="${c.is_active === false ? 'bg-green-700 hover:bg-green-600' : 'bg-red-600/50 hover:bg-red-600'} text-white px-2 py-1.5 rounded text-[10px]">${c.is_active === false ? 'إعادة تشغيل' : 'إيقاف'}</button>
+              <a href="admin.html?client=${slug}" target="_blank" class="bg-white/10 hover:bg-white/20 text-white px-2 py-1.5 rounded text-[10px]">لوحته</a>
+              <a href="menu.html?client=${slug}" target="_blank" class="bg-white/10 hover:bg-white/20 text-white px-2 py-1.5 rounded text-[10px]">المنيو</a>
+            </div>
+          </td>
+        </tr>`;
     }).join('');
   }
 
-  async function activateSubscription(id, type) {
-    const targetDate = new Date();
-    if (type === 'month') targetDate.setMonth(targetDate.getMonth() + 1);
-    else targetDate.setFullYear(targetDate.getFullYear() + 1);
+  async function activate(id, period) {
+    const c = clients.find(x => x.id === id);
+    const label = period === 'year' ? 'سنة' : 'شهر';
+    if (!confirm(`تفعيل ${label} لـ "${c ? c.name : id}"؟ (تُضاف المدة على الاشتراك الحالي إن كان سارياً)`)) return;
+    const { error } = await supabaseClient.rpc('admin_activate', { p_client_id: id, p_period: period });
+    if (error) { console.error(error); return showToast('تعذر التفعيل', true); }
+    showToast(`تم تفعيل ${label}`);
+    loadClients();
+  }
 
-    await supabaseClient.from('clients').update({
-      subscription_status: 'active',
-      is_active: true,
-      subscription_end_date: targetDate.toISOString()
-    }).eq('id', id);
-
-    alert('تم تفعيل الاشتراك بنجاح!');
+  async function setActive(id, active) {
+    if (!active && !confirm('إيقاف هذا المتجر؟ سيختفي منيوه عن الزبائن.')) return;
+    const { error } = await supabaseClient.rpc('admin_set_active', { p_client_id: id, p_active: active });
+    if (error) { console.error(error); return showToast('تعذر تنفيذ العملية', true); }
+    showToast(active ? 'تمت إعادة تشغيل المتجر' : 'تم إيقاف المتجر');
     loadClients();
   }
 
   async function sendNotification(id) {
     const msg = document.getElementById(`notif-${id}`).value;
-    await supabaseClient.from('clients').update({ admin_notification: msg }).eq('id', id);
-    alert('تم إرسال الإشعار للعميل بنجاح وسيظهر في لوحة تحكمه!');
+    const { error } = await supabaseClient.rpc('admin_notify', { p_client_id: id, p_message: msg });
+    if (error) { console.error(error); return showToast('تعذر حفظ الإشعار', true); }
+    showToast(msg.trim() ? 'سيظهر الإشعار في لوحة العميل' : 'تم حذف الإشعار');
     loadClients();
   }
 
-  async function toggleSuspend(id, currentStatus) {
-    await supabaseClient.from('clients').update({ is_active: !currentStatus }).eq('id', currentStatus);
-    loadClients();
-  }
-
-  document.addEventListener('DOMContentLoaded', loadClients);
+  init();
 </script>
 </body>
 </html>
