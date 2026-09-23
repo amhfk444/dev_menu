@@ -44,7 +44,13 @@ tailwind.config = {
   <span id="toast-msg">تمت العملية بنجاح</span>
 </div>
 
-<div class="max-w-6xl mx-auto space-y-5">
+<!-- شاشة التحقق من الدخول -->
+<div id="auth-loading" class="fixed inset-0 z-40 flex flex-col items-center justify-center gap-3 text-xs text-gray-400 text-center px-6">
+  <i class="fa-solid fa-spinner fa-spin text-lg"></i>
+  <span>جاري التحقق من تسجيل الدخول...</span>
+</div>
+
+<div id="app" class="max-w-6xl mx-auto space-y-5" style="visibility:hidden">
   
   <!-- ترويسة اللوحة -->
   <header class="pro-card p-4 flex flex-wrap items-center justify-between gap-4">
@@ -57,10 +63,15 @@ tailwind.config = {
         <p class="text-[11px] text-gray-400">إدارة الهوية، المنتجات، الاشتراك، ورابط المنيو الرقمي</p>
       </div>
     </div>
+    <div class="flex items-center gap-2">
+    <button onclick="logout()" class="text-xs bg-white/10 hover:bg-white/20 text-white font-bold px-4 py-2 rounded-xl transition border border-white/20 flex items-center gap-1.5">
+      <i class="fa-solid fa-right-from-bracket text-[10px]"></i> خروج
+    </button>
     <a id="preview-menu-btn" href="#" target="_blank" class="text-xs bg-white text-black font-bold px-4 py-2 rounded-xl transition hover:bg-gray-200 flex items-center gap-1.5 shadow-lg">
       <span>معاينة المنيو الحي</span>
       <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
     </a>
+    </div>
   </header>
 
   <!-- بطاقة معلومات الاشتراك والتنبيهات والـ QR Code -->
@@ -185,7 +196,7 @@ tailwind.config = {
       <div class="lg:col-span-5">
         <form id="add-product-form" class="pro-card p-5 space-y-3.5 sticky top-5">
           <h3 class="text-xs font-bold text-white border-b border-white/15 pb-2 flex items-center gap-2">
-            <i class="fa-solid fa-plus text-white"></i> إضافة طبق أو منتج جديد
+            <i id="form-icon" class="fa-solid fa-plus text-white"></i> <span id="form-title">إضافة طبق أو منتج جديد</span>
           </h3>
           <div>
             <label class="text-[11px] text-gray-300 block mb-1">اسم الطبق / المنتج *</label>
@@ -202,7 +213,7 @@ tailwind.config = {
             </div>
           </div>
           <div>
-            <label class="text-[11px] text-gray-300 block mb-1">صورة الطبق</label>
+            <label class="text-[11px] text-gray-300 block mb-1">صورة الطبق <span id="image-hint" class="text-gray-500"></span></label>
             <input type="file" id="prod-image-file" accept="image/*" class="input-pro text-xs">
           </div>
           <div>
@@ -216,6 +227,7 @@ tailwind.config = {
             </label>
           </div>
           <button type="submit" id="submit-btn" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-2.5 rounded-xl text-xs transition shadow-lg">حفظ وإضافة الطبق</button>
+          <button type="button" id="cancel-edit-btn" onclick="cancelEdit()" class="hidden w-full bg-white/5 hover:bg-white/10 text-gray-300 font-bold py-2.5 rounded-xl text-xs transition border border-white/15">إلغاء التعديل</button>
         </form>
       </div>
 
@@ -274,28 +286,32 @@ tailwind.config = {
 
 <!-- JavaScript البرمجي المنظم -->
 <script>
-  const urlParams = new URLSearchParams(window.location.search);
-  const clientSlugFromUrl = urlParams.get('client') || 'alqarya-restaurant';
-
-  const THIS_PROJECT = { 
-    slug: clientSlugFromUrl, 
-    name: 'Dev Menu' 
-  };
-
   const SUPABASE_URL = 'https://czdoamcgxgkicrbufpcn.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZG9hbWNneGdraWNyYnVmcGNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwMTA5MzAsImV4cCI6MjEwNTU4NjkzMH0.45zKx4ljXJ27SS-ukc62qiu52movhDgSoC9OEnK9NHk';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  let currentClientId = null;
-  let loadedProducts = [];
-  let loadedCategories = [];
+  // حماية من حقن الكود: أي نص قادم من قاعدة البيانات يمر من هنا قبل عرضه
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // يقبل روابط http/https فقط (يمنع روابط javascript:)
+  function safeUrl(u) {
+    if (!u) return '';
+    try { const x = new URL(u); return (x.protocol === 'https:' || x.protocol === 'http:') ? x.href : ''; }
+    catch { return ''; }
+  }
+  const params = new URLSearchParams(window.location.search);
+  const requestedSlug = (params.get('client') || '').trim().toLowerCase();
+  const MAX_IMAGE_MB = 5, MAX_VIDEO_MB = 30;
+
+  let client = null, currentClientId = null, isSuperAdmin = false;
+  let loadedProducts = [], loadedCategories = [], editingProductId = null;
 
   function showToast(msg, isError = false) {
     const toast = document.getElementById('toast');
     document.getElementById('toast-msg').textContent = msg;
     document.getElementById('toast-icon').className = isError ? 'fa-solid fa-circle-xmark text-red-500' : 'fa-solid fa-circle-check text-green-600';
     toast.className = `fixed bottom-5 left-5 z-50 px-5 py-3 rounded-2xl shadow-2xl border text-xs font-bold flex items-center gap-2 transition-all ${isError ? 'bg-zinc-900 border-red-500 text-white' : 'bg-white border-white text-black'} show`;
-    setTimeout(() => { toast.classList.remove('show'); }, 3000);
+    clearTimeout(showToast.t);
+    showToast.t = setTimeout(() => { toast.classList.remove('show'); }, 3200);
   }
 
   function switchTab(tab) {
@@ -305,249 +321,259 @@ tailwind.config = {
     document.getElementById('tab-categories').classList.toggle('active', tab === 'categories');
   }
 
-  async function getOrFetchClientId() {
-    if (currentClientId) return currentClientId;
+  // رابط المنيو مبني على مسار الصفحة الحالية (يشتغل على GitHub Pages داخل مجلد المشروع)
+  const menuUrl = () => new URL(`menu.html?client=${encodeURIComponent(client.client_slug)}`, window.location.href).href;
 
-    let { data: client } = await supabaseClient
-      .from('clients')
-      .select('*')
-      .eq('client_slug', THIS_PROJECT.slug)
-      .maybeSingle();
-
-    if (!client) {
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + 7);
-      const { data: inserted } = await supabaseClient
-        .from('clients')
-        .insert([{
-          client_slug: THIS_PROJECT.slug,
-          name: THIS_PROJECT.slug,
-          subscription_status: 'trial',
-          is_active: true,
-          trial_ends_at: endDate.toISOString()
-        }])
-        .select('*');
-      if (inserted && inserted.length > 0) client = inserted[0];
-    }
-
-    if (client && client.id) {
-      currentClientId = client.id;
-      document.getElementById('header-title').textContent = `لوحة تحكم | ${client.name || 'المنشأة'}`;
-      document.getElementById('setting-name').value = client.name || '';
-      document.getElementById('promo-message-input').value = client.promo_message || '';
-      
-      const menuUrl = `${window.location.origin}/menu.html?client=${client.client_slug}`;
-      document.getElementById('preview-menu-btn').href = menuUrl;
-
-      document.getElementById('qrcode').innerHTML = '';
-      new QRCode(document.getElementById('qrcode'), {
-        text: menuUrl,
-        width: 80,
-        height: 80
-      });
-
-      renderSubscriptionStatus(client);
-
-      document.getElementById('social-web').value = client.website_url || '';
-      document.getElementById('social-tiktok').value = client.tiktok_url || '';
-      document.getElementById('social-insta').value = client.instagram_url || '';
-      document.getElementById('social-whatsapp').value = client.whatsapp_number || '';
-      document.getElementById('social-snap').value = client.snapchat_url || '';
-
-      if (client.logo_url) document.getElementById('logo-preview').src = client.logo_url;
-      return client.id;
-    }
-    return null;
+  async function logout() {
+    await supabaseClient.auth.signOut();
+    window.location.replace('login.html');
   }
 
-  function renderSubscriptionStatus(client) {
-    const infoBox = document.getElementById('subscription-info');
-    let badgeText = '';
-    if (client.subscription_status === 'trial') badgeText = '<span class="text-blue-400 font-bold">باقة تجريبية (7 أيام)</span>';
-    else if (client.subscription_status === 'active') badgeText = '<span class="text-green-400 font-bold">مشترك مدفوع نشط</span>';
-    else badgeText = '<span class="text-red-400 font-bold">الاشتراك منتهي</span>';
+  // ─── التحقق من الدخول وتحميل المتجر ───
+  async function initAuth() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) { window.location.replace('login.html'); return false; }
 
-    infoBox.innerHTML = `
-      <p>الحالة: ${badgeText}</p>
-      <p class="text-[10px] text-gray-400">معرف المتجر: ${client.client_slug}</p>
-    `;
+    const { data: adminFlag } = await supabaseClient.rpc('is_super_admin');
+    isSuperAdmin = adminFlag === true;
 
-    if (client.admin_notification && client.admin_notification.trim() !== '') {
-      document.getElementById('admin-notice-text').textContent = client.admin_notification;
-      document.getElementById('admin-notice-box').classList.remove('hidden');
+    let query = supabaseClient.from('clients').select('*');
+    if (isSuperAdmin) {
+      if (!requestedSlug) { window.location.replace('super-admin.html'); return false; }
+      query = query.eq('client_slug', requestedSlug);
     }
+    // لصاحب المتجر: سياسات الحماية ترجع متجره فقط، والرابط ?client= يتم تجاهله
+    const { data, error } = await query.order('id').limit(1);
+
+    if (error || !data || data.length === 0) {
+      document.getElementById('auth-loading').innerHTML = `
+        <i class="fa-solid fa-store-slash text-lg"></i>
+        <span>لا يوجد متجر مرتبط بحسابك.</span>
+        <div class="flex gap-2 mt-2">
+          <a href="index.html#register" class="bg-white text-black font-bold px-4 py-2 rounded-xl">أنشئ متجرك</a>
+          <button onclick="logout()" class="bg-white/10 text-white font-bold px-4 py-2 rounded-xl border border-white/20">تسجيل الخروج</button>
+        </div>`;
+      return false;
+    }
+
+    client = data[0];
+    currentClientId = client.id;
+    if (!isSuperAdmin && requestedSlug) history.replaceState(null, '', 'admin.html');
+    fillClientUI();
+    document.getElementById('auth-loading').remove();
+    document.getElementById('app').style.visibility = 'visible';
+    return true;
+  }
+
+  function fillClientUI() {
+    const name = client.name || 'المنشأة';
+    document.getElementById('header-title').textContent = `لوحة تحكم | ${name}${isSuperAdmin ? ' (وضع المدير العام)' : ''}`;
+    document.getElementById('setting-name').value = client.name || '';
+    document.getElementById('promo-message-input').value = client.promo_message || '';
+    document.getElementById('preview-menu-btn').href = menuUrl();
+
+    const qr = document.getElementById('qrcode');
+    qr.innerHTML = '';
+    new QRCode(qr, { text: menuUrl(), width: 80, height: 80 });
+
+    document.getElementById('social-web').value = client.website_url || '';
+    document.getElementById('social-tiktok').value = client.tiktok_url || '';
+    document.getElementById('social-insta').value = client.instagram_url || '';
+    document.getElementById('social-whatsapp').value = client.whatsapp_number || '';
+    document.getElementById('social-snap').value = client.snapchat_url || '';
+    const logo = safeUrl(client.logo_url);
+    if (logo) document.getElementById('logo-preview').src = logo;
+
+    renderSubscriptionStatus();
+  }
+
+  function renderSubscriptionStatus() {
+    const box = document.getElementById('subscription-info');
+    const status = client.subscription_status;
+    const end = status === 'active' ? client.subscription_end_date : client.trial_ends_at;
+    const left = end ? Math.ceil((new Date(end) - Date.now()) / 86400000) : null;
+    const expired = (status !== 'active' && status !== 'trial') || (left !== null && left <= 0);
+
+    let label, color;
+    if (client.is_active === false) { label = 'المتجر موقوف من الإدارة — المنيو لا يظهر للزبائن'; color = 'text-red-400'; }
+    else if (expired)               { label = 'الاشتراك منتهي — المنيو لا يظهر للزبائن'; color = 'text-red-400'; }
+    else if (status === 'trial')    { label = 'فترة تجريبية'; color = 'text-blue-400'; }
+    else                            { label = 'مشترك مدفوع نشط'; color = 'text-green-400'; }
+
+    const endText = end ? new Date(end).toLocaleDateString('ar-SA-u-ca-gregory') : '';
+    const live = client.is_active !== false && !expired;
+    box.innerHTML = `
+      <p>الحالة: <span class="${color} font-bold">${label}</span></p>
+      ${live && left !== null ? `<p class="text-[11px] text-gray-300">متبقي <b>${left}</b> يوم — ينتهي ${esc(endText)}</p>` : ''}
+      ${!live ? `<p class="text-[11px] text-amber-300">للتجديد تواصل معنا: support@devmenu.com</p>` : ''}
+      <p class="text-[10px] text-gray-400">معرف المتجر: ${esc(client.client_slug)}</p>`;
+
+    const notice = (client.admin_notification || '').trim();
+    document.getElementById('admin-notice-text').textContent = notice;
+    document.getElementById('admin-notice-box').classList.toggle('hidden', !notice);
   }
 
   function copyMenuLink() {
-    const menuUrl = `${window.location.origin}/menu.html?client=${THIS_PROJECT.slug}`;
-    navigator.clipboard.writeText(menuUrl);
-    showToast('تم نسخ رابط المنيو بنجاح!');
+    navigator.clipboard.writeText(menuUrl())
+      .then(() => showToast('تم نسخ رابط المنيو'))
+      .catch(() => showToast('تعذر النسخ، انسخ الرابط من زر المعاينة', true));
+  }
+
+  // يحدّث بيانات المتجر ويتأكد إن التحديث تم فعلاً
+  async function updateClient(payload) {
+    const { data, error } = await supabaseClient.from('clients').update(payload).eq('id', currentClientId).select('id');
+    if (error || !data || data.length === 0) { console.error(error); return false; }
+    Object.assign(client, payload);
+    return true;
   }
 
   async function updateRestaurantName() {
-    const clientId = await getOrFetchClientId();
     const newName = document.getElementById('setting-name').value.trim();
     if (!newName) return showToast('يرجى كتابة اسم المطعم', true);
-
-    const { error } = await supabaseClient.from('clients').update({ name: newName }).eq('id', clientId);
-    if (!error) {
-      showToast('تم تحديث اسم المطعم بنجاح');
-      document.getElementById('header-title').textContent = `لوحة تحكم | ${newName}`;
-    } else {
-      showToast('حدث خطأ أثناء التحديث', true);
-    }
+    if (await updateClient({ name: newName })) {
+      showToast('تم حفظ الاسم');
+      document.getElementById('header-title').textContent = `لوحة تحكم | ${newName}${isSuperAdmin ? ' (وضع المدير العام)' : ''}`;
+    } else showToast('تعذر حفظ الاسم', true);
   }
 
   async function updatePromoMessage() {
-    const clientId = await getOrFetchClientId();
     const msg = document.getElementById('promo-message-input').value.trim();
-
-    const { error } = await supabaseClient.from('clients').update({ promo_message: msg }).eq('id', clientId);
-    if (!error) {
-      showToast('تم نشر العرض الترويجي في المنيو بنجاح!');
-    } else {
-      showToast('خطأ أثناء نشر العرض', true);
-    }
+    if (await updateClient({ promo_message: msg })) showToast(msg ? 'تم نشر العرض في المنيو' : 'تم إخفاء العرض من المنيو');
+    else showToast('تعذر نشر العرض', true);
   }
 
   async function updateSocialLinks() {
-    const clientId = await getOrFetchClientId();
-    const payload = {
-      website_url: document.getElementById('social-web').value.trim(),
-      tiktok_url: document.getElementById('social-tiktok').value.trim(),
-      instagram_url: document.getElementById('social-insta').value.trim(),
-      whatsapp_number: document.getElementById('social-whatsapp').value.trim(),
-      snapchat_url: document.getElementById('social-snap').value.trim()
-    };
-
-    const { error } = await supabaseClient.from('clients').update(payload).eq('id', clientId);
-    if (!error) {
-      showToast('تم حفظ روابط التواصل بنجاح وتحديثها في المنيو!');
-    } else {
-      showToast('حدث خطأ أثناء الحفظ', true);
+    const fields = { website_url: 'social-web', tiktok_url: 'social-tiktok', instagram_url: 'social-insta', snapchat_url: 'social-snap' };
+    const payload = {};
+    for (const [col, id] of Object.entries(fields)) {
+      const v = document.getElementById(id).value.trim();
+      if (v && !safeUrl(v)) return showToast('رابط غير صحيح: يجب أن يبدأ بـ https://', true);
+      payload[col] = v;
     }
+    payload.whatsapp_number = document.getElementById('social-whatsapp').value.replace(/\D/g, '');
+    document.getElementById('social-whatsapp').value = payload.whatsapp_number;
+
+    if (await updateClient(payload)) showToast('تم حفظ روابط التواصل');
+    else showToast('تعذر حفظ الروابط', true);
+  }
+
+  // ─── رفع الملفات ───
+  function validateFile(file, kind) {
+    if (!file) return 'اختر الملف أولاً';
+    if (!file.type.startsWith(kind + '/')) return kind === 'video' ? 'الملف لازم يكون فيديو (MP4)' : 'الملف لازم يكون صورة';
+    const max = kind === 'video' ? MAX_VIDEO_MB : MAX_IMAGE_MB;
+    if (file.size > max * 1024 * 1024) return `حجم الملف كبير، الحد الأقصى ${max} ميجابايت`;
+    return '';
+  }
+
+  // الملفات تنحفظ داخل مجلد رقم المتجر: menu-images/<id>/...
+  async function uploadFile(file, prefix) {
+    const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
+    const path = `${currentClientId}/${prefix}_${Date.now()}.${ext}`;
+    const { error } = await supabaseClient.storage.from('menu-images').upload(path, file, { contentType: file.type });
+    if (error) { console.error(error); return null; }
+    return supabaseClient.storage.from('menu-images').getPublicUrl(path).data.publicUrl;
   }
 
   async function uploadMedia(type) {
-    const clientId = await getOrFetchClientId();
-    if (!clientId) return;
-
-    let fileInput, dbField, updatePayload;
-    if (type === 'logo') { fileInput = document.getElementById('logo-file'); dbField = 'logo_url'; }
-    else if (type === 'bg_image') { fileInput = document.getElementById('bg-img-file'); dbField = 'bg_image_url'; }
-    else if (type === 'bg_video') { fileInput = document.getElementById('bg-video-file'); dbField = 'bg_video_url'; }
-
+    const cfg = {
+      logo:     { input: 'logo-file',     kind: 'image', payload: url => ({ logo_url: url }) },
+      bg_image: { input: 'bg-img-file',   kind: 'image', payload: url => ({ bg_image_url: url, bg_video_url: null }) },
+      bg_video: { input: 'bg-video-file', kind: 'video', payload: url => ({ bg_video_url: url, bg_image_url: null }) }
+    }[type];
+    const fileInput = document.getElementById(cfg.input);
     const file = fileInput.files[0];
-    if (!file) return showToast('يرجى اختيار الملف أولاً', true);
+    const problem = validateFile(file, cfg.kind);
+    if (problem) return showToast(problem, true);
 
-    showToast('جاري رفع الملف وتحديث النظام...');
+    showToast('جاري رفع الملف...');
+    const url = await uploadFile(file, type);
+    if (!url) return showToast('فشل رفع الملف، حاول مرة أخرى', true);
 
-    const fileName = `${type}_${clientId}_${Date.now()}.${file.name.split('.').pop()}`;
-    const { error: uploadError } = await supabaseClient.storage.from('menu-images').upload(fileName, file);
-
-    if (!uploadError) {
-      const { data } = supabaseClient.storage.from('menu-images').getPublicUrl(fileName);
-      const mediaUrl = data.publicUrl;
-
-      if (type === 'bg_image') {
-        updatePayload = { bg_image_url: mediaUrl, bg_video_url: null };
-      } else if (type === 'bg_video') {
-        updatePayload = { bg_video_url: mediaUrl, bg_image_url: null };
-      } else {
-        updatePayload = { [dbField]: mediaUrl };
-      }
-
-      const { error: updateErr } = await supabaseClient.from('clients').update(updatePayload).eq('id', clientId);
-      
-      if (!updateErr) {
-        if (type === 'logo') document.getElementById('logo-preview').src = mediaUrl;
-        showToast('تم تحديث الملف وتطبيقه في المنيو بنجاح!');
-        fileInput.value = '';
-      } else {
-        showToast('فشل تحديث قاعدة البيانات', true);
-      }
-    } else {
-      showToast('فشل الرفع، تأكد من صلاحيات Storage', true);
-    }
+    if (await updateClient(cfg.payload(url))) {
+      if (type === 'logo') document.getElementById('logo-preview').src = url;
+      fileInput.value = '';
+      showToast('تم التحديث وظهر في المنيو');
+    } else showToast('تم رفع الملف لكن تعذر حفظه في المتجر', true);
   }
 
-  async function loadCategories() {
-    const clientId = await getOrFetchClientId();
-    if (!clientId) return;
+  // ─── البيانات ───
+  const productsInCategory = (cat) => loadedProducts.filter(p => p.category === cat.key || p.category === cat.name);
 
-    const { data } = await supabaseClient.from('categories').select('*').eq('client_id', clientId).order('id', { ascending: true });
-    loadedCategories = data || [];
+  async function refreshAll() {
+    const [catRes, prodRes] = await Promise.all([
+      supabaseClient.from('categories').select('*').eq('client_id', currentClientId).order('id', { ascending: true }),
+      supabaseClient.from('products').select('*').eq('client_id', currentClientId).order('id', { ascending: false })
+    ]);
+    loadedCategories = catRes.data || [];
+    loadedProducts = prodRes.data || [];
+    renderCategories();
+    filterProducts();
+  }
 
-    const optionsHtml = loadedCategories.length > 0 
-      ? loadedCategories.map(c => `<option value="${c.key}">${c.name}</option>`).join('')
-      : `<option value="">لا توجد أقسام مسجلة</option>`;
+  function renderCategories() {
+    const optionsHtml = loadedCategories.length > 0
+      ? loadedCategories.map(c => `<option value="${esc(c.key)}">${esc(c.name)}</option>`).join('')
+      : `<option value="">أضف قسماً أولاً من تبويب الأقسام</option>`;
 
-    document.getElementById('prod-category').innerHTML = optionsHtml;
-    document.getElementById('filter-category').innerHTML = `<option value="all">جميع الأقسام</option>` + optionsHtml;
+    const prodSelect = document.getElementById('prod-category');
+    const filterSelect = document.getElementById('filter-category');
+    const [prevProd, prevFilter] = [prodSelect.value, filterSelect.value];
+    prodSelect.innerHTML = optionsHtml;
+    filterSelect.innerHTML = `<option value="all">جميع الأقسام</option>` + (loadedCategories.length ? optionsHtml : '');
+    if ([...prodSelect.options].some(o => o.value === prevProd)) prodSelect.value = prevProd;
+    if ([...filterSelect.options].some(o => o.value === prevFilter)) filterSelect.value = prevFilter;
 
-    const catListContainer = document.getElementById('categories-list');
+    const list = document.getElementById('categories-list');
     if (loadedCategories.length === 0) {
-      catListContainer.innerHTML = `<p class="text-xs text-gray-400 text-center py-4">لا توجد أقسام بعد.</p>`;
+      list.innerHTML = `<p class="text-xs text-gray-400 text-center py-4">لا توجد أقسام بعد. أضف أول قسم من النموذج.</p>`;
       return;
     }
-
-    catListContainer.innerHTML = loadedCategories.map(c => `
+    list.innerHTML = loadedCategories.map(c => `
       <div class="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 text-xs">
-        <div><span class="font-bold text-white">${c.name}</span> <span class="text-gray-400 text-[10px]">(${c.key})</span></div>
-        <button onclick="deleteCategory(${c.id})" class="text-red-400 bg-red-500/10 px-3 py-1.5 rounded-lg">حذف</button>
-      </div>
-    `).join('');
+        <div>
+          <span class="font-bold text-white">${esc(c.name)}</span>
+          <span class="text-gray-400 text-[10px]">(${esc(c.key)}) — ${productsInCategory(c).length} طبق</span>
+        </div>
+        <button onclick="deleteCategory(${Number(c.id)})" class="text-red-400 bg-red-500/10 px-3 py-1.5 rounded-lg">حذف</button>
+      </div>`).join('');
   }
 
   document.getElementById('add-category-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const clientId = await getOrFetchClientId();
-    const name = document.getElementById('cat-name').value;
-    const key = document.getElementById('cat-key').value.toLowerCase().replace(/\s+/g, '-');
+    const name = document.getElementById('cat-name').value.trim();
+    const key = document.getElementById('cat-key').value.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9_-]/g, '');
+    if (!name) return showToast('اكتب اسم القسم', true);
+    if (!key) return showToast('المعرف لازم يكون بالإنجليزي (حروف أو أرقام أو -)', true);
+    if (loadedCategories.some(c => c.key === key)) return showToast('هذا المعرف مستخدم في قسم آخر', true);
 
-    if (!clientId) {
-      return showToast('خطأ: لم يتم التعرف على معرّف المنشأة', true);
-    }
-
-    const { error } = await supabaseClient.from('categories').insert([{ name, key, client_id: clientId }]);
-    
-    if (!error) {
-      showToast('تم إضافة القسم بنجاح');
-      document.getElementById('add-category-form').reset();
-      loadCategories();
-    } else {
-      console.error("Supabase Error:", error);
-      showToast('خطأ: ' + (error.message || 'فشل إضافة القسم'), true);
-    }
+    const { error } = await supabaseClient.from('categories').insert([{ name, key, client_id: currentClientId }]);
+    if (error) { console.error(error); return showToast('تعذر إضافة القسم', true); }
+    showToast('تمت إضافة القسم');
+    document.getElementById('add-category-form').reset();
+    refreshAll();
   });
 
   async function deleteCategory(id) {
-    if (confirm('تأكيد حذف القسم؟')) {
-      await supabaseClient.from('categories').delete().eq('id', id);
-      showToast('تم حذف القسم');
-      loadCategories();
-    }
-  }
+    const cat = loadedCategories.find(c => c.id === id);
+    if (!cat) return;
+    const count = productsInCategory(cat).length;
+    if (count > 0) return showToast(`القسم فيه ${count} طبق. انقلها لقسم آخر (زر تعديل) أو احذفها أولاً`, true);
+    if (!confirm(`حذف قسم "${cat.name}"؟`)) return;
 
-  async function loadAdminData() {
-    const clientId = await getOrFetchClientId();
-    if (!clientId) return;
-
-    const { data } = await supabaseClient.from('products').select('*').eq('client_id', clientId).order('id', { ascending: false });
-    loadedProducts = data || [];
-    filterProducts();
+    const { data, error } = await supabaseClient.from('categories').delete().eq('id', id).eq('client_id', currentClientId).select('id');
+    if (error || !data || !data.length) return showToast('تعذر حذف القسم', true);
+    showToast('تم حذف القسم');
+    refreshAll();
   }
 
   function filterProducts() {
-    const search = document.getElementById('search-input').value.toLowerCase();
+    const search = document.getElementById('search-input').value.trim().toLowerCase();
     const category = document.getElementById('filter-category').value;
-
-    const filtered = loadedProducts.filter(p => {
-      const matchName = p.name.toLowerCase().includes(search);
-      const matchCat = category === 'all' || p.category === category || p.category === (loadedCategories.find(c => c.key === category)?.name);
-      return matchName && matchCat;
-    });
-
+    const catName = loadedCategories.find(c => c.key === category)?.name;
+    const filtered = loadedProducts.filter(p =>
+      (p.name || '').toLowerCase().includes(search) &&
+      (category === 'all' || p.category === category || p.category === catName));
     renderProductsList(filtered);
   }
 
@@ -556,93 +582,137 @@ tailwind.config = {
     document.getElementById('products-count').textContent = `${products.length} طبق`;
 
     if (products.length === 0) {
-      list.innerHTML = `<p class="text-xs text-gray-400 text-center py-6">لا توجد أطباق مسجلة حالياً.</p>`;
+      list.innerHTML = `<p class="text-xs text-gray-400 text-center py-6">${loadedProducts.length ? 'لا توجد نتائج مطابقة.' : 'لا توجد أطباق بعد. أضف أول طبق من النموذج.'}</p>`;
       return;
     }
 
     list.innerHTML = products.map(p => {
+      const id = Number(p.id);
       const isAvailable = p.is_available !== false;
       const isBestseller = p.is_bestseller === true;
-
+      const img = safeUrl(p.image_url);
       return `
-        <div class="flex items-center justify-between bg-white/5 p-2.5 rounded-xl border border-white/10 text-xs">
+        <div class="flex items-center justify-between bg-white/5 p-2.5 rounded-xl border border-white/10 text-xs gap-2">
           <div class="flex items-center gap-2.5 min-w-0">
-            ${p.image_url ? `<img src="${p.image_url}" class="w-10 h-10 object-cover rounded-xl border border-white/20 shrink-0">` : `<div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0"><i class="fa-solid fa-utensils text-gray-400 text-xs"></i></div>`}
+            ${img ? `<img src="${esc(img)}" alt="" loading="lazy" class="w-10 h-10 object-cover rounded-xl border border-white/20 shrink-0">` : `<div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0"><i class="fa-solid fa-utensils text-gray-400 text-xs"></i></div>`}
             <div class="min-w-0">
               <div class="flex items-center gap-1.5">
-                <p class="font-bold text-white truncate ${!isAvailable ? 'line-through text-gray-500' : ''}">${p.name}</p>
-                ${isBestseller ? `<span class="bg-white/20 text-white text-[9px] px-1.5 py-0.5 rounded font-bold border border-white/30"><i class="fa-solid fa-fire text-amber-400"></i> مميز</span>` : ''}
+                <p class="font-bold text-white truncate ${!isAvailable ? 'line-through text-gray-500' : ''}">${esc(p.name)}</p>
+                ${isBestseller ? `<span class="bg-white/20 text-white text-[9px] px-1.5 py-0.5 rounded font-bold border border-white/30 shrink-0"><i class="fa-solid fa-fire text-amber-400"></i> مميز</span>` : ''}
               </div>
-              <p class="text-gray-300 font-semibold text-[11px]">${p.price} ر.س</p>
+              <p class="text-gray-300 font-semibold text-[11px]">${esc(p.price)} ر.س</p>
             </div>
           </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <button onclick="toggleBestseller(${p.id}, ${isBestseller})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border ${isBestseller ? 'bg-white text-black border-white' : 'bg-white/5 text-gray-300 border-white/10'}">تمييز</button>
-            <button onclick="toggleStock(${p.id}, ${isAvailable})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border ${isAvailable ? 'bg-green-500/20 text-green-300 border-green-500/30' : 'bg-red-500/20 text-red-300 border-red-500/30'}">${isAvailable ? 'متوفر' : 'نفذت'}</button>
-            <button onclick="deleteProduct(${p.id})" class="text-red-400 bg-red-500/10 p-2 rounded-lg border border-red-500/20"><i class="fa-solid fa-trash"></i></button>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button onclick="startEdit(${id})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border bg-white/5 text-gray-200 border-white/15"><i class="fa-solid fa-pen text-[9px]"></i> تعديل</button>
+            <button onclick="toggleField(${id}, 'is_bestseller', ${isBestseller})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border ${isBestseller ? 'bg-white text-black border-white' : 'bg-white/5 text-gray-300 border-white/10'}">تمييز</button>
+            <button onclick="toggleField(${id}, 'is_available', ${isAvailable})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border ${isAvailable ? 'bg-green-500/20 text-green-300 border-green-500/30' : 'bg-red-500/20 text-red-300 border-red-500/30'}">${isAvailable ? 'متوفر' : 'نفذت'}</button>
+            <button onclick="deleteProduct(${id})" aria-label="حذف" class="text-red-400 bg-red-500/10 p-2 rounded-lg border border-red-500/20"><i class="fa-solid fa-trash"></i></button>
           </div>
-        </div>
-      `;
+        </div>`;
     }).join('');
   }
 
-  async function toggleStock(id, currentStatus) {
-    await supabaseClient.from('products').update({ is_available: !currentStatus }).eq('id', id);
-    showToast(currentStatus ? 'تم تحويل الطبق إلى غير متوفر' : 'تم تفعيل الطبق');
-    loadAdminData();
+  async function toggleField(id, field, current) {
+    const { data, error } = await supabaseClient.from('products').update({ [field]: !current })
+      .eq('id', id).eq('client_id', currentClientId).select('id');
+    if (error || !data || !data.length) return showToast('تعذر التحديث', true);
+    if (field === 'is_available') showToast(current ? 'الطبق الآن: نفذت الكمية' : 'الطبق الآن: متوفر');
+    else showToast(current ? 'تمت إزالة التمييز' : 'تم تمييز الطبق');
+    refreshAll();
   }
 
-  async function toggleBestseller(id, currentStatus) {
-    await supabaseClient.from('products').update({ is_bestseller: !currentStatus }).eq('id', id);
-    showToast(!currentStatus ? 'تم تعيين الطبق كمميز' : 'تم إزالة التمييز');
-    loadAdminData();
+  async function deleteProduct(id) {
+    const p = loadedProducts.find(x => x.id === id);
+    if (!confirm(`حذف "${p ? p.name : 'الطبق'}"؟`)) return;
+    const { data, error } = await supabaseClient.from('products').delete().eq('id', id).eq('client_id', currentClientId).select('id');
+    if (error || !data || !data.length) return showToast('تعذر حذف الطبق', true);
+    if (editingProductId === id) cancelEdit();
+    showToast('تم حذف الطبق');
+    refreshAll();
+  }
+
+  // ─── إضافة وتعديل الأطباق ───
+  function startEdit(id) {
+    const p = loadedProducts.find(x => x.id === id);
+    if (!p) return;
+    editingProductId = id;
+    document.getElementById('prod-name').value = p.name || '';
+    document.getElementById('prod-price').value = p.price ?? '';
+    document.getElementById('prod-desc').value = p.description || '';
+    document.getElementById('prod-bestseller').checked = p.is_bestseller === true;
+    const cat = loadedCategories.find(c => c.key === p.category || c.name === p.category);
+    if (cat) document.getElementById('prod-category').value = cat.key;
+    document.getElementById('prod-image-file').value = '';
+    document.getElementById('image-hint').textContent = p.image_url ? '(اتركها فارغة للإبقاء على الصورة الحالية)' : '';
+    document.getElementById('form-title').textContent = `تعديل: ${p.name}`;
+    document.getElementById('form-icon').className = 'fa-solid fa-pen text-white';
+    document.getElementById('submit-btn').textContent = 'حفظ التعديلات';
+    document.getElementById('cancel-edit-btn').classList.remove('hidden');
+    switchTab('products');
+    document.getElementById('add-product-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function cancelEdit() {
+    editingProductId = null;
+    document.getElementById('add-product-form').reset();
+    document.getElementById('image-hint').textContent = '';
+    document.getElementById('form-title').textContent = 'إضافة طبق أو منتج جديد';
+    document.getElementById('form-icon').className = 'fa-solid fa-plus text-white';
+    document.getElementById('submit-btn').textContent = 'حفظ وإضافة الطبق';
+    document.getElementById('cancel-edit-btn').classList.add('hidden');
   }
 
   document.getElementById('add-product-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const clientId = await getOrFetchClientId();
-    const name = document.getElementById('prod-name').value;
+    const name = document.getElementById('prod-name').value.trim();
     const category = document.getElementById('prod-category').value;
-    const price = parseFloat(document.getElementById('prod-price').value) || 0;
-    const description = document.getElementById('prod-desc').value;
-    const isBestseller = document.getElementById('prod-bestseller').checked;
+    const price = parseFloat(document.getElementById('prod-price').value);
+    const description = document.getElementById('prod-desc').value.trim();
+    const is_bestseller = document.getElementById('prod-bestseller').checked;
     const imageFile = document.getElementById('prod-image-file').files[0];
 
-    let imageUrl = '';
-    if (imageFile) {
-      showToast('جاري رفع صورة الطبق...');
-      const cleanFileName = `prod_${clientId}_${Date.now()}.${imageFile.name.split('.').pop()}`;
-      const { error: uploadError } = await supabaseClient.storage.from('menu-images').upload(cleanFileName, imageFile);
-      if (!uploadError) {
-        imageUrl = supabaseClient.storage.from('menu-images').getPublicUrl(cleanFileName).data.publicUrl;
+    if (!name) return showToast('اكتب اسم الطبق', true);
+    if (!category) return showToast('أضف قسماً أولاً من تبويب الأقسام', true);
+    if (isNaN(price) || price < 0) return showToast('اكتب سعراً صحيحاً', true);
+
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    try {
+      const payload = { name, category, price, description, is_bestseller };
+      if (imageFile) {
+        const problem = validateFile(imageFile, 'image');
+        if (problem) return showToast(problem, true);
+        showToast('جاري رفع صورة الطبق...');
+        const url = await uploadFile(imageFile, 'prod');
+        if (!url) return showToast('فشل رفع الصورة، لم يتم حفظ الطبق', true);
+        payload.image_url = url;
       }
-    }
 
-    const { error: insertError } = await supabaseClient.from('products').insert([{ 
-      name, category, price, description, image_url: imageUrl, is_available: true, is_bestseller: isBestseller, client_id: clientId 
-    }]);
+      let result;
+      if (editingProductId) {
+        result = await supabaseClient.from('products').update(payload)
+          .eq('id', editingProductId).eq('client_id', currentClientId).select('id');
+      } else {
+        result = await supabaseClient.from('products').insert([{
+          ...payload, image_url: payload.image_url || '', is_available: true, client_id: currentClientId
+        }]).select('id');
+      }
+      if (result.error || !result.data || !result.data.length) { console.error(result.error); return showToast('تعذر حفظ الطبق', true); }
 
-    if (!insertError) {
-      document.getElementById('add-product-form').reset();
-      showToast('تمت إضافة الطبق بنجاح');
-      loadAdminData();
-    } else {
-      showToast('فشل إضافة الطبق', true);
+      showToast(editingProductId ? 'تم حفظ التعديلات' : 'تمت إضافة الطبق');
+      cancelEdit();
+      refreshAll();
+    } finally {
+      btn.disabled = false;
     }
   });
 
-  async function deleteProduct(id) {
-    if (confirm('تأكيد حذف هذا الطبق؟')) {
-      await supabaseClient.from('products').delete().eq('id', id);
-      showToast('تم حذف الطبق');
-      loadAdminData();
-    }
-  }
-
-  document.addEventListener('DOMContentLoaded', async () => {
-    await loadCategories();
-    await loadAdminData();
+  supabaseClient.auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_OUT') window.location.replace('login.html');
   });
+
+  (async () => { if (await initAuth()) await refreshAll(); })();
 </script>
 </body>
 </html>
