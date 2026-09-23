@@ -110,7 +110,7 @@
       <i class="fa-solid fa-user-lock"></i>
     </div>
     <h1 id="main-title" class="text-lg font-black text-brand">تسجيل الدخول عبر البريد</h1>
-    <p id="main-desc" class="text-xs text-gray-600">أدخل بريدك الإلكتروني المسجل لنرسل لك كود التحقق الآمن.</p>
+    <p id="main-desc" class="text-xs text-gray-600">أدخل بريدك الإلكتروني المسجل لنرسل لك كود التحقق الآمن عبر البريد.</p>
   </div>
 
   <!-- نموذج إدخال البريد -->
@@ -123,23 +123,21 @@
       </div>
     </div>
     <button type="submit" id="send-otp-btn" class="w-full btn-primary font-bold py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
-      <span id="btn-text">إرسال كود التحقق</span>
+      <span id="btn-text">إرسال كود التحقق إلى البريد</span>
       <i id="btn-spinner" class="fa-solid fa-spinner fa-spin hidden"></i>
     </button>
   </form>
 
-  <!-- نموذج إدخال كود التحقق (6 خانات) -->
+  <!-- نموذج إدخال كود التحقق (4 خانات) -->
   <form id="otp-form" class="space-y-5 hidden">
     <div class="bg-[#c9a227]/10 border border-[#c9a227]/30 rounded-2xl p-4 text-center space-y-1">
-      <p class="text-xs font-black text-[#1b3022]">تم إرسال كود التحقق إلى بريدك الإلكتروني.</p>
+      <p class="text-xs font-black text-[#1b3022]">تم إرسال كود التحقق إلى بريدك الإلكتروني بنجاح.</p>
       <p class="text-[10px] text-gray-600">يرجى تفقد صندوق الوارد أو الرسائل غير المرغوب فيها (Spam).</p>
     </div>
 
     <div>
-      <label class="lbl text-center mb-3">أدخل رمز التحقق (6 أرقام)</label>
-      <div class="flex justify-center gap-1.5" dir="ltr">
-        <input type="text" maxlength="1" class="otp-box" inputmode="numeric" />
-        <input type="text" maxlength="1" class="otp-box" inputmode="numeric" />
+      <label class="lbl text-center mb-3">أدخل كود التحقق المكون من 4 أرقام</label>
+      <div class="flex justify-center gap-2" dir="ltr">
         <input type="text" maxlength="1" class="otp-box" inputmode="numeric" />
         <input type="text" maxlength="1" class="otp-box" inputmode="numeric" />
         <input type="text" maxlength="1" class="otp-box" inputmode="numeric" />
@@ -149,7 +147,7 @@
     </div>
 
     <button type="submit" id="verify-otp-btn" class="w-full btn-primary font-bold py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
-      <span id="v-btn-text">تأكيد الرمز ودخول لوحة التحكم</span>
+      <span id="v-btn-text">تأكيد الكود ودخول لوحة التحكم</span>
       <i id="v-btn-spinner" class="fa-solid fa-spinner fa-spin hidden"></i>
     </button>
 
@@ -204,10 +202,10 @@
     }
 
     matchedClientSlug = client.client_slug;
-    generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    generatedOtp = Math.floor(1000 + Math.random() * 9000).toString(); // رمز من 4 أرقام
 
     try {
-      // 2. طلب إرسال البريد عبر سيرفر البيئة الخلفي (Serverless Function) بأمان تام
+      // 2. إرسال الكود عبر نقطة النهاية الآمنة في Vercel والتي تستخدم متغيرات البيئة
       const res = await fetch('/api/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -222,15 +220,15 @@
 
       document.getElementById('login-form').classList.add('hidden');
       document.getElementById('otp-form').classList.remove('hidden');
-      document.getElementById('main-title').textContent = 'أدخل رمز التحقق';
-      document.getElementById('main-desc').textContent = `تم إرسال كود الـ 6 أرقام إلى بريدك: ${inputEmail}`;
+      document.getElementById('main-title').textContent = 'أدخل كود التحقق';
+      document.getElementById('main-desc').textContent = `تم إرسال الكود إلى بريدك: ${inputEmail}`;
       setupOtpInputs();
-      showToast('تم إرسال رمز التحقق إلى بريدك بنجاح', 'success');
+      showToast('تم إرسال كود التحقق إلى بريدك بنجاح', 'success');
 
     } catch (err) {
       console.error(err);
       btn.disabled = false; spinner.classList.add('hidden');
-      showToast('حدث خطأ أثناء الاتصال بخدمة إرسال البريد', 'error');
+      showToast('حدث خطأ أثناء إرسال البريد، تأكد من إعدادات السيرفر', 'error');
     }
   });
 
@@ -271,7 +269,7 @@
     document.getElementById('otp-form').classList.add('hidden');
     document.getElementById('login-form').classList.remove('hidden');
     document.getElementById('main-title').textContent = 'تسجيل الدخول عبر البريد';
-    document.getElementById('main-desc').textContent = 'أدخل بريدك الإلكتروني المسجل لنرسل لك كود التحقق الآمن.';
+    document.getElementById('main-desc').textContent = 'أدخل بريدك الإلكتروني المسجل لنرسل لك كود التحقق الآمن عبر البريد.';
   }
 
   // 3. التحقق من صحة الكود المدخل
@@ -279,8 +277,8 @@
     e.preventDefault();
     const enteredOtp = document.getElementById('otp-input').value.trim();
 
-    if (enteredOtp.length < 6 || enteredOtp !== generatedOtp) {
-      showToast('رمز التحقق غير صحيح، حاول مرة أخرى', 'error');
+    if (enteredOtp.length < 4 || enteredOtp !== generatedOtp) {
+      showToast('كود التحقق غير صحيح، حاول مرة أخرى', 'error');
       return;
     }
 
