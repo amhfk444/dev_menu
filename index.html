@@ -28,7 +28,6 @@
   html { scroll-behavior: smooth; }
   body { font-family: 'Cairo', sans-serif; background-color: var(--sand); color: #1b3022; overflow-x: hidden; }
 
-  /* خلفية ناعمة: نقاط وتوهجات */
   .page-bg {
     position: fixed; inset: 0; z-index: -1; pointer-events: none;
     background: radial-gradient(55% 40% at 88% -5%, rgba(35,61,44,.12), transparent 70%),
@@ -54,7 +53,6 @@
     border-radius: 26px; box-shadow: 0 24px 50px -24px rgba(35,61,44,.22);
   }
 
-  /* الأزرار */
   .btn-primary {
     background: var(--brand); color: var(--sand); transition: all .25s ease;
     box-shadow: 0 14px 28px -12px rgba(35,61,44,.55);
@@ -68,7 +66,6 @@
   .btn-ghost { border: 1.5px solid rgba(35,61,44,.3); color: var(--brand); transition: all .25s ease; }
   .btn-ghost:hover { background: var(--brand); color: var(--sand); border-color: var(--brand); }
 
-  /* الحقول */
   .lbl { display: block; font-size: 11px; font-weight: 800; color: var(--brand); margin-bottom: 6px; }
   .input-pro {
     width: 100%; background: var(--cream); border: 1.5px solid #d8d2c2;
@@ -87,7 +84,6 @@
     color: rgba(35,61,44,.6);
   }
 
-  /* خانات رمز التحقق */
   .otp-box {
     width: 58px; height: 66px; text-align: center; font-size: 1.6rem; font-weight: 900;
     font-family: 'Cairo', sans-serif; background: var(--cream); border: 1.5px solid #d8d2c2;
@@ -107,7 +103,6 @@
   }
   .shake { animation: shake .4s; }
 
-  /* عناصر عائمة */
   .float-chip {
     display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 900;
     padding: 10px 14px; border-radius: 16px; white-space: nowrap;
@@ -119,14 +114,12 @@
   }
   .animate-float { animation: floaty 5s ease-in-out infinite; }
 
-  /* التموضع التدريجي */
   .reveal {
     opacity: 0; transform: translateY(26px);
     transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1);
   }
   .reveal.revealed { opacity: 1; transform: none; }
 
-  /* رسائل التنبيه Toast */
   #toast-wrap {
     position: fixed; top: 18px; inset-inline: 0; z-index: 100;
     display: flex; flex-direction: column; align-items: center; gap: 8px;
@@ -153,14 +146,13 @@
 <div class="page-bg"></div>
 <div id="toast-wrap"></div>
 
-<!-- ═══════════ الترويسة ═══════════ -->
+<!-- الترويسة -->
 <header class="sticky top-0 z-50 bg-[#f5f2eb]/85 backdrop-blur-xl border-b border-[#233d2c]/10">
   <div class="max-w-6xl mx-auto px-4 md:px-8 h-16 md:h-[76px] flex items-center justify-between gap-4">
     <a href="#" class="flex items-center gap-3">
       <span class="w-10 h-10 md:w-11 md:h-11 rounded-2xl overflow-hidden bg-[#233d2c] flex items-center justify-center border border-[#233d2c]/20 shadow-md">
         <img src="images/logo.jpeg" alt="DEV MENU" class="w-full h-full object-cover"
-             onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden')">
-        <span class="hidden text-[#f5f2eb] font-black text-sm">DM</span>
+             onerror="this.src='https://via.placeholder.com/150/233d2c/ffffff?text=DM'">
       </span>
       <span class="leading-tight">
         <span class="block text-sm font-black text-brand">DEV MENU</span>
@@ -172,20 +164,21 @@
       <a href="#how" class="hover:text-[#233d2c] transition">كيف يعمل؟</a>
       <a href="#pricing" class="hover:text-[#233d2c] transition">الباقات</a>
     </nav>
-    <a href="#register" class="btn-primary px-5 py-2.5 rounded-xl text-[11px] font-black">ابدأ مجاناً</a>
+    <div class="flex items-center gap-2">
+      <a href="login.html" class="btn-ghost px-4 py-2.5 rounded-xl text-[11px] font-black">تسجيل الدخول</a>
+      <a href="#register" class="btn-primary px-5 py-2.5 rounded-xl text-[11px] font-black">ابدأ مجاناً</a>
+    </div>
   </div>
 </header>
 
-<!-- ═══════════ قسم البطل مع صورة المنيو داخل الجوال ═══════════ -->
+<!-- قسم البطل -->
 <section class="relative">
   <div class="max-w-6xl mx-auto px-4 md:px-8 pt-12 md:pt-20 pb-10 md:pb-16 grid lg:grid-cols-[1.05fr_0.95fr] gap-14 lg:gap-8 items-center">
-
     <div class="space-y-7 text-center lg:text-right reveal">
       <span class="inline-flex items-center gap-2 text-[10px] font-black text-[#233d2c]/75 bg-white/70 border border-[#233d2c]/15 px-4 py-2 rounded-full">
         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
         تجربة مجانية 7 أيام — بدون بطاقة ائتمانية
       </span>
-
       <h1 class="text-4xl md:text-[3.25rem] leading-[1.25] font-black text-[#1b3022]">
         منيو رقمي
         <span class="relative inline-block">فاخر
@@ -195,50 +188,29 @@
         </span><br>
         يليق بمطعمك ويرفع مبيعاتك
       </h1>
-
       <p class="text-sm md:text-[15px] font-bold text-[#233d2c]/70 leading-relaxed max-w-lg mx-auto lg:mx-0">
-        أنشئ منيو مطعمك أو كافيهك الرقمي خلال دقائق، شاركه مع ضيوفك بررمز QR أنيق،
-        وحدّث أطباقك وأسعارك لحظياً — دون الحاجة لأي تطبيق.
+        أنشئ منيو مطعمك أو كافيهك الرقمي خلال دقائق، شاركه مع ضيوفك بررمز QR أنيق، وحدّث أطباقك وأسعارك لحظياً.
       </p>
-
       <div class="flex flex-wrap items-center justify-center lg:justify-start gap-3">
         <a href="#register" class="btn-primary px-7 py-3.5 rounded-2xl text-xs font-black flex items-center gap-2">
           أنشئ منيوك الآن <i class="fa-solid fa-arrow-left text-[10px]"></i>
         </a>
-        <a href="#clients" class="btn-ghost px-7 py-3.5 rounded-2xl text-xs font-black flex items-center gap-2">
-          <i class="fa-solid fa-eye text-[10px]"></i> أمثلة حقيقية
-        </a>
-      </div>
-
-      <div class="flex flex-wrap justify-center lg:justify-start gap-x-5 gap-y-2 pt-1">
-        <span class="flex items-center gap-1.5 text-[11px] font-extrabold text-[#233d2c]/65"><i class="fa-solid fa-bolt text-[#c9a227]"></i> جاهز خلال دقائق</span>
-        <span class="flex items-center gap-1.5 text-[11px] font-extrabold text-[#233d2c]/65"><i class="fa-solid fa-qrcode text-[#c9a227]"></i> رمز QR فوري</span>
-        <span class="flex items-center gap-1.5 text-[11px] font-extrabold text-[#233d2c]/65"><i class="fa-solid fa-rotate text-[#c9a227]"></i> تحديث لحظي</span>
-        <span class="flex items-center gap-1.5 text-[11px] font-extrabold text-[#233d2c]/65"><i class="fa-solid fa-shield-halved text-[#c9a227]"></i> بدون التزام</span>
       </div>
     </div>
-
-    <!-- إطار الجوال الحاضن لصورة المنيو (بدون تنبيهات خارجية) -->
-    <div class="relative reveal" style="transition-delay:.15s">
+    <div class="relative reveal">
       <div class="relative mx-auto w-[290px] md:w-[310px]">
-        <div class="absolute -inset-10 bg-[#233d2c]/10 blur-3xl rounded-full"></div>
-
-        <div class="relative bg-[#15271b] rounded-[2.6rem] p-2.5 shadow-2xl rotate-[1.5deg] hover:rotate-0 transition-transform duration-500 border border-[#233d2c]/20">
+        <div class="relative bg-[#15271b] rounded-[2.6rem] p-2.5 shadow-2xl border border-[#233d2c]/20">
           <div class="rounded-[2.1rem] overflow-hidden bg-black shadow-inner">
-            <img src="images/backg.png" alt="Dev Menu Mobile View" class="w-full h-auto object-cover block" onerror="this.src='https://picsum.photos/seed/dev-fallback/400/800.jpg'">
+            <img src="images/backg.png" alt="Dev Menu" class="w-full h-auto object-cover block"
+                 onerror="this.src='https://via.placeholder.com/400/800/111111/ffffff?text=DEV+MENU'">
           </div>
-        </div>
-
-        <!-- الشريحة العائمة لرمز QR فقط -->
-        <div class="float-chip animate-float absolute -top-4 -start-3 md:-start-10 bg-[#15271b] text-[#f5f2eb] border border-[#f5f2eb]/10">
-          <i class="fa-solid fa-qrcode text-[#c9a227] text-base"></i> امسح واستعرض المنيو
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ═══════════ عملاؤنا (بيانات حقيقية من قاعدة البيانات) ═══════════ -->
+<!-- عملاؤنا -->
 <section id="clients" class="max-w-6xl mx-auto px-4 md:px-8 py-12">
   <div class="reveal">
     <div class="flex items-end justify-between gap-4 mb-6">
@@ -246,57 +218,40 @@
         <span class="eyebrow">TRUSTED CLIENTS</span>
         <h2 class="text-2xl md:text-[1.7rem] font-black text-[#1b3022] mt-1.5">نخبة المنشآت التي تثق بنا</h2>
       </div>
-      <span class="hidden sm:inline-flex items-center gap-2 text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-3.5 py-2 rounded-full">
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> نشط الآن
-      </span>
     </div>
     <div id="clients-logos-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3.5">
       <div class="bg-white/60 border border-[#233d2c]/10 rounded-2xl h-[74px] animate-pulse"></div>
       <div class="bg-white/60 border border-[#233d2c]/10 rounded-2xl h-[74px] animate-pulse"></div>
-      <div class="hidden md:block bg-white/60 border border-[#233d2c]/10 rounded-2xl h-[74px] animate-pulse"></div>
     </div>
   </div>
 </section>
 
-<!-- ═══════════ كيف يعمل؟ ═══════════ -->
+<!-- كيف يعمل؟ -->
 <section id="how" class="max-w-5xl mx-auto px-4 md:px-8 py-12">
   <div class="text-center mb-10 reveal">
     <span class="eyebrow">HOW IT WORKS</span>
     <h2 class="text-2xl md:text-[1.7rem] font-black text-[#1b3022] mt-1.5">منيوك جاهز خلال 3 خطوات</h2>
   </div>
-  <div class="relative grid md:grid-cols-3 gap-10 md:gap-6">
-    <div class="hidden md:block absolute top-7 inset-x-[16%] border-t-2 border-dashed border-[#233d2c]/20"></div>
-
-    <div class="relative text-center space-y-3 reveal">
-      <div class="relative mx-auto w-14 h-14 rounded-2xl bg-[#233d2c] text-[#f5f2eb] flex items-center justify-center text-lg shadow-[0_12px_25px_-10px_rgba(35,61,44,.5)]">
-        <i class="fa-solid fa-user-plus"></i>
-        <span class="absolute -top-2 -start-2 w-6 h-6 rounded-full bg-[#c9a227] text-[#15271b] text-[10px] font-black flex items-center justify-center border-2 border-[#f5f2eb]">1</span>
-      </div>
-      <h3 class="text-sm font-black text-[#1b3022]">سجّل وفعّل حسابك</h3>
-      <p class="text-[11px] font-bold text-[#233d2c]/60 leading-relaxed max-w-[230px] mx-auto">أنشئ متجرك خلال دقيقة برمز تحقق سريع وآمن يصل إلى بريدك.</p>
+  <div class="grid md:grid-cols-3 gap-6">
+    <div class="text-center space-y-3 pro-card p-6">
+      <div class="mx-auto w-12 h-12 rounded-2xl bg-brand text-white flex items-center justify-center font-bold">1</div>
+      <h3 class="text-sm font-black">سجّل متجرك</h3>
+      <p class="text-[11px] text-gray-600">أدخل بيانات مطعمك ومعرف المتجر.</p>
     </div>
-
-    <div class="relative text-center space-y-3 reveal" style="transition-delay:.1s">
-      <div class="relative mx-auto w-14 h-14 rounded-2xl bg-[#233d2c] text-[#f5f2eb] flex items-center justify-center text-lg shadow-[0_12px_25px_-10px_rgba(35,61,44,.5)]">
-        <i class="fa-solid fa-utensils"></i>
-        <span class="absolute -top-2 -start-2 w-6 h-6 rounded-full bg-[#c9a227] text-[#15271b] text-[10px] font-black flex items-center justify-center border-2 border-[#f5f2eb]">2</span>
-      </div>
-      <h3 class="text-sm font-black text-[#1b3022]">أضف أطباقك وأسعارك</h3>
-      <p class="text-[11px] font-bold text-[#233d2c]/60 leading-relaxed max-w-[230px] mx-auto">ارفع صور أطباقك ونظّمها في تصنيفات بلمسة واحدة.</p>
+    <div class="text-center space-y-3 pro-card p-6">
+      <div class="mx-auto w-12 h-12 rounded-2xl bg-brand text-white flex items-center justify-center font-bold">2</div>
+      <h3 class="text-sm font-black">أضف الأطباق</h3>
+      <p class="text-[11px] text-gray-600">نظّم أقسامك وأسعارك بسهولة.</p>
     </div>
-
-    <div class="relative text-center space-y-3 reveal" style="transition-delay:.2s">
-      <div class="relative mx-auto w-14 h-14 rounded-2xl bg-[#233d2c] text-[#f5f2eb] flex items-center justify-center text-lg shadow-[0_12px_25px_-10px_rgba(35,61,44,.5)]">
-        <i class="fa-solid fa-qrcode"></i>
-        <span class="absolute -top-2 -start-2 w-6 h-6 rounded-full bg-[#c9a227] text-[#15271b] text-[10px] font-black flex items-center justify-center border-2 border-[#f5f2eb]">3</span>
-      </div>
-      <h3 class="text-sm font-black text-[#1b3022]">شارك منيوك مع ضيوفك</h3>
-      <p class="text-[11px] font-bold text-[#233d2c]/60 leading-relaxed max-w-[230px] mx-auto">اطبع رمز QR الخاص بك وضعه على الطاولات — وجاهز!</p>
+    <div class="text-center space-y-3 pro-card p-6">
+      <div class="mx-auto w-12 h-12 rounded-2xl bg-brand text-white flex items-center justify-center font-bold">3</div>
+      <h3 class="text-sm font-black">شارك رمز QR</h3>
+      <p class="text-[11px] text-gray-600">اطبع الرمز على الطاولات وابدأ.</p>
     </div>
   </div>
 </section>
 
-<!-- ═══════════ التسجيل + رمز التحقق ═══════════ -->
+<!-- التسجيل وإنشاء الحساب -->
 <section id="register" class="max-w-2xl mx-auto px-4 md:px-8 py-12">
   <div class="text-center mb-7 reveal">
     <span class="eyebrow">GET STARTED</span>
@@ -305,16 +260,12 @@
   </div>
 
   <div class="pro-card p-6 md:p-9 space-y-6 reveal">
-
     <div class="flex items-center justify-between border-b border-[#233d2c]/10 pb-4">
-      <h3 class="flex items-center gap-2.5 text-sm font-black">
-        <span class="w-9 h-9 rounded-xl bg-brand text-[#f5f2eb] flex items-center justify-center"><i class="fa-solid fa-rocket text-xs"></i></span>
-        بيانات متجرك
-      </h3>
+      <span class="text-xs font-black text-brand">بيانات متجرك</span>
       <span id="step-indicator" class="text-[9px] font-black bg-[#c9a227]/15 text-[#8a6d0f] border border-[#c9a227]/30 px-3 py-1.5 rounded-full">الخطوة 1 من 2</span>
     </div>
 
-    <!-- الخطوة 1: البيانات -->
+    <!-- نموذج التسجيل -->
     <form id="register-form" class="space-y-4" novalidate>
       <div>
         <label for="reg-name" class="lbl">اسم المطعم أو الكافيه *</label>
@@ -359,7 +310,7 @@
       </button>
     </form>
 
-    <!-- الخطوة 2: رمز التحقق -->
+    <!-- نموذج التحقق OTP -->
     <div id="otp-section" class="hidden space-y-5">
       <div class="bg-[#c9a227]/10 border border-[#c9a227]/30 rounded-2xl p-4 text-center space-y-1.5">
         <p class="text-xs font-black text-[#1b3022]">تم إرسال رمز التحقق إلى <span id="otp-email" dir="ltr"></span></p>
@@ -369,10 +320,10 @@
       </div>
 
       <div class="otp-boxes flex justify-center gap-3" dir="ltr">
-        <input type="text" inputmode="numeric" class="otp-box" maxlength="1" aria-label="الرقم 1">
-        <input type="text" inputmode="numeric" class="otp-box" maxlength="1" aria-label="الرقم 2">
-        <input type="text" inputmode="numeric" class="otp-box" maxlength="1" aria-label="الرقم 3">
-        <input type="text" inputmode="numeric" class="otp-box" maxlength="1" aria-label="الرقم 4">
+        <input type="text" inputmode="numeric" class="otp-box" maxlength="1">
+        <input type="text" inputmode="numeric" class="otp-box" maxlength="1">
+        <input type="text" inputmode="numeric" class="otp-box" maxlength="1">
+        <input type="text" inputmode="numeric" class="otp-box" maxlength="1">
       </div>
 
       <button id="verify-btn" onclick="verifyOtpAndRegister()" class="btn-primary w-full font-black py-4 rounded-2xl text-xs">
@@ -380,99 +331,16 @@
       </button>
 
       <div class="flex items-center justify-between text-[10px] font-black">
-        <button type="button" onclick="backToForm()" class="text-[#233d2c]/60 hover:text-[#233d2c] transition flex items-center gap-1.5">
-          <i class="fa-solid fa-arrow-right text-[8px]"></i> تعديل البيانات
-        </button>
-        <button type="button" onclick="resendOtp()" class="text-[#233d2c]/60 hover:text-[#233d2c] transition flex items-center gap-1.5">
-          <i class="fa-solid fa-rotate-right text-[8px]"></i> إعادة إرسال الرمز
-        </button>
+        <button type="button" onclick="backToForm()" class="text-[#233d2c]/60 hover:text-[#233d2c] transition">تعديل البيانات</button>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ═══════════ الباقات ═══════════ -->
-<section id="pricing" class="max-w-4xl mx-auto px-4 md:px-8 py-12">
-  <div class="text-center mb-8 reveal">
-    <span class="eyebrow">PRICING</span>
-    <h2 class="text-2xl md:text-[1.7rem] font-black text-[#1b3022] mt-1.5">باقات بسيطة وواضحة</h2>
-    <p class="text-xs font-bold text-[#233d2c]/60 mt-2">ابدأ مجاناً لمدة 7 أيام، ثم اختر ما يناسبك</p>
-  </div>
-
-  <div class="grid md:grid-cols-2 gap-5 reveal">
-    <!-- الشهرية -->
-    <div class="pro-card p-7 space-y-5 hover:-translate-y-1 transition-transform duration-300">
-      <div class="space-y-1">
-        <h4 class="text-xs font-black text-[#233d2c]/60">الباقة الشهرية</h4>
-        <p class="text-4xl font-black text-brand">99 <span class="text-xs font-bold text-[#233d2c]/50">ر.س</span></p>
-        <p class="text-[10px] font-bold text-[#233d2c]/50">شهرياً — بدون أي التزام</p>
-      </div>
-      <ul class="space-y-2.5">
-        <li class="flex items-center gap-2.5 text-[11px] font-bold text-[#233d2c]/75"><span class="w-4 h-4 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[7px] text-emerald-700"></i></span> منيو رقمي كامل بأصناف غير محدودة</li>
-        <li class="flex items-center gap-2.5 text-[11px] font-bold text-[#233d2c]/75"><span class="w-4 h-4 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[7px] text-emerald-700"></i></span> رابط مخصص + رمز QR فوري</li>
-        <li class="flex items-center gap-2.5 text-[11px] font-bold text-[#233d2c]/75"><span class="w-4 h-4 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[7px] text-emerald-700"></i></span> تحديث لحظي للأسعار والأصناف</li>
-        <li class="flex items-center gap-2.5 text-[11px] font-bold text-[#233d2c]/75"><span class="w-4 h-4 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[7px] text-emerald-700"></i></span> إلغاء في أي وقت</li>
-      </ul>
-      <a href="#register" class="btn-ghost block text-center font-black py-3.5 rounded-2xl text-xs">ابدأ بالتجربة المجانية</a>
-    </div>
-
-    <!-- السنوية -->
-    <div class="pro-card !border-2 !border-[#c9a227] p-7 pt-9 space-y-5 relative overflow-hidden shadow-[0_24px_50px_-24px_rgba(201,162,39,.5)] hover:-translate-y-1 transition-transform duration-300">
-      <span class="absolute top-0 start-0 bg-[#c9a227] text-[#15271b] text-[9px] font-black px-3.5 py-1.5 rounded-tr-[22px] rounded-bl-2xl">الأكثر طلباً</span>
-      <div class="space-y-1">
-        <h4 class="text-xs font-black text-[#233d2c]/60">الباقة السنوية</h4>
-        <p class="text-4xl font-black text-brand">1149 <span class="text-xs font-bold text-[#233d2c]/50">ر.س</span></p>
-        <p class="text-[10px] font-bold text-[#8a6d0f]">سنوياً — ما يعادل 96 ر.س شهرياً فقط</p>
-      </div>
-      <ul class="space-y-2.5">
-        <li class="flex items-center gap-2.5 text-[11px] font-bold text-[#233d2c]/75"><span class="w-4 h-4 rounded-full bg-[#c9a227]/20 border border-[#c9a227]/40 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[7px] text-[#8a6d0f]"></i></span> كل مزايا الباقة الشهرية</li>
-        <li class="flex items-center gap-2.5 text-[11px] font-bold text-[#233d2c]/75"><span class="w-4 h-4 rounded-full bg-[#c9a227]/20 border border-[#c9a227]/40 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[7px] text-[#8a6d0f]"></i></span> وفّر 39 ر.س سنوياً</li>
-        <li class="flex items-center gap-2.5 text-[11px] font-bold text-[#233d2c]/75"><span class="w-4 h-4 rounded-full bg-[#c9a227]/20 border border-[#c9a227]/40 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[7px] text-[#8a6d0f]"></i></span> رمز QR مخصص بهوية مطعمك</li>
-        <li class="flex items-center gap-2.5 text-[11px] font-bold text-[#233d2c]/75"><span class="w-4 h-4 rounded-full bg-[#c9a227]/20 border border-[#c9a227]/40 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[7px] text-[#8a6d0f]"></i></span> أولوية في الدعم الفني</li>
-      </ul>
-      <a href="#register" class="btn-primary block text-center font-black py-3.5 rounded-2xl text-xs">اشترك سنوياً ووفّر</a>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════ التذييل ═══════════ -->
+<!-- التذييل -->
 <footer class="bg-[#233d2c] text-[#f5f2eb] mt-auto">
-  <div class="max-w-6xl mx-auto px-4 md:px-8 pt-14 pb-8 grid md:grid-cols-3 gap-10">
-    <div class="space-y-4">
-      <div class="flex items-center gap-3">
-        <span class="w-10 h-10 rounded-xl bg-[#f5f2eb]/10 border border-[#f5f2eb]/20 flex items-center justify-center font-black">DM</span>
-        <div class="leading-tight">
-          <p class="text-sm font-black">DEV MENU</p>
-          <p class="text-[8px] tracking-[0.3em] text-[#f5f2eb]/50 font-bold">DIGITAL MENU PLATFORM</p>
-        </div>
-      </div>
-      <p class="text-[11px] font-bold text-[#f5f2eb]/60 leading-relaxed">منصة عربية متخصصة في إنشاء المنيوهات الرقمية الفاخرة للمطاعم والكافيهات.</p>
-      <div class="flex gap-2">
-        <a href="#" class="w-9 h-9 rounded-xl bg-[#f5f2eb]/10 border border-[#f5f2eb]/15 flex items-center justify-center text-xs hover:bg-[#c9a227] hover:text-[#15271b] hover:border-[#c9a227] transition"><i class="fa-brands fa-x-twitter"></i></a>
-        <a href="#" class="w-9 h-9 rounded-xl bg-[#f5f2eb]/10 border border-[#f5f2eb]/15 flex items-center justify-center text-xs hover:bg-[#c9a227] hover:text-[#15271b] hover:border-[#c9a227] transition"><i class="fa-brands fa-instagram"></i></a>
-        <a href="#" class="w-9 h-9 rounded-xl bg-[#f5f2eb]/10 border border-[#f5f2eb]/15 flex items-center justify-center text-xs hover:bg-[#c9a227] hover:text-[#15271b] hover:border-[#c9a227] transition"><i class="fa-brands fa-whatsapp"></i></a>
-      </div>
-    </div>
-    <div>
-      <h4 class="text-xs font-black mb-4 text-[#c9a227]">روابط سريعة</h4>
-      <ul class="space-y-3 text-[11px] font-bold text-[#f5f2eb]/70">
-        <li><a href="#clients" class="hover:text-white transition">عملاؤنا</a></li>
-        <li><a href="#how" class="hover:text-white transition">كيف يعمل المنصة؟</a></li>
-        <li><a href="#pricing" class="hover:text-white transition">الباقات والأسعار</a></li>
-        <li><a href="#register" class="hover:text-white transition">التجربة المجانية</a></li>
-      </ul>
-    </div>
-    <div>
-      <h4 class="text-xs font-black mb-4 text-[#c9a227]">تواصل معنا</h4>
-      <ul class="space-y-3 text-[11px] font-bold text-[#f5f2eb]/70">
-        <li class="flex items-center gap-2.5"><i class="fa-solid fa-envelope w-4 text-[#f5f2eb]/40"></i> support@devmenu.com</li>
-        <li class="flex items-center gap-2.5"><i class="fa-brands fa-whatsapp w-4 text-[#f5f2eb]/40"></i> <span dir="ltr">+966561161448</span></li>
-        <li class="flex items-center gap-2.5"><i class="fa-solid fa-clock w-4 text-[#f5f2eb]/40"></i> دعم فني على مدار الأسبوع</li>
-      </ul>
-    </div>
-  </div>
-  <div class="border-t border-[#f5f2eb]/10">
-    <p class="text-center text-[10px] font-bold text-[#f5f2eb]/50 py-4">جميع الحقوق محفوظة © DEV MENU 2026</p>
+  <div class="max-w-6xl mx-auto px-4 md:px-8 pt-10 pb-6 text-center text-xs">
+    <p>جميع الحقوق محفوظة © DEV MENU 2026</p>
   </div>
 </footer>
 
@@ -484,7 +352,6 @@
   let tempGeneratedOtp = '';
   let formDataCache = {};
 
-  /* ===== نظام التنبيهات (Toast) ===== */
   function showToast(msg, type = 'success') {
     const icons = { success: 'fa-circle-check', error: 'fa-circle-exclamation', info: 'fa-circle-info' };
     const el = document.createElement('div');
@@ -494,59 +361,44 @@
     setTimeout(() => { el.classList.add('toast-out'); setTimeout(() => el.remove(), 400); }, 3800);
   }
 
-  /* ===== جلب العملاء النشطين من قاعدة البيانات ===== */
   async function loadActiveClientsLogos() {
-    let { data: clients } = await supabaseClient
-      .from('clients')
-      .select('name, logo_url, client_slug')
-      .eq('is_active', true)
-      .limit(6);
-    const grid = document.getElementById('clients-logos-grid');
-
-    if (clients && clients.length > 0) {
-      grid.innerHTML = clients.map(c => `
-        <a href="menu.html?client=${c.client_slug}" target="_blank"
-           class="group bg-white border border-[#233d2c]/10 rounded-2xl p-4 flex items-center gap-3 hover:border-[#233d2c]/40 hover:-translate-y-1 hover:shadow-[0_18px_35px_-18px_rgba(35,61,44,.35)] transition-all duration-300">
-          ${c.logo_url
-            ? `<img src="${c.logo_url}" alt="${c.name}" class="w-11 h-11 rounded-xl object-cover border border-[#233d2c]/15 flex-shrink-0">`
-            : `<span class="w-11 h-11 rounded-xl bg-[#233d2c]/10 border border-[#233d2c]/15 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-store text-xs text-[#233d2c]"></i></span>`}
-          <div class="min-w-0 flex-1">
-            <p class="text-xs font-black text-[#1b3022] truncate">${c.name}</p>
-            <p class="text-[9px] font-bold text-[#233d2c]/50 mt-0.5 flex items-center gap-1.5">عرض المنيو
-              <i class="fa-solid fa-arrow-left text-[7px] transition-transform duration-300 group-hover:-translate-x-1"></i></p>
-          </div>
-        </a>`).join('');
-    } else {
-      grid.innerHTML = `
-        <div class="col-span-2 md:col-span-3 bg-white border border-dashed border-[#233d2c]/25 rounded-2xl p-9 text-center">
-          <i class="fa-solid fa-utensils text-2xl text-[#233d2c]/25 mb-3"></i>
-          <p class="text-xs font-black text-[#1b3022]">لا توجد منشآت نشطة بعد</p>
-          <p class="text-[10px] font-bold text-[#233d2c]/55 mt-1">كن أول المنضمين وابدأ تجربتك المجانية اليوم</p>
-        </div>`;
+    try {
+      let { data: clients } = await supabaseClient.from('clients').select('name, logo_url, client_slug').eq('is_active', true).limit(6);
+      const grid = document.getElementById('clients-logos-grid');
+      if (clients && clients.length > 0) {
+        grid.innerHTML = clients.map(c => `
+          <a href="menu.html?client=${c.client_slug}" target="_blank"
+             class="group bg-white border border-[#233d2c]/10 rounded-2xl p-4 flex items-center gap-3 hover:border-[#233d2c]/40 transition">
+            ${c.logo_url ? `<img src="${c.logo_url}" class="w-11 h-11 rounded-xl object-cover shrink-0">` : `<span class="w-11 h-11 rounded-xl bg-[#233d2c]/10 flex items-center justify-center shrink-0"><i class="fa-solid fa-store text-xs"></i></span>`}
+            <div class="min-w-0 flex-1">
+              <p class="text-xs font-black text-[#1b3022] truncate">${c.name}</p>
+              <p class="text-[9px] font-bold text-[#233d2c]/50">عرض المنيو</p>
+            </div>
+          </a>`).join('');
+      } else {
+        grid.innerHTML = `<div class="col-span-full bg-white border rounded-2xl p-6 text-center text-xs text-gray-500">لا توجد منشآت نشطة حالياً</div>`;
+      }
+    } catch(err) {
+      console.error(err);
     }
   }
 
-  /* ===== معاينة الرابط أثناء الكتابة ===== */
   const slugInput = document.getElementById('reg-slug');
   slugInput.addEventListener('input', () => {
-    const v = slugInput.value.trim().toLowerCase().replace(/\s+/g, '-');
+    const v = slugInput.value.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '');
+    slugInput.value = v;
     document.getElementById('slug-preview').textContent = v || 'your-store';
   });
 
-  /* ===== الخطوة 1: إرسال رمز التحقق ===== */
   document.getElementById('register-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const name  = document.getElementById('reg-name').value.trim();
     const email = document.getElementById('reg-email').value.trim();
     const phone = document.getElementById('reg-phone').value.trim();
-    const slug  = slugInput.value.trim().toLowerCase().replace(/\s+/g, '-');
+    const slug  = slugInput.value.trim().toLowerCase();
 
     if (!name || !email || !phone || !slug) {
       showToast('يرجى ملء جميع الحقول المطلوبة', 'error');
-      return;
-    }
-    if (!/^[a-z0-9-]{3,}$/.test(slug)) {
-      showToast('الرابط يجب أن يكون بالإنجليزية (3 أحرف على الأقل) وبدون مسافات', 'error');
       return;
     }
 
@@ -560,15 +412,11 @@
     document.getElementById('step-indicator').textContent = 'الخطوة 2 من 2';
     resetOtpBoxes();
     otpBoxes[0].focus();
-    showToast('تم إرسال رمز التحقق إلى بريدك الإلكتروني', 'success');
+    showToast('تم إرسال رمز التحقق', 'success');
   });
 
-  /* ===== خانات OTP: تنقل تلقائي + لصق + رجوع ===== */
   const otpBoxes = Array.from(document.querySelectorAll('.otp-box'));
-
-  function resetOtpBoxes() {
-    otpBoxes.forEach(b => { b.value = ''; b.classList.remove('filled'); });
-  }
+  function resetOtpBoxes() { otpBoxes.forEach(b => { b.value = ''; b.classList.remove('filled'); }); }
 
   otpBoxes.forEach((box, idx) => {
     box.addEventListener('input', () => {
@@ -578,22 +426,11 @@
     });
     box.addEventListener('keydown', (e) => {
       if (e.key === 'Backspace' && !box.value && idx > 0) {
-        e.preventDefault();
         otpBoxes[idx - 1].value = '';
         otpBoxes[idx - 1].classList.remove('filled');
         otpBoxes[idx - 1].focus();
       }
     });
-  });
-
-  document.querySelector('.otp-boxes').addEventListener('paste', (e) => {
-    e.preventDefault();
-    const text = (e.clipboardData.getData('text') || '').replace(/\D/g, '');
-    resetOtpBoxes();
-    text.slice(0, 4).split('').forEach((d, i) => {
-      if (otpBoxes[i]) { otpBoxes[i].value = d; otpBoxes[i].classList.add('filled'); }
-    });
-    otpBoxes[Math.min(text.length, 3)]?.focus();
   });
 
   function backToForm() {
@@ -602,33 +439,14 @@
     document.getElementById('step-indicator').textContent = 'الخطوة 1 من 2';
   }
 
-  function resendOtp() {
-    tempGeneratedOtp = Math.floor(1000 + Math.random() * 9000).toString();
-    document.getElementById('demo-otp-code').textContent = tempGeneratedOtp;
-    resetOtpBoxes();
-    otpBoxes[0].focus();
-    showToast('تم إرسال رمز تحقق جديد', 'info');
-  }
-
-  /* ===== الخطوة 2: التحقق وإنشاء المتجر ===== */
   async function verifyOtpAndRegister() {
     const enteredOtp = otpBoxes.map(b => b.value).join('');
-    if (enteredOtp.length < 4) {
-      showToast('يرجى إدخال رمز التحقق المكوّن من 4 أرقام', 'error');
-      return;
-    }
-    if (enteredOtp !== tempGeneratedOtp) {
-      showToast('رمز التحقق غير صحيح، حاول مرة أخرى', 'error');
-      const boxes = document.querySelector('.otp-boxes');
-      boxes.classList.add('shake');
-      setTimeout(() => boxes.classList.remove('shake'), 450);
-      resetOtpBoxes();
-      otpBoxes[0].focus();
+    if (enteredOtp.length < 4 || enteredOtp !== tempGeneratedOtp) {
+      showToast('رمز التحقق غير صحيح', 'error');
       return;
     }
 
     const btn = document.getElementById('verify-btn');
-    const originalLabel = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري إنشاء متجرك...';
 
@@ -638,31 +456,31 @@
     const { error } = await supabaseClient.from('clients').insert([{
       name: formDataCache.name,
       client_slug: formDataCache.slug,
+      email: formDataCache.email,
+      phone: formDataCache.phone,
       subscription_status: 'trial',
       is_active: true,
       trial_ends_at: trialEnd.toISOString()
     }]);
 
     if (!error) {
-      showToast('تم إنشاء متجرك بنجاح! جاري تحويلك للوحة التحكم...', 'success');
-      setTimeout(() => { window.location.href = `admin.html?client=${formDataCache.slug}`; }, 1400);
+      showToast('تم إنشاء متجرك بنجاح!', 'success');
+      setTimeout(() => { window.location.href = `admin.html?client=${formDataCache.slug}`; }, 1200);
     } else {
       btn.disabled = false;
-      btn.innerHTML = originalLabel;
-      showToast('هذا المعرف (Slug) مستخدم مسبقاً — اختر اسماً آخر', 'error');
+      btn.innerHTML = 'تأكيد الرمز ودخول لوحة التحكم';
+      showToast('حدث خطأ أو أن الرابط مستخدم مسبقاً', 'error');
       backToForm();
     }
   }
 
-  /* ===== الظهور التدريجي عند التمرير ===== */
   const io = new IntersectionObserver((entries) => {
     entries.forEach(en => {
       if (en.isIntersecting) { en.target.classList.add('revealed'); io.unobserve(en.target); }
     });
-  }, { threshold: 0.12 });
+  }, { threshold: 0.1 });
   document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 
-  /* ===== التشغيل ===== */
   document.addEventListener('DOMContentLoaded', loadActiveClientsLogos);
 </script>
 </body>
