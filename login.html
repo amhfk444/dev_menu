@@ -178,7 +178,7 @@
     setTimeout(() => el.remove(), 3800);
   }
 
-  // إرسال الكود الحقيقي مباشرة عبر Supabase Auth
+  // التحقق من جدول clients أولاً، ثم إرسال الرمز الحقيقي عبر Supabase Auth
   document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     inputEmail = document.getElementById('identifier-input').value.trim().toLowerCase();
@@ -189,15 +189,29 @@
 
     btn.disabled = true; spinner.classList.remove('hidden');
 
+    // 1. التأكد من أن الإيميل مسجل في جدول clients الخاص بالمتاجر
+    const { data: clientCheck, error: dbError } = await supabaseClient
+      .from('clients')
+      .select('client_slug')
+      .eq('email', inputEmail)
+      .maybeSingle();
+
+    if (dbError || !clientCheck) {
+      btn.disabled = false; spinner.classList.add('hidden');
+      showToast('عذراً، هذا البريد غير مسجل لأي متجر في النظام.', 'error');
+      return;
+    }
+
+    // 2. إرسال الكود الحقيقي عبر Supabase Auth مع تفعيل السماح بالإنشاء لتجاوز خطأ الـ Signups
     const { error } = await supabaseClient.auth.signInWithOtp({
       email: inputEmail,
-      options: { shouldCreateUser: false }
+      options: { shouldCreateUser: true }
     });
 
     btn.disabled = false; spinner.classList.add('hidden');
 
     if (error) {
-      showToast(error.message || 'عذراً، البريد الإلكتروني غير مسجل أو حدث خطأ.', 'error');
+      showToast(error.message || 'عذراً، حدث خطأ أثناء إرسال الرمز.', 'error');
       return;
     }
 
@@ -228,7 +242,7 @@
           boxes[idx - 1].focus();
           boxes[idx - 1].value = '';
           boxes[idx - 1].classList.remove('filled');
-          updateHiddenOrgOtp();
+          updateHiddenOtp();
         }
       });
     });
