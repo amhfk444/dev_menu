@@ -169,6 +169,8 @@
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let inputEmail = '';
+  let generatedOtp = '';
+  let matchedClientSlug = '';
 
   function showToast(msg, type = 'success') {
     const el = document.createElement('div');
@@ -178,7 +180,7 @@
     setTimeout(() => el.remove(), 3800);
   }
 
-  // التحقق من جدول clients أولاً، ثم إرسال الرمز الحقيقي عبر Supabase Auth
+  // 1. التحقق من البريد في جدول clients ثم إرسال الرمز عبر Vercel API / Resend بأمان
   document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     inputEmail = document.getElementById('identifier-input').value.trim().toLowerCase();
@@ -189,38 +191,48 @@
 
     btn.disabled = true; spinner.classList.remove('hidden');
 
-    // 1. التأكد من أن الإيميل مسجل في جدول clients الخاص بالمتاجر
-    const { data: clientCheck, error: dbError } = await supabaseClient
+    // التحقق من وجود الإيميل في جدول clients
+    const { data: client, error } = await supabaseClient
       .from('clients')
       .select('client_slug')
       .eq('email', inputEmail)
       .maybeSingle();
 
-    if (dbError || !clientCheck) {
+    if (error || !client) {
       btn.disabled = false; spinner.classList.add('hidden');
-      showToast('عذراً، هذا البريد غير مسجل لأي متجر في النظام.', 'error');
+      showToast('عذراً، البريد الإلكتروني غير مسجل لأي متجر في النظام.', 'error');
       return;
     }
 
-    // 2. إرسال الكود الحقيقي عبر Supabase Auth مع تفعيل السماح بالإنشاء لتجاوز خطأ الـ Signups
-    const { error } = await supabaseClient.auth.signInWithOtp({
-      email: inputEmail,
-      options: { shouldCreateUser: true }
-    });
+    matchedClientSlug = client.client_slug;
+    generatedOtp = Math.floor(100000 + Math.random() * 900000).toString(); // رمز من 6 أرقام
 
-    btn.disabled = false; spinner.classList.add('hidden');
+    try {
+      // إرسال الرمز عبر مسار السيرفر الخلفي في Vercel (والذي يستمد مفتاح Resend من Environment Variables)
+      const res = await fetch('/api/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: inputEmail, otp: generatedOtp })
+      });
 
-    if (error) {
-      showToast(error.message || 'عذراً، حدث خطأ أثناء إرسال الرمز.', 'error');
-      return;
+      btn.disabled = false; spinner.classList.add('hidden');
+
+      if (!res.ok) {
+        throw new Error('فشل إرسال البريد');
+      }
+
+      document.getElementById('login-form').classList.add('hidden');
+      document.getElementById('otp-form').classList.remove('hidden');
+      document.getElementById('main-title').textContent = 'أدخل رمز التحقق';
+      document.getElementById('main-desc').textContent = `تم إرسال كود الـ 6 أرقام إلى بريدك: ${inputEmail}`;
+      setupOtpInputs();
+      showToast('تم إرسال رمز التحقق إلى بريدك بنجاح', 'success');
+
+    } catch (err) {
+      console.error(err);
+      btn.disabled = false; spinner.classList.add('hidden');
+      showToast('حدث خطأ أثناء إرسال البريد عبر السيرفر', 'error');
     }
-
-    document.getElementById('login-form').classList.add('hidden');
-    document.getElementById('otp-form').classList.remove('hidden');
-    document.getElementById('main-title').textContent = 'أدخل رمز التحقق';
-    document.getElementById('main-desc').textContent = `تم إرسال الرمز إلى ${inputEmail}`;
-    setupOtpInputs();
-    showToast('تم إرسال رمز التحقق إلى بريدك بنجاح', 'success');
   });
 
   function setupOtpInputs() {
@@ -263,44 +275,19 @@
     document.getElementById('main-desc').textContent = 'أدخل بريدك الإلكتروني المسجل لنرسل لك رمز التحقق الحقيقي.';
   }
 
-  // التحقق من الرمز الحقيقي والدخول
-  document.getElementById('otp-form').addEventListener('submit', async (e) => {
+  // 2. التحقق من صحة الكود المدخل محلياً
+  document.getElementById('otp-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    const otp = document.getElementById('otp-input').value.trim();
-    const btn = document.getElementById('verify-otp-btn');
-    const spinner = document.getElementById('v-btn-spinner');
+    const enteredOtp = document.getElementById('otp-input').value.trim();
 
-    if (otp.length < 6) {
-      showToast('يرجى إدخال رمز التحقق كاملاً (6 أرقام)', 'error');
+    if (enteredOtp.length < 6 || enteredOtp !== generatedOtp) {
+      showToast('رمز التحقق غير صحيح، حاول مرة أخرى', 'error');
       return;
     }
 
-    btn.disabled = true; spinner.classList.remove('hidden');
-
-    const { data, error } = await supabaseClient.auth.verifyOtp({
-      email: inputEmail,
-      token: otp,
-      type: 'email'
-    });
-
-    btn.disabled = false; spinner.classList.add('hidden');
-
-    if (error || !data.session) {
-      showToast('رمز التحقق غير صحيح أو منتهي الصلاحية', 'error');
-      return;
-    }
-
-    const { data: client } = await supabaseClient
-      .from('clients')
-      .select('client_slug')
-      .eq('email', inputEmail)
-      .maybeSingle();
-
-    const clientSlug = client ? client.client_slug : 'alqarya-restaurant';
-
-    showToast('تم تسجيل الدخول بنجاح! جاري تحويلك...', 'success');
+    showToast('تم تسجيل الدخول بنجاح! جاري تحويلك لوحة التحكم...', 'success');
     setTimeout(() => {
-      window.location.href = `admin.html?client=${clientSlug}`;
+      window.location.href = `admin.html?client=${matchedClientSlug}`;
     }, 1000);
   });
 </script>
