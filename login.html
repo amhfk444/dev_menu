@@ -51,7 +51,6 @@
     background: var(--brand-dark); transform: translateY(-2px);
     box-shadow: 0 20px 36px -14px rgba(35,61,44,.6);
   }
-  .btn-primary:active { transform: translateY(0); }
   .btn-primary:disabled { opacity: .7; cursor: not-allowed; transform: none; }
 
   .lbl { display: block; font-size: 11px; font-weight: 800; color: var(--brand); margin-bottom: 6px; }
@@ -67,10 +66,11 @@
   }
 
   .otp-box {
-    width: 58px; height: 66px; text-align: center; font-size: 1.6rem; font-weight: 900;
+    width: 44px; height: 54px; text-align: center; font-size: 1.4rem; font-weight: 900;
     font-family: 'Cairo', sans-serif; background: var(--cream); border: 1.5px solid #d8d2c2;
-    border-radius: 16px; color: var(--brand); transition: all .2s;
+    border-radius: 14px; color: var(--brand); transition: all .2s;
   }
+  .otp-box:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 4px rgba(35,61,44,.08); transform: translateY(-2px); }
   .otp-box.filled { background: var(--brand); color: var(--sand); border-color: var(--brand); }
 
   #toast-wrap {
@@ -109,16 +109,17 @@
     <div class="w-12 h-12 rounded-2xl bg-[#233d2c]/10 text-brand border border-[#233d2c]/20 flex items-center justify-center mx-auto text-xl">
       <i class="fa-solid fa-user-lock"></i>
     </div>
-    <h1 id="main-title" class="text-lg font-black text-brand">تسجيل الدخول / إنشاء حساب</h1>
-    <p id="main-desc" class="text-xs text-gray-600">أدخل بريدك الإلكتروني أو رقم جوالك لنرسل لك كود التحقق.</p>
+    <h1 id="main-title" class="text-lg font-black text-brand">تسجيل الدخول عبر البريد</h1>
+    <p id="main-desc" class="text-xs text-gray-600">أدخل بريدك الإلكتروني المسجل لنرسل لك كود التحقق الآمن.</p>
   </div>
 
+  <!-- نموذج إدخال البريد -->
   <form id="login-form" class="space-y-4">
     <div>
-      <label class="lbl">البريد الإلكتروني أو رقم الجوال</label>
+      <label class="lbl">البريد الإلكتروني</label>
       <div class="relative">
-        <i class="fa-solid fa-user absolute start-3.5 top-1/2 -translate-y-1/2 text-brand/40 text-xs"></i>
-        <input type="text" id="identifier-input" placeholder="example@mail.com أو 05xxxxxxx" required class="input-pro">
+        <i class="fa-solid fa-envelope absolute start-3.5 top-1/2 -translate-y-1/2 text-brand/40 text-xs"></i>
+        <input type="email" id="identifier-input" placeholder="example@mail.com" required class="input-pro" dir="ltr">
       </div>
     </div>
     <button type="submit" id="send-otp-btn" class="w-full btn-primary font-bold py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
@@ -127,16 +128,18 @@
     </button>
   </form>
 
+  <!-- نموذج إدخال كود التحقق (6 خانات) -->
   <form id="otp-form" class="space-y-5 hidden">
-    <div class="bg-[#c9a227]/10 border border-[#c9a227]/30 rounded-2xl p-4 text-center space-y-1.5">
-      <p class="text-xs font-black text-[#1b3022]">رمز التحقق التجريبي الخاص بك:
-        <span id="demo-otp-code" dir="ltr" class="font-black text-base text-[#8a6d0f] tracking-widest">----</span>
-      </p>
+    <div class="bg-[#c9a227]/10 border border-[#c9a227]/30 rounded-2xl p-4 text-center space-y-1">
+      <p class="text-xs font-black text-[#1b3022]">تم إرسال كود التحقق إلى بريدك الإلكتروني.</p>
+      <p class="text-[10px] text-gray-600">يرجى تفقد صندوق الوارد أو الرسائل غير المرغوب فيها (Spam).</p>
     </div>
 
     <div>
-      <label class="lbl text-center mb-3">أدخل كود التحقق المكون من 4 أرقام</label>
-      <div class="flex justify-center gap-2" dir="ltr">
+      <label class="lbl text-center mb-3">أدخل رمز التحقق (6 أرقام)</label>
+      <div class="flex justify-center gap-1.5" dir="ltr">
+        <input type="text" maxlength="1" class="otp-box" inputmode="numeric" />
+        <input type="text" maxlength="1" class="otp-box" inputmode="numeric" />
         <input type="text" maxlength="1" class="otp-box" inputmode="numeric" />
         <input type="text" maxlength="1" class="otp-box" inputmode="numeric" />
         <input type="text" maxlength="1" class="otp-box" inputmode="numeric" />
@@ -145,9 +148,14 @@
       <input type="hidden" id="otp-input">
     </div>
 
-    <button type="submit" id="verify-otp-btn" class="w-full btn-primary font-bold py-3.5 rounded-xl text-xs transition">
-      تأكيد الكود ودخول لوحة التحكم
+    <button type="submit" id="verify-otp-btn" class="w-full btn-primary font-bold py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+      <span id="v-btn-text">تأكيد الرمز ودخول لوحة التحكم</span>
+      <i id="v-btn-spinner" class="fa-solid fa-spinner fa-spin hidden"></i>
     </button>
+
+    <div class="text-center">
+      <button type="button" onclick="backToLogin()" class="text-xs text-brand/60 hover:text-brand font-bold">تغيير البريد الإلكتروني</button>
+    </div>
   </form>
 </div>
 
@@ -160,7 +168,8 @@
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZG9hbWNneGdraWNyYnVmcGNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwMTA5MzAsImV4cCI6MjEwNTU4NjkzMH0.45zKx4ljXJ27SS-ukc62qiu52movhDgSoC9OEnK9NHk';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  let tempGeneratedOtp = '';
+  let inputEmail = '';
+  let generatedOtp = '';
   let matchedClientSlug = '';
 
   function showToast(msg, type = 'success') {
@@ -168,53 +177,61 @@
     el.className = `toast toast-${type}`;
     el.innerHTML = `<span>${msg}</span>`;
     document.getElementById('toast-wrap').appendChild(el);
-    setTimeout(() => el.remove(), 3500);
+    setTimeout(() => el.remove(), 3800);
   }
 
   document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const inputVal = document.getElementById('identifier-input').value.trim();
+    inputEmail = document.getElementById('identifier-input').value.trim().toLowerCase();
     const btn = document.getElementById('send-otp-btn');
     const spinner = document.getElementById('btn-spinner');
 
-    if (!inputVal) return;
+    if (!inputEmail) return;
+
     btn.disabled = true; spinner.classList.remove('hidden');
 
-    let { data: clients } = await supabaseClient.from('clients').select('client_slug, email, phone');
-    
-    let found = clients ? clients.find(c => 
-      (c.email && c.email.toLowerCase() === inputVal.toLowerCase()) || 
-      (c.phone && c.phone.includes(inputVal))
-    ) : null;
+    // 1. التحقق من وجود البريد في جدول المتاجر clients
+    const { data: client, error } = await supabaseClient
+      .from('clients')
+      .select('client_slug')
+      .eq('email', inputEmail)
+      .maybeSingle();
 
-    if (!found && clients && clients.length > 0) {
-      found = clients[0];
+    if (error || !client) {
+      btn.disabled = false; spinner.classList.add('hidden');
+      showToast('عذراً، البريد الإلكتروني غير مسجل لأي متجر في النظام.', 'error');
+      return;
     }
 
-    if (!found) {
-      const newSlug = 'store-' + Math.floor(Math.random() * 1000);
-      await supabaseClient.from('clients').insert([{
-        name: 'متجر جديد',
-        client_slug: newSlug,
-        email: inputVal,
-        is_active: true
-      }]);
-      matchedClientSlug = newSlug;
-    } else {
-      matchedClientSlug = found.client_slug || 'alqarya-restaurant';
+    matchedClientSlug = client.client_slug;
+    generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    try {
+      // 2. طلب إرسال البريد عبر سيرفر البيئة الخلفي (Serverless Function) بأمان تام
+      const res = await fetch('/api/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: inputEmail, otp: generatedOtp })
+      });
+
+      btn.disabled = false; spinner.classList.add('hidden');
+
+      if (!res.ok) {
+        throw new Error('فشل إرسال البريد');
+      }
+
+      document.getElementById('login-form').classList.add('hidden');
+      document.getElementById('otp-form').classList.remove('hidden');
+      document.getElementById('main-title').textContent = 'أدخل رمز التحقق';
+      document.getElementById('main-desc').textContent = `تم إرسال كود الـ 6 أرقام إلى بريدك: ${inputEmail}`;
+      setupOtpInputs();
+      showToast('تم إرسال رمز التحقق إلى بريدك بنجاح', 'success');
+
+    } catch (err) {
+      console.error(err);
+      btn.disabled = false; spinner.classList.add('hidden');
+      showToast('حدث خطأ أثناء الاتصال بخدمة إرسال البريد', 'error');
     }
-
-    btn.disabled = false; spinner.classList.add('hidden');
-
-    tempGeneratedOtp = Math.floor(1000 + Math.random() * 9000).toString();
-    document.getElementById('demo-otp-code').textContent = tempGeneratedOtp;
-
-    document.getElementById('login-form').classList.add('hidden');
-    document.getElementById('otp-form').classList.remove('hidden');
-    document.getElementById('main-title').textContent = 'أدخل كود التحقق';
-    document.getElementById('main-desc').textContent = `تم إرسال كود التحقق بنجاح`;
-    setupOtpInputs();
-    showToast('تم إرسال رمز التحقق', 'success');
   });
 
   function setupOtpInputs() {
@@ -250,16 +267,24 @@
     document.getElementById('otp-input').value = code;
   }
 
+  function backToLogin() {
+    document.getElementById('otp-form').classList.add('hidden');
+    document.getElementById('login-form').classList.remove('hidden');
+    document.getElementById('main-title').textContent = 'تسجيل الدخول عبر البريد';
+    document.getElementById('main-desc').textContent = 'أدخل بريدك الإلكتروني المسجل لنرسل لك كود التحقق الآمن.';
+  }
+
+  // 3. التحقق من صحة الكود المدخل
   document.getElementById('otp-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    const otp = document.getElementById('otp-input').value.trim();
+    const enteredOtp = document.getElementById('otp-input').value.trim();
 
-    if (otp !== tempGeneratedOtp) {
-      showToast('رمز التحقق غير صحيح', 'error');
+    if (enteredOtp.length < 6 || enteredOtp !== generatedOtp) {
+      showToast('رمز التحقق غير صحيح، حاول مرة أخرى', 'error');
       return;
     }
 
-    showToast('تم تسجيل الدخول بنجاح!', 'success');
+    showToast('تم تسجيل الدخول بنجاح! جاري تحويلك لوحة التحكم...', 'success');
     setTimeout(() => {
       window.location.href = `admin.html?client=${matchedClientSlug}`;
     }, 1000);
