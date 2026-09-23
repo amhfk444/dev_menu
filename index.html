@@ -186,17 +186,19 @@ tailwind.config = {
       <button onclick="updateSocialLinks()" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-2 rounded-xl text-xs transition shadow-md">حفظ روابط التواصل</button>
     </div>
 
-    <!-- العروض والرسائل الترويجية -->
+    <!-- العروض والرسائل الترويجية (مع زر حفظ وحذف) -->
     <div class="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-3">
       <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
         <i class="fa-solid fa-bullhorn text-amber-300"></i> الرسائل الترويجية والعروض (تظهر أعلى المنيو للعملاء)
       </h4>
-      <div class="flex flex-wrap md:flex-nowrap gap-2">
+      <div class="flex flex-col sm:flex-row gap-2">
         <input type="text" id="promo-message-input" placeholder="مثال: خصم 20% على جميع الأطباق الرئيسية اليوم!" class="input-pro text-xs flex-1">
-        <div class="flex gap-2 w-full md:w-auto shrink-0">
-          <button onclick="updatePromoMessage()" class="flex-1 md:flex-initial bg-white text-black hover:bg-gray-200 px-5 py-2 rounded-xl font-bold text-xs transition">حفظ ونشر</button>
-          <button onclick="deletePromoMessage()" class="flex-1 md:flex-initial bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-4 py-2 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1">
-            <i class="fa-solid fa-trash text-[10px]"></i> حذف الإعلان
+        <div class="flex gap-2 shrink-0">
+          <button onclick="updatePromoMessage()" class="bg-white text-black hover:bg-gray-200 px-5 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-md">
+            <i class="fa-solid fa-floppy-disk text-[11px]"></i> حفظ ونشر
+          </button>
+          <button onclick="deletePromoMessage()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-4 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-trash text-[11px]"></i> حذف الإعلان
           </button>
         </div>
       </div>
@@ -476,17 +478,17 @@ tailwind.config = {
   async function updatePromoMessage() {
     const msg = document.getElementById('promo-message-input').value.trim();
     if (await updateClient({ promo_message: msg })) {
-      showToast(msg ? 'تم نشر العرض بنجاح في المنيو' : 'تم حفظ الحقل فارغاً');
+      showToast(msg ? 'تم حفظ ونشر العرض في المنيو بنجاح' : 'تم حفظ الحقل فارغاً');
     } else {
       showToast('تعذر نشر العرض', true);
     }
   }
 
   async function deletePromoMessage() {
-    openDeleteModal('حذف إعلان العرض', 'هل أنت متأكد من رغبتك في حذف وإزالة العرض الحالي من المنيو؟', async () => {
+    openDeleteModal('حذف الإعلان الترويجي', 'هل أنت متأكد من حذف وإزالة هذا العرض من المنيو الحي للعملاء؟', async () => {
       if (await updateClient({ promo_message: '' })) {
         document.getElementById('promo-message-input').value = '';
-        showToast('تم حذف وإزالة الإعلان من المنيو');
+        showToast('تم حذف وإزالة الإعلان بنجاح');
       } else {
         showToast('تعذر حذف الإعلان', true);
       }
