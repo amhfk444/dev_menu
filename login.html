@@ -188,9 +188,23 @@
 
     btn.disabled = true; spinner.classList.remove('hidden');
 
+    // التحقق أولاً هل البريد مسجل في جدول clients الخاص بالمتاجر
+    const { data: clientCheck } = await supabaseClient
+      .from('clients')
+      .select('client_slug')
+      .eq('email', inputEmail)
+      .maybeSingle();
+
+    if (!clientCheck) {
+      btn.disabled = false; spinner.classList.add('hidden');
+      showToast('عذراً، هذا البريد الإلكتروني غير مسجل لأي متجر في النظام.', 'error');
+      return;
+    }
+
+    // إرسال الكود عبر Supabase Auth مع السماح بالإنشاء للمصادقة
     const { error } = await supabaseClient.auth.signInWithOtp({
       email: inputEmail,
-      options: { shouldCreateUser: false }
+      options: { shouldCreateUser: true }
     });
 
     btn.disabled = false; spinner.classList.add('hidden');
