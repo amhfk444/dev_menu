@@ -3,667 +3,646 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DEV MENU | منصة المنيو الرقمي الفاخر</title>
+<title>لوحة التحكم الاحترافية | Dev Menu</title>
 
 <!-- Tailwind CSS & FontAwesome -->
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- مكتبة توليد الـ QR Code -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-<!-- Google Fonts -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: { extend: {
+    colors: { darkBg: '#0b0b0b', cardDark: '#141414' }
+  }}
+}
+</script>
 
 <style>
-  :root {
-    --brand: #233d2c;
-    --brand-dark: #15271b;
-    --sand: #f5f2eb;
-    --cream: #fdfbf7;
-    --gold: #c9a227;
-    --gold-deep: #8a6d0f;
-  }
-  * { -webkit-tap-highlight-color: transparent; }
-  html { scroll-behavior: smooth; }
-  body { font-family: 'Cairo', sans-serif; background-color: var(--sand); color: #1b3022; overflow-x: hidden; }
-
-  /* خلفية ناعمة: نقاط وتوهجات */
-  .page-bg {
-    position: fixed; inset: 0; z-index: -1; pointer-events: none;
-    background: radial-gradient(55% 40% at 88% -5%, rgba(35,61,44,.12), transparent 70%),
-                radial-gradient(45% 35% at 5% 15%, rgba(201,162,39,.10), transparent 70%);
-  }
-  .page-bg::after {
-    content: ''; position: absolute; inset: 0;
-    background-image: radial-gradient(rgba(35,61,44,.06) 1px, transparent 1.6px);
-    background-size: 26px 26px;
-  }
-  ::selection { background: var(--brand); color: var(--sand); }
-  ::-webkit-scrollbar { width: 10px; }
-  ::-webkit-scrollbar-track { background: var(--sand); }
-  ::-webkit-scrollbar-thumb { background: rgba(35,61,44,.35); border-radius: 99px; }
-
-  section[id] { scroll-margin-top: 92px; }
-  .bg-brand { background-color: var(--brand); }
-  .text-brand { color: var(--brand); }
-  .eyebrow { font-size: 10px; letter-spacing: .28em; font-weight: 900; color: var(--gold-deep); }
-
-  .pro-card {
-    background: #fff; border: 1.5px solid rgba(35,61,44,.14);
-    border-radius: 26px; box-shadow: 0 24px 50px -24px rgba(35,61,44,.22);
-  }
-
-  /* الأزرار */
-  .btn-primary {
-    background: var(--brand); color: var(--sand); transition: all .25s ease;
-    box-shadow: 0 14px 28px -12px rgba(35,61,44,.55);
-  }
-  .btn-primary:hover {
-    background: var(--brand-dark); transform: translateY(-2px);
-    box-shadow: 0 20px 36px -14px rgba(35,61,44,.6);
-  }
-  .btn-primary:active { transform: translateY(0); }
-  .btn-primary:disabled { opacity: .7; cursor: not-allowed; transform: none; }
-  .btn-ghost { border: 1.5px solid rgba(35,61,44,.3); color: var(--brand); transition: all .25s ease; }
-  .btn-ghost:hover { background: var(--brand); color: var(--sand); border-color: var(--brand); }
-
-  /* الحقول */
-  .lbl { display: block; font-size: 11px; font-weight: 800; color: var(--brand); margin-bottom: 6px; }
+  body { font-family: 'Cairo', sans-serif; background-color: #0b0b0b; color: #ffffff; min-height: 100vh; }
+  .pro-card { background: rgba(20, 20, 20, 0.95); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; }
   .input-pro {
-    width: 100%; background: var(--cream); border: 1.5px solid #d8d2c2;
-    border-radius: 14px; padding: .85rem 1rem; padding-inline-start: 2.7rem;
-    color: #1b3022; font-size: .85rem; font-weight: 600; transition: all .2s;
+    width: 100%; background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 0.75rem;
+    padding: 0.65rem 0.85rem; font-size: 0.813rem; color: #ffffff; transition: all 0.2s;
   }
-  .input-pro::placeholder { color: rgba(35,61,44,.35); font-weight: 600; }
-  .input-pro:focus {
-    outline: none; border-color: var(--brand); background: #fff;
-    box-shadow: 0 0 0 4px rgba(35,61,44,.08);
-  }
-  .slug-preview {
-    margin-top: 8px; display: flex; align-items: center; gap: 8px;
-    background: rgba(35,61,44,.05); border: 1.5px dashed rgba(35,61,44,.2);
-    border-radius: 12px; padding: 7px 12px; font-size: 10px; font-weight: 700;
-    color: rgba(35,61,44,.6);
-  }
-
-  /* خانات رمز التحقق */
-  .otp-box {
-    width: 58px; height: 66px; text-align: center; font-size: 1.6rem; font-weight: 900;
-    font-family: 'Cairo', sans-serif; background: var(--cream); border: 1.5px solid #d8d2c2;
-    border-radius: 16px; color: var(--brand); transition: all .2s;
-  }
-  .otp-box:focus {
-    outline: none; border-color: var(--brand);
-    box-shadow: 0 0 0 4px rgba(35,61,44,.08); transform: translateY(-2px);
-  }
-  .otp-box.filled { background: var(--brand); color: var(--sand); border-color: var(--brand); }
-  @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    20% { transform: translateX(-6px); }
-    40% { transform: translateX(6px); }
-    60% { transform: translateX(-4px); }
-    80% { transform: translateX(4px); }
-  }
-  .shake { animation: shake .4s; }
-
-  /* عناصر عائمة */
-  .float-chip {
-    display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 900;
-    padding: 10px 14px; border-radius: 16px; white-space: nowrap;
-    box-shadow: 0 18px 35px -14px rgba(21,39,27,.35);
-  }
-  @keyframes floaty {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-12px); }
-  }
-  .animate-float { animation: floaty 5s ease-in-out infinite; }
-
-  /* التموضع التدريجي */
-  .reveal {
-    opacity: 0; transform: translateY(26px);
-    transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1);
-  }
-  .reveal.revealed { opacity: 1; transform: none; }
-
-  /* رسائل التنبيه Toast */
-  #toast-wrap {
-    position: fixed; top: 18px; inset-inline: 0; z-index: 100;
-    display: flex; flex-direction: column; align-items: center; gap: 8px;
-    pointer-events: none; padding: 0 16px;
-  }
-  .toast {
-    display: flex; align-items: center; gap: 10px; background: var(--brand-dark);
-    color: var(--sand); font-size: 12px; font-weight: 800; padding: 12px 18px;
-    border-radius: 14px; max-width: min(92vw, 480px);
-    box-shadow: 0 20px 40px -12px rgba(21,39,27,.5);
-    animation: toastIn .35s cubic-bezier(.22,1,.36,1);
-  }
-  .toast i { font-size: 14px; }
-  .toast-success i { color: #4ade80; }
-  .toast-error i { color: #fbbf24; }
-  .toast-info i { color: #93c5fd; }
-  .toast-out { animation: toastOut .35s forwards; }
-  @keyframes toastIn { from { opacity: 0; transform: translateY(-16px) scale(.95); } to { opacity: 1; transform: none; } }
-  @keyframes toastOut { to { opacity: 0; transform: translateY(-12px) scale(.95); } }
+  .input-pro:focus { outline: none; border-color: #ffffff; background-color: rgba(255, 255, 255, 0.08); }
+  .tab-btn.active { background-color: #ffffff; color: #000000; font-weight: 800; }
+  #toast { transition: transform 0.3s ease, opacity 0.3s ease; }
+  #toast.show { transform: translateY(0); opacity: 1; }
 </style>
 </head>
 
-<body class="min-h-screen flex flex-col">
-<div class="page-bg"></div>
-<div id="toast-wrap"></div>
+<body class="py-6 px-3 md:px-8">
 
-<!-- ═══════════ الترويسة ═══════════ -->
-<header class="sticky top-0 z-50 bg-[#f5f2eb]/85 backdrop-blur-xl border-b border-[#233d2c]/10">
-  <div class="max-w-6xl mx-auto px-4 md:px-8 h-16 md:h-[76px] flex items-center justify-between gap-4">
-    <a href="#" class="flex items-center gap-3">
-      <span class="w-10 h-10 md:w-11 md:h-11 rounded-2xl overflow-hidden bg-[#233d2c] flex items-center justify-center border border-[#233d2c]/20 shadow-md">
-        <img src="images/logo.jpeg" alt="DEV MENU" class="w-full h-full object-cover"
-             onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden')">
-        <span class="hidden text-[#f5f2eb] font-black text-sm">DM</span>
-      </span>
-      <span class="leading-tight">
-        <span class="block text-sm font-black text-brand">DEV MENU</span>
-        <span class="block text-[8px] tracking-[0.3em] text-[#233d2c]/50 font-bold">DIGITAL MENU</span>
-      </span>
+<!-- رسائل التنبيه Toast -->
+<div id="toast" class="fixed bottom-5 left-5 z-50 transform translate-y-10 opacity-0 pointer-events-none bg-white text-black px-5 py-3 rounded-2xl shadow-2xl border border-white/30 text-xs font-bold flex items-center gap-2">
+  <i id="toast-icon" class="fa-solid fa-circle-check text-green-600"></i>
+  <span id="toast-msg">تمت العملية بنجاح</span>
+</div>
+
+<div class="max-w-6xl mx-auto space-y-5">
+  
+  <!-- ترويسة اللوحة -->
+  <header class="pro-card p-4 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-white/10 text-white border border-white/20 flex items-center justify-center text-lg">
+        <i class="fa-solid fa-gauge-high"></i>
+      </div>
+      <div>
+        <h1 id="header-title" class="text-base font-black tracking-wide">لوحة تحكم المنشأة</h1>
+        <p class="text-[11px] text-gray-400">إدارة الهوية، المنتجات، الاشتراك، ورابط المنيو الرقمي</p>
+      </div>
+    </div>
+    <a id="preview-menu-btn" href="#" target="_blank" class="text-xs bg-white text-black font-bold px-4 py-2 rounded-xl transition hover:bg-gray-200 flex items-center gap-1.5 shadow-lg">
+      <span>معاينة المنيو الحي</span>
+      <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
     </a>
-    <nav class="hidden md:flex items-center gap-7 text-xs font-extrabold text-[#233d2c]/65">
-      <a href="#clients" class="hover:text-[#233d2c] transition">عملاؤنا</a>
-      <a href="#how" class="hover:text-[#233d2c] transition">كيف يعمل؟</a>
-      <a href="#pricing" class="hover:text-[#233d2c] transition">الباقات</a>
-    </nav>
-    <a href="#register" class="btn-primary px-5 py-2.5 rounded-xl text-[11px] font-black">ابدأ مجاناً</a>
-  </div>
-</header>
+  </header>
 
-<!-- ═══════════ قسم البطل مع صورة المنيو داخل الجوال ═══════════ -->
-<section class="relative">
-  <div class="max-w-6xl mx-auto px-4 md:px-8 pt-12 md:pt-20 pb-10 md:pb-16 grid lg:grid-cols-[1.05fr_0.95fr] gap-14 lg:gap-8 items-center">
-
-    <div class="space-y-7 text-center lg:text-right reveal">
-      <span class="inline-flex items-center gap-2 text-[10px] font-black text-[#233d2c]/75 bg-white/70 border border-[#233d2c]/15 px-4 py-2 rounded-full">
-        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        تجربة مجانية 7 أيام — بدون بطاقة ائتمانية
-      </span>
-
-      <h1 class="text-4xl md:text-[3.25rem] leading-[1.25] font-black text-[#1b3022]">
-        منيو رقمي
-        <span class="relative inline-block">فاخر
-          <svg class="absolute -bottom-1.5 right-0 w-full h-3" viewBox="0 0 100 12" fill="none" preserveAspectRatio="none">
-            <path d="M2 9 C 28 2, 72 2, 98 8" stroke="#c9a227" stroke-width="4.5" stroke-linecap="round"/>
-          </svg>
-        </span><br>
-        يليق بمطعمك ويرفع مبيعاتك
-      </h1>
-
-      <p class="text-sm md:text-[15px] font-bold text-[#233d2c]/70 leading-relaxed max-w-lg mx-auto lg:mx-0">
-        أنشئ منيو مطعمك أو كافيهك الرقمي خلال دقائق، شاركه مع ضيوفك بررمز QR أنيق،
-        وحدّث أطباقك وأسعارك لحظياً — دون الحاجة لأي تطبيق.
-      </p>
-
-      <div class="flex flex-wrap items-center justify-center lg:justify-start gap-3">
-        <a href="#register" class="btn-primary px-7 py-3.5 rounded-2xl text-xs font-black flex items-center gap-2">
-          أنشئ منيوك الآن <i class="fa-solid fa-arrow-left text-[10px]"></i>
-        </a>
-        <a href="#clients" class="btn-ghost px-7 py-3.5 rounded-2xl text-xs font-black flex items-center gap-2">
-          <i class="fa-solid fa-eye text-[10px]"></i> أمثلة حقيقية
-        </a>
-      </div>
-
-      <div class="flex flex-wrap justify-center lg:justify-start gap-x-5 gap-y-2 pt-1">
-        <span class="flex items-center gap-1.5 text-[11px] font-extrabold text-[#233d2c]/65"><i class="fa-solid fa-bolt text-[#c9a227]"></i> جاهز خلال دقائق</span>
-        <span class="flex items-center gap-1.5 text-[11px] font-extrabold text-[#233d2c]/65"><i class="fa-solid fa-qrcode text-[#c9a227]"></i> رمز QR فوري</span>
-        <span class="flex items-center gap-1.5 text-[11px] font-extrabold text-[#233d2c]/65"><i class="fa-solid fa-rotate text-[#c9a227]"></i> تحديث لحظي</span>
-        <span class="flex items-center gap-1.5 text-[11px] font-extrabold text-[#233d2c]/65"><i class="fa-solid fa-shield-halved text-[#c9a227]"></i> بدون التزام</span>
+  <!-- بطاقة معلومات الاشتراك والتنبيهات والـ QR Code -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- حالة الاشتراك -->
+    <div class="pro-card p-4 space-y-2 border-l-4 border-l-amber-400">
+      <h3 class="text-xs font-bold text-gray-300 flex items-center gap-1.5"><i class="fa-solid fa-id-card"></i> حالة الاشتراك</h3>
+      <div id="subscription-info" class="text-xs space-y-1 text-gray-200">
+        <p>جاري التحقق من الاشتراك...</p>
       </div>
     </div>
 
-    <!-- إطار الجوال الحاضن لصورة المنيو (بدون تنبيهات خارجية) -->
-    <div class="relative reveal" style="transition-delay:.15s">
-      <div class="relative mx-auto w-[290px] md:w-[310px]">
-        <div class="absolute -inset-10 bg-[#233d2c]/10 blur-3xl rounded-full"></div>
-
-        <div class="relative bg-[#15271b] rounded-[2.6rem] p-2.5 shadow-2xl rotate-[1.5deg] hover:rotate-0 transition-transform duration-500 border border-[#233d2c]/20">
-          <div class="rounded-[2.1rem] overflow-hidden bg-black shadow-inner">
-            <img src="images/backg.png" alt="Dev Menu Mobile View" class="w-full h-auto object-cover block" onerror="this.src='https://picsum.photos/seed/dev-fallback/400/800.jpg'">
-          </div>
-        </div>
-
-        <!-- الشريحة العائمة لرمز QR فقط -->
-        <div class="float-chip animate-float absolute -top-4 -start-3 md:-start-10 bg-[#15271b] text-[#f5f2eb] border border-[#f5f2eb]/10">
-          <i class="fa-solid fa-qrcode text-[#c9a227] text-base"></i> امسح واستعرض المنيو
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════ عملاؤنا (بيانات حقيقية من قاعدة البيانات) ═══════════ -->
-<section id="clients" class="max-w-6xl mx-auto px-4 md:px-8 py-12">
-  <div class="reveal">
-    <div class="flex items-end justify-between gap-4 mb-6">
-      <div>
-        <span class="eyebrow">TRUSTED CLIENTS</span>
-        <h2 class="text-2xl md:text-[1.7rem] font-black text-[#1b3022] mt-1.5">نخبة المنشآت التي تثق بنا</h2>
-      </div>
-      <span class="hidden sm:inline-flex items-center gap-2 text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-3.5 py-2 rounded-full">
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> نشط الآن
-      </span>
-    </div>
-    <div id="clients-logos-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3.5">
-      <div class="bg-white/60 border border-[#233d2c]/10 rounded-2xl h-[74px] animate-pulse"></div>
-      <div class="bg-white/60 border border-[#233d2c]/10 rounded-2xl h-[74px] animate-pulse"></div>
-      <div class="hidden md:block bg-white/60 border border-[#233d2c]/10 rounded-2xl h-[74px] animate-pulse"></div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════ كيف يعمل؟ ═══════════ -->
-<section id="how" class="max-w-5xl mx-auto px-4 md:px-8 py-12">
-  <div class="text-center mb-10 reveal">
-    <span class="eyebrow">HOW IT WORKS</span>
-    <h2 class="text-2xl md:text-[1.7rem] font-black text-[#1b3022] mt-1.5">منيوك جاهز خلال 3 خطوات</h2>
-  </div>
-  <div class="relative grid md:grid-cols-3 gap-10 md:gap-6">
-    <div class="hidden md:block absolute top-7 inset-x-[16%] border-t-2 border-dashed border-[#233d2c]/20"></div>
-
-    <div class="relative text-center space-y-3 reveal">
-      <div class="relative mx-auto w-14 h-14 rounded-2xl bg-[#233d2c] text-[#f5f2eb] flex items-center justify-center text-lg shadow-[0_12px_25px_-10px_rgba(35,61,44,.5)]">
-        <i class="fa-solid fa-user-plus"></i>
-        <span class="absolute -top-2 -start-2 w-6 h-6 rounded-full bg-[#c9a227] text-[#15271b] text-[10px] font-black flex items-center justify-center border-2 border-[#f5f2eb]">1</span>
-      </div>
-      <h3 class="text-sm font-black text-[#1b3022]">سجّل وفعّل حسابك</h3>
-      <p class="text-[11px] font-bold text-[#233d2c]/60 leading-relaxed max-w-[230px] mx-auto">أنشئ متجرك خلال دقيقة برمز تحقق سريع وآمن يصل إلى بريدك.</p>
+    <!-- تنبيهات الإدارة -->
+    <div id="admin-notice-box" class="pro-card p-4 space-y-2 border-l-4 border-l-blue-400 hidden">
+      <h3 class="text-xs font-bold text-blue-300 flex items-center gap-1.5"><i class="fa-solid fa-bell"></i> تنبيه من الإدارة</h3>
+      <p id="admin-notice-text" class="text-xs text-gray-200"></p>
     </div>
 
-    <div class="relative text-center space-y-3 reveal" style="transition-delay:.1s">
-      <div class="relative mx-auto w-14 h-14 rounded-2xl bg-[#233d2c] text-[#f5f2eb] flex items-center justify-center text-lg shadow-[0_12px_25px_-10px_rgba(35,61,44,.5)]">
-        <i class="fa-solid fa-utensils"></i>
-        <span class="absolute -top-2 -start-2 w-6 h-6 rounded-full bg-[#c9a227] text-[#15271b] text-[10px] font-black flex items-center justify-center border-2 border-[#f5f2eb]">2</span>
-      </div>
-      <h3 class="text-sm font-black text-[#1b3022]">أضف أطباقك وأسعارك</h3>
-      <p class="text-[11px] font-bold text-[#233d2c]/60 leading-relaxed max-w-[230px] mx-auto">ارفع صور أطباقك ونظّمها في تصنيفات بلمسة واحدة.</p>
-    </div>
-
-    <div class="relative text-center space-y-3 reveal" style="transition-delay:.2s">
-      <div class="relative mx-auto w-14 h-14 rounded-2xl bg-[#233d2c] text-[#f5f2eb] flex items-center justify-center text-lg shadow-[0_12px_25px_-10px_rgba(35,61,44,.5)]">
-        <i class="fa-solid fa-qrcode"></i>
-        <span class="absolute -top-2 -start-2 w-6 h-6 rounded-full bg-[#c9a227] text-[#15271b] text-[10px] font-black flex items-center justify-center border-2 border-[#f5f2eb]">3</span>
-      </div>
-      <h3 class="text-sm font-black text-[#1b3022]">شارك منيوك مع ضيوفك</h3>
-      <p class="text-[11px] font-bold text-[#233d2c]/60 leading-relaxed max-w-[230px] mx-auto">اطبع رمز QR الخاص بك وضعه على الطاولات — وجاهز!</p>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════ التسجيل + رمز التحقق ═══════════ -->
-<section id="register" class="max-w-2xl mx-auto px-4 md:px-8 py-12">
-  <div class="text-center mb-7 reveal">
-    <span class="eyebrow">GET STARTED</span>
-    <h2 class="text-2xl md:text-3xl font-black text-[#1b3022] mt-1.5">ابدأ تجربتك المجانية الآن</h2>
-    <p class="text-xs font-bold text-[#233d2c]/60 mt-2">7 أيام كاملة بكل المزايا — بدون بطاقة ائتمانية</p>
-  </div>
-
-  <div class="pro-card p-6 md:p-9 space-y-6 reveal">
-
-    <div class="flex items-center justify-between border-b border-[#233d2c]/10 pb-4">
-      <h3 class="flex items-center gap-2.5 text-sm font-black">
-        <span class="w-9 h-9 rounded-xl bg-brand text-[#f5f2eb] flex items-center justify-center"><i class="fa-solid fa-rocket text-xs"></i></span>
-        بيانات متجرك
-      </h3>
-      <span id="step-indicator" class="text-[9px] font-black bg-[#c9a227]/15 text-[#8a6d0f] border border-[#c9a227]/30 px-3 py-1.5 rounded-full">الخطوة 1 من 2</span>
-    </div>
-
-    <!-- الخطوة 1: البيانات -->
-    <form id="register-form" class="space-y-4" novalidate>
-      <div>
-        <label for="reg-name" class="lbl">اسم المطعم أو الكافيه *</label>
-        <div class="relative">
-          <i class="fa-solid fa-store absolute start-3.5 top-1/2 -translate-y-1/2 text-[#233d2c]/35 text-xs"></i>
-          <input type="text" id="reg-name" placeholder="مثال: مطعم لانو" required class="input-pro">
-        </div>
-      </div>
-
-      <div class="grid md:grid-cols-2 gap-4">
-        <div>
-          <label for="reg-email" class="lbl">البريد الإلكتروني *</label>
-          <div class="relative">
-            <i class="fa-solid fa-envelope absolute start-3.5 top-1/2 -translate-y-1/2 text-[#233d2c]/35 text-xs"></i>
-            <input type="email" id="reg-email" placeholder="name@domain.com" required class="input-pro">
-          </div>
-        </div>
-        <div>
-          <label for="reg-phone" class="lbl">رقم الجوال *</label>
-          <div class="relative">
-            <i class="fa-solid fa-mobile-screen-button absolute start-3.5 top-1/2 -translate-y-1/2 text-[#233d2c]/35 text-xs"></i>
-            <input type="text" id="reg-phone" inputmode="numeric" placeholder="9665xxxxxxxx" required class="input-pro">
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <label for="reg-slug" class="lbl">رابط المتجر بالإنجليزية (Slug بدون مسافات) *</label>
-        <div class="relative">
-          <i class="fa-solid fa-link absolute start-3.5 top-1/2 -translate-y-1/2 text-[#233d2c]/35 text-xs"></i>
-          <input type="text" id="reg-slug" placeholder="مثال: lano-rest" required class="input-pro">
-        </div>
-        <div class="slug-preview" dir="ltr">
-          <i class="fa-solid fa-globe text-[9px]"></i>
-          <span class="truncate">menu.html?client=<b id="slug-preview">your-store</b></span>
-        </div>
-      </div>
-
-      <button type="submit" class="btn-primary w-full font-black py-4 rounded-2xl text-xs flex items-center justify-center gap-2">
-        <span>إرسال رمز التحقق والبدء الفوري</span>
-        <i class="fa-solid fa-arrow-left text-[10px]"></i>
-      </button>
-    </form>
-
-    <!-- الخطوة 2: رمز التحقق -->
-    <div id="otp-section" class="hidden space-y-5">
-      <div class="bg-[#c9a227]/10 border border-[#c9a227]/30 rounded-2xl p-4 text-center space-y-1.5">
-        <p class="text-xs font-black text-[#1b3022]">تم إرسال رمز التحقق إلى <span id="otp-email" dir="ltr"></span></p>
-        <p class="text-[11px] font-bold text-[#233d2c]/70">الرمز التجريبي الخاص بك:
-          <span id="demo-otp-code" dir="ltr" class="font-black text-base text-[#8a6d0f] tracking-widest">----</span>
-        </p>
-      </div>
-
-      <div class="otp-boxes flex justify-center gap-3" dir="ltr">
-        <input type="text" inputmode="numeric" class="otp-box" maxlength="1" aria-label="الرقم 1">
-        <input type="text" inputmode="numeric" class="otp-box" maxlength="1" aria-label="الرقم 2">
-        <input type="text" inputmode="numeric" class="otp-box" maxlength="1" aria-label="الرقم 3">
-        <input type="text" inputmode="numeric" class="otp-box" maxlength="1" aria-label="الرقم 4">
-      </div>
-
-      <button id="verify-btn" onclick="verifyOtpAndRegister()" class="btn-primary w-full font-black py-4 rounded-2xl text-xs">
-        تأكيد الرمز ودخول لوحة التحكم
-      </button>
-
-      <div class="flex items-center justify-between text-[10px] font-black">
-        <button type="button" onclick="backToForm()" class="text-[#233d2c]/60 hover:text-[#233d2c] transition flex items-center gap-1.5">
-          <i class="fa-solid fa-arrow-right text-[8px]"></i> تعديل البيانات
-        </button>
-        <button type="button" onclick="resendOtp()" class="text-[#233d2c]/60 hover:text-[#233d2c] transition flex items-center gap-1.5">
-          <i class="fa-solid fa-rotate-right text-[8px]"></i> إعادة إرسال الرمز
+    <!-- رابط المنيو والـ QR Code -->
+    <div class="pro-card p-4 flex items-center justify-between gap-3">
+      <div class="space-y-2">
+        <h3 class="text-xs font-bold text-white"><i class="fa-solid fa-qrcode text-amber-400"></i> باركود المنيو الخاص بك</h3>
+        <p class="text-[10px] text-gray-400">امسح الكود لفتح المنيو أو شاركه مع زملائك</p>
+        <button onclick="copyMenuLink()" class="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold border border-white/20 transition">
+          <i class="fa-solid fa-copy"></i> نسخ رابط المنيو
         </button>
       </div>
+      <div id="qrcode" class="bg-white p-2 rounded-xl shrink-0"></div>
     </div>
   </div>
-</section>
 
-<!-- ═══════════ الباقات ═══════════ -->
-<section id="pricing" class="max-w-4xl mx-auto px-4 md:px-8 py-12">
-  <div class="text-center mb-8 reveal">
-    <span class="eyebrow">PRICING</span>
-    <h2 class="text-2xl md:text-[1.7rem] font-black text-[#1b3022] mt-1.5">باقات بسيطة وواضحة</h2>
-    <p class="text-xs font-bold text-[#233d2c]/60 mt-2">ابدأ مجاناً لمدة 7 أيام، ثم اختر ما يناسبك</p>
-  </div>
-
-  <div class="grid md:grid-cols-2 gap-5 reveal">
-    <!-- الشهرية -->
-    <div class="pro-card p-7 space-y-5 hover:-translate-y-1 transition-transform duration-300">
-      <div class="space-y-1">
-        <h4 class="text-xs font-black text-[#233d2c]/60">الباقة الشهرية</h4>
-        <p class="text-4xl font-black text-brand">99 <span class="text-xs font-bold text-[#233d2c]/50">ر.س</span></p>
-        <p class="text-[10px] font-bold text-[#233d2c]/50">شهرياً — بدون أي التزام</p>
+  <!-- الهوية والبصرية -->
+  <div class="pro-card p-5 space-y-4">
+    <h3 class="text-xs font-bold text-white border-b border-white/15 pb-2 flex items-center gap-2">
+      <i class="fa-solid fa-sliders text-gray-300"></i> إعدادات المنشأة والهوية البصرية
+    </h3>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
+        <label class="text-[11px] font-bold text-gray-300">اسم المطعم في المنيو</label>
+        <input type="text" id="setting-name" placeholder="اسم المطعم" class="input-pro text-xs">
+        <button onclick="updateRestaurantName()" class="w-full bg-white text-black hover:bg-gray-200 text-xs font-bold py-2 rounded-xl transition">حفظ الاسم</button>
       </div>
-      <ul class="space-y-2.5">
-        <li class="flex items-center gap-2.5 text-[11px] font-bold text-[#233d2c]/75"><span class="w-4 h-4 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[7px] text-emerald-700"></i></span> منيو رقمي كامل بأصناف غير محدودة</li>
-        <li class="flex items-center gap-2.5 text-[11px] font-bold text-[#233d2c]/75"><span class="w-4 h-4 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[7px] text-emerald-700"></i></span> رابط مخصص + رمز QR فوري</li>
-        <li class="flex items-center gap-2.5 text-[11px] font-bold text-[#233d2c]/75"><span class="w-4 h-4 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[7px] text-emerald-700"></i></span> تحديث لحظي للأسعار والأصناف</li>
-        <li class="flex items-center gap-2.5 text-[11px] font-bold text-[#233d2c]/75"><span class="w-4 h-4 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[7px] text-emerald-700"></i></span> إلغاء في أي وقت</li>
-      </ul>
-      <a href="#register" class="btn-ghost block text-center font-black py-3.5 rounded-2xl text-xs">ابدأ بالتجربة المجانية</a>
-    </div>
 
-    <!-- السنوية -->
-    <div class="pro-card !border-2 !border-[#c9a227] p-7 pt-9 space-y-5 relative overflow-hidden shadow-[0_24px_50px_-24px_rgba(201,162,39,.5)] hover:-translate-y-1 transition-transform duration-300">
-      <span class="absolute top-0 start-0 bg-[#c9a227] text-[#15271b] text-[9px] font-black px-3.5 py-1.5 rounded-tr-[22px] rounded-bl-2xl">الأكثر طلباً</span>
-      <div class="space-y-1">
-        <h4 class="text-xs font-black text-[#233d2c]/60">الباقة السنوية</h4>
-        <p class="text-4xl font-black text-brand">1149 <span class="text-xs font-bold text-[#233d2c]/50">ر.س</span></p>
-        <p class="text-[10px] font-bold text-[#8a6d0f]">سنوياً — ما يعادل 96 ر.س شهرياً فقط</p>
+      <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
+        <div class="flex items-center justify-between">
+          <label class="text-[11px] font-bold text-gray-300">شعار المطعم (Logo)</label>
+          <img id="logo-preview" src="images/logo.jpeg" class="w-7 h-7 object-cover rounded-full border border-white/30" onerror="this.src='https://via.placeholder.com/50'">
+        </div>
+        <input type="file" id="logo-file" accept="image/*" class="input-pro text-[10px]">
+        <button onclick="uploadMedia('logo')" class="w-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-2 rounded-xl transition border border-white/20">تحديث الشعار</button>
       </div>
-      <ul class="space-y-2.5">
-        <li class="flex items-center gap-2.5 text-[11px] font-bold text-[#233d2c]/75"><span class="w-4 h-4 rounded-full bg-[#c9a227]/20 border border-[#c9a227]/40 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[7px] text-[#8a6d0f]"></i></span> كل مزايا الباقة الشهرية</li>
-        <li class="flex items-center gap-2.5 text-[11px] font-bold text-[#233d2c]/75"><span class="w-4 h-4 rounded-full bg-[#c9a227]/20 border border-[#c9a227]/40 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[7px] text-[#8a6d0f]"></i></span> وفّر 39 ر.س سنوياً</li>
-        <li class="flex items-center gap-2.5 text-[11px] font-bold text-[#233d2c]/75"><span class="w-4 h-4 rounded-full bg-[#c9a227]/20 border border-[#c9a227]/40 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[7px] text-[#8a6d0f]"></i></span> رمز QR مخصص بهوية مطعمك</li>
-        <li class="flex items-center gap-2.5 text-[11px] font-bold text-[#233d2c]/75"><span class="w-4 h-4 rounded-full bg-[#c9a227]/20 border border-[#c9a227]/40 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[7px] text-[#8a6d0f]"></i></span> أولوية في الدعم الفني</li>
-      </ul>
-      <a href="#register" class="btn-primary block text-center font-black py-3.5 rounded-2xl text-xs">اشترك سنوياً ووفّر</a>
-    </div>
-  </div>
-</section>
 
-<!-- ═══════════ التذييل ═══════════ -->
-<footer class="bg-[#233d2c] text-[#f5f2eb] mt-auto">
-  <div class="max-w-6xl mx-auto px-4 md:px-8 pt-14 pb-8 grid md:grid-cols-3 gap-10">
-    <div class="space-y-4">
-      <div class="flex items-center gap-3">
-        <span class="w-10 h-10 rounded-xl bg-[#f5f2eb]/10 border border-[#f5f2eb]/20 flex items-center justify-center font-black">DM</span>
-        <div class="leading-tight">
-          <p class="text-sm font-black">DEV MENU</p>
-          <p class="text-[8px] tracking-[0.3em] text-[#f5f2eb]/50 font-bold">DIGITAL MENU PLATFORM</p>
+      <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
+        <label class="text-[11px] font-bold text-gray-300">صورة الخلفية للمنيو</label>
+        <input type="file" id="bg-img-file" accept="image/*" class="input-pro text-[10px]">
+        <button onclick="uploadMedia('bg_image')" class="w-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-2 rounded-xl transition border border-white/20">تحديث الخلفية</button>
+      </div>
+
+      <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
+        <label class="text-[11px] font-bold text-gray-300">فيديو الخلفية (MP4)</label>
+        <input type="file" id="bg-video-file" accept="video/*" class="input-pro text-[10px]">
+        <button onclick="uploadMedia('bg_video')" class="w-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-2 rounded-xl transition border border-white/20">تحديث الفيديو</button>
+      </div>
+    </div>
+
+    <!-- روابط التواصل الاجتماعي -->
+    <div class="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-3">
+      <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
+        <i class="fa-solid fa-share-nodes text-blue-400"></i> روابط منصات التواصل الاجتماعي وموقع المطعم
+      </h4>
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div>
+          <label class="text-[10px] text-gray-300 block mb-1">الموقع الإلكتروني</label>
+          <input type="url" id="social-web" placeholder="https://..." class="input-pro text-xs">
+        </div>
+        <div>
+          <label class="text-[10px] text-gray-300 block mb-1">رابط تيك توك</label>
+          <input type="url" id="social-tiktok" placeholder="https://tiktok.com/@..." class="input-pro text-xs">
+        </div>
+        <div>
+          <label class="text-[10px] text-gray-300 block mb-1">رابط انستجرام</label>
+          <input type="url" id="social-insta" placeholder="https://instagram.com/..." class="input-pro text-xs">
+        </div>
+        <div>
+          <label class="text-[10px] text-gray-300 block mb-1">رقم الواتساب</label>
+          <input type="text" id="social-whatsapp" placeholder="9665xxxxxxxx" class="input-pro text-xs">
+        </div>
+        <div>
+          <label class="text-[10px] text-gray-300 block mb-1">رابط سناب شات</label>
+          <input type="url" id="social-snap" placeholder="https://snapchat.com/..." class="input-pro text-xs">
         </div>
       </div>
-      <p class="text-[11px] font-bold text-[#f5f2eb]/60 leading-relaxed">منصة عربية متخصصة في إنشاء المنيوهات الرقمية الفاخرة للمطاعم والكافيهات.</p>
+      <button onclick="updateSocialLinks()" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-2 rounded-xl text-xs transition shadow-md">حفظ روابط التواصل</button>
+    </div>
+
+    <!-- العروض والرسائل الترويجية -->
+    <div class="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-3">
+      <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
+        <i class="fa-solid fa-bullhorn text-amber-300"></i> الرسائل الترويجية والعروض (تظهر أعلى المنيو للعملاء)
+      </h4>
       <div class="flex gap-2">
-        <a href="#" class="w-9 h-9 rounded-xl bg-[#f5f2eb]/10 border border-[#f5f2eb]/15 flex items-center justify-center text-xs hover:bg-[#c9a227] hover:text-[#15271b] hover:border-[#c9a227] transition"><i class="fa-brands fa-x-twitter"></i></a>
-        <a href="#" class="w-9 h-9 rounded-xl bg-[#f5f2eb]/10 border border-[#f5f2eb]/15 flex items-center justify-center text-xs hover:bg-[#c9a227] hover:text-[#15271b] hover:border-[#c9a227] transition"><i class="fa-brands fa-instagram"></i></a>
-        <a href="#" class="w-9 h-9 rounded-xl bg-[#f5f2eb]/10 border border-[#f5f2eb]/15 flex items-center justify-center text-xs hover:bg-[#c9a227] hover:text-[#15271b] hover:border-[#c9a227] transition"><i class="fa-brands fa-whatsapp"></i></a>
+        <input type="text" id="promo-message-input" placeholder="مثال: خصم 20% على جميع الأطباق الرئيسية اليوم!" class="input-pro text-xs flex-1">
+        <button onclick="updatePromoMessage()" class="bg-white text-black hover:bg-gray-200 px-5 py-2 rounded-xl font-bold text-xs shrink-0 transition">نشر العرض</button>
       </div>
     </div>
-    <div>
-      <h4 class="text-xs font-black mb-4 text-[#c9a227]">روابط سريعة</h4>
-      <ul class="space-y-3 text-[11px] font-bold text-[#f5f2eb]/70">
-        <li><a href="#clients" class="hover:text-white transition">عملاؤنا</a></li>
-        <li><a href="#how" class="hover:text-white transition">كيف يعمل المنصة؟</a></li>
-        <li><a href="#pricing" class="hover:text-white transition">الباقات والأسعار</a></li>
-        <li><a href="#register" class="hover:text-white transition">التجربة المجانية</a></li>
-      </ul>
-    </div>
-    <div>
-      <h4 class="text-xs font-black mb-4 text-[#c9a227]">تواصل معنا</h4>
-      <ul class="space-y-3 text-[11px] font-bold text-[#f5f2eb]/70">
-        <li class="flex items-center gap-2.5"><i class="fa-solid fa-envelope w-4 text-[#f5f2eb]/40"></i> support@devmenu.com</li>
-        <li class="flex items-center gap-2.5"><i class="fa-brands fa-whatsapp w-4 text-[#f5f2eb]/40"></i> <span dir="ltr">+966 5X XXX XXXX</span></li>
-        <li class="flex items-center gap-2.5"><i class="fa-solid fa-clock w-4 text-[#f5f2eb]/40"></i> دعم فني على مدار الأسبوع</li>
-      </ul>
-    </div>
   </div>
-  <div class="border-t border-[#f5f2eb]/10">
-    <p class="text-center text-[10px] font-bold text-[#f5f2eb]/50 py-4">جميع الحقوق محفوظة © DEV MENU 2026</p>
-  </div>
-</footer>
 
+  <!-- التبويبات -->
+  <div class="flex gap-2 border-b border-white/15 pb-2">
+    <button onclick="switchTab('products')" id="tab-products" class="tab-btn active px-5 py-2.5 rounded-xl border border-white/20 text-xs font-bold transition flex items-center gap-2">
+      <i class="fa-solid fa-box"></i> المنتجات والأطباق
+    </button>
+    <button onclick="switchTab('categories')" id="tab-categories" class="tab-btn bg-white/5 hover:bg-white/10 text-gray-300 px-5 py-2.5 rounded-xl border border-white/20 text-xs font-bold transition flex items-center gap-2">
+      <i class="fa-solid fa-layer-group"></i> الأقسام والقوائم
+    </button>
+  </div>
+
+  <!-- قسم المنتجات -->
+  <div id="section-products" class="space-y-4">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <div class="lg:col-span-5">
+        <form id="add-product-form" class="pro-card p-5 space-y-3.5 sticky top-5">
+          <h3 class="text-xs font-bold text-white border-b border-white/15 pb-2 flex items-center gap-2">
+            <i class="fa-solid fa-plus text-white"></i> إضافة طبق أو منتج جديد
+          </h3>
+          <div>
+            <label class="text-[11px] text-gray-300 block mb-1">اسم الطبق / المنتج *</label>
+            <input type="text" id="prod-name" placeholder="مثال: ستيك لحم فاخر" required class="input-pro">
+          </div>
+          <div class="grid grid-cols-2 gap-2.5">
+            <div>
+              <label class="text-[11px] text-gray-300 block mb-1">القسم *</label>
+              <select id="prod-category" required class="input-pro bg-zinc-900"></select>
+            </div>
+            <div>
+              <label class="text-[11px] text-gray-300 block mb-1">السعر (ر.س) *</label>
+              <input type="number" step="0.5" id="prod-price" placeholder="0.00" required class="input-pro">
+            </div>
+          </div>
+          <div>
+            <label class="text-[11px] text-gray-300 block mb-1">صورة الطبق</label>
+            <input type="file" id="prod-image-file" accept="image/*" class="input-pro text-xs">
+          </div>
+          <div>
+            <label class="text-[11px] text-gray-300 block mb-1">وصف المكونات</label>
+            <textarea id="prod-desc" placeholder="وصف موجز للمكونات..." class="input-pro h-16 resize-none"></textarea>
+          </div>
+          <div class="flex items-center gap-2 bg-white/5 p-2.5 rounded-xl border border-white/10">
+            <input type="checkbox" id="prod-bestseller" class="w-4 h-4 accent-black cursor-pointer">
+            <label for="prod-bestseller" class="text-xs font-bold text-white cursor-pointer flex items-center gap-1.5">
+              <i class="fa-solid fa-fire text-amber-400"></i> تمييز كـ "طبق مميز / الأكثر مبيعاً"
+            </label>
+          </div>
+          <button type="submit" id="submit-btn" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-2.5 rounded-xl text-xs transition shadow-lg">حفظ وإضافة الطبق</button>
+        </form>
+      </div>
+
+      <div class="lg:col-span-7 space-y-3.5">
+        <div class="pro-card p-3.5 flex flex-wrap items-center justify-between gap-3">
+          <div class="relative flex-1 min-w-[180px]">
+            <i class="fa-solid fa-magnifying-glass absolute right-3.5 top-3 text-gray-400 text-xs"></i>
+            <input type="text" id="search-input" oninput="filterProducts()" placeholder="بحث في الأطباق..." class="input-pro pr-9 text-xs">
+          </div>
+          <select id="filter-category" onchange="filterProducts()" class="input-pro bg-zinc-900 w-auto text-xs">
+            <option value="all">جميع الأقسام</option>
+          </select>
+        </div>
+        <div class="pro-card p-4 space-y-3">
+          <div class="flex items-center justify-between border-b border-white/15 pb-2">
+            <h3 class="text-xs font-bold text-white">الأطباق المتاحة في القائمة</h3>
+            <span id="products-count" class="text-[10px] font-bold text-black bg-white px-2.5 py-0.5 rounded-full">0 طبق</span>
+          </div>
+          <div id="admin-products-list" class="space-y-2.5 max-h-[550px] overflow-y-auto pr-1">
+            <p class="text-xs text-gray-400 text-center py-6">جاري التحميل...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- قسم الأقسام -->
+  <div id="section-categories" class="space-y-4 hidden">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
+      <div class="md:col-span-5">
+        <form id="add-category-form" class="pro-card p-5 space-y-3.5">
+          <h3 class="text-xs font-bold text-white border-b border-white/15 pb-2">إضافة قسم جديد للمنيو</h3>
+          <div>
+            <label class="text-[11px] text-gray-300 block mb-1">اسم القسم (عربي) *</label>
+            <input type="text" id="cat-name" placeholder="مثال: المقبلات الساخنة" required class="input-pro">
+          </div>
+          <div>
+            <label class="text-[11px] text-gray-300 block mb-1">المعرف الإنجليزي (Key) *</label>
+            <input type="text" id="cat-key" placeholder="مثال: appetizers" required class="input-pro">
+          </div>
+          <button type="submit" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-2.5 rounded-xl text-xs transition shadow-lg">حفظ القسم</button>
+        </form>
+      </div>
+      <div class="md:col-span-7">
+        <div class="pro-card p-5 space-y-3">
+          <h3 class="text-xs font-bold text-white border-b border-white/15 pb-2">الأقسام الحالية</h3>
+          <div id="categories-list" class="space-y-2.5">
+            <p class="text-xs text-gray-400 text-center py-4">لا توجد أقسام بعد.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- JavaScript البرمجي المنظم -->
 <script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const clientSlugFromUrl = urlParams.get('client') || 'alqarya-restaurant';
+
+  const THIS_PROJECT = { 
+    slug: clientSlugFromUrl, 
+    name: 'Dev Menu' 
+  };
+
   const SUPABASE_URL = 'https://czdoamcgxgkicrbufpcn.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZG9hbWNneGdraWNyYnVmcGNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwMTA5MzAsImV4cCI6MjEwNTU4NjkzMH0.45zKx4ljXJ27SS-ukc62qiu52movhDgSoC9OEnK9NHk';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  let tempGeneratedOtp = '';
-  let formDataCache = {};
+  let currentClientId = null;
+  let loadedProducts = [];
+  let loadedCategories = [];
 
-  /* ===== نظام التنبيهات (Toast) ===== */
-  function showToast(msg, type = 'success') {
-    const icons = { success: 'fa-circle-check', error: 'fa-circle-exclamation', info: 'fa-circle-info' };
-    const el = document.createElement('div');
-    el.className = `toast toast-${type}`;
-    el.innerHTML = `<i class="fa-solid ${icons[type]}"></i><span>${msg}</span>`;
-    document.getElementById('toast-wrap').appendChild(el);
-    setTimeout(() => { el.classList.add('toast-out'); setTimeout(() => el.remove(), 400); }, 3800);
+  function showToast(msg, isError = false) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    document.getElementById('toast-icon').className = isError ? 'fa-solid fa-circle-xmark text-red-500' : 'fa-solid fa-circle-check text-green-600';
+    toast.className = `fixed bottom-5 left-5 z-50 px-5 py-3 rounded-2xl shadow-2xl border text-xs font-bold flex items-center gap-2 transition-all ${isError ? 'bg-zinc-900 border-red-500 text-white' : 'bg-white border-white text-black'} show`;
+    setTimeout(() => { toast.classList.remove('show'); }, 3000);
   }
 
-  /* ===== جلب العملاء النشطين من قاعدة البيانات ===== */
-  async function loadActiveClientsLogos() {
-    let { data: clients } = await supabaseClient
+  function switchTab(tab) {
+    document.getElementById('section-products').classList.toggle('hidden', tab !== 'products');
+    document.getElementById('section-categories').classList.toggle('hidden', tab !== 'categories');
+    document.getElementById('tab-products').classList.toggle('active', tab === 'products');
+    document.getElementById('tab-categories').classList.toggle('active', tab === 'categories');
+  }
+
+  async function getOrFetchClientId() {
+    if (currentClientId) return currentClientId;
+
+    let { data: client } = await supabaseClient
       .from('clients')
-      .select('name, logo_url, client_slug')
-      .eq('is_active', true)
-      .limit(6);
-    const grid = document.getElementById('clients-logos-grid');
+      .select('*')
+      .eq('client_slug', THIS_PROJECT.slug)
+      .maybeSingle();
 
-    if (clients && clients.length > 0) {
-      grid.innerHTML = clients.map(c => `
-        <a href="menu.html?client=${c.client_slug}" target="_blank"
-           class="group bg-white border border-[#233d2c]/10 rounded-2xl p-4 flex items-center gap-3 hover:border-[#233d2c]/40 hover:-translate-y-1 hover:shadow-[0_18px_35px_-18px_rgba(35,61,44,.35)] transition-all duration-300">
-          ${c.logo_url
-            ? `<img src="${c.logo_url}" alt="${c.name}" class="w-11 h-11 rounded-xl object-cover border border-[#233d2c]/15 flex-shrink-0">`
-            : `<span class="w-11 h-11 rounded-xl bg-[#233d2c]/10 border border-[#233d2c]/15 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-store text-xs text-[#233d2c]"></i></span>`}
-          <div class="min-w-0 flex-1">
-            <p class="text-xs font-black text-[#1b3022] truncate">${c.name}</p>
-            <p class="text-[9px] font-bold text-[#233d2c]/50 mt-0.5 flex items-center gap-1.5">عرض المنيو
-              <i class="fa-solid fa-arrow-left text-[7px] transition-transform duration-300 group-hover:-translate-x-1"></i></p>
-          </div>
-        </a>`).join('');
+    if (!client) {
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + 7);
+      const { data: inserted } = await supabaseClient
+        .from('clients')
+        .insert([{
+          client_slug: THIS_PROJECT.slug,
+          name: THIS_PROJECT.slug,
+          subscription_status: 'trial',
+          is_active: true,
+          trial_ends_at: endDate.toISOString()
+        }])
+        .select('*');
+      if (inserted && inserted.length > 0) client = inserted[0];
+    }
+
+    if (client && client.id) {
+      currentClientId = client.id;
+      document.getElementById('header-title').textContent = `لوحة تحكم | ${client.name || 'المنشأة'}`;
+      document.getElementById('setting-name').value = client.name || '';
+      document.getElementById('promo-message-input').value = client.promo_message || '';
+      
+      const menuUrl = `${window.location.origin}/menu.html?client=${client.client_slug}`;
+      document.getElementById('preview-menu-btn').href = menuUrl;
+
+      document.getElementById('qrcode').innerHTML = '';
+      new QRCode(document.getElementById('qrcode'), {
+        text: menuUrl,
+        width: 80,
+        height: 80
+      });
+
+      renderSubscriptionStatus(client);
+
+      document.getElementById('social-web').value = client.website_url || '';
+      document.getElementById('social-tiktok').value = client.tiktok_url || '';
+      document.getElementById('social-insta').value = client.instagram_url || '';
+      document.getElementById('social-whatsapp').value = client.whatsapp_number || '';
+      document.getElementById('social-snap').value = client.snapchat_url || '';
+
+      if (client.logo_url) document.getElementById('logo-preview').src = client.logo_url;
+      return client.id;
+    }
+    return null;
+  }
+
+  function renderSubscriptionStatus(client) {
+    const infoBox = document.getElementById('subscription-info');
+    let badgeText = '';
+    if (client.subscription_status === 'trial') badgeText = '<span class="text-blue-400 font-bold">باقة تجريبية (7 أيام)</span>';
+    else if (client.subscription_status === 'active') badgeText = '<span class="text-green-400 font-bold">مشترك مدفوع نشط</span>';
+    else badgeText = '<span class="text-red-400 font-bold">الاشتراك منتهي</span>';
+
+    infoBox.innerHTML = `
+      <p>الحالة: ${badgeText}</p>
+      <p class="text-[10px] text-gray-400">معرف المتجر: ${client.client_slug}</p>
+    `;
+
+    if (client.admin_notification && client.admin_notification.trim() !== '') {
+      document.getElementById('admin-notice-text').textContent = client.admin_notification;
+      document.getElementById('admin-notice-box').classList.remove('hidden');
+    }
+  }
+
+  function copyMenuLink() {
+    const menuUrl = `${window.location.origin}/menu.html?client=${THIS_PROJECT.slug}`;
+    navigator.clipboard.writeText(menuUrl);
+    showToast('تم نسخ رابط المنيو بنجاح!');
+  }
+
+  async function updateRestaurantName() {
+    const clientId = await getOrFetchClientId();
+    const newName = document.getElementById('setting-name').value.trim();
+    if (!newName) return showToast('يرجى كتابة اسم المطعم', true);
+
+    const { error } = await supabaseClient.from('clients').update({ name: newName }).eq('id', clientId);
+    if (!error) {
+      showToast('تم تحديث اسم المطعم بنجاح');
+      document.getElementById('header-title').textContent = `لوحة تحكم | ${newName}`;
     } else {
-      grid.innerHTML = `
-        <div class="col-span-2 md:col-span-3 bg-white border border-dashed border-[#233d2c]/25 rounded-2xl p-9 text-center">
-          <i class="fa-solid fa-utensils text-2xl text-[#233d2c]/25 mb-3"></i>
-          <p class="text-xs font-black text-[#1b3022]">لا توجد منشآت نشطة بعد</p>
-          <p class="text-[10px] font-bold text-[#233d2c]/55 mt-1">كن أول المنضمين وابدأ تجربتك المجانية اليوم</p>
-        </div>`;
+      showToast('حدث خطأ أثناء التحديث', true);
     }
   }
 
-  /* ===== معاينة الرابط أثناء الكتابة ===== */
-  const slugInput = document.getElementById('reg-slug');
-  slugInput.addEventListener('input', () => {
-    const v = slugInput.value.trim().toLowerCase().replace(/\s+/g, '-');
-    document.getElementById('slug-preview').textContent = v || 'your-store';
-  });
+  async function updatePromoMessage() {
+    const clientId = await getOrFetchClientId();
+    const msg = document.getElementById('promo-message-input').value.trim();
 
-  /* ===== الخطوة 1: إرسال رمز التحقق ===== */
-  document.getElementById('register-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const name  = document.getElementById('reg-name').value.trim();
-    const email = document.getElementById('reg-email').value.trim();
-    const phone = document.getElementById('reg-phone').value.trim();
-    const slug  = slugInput.value.trim().toLowerCase().replace(/\s+/g, '-');
-
-    if (!name || !email || !phone || !slug) {
-      showToast('يرجى ملء جميع الحقول المطلوبة', 'error');
-      return;
+    const { error } = await supabaseClient.from('clients').update({ promo_message: msg }).eq('id', clientId);
+    if (!error) {
+      showToast('تم نشر العرض الترويجي في المنيو بنجاح!');
+    } else {
+      showToast('خطأ أثناء نشر العرض', true);
     }
-    if (!/^[a-z0-9-]{3,}$/.test(slug)) {
-      showToast('الرابط يجب أن يكون بالإنجليزية (3 أحرف على الأقل) وبدون مسافات', 'error');
-      return;
-    }
-
-    tempGeneratedOtp = Math.floor(1000 + Math.random() * 9000).toString();
-    document.getElementById('demo-otp-code').textContent = tempGeneratedOtp;
-    document.getElementById('otp-email').textContent = email;
-    formDataCache = { name, email, phone, slug };
-
-    document.getElementById('register-form').classList.add('hidden');
-    document.getElementById('otp-section').classList.remove('hidden');
-    document.getElementById('step-indicator').textContent = 'الخطوة 2 من 2';
-    resetOtpBoxes();
-    otpBoxes[0].focus();
-    showToast('تم إرسال رمز التحقق إلى بريدك الإلكتروني', 'success');
-  });
-
-  /* ===== خانات OTP: تنقل تلقائي + لصق + رجوع ===== */
-  const otpBoxes = Array.from(document.querySelectorAll('.otp-box'));
-
-  function resetOtpBoxes() {
-    otpBoxes.forEach(b => { b.value = ''; b.classList.remove('filled'); });
   }
 
-  otpBoxes.forEach((box, idx) => {
-    box.addEventListener('input', () => {
-      box.value = box.value.replace(/\D/g, '').slice(0, 1);
-      box.classList.toggle('filled', !!box.value);
-      if (box.value && idx < otpBoxes.length - 1) otpBoxes[idx + 1].focus();
-    });
-    box.addEventListener('keydown', (e) => {
-      if (e.key === 'Backspace' && !box.value && idx > 0) {
-        e.preventDefault();
-        otpBoxes[idx - 1].value = '';
-        otpBoxes[idx - 1].classList.remove('filled');
-        otpBoxes[idx - 1].focus();
+  async function updateSocialLinks() {
+    const clientId = await getOrFetchClientId();
+    const payload = {
+      website_url: document.getElementById('social-web').value.trim(),
+      tiktok_url: document.getElementById('social-tiktok').value.trim(),
+      instagram_url: document.getElementById('social-insta').value.trim(),
+      whatsapp_number: document.getElementById('social-whatsapp').value.trim(),
+      snapchat_url: document.getElementById('social-snap').value.trim()
+    };
+
+    const { error } = await supabaseClient.from('clients').update(payload).eq('id', clientId);
+    if (!error) {
+      showToast('تم حفظ روابط التواصل بنجاح وتحديثها في المنيو!');
+    } else {
+      showToast('حدث خطأ أثناء الحفظ', true);
+    }
+  }
+
+  async function uploadMedia(type) {
+    const clientId = await getOrFetchClientId();
+    if (!clientId) return;
+
+    let fileInput, dbField, updatePayload;
+    if (type === 'logo') { fileInput = document.getElementById('logo-file'); dbField = 'logo_url'; }
+    else if (type === 'bg_image') { fileInput = document.getElementById('bg-img-file'); dbField = 'bg_image_url'; }
+    else if (type === 'bg_video') { fileInput = document.getElementById('bg-video-file'); dbField = 'bg_video_url'; }
+
+    const file = fileInput.files[0];
+    if (!file) return showToast('يرجى اختيار الملف أولاً', true);
+
+    showToast('جاري رفع الملف وتحديث النظام...');
+
+    const fileName = `${type}_${clientId}_${Date.now()}.${file.name.split('.').pop()}`;
+    const { error: uploadError } = await supabaseClient.storage.from('menu-images').upload(fileName, file);
+
+    if (!uploadError) {
+      const { data } = supabaseClient.storage.from('menu-images').getPublicUrl(fileName);
+      const mediaUrl = data.publicUrl;
+
+      if (type === 'bg_image') {
+        updatePayload = { bg_image_url: mediaUrl, bg_video_url: null };
+      } else if (type === 'bg_video') {
+        updatePayload = { bg_video_url: mediaUrl, bg_image_url: null };
+      } else {
+        updatePayload = { [dbField]: mediaUrl };
       }
-    });
-  });
 
-  document.querySelector('.otp-boxes').addEventListener('paste', (e) => {
+      const { error: updateErr } = await supabaseClient.from('clients').update(updatePayload).eq('id', clientId);
+      
+      if (!updateErr) {
+        if (type === 'logo') document.getElementById('logo-preview').src = mediaUrl;
+        showToast('تم تحديث الملف وتطبيقه في المنيو بنجاح!');
+        fileInput.value = '';
+      } else {
+        showToast('فشل تحديث قاعدة البيانات', true);
+      }
+    } else {
+      showToast('فشل الرفع، تأكد من صلاحيات Storage', true);
+    }
+  }
+
+  async function loadCategories() {
+    const clientId = await getOrFetchClientId();
+    if (!clientId) return;
+
+    const { data } = await supabaseClient.from('categories').select('*').eq('client_id', clientId).order('id', { ascending: true });
+    loadedCategories = data || [];
+
+    const optionsHtml = loadedCategories.length > 0 
+      ? loadedCategories.map(c => `<option value="${c.key}">${c.name}</option>`).join('')
+      : `<option value="">لا توجد أقسام مسجلة</option>`;
+
+    document.getElementById('prod-category').innerHTML = optionsHtml;
+    document.getElementById('filter-category').innerHTML = `<option value="all">جميع الأقسام</option>` + optionsHtml;
+
+    const catListContainer = document.getElementById('categories-list');
+    if (loadedCategories.length === 0) {
+      catListContainer.innerHTML = `<p class="text-xs text-gray-400 text-center py-4">لا توجد أقسام بعد.</p>`;
+      return;
+    }
+
+    catListContainer.innerHTML = loadedCategories.map(c => `
+      <div class="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 text-xs">
+        <div><span class="font-bold text-white">${c.name}</span> <span class="text-gray-400 text-[10px]">(${c.key})</span></div>
+        <button onclick="deleteCategory(${c.id})" class="text-red-400 bg-red-500/10 px-3 py-1.5 rounded-lg">حذف</button>
+      </div>
+    `).join('');
+  }
+
+  document.getElementById('add-category-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const text = (e.clipboardData.getData('text') || '').replace(/\D/g, '');
-    resetOtpBoxes();
-    text.slice(0, 4).split('').forEach((d, i) => {
-      if (otpBoxes[i]) { otpBoxes[i].value = d; otpBoxes[i].classList.add('filled'); }
-    });
-    otpBoxes[Math.min(text.length, 3)]?.focus();
+    const clientId = await getOrFetchClientId();
+    const name = document.getElementById('cat-name').value;
+    const key = document.getElementById('cat-key').value.toLowerCase().replace(/\s+/g, '-');
+
+    if (!clientId) {
+      return showToast('خطأ: لم يتم التعرف على معرّف المنشأة', true);
+    }
+
+    const { error } = await supabaseClient.from('categories').insert([{ name, key, client_id: clientId }]);
+    
+    if (!error) {
+      showToast('تم إضافة القسم بنجاح');
+      document.getElementById('add-category-form').reset();
+      loadCategories();
+    } else {
+      console.error("Supabase Error:", error);
+      showToast('خطأ: ' + (error.message || 'فشل إضافة القسم'), true);
+    }
   });
 
-  function backToForm() {
-    document.getElementById('otp-section').classList.add('hidden');
-    document.getElementById('register-form').classList.remove('hidden');
-    document.getElementById('step-indicator').textContent = 'الخطوة 1 من 2';
+  async function deleteCategory(id) {
+    if (confirm('تأكيد حذف القسم؟')) {
+      await supabaseClient.from('categories').delete().eq('id', id);
+      showToast('تم حذف القسم');
+      loadCategories();
+    }
   }
 
-  function resendOtp() {
-    tempGeneratedOtp = Math.floor(1000 + Math.random() * 9000).toString();
-    document.getElementById('demo-otp-code').textContent = tempGeneratedOtp;
-    resetOtpBoxes();
-    otpBoxes[0].focus();
-    showToast('تم إرسال رمز تحقق جديد', 'info');
+  async function loadAdminData() {
+    const clientId = await getOrFetchClientId();
+    if (!clientId) return;
+
+    const { data } = await supabaseClient.from('products').select('*').eq('client_id', clientId).order('id', { ascending: false });
+    loadedProducts = data || [];
+    filterProducts();
   }
 
-  /* ===== الخطوة 2: التحقق وإنشاء المتجر ===== */
-  async function verifyOtpAndRegister() {
-    const enteredOtp = otpBoxes.map(b => b.value).join('');
-    if (enteredOtp.length < 4) {
-      showToast('يرجى إدخال رمز التحقق المكوّن من 4 أرقام', 'error');
+  function filterProducts() {
+    const search = document.getElementById('search-input').value.toLowerCase();
+    const category = document.getElementById('filter-category').value;
+
+    const filtered = loadedProducts.filter(p => {
+      const matchName = p.name.toLowerCase().includes(search);
+      const matchCat = category === 'all' || p.category === category || p.category === (loadedCategories.find(c => c.key === category)?.name);
+      return matchName && matchCat;
+    });
+
+    renderProductsList(filtered);
+  }
+
+  function renderProductsList(products) {
+    const list = document.getElementById('admin-products-list');
+    document.getElementById('products-count').textContent = `${products.length} طبق`;
+
+    if (products.length === 0) {
+      list.innerHTML = `<p class="text-xs text-gray-400 text-center py-6">لا توجد أطباق مسجلة حالياً.</p>`;
       return;
     }
-    if (enteredOtp !== tempGeneratedOtp) {
-      showToast('رمز التحقق غير صحيح، حاول مرة أخرى', 'error');
-      const boxes = document.querySelector('.otp-boxes');
-      boxes.classList.add('shake');
-      setTimeout(() => boxes.classList.remove('shake'), 450);
-      resetOtpBoxes();
-      otpBoxes[0].focus();
-      return;
+
+    list.innerHTML = products.map(p => {
+      const isAvailable = p.is_available !== false;
+      const isBestseller = p.is_bestseller === true;
+
+      return `
+        <div class="flex items-center justify-between bg-white/5 p-2.5 rounded-xl border border-white/10 text-xs">
+          <div class="flex items-center gap-2.5 min-w-0">
+            ${p.image_url ? `<img src="${p.image_url}" class="w-10 h-10 object-cover rounded-xl border border-white/20 shrink-0">` : `<div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0"><i class="fa-solid fa-utensils text-gray-400 text-xs"></i></div>`}
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5">
+                <p class="font-bold text-white truncate ${!isAvailable ? 'line-through text-gray-500' : ''}">${p.name}</p>
+                ${isBestseller ? `<span class="bg-white/20 text-white text-[9px] px-1.5 py-0.5 rounded font-bold border border-white/30"><i class="fa-solid fa-fire text-amber-400"></i> مميز</span>` : ''}
+              </div>
+              <p class="text-gray-300 font-semibold text-[11px]">${p.price} ر.س</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button onclick="toggleBestseller(${p.id}, ${isBestseller})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border ${isBestseller ? 'bg-white text-black border-white' : 'bg-white/5 text-gray-300 border-white/10'}">تمييز</button>
+            <button onclick="toggleStock(${p.id}, ${isAvailable})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border ${isAvailable ? 'bg-green-500/20 text-green-300 border-green-500/30' : 'bg-red-500/20 text-red-300 border-red-500/30'}">${isAvailable ? 'متوفر' : 'نفذت'}</button>
+            <button onclick="deleteProduct(${p.id})" class="text-red-400 bg-red-500/10 p-2 rounded-lg border border-red-500/20"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function toggleStock(id, currentStatus) {
+    await supabaseClient.from('products').update({ is_available: !currentStatus }).eq('id', id);
+    showToast(currentStatus ? 'تم تحويل الطبق إلى غير متوفر' : 'تم تفعيل الطبق');
+    loadAdminData();
+  }
+
+  async function toggleBestseller(id, currentStatus) {
+    await supabaseClient.from('products').update({ is_bestseller: !currentStatus }).eq('id', id);
+    showToast(!currentStatus ? 'تم تعيين الطبق كمميز' : 'تم إزالة التمييز');
+    loadAdminData();
+  }
+
+  document.getElementById('add-product-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const clientId = await getOrFetchClientId();
+    const name = document.getElementById('prod-name').value;
+    const category = document.getElementById('prod-category').value;
+    const price = parseFloat(document.getElementById('prod-price').value) || 0;
+    const description = document.getElementById('prod-desc').value;
+    const isBestseller = document.getElementById('prod-bestseller').checked;
+    const imageFile = document.getElementById('prod-image-file').files[0];
+
+    let imageUrl = '';
+    if (imageFile) {
+      showToast('جاري رفع صورة الطبق...');
+      const cleanFileName = `prod_${clientId}_${Date.now()}.${imageFile.name.split('.').pop()}`;
+      const { error: uploadError } = await supabaseClient.storage.from('menu-images').upload(cleanFileName, imageFile);
+      if (!uploadError) {
+        imageUrl = supabaseClient.storage.from('menu-images').getPublicUrl(cleanFileName).data.publicUrl;
+      }
     }
 
-    const btn = document.getElementById('verify-btn');
-    const originalLabel = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري إنشاء متجرك...';
-
-    const trialEnd = new Date();
-    trialEnd.setDate(trialEnd.getDate() + 7);
-
-    const { error } = await supabaseClient.from('clients').insert([{
-      name: formDataCache.name,
-      client_slug: formDataCache.slug,
-      subscription_status: 'trial',
-      is_active: true,
-      trial_ends_at: trialEnd.toISOString()
+    const { error: insertError } = await supabaseClient.from('products').insert([{ 
+      name, category, price, description, image_url: imageUrl, is_available: true, is_bestseller: isBestseller, client_id: clientId 
     }]);
 
-    if (!error) {
-      showToast('تم إنشاء متجرك بنجاح! جاري تحويلك للوحة التحكم...', 'success');
-      setTimeout(() => { window.location.href = `admin.html?client=${formDataCache.slug}`; }, 1400);
+    if (!insertError) {
+      document.getElementById('add-product-form').reset();
+      showToast('تمت إضافة الطبق بنجاح');
+      loadAdminData();
     } else {
-      btn.disabled = false;
-      btn.innerHTML = originalLabel;
-      showToast('هذا المعرف (Slug) مستخدم مسبقاً — اختر اسماً آخر', 'error');
-      backToForm();
+      showToast('فشل إضافة الطبق', true);
+    }
+  });
+
+  async function deleteProduct(id) {
+    if (confirm('تأكيد حذف هذا الطبق؟')) {
+      await supabaseClient.from('products').delete().eq('id', id);
+      showToast('تم حذف الطبق');
+      loadAdminData();
     }
   }
 
-  /* ===== الظهور التدريجي عند التمرير ===== */
-  const io = new IntersectionObserver((entries) => {
-    entries.forEach(en => {
-      if (en.isIntersecting) { en.target.classList.add('revealed'); io.unobserve(en.target); }
-    });
-  }, { threshold: 0.12 });
-  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
-
-  /* ===== التشغيل ===== */
-  document.addEventListener('DOMContentLoaded', loadActiveClientsLogos);
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadCategories();
+    await loadAdminData();
+  });
 </script>
 </body>
 </html>
