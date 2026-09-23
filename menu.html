@@ -58,21 +58,17 @@
 </div>
 <div class="bg-overlay"></div>
 
-<!-- شاشة الحظر عند انتهاء الاشتراك أو التعطيل -->
-<div id="block-screen" class="fixed inset-0 z-50 flex items-center justify-center p-5 bg-black/95 backdrop-blur-xl hidden">
-  <div class="glass-card p-8 w-full max-w-sm text-center border border-red-500/30 space-y-5 shadow-2xl">
-    <div class="w-16 h-16 bg-red-500/20 text-red-400 border border-red-500/30 rounded-2xl flex items-center justify-center mx-auto text-3xl">
-      <i class="fa-solid fa-lock"></i>
-    </div>
-    <div class="space-y-2">
-      <h2 class="text-xl font-bold text-white">الخدمة متوقفة مؤقتاً</h2>
-      <p id="block-reason" class="text-xs text-gray-300">عذراً، انتهت فترة الاشتراك أو تم تعليق المنشأة.</p>
-    </div>
-  </div>
-</div>
-
 <!-- المحتوى الرئيسي للمنيو -->
 <div id="app-content" class="w-full max-w-md mx-auto px-4 pt-4 relative z-10 space-y-5">
+
+  <!-- زر تبديل اللغة -->
+  <div class="flex justify-between items-center">
+    <button onclick="toggleLanguage()" class="bg-white/10 hover:bg-white/20 text-white px-4 py-1.5 rounded-full text-xs font-bold border border-white/20 transition flex items-center gap-2 backdrop-blur-md">
+      <i class="fa-solid fa-globe text-amber-400"></i>
+      <span id="lang-btn-text">English</span>
+    </button>
+    <span class="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-3 py-1 rounded-full font-bold">Digital Menu</span>
+  </div>
 
   <!-- شريط العروض والرسائل الترويجية -->
   <div id="promo-banner" class="hidden bg-white text-black p-3.5 rounded-2xl shadow-2xl flex items-center gap-3 border border-white">
@@ -80,7 +76,7 @@
       <i class="fa-solid fa-bullhorn"></i>
     </div>
     <div class="flex-1 min-w-0">
-      <p class="text-[10px] font-black uppercase tracking-wider text-gray-600">إعلان / عرض خاص</p>
+      <p id="promo-label" class="text-[10px] font-black uppercase tracking-wider text-gray-600">إعلان / عرض خاص</p>
       <p id="promo-text" class="text-xs font-bold text-black"></p>
     </div>
   </div>
@@ -143,11 +139,45 @@ const SUPABASE_URL = 'https://czdoamcgxgkicrbufpcn.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZG9hbWNneGdraWNyYnVmcGNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwMTA5MzAsImV4cCI6MjEwNTU4NjkzMH0.45zKx4ljXJ27SS-ukc62qiu52movhDgSoC9OEnK9NHk';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// استقبال معرف العميل من الرابط
 const urlParams = new URLSearchParams(window.location.search);
 const clientSlugFromUrl = urlParams.get('client') || 'alqarya-restaurant';
 
 let currentClientId = null, allProducts = [], allCategories = [];
+let currentLang = 'ar';
+const translationCache = {};
+
+async function translateText(text) {
+  if (!text || currentLang === 'ar') return text;
+  if (translationCache[text]) return translationCache[text];
+  try {
+    const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=ar|en`);
+    const data = await res.json();
+    if (data && data.responseData && data.responseData.translatedText) {
+      let translated = data.responseData.translatedText;
+      translationCache[text] = translated;
+      return translated;
+    }
+  } catch (e) {
+    console.error("Translation error:", e);
+  }
+  return text;
+}
+
+async function toggleLanguage() {
+  currentLang = currentLang === 'ar' ? 'en' : 'ar';
+  document.documentElement.lang = currentLang;
+  document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+  
+  const btnText = document.getElementById('lang-btn-text');
+  btnText.innerHTML = currentLang === 'en' ? '<i class="fa-solid fa-spinner fa-spin"></i> Translating...' : 'English';
+
+  document.getElementById('search-input').placeholder = currentLang === 'ar' ? 'ابحث عن طبقك المفضلة...' : 'Search for your favorite dish...';
+  
+  await renderFilterBar();
+  await renderMenu(allProducts);
+
+  btnText.textContent = currentLang === 'ar' ? 'English' : 'عربي';
+}
 
 async function initMenu() {
   let { data: project } = await supabaseClient.from('clients').select('*').eq('client_slug', clientSlugFromUrl).maybeSingle();
@@ -157,15 +187,6 @@ async function initMenu() {
     document.getElementById('project-title').textContent = project.name || 'Dev Menu';
     if (project.logo_url) document.getElementById('project-logo').src = project.logo_url;
 
-    // التحقق من حالة الاشتراك أو التعطيل
-    if (project.is_active === false) {
-      document.getElementById('block-reason').textContent = 'عذراً، تم تعطيل هذا المتجر من الإدارة مؤقتاً.';
-      document.getElementById('block-screen').classList.remove('hidden');
-      document.getElementById('app-content').classList.add('hidden');
-      return;
-    }
-
-    // عرض الرسالة الترويجية
     const promoBanner = document.getElementById('promo-banner');
     const promoText = document.getElementById('promo-text');
     if (project.promo_message && project.promo_message.trim() !== '') {
@@ -175,10 +196,8 @@ async function initMenu() {
       promoBanner.classList.add('hidden');
     }
 
-    // روابط التواصل
     renderSocialLinks(project);
 
-    // الخلفية (صورة أو فيديو)
     const bgVideo = document.getElementById('bg-video');
     const bgImage = document.getElementById('bg-image');
     bgVideo.classList.add('hidden');
@@ -197,15 +216,14 @@ async function initMenu() {
     return;
   }
 
-  // جلب الأقسام والمنتجات الخاصة بهذا العميل
   const { data: dbCat } = await supabaseClient.from('categories').select('*').eq('client_id', currentClientId).order('id', { ascending: true });
   allCategories = dbCat || [];
 
   const { data: dbProd } = await supabaseClient.from('products').select('*').eq('client_id', currentClientId).order('id', { ascending: false });
   allProducts = dbProd || [];
 
-  renderFilterBar();
-  renderMenu(allProducts);
+  await renderFilterBar();
+  await renderMenu(allProducts);
 }
 
 function renderSocialLinks(p) {
@@ -226,14 +244,18 @@ function renderSocialLinks(p) {
   }
 }
 
-function renderFilterBar() {
+async function renderFilterBar() {
   const bar = document.getElementById('fast-filter-bar');
   if (!bar) return;
-  bar.innerHTML = allCategories.map((c, i) => `
-    <button onclick="scrollToSection('${c.key}', this)" class="cat-pill ${i===0?'active':''} px-4 py-2 rounded-xl bg-white/10 border border-white/25 shrink-0 text-xs text-white font-bold transition">
-      ${c.name}
-    </button>
-  `).join('');
+  let html = '';
+  for (let i = 0; i < allCategories.length; i++) {
+    const c = allCategories[i];
+    const catName = currentLang === 'en' ? await translateText(c.name) : c.name;
+    html += `<button onclick="scrollToSection('${c.key}', this)" class="cat-pill ${i===0?'active':''} px-4 py-2 rounded-xl bg-white/10 border border-white/25 shrink-0 text-xs text-white font-bold transition">
+      ${catName}
+    </button>`;
+  }
+  bar.innerHTML = html;
 }
 
 function scrollToSection(key, el) {
@@ -243,61 +265,74 @@ function scrollToSection(key, el) {
   if (target) window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
 }
 
-function renderMenu(products) {
+async function renderMenu(products) {
   const container = document.getElementById('dynamic-menu-sections');
   container.innerHTML = '';
 
   if (allCategories.length === 0) {
-    container.innerHTML = `<p class="text-center text-xs text-gray-400 py-10">لم يتم إضافة أقسام أو أطباق لهذا المتجر بعد.</p>`;
+    container.innerHTML = `<p class="text-center text-xs text-gray-400 py-10">${currentLang === 'ar' ? 'لم يتم إضافة أقسام أو أطباق لهذا المتجر بعد.' : 'No categories or dishes added yet.'}</p>`;
     return;
   }
 
-  allCategories.forEach(cat => {
+  for (const cat of allCategories) {
     const catProducts = products.filter(p => p.category === cat.key || p.category === cat.name);
-    if (catProducts.length === 0) return;
+    if (catProducts.length === 0) continue;
 
     const section = document.createElement('div');
     section.id = `section-${cat.key}`;
     section.className = 'space-y-3 scroll-mt-24';
 
-    const items = catProducts.map(p => {
+    let itemsHtml = '';
+    for (const p of catProducts) {
       const isAvailable = (p.is_available !== false);
       const isBestseller = (p.is_bestseller === true);
       const cardClass = isAvailable ? 'glass-card p-3 flex gap-3 items-center cursor-pointer shadow-lg' : 'glass-card p-3 flex gap-3 items-center opacity-45 grayscale pointer-events-none relative';
 
-      return `
-        <article onclick="openModal('${p.image_url || ''}', '${p.name}', '${p.price}', '${p.description || ''}')" class="${cardClass}">
+      let name = p.name;
+      let desc = p.description || '';
+      if (currentLang === 'en') {
+        name = p.name_en || await translateText(p.name);
+        desc = p.description_en || (p.description ? await translateText(p.description) : '');
+      }
+
+      const currencyText = currentLang === 'ar' ? 'ر.س' : 'SAR';
+      const bestText = currentLang === 'ar' ? 'مميز' : 'Featured';
+
+      itemsHtml += `
+        <article onclick="openModal('${p.image_url || ''}', '${name.replace(/'/g, "\\'")}', '${p.price}', '${desc.replace(/'/g, "\\'")}')" class="${cardClass}">
           ${p.image_url ? `<img src="${p.image_url}" class="product-img">` : `<div class="w-[90px] h-[90px] bg-white/10 rounded-2xl flex items-center justify-center shrink-0"><i class="fa-solid fa-utensils text-gray-400"></i></div>`}
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-1.5 min-w-0">
-                <h4 class="font-bold text-sm text-white truncate">${p.name}</h4>
-                ${isBestseller ? `<span class="bg-white/20 text-white text-[9px] px-1.5 py-0.5 rounded font-bold border border-white/30"><i class="fa-solid fa-fire text-amber-400"></i> مميز</span>` : ''}
+                <h4 class="font-bold text-sm text-white truncate">${name}</h4>
+                ${isBestseller ? `<span class="bg-white/20 text-white text-[9px] px-1.5 py-0.5 rounded font-bold border border-white/30"><i class="fa-solid fa-fire text-amber-400"></i> ${bestText}</span>` : ''}
               </div>
               <span class="leader-line"></span>
-              <span class="font-black text-sm text-white shrink-0">${p.price} ر.س</span>
+              <span class="font-black text-sm text-white shrink-0">${p.price} ${currencyText}</span>
             </div>
-            ${p.description ? `<p class="text-[11px] text-gray-300 line-clamp-2 mt-1">${p.description}</p>` : ''}
+            ${desc ? `<p class="text-[11px] text-gray-300 line-clamp-2 mt-1">${desc}</p>` : ''}
           </div>
         </article>
       `;
-    }).join('');
+    }
 
-    section.innerHTML = `<h3 class="font-bold text-base text-white tracking-wide border-b border-white/30 pb-1.5">${cat.name}</h3><div class="space-y-2.5">${items}</div>`;
+    const catTitleName = currentLang === 'en' ? await translateText(cat.name) : cat.name;
+    section.innerHTML = `<h3 class="font-bold text-base text-white tracking-wide border-b border-white/30 pb-1.5">${catTitleName}</h3><div class="space-y-2.5">${itemsHtml}</div>`;
     container.appendChild(section);
-  });
+  }
 }
 
-function handleSearch() {
+async function handleSearch() {
   const q = document.getElementById('search-input').value.toLowerCase();
-  renderMenu(allProducts.filter(p => p.name.toLowerCase().includes(q) || (p.description && p.description.toLowerCase().includes(q))));
+  const filtered = allProducts.filter(p => p.name.toLowerCase().includes(q) || (p.description && p.description.toLowerCase().includes(q)));
+  await renderMenu(filtered);
 }
 
 function openModal(img, title, price, desc) {
   if (!img) return;
   document.getElementById('modalImg').src = img;
   document.getElementById('modalTitle').textContent = title;
-  document.getElementById('modalPrice').textContent = price + ' ر.س';
+  document.getElementById('modalPrice').textContent = price + (currentLang === 'ar' ? ' ر.س' : ' SAR');
   document.getElementById('modalDesc').textContent = desc;
   document.getElementById('productModal').classList.remove('opacity-0', 'pointer-events-none');
 }
