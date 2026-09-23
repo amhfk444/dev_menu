@@ -109,7 +109,7 @@
     <div class="w-12 h-12 rounded-2xl bg-[#233d2c]/10 text-brand border border-[#233d2c]/20 flex items-center justify-center mx-auto text-xl">
       <i class="fa-solid fa-user-lock"></i>
     </div>
-    <h1 id="main-title" class="text-lg font-black text-brand">تسجيل الدخول عبر البريد</h1>
+    <h1 id="main-title" class="text-lg font-black text-brand">تسجيل الدخول عبر Supabase</h1>
     <p id="main-desc" class="text-xs text-gray-600">أدخل بريدك الإلكتروني المسجل لنرسل لك رمز التحقق الحقيقي.</p>
   </div>
 
@@ -169,8 +169,6 @@
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let inputEmail = '';
-  let generatedOtp = '';
-  let matchedClientSlug = '';
 
   function showToast(msg, type = 'success') {
     const el = document.createElement('div');
@@ -180,7 +178,7 @@
     setTimeout(() => el.remove(), 3800);
   }
 
-  // 1. التحقق من البريد في جدول clients ثم إرسال الرمز عبر Vercel API / Resend بأمان
+  // إرسال الكود مباشرة عبر دالة Supabase Auth الرسمية
   document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     inputEmail = document.getElementById('identifier-input').value.trim().toLowerCase();
@@ -191,48 +189,38 @@
 
     btn.disabled = true; spinner.classList.remove('hidden');
 
-    // التحقق من وجود الإيميل في جدول clients
-    const { data: client, error } = await supabaseClient
+    // 1. التحقق من وجود الإيميل في جدول clients أولاً
+    const { data: client, error: clientErr } = await supabaseClient
       .from('clients')
       .select('client_slug')
       .eq('email', inputEmail)
       .maybeSingle();
 
-    if (error || !client) {
+    if (clientErr || !client) {
       btn.disabled = false; spinner.classList.add('hidden');
-      showToast('عذراً، البريد الإلكتروني غير مسجل لأي متجر في النظام.', 'error');
+      showToast('عذراً، هذا البريد الإلكتروني غير مسجل في النظام.', 'error');
       return;
     }
 
-    matchedClientSlug = client.client_slug;
-    generatedOtp = Math.floor(100000 + Math.random() * 900000).toString(); // رمز من 6 أرقام
+    // 2. إرسال رمز الـ OTP عبر خدمة Supabase Auth
+    const { error } = await supabaseClient.auth.signInWithOtp({
+      email: inputEmail,
+      options: { shouldCreateUser: true }
+    });
 
-    try {
-      // إرسال الرمز عبر مسار السيرفر الخلفي في Vercel (والذي يستمد مفتاح Resend من Environment Variables)
-      const res = await fetch('/api/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: inputEmail, otp: generatedOtp })
-      });
+    btn.disabled = false; spinner.classList.add('hidden');
 
-      btn.disabled = false; spinner.classList.add('hidden');
-
-      if (!res.ok) {
-        throw new Error('فشل إرسال البريد');
-      }
-
-      document.getElementById('login-form').classList.add('hidden');
-      document.getElementById('otp-form').classList.remove('hidden');
-      document.getElementById('main-title').textContent = 'أدخل رمز التحقق';
-      document.getElementById('main-desc').textContent = `تم إرسال كود الـ 6 أرقام إلى بريدك: ${inputEmail}`;
-      setupOtpInputs();
-      showToast('تم إرسال رمز التحقق إلى بريدك بنجاح', 'success');
-
-    } catch (err) {
-      console.error(err);
-      btn.disabled = false; spinner.classList.add('hidden');
-      showToast('حدث خطأ أثناء إرسال البريد عبر السيرفر', 'error');
+    if (error) {
+      showToast(error.message || 'حدث خطأ أثناء إرسال الرمز عبر البريد.', 'error');
+      return;
     }
+
+    document.getElementById('login-form').classList.add('hidden');
+    document.getElementById('otp-form').classList.remove('hidden');
+    document.getElementById('main-title').textContent = 'أدخل رمز التحقق';
+    document.getElementById('main-desc').textContent = `تم إرسال الرمز الحقيقي إلى بريدك: ${inputEmail}`;
+    setupOtpInputs();
+    showToast('تم إرسال رمز التحقق إلى بريدك بنجاح', 'success');
   });
 
   function setupOtpInputs() {
@@ -271,23 +259,48 @@
   function backToLogin() {
     document.getElementById('otp-form').classList.add('hidden');
     document.getElementById('login-form').classList.remove('hidden');
-    document.getElementById('main-title').textContent = 'تسجيل الدخول عبر البريد';
+    document.getElementById('main-title').textContent = 'تسجيل الدخول عبر Supabase';
     document.getElementById('main-desc').textContent = 'أدخل بريدك الإلكتروني المسجل لنرسل لك رمز التحقق الحقيقي.';
   }
 
-  // 2. التحقق من صحة الكود المدخل محلياً
-  document.getElementById('otp-form').addEventListener('submit', (e) => {
+  // 3. التحقق من الكود المدخل وتحويل المستخدم للوحة التحكم
+  document.getElementById('otp-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const enteredOtp = document.getElementById('otp-input').value.trim();
+    const otp = document.getElementById('otp-input').value.trim();
+    const btn = document.getElementById('verify-otp-btn');
+    const spinner = document.getElementById('v-btn-spinner');
 
-    if (enteredOtp.length < 6 || enteredOtp !== generatedOtp) {
-      showToast('رمز التحقق غير صحيح، حاول مرة أخرى', 'error');
+    if (otp.length < 6) {
+      showToast('يرجى إدخال رمز التحقق كاملاً (6 أرقام)', 'error');
       return;
     }
 
-    showToast('تم تسجيل الدخول بنجاح! جاري تحويلك لوحة التحكم...', 'success');
+    btn.disabled = true; spinner.classList.remove('hidden');
+
+    const { data, error } = await supabaseClient.auth.verifyOtp({
+      email: inputEmail,
+      token: otp,
+      type: 'email'
+    });
+
+    btn.disabled = false; spinner.classList.add('hidden');
+
+    if (error || !data.session) {
+      showToast('رمز التحقق غير صحيح أو منتهي الصلاحية', 'error');
+      return;
+    }
+
+    const { data: client } = await supabaseClient
+      .from('clients')
+      .select('client_slug')
+      .eq('email', inputEmail)
+      .maybeSingle();
+
+    const clientSlug = client ? client.client_slug : 'alqarya-restaurant';
+
+    showToast('تم تسجيل الدخول بنجاح! جاري تحويلك...', 'success');
     setTimeout(() => {
-      window.location.href = `admin.html?client=${matchedClientSlug}`;
+      window.location.href = `admin.html?client=${clientSlug}`;
     }, 1000);
   });
 </script>
