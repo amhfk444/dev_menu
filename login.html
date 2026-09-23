@@ -178,7 +178,7 @@
     setTimeout(() => el.remove(), 3800);
   }
 
-  // إرسال الكود الحقيقي عبر Supabase Auth
+  // إرسال الكود الحقيقي مباشرة عبر Supabase Auth
   document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     inputEmail = document.getElementById('identifier-input').value.trim().toLowerCase();
@@ -228,7 +228,7 @@
           boxes[idx - 1].focus();
           boxes[idx - 1].value = '';
           boxes[idx - 1].classList.remove('filled');
-          updateHiddenOtp();
+          updateHiddenOrgOtp();
         }
       });
     });
