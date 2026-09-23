@@ -110,7 +110,7 @@
       <i class="fa-solid fa-user-lock"></i>
     </div>
     <h1 id="main-title" class="text-lg font-black text-brand">تسجيل الدخول عبر البريد</h1>
-    <p id="main-desc" class="text-xs text-gray-600">أدخل بريدك الإلكتروني المسجل لنرسل لك كود التحقق الآمن عبر البريد.</p>
+    <p id="main-desc" class="text-xs text-gray-600">أدخل بريدك الإلكتروني المسجل لنرسل لك رمز التحقق الحقيقي.</p>
   </div>
 
   <!-- نموذج إدخال البريد -->
@@ -123,21 +123,23 @@
       </div>
     </div>
     <button type="submit" id="send-otp-btn" class="w-full btn-primary font-bold py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
-      <span id="btn-text">إرسال كود التحقق إلى البريد</span>
+      <span id="btn-text">إرسال رمز التحقق للبريد</span>
       <i id="btn-spinner" class="fa-solid fa-spinner fa-spin hidden"></i>
     </button>
   </form>
 
-  <!-- نموذج إدخال كود التحقق (4 خانات) -->
+  <!-- نموذج إدخال كود التحقق (6 خانات) -->
   <form id="otp-form" class="space-y-5 hidden">
     <div class="bg-[#c9a227]/10 border border-[#c9a227]/30 rounded-2xl p-4 text-center space-y-1">
-      <p class="text-xs font-black text-[#1b3022]">تم إرسال كود التحقق إلى بريدك الإلكتروني بنجاح.</p>
+      <p class="text-xs font-black text-[#1b3022]">تم إرسال رمز التحقق إلى بريدك الإلكتروني.</p>
       <p class="text-[10px] text-gray-600">يرجى تفقد صندوق الوارد أو الرسائل غير المرغوب فيها (Spam).</p>
     </div>
 
     <div>
-      <label class="lbl text-center mb-3">أدخل كود التحقق المكون من 4 أرقام</label>
-      <div class="flex justify-center gap-2" dir="ltr">
+      <label class="lbl text-center mb-3">أدخل رمز التحقق (6 أرقام)</label>
+      <div class="flex justify-center gap-1.5" dir="ltr">
+        <input type="text" maxlength="1" class="otp-box" inputmode="numeric" />
+        <input type="text" maxlength="1" class="otp-box" inputmode="numeric" />
         <input type="text" maxlength="1" class="otp-box" inputmode="numeric" />
         <input type="text" maxlength="1" class="otp-box" inputmode="numeric" />
         <input type="text" maxlength="1" class="otp-box" inputmode="numeric" />
@@ -147,7 +149,7 @@
     </div>
 
     <button type="submit" id="verify-otp-btn" class="w-full btn-primary font-bold py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
-      <span id="v-btn-text">تأكيد الكود ودخول لوحة التحكم</span>
+      <span id="v-btn-text">تأكيد الرمز ودخول لوحة التحكم</span>
       <i id="v-btn-spinner" class="fa-solid fa-spinner fa-spin hidden"></i>
     </button>
 
@@ -167,8 +169,6 @@
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let inputEmail = '';
-  let generatedOtp = '';
-  let matchedClientSlug = '';
 
   function showToast(msg, type = 'success') {
     const el = document.createElement('div');
@@ -178,6 +178,7 @@
     setTimeout(() => el.remove(), 3800);
   }
 
+  // إرسال الكود الحقيقي عبر Supabase Auth
   document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     inputEmail = document.getElementById('identifier-input').value.trim().toLowerCase();
@@ -188,48 +189,24 @@
 
     btn.disabled = true; spinner.classList.remove('hidden');
 
-    // 1. التحقق من وجود البريد في جدول المتاجر clients
-    const { data: client, error } = await supabaseClient
-      .from('clients')
-      .select('client_slug')
-      .eq('email', inputEmail)
-      .maybeSingle();
+    const { error } = await supabaseClient.auth.signInWithOtp({
+      email: inputEmail,
+      options: { shouldCreateUser: false }
+    });
 
-    if (error || !client) {
-      btn.disabled = false; spinner.classList.add('hidden');
-      showToast('عذراً، البريد الإلكتروني غير مسجل لأي متجر في النظام.', 'error');
+    btn.disabled = false; spinner.classList.add('hidden');
+
+    if (error) {
+      showToast(error.message || 'عذراً، البريد الإلكتروني غير مسجل أو حدث خطأ.', 'error');
       return;
     }
 
-    matchedClientSlug = client.client_slug;
-    generatedOtp = Math.floor(1000 + Math.random() * 9000).toString(); // رمز من 4 أرقام
-
-    try {
-      // 2. إرسال الكود عبر نقطة النهاية الآمنة في Vercel والتي تستخدم متغيرات البيئة
-      const res = await fetch('/api/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: inputEmail, otp: generatedOtp })
-      });
-
-      btn.disabled = false; spinner.classList.add('hidden');
-
-      if (!res.ok) {
-        throw new Error('فشل إرسال البريد');
-      }
-
-      document.getElementById('login-form').classList.add('hidden');
-      document.getElementById('otp-form').classList.remove('hidden');
-      document.getElementById('main-title').textContent = 'أدخل كود التحقق';
-      document.getElementById('main-desc').textContent = `تم إرسال الكود إلى بريدك: ${inputEmail}`;
-      setupOtpInputs();
-      showToast('تم إرسال كود التحقق إلى بريدك بنجاح', 'success');
-
-    } catch (err) {
-      console.error(err);
-      btn.disabled = false; spinner.classList.add('hidden');
-      showToast('حدث خطأ أثناء إرسال البريد، تأكد من إعدادات السيرفر', 'error');
-    }
+    document.getElementById('login-form').classList.add('hidden');
+    document.getElementById('otp-form').classList.remove('hidden');
+    document.getElementById('main-title').textContent = 'أدخل رمز التحقق';
+    document.getElementById('main-desc').textContent = `تم إرسال الرمز إلى ${inputEmail}`;
+    setupOtpInputs();
+    showToast('تم إرسال رمز التحقق إلى بريدك بنجاح', 'success');
   });
 
   function setupOtpInputs() {
@@ -269,22 +246,47 @@
     document.getElementById('otp-form').classList.add('hidden');
     document.getElementById('login-form').classList.remove('hidden');
     document.getElementById('main-title').textContent = 'تسجيل الدخول عبر البريد';
-    document.getElementById('main-desc').textContent = 'أدخل بريدك الإلكتروني المسجل لنرسل لك كود التحقق الآمن عبر البريد.';
+    document.getElementById('main-desc').textContent = 'أدخل بريدك الإلكتروني المسجل لنرسل لك رمز التحقق الحقيقي.';
   }
 
-  // 3. التحقق من صحة الكود المدخل
-  document.getElementById('otp-form').addEventListener('submit', (e) => {
+  // التحقق من الرمز الحقيقي والدخول
+  document.getElementById('otp-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const enteredOtp = document.getElementById('otp-input').value.trim();
+    const otp = document.getElementById('otp-input').value.trim();
+    const btn = document.getElementById('verify-otp-btn');
+    const spinner = document.getElementById('v-btn-spinner');
 
-    if (enteredOtp.length < 4 || enteredOtp !== generatedOtp) {
-      showToast('كود التحقق غير صحيح، حاول مرة أخرى', 'error');
+    if (otp.length < 6) {
+      showToast('يرجى إدخال رمز التحقق كاملاً (6 أرقام)', 'error');
       return;
     }
 
-    showToast('تم تسجيل الدخول بنجاح! جاري تحويلك لوحة التحكم...', 'success');
+    btn.disabled = true; spinner.classList.remove('hidden');
+
+    const { data, error } = await supabaseClient.auth.verifyOtp({
+      email: inputEmail,
+      token: otp,
+      type: 'email'
+    });
+
+    btn.disabled = false; spinner.classList.add('hidden');
+
+    if (error || !data.session) {
+      showToast('رمز التحقق غير صحيح أو منتهي الصلاحية', 'error');
+      return;
+    }
+
+    const { data: client } = await supabaseClient
+      .from('clients')
+      .select('client_slug')
+      .eq('email', inputEmail)
+      .maybeSingle();
+
+    const clientSlug = client ? client.client_slug : 'alqarya-restaurant';
+
+    showToast('تم تسجيل الدخول بنجاح! جاري تحويلك...', 'success');
     setTimeout(() => {
-      window.location.href = `admin.html?client=${matchedClientSlug}`;
+      window.location.href = `admin.html?client=${clientSlug}`;
     }, 1000);
   });
 </script>
