@@ -113,6 +113,19 @@
   <!-- أزرار التواصل الاجتماعي -->
   <div id="social-links-container" class="hidden pt-4 pb-2 border-t border-white/10 flex justify-center items-center gap-3"></div>
 
+  <!-- التذييل مع زر تسجيل دخول صاحب المتجر -->
+  <footer class="text-center pt-8 mt-6 border-t border-white/10 space-y-3">
+    <div>
+      <a href="login.html" class="inline-flex items-center gap-2 text-xs font-bold bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-2 rounded-xl text-white transition backdrop-blur-md">
+        <i class="fa-solid fa-user-gear text-amber-400"></i>
+        <span id="footer-login-text">تسجيل دخول صاحب المتجر / لوحة التحكم</span>
+      </a>
+    </div>
+    <p id="footer-powered" class="text-[10px] font-bold text-gray-500">مُقدَّم من DEV MENU</p>
+    <a href="index.html" class="inline-block text-xs font-black text-amber-400/90 hover:text-amber-300 transition">DEV MENU — أنشئ منيوك الرقمي</a>
+    <p class="text-[9px] font-bold text-gray-700">© DEV MENU 2026</p>
+  </footer>
+
 </div>
 
 <!-- Modal تفاصيل المنتج -->
@@ -172,6 +185,8 @@ async function toggleLanguage() {
   btnText.innerHTML = currentLang === 'en' ? '<i class="fa-solid fa-spinner fa-spin"></i> Translating...' : 'English';
 
   document.getElementById('search-input').placeholder = currentLang === 'ar' ? 'ابحث عن طبقك المفضلة...' : 'Search for your favorite dish...';
+  document.getElementById('footer-login-text').textContent = currentLang === 'ar' ? 'تسجيل دخول صاحب المتجر / لوحة التحكم' : 'Merchant Login / Dashboard';
+  document.getElementById('footer-powered').textContent = currentLang === 'ar' ? 'مُقدَّم من DEV MENU' : 'Powered by DEV MENU';
   
   await renderFilterBar();
   await renderMenu(allProducts);
