@@ -64,10 +64,10 @@
   <!-- زر تبديل اللغة وشعار الديجيتال منيو -->
   <div class="flex justify-between items-center">
     <button onclick="toggleLanguage()" class="bg-white/10 hover:bg-white/20 text-white px-4 py-1.5 rounded-full text-xs font-bold border border-white/20 transition flex items-center gap-2 backdrop-blur-md">
-      <i class="fa-solid fa-globe text-amber-400"></i>
+      <i class="fa-solid fa-globe text-white"></i>
       <span id="lang-btn-text">English</span>
     </button>
-    <span class="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-3 py-1 rounded-full font-bold">Digital Menu</span>
+    <span class="text-[10px] bg-white-500/20 text-white-300 border border-white-500/30 px-3 py-1 rounded-full font-bold">Digital Menu</span>
   </div>
 
   <!-- شريط العروض والرسائل الترويجية -->
@@ -115,7 +115,7 @@
 
   <!-- التذييل (مُلغى منه زر تسجيل الدخول نهائياً) -->
   <footer class="text-center pt-8 mt-6 border-t border-white/10 space-y-2">
-    <a href="index.html" class="inline-block text-xs font-black text-amber-400/90 hover:text-amber-300 transition">DEV MENU — أنشئ منيوك الرقمي</a>
+    <a href="index.html" class="inline-block text-xs font-black text-white-400/90 hover:text-amber-300 transition">DEV MENU — أنشئ منيوك الرقمي</a>
     <p class="text-[9px] font-bold text-gray-600">© DEV MENU 2026</p>
   </footer>
 
@@ -238,7 +238,7 @@ function renderSocialLinks(p) {
   if (p.tiktok_url) html += `<a href="${p.tiktok_url}" target="_blank" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition"><i class="fa-brands fa-tiktok"></i></a>`;
   if (p.instagram_url) html += `<a href="${p.instagram_url}" target="_blank" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition"><i class="fa-brands fa-instagram"></i></a>`;
   if (p.whatsapp_number) html += `<a href="https://wa.me/${p.whatsapp_number}" target="_blank" class="w-10 h-10 rounded-full bg-green-600/30 hover:bg-green-600/50 border border-green-500/40 flex items-center justify-center text-green-300 transition"><i class="fa-brands fa-whatsapp"></i></a>`;
-  if (p.snapchat_url) html += `<a href="${p.snapchat_url}" target="_blank" class="w-10 h-10 rounded-full bg-yellow-500/20 hover:bg-yellow-500/40 border border-yellow-500/30 flex items-center justify-center text-yellow-300 transition"><i class="fa-brands fa-snapchat"></i></a>`;
+  if (p.snapchat_url) html += `<a href="${p.snapchat_url}" target="_blank" class="w-10 h-10 rounded-full bg-white-500/20 hover:bg-white-500/40 border border-white-500/30 flex items-center justify-center text-white-300 transition"><i class="fa-brands fa-snapchat"></i></a>`;
 
   if (html !== '') {
     container.innerHTML = html;
