@@ -191,7 +191,7 @@
       </h1>
 
       <p class="text-sm md:text-[15px] font-bold text-[#233d2c]/70 leading-relaxed max-w-lg mx-auto lg:mx-0">
-        أنشئ منيو مطعمك أو كافيهك الرقمي خلال دقائق، شاركه مع ضيوفك بررمز QR أنيق،
+        أنشئ منيو مطعمك أو كافيهك الرقمي خلال دقائق، شاركه مع ضيوفك برمز QR أنيق،
         وحدّث أطباقك وأسعارك لحظياً — دون الحاجة لأي تطبيق.
       </p>
 
@@ -460,37 +460,69 @@
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZG9hbWNneGdraWNyYnVmcGNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwMTA5MzAsImV4cCI6MjEwNTU4NjkzMH0.45zKx4ljXJ27SS-ukc62qiu52movhDgSoC9OEnK9NHk';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+  // حماية من حقن الكود: أي نص قادم من قاعدة البيانات يمر من هنا قبل عرضه
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // يقبل روابط http/https فقط (يمنع روابط javascript:)
+  function safeUrl(u) {
+    if (!u) return '';
+    try { const x = new URL(u); return (x.protocol === 'https:' || x.protocol === 'http:') ? x.href : ''; }
+    catch { return ''; }
+  }
   let formDataCache = {};
 
   function showToast(msg, type = 'success') {
     const icons = { success: 'fa-circle-check', error: 'fa-circle-exclamation', info: 'fa-circle-info' };
     const el = document.createElement('div');
     el.className = `toast toast-${type}`;
-    el.innerHTML = `<i class="fa-solid ${icons[type]}"></i><span>${msg}</span>`;
+    const icon = document.createElement('i');
+    icon.className = `fa-solid ${icons[type] || icons.info}`;
+    const text = document.createElement('span');
+    text.textContent = msg;
+    el.append(icon, text);
     document.getElementById('toast-wrap').appendChild(el);
     setTimeout(() => { el.classList.add('toast-out'); setTimeout(() => el.remove(), 400); }, 3800);
   }
 
+  function otpErrorMessage(error) {
+    if (error && error.status === 429) return 'طلبت رموزاً كثيرة، انتظر دقيقة ثم حاول مرة أخرى';
+    return 'تعذر إرسال الرمز إلى بريدك، تأكد من البريد وحاول مرة أخرى';
+  }
+
+  function registerErrorMessage(error) {
+    const m = (error && error.message) || '';
+    if (m.includes('EMAIL_TAKEN'))  return 'هذا البريد مرتبط بمتجر مسجل مسبقاً، جاري تحويلك للوحة التحكم...';
+    if (m.includes('SLUG_TAKEN'))   return 'رابط المتجر مستخدم مسبقاً، اختر رابطاً آخر';
+    if (m.includes('INVALID_SLUG')) return 'رابط المتجر من 3 إلى 40 حرفاً: حروف إنجليزية صغيرة أو أرقام أو - أو _';
+    if (m.includes('INVALID_NAME')) return 'اكتب اسم المطعم أو الكافيه';
+    return 'حدث خطأ أثناء إنشاء المتجر، حاول مرة أخرى';
+  }
+
+  // شعارات العملاء: من النسخة العامة الآمنة (بدون بريد أو جوال)
   async function loadActiveClientsLogos() {
-    try {
-      let { data: clients } = await supabaseClient.from('clients').select('name, logo_url, client_slug').eq('is_active', true).limit(6);
-      const grid = document.getElementById('clients-logos-grid');
-      if (clients && clients.length > 0) {
-        grid.innerHTML = clients.map(c => `
-          <a href="menu.html?client=${c.client_slug}" target="_blank"
-             class="group bg-white border border-[#233d2c]/10 rounded-2xl p-4 flex items-center gap-3 hover:border-[#233d2c]/40 transition">
-            ${c.logo_url ? `<img src="${c.logo_url}" class="w-11 h-11 rounded-xl object-cover shrink-0">` : `<span class="w-11 h-11 rounded-xl bg-[#233d2c]/10 flex items-center justify-center shrink-0"><i class="fa-solid fa-store text-xs"></i></span>`}
-            <div class="min-w-0 flex-1">
-              <p class="text-xs font-black text-[#1b3022] truncate">${c.name}</p>
-              <p class="text-[9px] font-bold text-[#233d2c]/50">عرض المنيو</p>
-            </div>
-          </a>`).join('');
-      } else {
-        grid.innerHTML = `<div class="col-span-full bg-white border rounded-2xl p-6 text-center text-xs text-gray-500">لا توجد منشآت نشطة حالياً</div>`;
-      }
-    } catch(err) {
-      console.error(err);
+    const grid = document.getElementById('clients-logos-grid');
+    const { data: clients, error } = await supabaseClient
+      .from('public_clients').select('name, logo_url, client_slug').limit(6);
+
+    if (error) { console.error(error); grid.innerHTML = ''; return; }
+    if (!clients || clients.length === 0) {
+      grid.innerHTML = `<div class="col-span-full bg-white border rounded-2xl p-6 text-center text-xs text-gray-500">لا توجد منشآت نشطة حالياً</div>`;
+      return;
     }
+
+    grid.innerHTML = clients.map(c => {
+      const logo = safeUrl(c.logo_url);
+      return `
+        <a href="menu.html?client=${encodeURIComponent(c.client_slug)}" target="_blank" rel="noopener"
+           class="group bg-white border border-[#233d2c]/10 rounded-2xl p-4 flex items-center gap-3 hover:border-[#233d2c]/40 transition">
+          ${logo
+            ? `<img src="${esc(logo)}" alt="" loading="lazy" class="w-11 h-11 rounded-xl object-cover shrink-0">`
+            : `<span class="w-11 h-11 rounded-xl bg-[#233d2c]/10 flex items-center justify-center shrink-0"><i class="fa-solid fa-store text-xs"></i></span>`}
+          <div class="min-w-0 flex-1">
+            <p class="text-xs font-black text-[#1b3022] truncate">${esc(c.name)}</p>
+            <p class="text-[9px] font-bold text-[#233d2c]/50">عرض المنيو</p>
+          </div>
+        </a>`;
+    }).join('');
   }
 
   const slugInput = document.getElementById('reg-slug');
@@ -500,52 +532,46 @@
     document.getElementById('slug-preview').textContent = v || 'your-store';
   });
 
-  // إرسال الكود الحقيقي عبر Supabase Auth
+  function setRegisterBusy(busy) {
+    document.getElementById('submit-btn').disabled = busy;
+    document.getElementById('btn-spinner').classList.toggle('hidden', !busy);
+  }
+
+  // الخطوة 1: فحص الرابط ثم إرسال رمز التحقق
   document.getElementById('register-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const name  = document.getElementById('reg-name').value.trim();
     const email = document.getElementById('reg-email').value.trim().toLowerCase();
-    const phone = document.getElementById('reg-phone').value.trim();
+    const phone = document.getElementById('reg-phone').value.replace(/\D/g, '');
     const slug  = slugInput.value.trim().toLowerCase();
 
-    if (!name || !email || !phone || !slug) {
-      showToast('يرجى ملء جميع الحقول المطلوبة', 'error');
-      return;
+    if (!name || !email || !phone || !slug) return showToast('يرجى ملء جميع الحقول المطلوبة', 'error');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast('البريد الإلكتروني غير صحيح', 'error');
+    if (!/^[a-z0-9_-]{3,40}$/.test(slug)) return showToast('رابط المتجر من 3 إلى 40 حرفاً: حروف إنجليزية صغيرة أو أرقام أو - أو _', 'error');
+
+    setRegisterBusy(true);
+    try {
+      const { data: available, error: slugErr } = await supabaseClient.rpc('is_slug_available', { p_slug: slug });
+      if (slugErr) throw slugErr;
+      if (!available) return showToast('رابط المتجر مستخدم مسبقاً، اختر رابطاً آخر', 'error');
+
+      formDataCache = { name, email, phone, slug };
+      const { error } = await supabaseClient.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+      if (error) return showToast(otpErrorMessage(error), 'error');
+
+      document.getElementById('register-form').classList.add('hidden');
+      document.getElementById('otp-section').classList.remove('hidden');
+      document.getElementById('step-indicator').textContent = 'الخطوة 2 من 2';
+      document.getElementById('otp-email').textContent = email;
+      resetOtpBoxes();
+      otpBoxes[0].focus();
+      showToast('تم إرسال رمز التحقق إلى بريدك', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('تعذر الاتصال بالخادم، حاول مرة أخرى', 'error');
+    } finally {
+      setRegisterBusy(false);
     }
-
-    const btn = document.getElementById('submit-btn');
-    const spinner = document.getElementById('btn-spinner');
-    btn.disabled = true; spinner.classList.remove('hidden');
-
-    // التحقق من توفر الـ slug مسبقاً
-    const { data: existingSlug } = await supabaseClient.from('clients').select('id').eq('client_slug', slug).maybeSingle();
-    if (existingSlug) {
-      showToast('رابط المتجر مستخدم مسبقاً، اختر رابطاً آخر', 'error');
-      btn.disabled = false; spinner.classList.add('hidden');
-      return;
-    }
-
-    formDataCache = { name, email, phone, slug };
-
-    const { error } = await supabaseClient.auth.signInWithOtp({
-      email: email,
-      options: { shouldCreateUser: true }
-    });
-
-    btn.disabled = false; spinner.classList.add('hidden');
-
-    if (error) {
-      showToast(error.message || 'تعذر إرسال الرمز للبريد، تحقق من إعدادات Supabase', 'error');
-      return;
-    }
-
-    document.getElementById('register-form').classList.add('hidden');
-    document.getElementById('otp-section').classList.remove('hidden');
-    document.getElementById('step-indicator').textContent = 'الخطوة 2 من 2';
-    document.getElementById('otp-email').textContent = email;
-    resetOtpBoxes();
-    otpBoxes[0].focus();
-    showToast('تم إرسال رمز التحقق إلى بريدك بنجاح', 'success');
   });
 
   const otpBoxes = Array.from(document.querySelectorAll('.otp-box'));
@@ -556,6 +582,7 @@
       box.value = box.value.replace(/\D/g, '').slice(0, 1);
       box.classList.toggle('filled', !!box.value);
       if (box.value && idx < otpBoxes.length - 1) otpBoxes[idx + 1].focus();
+      if (box.value && idx === otpBoxes.length - 1) verifyOtpAndRegister();
     });
     box.addEventListener('keydown', (e) => {
       if (e.key === 'Backspace' && !box.value && idx > 0) {
@@ -563,6 +590,15 @@
         otpBoxes[idx - 1].classList.remove('filled');
         otpBoxes[idx - 1].focus();
       }
+    });
+    // لصق الرمز كاملاً مرة واحدة
+    box.addEventListener('paste', (e) => {
+      const digits = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, otpBoxes.length);
+      if (!digits) return;
+      e.preventDefault();
+      otpBoxes.forEach((b, i) => { b.value = digits[i] || ''; b.classList.toggle('filled', !!b.value); });
+      otpBoxes[Math.min(digits.length, otpBoxes.length) - 1].focus();
+      if (digits.length === otpBoxes.length) verifyOtpAndRegister();
     });
   });
 
@@ -574,60 +610,55 @@
 
   async function resendOtp() {
     if (!formDataCache.email) return;
-    const { error } = await supabaseClient.auth.signInWithOtp({ email: formDataCache.email });
-    if (!error) {
-      showToast('تم إعادة إرسال رمز التحقق بنجاح', 'success');
-    } else {
-      showToast('فشل إعادة إرسال الرمز', 'error');
-    }
+    const { error } = await supabaseClient.auth.signInWithOtp({ email: formDataCache.email, options: { shouldCreateUser: true } });
+    if (error) showToast(otpErrorMessage(error), 'error');
+    else showToast('تم إعادة إرسال رمز التحقق', 'success');
   }
 
-  // التحقق من الرمز الحقيقي وإنشاء المتجر
+  // الخطوة 2: التحقق من الرمز ثم إنشاء المتجر من الخادم
+  let verifying = false;
   async function verifyOtpAndRegister() {
-    const enteredOtp = otpBoxes.map(b => b.value).join('');
-    if (enteredOtp.length < 6) {
-      showToast('يرجى إدخال الرمز كاملاً (6 أرقام)', 'error');
-      return;
-    }
+    if (verifying) return;
+    const token = otpBoxes.map(b => b.value).join('');
+    if (token.length < otpBoxes.length) return showToast('يرجى إدخال الرمز كاملاً (6 أرقام)', 'error');
 
+    verifying = true;
+    let redirecting = false;
     const btn = document.getElementById('verify-btn');
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحقق وإنشاء متجرك...';
 
-    const { data, error: verifyError } = await supabaseClient.auth.verifyOtp({
-      email: formDataCache.email,
-      token: enteredOtp,
-      type: 'email'
-    });
+    try {
+      const { data, error } = await supabaseClient.auth.verifyOtp({ email: formDataCache.email, token, type: 'email' });
+      if (error || !data.session) return showToast('رمز التحقق غير صحيح أو منتهي الصلاحية', 'error');
 
-    if (verifyError || !data.session) {
-      btn.disabled = false;
-      btn.innerHTML = 'تأكيد الرمز وإنشاء المتجر';
-      showToast('رمز التحقق غير صحيح أو منتهي الصلاحية', 'error');
-      return;
-    }
+      const { error: regErr } = await supabaseClient.rpc('register_client', {
+        p_name: formDataCache.name, p_slug: formDataCache.slug, p_phone: formDataCache.phone
+      });
 
-    const trialEnd = new Date();
-    trialEnd.setDate(trialEnd.getDate() + 7);
+      if (regErr) {
+        showToast(registerErrorMessage(regErr), 'error');
+        if ((regErr.message || '').includes('EMAIL_TAKEN')) {
+          redirecting = true;
+          setTimeout(() => { window.location.href = 'admin.html'; }, 1800);
+        } else {
+          backToForm();
+        }
+        return;
+      }
 
-    const { error: clientError } = await supabaseClient.from('clients').insert([{
-      name: formDataCache.name,
-      client_slug: formDataCache.slug,
-      email: formDataCache.email,
-      phone: formDataCache.phone,
-      subscription_status: 'trial',
-      is_active: true,
-      trial_ends_at: trialEnd.toISOString()
-    }]);
-
-    if (!clientError) {
+      redirecting = true;
       showToast('تم إنشاء متجرك بنجاح!', 'success');
-      setTimeout(() => { window.location.href = `admin.html?client=${formDataCache.slug}`; }, 1200);
-    } else {
-      btn.disabled = false;
-      btn.innerHTML = 'تأكيد الرمز وإنشاء المتجر';
-      showToast('حدث خطأ أثناء حفظ بيانات المتجر', 'error');
-      backToForm();
+      setTimeout(() => { window.location.href = 'admin.html'; }, 1200);
+    } catch (err) {
+      console.error(err);
+      showToast('تعذر الاتصال بالخادم، حاول مرة أخرى', 'error');
+    } finally {
+      verifying = false;
+      if (!redirecting) {
+        btn.disabled = false;
+        btn.innerHTML = '<span>تأكيد الرمز وإنشاء المتجر</span>';
+      }
     }
   }
 
@@ -638,7 +669,7 @@
   }, { threshold: 0.1 });
   document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 
-  document.addEventListener('DOMContentLoaded', loadActiveClientsLogos);
+  loadActiveClientsLogos();
 </script>
 </body>
 </html>
