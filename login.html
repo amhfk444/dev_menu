@@ -231,9 +231,18 @@
     setBusy('send-otp-btn', 'btn-spinner', false);
 
     if (error) {
-      showToast(error.status === 429
-        ? 'طلبت رموزاً كثيرة، انتظر دقيقة ثم حاول مرة أخرى'
-        : 'تعذر إرسال الرمز. تأكد أن البريد مسجل لدينا، أو أنشئ متجرك من الصفحة الرئيسية.', 'error');
+      console.error('OTP error:', error);
+      const m = (error.message || '').toLowerCase();
+      let msg;
+      if (error.status === 429 || m.includes('rate limit') || m.includes('security purposes'))
+        msg = 'طلبت رموزاً كثيرة، انتظر دقيقة ثم حاول مرة أخرى';
+      else if (m.includes('signups not allowed') || m.includes('user not found'))
+        msg = 'هذا البريد غير مسجل لدينا. أنشئ متجرك من الصفحة الرئيسية.';
+      else if (m.includes('not authorized'))
+        msg = 'خدمة البريد لا تسمح بالإرسال لهذا العنوان (يلزم إعداد SMTP في Supabase).';
+      else
+        msg = `تعذر إرسال الرمز: ${error.message}`;
+      showToast(msg, 'error');
       return;
     }
 
