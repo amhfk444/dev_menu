@@ -158,6 +158,7 @@
               <button onclick="setActive(${id}, ${c.is_active === false})" class="${c.is_active === false ? 'bg-green-700 hover:bg-green-600' : 'bg-red-600/50 hover:bg-red-600'} text-white px-2 py-1.5 rounded text-[10px]">${c.is_active === false ? 'إعادة تشغيل' : 'إيقاف'}</button>
               <a href="admin.html?client=${slug}" target="_blank" class="bg-white/10 hover:bg-white/20 text-white px-2 py-1.5 rounded text-[10px]">لوحته</a>
               <a href="menu.html?client=${slug}" target="_blank" class="bg-white/10 hover:bg-white/20 text-white px-2 py-1.5 rounded text-[10px]">المنيو</a>
+              <button onclick="deleteClient(${id})" class="bg-red-900/60 hover:bg-red-700 text-red-100 px-2 py-1.5 rounded text-[10px] border border-red-500/40"><i class="fa-solid fa-trash text-[9px]"></i> حذف</button>
             </div>
           </td>
         </tr>`;
@@ -187,6 +188,52 @@
     const { error } = await supabaseClient.rpc('admin_notify', { p_client_id: id, p_message: msg });
     if (error) { console.error(error); return showToast('تعذر حفظ الإشعار', true); }
     showToast(msg.trim() ? 'سيظهر الإشعار في لوحة العميل' : 'تم حذف الإشعار');
+    loadClients();
+  }
+
+  // ─── حذف متجر نهائياً ───
+  // يحوّل رابط الملف العام إلى مساره داخل bucket menu-images
+  function storagePath(url) {
+    const marker = '/storage/v1/object/public/menu-images/';
+    if (!url) return '';
+    const i = url.indexOf(marker);
+    return i === -1 ? '' : decodeURIComponent(url.slice(i + marker.length).split('?')[0]);
+  }
+
+  async function deleteClient(id) {
+    const c = clients.find(x => x.id === id);
+    if (!c) return;
+    const typed = prompt(
+      `سيتم حذف متجر "${c.name || c.client_slug}" نهائياً:\n` +
+      `الأطباق، الأقسام، الصور، وحساب دخول صاحبه.\n` +
+      `لا يمكن التراجع عن هذا.\n\n` +
+      `للتأكيد اكتب رابط المتجر: ${c.client_slug}`);
+    if (typed === null) return;
+    if (typed.trim().toLowerCase() !== String(c.client_slug).toLowerCase()) {
+      return showToast('الرابط غير مطابق، لم يتم الحذف', true);
+    }
+
+    showToast('جاري حذف المتجر...');
+
+    // 1) تجميع مسارات الصور قبل حذف البيانات
+    const paths = new Set();
+    const { data: prods } = await supabaseClient.from('products').select('image_url').eq('client_id', id);
+    [c.logo_url, c.bg_image_url, c.bg_video_url, ...(prods || []).map(p => p.image_url)]
+      .forEach(u => { const p = storagePath(u); if (p) paths.add(p); });
+    const { data: files } = await supabaseClient.storage.from('menu-images').list(String(id), { limit: 1000 });
+    (files || []).forEach(f => { if (f.id) paths.add(`${id}/${f.name}`); });
+
+    // 2) حذف البيانات وحساب الدخول
+    const { error } = await supabaseClient.rpc('admin_delete_client', { p_client_id: id });
+    if (error) { console.error(error); return showToast(`تعذر حذف المتجر: ${error.message}`, true); }
+
+    // 3) حذف الصور والفيديوهات
+    if (paths.size) {
+      const { error: rmErr } = await supabaseClient.storage.from('menu-images').remove([...paths]);
+      if (rmErr) console.warn('Storage cleanup:', rmErr);
+    }
+
+    showToast('تم حذف المتجر وكل بياناته');
     loadClients();
   }
 
