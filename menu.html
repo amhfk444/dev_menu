@@ -12,8 +12,19 @@
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
 <style>
+  /* رمز الريال السعودي الجديد ⃁ (U+20C1): خط مخصص يُستخدم لهذا الرمز فقط */
+  @font-face {
+    font-family: 'SaudiRiyal';
+    src: url('https://cdn.jsdelivr.net/npm/@emran-alhaddad/saudi-riyal-font@1.1.0/fonts/regular/saudi_riyal.woff2') format('woff2');
+    font-weight: 100 600; font-display: swap; unicode-range: U+20C1;
+  }
+  @font-face {
+    font-family: 'SaudiRiyal';
+    src: url('https://cdn.jsdelivr.net/npm/@emran-alhaddad/saudi-riyal-font@1.1.0/fonts/bold/saudi_riyal.woff2') format('woff2');
+    font-weight: 700 900; font-display: swap; unicode-range: U+20C1;
+  }
   body {
-    font-family: 'Cairo', sans-serif;
+    font-family: 'SaudiRiyal', 'Cairo', sans-serif;
     background-color: #0b0b0b;
     color: #f5f5f5;
     min-height: 100vh;
@@ -152,6 +163,10 @@
   const SUPABASE_URL = 'https://czdoamcgxgkicrbufpcn.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZG9hbWNneGdraWNyYnVmcGNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwMTA5MzAsImV4cCI6MjEwNTU4NjkzMH0.45zKx4ljXJ27SS-ukc62qiu52movhDgSoC9OEnK9NHk';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // السعر مع رمز الريال الجديد: "⃁ 25" (الرمز يسار الرقم)
+  const SAR = '\u20C1';
+  const money = (n) => `\u2066${SAR} ${n}\u2069`;
+
 
   // حماية من حقن الكود: أي نص قادم من قاعدة البيانات يمر من هنا قبل عرضه
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -355,7 +370,6 @@
     const available = p.is_available !== false;
     const img = safeUrl(p.image_url);
     const name = productName(p), desc = productDesc(p);
-    const cur = currentLang === 'ar' ? 'ر.س' : 'SAR';
     const cls = available
       ? 'glass-card p-3 flex gap-3 items-center cursor-pointer shadow-lg'
       : 'glass-card p-3 flex gap-3 items-center opacity-45 grayscale';
@@ -371,7 +385,7 @@
               ${p.is_bestseller === true ? `<span class="bg-white/20 text-white text-[9px] px-1.5 py-0.5 rounded font-bold border border-white/30 shrink-0"><i class="fa-solid fa-fire text-amber-400"></i> ${currentLang === 'ar' ? 'مميز' : 'Featured'}</span>` : ''}
             </div>
             <span class="leader-line"></span>
-            <span class="font-black text-sm text-white shrink-0">${esc(p.price)} ${cur}</span>
+            <span class="font-black text-sm text-white shrink-0">${esc(money(p.price))}</span>
           </div>
           ${desc ? `<p class="text-[11px] text-gray-300 line-clamp-2 mt-1">${esc(desc)}</p>` : ''}
           ${p.calories != null ? `<p class="text-[10px] text-gray-400 mt-1"><i class="fa-solid fa-fire-flame-simple text-amber-400/80"></i> ${Number(p.calories)} ${currentLang === 'ar' ? 'سعرة حرارية' : 'kcal'}</p>` : ''}
@@ -455,7 +469,7 @@
     modalImg.src = img || '';
     document.getElementById('modalTitle').closest('.p-5').classList.toggle('pt-14', !img);
     document.getElementById('modalTitle').textContent = productName(p);
-    document.getElementById('modalPrice').textContent = `${p.price} ${currentLang === 'ar' ? 'ر.س' : 'SAR'}`;
+    document.getElementById('modalPrice').textContent = money(p.price);
     document.getElementById('modalDesc').textContent = productDesc(p);
 
     const L = currentLang === 'ar' ? 0 : 1;
