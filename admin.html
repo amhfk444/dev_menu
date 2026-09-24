@@ -58,6 +58,17 @@ tailwind.config = {
     background: #384f3d; color: #faf6f1; border: 0; border-radius: .5rem; padding: .3rem .7rem; margin-inline-end: .6rem; font-family: inherit; font-weight: 700; cursor: pointer;
   }
   .tab-btn { background: #faf6f1; color: rgba(34,54,42,.7); }
+
+  /* ─── الجوال ─── */
+  @media (max-width: 640px) {
+    /* آيفون يكبّر الصفحة إذا كان خط الحقل أصغر من 16px */
+    .input-pro, input.input-pro, select.input-pro, textarea.input-pro { font-size: 16px !important; }
+    .pro-card { border-radius: 16px; }
+    main { padding-left: 12px !important; padding-right: 12px !important; }
+    .tab-btn { flex: 1; justify-content: center; padding-left: .5rem !important; padding-right: .5rem !important; }
+  }
+  html { -webkit-text-size-adjust: 100%; }
+  button, a { touch-action: manipulation; }
   .tab-btn.active { background-color: #384f3d; color: #faf6f1; border-color: #384f3d; font-weight: 800; }
 
   /* القائمة الجانبية الخضراء */
@@ -210,10 +221,10 @@ tailwind.config = {
                   </button>
                 </div>
               </div>
-              <div id="stats-body" class="text-xs text-ink/60">جاري التحميل...</div>
+              <div id="stats-body" class="text-xs text-ink/60 space-y-5">جاري التحميل...</div>
             </div>
           </div>
-          <div class="space-y-6">
+          <div class="space-y-6 order-first xl:order-none">
     <!-- حالة الاشتراك -->
             <div class="pro-card p-5 space-y-2 border-r-4 border-r-amber-400">
               <h3 class="text-xs font-bold text-ink/75 flex items-center gap-1.5"><i class="fa-solid fa-id-card"></i> حالة الاشتراك</h3>
@@ -259,6 +270,9 @@ tailwind.config = {
 
       <!-- ═════════════════ صفحة المنيو ═════════════════ -->
       <section data-page="menu" class="hidden space-y-5">
+        <!-- زر إضافة عائم (جوال) -->
+        <button onclick="goAddDish()" aria-label="أضف طبق" class="lg:hidden fixed bottom-24 left-4 z-30 bg-brand text-cream w-14 h-14 rounded-2xl shadow-xl flex items-center justify-center text-lg active:scale-95 transition"
+                style="margin-bottom: env(safe-area-inset-bottom)"><i class="fa-solid fa-plus"></i></button>
   <!-- التبويبات -->
   <div class="flex gap-2 border-b border-brand/20 pb-2">
     <button onclick="switchTab('products')" id="tab-products" class="tab-btn active px-5 py-2.5 rounded-xl border border-brand/25 text-xs font-bold transition flex items-center gap-2">
@@ -272,7 +286,7 @@ tailwind.config = {
   <!-- قسم المنتجات -->
   <div id="section-products" class="space-y-4">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-      <div class="lg:col-span-5 xl:col-span-4">
+      <div id="product-form-col" class="order-2 lg:order-none lg:col-span-5 xl:col-span-4">
         <form id="add-product-form" class="pro-card p-5 space-y-3.5 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
           <h3 class="text-xs font-bold text-ink border-b border-brand/20 pb-2 flex items-center gap-2">
             <i id="form-icon" class="fa-solid fa-plus text-ink"></i> <span id="form-title">إضافة طبق أو منتج جديد</span>
@@ -398,7 +412,7 @@ tailwind.config = {
         </form>
       </div>
 
-      <div class="lg:col-span-7 xl:col-span-8 space-y-3.5">
+      <div class="order-1 lg:order-none lg:col-span-7 xl:col-span-8 space-y-3.5">
         <div class="pro-card p-3.5 flex flex-wrap items-center justify-between gap-3">
           <div class="relative flex-1 min-w-[180px]">
             <i class="fa-solid fa-magnifying-glass absolute right-3.5 top-3 text-ink/60 text-xs"></i>
@@ -668,7 +682,8 @@ tailwind.config = {
     showPage('menu');
     switchTab('products');
     if (editingProductId) cancelEdit();
-    setTimeout(() => document.getElementById('prod-name').focus(), 50);
+    document.getElementById('add-product-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => document.getElementById('prod-name').focus({ preventScroll: true }), 350);
   }
 
   function setStoreName(name) {
@@ -691,9 +706,9 @@ tailwind.config = {
     document.getElementById('nav-count').textContent = total;
 
     const tile = (label, value, icon, color, page) => `
-      <button onclick="location.hash='${page}'" class="pro-card p-4 text-right hover:border-brand/40 transition">
+      <button onclick="location.hash='${page}'" class="pro-card p-3 sm:p-4 text-right hover:border-brand/40 transition">
         <p class="text-[10px] text-ink/60 flex items-center gap-1.5"><i class="fa-solid ${icon} ${color}"></i> ${label}</p>
-        <p class="text-2xl font-black text-ink mt-1">${value}</p>
+        <p class="text-xl sm:text-2xl font-black text-ink mt-1">${value}</p>
       </button>`;
     document.getElementById('quick-counts').innerHTML =
       tile('الأطباق', total, 'fa-utensils', 'text-blue-700', 'menu') +
@@ -1822,27 +1837,27 @@ tailwind.config = {
         ? `<p class="text-[10px] font-bold text-ink/50 pt-2 first:pt-0">${esc(cat.name)}</p>` : '';
       lastCat = cat;
       return `${header}
-        <div class="flex items-center justify-between bg-brand/5 p-2.5 rounded-xl border ${editingProductId === id ? 'editing-glow' : 'border-brand/15'} text-xs gap-2 transition">
-          <div class="flex items-center gap-2 min-w-0">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-brand/5 p-2.5 rounded-xl border ${editingProductId === id ? 'editing-glow' : 'border-brand/15'} text-xs gap-2.5 sm:gap-2 transition">
+          <div class="flex items-center gap-2 min-w-0 w-full sm:w-auto">
             <div class="flex flex-col shrink-0">
-              <button onclick="moveProduct(${id}, -1)" ${pos <= 0 ? 'disabled' : ''} aria-label="تحريك لأعلى" class="px-1 text-ink/60 hover:text-ink disabled:opacity-20"><i class="fa-solid fa-chevron-up text-[9px]"></i></button>
-              <button onclick="moveProduct(${id}, 1)" ${pos < 0 || pos >= siblings.length - 1 ? 'disabled' : ''} aria-label="تحريك لأسفل" class="px-1 text-ink/60 hover:text-ink disabled:opacity-20"><i class="fa-solid fa-chevron-down text-[9px]"></i></button>
+              <button onclick="moveProduct(${id}, -1)" ${pos <= 0 ? 'disabled' : ''} aria-label="تحريك لأعلى" class="px-1.5 py-1 sm:py-0 text-ink/60 hover:text-ink disabled:opacity-20"><i class="fa-solid fa-chevron-up text-[10px] sm:text-[9px]"></i></button>
+              <button onclick="moveProduct(${id}, 1)" ${pos < 0 || pos >= siblings.length - 1 ? 'disabled' : ''} aria-label="تحريك لأسفل" class="px-1.5 py-1 sm:py-0 text-ink/60 hover:text-ink disabled:opacity-20"><i class="fa-solid fa-chevron-down text-[10px] sm:text-[9px]"></i></button>
             </div>
-            ${img ? `<img src="${esc(img)}" alt="" loading="lazy" class="w-10 h-10 object-cover rounded-xl border border-brand/25 shrink-0">` : `<div class="w-10 h-10 bg-brand/10 rounded-xl flex items-center justify-center shrink-0"><i class="fa-solid fa-utensils text-ink/60 text-xs"></i></div>`}
-            <div class="min-w-0">
+            ${img ? `<img src="${esc(img)}" alt="" loading="lazy" class="w-12 h-12 sm:w-10 sm:h-10 object-cover rounded-xl border border-brand/25 shrink-0">` : `<div class="w-12 h-12 sm:w-10 sm:h-10 bg-brand/10 rounded-xl flex items-center justify-center shrink-0"><i class="fa-solid fa-utensils text-ink/60 text-xs"></i></div>`}
+            <div class="min-w-0 flex-1">
               <div class="flex items-center gap-1.5">
-                <p class="font-bold text-ink truncate ${!isAvailable ? 'line-through text-ink/50' : ''}">${esc(p.name)}</p>
+                <p class="font-bold text-ink text-[13px] sm:text-xs truncate ${!isAvailable ? 'line-through text-ink/50' : ''}">${esc(p.name)}</p>
                 ${isBestseller ? `<span class="bg-brand/15 text-ink text-[9px] px-1.5 py-0.5 rounded font-bold border border-brand/30 shrink-0"><i class="fa-solid fa-fire text-amber-600"></i> مميز</span>` : ''}
               </div>
               <p class="text-ink/75 font-semibold text-[11px]">${esc(money(p.price))}${!showCalories() ? '' : p.calories != null ? ` <span class="text-ink/50">· ${Number(p.calories)} سعرة</span>` : ` <span class="text-amber-600">· بدون سعرات</span>`}</p>
               ${p.coffee && allowsCoffee() ? `<p class="text-[10px] text-amber-700 truncate"><i class="fa-solid fa-mug-hot"></i> ${esc(coffeeSummary(p.coffee) || 'قهوة مختصة')}</p>` : ''}
             </div>
           </div>
-          <div class="flex items-center gap-1.5 shrink-0">
-            <button onclick="startEdit(${id})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border bg-brand/5 text-ink/90 border-brand/20 hover:bg-brand/10 transition"><i class="fa-solid fa-pen text-[9px]"></i> تعديل</button>
-            <button onclick="toggleField(${id}, 'is_bestseller', ${isBestseller})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border ${isBestseller ? 'bg-brand text-cream border-brand' : 'bg-brand/5 text-ink/75 border-brand/15'}">تمييز</button>
-            <button onclick="toggleField(${id}, 'is_available', ${isAvailable})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border ${isAvailable ? 'bg-green-500/20 text-green-700 border-green-500/30' : 'bg-red-500/20 text-red-700 border-red-500/30'}">${isAvailable ? 'متوفر' : 'نفذت'}</button>
-            <button onclick="deleteProduct(${id})" aria-label="حذف" class="text-red-600 bg-red-500/10 hover:bg-red-500/20 p-2 rounded-lg border border-red-500/20 transition"><i class="fa-solid fa-trash"></i></button>
+          <div class="grid grid-cols-[1fr_1fr_1fr_auto] sm:flex items-center gap-1.5 shrink-0 w-full sm:w-auto">
+            <button onclick="startEdit(${id})" class="px-2.5 py-2 sm:py-1 rounded-lg text-[10px] font-bold border bg-brand/5 text-ink/90 border-brand/20 hover:bg-brand/10 transition"><i class="fa-solid fa-pen text-[9px]"></i> تعديل</button>
+            <button onclick="toggleField(${id}, 'is_bestseller', ${isBestseller})" class="px-2.5 py-2 sm:py-1 rounded-lg text-[10px] font-bold border ${isBestseller ? 'bg-brand text-cream border-brand' : 'bg-brand/5 text-ink/75 border-brand/15'}">تمييز</button>
+            <button onclick="toggleField(${id}, 'is_available', ${isAvailable})" class="px-2.5 py-2 sm:py-1 rounded-lg text-[10px] font-bold border ${isAvailable ? 'bg-green-500/20 text-green-700 border-green-500/30' : 'bg-red-500/20 text-red-700 border-red-500/30'}">${isAvailable ? 'متوفر' : 'نفذت'}</button>
+            <button onclick="deleteProduct(${id})" aria-label="حذف" class="text-red-600 bg-red-500/10 hover:bg-red-500/20 px-3 py-2 sm:p-2 rounded-lg border border-red-500/20 transition"><i class="fa-solid fa-trash"></i></button>
           </div>
         </div>`;
     }).join('');
