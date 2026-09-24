@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>المنيو الرقمي  | Dev Menu</title>
+<title>المنيو الرقمي الفاخر | Dev Menu</title>
 
 <!-- Tailwind CSS & FontAwesome -->
 <script src="https://cdn.tailwindcss.com"></script>
@@ -130,7 +130,7 @@
 
   <!-- التذييل (مُلغى منه زر تسجيل الدخول نهائياً) -->
   <footer class="text-center pt-8 mt-6 border-t border-white/10 space-y-2">
-    <a href="index.html" class="inline-block text-xs font-black text-white/80 hover:text-amber-300 transition"> DEV MENU — حوّل قائمتك إلى تجربة رقمية</a>
+    <a href="index.html" class="inline-block text-xs font-black text-white/80 hover:text-amber-300 transition">DEV MENU — أنشئ منيوك الرقمي</a>
     <p class="text-[9px] font-bold text-gray-600">© DEV MENU 2026</p>
   </footer>
 
@@ -206,7 +206,7 @@
       if (!p.description_en && p.description) texts.add(p.description);
       if (p.extra_info) texts.add(p.extra_info);
       if (p.note) texts.add(p.note);
-      if (p.coffee) [p.coffee.origin, p.coffee.region, ...(p.coffee.notes || [])].forEach(t => t && texts.add(t));
+      if (p.coffee) [p.coffee.origin, p.coffee.region, p.coffee.process_other, ...(p.coffee.notes || [])].forEach(t => t && texts.add(t));
     });
     if (project && project.promo_message) texts.add(project.promo_message);
     const list = [...texts].filter(t => !translationCache[t]);
@@ -230,9 +230,12 @@
   // تفاصيل القهوة تظهر للمقاهي فقط (إذا كان النوع غير محدد نعرضها لو موجودة)
   const coffeeOn = () => !project || !project.business_type || ['cafe', 'mixed'].includes(project.business_type);
 
+  // "أخرى": نعرض المعالجة اللي كتبها صاحب المقهى
+  const processText = (c) => c.process === 'other' ? tr(c.process_other || '') : label(COFFEE_PROCESS, c.process);
+
   function coffeeLine(c) {
     if (!c || !coffeeOn()) return '';
-    return [tr(c.origin), label(COFFEE_PROCESS, c.process)].filter(Boolean).join(' · ');
+    return [tr(c.origin), processText(c)].filter(Boolean).join(' · ');
   }
 
   function renderCoffeeModal(c) {
@@ -242,7 +245,7 @@
     const specs = [
       [ar ? 'الأصل' : 'Origin', tr(c.origin), 'fa-earth-africa'],
       [ar ? 'المنطقة' : 'Region', tr(c.region), 'fa-location-dot'],
-      [ar ? 'المعالجة' : 'Process', label(COFFEE_PROCESS, c.process), 'fa-droplet'],
+      [ar ? 'المعالجة' : 'Process', processText(c), 'fa-droplet'],
       [ar ? 'السلالة' : 'Variety', c.variety, 'fa-seedling'],
       [ar ? 'الارتفاع' : 'Altitude', c.altitude ? `${c.altitude} ${ar ? 'م' : 'm'}` : '', 'fa-mountain'],
       [ar ? 'التحميص' : 'Roast', label(COFFEE_ROAST, c.roast), 'fa-fire']
