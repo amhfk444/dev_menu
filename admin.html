@@ -130,10 +130,19 @@ tailwind.config = {
   </div>
 
   <!-- إحصائيات المنيو -->
-  <div class="pro-card p-5 space-y-4">
-    <div class="flex items-center justify-between border-b border-white/15 pb-2">
+  <div class="pro-card p-5 space-y-5">
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/15 pb-3">
       <h3 class="text-xs font-bold text-white flex items-center gap-2"><i class="fa-solid fa-chart-simple text-emerald-400"></i> إحصائيات المنيو</h3>
-      <span class="text-[10px] text-gray-500">عدد مرات فتح المنيو من الزبائن</span>
+      <div class="flex items-center gap-2">
+        <div id="stats-periods" class="flex bg-white/5 border border-white/10 rounded-xl p-0.5 text-[11px] font-bold">
+          <button data-days="7" class="stats-period px-3 py-1.5 rounded-lg text-gray-300">7 أيام</button>
+          <button data-days="30" class="stats-period px-3 py-1.5 rounded-lg bg-white text-black">30 يوم</button>
+          <button data-days="90" class="stats-period px-3 py-1.5 rounded-lg text-gray-300">90 يوم</button>
+        </div>
+        <button id="stats-export" onclick="exportStatsCsv()" title="تصدير Excel" class="bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition disabled:opacity-40">
+          <i class="fa-solid fa-file-arrow-down"></i> تصدير
+        </button>
+      </div>
     </div>
     <div id="stats-body" class="text-xs text-gray-400">جاري التحميل...</div>
   </div>
@@ -423,6 +432,8 @@ tailwind.config = {
 
   // رابط المنيو مبني على مسار الصفحة الحالية (يشتغل على GitHub Pages داخل مجلد المشروع)
   const menuUrl = () => new URL(`menu.html?client=${encodeURIComponent(client.client_slug)}`, window.location.href).href;
+  // رابط رمز QR يحمل src=qr عشان نفرّق في الإحصائيات بين مسح الطاولة والرابط المشارك
+  const qrUrl = () => `${menuUrl()}&src=qr`;
 
   async function logout() {
     await supabaseClient.auth.signOut();
@@ -474,7 +485,7 @@ tailwind.config = {
 
     const qr = document.getElementById('qrcode');
     qr.innerHTML = '';
-    new QRCode(qr, { text: menuUrl(), width: 80, height: 80 });
+    new QRCode(qr, { text: qrUrl(), width: 80, height: 80 });
 
     document.getElementById('social-web').value = client.website_url || '';
     document.getElementById('social-tiktok').value = client.tiktok_url || '';
@@ -814,7 +825,7 @@ tailwind.config = {
       drawFittedText(ctx, client.name || 'المنيو', cx, logo ? 355 : 250, W - 160, 800, 66, FONT);
 
       const tmp = document.createElement('div');
-      new QRCode(tmp, { text: menuUrl(), width: 740, height: 740, correctLevel: QRCode.CorrectLevel.H });
+      new QRCode(tmp, { text: qrUrl(), width: 740, height: 740, correctLevel: QRCode.CorrectLevel.H });
       const qr = tmp.querySelector('canvas');
       const qx = (W - 740) / 2, qy = 540;
       ctx.fillStyle = '#f5f2eb';
@@ -899,44 +910,274 @@ tailwind.config = {
   }
 
   // ─── الإحصائيات ───
+  let statsDays = 30, lastStats = null;
+  const WEEKDAYS = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  const fmtNum = (n) => (Number(n) || 0).toLocaleString('en-US');
+  const hourLabel = (h) => `${h % 12 || 12} ${h < 12 ? 'ص' : 'م'}`;
+  const hourRange = (h) => {
+    const part = (x) => x < 5 ? 'فجراً' : x < 12 ? 'صباحاً' : x < 15 ? 'ظهراً' : x < 18 ? 'عصراً' : 'مساءً';
+    return `بين ${h % 12 || 12} و${(h + 1) % 12 || 12} ${part(h)}`;
+  };
+
+  document.getElementById('stats-periods').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-days]');
+    if (!b || Number(b.dataset.days) === statsDays) return;
+    statsDays = Number(b.dataset.days);
+    document.querySelectorAll('.stats-period').forEach(x => {
+      const on = x === b;
+      x.classList.toggle('bg-white', on); x.classList.toggle('text-black', on); x.classList.toggle('text-gray-300', !on);
+    });
+    loadStats();
+  });
+
+  function deltaBadge(cur, prev) {
+    if (!prev && !cur) return '<span class="text-[10px] text-gray-500">—</span>';
+    if (!prev) return '<span class="text-[10px] font-bold text-emerald-400">جديد</span>';
+    const pct = Math.round(((cur - prev) / prev) * 100);
+    if (pct === 0) return '<span class="text-[10px] font-bold text-gray-400">بدون تغيير</span>';
+    const up = pct > 0;
+    return `<span class="text-[10px] font-bold ${up ? 'text-emerald-400' : 'text-red-400'}" dir="ltr">${up ? '▲' : '▼'} ${Math.abs(pct)}%</span>`;
+  }
+
+  function kpiTile(label, value, sub, icon, color) {
+    return `
+      <div class="bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-1">
+        <p class="text-[10px] text-gray-400 flex items-center gap-1.5"><i class="${icon} ${color}"></i> ${label}</p>
+        <p class="text-2xl font-black text-white leading-none">${value}</p>
+        <div class="min-h-[14px]">${sub}</div>
+      </div>`;
+  }
+
+  function barRow(label, value, max, color = 'bg-emerald-500/70', extra = '') {
+    const w = max ? Math.max(2, (value / max) * 100) : 0;
+    return `
+      <div class="flex items-center gap-2 text-[11px]">
+        <span class="w-24 shrink-0 truncate text-gray-300">${label}</span>
+        <div class="flex-1 h-2.5 bg-white/5 rounded-full overflow-hidden"><div class="h-full ${color} rounded-full" style="width:${w}%"></div></div>
+        <b class="w-10 text-left text-white shrink-0">${fmtNum(value)}</b>${extra}
+      </div>`;
+  }
+
   async function loadStats() {
     const body = document.getElementById('stats-body');
-    const { data, error } = await supabaseClient.rpc('get_menu_stats', { p_client_id: currentClientId });
-    if (error || !data) { console.error(error); body.textContent = 'الإحصائيات غير متاحة حالياً.'; return; }
-
-    const map = {};
-    (data.daily || []).forEach(d => { map[d.day] = Number(d.views) || 0; });
-    const days = [];
-    for (let i = 13; i >= 0; i--) {
-      const d = new Date(Date.now() - i * 86400000);
-      const key = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
-      days.push({ v: map[key] || 0, label: d.toLocaleDateString('ar-SA-u-ca-gregory', { day: 'numeric', month: 'numeric', timeZone: 'Asia/Riyadh' }) });
+    body.innerHTML = '<p class="text-xs text-gray-500 py-6 text-center"><i class="fa-solid fa-spinner fa-spin"></i> جاري تحميل الإحصائيات...</p>';
+    const { data, error } = await supabaseClient.rpc('get_menu_stats_v2', { p_client_id: currentClientId, p_days: statsDays });
+    if (error || !data) {
+      console.error(error);
+      body.innerHTML = '<p class="text-xs text-gray-400 py-6 text-center">الإحصائيات غير متاحة حالياً.</p>';
+      document.getElementById('stats-export').disabled = true;
+      return;
     }
-    const max = Math.max(1, ...days.map(d => d.v));
-    const tiles = [['اليوم', data.today], ['آخر 7 أيام', data.week], ['آخر 30 يوم', data.month]];
+    lastStats = data;
+    document.getElementById('stats-export').disabled = false;
+    renderStats(data);
+  }
 
+  function renderStats(data) {
+    const body = document.getElementById('stats-body');
+    const t = data.totals || {}, pv = data.prev || {};
+    const views = Number(t.views) || 0, dishOpens = Number(t.dishes) || 0, orders = Number(t.orders) || 0;
+    const dishes = data.dishes || [];
+
+    if (views === 0) {
+      body.innerHTML = `
+        <div class="text-center py-8 space-y-3">
+          <div class="w-12 h-12 mx-auto rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400"><i class="fa-solid fa-chart-line"></i></div>
+          <p class="text-sm font-bold text-white">ما فيه زيارات خلال آخر ${data.days} يوم</p>
+          <p class="text-[11px] text-gray-400 max-w-sm mx-auto">اطبع بطاقة الـ QR وحطها على الطاولات، أو شارك رابط المنيو في حساباتك. الإحصائيات تبدأ تظهر هنا مع أول زيارة.</p>
+          <button onclick="downloadQrCard()" class="bg-amber-400 hover:bg-amber-300 text-black px-4 py-2 rounded-xl text-[11px] font-black"><i class="fa-solid fa-print"></i> تحميل بطاقة الطاولة</button>
+        </div>`;
+      return;
+    }
+
+    // ── السلسلة اليومية (نملأ الأيام الفاضية بصفر)
+    const dayMap = {};
+    (data.daily || []).forEach(d => { dayMap[d.day] = Number(d.views) || 0; });
+    const series = [];
+    for (let i = data.days - 1; i >= 0; i--) {
+      const dt = new Date(Date.now() - i * 86400000);
+      series.push({
+        v: dayMap[dt.toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' })] || 0,
+        label: dt.toLocaleDateString('ar-SA-u-ca-gregory', { weekday: 'short', day: 'numeric', month: 'numeric', timeZone: 'Asia/Riyadh' })
+      });
+    }
+    const maxDay = Math.max(1, ...series.map(d => d.v));
+
+    // ── الساعات وأيام الأسبوع
+    const hours = Array(24).fill(0);
+    (data.hours || []).forEach(x => { hours[x.h] = Number(x.c) || 0; });
+    const maxHour = Math.max(1, ...hours);
+    const peakHour = hours.indexOf(Math.max(...hours));
+    const week = Array(7).fill(0);
+    (data.weekdays || []).forEach(x => { week[x.d] = Number(x.c) || 0; });
+    const maxWeek = Math.max(1, ...week);
+    const peakDay = week.indexOf(Math.max(...week));
+
+    // ── الأطباق والأقسام
+    const viewed = dishes.filter(d => d.views > 0);
+    const cold = dishes.filter(d => d.views === 0);
+    const topDishes = viewed.slice(0, 8);
+    const maxDish = Math.max(1, ...topDishes.map(d => d.views));
+    const catTotals = loadedCategories.map(c => ({
+      name: c.name,
+      views: dishes.filter(d => d.category === c.key || d.category === c.name).reduce((sum, d) => sum + d.views, 0)
+    })).filter(c => c.views > 0).sort((a, b) => b.views - a.views);
+    const maxCat = Math.max(1, ...catTotals.map(c => c.views));
+
+    // ── المصادر واللغة
+    const qr = Number(t.qr) || 0, link = Number(t.link) || 0, known = qr + link;
+    const qrPct = known ? Math.round((qr / known) * 100) : 0;
+    const enPct = views ? Math.round(((Number(t.lang_en) || 0) / views) * 100) : 0;
+
+    // ── ملاحظات تلقائية
+    const insights = [];
+    if (Math.max(...week) > 0) insights.push(`ذروة زوارك يوم <b>${WEEKDAYS[peakDay]}</b> ${hourRange(peakHour)}. أفضل وقت تنشر فيه عروضك قبلها بساعة.`);
+    if (known >= 10) insights.push(`<b>${qrPct}%</b> من الزيارات جاءت من مسح رمز QR، و<b>${100 - qrPct}%</b> من الرابط المشارك.`);
+    const noEn = loadedProducts.filter(p => !p.name_en).length;
+    if (enPct >= 10 && noEn > 0) insights.push(`<b>${enPct}%</b> من زبائنك يتصفحون بالإنجليزي، و${noEn} طبق ما لها اسم إنجليزي. أضفها بدل الترجمة الآلية.`);
+    const coldNoImg = cold.filter(d => !d.image_url).length;
+    if (cold.length && dishes.length > 3) insights.push(`<b>${cold.length}</b> طبق ما فتحه أحد خلال الفترة${coldNoImg ? `، منها ${coldNoImg} بدون صورة. الصور ترفع المشاهدات بشكل واضح` : '. جرّب تميّزها أو تغيّر ترتيبها'}.`);
+
+    const waEnabled = client.whatsapp_orders === true;
     body.innerHTML = `
-      <div class="grid grid-cols-3 gap-3">
-        ${tiles.map(([l, v]) => `
-          <div class="bg-white/5 border border-white/10 rounded-xl p-3">
-            <p class="text-[10px] text-gray-400">${l}</p>
-            <p class="text-xl font-black text-white">${(Number(v) || 0).toLocaleString('en-US')}</p>
-          </div>`).join('')}
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        ${kpiTile('زيارات المنيو', fmtNum(views), `${deltaBadge(views, pv.views)} <span class="text-[10px] text-gray-500">مقارنة بالفترة السابقة</span>`, 'fa-solid fa-eye', 'text-emerald-400')}
+        ${kpiTile('مشاهدات الأطباق', fmtNum(dishOpens), deltaBadge(dishOpens, pv.dishes), 'fa-solid fa-utensils', 'text-blue-300')}
+        ${kpiTile('طلبات واتساب', waEnabled || orders ? fmtNum(orders) : '—', waEnabled || orders ? deltaBadge(orders, pv.orders) : '<span class="text-[10px] text-amber-300">فعّلها من معلومات المطعم</span>', 'fa-brands fa-whatsapp', 'text-green-400')}
+        ${kpiTile('أطباق لكل زيارة', (dishOpens / views).toFixed(1), '<span class="text-[10px] text-gray-500">متوسط الأطباق اللي يفتحها الزبون</span>', 'fa-solid fa-hand-pointer', 'text-amber-300')}
       </div>
-      <div class="grid md:grid-cols-2 gap-5 mt-4">
+
+      ${insights.length ? `
+        <div class="bg-amber-400/5 border border-amber-400/20 rounded-xl p-3.5 space-y-1.5">
+          ${insights.map(x => `<p class="text-[11px] text-gray-200 leading-relaxed"><i class="fa-solid fa-lightbulb text-amber-300 ml-1"></i> ${x}</p>`).join('')}
+        </div>` : ''}
+
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-[11px] font-bold text-gray-300">الزيارات اليومية</p>
+          <p class="text-[10px] text-gray-500">أعلى يوم: ${fmtNum(maxDay)} زيارة</p>
+        </div>
+        <div class="flex items-end gap-[2px] h-28 bg-white/[0.02] rounded-lg p-1.5" dir="ltr">
+          ${series.map(d => `<div class="flex-1 rounded-t ${d.v === maxDay && d.v > 0 ? 'bg-emerald-400' : 'bg-emerald-500/60'} hover:bg-emerald-300 transition" style="height:${Math.max(3, (d.v / maxDay) * 100)}%" title="${esc(d.label)}: ${d.v} زيارة"></div>`).join('')}
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-5">
         <div>
-          <p class="text-[10px] text-gray-400 mb-2">الزيارات خلال آخر 14 يوم</p>
-          <div class="flex items-end gap-1 h-24" dir="ltr">
-            ${days.map(d => `<div class="flex-1 bg-emerald-500/70 hover:bg-emerald-400 rounded-t transition" style="height:${Math.max(4, (d.v / max) * 100)}%" title="${esc(d.label)}: ${d.v}"></div>`).join('')}
+          <p class="text-[11px] font-bold text-gray-300 mb-2">أوقات الذروة خلال اليوم</p>
+          <div class="flex items-end gap-[3px] h-24" dir="ltr">
+            ${hours.map((c, h) => `<div class="flex-1 rounded-t ${h === peakHour && c > 0 ? 'bg-amber-400' : 'bg-white/20'} hover:bg-amber-300 transition" style="height:${Math.max(3, (c / maxHour) * 100)}%" title="${hourLabel(h)}: ${c} زيارة"></div>`).join('')}
+          </div>
+          <div class="flex justify-between text-[9px] text-gray-500 mt-1" dir="ltr">
+            <span>12 ص</span><span>6 ص</span><span>12 م</span><span>6 م</span><span>11 م</span>
           </div>
         </div>
         <div>
-          <p class="text-[10px] text-gray-400 mb-2">أكثر الأطباق مشاهدة (آخر 30 يوم)</p>
-          ${(data.top || []).length
-            ? `<ol class="space-y-1.5">${data.top.map((t, i) => `<li class="flex justify-between gap-2 text-[11px]"><span class="text-gray-200 truncate">${i + 1}. ${esc(t.name)}</span><b class="text-white">${Number(t.views) || 0}</b></li>`).join('')}</ol>`
-            : '<p class="text-[11px] text-gray-500">لا توجد مشاهدات للأطباق بعد.</p>'}
+          <p class="text-[11px] font-bold text-gray-300 mb-2">أيام الأسبوع</p>
+          <div class="space-y-1.5">
+            ${[0, 1, 2, 3, 4, 5, 6].map(d => barRow(WEEKDAYS[d], week[d], maxWeek, d === peakDay && week[d] > 0 ? 'bg-amber-400' : 'bg-white/30')).join('')}
+          </div>
         </div>
-      </div>`;
+      </div>
+
+      <div>
+        <p class="text-[11px] font-bold text-gray-300 mb-2">أداء الأطباق</p>
+        ${topDishes.length ? `
+          <div class="overflow-x-auto">
+            <table class="w-full text-[11px]">
+              <thead class="text-gray-500">
+                <tr><th class="text-right font-bold pb-2">الطبق</th><th class="text-right font-bold pb-2 w-2/5">المشاهدات</th><th class="font-bold pb-2 w-16">الطلبات</th></tr>
+              </thead>
+              <tbody class="divide-y divide-white/5">
+                ${topDishes.map((d, i) => {
+                  const img = safeUrl(d.image_url);
+                  return `
+                    <tr>
+                      <td class="py-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                          <span class="w-4 text-gray-500">${i + 1}</span>
+                          ${img ? `<img src="${esc(img)}" alt="" loading="lazy" class="w-8 h-8 rounded-lg object-cover shrink-0">` : '<div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0"><i class="fa-solid fa-utensils text-[10px] text-gray-500"></i></div>'}
+                          <span class="text-gray-100 font-bold truncate">${esc(d.name)}</span>
+                        </div>
+                      </td>
+                      <td class="py-2">
+                        <div class="flex items-center gap-2">
+                          <div class="flex-1 h-2 bg-white/5 rounded-full overflow-hidden"><div class="h-full bg-blue-400/70 rounded-full" style="width:${(d.views / maxDish) * 100}%"></div></div>
+                          <b class="text-white w-8 text-left">${fmtNum(d.views)}</b>
+                        </div>
+                      </td>
+                      <td class="py-2 text-center ${d.orders ? 'text-green-300 font-bold' : 'text-gray-600'}">${d.orders ? fmtNum(d.orders) : '—'}</td>
+                    </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>` : '<p class="text-[11px] text-gray-500">ما فتح أحد تفاصيل أي طبق خلال الفترة.</p>'}
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-5">
+        <div>
+          <p class="text-[11px] font-bold text-gray-300 mb-2">أكثر الأقسام اهتماماً</p>
+          ${catTotals.length ? `<div class="space-y-1.5">${catTotals.slice(0, 6).map(c => barRow(esc(c.name), c.views, maxCat, 'bg-blue-400/60')).join('')}</div>`
+            : '<p class="text-[11px] text-gray-500">لا توجد بيانات كافية بعد.</p>'}
+        </div>
+        <div class="space-y-4">
+          <div>
+            <p class="text-[11px] font-bold text-gray-300 mb-2">من وين يجي زبائنك؟</p>
+            ${known ? `
+              <div class="flex h-3 rounded-full overflow-hidden bg-white/5">
+                <div class="bg-amber-400" style="width:${qrPct}%"></div>
+                <div class="bg-sky-400/70" style="width:${100 - qrPct}%"></div>
+              </div>
+              <div class="flex justify-between text-[10px] mt-1.5">
+                <span class="text-amber-300"><i class="fa-solid fa-qrcode"></i> مسح QR · ${qrPct}%</span>
+                <span class="text-sky-300"><i class="fa-solid fa-link"></i> رابط مشارك · ${100 - qrPct}%</span>
+              </div>` : '<p class="text-[10px] text-gray-500">يظهر بعد أول زيارات من رمز QR الجديد.</p>'}
+          </div>
+          <div>
+            <p class="text-[11px] font-bold text-gray-300 mb-1">لغة التصفح</p>
+            <p class="text-[11px] text-gray-400"><b class="text-white">${enPct}%</b> من الزيارات تحوّلت للإنجليزي</p>
+          </div>
+        </div>
+      </div>
+
+      ${cold.length ? `
+        <div>
+          <p class="text-[11px] font-bold text-gray-300 mb-2">أطباق ما فتحها أحد <span class="text-gray-500 font-normal">(${cold.length})</span></p>
+          <div class="flex flex-wrap gap-1.5">
+            ${cold.slice(0, 12).map(d => `<button onclick="startEdit(${Number(d.id)})" class="bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 px-2.5 py-1 rounded-lg text-[10px] transition">${esc(d.name)}${d.image_url ? '' : ' <i class="fa-solid fa-image text-amber-400/70" title="بدون صورة"></i>'}</button>`).join('')}
+            ${cold.length > 12 ? `<span class="text-[10px] text-gray-500 self-center">و${cold.length - 12} غيرها</span>` : ''}
+          </div>
+        </div>` : ''}
+    `;
+  }
+
+  // تصدير ملف يفتح في Excel (مع دعم العربي)
+  function exportStatsCsv() {
+    if (!lastStats) return;
+    const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const catNameOf = (key) => (loadedCategories.find(c => c.key === key || c.name === key) || {}).name || '';
+    const rows = [
+      [`إحصائيات منيو ${client.name || ''} — آخر ${lastStats.days} يوم`],
+      [],
+      ['المؤشر', 'القيمة'],
+      ['زيارات المنيو', lastStats.totals.views],
+      ['مشاهدات الأطباق', lastStats.totals.dishes],
+      ['طلبات واتساب', lastStats.totals.orders],
+      ['زيارات من QR', lastStats.totals.qr],
+      ['زيارات من رابط', lastStats.totals.link],
+      [],
+      ['الطبق', 'القسم', 'المشاهدات', 'طلبات واتساب'],
+      ...(lastStats.dishes || []).map(d => [d.name, catNameOf(d.category), d.views, d.orders]),
+      [],
+      ['اليوم', 'الزيارات'],
+      ...(lastStats.daily || []).map(d => [d.day, d.views])
+    ];
+    const csv = '\ufeff' + rows.map(r => r.map(q).join(',')).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = `stats-${client.client_slug}-${lastStats.days}d.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
   }
 
   // ─── مسببات الحساسية ───
