@@ -218,13 +218,16 @@ tailwind.config = {
           <input type="url" id="info-location" placeholder="https://maps.app.goo.gl/..." class="input-pro text-xs" dir="ltr">
         </div>
       </div>
-      <label class="flex items-start gap-2.5 bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer">
-        <input type="checkbox" id="info-wa-orders" class="w-4 h-4 mt-0.5 accent-green-500 cursor-pointer">
-        <span class="text-xs">
-          <b class="text-white"><i class="fa-brands fa-whatsapp text-green-400"></i> استقبال الطلبات عبر واتساب</b>
-          <span class="block text-[10px] text-gray-400 mt-0.5">يظهر زر "اطلب عبر واتساب" في تفاصيل كل طبق، ويُرسل الطلب لرقم الواتساب المحفوظ في روابط التواصل.</span>
-        </span>
-      </label>
+      <div id="wa-orders-box" class="bg-white/5 p-3 rounded-xl border border-white/10 space-y-2.5">
+        <label id="wa-orders-label" class="flex items-start gap-2.5 cursor-pointer">
+          <input type="checkbox" id="info-wa-orders" class="w-4 h-4 mt-0.5 accent-green-500 cursor-pointer disabled:cursor-not-allowed">
+          <span class="text-xs">
+            <b class="text-white"><i class="fa-brands fa-whatsapp text-green-400"></i> استقبال الطلبات عبر واتساب</b>
+            <span class="block text-[10px] text-gray-400 mt-0.5">يظهر زر "اطلب عبر واتساب" في تفاصيل كل طبق، ويصل الطلب مباشرة إلى واتساب المطعم.</span>
+          </span>
+        </label>
+        <div id="wa-orders-status" class="text-[11px]"></div>
+      </div>
       <button onclick="updateRestaurantInfo()" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-2 rounded-xl text-xs transition shadow-md">حفظ معلومات المطعم</button>
     </div>
 
@@ -484,6 +487,7 @@ tailwind.config = {
     document.getElementById('info-hours').value = client.opening_hours || '';
     document.getElementById('info-location').value = client.location_url || '';
     document.getElementById('info-wa-orders').checked = client.whatsapp_orders === true;
+    renderWaOrderState();
 
     renderSubscriptionStatus();
     renderPromoState();
@@ -654,11 +658,15 @@ tailwind.config = {
     if (wa.startsWith('00')) wa = wa.slice(2);
     if (wa.startsWith('05')) wa = '966' + wa.slice(1);
     else if (wa.startsWith('5') && wa.length === 9) wa = '966' + wa;
-    if (wa && !/^\d{10,15}$/.test(wa)) return showToast('رقم الواتساب غير صحيح، اكتبه مثل 05xxxxxxxx', true);
+    if (wa && !isValidWa(wa)) return showToast('رقم الواتساب غير صحيح، اكتبه مثل 05xxxxxxxx', true);
     payload.whatsapp_number = wa;
     document.getElementById('social-whatsapp').value = payload.whatsapp_number;
 
-    if (await updateClient(payload)) showToast('تم حفظ روابط التواصل');
+    if (!isValidWa(payload.whatsapp_number) && client.whatsapp_orders) payload.whatsapp_orders = false;
+    if (await updateClient(payload)) {
+      renderWaOrderState();
+      showToast(payload.whatsapp_orders === false ? 'تم الحفظ، وأُوقفت طلبات واتساب لعدم وجود رقم صالح' : 'تم حفظ روابط التواصل');
+    }
     else showToast('تعذر حفظ الروابط', true);
   }
 
@@ -840,14 +848,51 @@ tailwind.config = {
     }
   }
 
+  // ─── رقم واتساب الطلبات ───
+  // رقم صالح: جوال سعودي 9665xxxxxxxx، أو رقم دولي كامل (11–15 رقم)
+  function isValidWa(n) {
+    const d = String(n || '');
+    if (d.startsWith('966')) return /^9665\d{8}$/.test(d);
+    return /^[1-9]\d{10,14}$/.test(d);
+  }
+  const prettyWa = (d) => d.startsWith('966') ? `0${d.slice(3, 5)} ${d.slice(5, 8)} ${d.slice(8)}` : `+${d}`;
+
+  function renderWaOrderState() {
+    const cb = document.getElementById('info-wa-orders');
+    const status = document.getElementById('wa-orders-status');
+    const label = document.getElementById('wa-orders-label');
+    const wa = String(client.whatsapp_number || '');
+    const ok = isValidWa(wa);
+
+    cb.disabled = !ok;
+    if (!ok) cb.checked = false;
+    label.classList.toggle('opacity-50', !ok);
+
+    status.innerHTML = ok
+      ? `<div class="flex flex-wrap items-center justify-between gap-2 bg-green-500/10 border border-green-500/25 rounded-lg px-3 py-2">
+           <span class="text-green-200">الطلبات تصل إلى: <b dir="ltr">${esc(prettyWa(wa))}</b></span>
+           <a href="https://wa.me/${esc(wa)}?text=${encodeURIComponent('رسالة تجريبية من DEV MENU ✅')}" target="_blank" rel="noopener"
+              class="bg-green-600 hover:bg-green-500 text-white font-bold px-2.5 py-1 rounded-md text-[10px] transition">
+             <i class="fa-brands fa-whatsapp"></i> اختبر الرقم
+           </a>
+         </div>
+         <p class="text-[10px] text-gray-500 mt-1.5">اضغط "اختبر الرقم": إذا فتحت محادثة في واتساب فالرقم شغال. وإذا ظهرت رسالة إن الرقم غير صالح، صحّحه في روابط التواصل.</p>`
+      : `<div class="flex flex-wrap items-center justify-between gap-2 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
+           <span class="text-amber-200"><i class="fa-solid fa-circle-info"></i> لتفعيل الطلبات، أضف رقم واتساب المطعم واحفظه أولاً.</span>
+           <button type="button" onclick="document.getElementById('social-whatsapp').focus(); document.getElementById('social-whatsapp').scrollIntoView({behavior:'smooth', block:'center'})"
+                   class="bg-white/10 hover:bg-white/20 text-white font-bold px-2.5 py-1 rounded-md text-[10px] border border-white/20 transition">إضافة الرقم</button>
+         </div>`;
+  }
+
   // ─── معلومات المطعم ───
   async function updateRestaurantInfo() {
     const hours = document.getElementById('info-hours').value.trim();
     const loc = document.getElementById('info-location').value.trim();
     const waOrders = document.getElementById('info-wa-orders').checked;
     if (loc && !safeUrl(loc)) return showToast('رابط الموقع غير صحيح، يجب أن يبدأ بـ https://', true);
-    if (waOrders && !String(client.whatsapp_number || '').trim()) {
-      return showToast('احفظ رقم الواتساب في روابط التواصل أولاً', true);
+    if (waOrders && !isValidWa(client.whatsapp_number)) {
+      renderWaOrderState();
+      return showToast('أضف رقم واتساب صحيح في روابط التواصل واحفظه أولاً', true);
     }
     if (await updateClient({ opening_hours: hours, location_url: loc, whatsapp_orders: waOrders })) showToast('تم حفظ معلومات المطعم');
     else showToast('تعذر حفظ معلومات المطعم', true);
