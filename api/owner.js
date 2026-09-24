@@ -41,11 +41,13 @@ function cleanCoffee(c) {
   const out = {
     origin: s(c.origin, 60), region: s(c.region, 60), variety: s(c.variety, 60),
     process: PROCESS.includes(c.process) ? c.process : '',
+    process_other: c.process === 'other' ? s(c.process_other, 40) : '',
     roast: ROAST.includes(c.roast) ? c.roast : '',
     altitude: Number.isInteger(int(c.altitude)) && int(c.altitude) > 0 && int(c.altitude) < 5000 ? int(c.altitude) : null,
     notes: Array.isArray(c.notes) ? [...new Set(c.notes.map(n => String(n).trim().slice(0, 25)).filter(Boolean))].slice(0, 8) : [],
     methods: Array.isArray(c.methods) ? c.methods.filter(m => METHODS.includes(m)) : []
   };
+  if (out.process === 'other' && !out.process_other) out.process = '';
   const empty = !out.origin && !out.region && !out.variety && !out.process && !out.roast && !out.altitude && !out.notes.length && !out.methods.length;
   return empty ? null : out;
 }
