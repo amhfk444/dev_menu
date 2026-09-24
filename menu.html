@@ -463,7 +463,8 @@
 
     const order = document.getElementById('modalOrder');
     const wa = String(project.whatsapp_number || '').replace(/\D/g, '');
-    if (project.whatsapp_orders && wa) {
+    const waValid = wa.startsWith('966') ? /^9665\d{8}$/.test(wa) : /^[1-9]\d{10,14}$/.test(wa);
+    if (project.whatsapp_orders && waValid) {
       const msg = L
         ? `Hello ${project.name || ''}, I'd like to order: ${productName(p)} (${p.price} SAR)`
         : `مرحباً ${project.name || ''}، أبغى أطلب: ${p.name} (${p.price} ر.س)`;
