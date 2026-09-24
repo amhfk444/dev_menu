@@ -16,6 +16,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 
 <style>
+  /* رمز الريال السعودي الجديد ⃁ (U+20C1): خط مخصص يُستخدم لهذا الرمز فقط */
+  @font-face {
+    font-family: 'SaudiRiyal';
+    src: url('https://cdn.jsdelivr.net/npm/@emran-alhaddad/saudi-riyal-font@1.1.0/fonts/regular/saudi_riyal.woff2') format('woff2');
+    font-weight: 100 600; font-display: swap; unicode-range: U+20C1;
+  }
+  @font-face {
+    font-family: 'SaudiRiyal';
+    src: url('https://cdn.jsdelivr.net/npm/@emran-alhaddad/saudi-riyal-font@1.1.0/fonts/bold/saudi_riyal.woff2') format('woff2');
+    font-weight: 700 900; font-display: swap; unicode-range: U+20C1;
+  }
   :root {
     --brand: #233d2c;
     --brand-dark: #15271b;
@@ -26,7 +37,7 @@
   }
   * { -webkit-tap-highlight-color: transparent; }
   html { scroll-behavior: smooth; }
-  body { font-family: 'Cairo', sans-serif; background-color: var(--sand); color: #1b3022; overflow-x: hidden; }
+  body { font-family: 'SaudiRiyal', 'Cairo', sans-serif; background-color: var(--sand); color: #1b3022; overflow-x: hidden; }
 
   /* خلفية ناعمة: نقاط وتوهجات */
   .page-bg {
@@ -406,7 +417,7 @@
     <div class="pro-card p-7 space-y-5 hover:-translate-y-1 transition-transform duration-300">
       <div class="space-y-1">
         <h4 class="text-xs font-black text-[#233d2c]/60">الباقة الشهرية</h4>
-        <p class="text-4xl font-black text-brand">99 <span class="text-xs font-bold text-[#233d2c]/50">ر.س</span></p>
+        <p class="text-4xl font-black text-brand"><span dir="ltr"><span class="text-[0.7em] text-[#233d2c]/60">&#x20C1;</span> 99</span></p>
         <p class="text-[10px] font-bold text-[#233d2c]/50">شهرياً — بدون أي التزام</p>
       </div>
       <ul class="space-y-2.5">
@@ -426,12 +437,12 @@
       <span class="absolute top-0 start-0 bg-[#c9a227] text-[#15271b] text-[9px] font-black px-3.5 py-1.5 rounded-tr-[22px] rounded-bl-2xl">الأكثر طلباً</span>
       <div class="space-y-1">
         <h4 class="text-xs font-black text-[#233d2c]/60">الباقة السنوية</h4>
-        <p class="text-4xl font-black text-brand">1149 <span class="text-xs font-bold text-[#233d2c]/50">ر.س</span></p>
-        <p class="text-[10px] font-bold text-[#8a6d0f]">سنوياً — ما يعادل 96 ر.س شهرياً فقط</p>
+        <p class="text-4xl font-black text-brand"><span dir="ltr"><span class="text-[0.7em] text-[#233d2c]/60">&#x20C1;</span> 1149</span></p>
+        <p class="text-[10px] font-bold text-[#8a6d0f]">سنوياً — ما يعادل <span dir="ltr">&#x20C1; 96</span> شهرياً فقط</p>
       </div>
       <ul class="space-y-2.5">
         <li class="flex items-center gap-2.5 text-[11px] font-bold text-[#233d2c]/75"><span class="w-4 h-4 rounded-full bg-[#c9a227]/20 border border-[#c9a227]/40 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[7px] text-[#8a6d0f]"></i></span> كل مزايا الباقة الشهرية</li>
-        <li class="flex items-center gap-2.5 text-[11px] font-bold text-[#233d2c]/75"><span class="w-4 h-4 rounded-full bg-[#c9a227]/20 border border-[#c9a227]/40 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[7px] text-[#8a6d0f]"></i></span> وفّر 39 ر.س سنوياً</li>
+        <li class="flex items-center gap-2.5 text-[11px] font-bold text-[#233d2c]/75"><span class="w-4 h-4 rounded-full bg-[#c9a227]/20 border border-[#c9a227]/40 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[7px] text-[#8a6d0f]"></i></span> وفّر <span dir="ltr">&#x20C1; 39</span> سنوياً</li>
         <li class="flex items-center gap-2.5 text-[11px] font-bold text-[#233d2c]/75"><span class="w-4 h-4 rounded-full bg-[#c9a227]/20 border border-[#c9a227]/40 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[7px] text-[#8a6d0f]"></i></span> رمز QR مخصص بهوية مطعمك</li>
         <li class="flex items-center gap-2.5 text-[11px] font-bold text-[#233d2c]/75"><span class="w-4 h-4 rounded-full bg-[#c9a227]/20 border border-[#c9a227]/40 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-check text-[7px] text-[#8a6d0f]"></i></span> أولوية في الدعم الفني</li>
       </ul>
@@ -493,6 +504,10 @@
   const SUPABASE_URL = 'https://czdoamcgxgkicrbufpcn.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZG9hbWNneGdraWNyYnVmcGNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwMTA5MzAsImV4cCI6MjEwNTU4NjkzMH0.45zKx4ljXJ27SS-ukc62qiu52movhDgSoC9OEnK9NHk';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // السعر مع رمز الريال الجديد: "⃁ 25" (الرمز يسار الرقم)
+  const SAR = '\u20C1';
+  const money = (n) => `\u2066${SAR} ${n}\u2069`;
+
 
   let formDataCache = {};
 
@@ -710,7 +725,7 @@
             </div>
           </div>
           ${items.length
-            ? `<ul class="example-items">${items.map(p => `<li><span>${esc(p.name)}</span><i></i><b>${esc(p.price)} ر.س</b></li>`).join('')}</ul>`
+            ? `<ul class="example-items">${items.map(p => `<li><span>${esc(p.name)}</span><i></i><b>${esc(money(p.price))}</b></li>`).join('')}</ul>`
             : `<p class="text-[11px] font-bold opacity-60">اضغط لمشاهدة المنيو كاملاً</p>`}
         </div>
         <div class="example-foot">
