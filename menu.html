@@ -163,6 +163,12 @@
   }
   const urlParams = new URLSearchParams(window.location.search);
   const clientSlug = (urlParams.get('client') || '').trim().toLowerCase();
+  // مصدر الزيارة: رمز QR المطبوع أو رابط مشارك. نشيل src من الرابط حتى لا تُحسب المشاركات كمسح QR
+  const visitSource = urlParams.get('src') === 'qr' ? 'qr' : 'link';
+  if (urlParams.has('src')) {
+    urlParams.delete('src');
+    history.replaceState(null, '', `${location.pathname}?${urlParams.toString()}`);
+  }
 
   let project = null, allProducts = [], allCategories = [];
   let currentLang = 'ar', translating = false;
@@ -203,9 +209,9 @@
   };
 
   // إحصائيات مجهولة: مرة واحدة لكل زيارة (بدون أي بيانات شخصية)
-  function trackOnce(key, kind, productId = null) {
+  function trackOnce(key, kind, productId = null, source = null) {
     try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, '1'); } catch {}
-    supabaseClient.rpc('track_event', { p_client_id: project.id, p_kind: kind, p_product_id: productId })
+    supabaseClient.rpc('track_event', { p_client_id: project.id, p_kind: kind, p_product_id: productId, p_source: source })
       .then(({ error }) => { if (error) console.warn('track', error.message); });
   }
 
@@ -237,6 +243,7 @@
       translating = true;
       btnText.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Translating...';
       currentLang = 'en';
+      if (project) trackOnce(`l:${project.id}`, 'lang');
       await translateAll();
       translating = false;
     } else {
@@ -309,7 +316,7 @@
     renderFilterBar();
     renderMenu(allProducts, false);
     renderCalorieNote();
-    trackOnce(`v:${p.id}`, 'view');
+    trackOnce(`v:${p.id}`, 'view', null, visitSource);
   }
 
   function renderSocialLinks(p) {
@@ -475,9 +482,15 @@
       order.classList.add('hidden'); order.classList.remove('flex');
     }
 
+    currentModalProduct = p.id;
     trackOnce(`d:${p.id}`, 'dish', p.id);
     document.getElementById('productModal').classList.remove('opacity-0', 'pointer-events-none');
   }
+
+  let currentModalProduct = null;
+  document.getElementById('modalOrder').addEventListener('click', () => {
+    if (currentModalProduct) trackOnce(`o:${currentModalProduct}`, 'order', currentModalProduct);
+  });
 
   function closeModal() {
     document.getElementById('productModal').classList.add('opacity-0', 'pointer-events-none');
