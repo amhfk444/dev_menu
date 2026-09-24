@@ -337,7 +337,8 @@ tailwind.config = {
                 </div>
                 <div>
                   <label class="text-[10px] text-ink/60 block mb-1">المعالجة</label>
-                  <select id="coffee-process" class="input-pro bg-cream text-xs"></select>
+                  <select id="coffee-process" onchange="toggleProcessOther()" class="input-pro bg-cream text-xs"></select>
+                  <input type="text" id="coffee-process-other" maxlength="40" placeholder="اكتب المعالجة، مثل: مخمّرة بالقرفة" class="input-pro text-xs mt-2 hidden">
                 </div>
                 <div>
                   <label class="text-[10px] text-ink/60 block mb-1">السلالة</label>
@@ -1628,11 +1629,13 @@ tailwind.config = {
     const alt = parseInt(v('coffee-altitude'), 10);
     const c = {
       origin: v('coffee-origin'), region: v('coffee-region'), process: v('coffee-process'), variety: v('coffee-variety'),
+      process_other: v('coffee-process') === 'other' ? v('coffee-process-other') : '',
       altitude: Number.isFinite(alt) && alt > 0 ? alt : null,
       roast: document.querySelector('[name="coffee-roast"]:checked')?.value || '',
       notes: [...coffeeNotes],
       methods: [...document.querySelectorAll('.coffee-method:checked')].map(x => x.value)
     };
+    if (c.process === 'other' && !c.process_other) c.process = '';   // "أخرى" بدون نص = بدون معالجة
     const empty = !c.origin && !c.region && !c.process && !c.variety && !c.altitude && !c.roast && !c.notes.length && !c.methods.length;
     return empty ? null : c;
   }
@@ -1641,6 +1644,8 @@ tailwind.config = {
     document.getElementById('coffee-origin').value = c.origin || '';
     document.getElementById('coffee-region').value = c.region || '';
     document.getElementById('coffee-process').value = c.process || '';
+    document.getElementById('coffee-process-other').value = c.process_other || '';
+    toggleProcessOther();
     document.getElementById('coffee-variety').value = c.variety || '';
     document.getElementById('coffee-altitude').value = c.altitude || '';
     document.querySelectorAll('[name="coffee-roast"]').forEach(r => { r.checked = r.value === c.roast; r.dataset.was = r.checked ? '1' : '0'; });
@@ -1649,7 +1654,15 @@ tailwind.config = {
     renderNotes();
     document.getElementById('coffee-details').open = !!(c && Object.keys(c).length);
   }
-  const coffeeSummary = (c) => c ? [c.origin, COFFEE_PROCESS[c.process], COFFEE_ROAST[c.roast] && `تحميص ${COFFEE_ROAST[c.roast]}`].filter(Boolean).join(' · ') : '';
+  // عند اختيار "أخرى" يظهر حقل يكتب فيه صاحب المقهى المعالجة بنفسه
+  function toggleProcessOther() {
+    const other = document.getElementById('coffee-process').value === 'other';
+    const input = document.getElementById('coffee-process-other');
+    input.classList.toggle('hidden', !other);
+    if (other && !input.value) setTimeout(() => input.focus(), 30);
+  }
+  const processLabel = (c) => c.process === 'other' ? (c.process_other || '') : (COFFEE_PROCESS[c.process] || '');
+  const coffeeSummary = (c) => c ? [c.origin, processLabel(c), COFFEE_ROAST[c.roast] && `تحميص ${COFFEE_ROAST[c.roast]}`].filter(Boolean).join(' · ') : '';
   renderNotes();
 
   // ─── مسببات الحساسية ───
