@@ -9,6 +9,8 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- رفع الملفات الكبيرة على أجزاء (يكمل من حيث توقف لو انقطع النت) -->
+<script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.2.3/dist/tus.min.js"></script>
 <!-- مكتبة توليد الـ QR Code -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -22,7 +24,18 @@ tailwind.config = {
 </script>
 
 <style>
-  body { font-family: 'Cairo', sans-serif; background-color: #0b0b0b; color: #ffffff; min-height: 100vh; }
+  /* رمز الريال السعودي الجديد ⃁ (U+20C1): خط مخصص يُستخدم لهذا الرمز فقط */
+  @font-face {
+    font-family: 'SaudiRiyal';
+    src: url('https://cdn.jsdelivr.net/npm/@emran-alhaddad/saudi-riyal-font@1.1.0/fonts/regular/saudi_riyal.woff2') format('woff2');
+    font-weight: 100 600; font-display: swap; unicode-range: U+20C1;
+  }
+  @font-face {
+    font-family: 'SaudiRiyal';
+    src: url('https://cdn.jsdelivr.net/npm/@emran-alhaddad/saudi-riyal-font@1.1.0/fonts/bold/saudi_riyal.woff2') format('woff2');
+    font-weight: 700 900; font-display: swap; unicode-range: U+20C1;
+  }
+  body { font-family: 'SaudiRiyal', 'Cairo', sans-serif; background-color: #0b0b0b; color: #ffffff; min-height: 100vh; }
   .pro-card { background: rgba(20, 20, 20, 0.95); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; }
   .input-pro {
     width: 100%; background-color: rgba(255, 255, 255, 0.05);
@@ -247,7 +260,7 @@ tailwind.config = {
               <select id="prod-category" required class="input-pro bg-zinc-900"></select>
             </div>
             <div>
-              <label class="text-[11px] text-gray-300 block mb-1">السعر (ر.س) *</label>
+              <label class="text-[11px] text-gray-300 block mb-1">السعر (&#x20C1;) *</label>
               <input type="number" step="0.5" id="prod-price" placeholder="0.00" required class="input-pro">
             </div>
           </div>
@@ -478,6 +491,10 @@ tailwind.config = {
   const SUPABASE_URL = 'https://czdoamcgxgkicrbufpcn.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZG9hbWNneGdraWNyYnVmcGNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwMTA5MzAsImV4cCI6MjEwNTU4NjkzMH0.45zKx4ljXJ27SS-ukc62qiu52movhDgSoC9OEnK9NHk';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // السعر مع رمز الريال الجديد: "⃁ 25" (الرمز يسار الرقم)
+  const SAR = '\u20C1';
+  const money = (n) => `\u2066${SAR} ${n}\u2069`;
+
 
   // حماية من حقن الكود: أي نص قادم من قاعدة البيانات يمر من هنا قبل عرضه
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -703,8 +720,8 @@ tailwind.config = {
       ${live && left !== null ? `<p class="text-[11px] text-gray-300">متبقي <b>${daysText(left)}</b> — ينتهي ${esc(endText)}</p>` : ''}
       ${showPlans ? `
         <div class="flex flex-wrap gap-1.5 pt-1">
-          <a href="${esc(renewLink('month'))}" target="_blank" rel="noopener" class="bg-white/10 hover:bg-white/20 border border-white/20 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="fa-brands fa-whatsapp text-green-400"></i> ${verb} شهرياً · 99 ر.س</a>
-          <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/40 text-amber-200 px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="fa-brands fa-whatsapp"></i> ${verb} سنوياً · 1149 ر.س</a>
+          <a href="${esc(renewLink('month'))}" target="_blank" rel="noopener" class="bg-white/10 hover:bg-white/20 border border-white/20 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="fa-brands fa-whatsapp text-green-400"></i> ${verb} شهرياً · ${money(99)}</a>
+          <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/40 text-amber-200 px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="fa-brands fa-whatsapp"></i> ${verb} سنوياً · ${money(1149)}</a>
         </div>` : ''}
       <p class="text-[10px] text-gray-400">معرف المتجر: ${esc(client.client_slug)}</p>`;
 
@@ -723,8 +740,8 @@ tailwind.config = {
         ${suspended
           ? `<a href="https://wa.me/${SUPPORT_WA}" target="_blank" rel="noopener" class="bg-white text-black px-3 py-1.5 rounded-lg text-[11px] font-black"><i class="fa-brands fa-whatsapp"></i> تواصل معنا</a>`
           : `<div class="flex gap-2">
-               <a href="${esc(renewLink('month'))}" target="_blank" rel="noopener" class="bg-white text-black px-3 py-1.5 rounded-lg text-[11px] font-black">شهري · 99 ر.س</a>
-               <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400 text-black px-3 py-1.5 rounded-lg text-[11px] font-black">سنوي · 1149 ر.س</a>
+               <a href="${esc(renewLink('month'))}" target="_blank" rel="noopener" class="bg-white text-black px-3 py-1.5 rounded-lg text-[11px] font-black">شهري · ${money(99)}</a>
+               <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400 text-black px-3 py-1.5 rounded-lg text-[11px] font-black">سنوي · ${money(1149)}</a>
              </div>`}`;
       banner.classList.remove('hidden');
     } else {
@@ -890,10 +907,44 @@ tailwind.config = {
     if (/mime type/i.test(m)) return 'صيغة الملف غير مدعومة، استخدم JPG أو PNG أو MP4';
     if (/exceed|too large|maximum allowed size/i.test(m)) return 'حجم الملف أكبر من المسموح';
     if (/row-level security|policy|unauthori/i.test(m)) return 'لا تملك صلاحية الرفع لهذا المتجر';
+    if (/failed to fetch|network|load failed|timeout/i.test(m)) return 'انقطع الاتصال أثناء الرفع. تأكد من الإنترنت وجرّب مرة ثانية';
     return m;
   }
 
   // الملفات تنحفظ داخل مجلد رقم المتجر: menu-images/<id>/...
+  // رفع على أجزاء 6 ميجا (الطريقة اللي توصي فيها Supabase للملفات الكبيرة)
+  async function uploadResumable(file, path, onProgress) {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) throw new Error('انتهت الجلسة، سجّل دخولك مرة ثانية');
+    return new Promise((resolve, reject) => {
+      const upload = new tus.Upload(file, {
+        endpoint: `${SUPABASE_URL}/storage/v1/upload/resumable`,
+        retryDelays: [0, 2000, 5000, 10000, 20000],
+        headers: { authorization: `Bearer ${session.access_token}`, apikey: SUPABASE_ANON_KEY, 'x-upsert': 'false' },
+        uploadDataDuringCreation: true,
+        removeFingerprintOnSuccess: true,
+        chunkSize: 6 * 1024 * 1024,
+        metadata: { bucketName: 'menu-images', objectName: path, contentType: file.type, cacheControl: '3600' },
+        onProgress: (sent, total) => onProgress && onProgress(Math.round((sent / total) * 100)),
+        onError: (err) => reject(err),
+        onSuccess: () => resolve()
+      });
+      upload.findPreviousUploads().then(prev => {
+        if (prev.length) upload.resumeFromPreviousUpload(prev[0]);
+        upload.start();
+      });
+    });
+  }
+
+  function progressToast(label) {
+    let last = -1;
+    return (pct) => {
+      if (pct === last || (pct < 100 && pct - last < 5)) return;
+      last = pct;
+      showToast(`${label} ${pct}%`);
+    };
+  }
+
   async function uploadFile(file, prefix, maxDim = 1600) {
     if (file.type.startsWith('image/')) {
       file = await compressImage(file, maxDim);
@@ -904,9 +955,22 @@ tailwind.config = {
     }
     const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
     const path = `${currentClientId}/${prefix}_${Date.now()}.${ext}`;
-    const { error } = await supabaseClient.storage.from('menu-images').upload(path, file, { contentType: file.type });
-    if (error) {
-      console.error('Upload error:', error);
+    const big = file.size > 5 * 1024 * 1024;
+
+    try {
+      if (big && window.tus) {
+        await uploadResumable(file, path, progressToast(file.type.startsWith('video/') ? 'جاري رفع الفيديو...' : 'جاري الرفع...'));
+      } else {
+        // رفع عادي للملفات الصغيرة، مع إعادة محاولة وحدة لو انقطع الاتصال
+        let { error } = await supabaseClient.storage.from('menu-images').upload(path, file, { contentType: file.type });
+        if (error && /failed to fetch|network|load failed/i.test(error.message || '')) {
+          await new Promise(r => setTimeout(r, 1500));
+          ({ error } = await supabaseClient.storage.from('menu-images').upload(path, file, { contentType: file.type }));
+        }
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error('Upload error:', error, { size: file.size, type: file.type, path });
       lastUploadError = uploadErrorText(error);
       return null;
     }
@@ -1528,7 +1592,7 @@ tailwind.config = {
                 <p class="font-bold text-white truncate ${!isAvailable ? 'line-through text-gray-500' : ''}">${esc(p.name)}</p>
                 ${isBestseller ? `<span class="bg-white/20 text-white text-[9px] px-1.5 py-0.5 rounded font-bold border border-white/30 shrink-0"><i class="fa-solid fa-fire text-amber-400"></i> مميز</span>` : ''}
               </div>
-              <p class="text-gray-300 font-semibold text-[11px]">${esc(p.price)} ر.س${p.calories != null ? ` <span class="text-gray-500">· ${Number(p.calories)} سعرة</span>` : ` <span class="text-amber-400/80">· بدون سعرات</span>`}</p>
+              <p class="text-gray-300 font-semibold text-[11px]">${esc(money(p.price))}${p.calories != null ? ` <span class="text-gray-500">· ${Number(p.calories)} سعرة</span>` : ` <span class="text-amber-400/80">· بدون سعرات</span>`}</p>
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
