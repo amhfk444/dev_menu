@@ -93,6 +93,7 @@
       <h1 id="project-title" class="text-2xl font-black text-white tracking-widest uppercase">Dev Menu</h1>
       <p class="text-xs text-gray-300 font-semibold tracking-wider">RESTAURANT &amp; CAFE</p>
     </div>
+    <div id="info-bar" class="hidden flex-wrap justify-center gap-2 pt-1"></div>
   </header>
 
   <!-- البحث السريع -->
@@ -109,6 +110,9 @@
 
   <!-- الأقسام والمنتجات -->
   <main id="dynamic-menu-sections" class="space-y-8 min-h-[300px]"></main>
+
+  <!-- ملاحظة السعرات (هيئة الغذاء والدواء) -->
+  <p id="calorie-note" class="hidden text-center text-[10px] text-gray-400 leading-relaxed px-4"></p>
 
   <!-- أزرار التواصل الاجتماعي -->
   <div id="social-links-container" class="hidden pt-4 pb-2 border-t border-white/10 flex justify-center items-center gap-3"></div>
@@ -136,6 +140,10 @@
         <span id="modalPrice" class="text-base font-black text-white bg-white/10 px-3 py-1 rounded-xl border border-white/20"></span>
       </div>
       <p id="modalDesc" class="text-xs text-gray-300 leading-relaxed font-normal"></p>
+      <div id="modalMeta" class="flex flex-wrap gap-1.5"></div>
+      <a id="modalOrder" href="#" target="_blank" rel="noopener" class="hidden w-full bg-[#25d366] hover:bg-[#1ebe5b] text-black font-black text-xs py-3 rounded-2xl items-center justify-center gap-2 transition">
+        <i class="fa-brands fa-whatsapp text-base"></i> <span id="modalOrderText">اطلب عبر واتساب</span>
+      </a>
     </div>
   </div>
 </div>
@@ -173,7 +181,7 @@
   // يترجم كل النصوص دفعة وحدة (6 طلبات بالتوازي) بدل طبق طبق
   async function translateAll() {
     const texts = new Set();
-    allCategories.forEach(c => c.name && texts.add(c.name));
+    allCategories.forEach(c => { if (!c.name_en && c.name) texts.add(c.name); });
     allProducts.forEach(p => {
       if (!p.name_en && p.name) texts.add(p.name);
       if (!p.description_en && p.description) texts.add(p.description);
@@ -185,6 +193,42 @@
   const tr = (t) => (currentLang === 'en' && t) ? (translationCache[t] || t) : (t || '');
   const productName = (p) => currentLang === 'en' ? (p.name_en || tr(p.name)) : p.name;
   const productDesc = (p) => currentLang === 'en' ? (p.description_en || tr(p.description)) : (p.description || '');
+  const catName = (c) => currentLang === 'en' ? (c.name_en || tr(c.name)) : c.name;
+  const bySort = (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id;
+
+  const ALLERGEN_LABELS = {
+    gluten: ['الغلوتين', 'Gluten'], milk: ['الحليب', 'Milk'], egg: ['البيض', 'Egg'],
+    nuts: ['المكسرات', 'Tree nuts'], peanut: ['الفول السوداني', 'Peanuts'], sesame: ['السمسم', 'Sesame'],
+    fish: ['الأسماك', 'Fish'], shellfish: ['القشريات', 'Shellfish'], soy: ['الصويا', 'Soy']
+  };
+
+  // إحصائيات مجهولة: مرة واحدة لكل زيارة (بدون أي بيانات شخصية)
+  function trackOnce(key, kind, productId = null) {
+    try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, '1'); } catch {}
+    supabaseClient.rpc('track_event', { p_client_id: project.id, p_kind: kind, p_product_id: productId })
+      .then(({ error }) => { if (error) console.warn('track', error.message); });
+  }
+
+  function renderInfoBar() {
+    const bar = document.getElementById('info-bar');
+    const chip = 'inline-flex items-center gap-1.5 bg-white/10 border border-white/20 text-white text-[10px] font-bold px-3 py-1.5 rounded-full backdrop-blur-md';
+    const items = [];
+    if (project.opening_hours) items.push(`<span class="${chip}"><i class="fa-regular fa-clock"></i> ${esc(project.opening_hours)}</span>`);
+    const loc = safeUrl(project.location_url);
+    if (loc) items.push(`<a href="${esc(loc)}" target="_blank" rel="noopener" class="${chip} hover:bg-white/20 transition"><i class="fa-solid fa-location-dot"></i> ${currentLang === 'ar' ? 'موقعنا' : 'Location'}</a>`);
+    bar.innerHTML = items.join('');
+    bar.classList.toggle('hidden', items.length === 0);
+    bar.classList.toggle('flex', items.length > 0);
+  }
+
+  function renderCalorieNote() {
+    const note = document.getElementById('calorie-note');
+    const any = allProducts.some(p => p.calories != null);
+    note.classList.toggle('hidden', !any);
+    note.textContent = currentLang === 'ar'
+      ? 'يحتاج البالغون في المتوسط إلى 2000 سعرة حرارية يومياً، وقد تختلف الاحتياجات من شخص لآخر.'
+      : 'Adults need an average of 2,000 calories a day; individual needs may vary.';
+  }
 
   async function toggleLanguage() {
     if (translating) return;
@@ -204,6 +248,8 @@
     document.getElementById('promo-label').textContent = currentLang === 'ar' ? 'إعلان / عرض خاص' : 'Special offer';
     if (project && project.promo_message) document.getElementById('promo-text').textContent = tr(project.promo_message);
     renderFilterBar();
+    renderInfoBar();
+    renderCalorieNote();
     handleSearch();
     btnText.textContent = currentLang === 'ar' ? 'English' : 'عربي';
   }
@@ -253,14 +299,17 @@
     }
 
     const [catRes, prodRes] = await Promise.all([
-      supabaseClient.from('categories').select('*').eq('client_id', p.id).order('id', { ascending: true }),
-      supabaseClient.from('products').select('*').eq('client_id', p.id).order('id', { ascending: false })
+      supabaseClient.from('categories').select('*').eq('client_id', p.id),
+      supabaseClient.from('products').select('*').eq('client_id', p.id)
     ]);
-    allCategories = catRes.data || [];
-    allProducts = prodRes.data || [];
+    allCategories = (catRes.data || []).sort(bySort);
+    allProducts = (prodRes.data || []).sort(bySort);
 
+    renderInfoBar();
     renderFilterBar();
     renderMenu(allProducts, false);
+    renderCalorieNote();
+    trackOnce(`v:${p.id}`, 'view');
   }
 
   function renderSocialLinks(p) {
@@ -283,7 +332,7 @@
   }
 
   // ─── العرض ───
-  const productsIn = (cat, list) => list.filter(p => p.category === cat.key || p.category === cat.name);
+  const productsIn = (cat, list) => list.filter(p => p.category === cat.key || p.category === cat.name).sort(bySort);
 
   function renderFilterBar() {
     const bar = document.getElementById('fast-filter-bar');
@@ -291,7 +340,7 @@
     bar.parentElement.classList.toggle('hidden', cats.length === 0);
     bar.innerHTML = cats.map((c, i) => `
       <button type="button" data-cat="${esc(c.id)}" class="cat-pill ${i === 0 ? 'active' : ''} px-4 py-2 rounded-xl bg-white/10 border border-white/25 shrink-0 text-xs text-white font-bold transition">
-        ${esc(tr(c.name))}
+        ${esc(catName(c))}
       </button>`).join('');
   }
 
@@ -318,6 +367,7 @@
             <span class="font-black text-sm text-white shrink-0">${esc(p.price)} ${cur}</span>
           </div>
           ${desc ? `<p class="text-[11px] text-gray-300 line-clamp-2 mt-1">${esc(desc)}</p>` : ''}
+          ${p.calories != null ? `<p class="text-[10px] text-gray-400 mt-1"><i class="fa-solid fa-fire-flame-simple text-amber-400/80"></i> ${Number(p.calories)} ${currentLang === 'ar' ? 'سعرة حرارية' : 'kcal'}</p>` : ''}
           ${!available ? `<p class="text-[10px] font-bold text-red-300 mt-1">${currentLang === 'ar' ? 'غير متوفر حالياً' : 'Currently unavailable'}</p>` : ''}
         </div>
       </article>`;
@@ -337,7 +387,7 @@
 
     container.innerHTML = groups.map(([cat, ps]) => `
       <section id="section-${esc(cat.id)}" class="space-y-3 scroll-mt-24">
-        <h3 class="font-bold text-base text-white tracking-wide border-b border-white/30 pb-1.5">${esc(tr(cat.name))}</h3>
+        <h3 class="font-bold text-base text-white tracking-wide border-b border-white/30 pb-1.5">${esc(catName(cat))}</h3>
         <div class="space-y-2.5">${ps.map(productCard).join('')}</div>
       </section>`).join('');
   }
@@ -400,6 +450,31 @@
     document.getElementById('modalTitle').textContent = productName(p);
     document.getElementById('modalPrice').textContent = `${p.price} ${currentLang === 'ar' ? 'ر.س' : 'SAR'}`;
     document.getElementById('modalDesc').textContent = productDesc(p);
+
+    const L = currentLang === 'ar' ? 0 : 1;
+    const meta = [];
+    if (p.calories != null) {
+      meta.push(`<span class="inline-flex items-center gap-1 bg-amber-400/15 text-amber-200 border border-amber-400/30 text-[10px] font-bold px-2.5 py-1 rounded-full"><i class="fa-solid fa-fire-flame-simple"></i> ${Number(p.calories)} ${L ? 'kcal' : 'سعرة حرارية'}</span>`);
+    }
+    String(p.allergens || '').split(',').filter(k => ALLERGEN_LABELS[k]).forEach(k => {
+      meta.push(`<span class="inline-flex items-center gap-1 bg-white/10 text-gray-200 border border-white/15 text-[10px] font-bold px-2.5 py-1 rounded-full"><i class="fa-solid fa-triangle-exclamation text-[9px] text-amber-300"></i> ${ALLERGEN_LABELS[k][L]}</span>`);
+    });
+    document.getElementById('modalMeta').innerHTML = meta.join('');
+
+    const order = document.getElementById('modalOrder');
+    const wa = String(project.whatsapp_number || '').replace(/\D/g, '');
+    if (project.whatsapp_orders && wa) {
+      const msg = L
+        ? `Hello ${project.name || ''}, I'd like to order: ${productName(p)} (${p.price} SAR)`
+        : `مرحباً ${project.name || ''}، أبغى أطلب: ${p.name} (${p.price} ر.س)`;
+      order.href = `https://wa.me/${wa}?text=${encodeURIComponent(msg)}`;
+      document.getElementById('modalOrderText').textContent = L ? 'Order via WhatsApp' : 'اطلب عبر واتساب';
+      order.classList.remove('hidden'); order.classList.add('flex');
+    } else {
+      order.classList.add('hidden'); order.classList.remove('flex');
+    }
+
+    trackOnce(`d:${p.id}`, 'dish', p.id);
     document.getElementById('productModal').classList.remove('opacity-0', 'pointer-events-none');
   }
 
