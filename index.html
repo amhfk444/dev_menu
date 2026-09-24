@@ -152,6 +152,13 @@
   }
   .example-foot i { margin-inline-end: 4px; }
 
+  /* اختيار نوع النشاط */
+  .type-chip {
+    display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 8px;
+    border-radius: 12px; border: 1.5px solid #d8d2c2; background: var(--cream); color: rgba(35,61,44,.75); transition: all .2s;
+  }
+  .peer:checked + .type-chip { background: var(--brand); border-color: var(--brand); color: var(--sand); }
+
   /* رسائل التنبيه Toast */
   #toast-wrap {
     position: fixed; top: 18px; inset-inline: 0; z-index: 100;
@@ -338,6 +345,16 @@
         <div class="relative">
           <i class="fa-solid fa-store absolute start-3.5 top-1/2 -translate-y-1/2 text-[#233d2c]/35 text-xs"></i>
           <input type="text" id="reg-name" placeholder="مثال: مطعم لانو" required class="input-pro">
+        </div>
+      </div>
+
+      <div>
+        <span class="lbl">نوع النشاط *</span>
+        <div id="reg-type" class="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px] font-black">
+          <label class="cursor-pointer"><input type="radio" name="reg-type" value="restaurant" class="peer hidden" checked><span class="type-chip"><i class="fa-solid fa-utensils"></i> مطعم</span></label>
+          <label class="cursor-pointer"><input type="radio" name="reg-type" value="cafe" class="peer hidden"><span class="type-chip"><i class="fa-solid fa-mug-hot"></i> مقهى</span></label>
+          <label class="cursor-pointer"><input type="radio" name="reg-type" value="mixed" class="peer hidden"><span class="type-chip"><i class="fa-solid fa-burger"></i> مطعم ومقهى</span></label>
+          <label class="cursor-pointer"><input type="radio" name="reg-type" value="bakery" class="peer hidden"><span class="type-chip"><i class="fa-solid fa-bread-slice"></i> مخبز وحلويات</span></label>
         </div>
       </div>
 
@@ -584,7 +601,8 @@
 
     setRegisterBusy(true);
     try {
-      formDataCache = { name, email, phone };
+      const businessType = document.querySelector('[name="reg-type"]:checked')?.value || 'restaurant';
+      formDataCache = { name, email, phone, businessType };
       const { error } = await supabaseClient.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
       if (error) return showToast(otpErrorMessage(error), 'error');
 
@@ -663,9 +681,13 @@
       const { data, error } = await supabaseClient.auth.verifyOtp({ email: formDataCache.email, token, type: 'email' });
       if (error || !data.session) return showToast('رمز التحقق غير صحيح أو منتهي الصلاحية', 'error');
 
-      const { error: regErr } = await supabaseClient.rpc('register_client', {
+      const { data: newSlug, error: regErr } = await supabaseClient.rpc('register_client', {
         p_name: formDataCache.name, p_slug: null, p_phone: formDataCache.phone
       });
+      // حفظ نوع النشاط للمتجر الجديد
+      if (!regErr && newSlug && formDataCache.businessType !== 'restaurant') {
+        await supabaseClient.from('clients').update({ business_type: formDataCache.businessType }).eq('client_slug', newSlug);
+      }
 
       if (regErr) {
         showToast(registerErrorMessage(regErr), 'error');
