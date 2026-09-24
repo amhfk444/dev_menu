@@ -23,7 +23,7 @@ tailwind.config = {
 
 <style>
   body { font-family: 'Cairo', sans-serif; background-color: #0b0b0b; color: #ffffff; min-height: 100vh; }
-  .pro-card { background: rgba(20, 20, 20, 0.95); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; transition: all 0.3s ease; }
+  .pro-card { background: rgba(20, 20, 20, 0.95); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; }
   .input-pro {
     width: 100%; background-color: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 0.75rem;
@@ -33,33 +33,33 @@ tailwind.config = {
   .tab-btn.active { background-color: #ffffff; color: #000000; font-weight: 800; }
   #toast { transition: transform 0.3s ease, opacity 0.3s ease; }
   #toast.show { transform: translateY(0); opacity: 1; }
-  .editing-glow { border-color: rgba(255, 193, 7, 0.8) !important; box-shadow: 0 0 15px rgba(255, 193, 7, 0.15); }
+  .editing-glow { border-color: rgba(251, 191, 36, 0.8) !important; box-shadow: 0 0 15px rgba(251, 191, 36, 0.15); }
 </style>
 </head>
 
 <body class="py-6 px-3 md:px-8">
 
 <!-- رسائل التنبيه Toast -->
-<div id="toast" class="fixed bottom-5 left-5 z-50 transform translate-y-10 opacity-0 pointer-events-none bg-white text-black px-5 py-3 rounded-2xl shadow-2xl border border-white/30 text-xs font-bold flex items-center gap-2">
-  <i id="toast-icon" class="fa-solid fa-circle-check text-green-600"></i>
-  <span id="toast-msg">تمت العملية بنجاح</span>
-</div>
-
-<!-- نافذة تأكيد الحذف المخصصة (Modal) -->
-<div id="delete-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-  <div class="pro-card max-w-md w-full p-6 space-y-4 border border-white/20 text-center animate-in fade-in zoom-in duration-200">
+<!-- نافذة تأكيد الحذف -->
+<div id="delete-modal" class="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm items-center justify-center p-4 hidden">
+  <div role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" class="pro-card max-w-md w-full p-6 space-y-4 text-center">
     <div class="w-12 h-12 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 flex items-center justify-center mx-auto text-xl">
       <i class="fa-solid fa-triangle-exclamation"></i>
     </div>
-    <div class="space-y-1">
-      <h3 id="delete-modal-title" class="text-sm font-bold text-white">تأكيد عملية الحذف</h3>
-      <p id="delete-modal-desc" class="text-xs text-gray-400">هل أنت متأكد من رغبتك في حذف هذا العنصر؟ لا يمكن التراجع عن هذا الإجراء لاحقاً.</p>
+    <div class="space-y-1.5">
+      <h3 id="delete-modal-title" class="text-sm font-bold text-white"></h3>
+      <p id="delete-modal-desc" class="text-xs text-gray-400 leading-relaxed"></p>
     </div>
     <div class="flex gap-2 pt-2">
-      <button onclick="closeDeleteModal()" class="flex-1 bg-white/10 hover:bg-white/20 text-white font-bold py-2.5 rounded-xl text-xs transition border border-white/20">تراجع</button>
-      <button id="confirm-delete-btn" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-lg">تأكيد الحذف</button>
+      <button type="button" onclick="closeDeleteModal()" class="flex-1 bg-white/10 hover:bg-white/20 text-white font-bold py-2.5 rounded-xl text-xs transition border border-white/20">تراجع</button>
+      <button type="button" id="confirm-delete-btn" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition">تأكيد الحذف</button>
     </div>
   </div>
+</div>
+
+<div id="toast" class="fixed bottom-5 left-5 z-[70] transform translate-y-10 opacity-0 pointer-events-none bg-white text-black px-5 py-3 rounded-2xl shadow-2xl border border-white/30 text-xs font-bold flex items-center gap-2">
+  <i id="toast-icon" class="fa-solid fa-circle-check text-green-600"></i>
+  <span id="toast-msg">تمت العملية بنجاح</span>
 </div>
 
 <!-- شاشة التحقق من الدخول -->
@@ -82,13 +82,13 @@ tailwind.config = {
       </div>
     </div>
     <div class="flex items-center gap-2">
-      <button onclick="logout()" class="text-xs bg-white/10 hover:bg-white/20 text-white font-bold px-4 py-2 rounded-xl transition border border-white/20 flex items-center gap-1.5">
-        <i class="fa-solid fa-right-from-bracket text-[10px]"></i> خروج
-      </button>
-      <a id="preview-menu-btn" href="#" target="_blank" class="text-xs bg-white text-black font-bold px-4 py-2 rounded-xl transition hover:bg-gray-200 flex items-center gap-1.5 shadow-lg">
-        <span>معاينة المنيو الحي</span>
-        <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-      </a>
+    <button onclick="logout()" class="text-xs bg-white/10 hover:bg-white/20 text-white font-bold px-4 py-2 rounded-xl transition border border-white/20 flex items-center gap-1.5">
+      <i class="fa-solid fa-right-from-bracket text-[10px]"></i> خروج
+    </button>
+    <a id="preview-menu-btn" href="#" target="_blank" class="text-xs bg-white text-black font-bold px-4 py-2 rounded-xl transition hover:bg-gray-200 flex items-center gap-1.5 shadow-lg">
+      <span>معاينة المنيو الحي</span>
+      <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+    </a>
     </div>
   </header>
 
@@ -186,18 +186,22 @@ tailwind.config = {
       <button onclick="updateSocialLinks()" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-2 rounded-xl text-xs transition shadow-md">حفظ روابط التواصل</button>
     </div>
 
-    <!-- العروض والرسائل الترويجية (مع زر حفظ وحذف) -->
+    <!-- العروض والرسائل الترويجية -->
     <div class="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-3">
       <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
         <i class="fa-solid fa-bullhorn text-amber-300"></i> الرسائل الترويجية والعروض (تظهر أعلى المنيو للعملاء)
       </h4>
+      <div id="promo-status" class="flex items-center gap-2 text-[11px]"></div>
       <div class="flex flex-col sm:flex-row gap-2">
-        <input type="text" id="promo-message-input" placeholder="مثال: خصم 20% على جميع الأطباق الرئيسية اليوم!" class="input-pro text-xs flex-1">
+        <div class="relative flex-1">
+          <input type="text" id="promo-message-input" maxlength="120" placeholder="مثال: خصم 20% على جميع الأطباق الرئيسية اليوم!" class="input-pro text-xs pl-14">
+          <span id="promo-counter" class="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-500 font-mono" dir="ltr">0/120</span>
+        </div>
         <div class="flex gap-2 shrink-0">
-          <button onclick="updatePromoMessage()" class="bg-white text-black hover:bg-gray-200 px-5 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-md">
+          <button type="button" id="promo-save-btn" onclick="updatePromoMessage()" class="flex-1 sm:flex-none bg-white text-black hover:bg-gray-200 px-5 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
             <i class="fa-solid fa-floppy-disk text-[11px]"></i> حفظ ونشر
           </button>
-          <button onclick="deletePromoMessage()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-4 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5">
+          <button type="button" id="promo-delete-btn" onclick="deletePromoMessage()" class="flex-1 sm:flex-none bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-4 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
             <i class="fa-solid fa-trash text-[11px]"></i> حذف الإعلان
           </button>
         </div>
@@ -315,7 +319,9 @@ tailwind.config = {
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZG9hbWNneGdraWNyYnVmcGNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwMTA5MzAsImV4cCI6MjEwNTU4NjkzMH0.45zKx4ljXJ27SS-ukc62qiu52movhDgSoC9OEnK9NHk';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+  // حماية من حقن الكود: أي نص قادم من قاعدة البيانات يمر من هنا قبل عرضه
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // يقبل روابط http/https فقط (يمنع روابط javascript:)
   function safeUrl(u) {
     if (!u) return '';
     try { const x = new URL(u); return (x.protocol === 'https:' || x.protocol === 'http:') ? x.href : ''; }
@@ -338,25 +344,6 @@ tailwind.config = {
     showToast.t = setTimeout(() => { toast.classList.remove('show'); }, 3200);
   }
 
-  let pendingDeleteAction = null;
-  function openDeleteModal(title, desc, onConfirm) {
-    document.getElementById('delete-modal-title').textContent = title;
-    document.getElementById('delete-modal-desc').textContent = desc;
-    pendingDeleteAction = onConfirm;
-    document.getElementById('delete-modal').classList.remove('hidden');
-  }
-  function closeDeleteModal() {
-    document.getElementById('delete-modal').classList.add('hidden');
-    pendingDeleteAction = null;
-  }
-  document.getElementById('confirm-delete-btn').addEventListener('click', async () => {
-    if (pendingDeleteAction) {
-      const action = pendingDeleteAction;
-      closeDeleteModal();
-      await action();
-    }
-  });
-
   function switchTab(tab) {
     document.getElementById('section-products').classList.toggle('hidden', tab !== 'products');
     document.getElementById('section-categories').classList.toggle('hidden', tab !== 'categories');
@@ -364,6 +351,7 @@ tailwind.config = {
     document.getElementById('tab-categories').classList.toggle('active', tab === 'categories');
   }
 
+  // رابط المنيو مبني على مسار الصفحة الحالية (يشتغل على GitHub Pages داخل مجلد المشروع)
   const menuUrl = () => new URL(`menu.html?client=${encodeURIComponent(client.client_slug)}`, window.location.href).href;
 
   async function logout() {
@@ -371,6 +359,7 @@ tailwind.config = {
     window.location.replace('login.html');
   }
 
+  // ─── التحقق من الدخول وتحميل المتجر ───
   async function initAuth() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) { window.location.replace('login.html'); return false; }
@@ -383,6 +372,7 @@ tailwind.config = {
       if (!requestedSlug) { window.location.replace('super-admin.html'); return false; }
       query = query.eq('client_slug', requestedSlug);
     }
+    // لصاحب المتجر: سياسات الحماية ترجع متجره فقط، والرابط ?client= يتم تجاهله
     const { data, error } = await query.order('id').limit(1);
 
     if (error || !data || data.length === 0) {
@@ -425,6 +415,7 @@ tailwind.config = {
     if (logo) document.getElementById('logo-preview').src = logo;
 
     renderSubscriptionStatus();
+    renderPromoState();
   }
 
   function renderSubscriptionStatus() {
@@ -436,7 +427,7 @@ tailwind.config = {
 
     let label, color;
     if (client.is_active === false) { label = 'المتجر موقوف من الإدارة — المنيو لا يظهر للزبائن'; color = 'text-red-400'; }
-    else if (expired)                 { label = 'الاشتراك منتهي — المنيو لا يظهر للزبائن'; color = 'text-red-400'; }
+    else if (expired)               { label = 'الاشتراك منتهي — المنيو لا يظهر للزبائن'; color = 'text-red-400'; }
     else if (status === 'trial')    { label = 'فترة تجريبية'; color = 'text-blue-400'; }
     else                            { label = 'مشترك مدفوع نشط'; color = 'text-green-400'; }
 
@@ -459,6 +450,7 @@ tailwind.config = {
       .catch(() => showToast('تعذر النسخ، انسخ الرابط من زر المعاينة', true));
   }
 
+  // يحدّث بيانات المتجر ويتأكد إن التحديث تم فعلاً
   async function updateClient(payload) {
     const { data, error } = await supabaseClient.from('clients').update(payload).eq('id', currentClientId).select('id');
     if (error || !data || data.length === 0) { console.error(error); return false; }
@@ -475,25 +467,70 @@ tailwind.config = {
     } else showToast('تعذر حفظ الاسم', true);
   }
 
-  async function updatePromoMessage() {
-    const msg = document.getElementById('promo-message-input').value.trim();
-    if (await updateClient({ promo_message: msg })) {
-      showToast(msg ? 'تم حفظ ونشر العرض في المنيو بنجاح' : 'تم حفظ الحقل فارغاً');
-    } else {
-      showToast('تعذر نشر العرض', true);
-    }
+  // ─── العرض الترويجي: حالة + حفظ + حذف ───
+  function renderPromoState() {
+    const input = document.getElementById('promo-message-input');
+    const current = (client.promo_message || '').trim();
+    const typed = input.value.trim();
+    document.getElementById('promo-counter').textContent = `${input.value.length}/120`;
+    document.getElementById('promo-status').innerHTML = current
+      ? `<span class="inline-flex items-center gap-1.5 bg-green-500/15 text-green-300 border border-green-500/30 px-2.5 py-1 rounded-full font-bold"><span class="w-1.5 h-1.5 rounded-full bg-green-400"></span> منشور الآن في المنيو</span>`
+      : `<span class="inline-flex items-center gap-1.5 bg-white/5 text-gray-400 border border-white/10 px-2.5 py-1 rounded-full font-bold"><span class="w-1.5 h-1.5 rounded-full bg-gray-500"></span> لا يوجد عرض منشور</span>`;
+    // الحفظ متاح فقط إذا تغيّر النص وكان غير فارغ، والحذف فقط إذا فيه عرض منشور
+    document.getElementById('promo-save-btn').disabled = !typed || typed === current;
+    document.getElementById('promo-delete-btn').disabled = !current;
   }
 
-  async function deletePromoMessage() {
-    openDeleteModal('حذف الإعلان الترويجي', 'هل أنت متأكد من حذف وإزالة هذا العرض من المنيو الحي للعملاء؟', async () => {
+  async function updatePromoMessage() {
+    const msg = document.getElementById('promo-message-input').value.trim();
+    if (!msg) return showToast('اكتب نص العرض أولاً', true);
+    if (msg === (client.promo_message || '').trim()) return;
+    const wasEmpty = !(client.promo_message || '').trim();
+    if (await updateClient({ promo_message: msg })) {
+      document.getElementById('promo-message-input').value = msg;
+      showToast(wasEmpty ? 'تم نشر العرض في المنيو' : 'تم تحديث العرض في المنيو');
+    } else showToast('تعذر حفظ العرض', true);
+    renderPromoState();
+  }
+
+  function deletePromoMessage() {
+    if (!(client.promo_message || '').trim()) return;
+    openDeleteModal('حذف الإعلان الترويجي', 'سيختفي هذا العرض من أعلى المنيو فوراً.', async () => {
       if (await updateClient({ promo_message: '' })) {
         document.getElementById('promo-message-input').value = '';
-        showToast('تم حذف وإزالة الإعلان بنجاح');
-      } else {
-        showToast('تعذر حذف الإعلان', true);
-      }
+        showToast('تم حذف الإعلان من المنيو');
+      } else showToast('تعذر حذف الإعلان', true);
+      renderPromoState();
     });
   }
+
+  document.getElementById('promo-message-input').addEventListener('input', renderPromoState);
+  document.getElementById('promo-message-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); if (!document.getElementById('promo-save-btn').disabled) updatePromoMessage(); }
+  });
+
+  // ─── نافذة تأكيد الحذف ───
+  let pendingDeleteAction = null;
+  function openDeleteModal(title, desc, onConfirm) {
+    document.getElementById('delete-modal-title').textContent = title;
+    document.getElementById('delete-modal-desc').textContent = desc;
+    pendingDeleteAction = onConfirm;
+    const m = document.getElementById('delete-modal');
+    m.classList.remove('hidden'); m.classList.add('flex');
+    document.getElementById('confirm-delete-btn').focus();
+  }
+  function closeDeleteModal() {
+    const m = document.getElementById('delete-modal');
+    m.classList.add('hidden'); m.classList.remove('flex');
+    pendingDeleteAction = null;
+  }
+  document.getElementById('confirm-delete-btn').addEventListener('click', async () => {
+    const action = pendingDeleteAction;
+    closeDeleteModal();
+    if (action) await action();
+  });
+  document.getElementById('delete-modal').addEventListener('click', (e) => { if (e.target.id === 'delete-modal') closeDeleteModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && pendingDeleteAction) closeDeleteModal(); });
 
   async function updateSocialLinks() {
     const fields = { website_url: 'social-web', tiktok_url: 'social-tiktok', instagram_url: 'social-insta', snapchat_url: 'social-snap' };
@@ -510,6 +547,7 @@ tailwind.config = {
     else showToast('تعذر حفظ الروابط', true);
   }
 
+  // ─── رفع الملفات ───
   function validateFile(file, kind) {
     if (!file) return 'اختر الملف أولاً';
     if (!file.type.startsWith(kind + '/')) return kind === 'video' ? 'الملف لازم يكون فيديو (MP4)' : 'الملف لازم يكون صورة';
@@ -518,6 +556,7 @@ tailwind.config = {
     return '';
   }
 
+  // الملفات تنحفظ داخل مجلد رقم المتجر: menu-images/<id>/...
   async function uploadFile(file, prefix) {
     const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
     const path = `${currentClientId}/${prefix}_${Date.now()}.${ext}`;
@@ -532,7 +571,7 @@ tailwind.config = {
 
   async function uploadMedia(type) {
     const cfg = {
-      logo:       { input: 'logo-file',     kind: 'image', payload: url => ({ logo_url: url }) },
+      logo:     { input: 'logo-file',     kind: 'image', payload: url => ({ logo_url: url }) },
       bg_image: { input: 'bg-img-file',   kind: 'image', payload: url => ({ bg_image_url: url, bg_video_url: null }) },
       bg_video: { input: 'bg-video-file', kind: 'video', payload: url => ({ bg_video_url: url, bg_image_url: null }) }
     }[type];
@@ -552,6 +591,7 @@ tailwind.config = {
     } else showToast('تم رفع الملف لكن تعذر حفظه في المتجر', true);
   }
 
+  // ─── البيانات ───
   const productsInCategory = (cat) => loadedProducts.filter(p => p.category === cat.key || p.category === cat.name);
 
   async function refreshAll() {
@@ -589,7 +629,7 @@ tailwind.config = {
           <span class="font-bold text-white">${esc(c.name)}</span>
           <span class="text-gray-400 text-[10px]">(${esc(c.key)}) — ${productsInCategory(c).length} طبق</span>
         </div>
-        <button onclick="promptDeleteCategory(${Number(c.id)}, '${esc(c.name)}')" class="text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-trash"></i> حذف</button>
+        <button onclick="deleteCategory(${Number(c.id)})" class="text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-trash text-[10px]"></i> حذف</button>
       </div>`).join('');
   }
 
@@ -608,18 +648,15 @@ tailwind.config = {
     refreshAll();
   });
 
-  function promptDeleteCategory(id, name) {
+  async function deleteCategory(id) {
     const cat = loadedCategories.find(c => c.id === id);
     if (!cat) return;
     const count = productsInCategory(cat).length;
-    if (count > 0) {
-      showToast(`القسم فيه ${count} طبق. احذف الأطباق أولاً`, true);
-      return;
-    }
-    openDeleteModal('حذف القسم', `هل أنت متأكد من حذف قسم "${name}" نهائياً؟`, async () => {
+    if (count > 0) return showToast(`القسم فيه ${count} طبق. انقلها لقسم آخر (زر تعديل) أو احذفها أولاً`, true);
+    openDeleteModal('حذف القسم', `هل أنت متأكد من حذف قسم "${cat.name}" نهائياً؟`, async () => {
       const { data, error } = await supabaseClient.from('categories').delete().eq('id', id).eq('client_id', currentClientId).select('id');
       if (error || !data || !data.length) return showToast('تعذر حذف القسم', true);
-      showToast('تم حذف القسم بنجاح');
+      showToast('تم حذف القسم');
       refreshAll();
     });
   }
@@ -648,9 +685,8 @@ tailwind.config = {
       const isAvailable = p.is_available !== false;
       const isBestseller = p.is_bestseller === true;
       const img = safeUrl(p.image_url);
-      const isEditingThis = editingProductId === id;
       return `
-        <div class="flex items-center justify-between bg-white/5 p-2.5 rounded-xl border ${isEditingThis ? 'editing-glow border-amber-400' : 'border-white/10'} text-xs gap-2 transition">
+        <div class="flex items-center justify-between bg-white/5 p-2.5 rounded-xl border ${editingProductId === id ? 'editing-glow' : 'border-white/10'} text-xs gap-2 transition">
           <div class="flex items-center gap-2.5 min-w-0">
             ${img ? `<img src="${esc(img)}" alt="" loading="lazy" class="w-10 h-10 object-cover rounded-xl border border-white/20 shrink-0">` : `<div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0"><i class="fa-solid fa-utensils text-gray-400 text-xs"></i></div>`}
             <div class="min-w-0">
@@ -662,10 +698,10 @@ tailwind.config = {
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
-            <button onclick="startEdit(${id})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border bg-white/5 text-gray-200 border-white/15 hover:bg-white/10 transition"><i class="fa-solid fa-pen text-[9px]"></i> تعديل</button>
-            <button onclick="toggleField(${id}, 'is_bestseller', ${isBestseller})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border ${isBestseller ? 'bg-white text-black border-white' : 'bg-white/5 text-gray-300 border-white/10'} transition">تمييز</button>
-            <button onclick="toggleField(${id}, 'is_available', ${isAvailable})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border ${isAvailable ? 'bg-green-500/20 text-green-300 border-green-500/30' : 'bg-red-500/20 text-red-300 border-red-500/30'} transition">${isAvailable ? 'متوفر' : 'نفذت'}</button>
-            <button onclick="promptDeleteProduct(${id}, '${esc(p.name)}')" aria-label="حذف" class="text-red-400 bg-red-500/10 hover:bg-red-500/20 p-2 rounded-lg border border-red-500/20 transition"><i class="fa-solid fa-trash"></i></button>
+            <button onclick="startEdit(${id})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border bg-white/5 text-gray-200 border-white/15"><i class="fa-solid fa-pen text-[9px]"></i> تعديل</button>
+            <button onclick="toggleField(${id}, 'is_bestseller', ${isBestseller})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border ${isBestseller ? 'bg-white text-black border-white' : 'bg-white/5 text-gray-300 border-white/10'}">تمييز</button>
+            <button onclick="toggleField(${id}, 'is_available', ${isAvailable})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border ${isAvailable ? 'bg-green-500/20 text-green-300 border-green-500/30' : 'bg-red-500/20 text-red-300 border-red-500/30'}">${isAvailable ? 'متوفر' : 'نفذت'}</button>
+            <button onclick="deleteProduct(${id})" aria-label="حذف" class="text-red-400 bg-red-500/10 p-2 rounded-lg border border-red-500/20"><i class="fa-solid fa-trash"></i></button>
           </div>
         </div>`;
     }).join('');
@@ -680,16 +716,18 @@ tailwind.config = {
     refreshAll();
   }
 
-  function promptDeleteProduct(id, name) {
-    openDeleteModal('حذف الطبق', `هل أنت متأكد من حذف طبق "${name}" من القائمة؟`, async () => {
+  async function deleteProduct(id) {
+    const p = loadedProducts.find(x => x.id === id);
+    openDeleteModal('حذف الطبق', `هل أنت متأكد من حذف "${p ? p.name : 'الطبق'}" من المنيو؟`, async () => {
       const { data, error } = await supabaseClient.from('products').delete().eq('id', id).eq('client_id', currentClientId).select('id');
       if (error || !data || !data.length) return showToast('تعذر حذف الطبق', true);
       if (editingProductId === id) cancelEdit();
-      showToast('تم حذف الطبق بنجاح');
+      showToast('تم حذف الطبق');
       refreshAll();
     });
   }
 
+  // ─── إضافة وتعديل الأطباق ───
   function startEdit(id) {
     const p = loadedProducts.find(x => x.id === id);
     if (!p) return;
@@ -759,7 +797,7 @@ tailwind.config = {
       }
       if (result.error || !result.data || !result.data.length) { console.error(result.error); return showToast('تعذر حفظ الطبق', true); }
 
-      showToast(editingProductId ? 'تم حفظ التعديلات بنجاح' : 'تمت إضافة الطبق بنجاح');
+      showToast(editingProductId ? 'تم حفظ التعديلات' : 'تمت إضافة الطبق');
       cancelEdit();
       refreshAll();
     } finally {
