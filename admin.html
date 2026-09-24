@@ -92,6 +92,9 @@ tailwind.config = {
     </div>
   </header>
 
+  <!-- شريط تنبيه انتهاء الاشتراك -->
+  <div id="renew-banner" class="hidden rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 border"></div>
+
   <!-- بطاقة معلومات الاشتراك والتنبيهات والـ QR Code -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <!-- حالة الاشتراك -->
@@ -113,12 +116,26 @@ tailwind.config = {
       <div class="space-y-2">
         <h3 class="text-xs font-bold text-white"><i class="fa-solid fa-qrcode text-amber-400"></i> باركود المنيو الخاص بك</h3>
         <p class="text-[10px] text-gray-400">امسح الكود لفتح المنيو أو شاركه مع زملائك</p>
-        <button onclick="copyMenuLink()" class="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold border border-white/20 transition">
-          <i class="fa-solid fa-copy"></i> نسخ رابط المنيو
-        </button>
+        <div class="flex flex-wrap gap-1.5">
+          <button onclick="copyMenuLink()" class="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold border border-white/20 transition">
+            <i class="fa-solid fa-copy"></i> نسخ الرابط
+          </button>
+          <button id="qr-download-btn" onclick="downloadQrCard()" class="bg-amber-400 hover:bg-amber-300 text-black px-3 py-1.5 rounded-lg text-[10px] font-bold transition">
+            <i class="fa-solid fa-print"></i> تحميل للطباعة
+          </button>
+        </div>
       </div>
       <div id="qrcode" class="bg-white p-2 rounded-xl shrink-0"></div>
     </div>
+  </div>
+
+  <!-- إحصائيات المنيو -->
+  <div class="pro-card p-5 space-y-4">
+    <div class="flex items-center justify-between border-b border-white/15 pb-2">
+      <h3 class="text-xs font-bold text-white flex items-center gap-2"><i class="fa-solid fa-chart-simple text-emerald-400"></i> إحصائيات المنيو</h3>
+      <span class="text-[10px] text-gray-500">عدد مرات فتح المنيو من الزبائن</span>
+    </div>
+    <div id="stats-body" class="text-xs text-gray-400">جاري التحميل...</div>
   </div>
 
   <!-- الهوية والبصرية -->
@@ -176,7 +193,7 @@ tailwind.config = {
         </div>
         <div>
           <label class="text-[10px] text-gray-300 block mb-1">رقم الواتساب</label>
-          <input type="text" id="social-whatsapp" placeholder="9665xxxxxxxx" class="input-pro text-xs">
+          <input type="tel" id="social-whatsapp" placeholder="05xxxxxxxx" class="input-pro text-xs" dir="ltr">
         </div>
         <div>
           <label class="text-[10px] text-gray-300 block mb-1">رابط سناب شات</label>
@@ -184,6 +201,31 @@ tailwind.config = {
         </div>
       </div>
       <button onclick="updateSocialLinks()" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-2 rounded-xl text-xs transition shadow-md">حفظ روابط التواصل</button>
+    </div>
+
+    <!-- معلومات المطعم -->
+    <div class="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-3">
+      <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
+        <i class="fa-solid fa-store text-emerald-400"></i> معلومات المطعم (تظهر أعلى المنيو)
+      </h4>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="text-[10px] text-gray-300 block mb-1">ساعات العمل</label>
+          <input type="text" id="info-hours" maxlength="80" placeholder="مثال: يومياً من 1 ظهراً حتى 1 فجراً" class="input-pro text-xs">
+        </div>
+        <div>
+          <label class="text-[10px] text-gray-300 block mb-1">رابط الموقع على خرائط Google</label>
+          <input type="url" id="info-location" placeholder="https://maps.app.goo.gl/..." class="input-pro text-xs" dir="ltr">
+        </div>
+      </div>
+      <label class="flex items-start gap-2.5 bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer">
+        <input type="checkbox" id="info-wa-orders" class="w-4 h-4 mt-0.5 accent-green-500 cursor-pointer">
+        <span class="text-xs">
+          <b class="text-white"><i class="fa-brands fa-whatsapp text-green-400"></i> استقبال الطلبات عبر واتساب</b>
+          <span class="block text-[10px] text-gray-400 mt-0.5">يظهر زر "اطلب عبر واتساب" في تفاصيل كل طبق، ويُرسل الطلب لرقم الواتساب المحفوظ في روابط التواصل.</span>
+        </span>
+      </label>
+      <button onclick="updateRestaurantInfo()" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-2 rounded-xl text-xs transition shadow-md">حفظ معلومات المطعم</button>
     </div>
 
     <!-- العروض والرسائل الترويجية -->
@@ -249,6 +291,31 @@ tailwind.config = {
             <label class="text-[11px] text-gray-300 block mb-1">وصف المكونات</label>
             <textarea id="prod-desc" placeholder="وصف موجز للمكونات..." class="input-pro h-16 resize-none"></textarea>
           </div>
+          <div>
+            <label class="text-[11px] text-gray-300 block mb-1">السعرات الحرارية <span class="text-gray-500">(مطلوبة من هيئة الغذاء والدواء)</span></label>
+            <div class="relative">
+              <input type="number" min="0" step="1" id="prod-calories" placeholder="مثال: 450" class="input-pro pl-14" dir="ltr">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-500">سعرة</span>
+            </div>
+          </div>
+          <details class="bg-white/5 rounded-xl border border-white/10 group">
+            <summary class="cursor-pointer select-none p-2.5 text-[11px] font-bold text-gray-200 flex items-center justify-between">
+              <span><i class="fa-solid fa-language text-blue-300"></i> الاسم والوصف بالإنجليزي <span class="text-gray-500 font-normal">(اختياري)</span></span>
+              <i class="fa-solid fa-chevron-down text-[9px] text-gray-500 group-open:rotate-180 transition"></i>
+            </summary>
+            <div class="p-2.5 pt-0 space-y-2">
+              <input type="text" id="prod-name-en" placeholder="Dish name" class="input-pro text-xs" dir="ltr">
+              <textarea id="prod-desc-en" placeholder="Short description" class="input-pro text-xs h-14 resize-none" dir="ltr"></textarea>
+              <p class="text-[10px] text-gray-500">إذا تركتها فارغة، يترجمها المنيو آلياً للزبون.</p>
+            </div>
+          </details>
+          <details class="bg-white/5 rounded-xl border border-white/10 group">
+            <summary class="cursor-pointer select-none p-2.5 text-[11px] font-bold text-gray-200 flex items-center justify-between">
+              <span><i class="fa-solid fa-triangle-exclamation text-amber-300"></i> مسببات الحساسية <span class="text-gray-500 font-normal">(اختياري)</span></span>
+              <i class="fa-solid fa-chevron-down text-[9px] text-gray-500 group-open:rotate-180 transition"></i>
+            </summary>
+            <div id="allergen-options" class="p-2.5 pt-0 grid grid-cols-3 gap-1.5 text-[10px]"></div>
+          </details>
           <div class="flex items-center gap-2 bg-white/5 p-2.5 rounded-xl border border-white/10">
             <input type="checkbox" id="prod-bestseller" class="w-4 h-4 accent-black cursor-pointer">
             <label for="prod-bestseller" class="text-xs font-bold text-white cursor-pointer flex items-center gap-1.5">
@@ -294,8 +361,8 @@ tailwind.config = {
             <input type="text" id="cat-name" placeholder="مثال: المقبلات الساخنة" required class="input-pro">
           </div>
           <div>
-            <label class="text-[11px] text-gray-300 block mb-1">المعرف الإنجليزي (Key) *</label>
-            <input type="text" id="cat-key" placeholder="مثال: appetizers" required class="input-pro">
+            <label class="text-[11px] text-gray-300 block mb-1">اسم القسم بالإنجليزي <span class="text-gray-500">(اختياري)</span></label>
+            <input type="text" id="cat-name-en" placeholder="Hot Appetizers" class="input-pro" dir="ltr">
           </div>
           <button type="submit" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-2.5 rounded-xl text-xs transition shadow-lg">حفظ القسم</button>
         </form>
@@ -414,8 +481,21 @@ tailwind.config = {
     const logo = safeUrl(client.logo_url);
     if (logo) document.getElementById('logo-preview').src = logo;
 
+    document.getElementById('info-hours').value = client.opening_hours || '';
+    document.getElementById('info-location').value = client.location_url || '';
+    document.getElementById('info-wa-orders').checked = client.whatsapp_orders === true;
+
     renderSubscriptionStatus();
     renderPromoState();
+  }
+
+  // ─── الاشتراك والتجديد ───
+  const SUPPORT_WA = '966561161448';
+  const daysText = (n) => n === 1 ? 'يوم واحد' : n === 2 ? 'يومين' : n <= 10 ? `${n} أيام` : `${n} يوم`;
+  function renewLink(plan) {
+    const label = plan === 'year' ? 'السنوية (1149 ر.س)' : 'الشهرية (99 ر.س)';
+    const msg = `مرحباً، أبغى أشترك/أجدد متجر "${client.name || ''}" (${client.client_slug}) بالباقة ${label}.`;
+    return `https://wa.me/${SUPPORT_WA}?text=${encodeURIComponent(msg)}`;
   }
 
   function renderSubscriptionStatus() {
@@ -424,20 +504,50 @@ tailwind.config = {
     const end = status === 'active' ? client.subscription_end_date : client.trial_ends_at;
     const left = end ? Math.ceil((new Date(end) - Date.now()) / 86400000) : null;
     const expired = (status !== 'active' && status !== 'trial') || (left !== null && left <= 0);
+    const suspended = client.is_active === false;
+    const live = !suspended && !expired;
 
     let label, color;
-    if (client.is_active === false) { label = 'المتجر موقوف من الإدارة — المنيو لا يظهر للزبائن'; color = 'text-red-400'; }
-    else if (expired)               { label = 'الاشتراك منتهي — المنيو لا يظهر للزبائن'; color = 'text-red-400'; }
-    else if (status === 'trial')    { label = 'فترة تجريبية'; color = 'text-blue-400'; }
-    else                            { label = 'مشترك مدفوع نشط'; color = 'text-green-400'; }
+    if (suspended)               { label = 'المتجر موقوف من الإدارة — المنيو لا يظهر للزبائن'; color = 'text-red-400'; }
+    else if (expired)            { label = 'الاشتراك منتهي — المنيو لا يظهر للزبائن'; color = 'text-red-400'; }
+    else if (status === 'trial') { label = 'فترة تجريبية'; color = 'text-blue-400'; }
+    else                         { label = 'مشترك مدفوع نشط'; color = 'text-green-400'; }
 
     const endText = end ? new Date(end).toLocaleDateString('ar-SA-u-ca-gregory') : '';
-    const live = client.is_active !== false && !expired;
+    const showPlans = !suspended && (!live || status === 'trial' || (left !== null && left <= 7));
+    const verb = status === 'active' ? 'جدّد' : 'اشترك';
     box.innerHTML = `
       <p>الحالة: <span class="${color} font-bold">${label}</span></p>
-      ${live && left !== null ? `<p class="text-[11px] text-gray-300">متبقي <b>${left}</b> يوم — ينتهي ${esc(endText)}</p>` : ''}
-      ${!live ? `<p class="text-[11px] text-amber-300">للتجديد تواصل معنا عبر واتساب: <a href="https://wa.me/966561161448" target="_blank" rel="noopener" class="underline">056 116 1448</a></p>` : ''}
+      ${live && left !== null ? `<p class="text-[11px] text-gray-300">متبقي <b>${daysText(left)}</b> — ينتهي ${esc(endText)}</p>` : ''}
+      ${showPlans ? `
+        <div class="flex flex-wrap gap-1.5 pt-1">
+          <a href="${esc(renewLink('month'))}" target="_blank" rel="noopener" class="bg-white/10 hover:bg-white/20 border border-white/20 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="fa-brands fa-whatsapp text-green-400"></i> ${verb} شهرياً · 99 ر.س</a>
+          <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/40 text-amber-200 px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="fa-brands fa-whatsapp"></i> ${verb} سنوياً · 1149 ر.س</a>
+        </div>` : ''}
       <p class="text-[10px] text-gray-400">معرف المتجر: ${esc(client.client_slug)}</p>`;
+
+    // شريط تنبيه بارز أعلى اللوحة
+    const banner = document.getElementById('renew-banner');
+    if (!live || (left !== null && left <= 3)) {
+      const danger = !live;
+      const text = suspended ? 'متجرك موقوف من الإدارة، والمنيو لا يظهر للزبائن حالياً.'
+        : !live ? 'انتهى اشتراكك، والمنيو لا يظهر للزبائن حالياً. جدّد الآن ليعود فوراً.'
+        : `${status === 'trial' ? 'تنتهي تجربتك المجانية' : 'ينتهي اشتراكك'} خلال ${daysText(left)}. جدّد الآن حتى لا يتوقف المنيو.`;
+      banner.className = `rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 border ${danger ? 'bg-red-500/10 border-red-500/40' : 'bg-amber-500/10 border-amber-500/40'}`;
+      banner.innerHTML = `
+        <p class="text-xs font-bold ${danger ? 'text-red-200' : 'text-amber-200'} flex items-center gap-2">
+          <i class="fa-solid ${danger ? 'fa-circle-exclamation' : 'fa-clock'}"></i> ${esc(text)}
+        </p>
+        ${suspended
+          ? `<a href="https://wa.me/${SUPPORT_WA}" target="_blank" rel="noopener" class="bg-white text-black px-3 py-1.5 rounded-lg text-[11px] font-black"><i class="fa-brands fa-whatsapp"></i> تواصل معنا</a>`
+          : `<div class="flex gap-2">
+               <a href="${esc(renewLink('month'))}" target="_blank" rel="noopener" class="bg-white text-black px-3 py-1.5 rounded-lg text-[11px] font-black">شهري · 99 ر.س</a>
+               <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400 text-black px-3 py-1.5 rounded-lg text-[11px] font-black">سنوي · 1149 ر.س</a>
+             </div>`}`;
+      banner.classList.remove('hidden');
+    } else {
+      banner.classList.add('hidden');
+    }
 
     const notice = (client.admin_notification || '').trim();
     document.getElementById('admin-notice-text').textContent = notice;
@@ -540,30 +650,73 @@ tailwind.config = {
       if (v && !safeUrl(v)) return showToast('رابط غير صحيح: يجب أن يبدأ بـ https://', true);
       payload[col] = v;
     }
-    payload.whatsapp_number = document.getElementById('social-whatsapp').value.replace(/\D/g, '');
+    let wa = document.getElementById('social-whatsapp').value.replace(/\D/g, '');
+    if (wa.startsWith('00')) wa = wa.slice(2);
+    if (wa.startsWith('05')) wa = '966' + wa.slice(1);
+    else if (wa.startsWith('5') && wa.length === 9) wa = '966' + wa;
+    if (wa && !/^\d{10,15}$/.test(wa)) return showToast('رقم الواتساب غير صحيح، اكتبه مثل 05xxxxxxxx', true);
+    payload.whatsapp_number = wa;
     document.getElementById('social-whatsapp').value = payload.whatsapp_number;
 
     if (await updateClient(payload)) showToast('تم حفظ روابط التواصل');
     else showToast('تعذر حفظ الروابط', true);
   }
 
-  // ─── رفع الملفات ───
+  // ─── رفع الملفات (الصور تُضغط تلقائياً قبل الرفع) ───
+  const MAX_ORIGINAL_IMAGE_MB = 20;
+
   function validateFile(file, kind) {
     if (!file) return 'اختر الملف أولاً';
     if (!file.type.startsWith(kind + '/')) return kind === 'video' ? 'الملف لازم يكون فيديو (MP4)' : 'الملف لازم يكون صورة';
-    const max = kind === 'video' ? MAX_VIDEO_MB : MAX_IMAGE_MB;
+    const max = kind === 'video' ? MAX_VIDEO_MB : MAX_ORIGINAL_IMAGE_MB;
     if (file.size > max * 1024 * 1024) return `حجم الملف كبير، الحد الأقصى ${max} ميجابايت`;
     return '';
   }
 
+  // تصغير الصورة وتحويلها WebP: أخف بكثير وأسرع في الفتح على جوال الزبون
+  async function compressImage(file, maxDim = 1600, quality = 0.82) {
+    if (!/^image\/(jpeg|png|webp|heic|heif)$/i.test(file.type)) return file;
+    try {
+      const bmp = await createImageBitmap(file);
+      const scale = Math.min(1, maxDim / Math.max(bmp.width, bmp.height));
+      const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(bmp, 0, 0, w, h);
+      if (bmp.close) bmp.close();
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/webp', quality));
+      if (!blob || blob.type !== 'image/webp') return file;
+      if (scale === 1 && blob.size >= file.size) return file;
+      return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.webp', { type: 'image/webp' });
+    } catch (e) {
+      console.warn('Image compression skipped:', e);
+      return file;
+    }
+  }
+
+  function uploadErrorText(err) {
+    const m = (err && err.message) || String(err || '');
+    if (/mime type/i.test(m)) return 'صيغة الملف غير مدعومة، استخدم JPG أو PNG أو MP4';
+    if (/exceed|too large|maximum allowed size/i.test(m)) return 'حجم الملف أكبر من المسموح';
+    if (/row-level security|policy|unauthori/i.test(m)) return 'لا تملك صلاحية الرفع لهذا المتجر';
+    return m;
+  }
+
   // الملفات تنحفظ داخل مجلد رقم المتجر: menu-images/<id>/...
-  async function uploadFile(file, prefix) {
+  async function uploadFile(file, prefix, maxDim = 1600) {
+    if (file.type.startsWith('image/')) {
+      file = await compressImage(file, maxDim);
+      if (file.size > MAX_IMAGE_MB * 1024 * 1024) {
+        lastUploadError = `الصورة كبيرة حتى بعد الضغط، الحد الأقصى ${MAX_IMAGE_MB} ميجابايت`;
+        return null;
+      }
+    }
     const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
     const path = `${currentClientId}/${prefix}_${Date.now()}.${ext}`;
     const { error } = await supabaseClient.storage.from('menu-images').upload(path, file, { contentType: file.type });
     if (error) {
       console.error('Upload error:', error);
-      lastUploadError = error.message || String(error);
+      lastUploadError = uploadErrorText(error);
       return null;
     }
     return supabaseClient.storage.from('menu-images').getPublicUrl(path).data.publicUrl;
@@ -571,17 +724,17 @@ tailwind.config = {
 
   async function uploadMedia(type) {
     const cfg = {
-      logo:     { input: 'logo-file',     kind: 'image', payload: url => ({ logo_url: url }) },
-      bg_image: { input: 'bg-img-file',   kind: 'image', payload: url => ({ bg_image_url: url, bg_video_url: null }) },
-      bg_video: { input: 'bg-video-file', kind: 'video', payload: url => ({ bg_video_url: url, bg_image_url: null }) }
+      logo:     { input: 'logo-file',     kind: 'image', maxDim: 800,  payload: url => ({ logo_url: url }) },
+      bg_image: { input: 'bg-img-file',   kind: 'image', maxDim: 1920, payload: url => ({ bg_image_url: url, bg_video_url: null }) },
+      bg_video: { input: 'bg-video-file', kind: 'video', maxDim: 0,    payload: url => ({ bg_video_url: url, bg_image_url: null }) }
     }[type];
     const fileInput = document.getElementById(cfg.input);
     const file = fileInput.files[0];
     const problem = validateFile(file, cfg.kind);
     if (problem) return showToast(problem, true);
 
-    showToast('جاري رفع الملف...');
-    const url = await uploadFile(file, type);
+    showToast(cfg.kind === 'image' ? 'جاري تجهيز الصورة ورفعها...' : 'جاري رفع الفيديو...');
+    const url = await uploadFile(file, type, cfg.maxDim);
     if (!url) return showToast(`فشل رفع الملف: ${lastUploadError}`, true);
 
     if (await updateClient(cfg.payload(url))) {
@@ -591,18 +744,218 @@ tailwind.config = {
     } else showToast('تم رفع الملف لكن تعذر حفظه في المتجر', true);
   }
 
-  // ─── البيانات ───
-  const productsInCategory = (cat) => loadedProducts.filter(p => p.category === cat.key || p.category === cat.name);
+  // ─── بطاقة QR جاهزة للطباعة ───
+  function loadImage(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  function roundRectPath(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function drawFittedText(ctx, text, x, y, maxWidth, weight, size, family) {
+    let s = size;
+    do { ctx.font = `${weight} ${s}px ${family}`; s -= 2; } while (ctx.measureText(text).width > maxWidth && s > 20);
+    ctx.fillText(text, x, y);
+  }
+
+  async function downloadQrCard() {
+    const btn = document.getElementById('qr-download-btn');
+    btn.disabled = true;
+    try {
+      const W = 1200, H = 1700, cx = W / 2;
+      const FONT = 'Cairo, Tahoma, Arial, sans-serif';
+      try { await Promise.all([document.fonts.load(`800 64px Cairo`), document.fonts.load(`600 36px Cairo`)]); } catch {}
+
+      const canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      ctx.textAlign = 'center';
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#15271b';
+      ctx.fillRect(0, 0, W, 430);
+
+      const logoUrl = safeUrl(client.logo_url);
+      const logo = logoUrl ? await loadImage(logoUrl).catch(() => null) : null;
+      if (logo) {
+        ctx.save();
+        ctx.beginPath(); ctx.arc(cx, 170, 104, 0, Math.PI * 2); ctx.closePath();
+        ctx.fillStyle = '#ffffff'; ctx.fill();
+        ctx.beginPath(); ctx.arc(cx, 170, 96, 0, Math.PI * 2); ctx.clip();
+        const s = Math.max(192 / logo.width, 192 / logo.height);
+        ctx.drawImage(logo, cx - (logo.width * s) / 2, 170 - (logo.height * s) / 2, logo.width * s, logo.height * s);
+        ctx.restore();
+      }
+
+      ctx.direction = 'rtl';
+      ctx.fillStyle = '#f5f2eb';
+      drawFittedText(ctx, client.name || 'المنيو', cx, logo ? 355 : 250, W - 160, 800, 66, FONT);
+
+      const tmp = document.createElement('div');
+      new QRCode(tmp, { text: menuUrl(), width: 740, height: 740, correctLevel: QRCode.CorrectLevel.H });
+      const qr = tmp.querySelector('canvas');
+      const qx = (W - 740) / 2, qy = 540;
+      ctx.fillStyle = '#f5f2eb';
+      roundRectPath(ctx, qx - 40, qy - 40, 820, 820, 48); ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      roundRectPath(ctx, qx - 16, qy - 16, 772, 772, 28); ctx.fill();
+      ctx.drawImage(qr, qx, qy, 740, 740);
+
+      ctx.fillStyle = '#1b3022';
+      drawFittedText(ctx, 'امسح الرمز لعرض المنيو', cx, 1470, W - 160, 800, 58, FONT);
+      ctx.direction = 'ltr';
+      ctx.fillStyle = '#5b6b60';
+      ctx.font = `600 36px ${FONT}`;
+      ctx.fillText('Scan to view our menu', cx, 1535);
+      ctx.fillStyle = '#9aa39c';
+      ctx.font = `700 26px ${FONT}`;
+      ctx.fillText('DEV MENU', cx, 1645);
+
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `qr-${client.client_slug}.png`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+      showToast('تم تحميل بطاقة الطاولة، اطبعها بمقاس A6 أو A5');
+    } catch (e) {
+      console.error(e);
+      showToast('تعذر إنشاء بطاقة الطباعة', true);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ─── معلومات المطعم ───
+  async function updateRestaurantInfo() {
+    const hours = document.getElementById('info-hours').value.trim();
+    const loc = document.getElementById('info-location').value.trim();
+    const waOrders = document.getElementById('info-wa-orders').checked;
+    if (loc && !safeUrl(loc)) return showToast('رابط الموقع غير صحيح، يجب أن يبدأ بـ https://', true);
+    if (waOrders && !String(client.whatsapp_number || '').trim()) {
+      return showToast('احفظ رقم الواتساب في روابط التواصل أولاً', true);
+    }
+    if (await updateClient({ opening_hours: hours, location_url: loc, whatsapp_orders: waOrders })) showToast('تم حفظ معلومات المطعم');
+    else showToast('تعذر حفظ معلومات المطعم', true);
+  }
+
+  // ─── الإحصائيات ───
+  async function loadStats() {
+    const body = document.getElementById('stats-body');
+    const { data, error } = await supabaseClient.rpc('get_menu_stats', { p_client_id: currentClientId });
+    if (error || !data) { console.error(error); body.textContent = 'الإحصائيات غير متاحة حالياً.'; return; }
+
+    const map = {};
+    (data.daily || []).forEach(d => { map[d.day] = Number(d.views) || 0; });
+    const days = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 86400000);
+      const key = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
+      days.push({ v: map[key] || 0, label: d.toLocaleDateString('ar-SA-u-ca-gregory', { day: 'numeric', month: 'numeric', timeZone: 'Asia/Riyadh' }) });
+    }
+    const max = Math.max(1, ...days.map(d => d.v));
+    const tiles = [['اليوم', data.today], ['آخر 7 أيام', data.week], ['آخر 30 يوم', data.month]];
+
+    body.innerHTML = `
+      <div class="grid grid-cols-3 gap-3">
+        ${tiles.map(([l, v]) => `
+          <div class="bg-white/5 border border-white/10 rounded-xl p-3">
+            <p class="text-[10px] text-gray-400">${l}</p>
+            <p class="text-xl font-black text-white">${(Number(v) || 0).toLocaleString('en-US')}</p>
+          </div>`).join('')}
+      </div>
+      <div class="grid md:grid-cols-2 gap-5 mt-4">
+        <div>
+          <p class="text-[10px] text-gray-400 mb-2">الزيارات خلال آخر 14 يوم</p>
+          <div class="flex items-end gap-1 h-24" dir="ltr">
+            ${days.map(d => `<div class="flex-1 bg-emerald-500/70 hover:bg-emerald-400 rounded-t transition" style="height:${Math.max(4, (d.v / max) * 100)}%" title="${esc(d.label)}: ${d.v}"></div>`).join('')}
+          </div>
+        </div>
+        <div>
+          <p class="text-[10px] text-gray-400 mb-2">أكثر الأطباق مشاهدة (آخر 30 يوم)</p>
+          ${(data.top || []).length
+            ? `<ol class="space-y-1.5">${data.top.map((t, i) => `<li class="flex justify-between gap-2 text-[11px]"><span class="text-gray-200 truncate">${i + 1}. ${esc(t.name)}</span><b class="text-white">${Number(t.views) || 0}</b></li>`).join('')}</ol>`
+            : '<p class="text-[11px] text-gray-500">لا توجد مشاهدات للأطباق بعد.</p>'}
+        </div>
+      </div>`;
+  }
+
+  // ─── مسببات الحساسية ───
+  const ALLERGENS = [
+    ['gluten', 'الغلوتين'], ['milk', 'الحليب'], ['egg', 'البيض'],
+    ['nuts', 'المكسرات'], ['peanut', 'الفول السوداني'], ['sesame', 'السمسم'],
+    ['fish', 'الأسماك'], ['shellfish', 'القشريات'], ['soy', 'الصويا']
+  ];
+  document.getElementById('allergen-options').innerHTML = ALLERGENS.map(([k, l]) => `
+    <label class="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 cursor-pointer">
+      <input type="checkbox" value="${k}" class="allergen-cb accent-amber-400"> ${l}
+    </label>`).join('');
+  const getAllergens = () => [...document.querySelectorAll('.allergen-cb:checked')].map(x => x.value).join(',');
+  const setAllergens = (v) => {
+    const set = new Set(String(v || '').split(',').filter(Boolean));
+    document.querySelectorAll('.allergen-cb').forEach(cb => { cb.checked = set.has(cb.value); });
+  };
+
+  // ─── البيانات والترتيب ───
+  const bySort = (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id;
+  const categoryOf = (p) => loadedCategories.find(c => c.key === p.category || c.name === p.category);
+  const productsInCategory = (cat) => loadedProducts.filter(p => p.category === cat.key || p.category === cat.name).sort(bySort);
 
   async function refreshAll() {
     const [catRes, prodRes] = await Promise.all([
-      supabaseClient.from('categories').select('*').eq('client_id', currentClientId).order('id', { ascending: true }),
-      supabaseClient.from('products').select('*').eq('client_id', currentClientId).order('id', { ascending: false })
+      supabaseClient.from('categories').select('*').eq('client_id', currentClientId),
+      supabaseClient.from('products').select('*').eq('client_id', currentClientId)
     ]);
-    loadedCategories = catRes.data || [];
-    loadedProducts = prodRes.data || [];
+    loadedCategories = (catRes.data || []).sort(bySort);
+    loadedProducts = (prodRes.data || []).sort(bySort);
     renderCategories();
     filterProducts();
+  }
+
+  // يعيد ترقيم القائمة بالترتيب المطلوب ويحفظ الصفوف اللي تغيّر ترتيبها فقط
+  async function saveOrder(table, list) {
+    for (let i = 0; i < list.length; i++) {
+      if (list[i].sort_order === i + 1) continue;
+      const { error } = await supabaseClient.from(table).update({ sort_order: i + 1 })
+        .eq('id', list[i].id).eq('client_id', currentClientId);
+      if (error) throw error;
+      list[i].sort_order = i + 1;
+    }
+  }
+
+  async function moveCategory(id, dir) {
+    const list = [...loadedCategories].sort(bySort);
+    const i = list.findIndex(c => c.id === id), j = i + dir;
+    if (i < 0 || j < 0 || j >= list.length) return;
+    [list[i], list[j]] = [list[j], list[i]];
+    try { await saveOrder('categories', list); refreshAll(); }
+    catch (e) { console.error(e); showToast('تعذر تغيير الترتيب', true); }
+  }
+
+  async function moveProduct(id, dir) {
+    const p = loadedProducts.find(x => x.id === id);
+    if (!p) return;
+    const cat = categoryOf(p);
+    const list = cat ? productsInCategory(cat) : loadedProducts.filter(x => !categoryOf(x)).sort(bySort);
+    const i = list.findIndex(x => x.id === id), j = i + dir;
+    if (i < 0 || j < 0 || j >= list.length) return;
+    [list[i], list[j]] = [list[j], list[i]];
+    try { await saveOrder('products', list); refreshAll(); }
+    catch (e) { console.error(e); showToast('تعذر تغيير الترتيب', true); }
   }
 
   function renderCategories() {
@@ -623,25 +976,33 @@ tailwind.config = {
       list.innerHTML = `<p class="text-xs text-gray-400 text-center py-4">لا توجد أقسام بعد. أضف أول قسم من النموذج.</p>`;
       return;
     }
-    list.innerHTML = loadedCategories.map(c => `
-      <div class="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 text-xs">
-        <div>
-          <span class="font-bold text-white">${esc(c.name)}</span>
-          <span class="text-gray-400 text-[10px]">(${esc(c.key)}) — ${productsInCategory(c).length} طبق</span>
+    const last = loadedCategories.length - 1;
+    list.innerHTML = loadedCategories.map((c, i) => `
+      <div class="flex items-center justify-between gap-2 bg-white/5 p-3 rounded-xl border border-white/10 text-xs">
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="flex flex-col">
+            <button onclick="moveCategory(${Number(c.id)}, -1)" ${i === 0 ? 'disabled' : ''} aria-label="تحريك لأعلى" class="px-1.5 text-gray-400 hover:text-white disabled:opacity-20"><i class="fa-solid fa-chevron-up text-[10px]"></i></button>
+            <button onclick="moveCategory(${Number(c.id)}, 1)" ${i === last ? 'disabled' : ''} aria-label="تحريك لأسفل" class="px-1.5 text-gray-400 hover:text-white disabled:opacity-20"><i class="fa-solid fa-chevron-down text-[10px]"></i></button>
+          </div>
+          <div class="min-w-0">
+            <p class="font-bold text-white truncate">${esc(c.name)} ${c.name_en ? `<span class="text-gray-500 font-normal" dir="ltr">· ${esc(c.name_en)}</span>` : ''}</p>
+            <p class="text-gray-400 text-[10px]">${productsInCategory(c).length} طبق</p>
+          </div>
         </div>
-        <button onclick="deleteCategory(${Number(c.id)})" class="text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-trash text-[10px]"></i> حذف</button>
+        <button onclick="deleteCategory(${Number(c.id)})" class="shrink-0 text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-trash text-[10px]"></i> حذف</button>
       </div>`).join('');
   }
 
   document.getElementById('add-category-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = document.getElementById('cat-name').value.trim();
-    const key = document.getElementById('cat-key').value.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9_-]/g, '');
+    const nameEn = document.getElementById('cat-name-en').value.trim();
     if (!name) return showToast('اكتب اسم القسم', true);
-    if (!key) return showToast('المعرف لازم يكون بالإنجليزي (حروف أو أرقام أو -)', true);
-    if (loadedCategories.some(c => c.key === key)) return showToast('هذا المعرف مستخدم في قسم آخر', true);
+    if (loadedCategories.some(c => c.name === name)) return showToast('يوجد قسم بنفس الاسم', true);
 
-    const { error } = await supabaseClient.from('categories').insert([{ name, key, client_id: currentClientId }]);
+    const key = 'c' + Date.now().toString(36);
+    const sort_order = Math.max(0, ...loadedCategories.map(c => c.sort_order || 0)) + 1;
+    const { error } = await supabaseClient.from('categories').insert([{ name, name_en: nameEn || null, key, sort_order, client_id: currentClientId }]);
     if (error) { console.error(error); return showToast('تعذر إضافة القسم', true); }
     showToast('تمت إضافة القسم');
     document.getElementById('add-category-form').reset();
@@ -665,9 +1026,12 @@ tailwind.config = {
     const search = document.getElementById('search-input').value.trim().toLowerCase();
     const category = document.getElementById('filter-category').value;
     const catName = loadedCategories.find(c => c.key === category)?.name;
-    const filtered = loadedProducts.filter(p =>
-      (p.name || '').toLowerCase().includes(search) &&
-      (category === 'all' || p.category === category || p.category === catName));
+    const catIndex = (p) => { const c = categoryOf(p); return c ? loadedCategories.indexOf(c) : 9999; };
+    const filtered = loadedProducts
+      .filter(p =>
+        [(p.name || ''), (p.name_en || '')].some(t => t.toLowerCase().includes(search)) &&
+        (category === 'all' || p.category === category || p.category === catName))
+      .sort((a, b) => catIndex(a) - catIndex(b) || bySort(a, b));
     renderProductsList(filtered);
   }
 
@@ -680,28 +1044,39 @@ tailwind.config = {
       return;
     }
 
+    let lastCat = null;
     list.innerHTML = products.map(p => {
       const id = Number(p.id);
       const isAvailable = p.is_available !== false;
       const isBestseller = p.is_bestseller === true;
       const img = safeUrl(p.image_url);
-      return `
+      const cat = categoryOf(p);
+      const siblings = cat ? productsInCategory(cat) : [];
+      const pos = siblings.findIndex(x => x.id === p.id);
+      const header = cat && cat !== lastCat
+        ? `<p class="text-[10px] font-bold text-gray-500 pt-2 first:pt-0">${esc(cat.name)}</p>` : '';
+      lastCat = cat;
+      return `${header}
         <div class="flex items-center justify-between bg-white/5 p-2.5 rounded-xl border ${editingProductId === id ? 'editing-glow' : 'border-white/10'} text-xs gap-2 transition">
-          <div class="flex items-center gap-2.5 min-w-0">
+          <div class="flex items-center gap-2 min-w-0">
+            <div class="flex flex-col shrink-0">
+              <button onclick="moveProduct(${id}, -1)" ${pos <= 0 ? 'disabled' : ''} aria-label="تحريك لأعلى" class="px-1 text-gray-400 hover:text-white disabled:opacity-20"><i class="fa-solid fa-chevron-up text-[9px]"></i></button>
+              <button onclick="moveProduct(${id}, 1)" ${pos < 0 || pos >= siblings.length - 1 ? 'disabled' : ''} aria-label="تحريك لأسفل" class="px-1 text-gray-400 hover:text-white disabled:opacity-20"><i class="fa-solid fa-chevron-down text-[9px]"></i></button>
+            </div>
             ${img ? `<img src="${esc(img)}" alt="" loading="lazy" class="w-10 h-10 object-cover rounded-xl border border-white/20 shrink-0">` : `<div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0"><i class="fa-solid fa-utensils text-gray-400 text-xs"></i></div>`}
             <div class="min-w-0">
               <div class="flex items-center gap-1.5">
                 <p class="font-bold text-white truncate ${!isAvailable ? 'line-through text-gray-500' : ''}">${esc(p.name)}</p>
                 ${isBestseller ? `<span class="bg-white/20 text-white text-[9px] px-1.5 py-0.5 rounded font-bold border border-white/30 shrink-0"><i class="fa-solid fa-fire text-amber-400"></i> مميز</span>` : ''}
               </div>
-              <p class="text-gray-300 font-semibold text-[11px]">${esc(p.price)} ر.س</p>
+              <p class="text-gray-300 font-semibold text-[11px]">${esc(p.price)} ر.س${p.calories != null ? ` <span class="text-gray-500">· ${Number(p.calories)} سعرة</span>` : ` <span class="text-amber-400/80">· بدون سعرات</span>`}</p>
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
-            <button onclick="startEdit(${id})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border bg-white/5 text-gray-200 border-white/15"><i class="fa-solid fa-pen text-[9px]"></i> تعديل</button>
+            <button onclick="startEdit(${id})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border bg-white/5 text-gray-200 border-white/15 hover:bg-white/10 transition"><i class="fa-solid fa-pen text-[9px]"></i> تعديل</button>
             <button onclick="toggleField(${id}, 'is_bestseller', ${isBestseller})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border ${isBestseller ? 'bg-white text-black border-white' : 'bg-white/5 text-gray-300 border-white/10'}">تمييز</button>
             <button onclick="toggleField(${id}, 'is_available', ${isAvailable})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border ${isAvailable ? 'bg-green-500/20 text-green-300 border-green-500/30' : 'bg-red-500/20 text-red-300 border-red-500/30'}">${isAvailable ? 'متوفر' : 'نفذت'}</button>
-            <button onclick="deleteProduct(${id})" aria-label="حذف" class="text-red-400 bg-red-500/10 p-2 rounded-lg border border-red-500/20"><i class="fa-solid fa-trash"></i></button>
+            <button onclick="deleteProduct(${id})" aria-label="حذف" class="text-red-400 bg-red-500/10 hover:bg-red-500/20 p-2 rounded-lg border border-red-500/20 transition"><i class="fa-solid fa-trash"></i></button>
           </div>
         </div>`;
     }).join('');
@@ -735,8 +1110,12 @@ tailwind.config = {
     document.getElementById('prod-name').value = p.name || '';
     document.getElementById('prod-price').value = p.price ?? '';
     document.getElementById('prod-desc').value = p.description || '';
+    document.getElementById('prod-calories').value = p.calories ?? '';
+    document.getElementById('prod-name-en').value = p.name_en || '';
+    document.getElementById('prod-desc-en').value = p.description_en || '';
+    setAllergens(p.allergens);
     document.getElementById('prod-bestseller').checked = p.is_bestseller === true;
-    const cat = loadedCategories.find(c => c.key === p.category || c.name === p.category);
+    const cat = categoryOf(p);
     if (cat) document.getElementById('prod-category').value = cat.key;
     document.getElementById('prod-image-file').value = '';
     document.getElementById('image-hint').textContent = p.image_url ? '(اتركها فارغة للإبقاء على الصورة الحالية)' : '';
@@ -766,33 +1145,51 @@ tailwind.config = {
     const category = document.getElementById('prod-category').value;
     const price = parseFloat(document.getElementById('prod-price').value);
     const description = document.getElementById('prod-desc').value.trim();
+    const caloriesRaw = document.getElementById('prod-calories').value.trim();
+    const calories = caloriesRaw === '' ? null : Math.round(Number(caloriesRaw));
     const is_bestseller = document.getElementById('prod-bestseller').checked;
     const imageFile = document.getElementById('prod-image-file').files[0];
 
     if (!name) return showToast('اكتب اسم الطبق', true);
     if (!category) return showToast('أضف قسماً أولاً من تبويب الأقسام', true);
     if (isNaN(price) || price < 0) return showToast('اكتب سعراً صحيحاً', true);
+    if (calories !== null && (isNaN(calories) || calories < 0 || calories > 10000)) return showToast('اكتب عدد سعرات صحيح', true);
 
     const btn = document.getElementById('submit-btn');
     btn.disabled = true;
     try {
-      const payload = { name, category, price, description, is_bestseller };
+      const payload = {
+        name, category, price, description, is_bestseller, calories,
+        name_en: document.getElementById('prod-name-en').value.trim() || null,
+        description_en: document.getElementById('prod-desc-en').value.trim() || null,
+        allergens: getAllergens() || null
+      };
       if (imageFile) {
         const problem = validateFile(imageFile, 'image');
         if (problem) return showToast(problem, true);
-        showToast('جاري رفع صورة الطبق...');
-        const url = await uploadFile(imageFile, 'prod');
+        showToast('جاري تجهيز صورة الطبق ورفعها...');
+        const url = await uploadFile(imageFile, 'prod', 1200);
         if (!url) return showToast(`فشل رفع الصورة: ${lastUploadError}`, true);
         payload.image_url = url;
       }
 
       let result;
       if (editingProductId) {
+        const old = loadedProducts.find(x => x.id === editingProductId);
+        if (old && old.category !== category) {
+          const sameCat = loadedProducts.filter(x => x.category === category);
+          payload.sort_order = Math.max(0, ...sameCat.map(x => x.sort_order || 0)) + 1;
+        }
         result = await supabaseClient.from('products').update(payload)
           .eq('id', editingProductId).eq('client_id', currentClientId).select('id');
       } else {
+        const sameCat = loadedProducts.filter(x => x.category === category);
         result = await supabaseClient.from('products').insert([{
-          ...payload, image_url: payload.image_url || '', is_available: true, client_id: currentClientId
+          ...payload,
+          image_url: payload.image_url || '',
+          is_available: true,
+          sort_order: Math.max(0, ...sameCat.map(x => x.sort_order || 0)) + 1,
+          client_id: currentClientId
         }]).select('id');
       }
       if (result.error || !result.data || !result.data.length) { console.error(result.error); return showToast('تعذر حفظ الطبق', true); }
@@ -809,7 +1206,12 @@ tailwind.config = {
     if (event === 'SIGNED_OUT') window.location.replace('login.html');
   });
 
-  (async () => { if (await initAuth()) await refreshAll(); })();
+  (async () => {
+    if (await initAuth()) {
+      await refreshAll();
+      loadStats();
+    }
+  })();
 </script>
 </body>
 </html>
