@@ -6,7 +6,7 @@
 <title>Dev Menu | لوحة تحكم الأدمن العامة</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/api.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   /* رمز الريال السعودي الجديد ⃁ (U+20C1): خط مخصص يُستخدم لهذا الرمز فقط */
@@ -101,9 +101,8 @@
   </div>
 
 <script>
-  const SUPABASE_URL = 'https://czdoamcgxgkicrbufpcn.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZG9hbWNneGdraWNyYnVmcGNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwMTA5MzAsImV4cCI6MjEwNTU4NjkzMH0.45zKx4ljXJ27SS-ukc62qiu52movhDgSoC9OEnK9NHk';
-  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // كل عمليات المدير العام تمر عبر خادمنا: /api/admin (يتحقق من الصلاحية بنفسه)
+  const A = (action) => `/api/admin?action=${action}`;
   // السعر مع رمز الريال الجديد: "⃁ 25" (الرمز يسار الرقم)
   const SAR = '\u20C1';
   const money = (n) => `\u2066${SAR} ${n}\u2069`;
@@ -177,7 +176,7 @@
   }
 
   async function logout() {
-    await supabaseClient.auth.signOut();
+    await DM.logout();
     window.location.replace('login.html');
   }
 
@@ -192,11 +191,11 @@
   }
 
   async function init() {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (!session) return window.location.replace('login.html');
-
-    const { data: isAdmin } = await supabaseClient.rpc('is_super_admin');
-    if (isAdmin !== true) {
+    if (!DM.signedIn()) return window.location.replace('login.html');
+    let isAdmin = false;
+    try { await DM.get(A('check'), true); isAdmin = true; }
+    catch (e) { if (e.status === 401) return window.location.replace('login.html'); }
+    if (!isAdmin) {
       document.getElementById('auth-loading').innerHTML = `
         <i class="fa-solid fa-lock text-lg"></i><span>هذه الصفحة للمدير العام فقط.</span>
         <a href="admin.html" class="bg-white text-black font-bold px-4 py-2 rounded-xl mt-2">لوحة متجري</a>`;
@@ -208,9 +207,8 @@
   }
 
   async function loadClients() {
-    const { data, error } = await supabaseClient.from('clients').select('*').order('id', { ascending: false });
-    if (error) { console.error(error); return showToast('تعذر تحميل العملاء', true); }
-    clients = data || [];
+    try { clients = (await DM.get(A('list'), true)).clients || []; }
+    catch (e) { console.error(e); return showToast(`تعذر تحميل العملاء: ${e.message}`, true); }
     const liveCount = clients.filter(c => statusOf(c).live).length;
     document.getElementById('count-all').textContent = clients.length;
     document.getElementById('count-live').textContent = liveCount;
@@ -318,7 +316,7 @@
       tone: 'success'
     });
     if (!confirmed) return;
-    const { error } = await supabaseClient.rpc('admin_activate', { p_client_id: id, p_period: period });
+    const error = await DM.post(A('activate'), { id, period }, true).then(() => null, e => e);
     if (error) { console.error(error); return showToast('تعذر التفعيل', true); }
     showToast(`تم تفعيل ${label}`);
     loadClients();
@@ -332,7 +330,7 @@
       : { title: 'إيقاف المتجر', message: `سيختفي منيو "${name}" عن الزبائن فوراً، ويمكنك إعادة تشغيله في أي وقت.`,
           items: ['لا تُحذف أي بيانات', 'صاحب المتجر يرى تنبيه الإيقاف في لوحته'], confirmText: 'إيقاف المتجر', tone: 'warning' });
     if (!confirmed) return;
-    const { error } = await supabaseClient.rpc('admin_set_active', { p_client_id: id, p_active: active });
+    const error = await DM.post(A('set-active'), { id, active }, true).then(() => null, e => e);
     if (error) { console.error(error); return showToast('تعذر تنفيذ العملية', true); }
     showToast(active ? 'تمت إعادة تشغيل المتجر' : 'تم إيقاف المتجر');
     loadClients();
@@ -340,7 +338,7 @@
 
   async function sendNotification(id) {
     const msg = document.getElementById(`notif-${id}`).value;
-    const { error } = await supabaseClient.rpc('admin_notify', { p_client_id: id, p_message: msg });
+    const error = await DM.post(A('notify'), { id, message: msg }, true).then(() => null, e => e);
     if (error) { console.error(error); return showToast('تعذر حفظ الإشعار', true); }
     showToast(msg.trim() ? 'سيظهر الإشعار في لوحة العميل' : 'تم حذف الإشعار');
     loadClients();
@@ -349,7 +347,7 @@
   // ─── عرض المتجر كمثال حقيقي في الصفحة الرئيسية ───
   async function setFeatured(id, featured) {
     const c = clients.find(x => x.id === id);
-    const { error } = await supabaseClient.rpc('admin_set_featured', { p_client_id: id, p_featured: featured });
+    const error = await DM.post(A('featured'), { id, featured }, true).then(() => null, e => e);
     if (error) { console.error(error); return showToast('تعذر التحديث', true); }
     if (featured && c && !statusOf(c).live) showToast('تم، لكنه لن يظهر في الرئيسية حتى يكون اشتراكه سارياً');
     else showToast(featured ? 'سيظهر المتجر في أمثلة الصفحة الرئيسية' : 'تمت إزالة المتجر من الأمثلة');
@@ -369,12 +367,10 @@
     const c = clients.find(x => x.id === id);
     if (!c) return;
     // تجميع ما سيُحذف لعرضه في نافذة التأكيد
-    const [{ data: prods }, { count: catCount }] = await Promise.all([
-      supabaseClient.from('products').select('image_url').eq('client_id', id),
-      supabaseClient.from('categories').select('id', { count: 'exact', head: true }).eq('client_id', id)
-    ]);
+    let counts = { products: 0, categories: 0 };
+    try { counts = await DM.post(A('summary'), { id }, true); } catch (e) { console.warn(e); }
     const items = [
-      `${(prods || []).length} طبق و ${catCount || 0} قسم`,
+      `${counts.products} طبق و ${counts.categories} قسم`,
       'الشعار والخلفيات وصور الأطباق',
       'حالة الاشتراك والإشعارات'
     ];
@@ -392,22 +388,9 @@
 
     showToast('جاري حذف المتجر...');
 
-    // 1) تجميع مسارات الصور قبل حذف البيانات
-    const paths = new Set();
-    [c.logo_url, c.bg_image_url, c.bg_video_url, ...(prods || []).map(p => p.image_url)]
-      .forEach(u => { const p = storagePath(u); if (p) paths.add(p); });
-    const { data: files } = await supabaseClient.storage.from('menu-images').list(String(id), { limit: 1000 });
-    (files || []).forEach(f => { if (f.id) paths.add(`${id}/${f.name}`); });
-
-    // 2) حذف البيانات وحساب الدخول
-    const { error } = await supabaseClient.rpc('admin_delete_client', { p_client_id: id });
-    if (error) { console.error(error); return showToast(`تعذر حذف المتجر: ${error.message}`, true); }
-
-    // 3) حذف الصور والفيديوهات
-    if (paths.size) {
-      const { error: rmErr } = await supabaseClient.storage.from('menu-images').remove([...paths]);
-      if (rmErr) console.warn('Storage cleanup:', rmErr);
-    }
+    // الخادم يحذف البيانات والملفات وحساب الدخول
+    try { await DM.post(A('delete'), { id }, true); }
+    catch (e) { console.error(e); return showToast(`تعذر حذف المتجر: ${e.message}`, true); }
 
     showToast('تم حذف المتجر وكل بياناته');
     loadClients();

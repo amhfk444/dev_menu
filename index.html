@@ -8,7 +8,7 @@
 <!-- Tailwind CSS & FontAwesome -->
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/api.js"></script>
 
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -518,9 +518,7 @@
 </footer>
 
 <script>
-  const SUPABASE_URL = 'https://czdoamcgxgkicrbufpcn.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZG9hbWNneGdraWNyYnVmcGNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwMTA5MzAsImV4cCI6MjEwNTU4NjkzMH0.45zKx4ljXJ27SS-ukc62qiu52movhDgSoC9OEnK9NHk';
-  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // تسجيل الدخول عبر Supabase Auth، وكل البيانات عبر خادمنا /api
   // السعر مع رمز الريال الجديد: "⃁ 25" (الرمز يسار الرقم)
   const SAR = '\u20C1';
   const money = (n) => `\u2066${SAR} ${n}\u2069`;
@@ -543,11 +541,12 @@
 
   function otpErrorMessage(error) {
     if (error && error.status === 429) return 'طلبت رموزاً كثيرة، انتظر دقيقة ثم حاول مرة أخرى';
+    if (error && error.status === 0) return error.message;
     return 'تعذر إرسال الرمز إلى بريدك، تأكد من البريد وحاول مرة أخرى';
   }
 
   function registerErrorMessage(error) {
-    const m = (error && error.message) || '';
+    const m = (error && (error.code || error.message)) || '';
     if (m.includes('EMAIL_TAKEN'))  return 'هذا البريد مرتبط بمتجر مسجل مسبقاً، جاري تحويلك للوحة التحكم...';
     if (m.includes('INVALID_NAME')) return 'اكتب اسم المطعم أو الكافيه';
     return 'حدث خطأ أثناء إنشاء المتجر، حاول مرة أخرى';
@@ -603,8 +602,8 @@
     try {
       const businessType = document.querySelector('[name="reg-type"]:checked')?.value || 'restaurant';
       formDataCache = { name, email, phone, businessType };
-      const { error } = await supabaseClient.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
-      if (error) return showToast(otpErrorMessage(error), 'error');
+      try { await DM.sendOtp(email); }
+      catch (error) { return showToast(otpErrorMessage(error), 'error'); }
 
       document.getElementById('register-form').classList.add('hidden');
       document.getElementById('otp-section').classList.remove('hidden');
@@ -658,8 +657,8 @@
 
   async function resendOtp() {
     if (!formDataCache.email) return;
-    const { error } = await supabaseClient.auth.signInWithOtp({ email: formDataCache.email, options: { shouldCreateUser: true } });
-    if (error) return showToast(otpErrorMessage(error), 'error');
+    try { await DM.sendOtp(formDataCache.email); }
+    catch (error) { return showToast(otpErrorMessage(error), 'error'); }
     startResendCooldown();
     showToast('تم إعادة إرسال رمز التحقق', 'success');
   }
@@ -678,20 +677,19 @@
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحقق وإنشاء متجرك...';
 
     try {
-      const { data, error } = await supabaseClient.auth.verifyOtp({ email: formDataCache.email, token, type: 'email' });
-      if (error || !data.session) return showToast('رمز التحقق غير صحيح أو منتهي الصلاحية', 'error');
+      try { await DM.verifyOtp(formDataCache.email, token); }
+      catch { return showToast('رمز التحقق غير صحيح أو منتهي الصلاحية', 'error'); }
 
-      const { data: newSlug, error: regErr } = await supabaseClient.rpc('register_client', {
-        p_name: formDataCache.name, p_slug: null, p_phone: formDataCache.phone
-      });
-      // حفظ نوع النشاط للمتجر الجديد
-      if (!regErr && newSlug && formDataCache.businessType !== 'restaurant') {
-        await supabaseClient.from('clients').update({ business_type: formDataCache.businessType }).eq('client_slug', newSlug);
-      }
+      let regErr = null;
+      try {
+        await DM.post('/api/owner?action=register', {
+          name: formDataCache.name, phone: formDataCache.phone, business_type: formDataCache.businessType
+        }, true);
+      } catch (e) { regErr = e; }
 
       if (regErr) {
-        showToast(registerErrorMessage(regErr), 'error');
-        if ((regErr.message || '').includes('EMAIL_TAKEN')) {
+        showToast(regErr.code === 'EMAIL_TAKEN' ? registerErrorMessage(regErr) : (regErr.message || registerErrorMessage(regErr)), 'error');
+        if (regErr.code === 'EMAIL_TAKEN') {
           redirecting = true;
           setTimeout(() => { window.location.href = 'admin.html'; }, 1800);
         } else {
@@ -764,30 +762,11 @@
 
   async function loadExamples() {
     try {
-      const { data: stores, error } = await supabaseClient
-        .from('public_clients')
-        .select('id, name, client_slug, logo_url, bg_image_url')
-        .eq('is_featured', true)
-        .limit(6);
-      if (error || !stores || stores.length === 0) return hideExamples();
-
-      // أبرز 4 أطباق متوفرة لكل متجر (المميزة أولاً)
-      const { data: prods } = await supabaseClient
-        .from('products')
-        .select('name, price, client_id, is_available, is_bestseller')
-        .in('client_id', stores.map(s => s.id))
-        .order('is_bestseller', { ascending: false })
-        .order('id', { ascending: false })
-        .limit(300);
-
-      const byStore = {};
-      (prods || []).filter(p => p.is_available !== false).forEach(p => {
-        (byStore[p.client_id] ||= []);
-        if (byStore[p.client_id].length < 4) byStore[p.client_id].push(p);
-      });
-
+      // الخادم يرجّع المتاجر المختارة والسارية فقط، مع أبرز 4 أطباق لكل متجر
+      const { stores } = await DM.get('/api/public?action=featured');
+      if (!stores || stores.length === 0) return hideExamples();
       document.getElementById('examples-grid').innerHTML =
-        stores.map(s => exampleCard(s, byStore[s.id] || [])).join('');
+        stores.map(s => exampleCard(s, s.items || [])).join('');
     } catch (err) {
       console.error(err);
       hideExamples();

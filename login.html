@@ -8,7 +8,7 @@
 <!-- Tailwind CSS & FontAwesome -->
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/api.js"></script>
 
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -164,9 +164,7 @@
 </footer>
 
 <script>
-  const SUPABASE_URL = 'https://czdoamcgxgkicrbufpcn.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZG9hbWNneGdraWNyYnVmcGNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwMTA5MzAsImV4cCI6MjEwNTU4NjkzMH0.45zKx4ljXJ27SS-ukc62qiu52movhDgSoC9OEnK9NHk';
-  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // تسجيل الدخول عبر Supabase Auth، والتوجيه حسب رد خادمنا /api
 
   // حماية من حقن الكود: أي نص قادم من قاعدة البيانات يمر من هنا قبل عرضه
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -197,14 +195,17 @@
   }
 
   // بعد الدخول: المدير العام يروح لوحته، وصاحب المتجر يروح لوحة متجره
+  // الخادم يحدد: مدير عام ← لوحة المشتركين، صاحب متجر ← لوحته
   async function goToDashboard() {
-    const { data: isAdmin } = await supabaseClient.rpc('is_super_admin');
-    if (isAdmin === true) { window.location.href = 'super-admin.html'; return; }
-
-    // سياسات الحماية ترجع متجرك أنت فقط
-    const { data: rows, error } = await supabaseClient.from('clients').select('id').limit(1);
-    if (error || !rows || rows.length === 0) {
-      await supabaseClient.auth.signOut();
+    let who;
+    try { who = await DM.get('/api/owner?action=whoami', true); }
+    catch (e) {
+      if (e.status === 401) { await DM.logout(); return; }
+      return showToast(e.message, 'error');
+    }
+    if (who.is_admin) { window.location.href = 'super-admin.html'; return; }
+    if (!who.has_store) {
+      await DM.logout();
       showToast('لا يوجد متجر مرتبط بهذا البريد. أنشئ متجرك من الصفحة الرئيسية.', 'error');
       return;
     }
@@ -212,10 +213,7 @@
   }
 
   // إذا كان داخل مسبقاً، حوّله مباشرة
-  (async () => {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session) goToDashboard();
-  })();
+  if (DM.signedIn()) goToDashboard();
 
   // 1. إرسال الرمز
   // shouldCreateUser: true حتى تقدر المتاجر القديمة تدخل بدون إضافتها يدوياً.
@@ -226,10 +224,8 @@
     if (!inputEmail) return;
 
     setBusy('send-otp-btn', 'btn-spinner', true);
-    const { error } = await supabaseClient.auth.signInWithOtp({
-      email: inputEmail,
-      options: { shouldCreateUser: true }
-    });
+    let error = null;
+    try { await DM.sendOtp(inputEmail); } catch (e) { error = e; }
     setBusy('send-otp-btn', 'btn-spinner', false);
 
     if (error) {
@@ -303,9 +299,10 @@
 
     verifying = true;
     setBusy('verify-otp-btn', 'v-btn-spinner', true);
-    const { data, error } = await supabaseClient.auth.verifyOtp({ email: inputEmail, token: otp, type: 'email' });
+    let ok = true;
+    try { await DM.verifyOtp(inputEmail, otp); } catch { ok = false; }
 
-    if (error || !data.session) {
+    if (!ok) {
       verifying = false;
       setBusy('verify-otp-btn', 'v-btn-spinner', false);
       return showToast('رمز التحقق غير صحيح أو منتهي الصلاحية', 'error');

@@ -8,17 +8,22 @@
 <!-- Tailwind CSS & FontAwesome -->
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- رفع الملفات الكبيرة على أجزاء (يكمل من حيث توقف لو انقطع النت) -->
-<script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.2.3/dist/tus.min.js"></script>
+<script src="js/api.js"></script>
 <!-- مكتبة توليد الـ QR Code -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Bagel+Fat+One&family=Crimson+Pro:wght@500&display=swap" rel="stylesheet">
 
 <script>
 tailwind.config = {
   theme: { extend: {
-    colors: { darkBg: '#0b0b0b', cardDark: '#141414' }
+    // ألوان هوية DEV MENU (مأخوذة من الشعار)
+    colors: {
+      sand:  '#efe5dc',
+      cream: '#faf6f1',
+      ink:   '#22362a',
+      brand: { DEFAULT: '#384f3d', dark: '#2a3e2f', light: '#4a6650' }
+    },
+    fontFamily: { logo: ['"Bagel Fat One"', 'Cairo', 'sans-serif'], serif: ['"Crimson Pro"', 'Georgia', 'serif'] }
   }}
 }
 </script>
@@ -35,30 +40,43 @@ tailwind.config = {
     src: url('https://cdn.jsdelivr.net/npm/@emran-alhaddad/saudi-riyal-font@1.1.0/fonts/bold/saudi_riyal.woff2') format('woff2');
     font-weight: 700 900; font-display: swap; unicode-range: U+20C1;
   }
-  body { font-family: 'SaudiRiyal', 'Cairo', sans-serif; background-color: #0b0b0b; color: #ffffff; min-height: 100vh; }
-  .pro-card { background: rgba(20, 20, 20, 0.95); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; }
-  .input-pro {
-    width: 100%; background-color: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 0.75rem;
-    padding: 0.65rem 0.85rem; font-size: 0.813rem; color: #ffffff; transition: all 0.2s;
+  body { font-family: 'SaudiRiyal', 'Cairo', sans-serif; background-color: #efe5dc; color: #22362a; min-height: 100vh; }
+  ::selection { background: #384f3d; color: #faf6f1; }
+  .pro-card {
+    background: #faf6f1; border: 1px solid rgba(56, 79, 61, 0.14); border-radius: 18px;
+    box-shadow: 0 1px 2px rgba(34, 54, 42, 0.04), 0 12px 32px -20px rgba(34, 54, 42, 0.25);
   }
-  .input-pro:focus { outline: none; border-color: #ffffff; background-color: rgba(255, 255, 255, 0.08); }
-  .tab-btn.active { background-color: #ffffff; color: #000000; font-weight: 800; }
-  #toast { transition: transform 0.3s ease, opacity 0.3s ease; }
-  #toast.show { transform: translateY(0); opacity: 1; }
+  .input-pro {
+    width: 100%; background-color: #ffffff;
+    border: 1px solid rgba(56, 79, 61, 0.2); border-radius: 0.75rem;
+    padding: 0.65rem 0.85rem; font-size: 0.813rem; color: #22362a; transition: all 0.2s;
+  }
+  .input-pro::placeholder { color: rgba(34, 54, 42, 0.35); }
+  .input-pro:focus { outline: none; border-color: #384f3d; box-shadow: 0 0 0 3px rgba(56, 79, 61, 0.12); }
+  select.input-pro { background-color: #ffffff; }
+  input[type="file"].input-pro::file-selector-button {
+    background: #384f3d; color: #faf6f1; border: 0; border-radius: .5rem; padding: .3rem .7rem; margin-inline-end: .6rem; font-family: inherit; font-weight: 700; cursor: pointer;
+  }
+  .tab-btn { background: #faf6f1; color: rgba(34,54,42,.7); }
+  .tab-btn.active { background-color: #384f3d; color: #faf6f1; border-color: #384f3d; font-weight: 800; }
+
+  /* القائمة الجانبية الخضراء */
   .nav-item {
     display: flex; align-items: center; gap: .65rem; width: 100%; padding: .65rem .85rem;
-    border-radius: .8rem; font-size: .8rem; font-weight: 700; color: #a3a3a3; transition: all .15s;
+    border-radius: .8rem; font-size: .8rem; font-weight: 700; color: rgba(250, 246, 241, 0.75); transition: all .15s;
   }
   .nav-item i { width: 1.1rem; text-align: center; }
-  .nav-item:hover { background: rgba(255,255,255,.06); color: #fff; }
-  .nav-item.nav-active { background: #fff; color: #000; }
-  .nav-item.nav-active #nav-count { background: rgba(0,0,0,.1); }
-  .bnav { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 8px; font-size: 10px; font-weight: 700; color: #8a8a8a; }
+  .nav-item:hover { background: rgba(250, 246, 241, 0.08); color: #faf6f1; }
+  .nav-item.nav-active { background: #faf6f1; color: #2a3e2f; }
+  #nav-count { background: rgba(250, 246, 241, 0.15); }
+  .nav-item.nav-active #nav-count { background: rgba(56, 79, 61, 0.12); }
+
+  /* شريط الجوال السفلي */
+  .bnav { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 8px; font-size: 10px; font-weight: 700; color: rgba(34, 54, 42, 0.5); }
   .bnav i { font-size: 16px; }
-  .bnav.nav-active { color: #fff; }
-  .bnav.nav-active i { color: #fbbf24; }
-  .editing-glow { border-color: rgba(251, 191, 36, 0.8) !important; box-shadow: 0 0 15px rgba(251, 191, 36, 0.15); }
+  .bnav.nav-active { color: #384f3d; }
+  .bnav.nav-active i { color: #384f3d; }
+  .editing-glow { border-color: rgba(180, 130, 20, 0.7) !important; background: rgba(251, 191, 36, 0.08) !important; box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15); }
 </style>
 </head>
 
@@ -67,57 +85,66 @@ tailwind.config = {
 
 <!-- رسائل التنبيه Toast -->
 <!-- نافذة تأكيد الحذف -->
-<div id="delete-modal" class="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm items-center justify-center p-4 hidden">
+<div id="delete-modal" class="fixed inset-0 z-[60] bg-ink/40 backdrop-blur-sm items-center justify-center p-4 hidden">
   <div role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" class="pro-card max-w-md w-full p-6 space-y-4 text-center">
-    <div class="w-12 h-12 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 flex items-center justify-center mx-auto text-xl">
+    <div class="w-12 h-12 rounded-full bg-red-500/10 text-red-600 border border-red-500/20 flex items-center justify-center mx-auto text-xl">
       <i class="fa-solid fa-triangle-exclamation"></i>
     </div>
     <div class="space-y-1.5">
-      <h3 id="delete-modal-title" class="text-sm font-bold text-white"></h3>
-      <p id="delete-modal-desc" class="text-xs text-gray-400 leading-relaxed"></p>
+      <h3 id="delete-modal-title" class="text-sm font-bold text-ink"></h3>
+      <p id="delete-modal-desc" class="text-xs text-ink/60 leading-relaxed"></p>
     </div>
     <div class="flex gap-2 pt-2">
-      <button type="button" onclick="closeDeleteModal()" class="flex-1 bg-white/10 hover:bg-white/20 text-white font-bold py-2.5 rounded-xl text-xs transition border border-white/20">تراجع</button>
-      <button type="button" id="confirm-delete-btn" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition">تأكيد الحذف</button>
+      <button type="button" onclick="closeDeleteModal()" class="flex-1 bg-brand/10 hover:bg-brand/15 text-ink font-bold py-2.5 rounded-xl text-xs transition border border-brand/25">تراجع</button>
+      <button type="button" id="confirm-delete-btn" class="flex-1 bg-red-600 hover:bg-red-700 text-ink font-bold py-2.5 rounded-xl text-xs transition">تأكيد الحذف</button>
     </div>
   </div>
 </div>
 
-<div id="toast" class="fixed bottom-20 lg:bottom-5 left-5 z-[70] transform translate-y-10 opacity-0 pointer-events-none bg-white text-black px-5 py-3 rounded-2xl shadow-2xl border border-white/30 text-xs font-bold flex items-center gap-2">
+<div id="toast" class="fixed bottom-20 lg:bottom-5 left-5 z-[70] transform translate-y-10 opacity-0 pointer-events-none bg-brand text-cream px-5 py-3 rounded-2xl shadow-2xl border border-brand/30 text-xs font-bold flex items-center gap-2">
   <i id="toast-icon" class="fa-solid fa-circle-check text-green-600"></i>
   <span id="toast-msg">تمت العملية بنجاح</span>
 </div>
 
 <!-- شاشة التحقق من الدخول -->
-<div id="auth-loading" class="fixed inset-0 z-40 flex flex-col items-center justify-center gap-3 text-xs text-gray-400 text-center px-6">
-  <i class="fa-solid fa-spinner fa-spin text-lg"></i>
-  <span>جاري التحقق من تسجيل الدخول...</span>
+<div id="auth-loading" class="fixed inset-0 z-40 flex flex-col items-center justify-center gap-3 text-xs text-ink/60 text-center px-6">
+  <p class="font-logo text-3xl text-brand leading-none" dir="ltr">DEV MENU</p>
+  <span class="flex items-center gap-2"><i class="fa-solid fa-spinner fa-spin"></i> جاري التحقق من تسجيل الدخول...</span>
 </div>
 
 <div id="app" style="visibility:hidden">
 
   <!-- ═════════ القائمة الجانبية (كمبيوتر) ═════════ -->
-  <aside class="hidden lg:flex fixed inset-y-0 right-0 z-30 w-64 flex-col bg-[#101010] border-l border-white/10">
-    <div class="p-5 border-b border-white/10 flex items-center gap-3">
-      <img id="sidebar-logo" src="images/logo.jpeg" alt="" class="w-11 h-11 rounded-xl object-cover border border-white/15 bg-white/5" onerror="this.src='images/logo.jpeg'">
+  <aside class="hidden lg:flex fixed inset-y-0 right-0 z-30 w-64 flex-col bg-brand text-cream">
+    <!-- شعار المنصة -->
+    <div class="px-6 pt-7 pb-5 text-center" dir="ltr">
+      <p class="font-serif text-[13px] text-cream/70 tracking-wide leading-none">Digital Menu Platform</p>
+      <p class="font-logo text-[34px] leading-[0.95] mt-1.5 text-cream">DEV<br>MENU</p>
+    </div>
+
+    <!-- المتجر الحالي -->
+    <div class="mx-3 p-3 rounded-2xl bg-cream/10 border border-cream/10 flex items-center gap-3">
+      <img id="sidebar-logo" src="images/logo.jpeg" alt="" class="w-11 h-11 rounded-xl object-cover bg-cream" onerror="this.onerror=null;this.src='images/logo.jpeg'">
       <div class="min-w-0">
-        <p id="header-title" class="text-sm font-black truncate">متجري</p>
-        <span id="store-status" class="inline-flex items-center gap-1 text-[10px] font-bold text-gray-400"></span>
+        <p id="header-title" class="text-sm font-black truncate text-cream">متجري</p>
+        <span id="store-status" class="inline-flex items-center gap-1 text-[10px] font-bold text-cream/70"></span>
       </div>
     </div>
-    <nav class="p-3 space-y-1 flex-1 overflow-y-auto">
+
+    <nav class="p-3 pt-4 space-y-1 flex-1 overflow-y-auto">
       <button data-nav="dashboard" class="nav-item"><i class="fa-solid fa-gauge-high"></i> الرئيسية</button>
-      <button data-nav="menu" class="nav-item"><i class="fa-solid fa-utensils"></i> المنيو <span id="nav-count" class="mr-auto text-[10px] bg-white/10 px-2 py-0.5 rounded-full">0</span></button>
+      <button data-nav="menu" class="nav-item"><i class="fa-solid fa-utensils"></i> المنيو <span id="nav-count" class="mr-auto text-[10px] px-2 py-0.5 rounded-full">0</span></button>
       <button data-nav="settings" class="nav-item"><i class="fa-solid fa-palette"></i> هوية المطعم</button>
-      <p class="px-3 pt-5 pb-1 text-[10px] text-gray-500 font-bold">اختصارات</p>
+      <p class="px-3 pt-5 pb-1 text-[10px] text-cream/45 font-bold">اختصارات</p>
       <a id="sidebar-preview" href="#" target="_blank" rel="noopener" class="nav-item"><i class="fa-solid fa-arrow-up-right-from-square"></i> معاينة المنيو</a>
       <button onclick="copyMenuLink()" class="nav-item"><i class="fa-solid fa-link"></i> نسخ رابط المنيو</button>
       <button onclick="downloadQrCard()" class="nav-item"><i class="fa-solid fa-print"></i> بطاقة الطاولة</button>
-      <a id="sa-link" href="super-admin.html" class="nav-item hidden"><i class="fa-solid fa-crown text-amber-400"></i> لوحة المشتركين</a>
+      <a id="sa-link" href="super-admin.html" class="nav-item hidden"><i class="fa-solid fa-crown text-amber-300"></i> لوحة المشتركين</a>
     </nav>
-    <div class="p-4 border-t border-white/10 space-y-2">
-      <p id="user-email" class="text-[10px] text-gray-500 truncate" dir="ltr"></p>
-      <button onclick="logout()" class="w-full bg-white/5 hover:bg-white/10 text-gray-300 font-bold py-2 rounded-xl text-xs transition border border-white/10 flex items-center justify-center gap-1.5">
+
+    <div class="p-4 border-t border-cream/10 space-y-2">
+      <p id="user-email" class="text-[10px] text-cream/50 truncate" dir="ltr"></p>
+      <button onclick="logout()" class="w-full bg-cream/10 hover:bg-cream/15 text-cream font-bold py-2 rounded-xl text-xs transition flex items-center justify-center gap-1.5">
         <i class="fa-solid fa-right-from-bracket text-[10px]"></i> تسجيل الخروج
       </button>
     </div>
@@ -126,21 +153,21 @@ tailwind.config = {
   <div class="lg:mr-64 min-h-screen flex flex-col">
 
     <!-- ═════════ الشريط العلوي ═════════ -->
-    <header class="sticky top-0 z-20 bg-[#0b0b0b]/85 backdrop-blur-xl border-b border-white/10">
+    <header class="sticky top-0 z-20 bg-sand/85 backdrop-blur-xl border-b border-brand/15">
       <div class="px-4 md:px-8 h-16 flex items-center justify-between gap-3">
         <div class="flex items-center gap-3 min-w-0">
-          <img id="mobile-logo" src="images/logo.jpeg" alt="" class="lg:hidden w-9 h-9 rounded-lg object-cover border border-white/15" onerror="this.src='images/logo.jpeg'">
+          <img id="mobile-logo" src="images/logo.jpeg" alt="" class="lg:hidden w-9 h-9 rounded-lg object-cover border border-brand/20" onerror="this.onerror=null;this.src='images/logo.jpeg'">
           <div class="min-w-0">
             <h1 id="page-title" class="text-base font-black leading-tight">الرئيسية</h1>
-            <p id="page-subtitle" class="text-[11px] text-gray-400 truncate"></p>
+            <p id="page-subtitle" class="text-[11px] text-ink/60 truncate"></p>
           </div>
         </div>
         <div class="flex items-center gap-2 shrink-0">
-          <span id="admin-mode-badge" class="hidden text-[10px] font-bold bg-amber-400/15 text-amber-300 border border-amber-400/30 px-2.5 py-1 rounded-full"><i class="fa-solid fa-crown"></i> وضع المدير العام</span>
-          <a id="preview-menu-btn" href="#" target="_blank" rel="noopener" class="text-xs bg-white text-black font-bold px-3.5 py-2 rounded-xl transition hover:bg-gray-200 flex items-center gap-1.5">
+          <span id="admin-mode-badge" class="hidden text-[10px] font-bold bg-amber-400/15 text-amber-700 border border-amber-400/30 px-2.5 py-1 rounded-full"><i class="fa-solid fa-crown"></i> وضع المدير العام</span>
+          <a id="preview-menu-btn" href="#" target="_blank" rel="noopener" class="text-xs bg-brand text-cream font-bold px-3.5 py-2 rounded-xl transition hover:bg-brand-dark flex items-center gap-1.5">
             <i class="fa-solid fa-eye text-[10px]"></i> <span class="hidden sm:inline">معاينة المنيو</span>
           </a>
-          <button onclick="logout()" aria-label="خروج" class="lg:hidden bg-white/10 hover:bg-white/20 text-white w-9 h-9 rounded-xl border border-white/20 flex items-center justify-center">
+          <button onclick="logout()" aria-label="خروج" class="lg:hidden bg-brand/10 hover:bg-brand/15 text-ink w-9 h-9 rounded-xl border border-brand/25 flex items-center justify-center">
             <i class="fa-solid fa-right-from-bracket text-xs"></i>
           </button>
         </div>
@@ -154,11 +181,11 @@ tailwind.config = {
         <div class="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 id="greeting" class="text-xl md:text-2xl font-black">أهلاً بك 👋</h2>
-            <p class="text-xs text-gray-400 mt-1">هذا ملخص متجرك وأداء المنيو.</p>
+            <p class="text-xs text-ink/60 mt-1">هذا ملخص متجرك وأداء المنيو.</p>
           </div>
           <div class="flex gap-2">
-            <button onclick="goAddDish()" class="bg-white text-black hover:bg-gray-200 px-4 py-2.5 rounded-xl text-xs font-black transition"><i class="fa-solid fa-plus"></i> أضف طبق</button>
-            <button onclick="downloadQrCard()" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-xl text-xs font-bold border border-white/20 transition"><i class="fa-solid fa-print"></i> بطاقة الطاولة</button>
+            <button onclick="goAddDish()" class="bg-brand text-cream hover:bg-brand-dark px-4 py-2.5 rounded-xl text-xs font-black transition"><i class="fa-solid fa-plus"></i> أضف طبق</button>
+            <button onclick="downloadQrCard()" class="bg-brand/10 hover:bg-brand/15 text-ink px-4 py-2.5 rounded-xl text-xs font-bold border border-brand/25 transition"><i class="fa-solid fa-print"></i> بطاقة الطاولة</button>
           </div>
         </div>
 
@@ -170,44 +197,44 @@ tailwind.config = {
           <div class="xl:col-span-2 space-y-6">
   <!-- إحصائيات المنيو -->
             <div class="pro-card p-5 space-y-5">
-              <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/15 pb-3">
-                <h3 class="text-xs font-bold text-white flex items-center gap-2"><i class="fa-solid fa-chart-simple text-emerald-400"></i> إحصائيات المنيو</h3>
+              <div class="flex flex-wrap items-center justify-between gap-3 border-b border-brand/20 pb-3">
+                <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="fa-solid fa-chart-simple text-emerald-600"></i> إحصائيات المنيو</h3>
                 <div class="flex items-center gap-2">
-                  <div id="stats-periods" class="flex bg-white/5 border border-white/10 rounded-xl p-0.5 text-[11px] font-bold">
-                    <button data-days="7" class="stats-period px-3 py-1.5 rounded-lg text-gray-300">7 أيام</button>
-                    <button data-days="30" class="stats-period px-3 py-1.5 rounded-lg bg-white text-black">30 يوم</button>
-                    <button data-days="90" class="stats-period px-3 py-1.5 rounded-lg text-gray-300">90 يوم</button>
+                  <div id="stats-periods" class="flex bg-brand/5 border border-brand/15 rounded-xl p-0.5 text-[11px] font-bold">
+                    <button data-days="7" class="stats-period px-3 py-1.5 rounded-lg text-ink/75">7 أيام</button>
+                    <button data-days="30" class="stats-period px-3 py-1.5 rounded-lg bg-brand text-cream">30 يوم</button>
+                    <button data-days="90" class="stats-period px-3 py-1.5 rounded-lg text-ink/75">90 يوم</button>
                   </div>
-                  <button id="stats-export" onclick="exportStatsCsv()" title="تصدير Excel" class="bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition disabled:opacity-40">
+                  <button id="stats-export" onclick="exportStatsCsv()" title="تصدير Excel" class="bg-brand/5 hover:bg-brand/10 border border-brand/15 text-ink/90 px-3 py-1.5 rounded-xl text-[11px] font-bold transition disabled:opacity-40">
                     <i class="fa-solid fa-file-arrow-down"></i> تصدير
                   </button>
                 </div>
               </div>
-              <div id="stats-body" class="text-xs text-gray-400">جاري التحميل...</div>
+              <div id="stats-body" class="text-xs text-ink/60">جاري التحميل...</div>
             </div>
           </div>
           <div class="space-y-6">
     <!-- حالة الاشتراك -->
             <div class="pro-card p-5 space-y-2 border-r-4 border-r-amber-400">
-              <h3 class="text-xs font-bold text-gray-300 flex items-center gap-1.5"><i class="fa-solid fa-id-card"></i> حالة الاشتراك</h3>
-              <div id="subscription-info" class="text-xs space-y-1 text-gray-200">
+              <h3 class="text-xs font-bold text-ink/75 flex items-center gap-1.5"><i class="fa-solid fa-id-card"></i> حالة الاشتراك</h3>
+              <div id="subscription-info" class="text-xs space-y-1 text-ink/90">
                 <p>جاري التحقق من الاشتراك...</p>
               </div>
             </div>
 
     <!-- تنبيهات الإدارة -->
             <div id="admin-notice-box" class="pro-card p-4 space-y-2 border-r-4 border-r-blue-400 hidden">
-              <h3 class="text-xs font-bold text-blue-300 flex items-center gap-1.5"><i class="fa-solid fa-bell"></i> تنبيه من الإدارة</h3>
-              <p id="admin-notice-text" class="text-xs text-gray-200"></p>
+              <h3 class="text-xs font-bold text-blue-700 flex items-center gap-1.5"><i class="fa-solid fa-bell"></i> تنبيه من الإدارة</h3>
+              <p id="admin-notice-text" class="text-xs text-ink/90"></p>
             </div>
 
     <!-- رابط المنيو والـ QR Code -->
             <div class="pro-card p-5 flex items-center justify-between gap-4">
               <div class="space-y-2">
-                <h3 class="text-xs font-bold text-white"><i class="fa-solid fa-qrcode text-amber-400"></i> باركود المنيو الخاص بك</h3>
-                <p class="text-[10px] text-gray-400">امسح الكود لفتح المنيو أو شاركه مع زملائك</p>
+                <h3 class="text-xs font-bold text-ink"><i class="fa-solid fa-qrcode text-amber-600"></i> باركود المنيو الخاص بك</h3>
+                <p class="text-[10px] text-ink/60">امسح الكود لفتح المنيو أو شاركه مع زملائك</p>
                 <div class="flex flex-wrap gap-1.5">
-                  <button onclick="copyMenuLink()" class="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold border border-white/20 transition">
+                  <button onclick="copyMenuLink()" class="bg-brand/10 hover:bg-brand/15 text-ink px-3 py-1.5 rounded-lg text-[10px] font-bold border border-brand/25 transition">
                     <i class="fa-solid fa-copy"></i> نسخ الرابط
                   </button>
                   <button id="qr-download-btn" onclick="downloadQrCard()" class="bg-amber-400 hover:bg-amber-300 text-black px-3 py-1.5 rounded-lg text-[10px] font-bold transition">
@@ -220,10 +247,10 @@ tailwind.config = {
             <!-- جاهزية المنيو -->
             <div class="pro-card p-5 space-y-3">
               <div class="flex items-center justify-between">
-                <h3 class="text-xs font-bold text-white flex items-center gap-2"><i class="fa-solid fa-list-check text-emerald-400"></i> جاهزية المنيو</h3>
-                <span id="checklist-pct" class="text-[11px] font-black text-emerald-300">0%</span>
+                <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="fa-solid fa-list-check text-emerald-600"></i> جاهزية المنيو</h3>
+                <span id="checklist-pct" class="text-[11px] font-black text-emerald-700">0%</span>
               </div>
-              <div class="h-2 bg-white/5 rounded-full overflow-hidden"><div id="checklist-bar" class="h-full bg-emerald-400 rounded-full transition-all" style="width:0%"></div></div>
+              <div class="h-2 bg-brand/5 rounded-full overflow-hidden"><div id="checklist-bar" class="h-full bg-brand rounded-full transition-all" style="width:0%"></div></div>
               <ul id="checklist-body" class="space-y-1.5"></ul>
             </div>
           </div>
@@ -233,11 +260,11 @@ tailwind.config = {
       <!-- ═════════════════ صفحة المنيو ═════════════════ -->
       <section data-page="menu" class="hidden space-y-5">
   <!-- التبويبات -->
-  <div class="flex gap-2 border-b border-white/15 pb-2">
-    <button onclick="switchTab('products')" id="tab-products" class="tab-btn active px-5 py-2.5 rounded-xl border border-white/20 text-xs font-bold transition flex items-center gap-2">
+  <div class="flex gap-2 border-b border-brand/20 pb-2">
+    <button onclick="switchTab('products')" id="tab-products" class="tab-btn active px-5 py-2.5 rounded-xl border border-brand/25 text-xs font-bold transition flex items-center gap-2">
       <i class="fa-solid fa-box"></i> المنتجات والأطباق
     </button>
-    <button onclick="switchTab('categories')" id="tab-categories" class="tab-btn bg-white/5 hover:bg-white/10 text-gray-300 px-5 py-2.5 rounded-xl border border-white/20 text-xs font-bold transition flex items-center gap-2">
+    <button onclick="switchTab('categories')" id="tab-categories" class="tab-btn bg-brand/5 hover:bg-brand/10 text-ink/75 px-5 py-2.5 rounded-xl border border-brand/25 text-xs font-bold transition flex items-center gap-2">
       <i class="fa-solid fa-layer-group"></i> الأقسام والقوائم
     </button>
   </div>
@@ -247,47 +274,55 @@ tailwind.config = {
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
       <div class="lg:col-span-5 xl:col-span-4">
         <form id="add-product-form" class="pro-card p-5 space-y-3.5 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
-          <h3 class="text-xs font-bold text-white border-b border-white/15 pb-2 flex items-center gap-2">
-            <i id="form-icon" class="fa-solid fa-plus text-white"></i> <span id="form-title">إضافة طبق أو منتج جديد</span>
+          <h3 class="text-xs font-bold text-ink border-b border-brand/20 pb-2 flex items-center gap-2">
+            <i id="form-icon" class="fa-solid fa-plus text-ink"></i> <span id="form-title">إضافة طبق أو منتج جديد</span>
           </h3>
           <div>
-            <label class="text-[11px] text-gray-300 block mb-1">اسم الطبق / المنتج *</label>
+            <label class="text-[11px] text-ink/75 block mb-1">اسم الطبق / المنتج *</label>
             <input type="text" id="prod-name" placeholder="مثال: ستيك لحم فاخر" required class="input-pro">
           </div>
           <div class="grid grid-cols-2 gap-2.5">
             <div>
-              <label class="text-[11px] text-gray-300 block mb-1">القسم *</label>
-              <select id="prod-category" required class="input-pro bg-zinc-900"></select>
+              <label class="text-[11px] text-ink/75 block mb-1">القسم *</label>
+              <select id="prod-category" required class="input-pro bg-cream"></select>
             </div>
             <div>
-              <label class="text-[11px] text-gray-300 block mb-1">السعر (&#x20C1;) *</label>
+              <label class="text-[11px] text-ink/75 block mb-1">السعر (&#x20C1;) *</label>
               <input type="number" step="0.5" id="prod-price" placeholder="0.00" required class="input-pro">
             </div>
           </div>
           <div>
-            <label class="text-[11px] text-gray-300 block mb-1">صورة الطبق <span id="image-hint" class="text-gray-500"></span></label>
+            <label class="text-[11px] text-ink/75 block mb-1">صورة الطبق <span id="image-hint" class="text-ink/50"></span></label>
             <input type="file" id="prod-image-file" accept="image/*" class="input-pro text-xs">
           </div>
           <div>
-            <label class="text-[11px] text-gray-300 block mb-1">وصف المكونات</label>
+            <label class="text-[11px] text-ink/75 block mb-1">وصف المكونات</label>
             <textarea id="prod-desc" placeholder="وصف موجز للمكونات..." class="input-pro h-16 resize-none"></textarea>
           </div>
           <div>
-            <label class="text-[11px] text-gray-300 block mb-1">السعرات الحرارية <span class="text-gray-500">(مطلوبة من هيئة الغذاء والدواء)</span></label>
+            <label class="text-[11px] text-ink/75 block mb-1">معلومات إضافية <span class="text-ink/50">(اختياري)</span></label>
+            <input type="text" id="prod-extra" maxlength="200" placeholder="مثال: 40g بروتين — 50g كارب" class="input-pro">
+          </div>
+          <div>
+            <label class="text-[11px] text-ink/75 block mb-1">ملاحظة <span class="text-ink/50">(اختياري)</span></label>
+            <input type="text" id="prod-note" maxlength="200" placeholder="مثال: يتوفر من 6 صباحاً إلى 2 مساءً" class="input-pro">
+          </div>
+          <div id="calories-field">
+            <label class="text-[11px] text-ink/75 block mb-1">السعرات الحرارية <span class="text-ink/50">(مطلوبة من هيئة الغذاء والدواء)</span></label>
             <div class="relative">
               <input type="number" min="0" step="1" id="prod-calories" placeholder="مثال: 450" class="input-pro pl-14" dir="ltr">
-              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-500">سعرة</span>
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-ink/50">سعرة</span>
             </div>
           </div>
-          <details id="coffee-details" class="bg-amber-900/10 rounded-xl border border-amber-700/30 group">
-            <summary class="cursor-pointer select-none p-2.5 text-[11px] font-bold text-amber-100 flex items-center justify-between">
-              <span><i class="fa-solid fa-mug-hot text-amber-400"></i> تفاصيل القهوة المختصة <span class="text-amber-200/50 font-normal">(للمقاهي، اختياري)</span></span>
-              <i class="fa-solid fa-chevron-down text-[9px] text-amber-200/50 group-open:rotate-180 transition"></i>
+          <details id="coffee-details" class="bg-amber-100/60 rounded-xl border border-amber-700/25 group">
+            <summary class="cursor-pointer select-none p-2.5 text-[11px] font-bold text-amber-900 flex items-center justify-between">
+              <span><i class="fa-solid fa-mug-hot text-amber-600"></i> تفاصيل القهوة المختصة <span class="text-amber-800/60 font-normal">(للمقاهي، اختياري)</span></span>
+              <i class="fa-solid fa-chevron-down text-[9px] text-amber-800/60 group-open:rotate-180 transition"></i>
             </summary>
             <div class="p-2.5 pt-0 space-y-3">
               <div class="grid grid-cols-2 gap-2">
                 <div>
-                  <label class="text-[10px] text-gray-400 block mb-1">الأصل (الدولة)</label>
+                  <label class="text-[10px] text-ink/60 block mb-1">الأصل (الدولة)</label>
                   <input type="text" id="coffee-origin" list="coffee-origins" placeholder="إثيوبيا" class="input-pro text-xs">
                   <datalist id="coffee-origins">
                     <option value="إثيوبيا"><option value="كولومبيا"><option value="البرازيل"><option value="كينيا">
@@ -297,88 +332,88 @@ tailwind.config = {
                   </datalist>
                 </div>
                 <div>
-                  <label class="text-[10px] text-gray-400 block mb-1">المنطقة / المزرعة</label>
+                  <label class="text-[10px] text-ink/60 block mb-1">المنطقة / المزرعة</label>
                   <input type="text" id="coffee-region" placeholder="يرقاتشيفي" class="input-pro text-xs">
                 </div>
                 <div>
-                  <label class="text-[10px] text-gray-400 block mb-1">المعالجة</label>
-                  <select id="coffee-process" class="input-pro bg-zinc-900 text-xs"></select>
+                  <label class="text-[10px] text-ink/60 block mb-1">المعالجة</label>
+                  <select id="coffee-process" class="input-pro bg-cream text-xs"></select>
                 </div>
                 <div>
-                  <label class="text-[10px] text-gray-400 block mb-1">السلالة</label>
+                  <label class="text-[10px] text-ink/60 block mb-1">السلالة</label>
                   <input type="text" id="coffee-variety" placeholder="Heirloom" class="input-pro text-xs">
                 </div>
                 <div>
-                  <label class="text-[10px] text-gray-400 block mb-1">الارتفاع</label>
+                  <label class="text-[10px] text-ink/60 block mb-1">الارتفاع</label>
                   <div class="relative">
                     <input type="number" min="0" max="3500" step="50" id="coffee-altitude" placeholder="2000" class="input-pro text-xs pl-10" dir="ltr">
-                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-500">متر</span>
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-ink/50">متر</span>
                   </div>
                 </div>
                 <div>
-                  <label class="text-[10px] text-gray-400 block mb-1">درجة التحميص</label>
+                  <label class="text-[10px] text-ink/60 block mb-1">درجة التحميص</label>
                   <div id="coffee-roast" class="grid grid-cols-3 gap-1"></div>
                 </div>
               </div>
               <div>
-                <label class="text-[10px] text-gray-400 block mb-1">الإيحاءات (النكهات)</label>
+                <label class="text-[10px] text-ink/60 block mb-1">الإيحاءات (النكهات)</label>
                 <div id="notes-box" class="input-pro flex flex-wrap gap-1.5 items-center min-h-[42px] cursor-text">
                   <input type="text" id="notes-input" placeholder="اكتب إيحاء واضغط Enter" class="bg-transparent outline-none flex-1 min-w-[110px] text-xs">
                 </div>
                 <div id="notes-suggest" class="flex flex-wrap gap-1 mt-1.5"></div>
               </div>
               <div>
-                <label class="text-[10px] text-gray-400 block mb-1">طرق التحضير المتاحة</label>
+                <label class="text-[10px] text-ink/60 block mb-1">طرق التحضير المتاحة</label>
                 <div id="coffee-methods" class="flex flex-wrap gap-1.5"></div>
               </div>
             </div>
           </details>
-          <details class="bg-white/5 rounded-xl border border-white/10 group">
-            <summary class="cursor-pointer select-none p-2.5 text-[11px] font-bold text-gray-200 flex items-center justify-between">
-              <span><i class="fa-solid fa-language text-blue-300"></i> الاسم والوصف بالإنجليزي <span class="text-gray-500 font-normal">(اختياري)</span></span>
-              <i class="fa-solid fa-chevron-down text-[9px] text-gray-500 group-open:rotate-180 transition"></i>
+          <details class="bg-brand/5 rounded-xl border border-brand/15 group">
+            <summary class="cursor-pointer select-none p-2.5 text-[11px] font-bold text-ink/90 flex items-center justify-between">
+              <span><i class="fa-solid fa-language text-blue-700"></i> الاسم والوصف بالإنجليزي <span class="text-ink/50 font-normal">(اختياري)</span></span>
+              <i class="fa-solid fa-chevron-down text-[9px] text-ink/50 group-open:rotate-180 transition"></i>
             </summary>
             <div class="p-2.5 pt-0 space-y-2">
               <input type="text" id="prod-name-en" placeholder="Dish name" class="input-pro text-xs" dir="ltr">
               <textarea id="prod-desc-en" placeholder="Short description" class="input-pro text-xs h-14 resize-none" dir="ltr"></textarea>
-              <p class="text-[10px] text-gray-500">إذا تركتها فارغة، يترجمها المنيو آلياً للزبون.</p>
+              <p class="text-[10px] text-ink/50">إذا تركتها فارغة، يترجمها المنيو آلياً للزبون.</p>
             </div>
           </details>
-          <details class="bg-white/5 rounded-xl border border-white/10 group">
-            <summary class="cursor-pointer select-none p-2.5 text-[11px] font-bold text-gray-200 flex items-center justify-between">
-              <span><i class="fa-solid fa-triangle-exclamation text-amber-300"></i> مسببات الحساسية <span class="text-gray-500 font-normal">(اختياري)</span></span>
-              <i class="fa-solid fa-chevron-down text-[9px] text-gray-500 group-open:rotate-180 transition"></i>
+          <details class="bg-brand/5 rounded-xl border border-brand/15 group">
+            <summary class="cursor-pointer select-none p-2.5 text-[11px] font-bold text-ink/90 flex items-center justify-between">
+              <span><i class="fa-solid fa-triangle-exclamation text-amber-700"></i> مسببات الحساسية <span class="text-ink/50 font-normal">(اختياري)</span></span>
+              <i class="fa-solid fa-chevron-down text-[9px] text-ink/50 group-open:rotate-180 transition"></i>
             </summary>
             <div id="allergen-options" class="p-2.5 pt-0 grid grid-cols-3 gap-1.5 text-[10px]"></div>
           </details>
-          <div class="flex items-center gap-2 bg-white/5 p-2.5 rounded-xl border border-white/10">
-            <input type="checkbox" id="prod-bestseller" class="w-4 h-4 accent-black cursor-pointer">
-            <label for="prod-bestseller" class="text-xs font-bold text-white cursor-pointer flex items-center gap-1.5">
-              <i class="fa-solid fa-fire text-amber-400"></i> تمييز كـ "طبق مميز / الأكثر مبيعاً"
+          <div class="flex items-center gap-2 bg-brand/5 p-2.5 rounded-xl border border-brand/15">
+            <input type="checkbox" id="prod-bestseller" class="w-4 h-4 accent-[#384f3d] cursor-pointer">
+            <label for="prod-bestseller" class="text-xs font-bold text-ink cursor-pointer flex items-center gap-1.5">
+              <i class="fa-solid fa-fire text-amber-600"></i> تمييز كـ "طبق مميز / الأكثر مبيعاً"
             </label>
           </div>
-          <button type="submit" id="submit-btn" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-2.5 rounded-xl text-xs transition shadow-lg">حفظ وإضافة الطبق</button>
-          <button type="button" id="cancel-edit-btn" onclick="cancelEdit()" class="hidden w-full bg-white/5 hover:bg-white/10 text-gray-300 font-bold py-2.5 rounded-xl text-xs transition border border-white/15">إلغاء التعديل</button>
+          <button type="submit" id="submit-btn" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition shadow-lg">حفظ وإضافة الطبق</button>
+          <button type="button" id="cancel-edit-btn" onclick="cancelEdit()" class="hidden w-full bg-brand/5 hover:bg-brand/10 text-ink/75 font-bold py-2.5 rounded-xl text-xs transition border border-brand/20">إلغاء التعديل</button>
         </form>
       </div>
 
       <div class="lg:col-span-7 xl:col-span-8 space-y-3.5">
         <div class="pro-card p-3.5 flex flex-wrap items-center justify-between gap-3">
           <div class="relative flex-1 min-w-[180px]">
-            <i class="fa-solid fa-magnifying-glass absolute right-3.5 top-3 text-gray-400 text-xs"></i>
+            <i class="fa-solid fa-magnifying-glass absolute right-3.5 top-3 text-ink/60 text-xs"></i>
             <input type="text" id="search-input" oninput="filterProducts()" placeholder="بحث في الأطباق..." class="input-pro pr-9 text-xs">
           </div>
-          <select id="filter-category" onchange="filterProducts()" class="input-pro bg-zinc-900 w-auto text-xs">
+          <select id="filter-category" onchange="filterProducts()" class="input-pro bg-cream w-auto text-xs">
             <option value="all">جميع الأقسام</option>
           </select>
         </div>
         <div class="pro-card p-4 space-y-3">
-          <div class="flex items-center justify-between border-b border-white/15 pb-2">
-            <h3 class="text-xs font-bold text-white">الأطباق المتاحة في القائمة</h3>
-            <span id="products-count" class="text-[10px] font-bold text-black bg-white px-2.5 py-0.5 rounded-full">0 طبق</span>
+          <div class="flex items-center justify-between border-b border-brand/20 pb-2">
+            <h3 class="text-xs font-bold text-ink">الأطباق المتاحة في القائمة</h3>
+            <span id="products-count" class="text-[10px] font-bold text-cream bg-brand px-2.5 py-0.5 rounded-full">0 طبق</span>
           </div>
           <div id="admin-products-list" class="space-y-2.5">
-            <p class="text-xs text-gray-400 text-center py-6">جاري التحميل...</p>
+            <p class="text-xs text-ink/60 text-center py-6">جاري التحميل...</p>
           </div>
         </div>
       </div>
@@ -390,23 +425,23 @@ tailwind.config = {
     <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
       <div class="md:col-span-5">
         <form id="add-category-form" class="pro-card p-5 space-y-3.5">
-          <h3 class="text-xs font-bold text-white border-b border-white/15 pb-2">إضافة قسم جديد للمنيو</h3>
+          <h3 class="text-xs font-bold text-ink border-b border-brand/20 pb-2">إضافة قسم جديد للمنيو</h3>
           <div>
-            <label class="text-[11px] text-gray-300 block mb-1">اسم القسم (عربي) *</label>
+            <label class="text-[11px] text-ink/75 block mb-1">اسم القسم (عربي) *</label>
             <input type="text" id="cat-name" placeholder="مثال: المقبلات الساخنة" required class="input-pro">
           </div>
           <div>
-            <label class="text-[11px] text-gray-300 block mb-1">اسم القسم بالإنجليزي <span class="text-gray-500">(اختياري)</span></label>
+            <label class="text-[11px] text-ink/75 block mb-1">اسم القسم بالإنجليزي <span class="text-ink/50">(اختياري)</span></label>
             <input type="text" id="cat-name-en" placeholder="Hot Appetizers" class="input-pro" dir="ltr">
           </div>
-          <button type="submit" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-2.5 rounded-xl text-xs transition shadow-lg">حفظ القسم</button>
+          <button type="submit" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition shadow-lg">حفظ القسم</button>
         </form>
       </div>
       <div class="md:col-span-7">
         <div class="pro-card p-5 space-y-3">
-          <h3 class="text-xs font-bold text-white border-b border-white/15 pb-2">الأقسام الحالية</h3>
+          <h3 class="text-xs font-bold text-ink border-b border-brand/20 pb-2">الأقسام الحالية</h3>
           <div id="categories-list" class="space-y-2.5">
-            <p class="text-xs text-gray-400 text-center py-4">لا توجد أقسام بعد.</p>
+            <p class="text-xs text-ink/60 text-center py-4">لا توجد أقسام بعد.</p>
           </div>
         </div>
       </div>
@@ -418,88 +453,95 @@ tailwind.config = {
       <section data-page="settings" class="hidden space-y-6">
         <div class="pro-card p-5 space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <h3 class="text-xs font-bold text-white flex items-center gap-2"><i class="fa-solid fa-shop text-gray-300"></i> نوع النشاط</h3>
-            <span class="text-[10px] text-gray-500">يحدد الحقول اللي تظهر لك عند إضافة الأطباق</span>
+            <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="fa-solid fa-shop text-ink/75"></i> نوع النشاط</h3>
+            <span class="text-[10px] text-ink/50">يحدد الحقول اللي تظهر لك عند إضافة الأطباق</span>
           </div>
           <div id="biz-type" class="grid grid-cols-2 md:grid-cols-4 gap-2"></div>
         </div>
         <div class="pro-card p-5 space-y-4">
-          <h3 class="text-xs font-bold text-white border-b border-white/15 pb-2 flex items-center gap-2">
-            <i class="fa-solid fa-palette text-gray-300"></i> الاسم والشعار والخلفية
+          <h3 class="text-xs font-bold text-ink border-b border-brand/20 pb-2 flex items-center gap-2">
+            <i class="fa-solid fa-palette text-ink/75"></i> الاسم والشعار والخلفية
           </h3>
     <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4">
-      <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
-        <label class="text-[11px] font-bold text-gray-300">اسم المطعم في المنيو</label>
+      <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
+        <label class="text-[11px] font-bold text-ink/75">اسم المطعم في المنيو</label>
         <input type="text" id="setting-name" placeholder="اسم المطعم" class="input-pro text-xs">
-        <button onclick="updateRestaurantName()" class="w-full bg-white text-black hover:bg-gray-200 text-xs font-bold py-2 rounded-xl transition">حفظ الاسم</button>
+        <button onclick="updateRestaurantName()" class="w-full bg-brand text-cream hover:bg-brand-dark text-xs font-bold py-2 rounded-xl transition">حفظ الاسم</button>
       </div>
 
-      <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
+      <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
         <div class="flex items-center justify-between">
-          <label class="text-[11px] font-bold text-gray-300">شعار المطعم (Logo)</label>
-          <img id="logo-preview" src="images/logo.jpeg" class="w-7 h-7 object-cover rounded-full border border-white/30" onerror="this.src='https://via.placeholder.com/50'">
+          <label class="text-[11px] font-bold text-ink/75">شعار المطعم (Logo)</label>
+          <img id="logo-preview" src="images/logo.jpeg" class="w-7 h-7 object-cover rounded-full border border-brand/30" onerror="this.onerror=null;this.src='images/logo.jpeg'">
         </div>
         <input type="file" id="logo-file" accept="image/*" class="input-pro text-[10px]">
-        <button onclick="uploadMedia('logo')" class="w-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-2 rounded-xl transition border border-white/20">تحديث الشعار</button>
+        <button onclick="uploadMedia('logo')" class="w-full bg-brand/10 hover:bg-brand/15 text-ink text-xs font-bold py-2 rounded-xl transition border border-brand/25">تحديث الشعار</button>
       </div>
 
-      <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
-        <label class="text-[11px] font-bold text-gray-300">صورة الخلفية للمنيو</label>
+      <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
+        <label class="text-[11px] font-bold text-ink/75">صورة الخلفية للمنيو</label>
         <input type="file" id="bg-img-file" accept="image/*" class="input-pro text-[10px]">
-        <button onclick="uploadMedia('bg_image')" class="w-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-2 rounded-xl transition border border-white/20">تحديث الخلفية</button>
+        <button onclick="uploadMedia('bg_image')" class="w-full bg-brand/10 hover:bg-brand/15 text-ink text-xs font-bold py-2 rounded-xl transition border border-brand/25">تحديث الخلفية</button>
       </div>
 
-      <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
-        <label class="text-[11px] font-bold text-gray-300">فيديو الخلفية (MP4)</label>
+      <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
+        <label class="text-[11px] font-bold text-ink/75">فيديو الخلفية (MP4)</label>
         <input type="file" id="bg-video-file" accept="video/*" class="input-pro text-[10px]">
-        <button onclick="uploadMedia('bg_video')" class="w-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-2 rounded-xl transition border border-white/20">تحديث الفيديو</button>
+        <button onclick="uploadMedia('bg_video')" class="w-full bg-brand/10 hover:bg-brand/15 text-ink text-xs font-bold py-2 rounded-xl transition border border-brand/25">تحديث الفيديو</button>
       </div>
     </div>
         </div>
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
     <!-- معلومات المطعم -->
     <div class="pro-card p-5 space-y-3">
-      <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
-        <i class="fa-solid fa-store text-emerald-400"></i> معلومات المطعم (تظهر أعلى المنيو)
+      <h4 class="text-xs font-bold text-ink flex items-center gap-1.5">
+        <i class="fa-solid fa-store text-emerald-600"></i> معلومات المطعم (تظهر أعلى المنيو)
       </h4>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label class="text-[10px] text-gray-300 block mb-1">ساعات العمل</label>
+          <label class="text-[10px] text-ink/75 block mb-1">ساعات العمل</label>
           <input type="text" id="info-hours" maxlength="80" placeholder="مثال: يومياً من 1 ظهراً حتى 1 فجراً" class="input-pro text-xs">
         </div>
         <div>
-          <label class="text-[10px] text-gray-300 block mb-1">رابط الموقع على خرائط Google</label>
+          <label class="text-[10px] text-ink/75 block mb-1">رابط الموقع على خرائط Google</label>
           <input type="url" id="info-location" placeholder="https://maps.app.goo.gl/..." class="input-pro text-xs" dir="ltr">
         </div>
       </div>
-      <div id="wa-orders-box" class="bg-white/5 p-3 rounded-xl border border-white/10 space-y-2.5">
+      <label class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
+        <input type="checkbox" id="info-show-calories" onchange="toggleCalories(this.checked)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
+        <span class="text-xs">
+          <b class="text-ink"><i class="fa-solid fa-fire-flame-simple text-amber-600"></i> عرض السعرات الحرارية في المنيو</b>
+          <span class="block text-[10px] text-ink/60 mt-0.5">عند الإيقاف: يختفي حقل السعرات من نموذج الأطباق، ولا تظهر السعرات للزبائن. السعرات المحفوظة تبقى ولا تنحذف.</span>
+        </span>
+      </label>
+      <div id="wa-orders-box" class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2.5">
         <label id="wa-orders-label" class="flex items-start gap-2.5 cursor-pointer">
           <input type="checkbox" id="info-wa-orders" class="w-4 h-4 mt-0.5 accent-green-500 cursor-pointer disabled:cursor-not-allowed">
           <span class="text-xs">
-            <b class="text-white"><i class="fa-brands fa-whatsapp text-green-400"></i> استقبال الطلبات عبر واتساب</b>
-            <span class="block text-[10px] text-gray-400 mt-0.5">يظهر زر "اطلب عبر واتساب" في تفاصيل كل طبق، ويصل الطلب مباشرة إلى واتساب المطعم.</span>
+            <b class="text-ink"><i class="fa-brands fa-whatsapp text-green-600"></i> استقبال الطلبات عبر واتساب</b>
+            <span class="block text-[10px] text-ink/60 mt-0.5">يظهر زر "اطلب عبر واتساب" في تفاصيل كل طبق، ويصل الطلب مباشرة إلى واتساب المطعم.</span>
           </span>
         </label>
         <div id="wa-orders-status" class="text-[11px]"></div>
       </div>
-      <button onclick="updateRestaurantInfo()" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-2 rounded-xl text-xs transition shadow-md">حفظ معلومات المطعم</button>
+      <button onclick="updateRestaurantInfo()" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2 rounded-xl text-xs transition shadow-md">حفظ معلومات المطعم</button>
     </div>
     <!-- العروض والرسائل الترويجية -->
     <div class="pro-card p-5 space-y-3">
-      <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
-        <i class="fa-solid fa-bullhorn text-amber-300"></i> الرسائل الترويجية والعروض (تظهر أعلى المنيو للعملاء)
+      <h4 class="text-xs font-bold text-ink flex items-center gap-1.5">
+        <i class="fa-solid fa-bullhorn text-amber-700"></i> الرسائل الترويجية والعروض (تظهر أعلى المنيو للعملاء)
       </h4>
       <div id="promo-status" class="flex items-center gap-2 text-[11px]"></div>
       <div class="flex flex-col sm:flex-row gap-2">
         <div class="relative flex-1">
           <input type="text" id="promo-message-input" maxlength="120" placeholder="مثال: خصم 20% على جميع الأطباق الرئيسية اليوم!" class="input-pro text-xs pl-14">
-          <span id="promo-counter" class="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-500 font-mono" dir="ltr">0/120</span>
+          <span id="promo-counter" class="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-ink/50 font-mono" dir="ltr">0/120</span>
         </div>
         <div class="flex gap-2 shrink-0">
-          <button type="button" id="promo-save-btn" onclick="updatePromoMessage()" class="flex-1 sm:flex-none bg-white text-black hover:bg-gray-200 px-5 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+          <button type="button" id="promo-save-btn" onclick="updatePromoMessage()" class="flex-1 sm:flex-none bg-brand text-cream hover:bg-brand-dark px-5 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
             <i class="fa-solid fa-floppy-disk text-[11px]"></i> حفظ ونشر
           </button>
-          <button type="button" id="promo-delete-btn" onclick="deletePromoMessage()" class="flex-1 sm:flex-none bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-4 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+          <button type="button" id="promo-delete-btn" onclick="deletePromoMessage()" class="flex-1 sm:flex-none bg-red-500/10 hover:bg-red-500/20 text-red-600 border border-red-500/20 px-4 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
             <i class="fa-solid fa-trash text-[11px]"></i> حذف الإعلان
           </button>
         </div>
@@ -508,39 +550,39 @@ tailwind.config = {
         </div>
     <!-- روابط التواصل الاجتماعي -->
     <div class="pro-card p-5 space-y-3">
-      <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
-        <i class="fa-solid fa-share-nodes text-blue-400"></i> روابط منصات التواصل الاجتماعي وموقع المطعم
+      <h4 class="text-xs font-bold text-ink flex items-center gap-1.5">
+        <i class="fa-solid fa-share-nodes text-blue-600"></i> روابط منصات التواصل الاجتماعي وموقع المطعم
       </h4>
       <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <div>
-          <label class="text-[10px] text-gray-300 block mb-1">الموقع الإلكتروني</label>
+          <label class="text-[10px] text-ink/75 block mb-1">الموقع الإلكتروني</label>
           <input type="url" id="social-web" placeholder="https://..." class="input-pro text-xs">
         </div>
         <div>
-          <label class="text-[10px] text-gray-300 block mb-1">رابط تيك توك</label>
+          <label class="text-[10px] text-ink/75 block mb-1">رابط تيك توك</label>
           <input type="url" id="social-tiktok" placeholder="https://tiktok.com/@..." class="input-pro text-xs">
         </div>
         <div>
-          <label class="text-[10px] text-gray-300 block mb-1">رابط انستجرام</label>
+          <label class="text-[10px] text-ink/75 block mb-1">رابط انستجرام</label>
           <input type="url" id="social-insta" placeholder="https://instagram.com/..." class="input-pro text-xs">
         </div>
         <div>
-          <label class="text-[10px] text-gray-300 block mb-1">رقم الواتساب</label>
+          <label class="text-[10px] text-ink/75 block mb-1">رقم الواتساب</label>
           <input type="tel" id="social-whatsapp" placeholder="05xxxxxxxx" class="input-pro text-xs" dir="ltr">
         </div>
         <div>
-          <label class="text-[10px] text-gray-300 block mb-1">رابط سناب شات</label>
+          <label class="text-[10px] text-ink/75 block mb-1">رابط سناب شات</label>
           <input type="url" id="social-snap" placeholder="https://snapchat.com/..." class="input-pro text-xs">
         </div>
       </div>
-      <button onclick="updateSocialLinks()" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-2 rounded-xl text-xs transition shadow-md">حفظ روابط التواصل</button>
+      <button onclick="updateSocialLinks()" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2 rounded-xl text-xs transition shadow-md">حفظ روابط التواصل</button>
     </div>
       </section>
     </main>
   </div>
 
   <!-- ═════════ شريط التنقل السفلي (جوال) ═════════ -->
-  <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-[#101010]/95 backdrop-blur-xl border-t border-white/10 grid grid-cols-3" style="padding-bottom: env(safe-area-inset-bottom)">
+  <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-cream/95 backdrop-blur-xl border-t border-brand/15 grid grid-cols-3" style="padding-bottom: env(safe-area-inset-bottom)">
     <button data-nav="dashboard" class="bnav"><i class="fa-solid fa-gauge-high"></i><span>الرئيسية</span></button>
     <button data-nav="menu" class="bnav"><i class="fa-solid fa-utensils"></i><span>المنيو</span></button>
     <button data-nav="settings" class="bnav"><i class="fa-solid fa-palette"></i><span>هوية المطعم</span></button>
@@ -549,9 +591,7 @@ tailwind.config = {
 
 <!-- JavaScript البرمجي المنظم -->
 <script>
-  const SUPABASE_URL = 'https://czdoamcgxgkicrbufpcn.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZG9hbWNneGdraWNyYnVmcGNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwMTA5MzAsImV4cCI6MjEwNTU4NjkzMH0.45zKx4ljXJ27SS-ukc62qiu52movhDgSoC9OEnK9NHk';
-  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // كل البيانات عبر خادمنا /api/owner — المتصفح ما يتصل بقاعدة البيانات
   // السعر مع رمز الريال الجديد: "⃁ 25" (الرمز يسار الرقم)
   const SAR = '\u20C1';
   const money = (n) => `\u2066${SAR} ${n}\u2069`;
@@ -569,15 +609,28 @@ tailwind.config = {
   const requestedSlug = (params.get('client') || '').trim().toLowerCase();
   const MAX_IMAGE_MB = 5, MAX_VIDEO_MB = 30;
 
-  let client = null, currentClientId = null, isSuperAdmin = false;
+  let client = null, currentClientId = null, isSuperAdmin = false, userEmail = '';
   let loadedProducts = [], loadedCategories = [], editingProductId = null;
-  let lastUploadError = '';
+  let lastUploadError = '', lastApiError = '';
+
+  // طلبات الخادم: المدير العام يمرر ?client= لإدارة متجر معيّن (الخادم يتجاهلها لغيره)
+  const O = (action) => `/api/owner?action=${action}${requestedSlug ? `&client=${encodeURIComponent(requestedSlug)}` : ''}`;
+  async function api(action, body) {
+    try {
+      return body === undefined ? await DM.get(O(action), true) : await DM.post(O(action), body, true);
+    } catch (e) {
+      if (e.status === 401) { window.location.replace('login.html'); throw e; }
+      lastApiError = e.message || '';
+      throw e;
+    }
+  }
 
   function showToast(msg, isError = false) {
+    if (isError && lastApiError) { msg = lastApiError; lastApiError = ''; }
     const toast = document.getElementById('toast');
     document.getElementById('toast-msg').textContent = msg;
     document.getElementById('toast-icon').className = isError ? 'fa-solid fa-circle-xmark text-red-500' : 'fa-solid fa-circle-check text-green-600';
-    toast.className = `fixed bottom-20 lg:bottom-5 left-5 z-[70] px-5 py-3 rounded-2xl shadow-2xl border text-xs font-bold flex items-center gap-2 transition-all ${isError ? 'bg-zinc-900 border-red-500 text-white' : 'bg-white border-white text-black'} show`;
+    toast.className = `fixed bottom-20 lg:bottom-5 left-5 z-[70] px-5 py-3 rounded-2xl shadow-2xl border text-xs font-bold flex items-center gap-2 transition-all ${isError ? 'bg-cream border-red-500 text-ink' : 'bg-brand border-brand text-cream'} show`;
     clearTimeout(showToast.t);
     showToast.t = setTimeout(() => { toast.classList.remove('show'); }, 3200);
   }
@@ -637,15 +690,15 @@ tailwind.config = {
     document.getElementById('nav-count').textContent = total;
 
     const tile = (label, value, icon, color, page) => `
-      <button onclick="location.hash='${page}'" class="pro-card p-4 text-right hover:border-white/30 transition">
-        <p class="text-[10px] text-gray-400 flex items-center gap-1.5"><i class="fa-solid ${icon} ${color}"></i> ${label}</p>
-        <p class="text-2xl font-black text-white mt-1">${value}</p>
+      <button onclick="location.hash='${page}'" class="pro-card p-4 text-right hover:border-brand/40 transition">
+        <p class="text-[10px] text-ink/60 flex items-center gap-1.5"><i class="fa-solid ${icon} ${color}"></i> ${label}</p>
+        <p class="text-2xl font-black text-ink mt-1">${value}</p>
       </button>`;
     document.getElementById('quick-counts').innerHTML =
-      tile('الأطباق', total, 'fa-utensils', 'text-blue-300', 'menu') +
-      tile('الأقسام', loadedCategories.length, 'fa-layer-group', 'text-purple-300', 'menu') +
-      tile('متوفر الآن', available, 'fa-circle-check', 'text-green-400', 'menu') +
-      tile('نفذت الكمية', total - available, 'fa-circle-xmark', 'text-red-400', 'menu');
+      tile('الأطباق', total, 'fa-utensils', 'text-blue-700', 'menu') +
+      tile('الأقسام', loadedCategories.length, 'fa-layer-group', 'text-purple-700', 'menu') +
+      tile('متوفر الآن', available, 'fa-circle-check', 'text-green-600', 'menu') +
+      tile('نفذت الكمية', total - available, 'fa-circle-xmark', 'text-red-600', 'menu');
 
     const items = [
       ['شعار المطعم', !!client.logo_url, 'settings'],
@@ -653,7 +706,7 @@ tailwind.config = {
       ['قسم واحد على الأقل', loadedCategories.length > 0, 'menu'],
       ['5 أطباق أو أكثر', total >= 5, 'menu'],
       [noImg ? `صور لكل الأطباق (باقي ${noImg})` : 'صور لكل الأطباق', total > 0 && noImg === 0, 'menu'],
-      [noCal ? `السعرات لكل الأطباق (باقي ${noCal})` : 'السعرات لكل الأطباق', total > 0 && noCal === 0, 'menu'],
+      ...(showCalories() ? [[noCal ? `السعرات لكل الأطباق (باقي ${noCal})` : 'السعرات لكل الأطباق', total > 0 && noCal === 0, 'menu']] : []),
       ['رقم واتساب المطعم', isValidWa(client.whatsapp_number), 'settings'],
       ['ساعات العمل', !!client.opening_hours, 'settings']
     ];
@@ -663,10 +716,10 @@ tailwind.config = {
     document.getElementById('checklist-bar').style.width = `${pct}%`;
     document.getElementById('checklist-body').innerHTML = items.map(([label, ok, page]) => `
       <li class="flex items-center justify-between gap-2 text-[11px]">
-        <span class="flex items-center gap-2 ${ok ? 'text-gray-400 line-through decoration-white/20' : 'text-gray-200'}">
-          <i class="fa-solid ${ok ? 'fa-circle-check text-emerald-400' : 'fa-circle text-white/15'}"></i> ${label}
+        <span class="flex items-center gap-2 ${ok ? 'text-ink/60 line-through decoration-brand/30' : 'text-ink/90'}">
+          <i class="fa-solid ${ok ? 'fa-circle-check text-emerald-600' : 'fa-circle text-ink/15'}"></i> ${label}
         </span>
-        ${ok ? '' : `<button onclick="location.hash='${page}'" class="text-[10px] font-bold text-amber-300 hover:text-amber-200">أكمل</button>`}
+        ${ok ? '' : `<button onclick="location.hash='${page}'" class="text-[10px] font-bold text-amber-700 hover:text-amber-800">أكمل</button>`}
       </li>`).join('');
   }
 
@@ -676,39 +729,39 @@ tailwind.config = {
   const qrUrl = () => `${menuUrl()}&src=qr`;
 
   async function logout() {
-    await supabaseClient.auth.signOut();
+    await DM.logout();
     window.location.replace('login.html');
   }
 
   // ─── التحقق من الدخول وتحميل المتجر ───
   async function initAuth() {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (!session) { window.location.replace('login.html'); return false; }
-
-    const { data: adminFlag } = await supabaseClient.rpc('is_super_admin');
-    isSuperAdmin = adminFlag === true;
-
-    let query = supabaseClient.from('clients').select('*');
-    if (isSuperAdmin) {
-      if (!requestedSlug) { window.location.replace('super-admin.html'); return false; }
-      query = query.eq('client_slug', requestedSlug);
+    if (!DM.signedIn()) { window.location.replace('login.html'); return false; }
+    let data;
+    try { data = await api('load'); }
+    catch (e) {
+      if (e.status === 401) return false;
+      document.getElementById('auth-loading').innerHTML = `<i class="fa-solid fa-triangle-exclamation text-lg"></i><span>${esc(e.message)}</span>`;
+      return false;
     }
-    // لصاحب المتجر: سياسات الحماية ترجع متجره فقط، والرابط ?client= يتم تجاهله
-    const { data, error } = await query.order('id').limit(1);
+    isSuperAdmin = data.is_admin === true;
+    userEmail = data.email || '';
 
-    if (error || !data || data.length === 0) {
+    if (!data.store) {
+      if (isSuperAdmin) { window.location.replace('super-admin.html'); return false; }
       document.getElementById('auth-loading').innerHTML = `
         <i class="fa-solid fa-store-slash text-lg"></i>
         <span>لا يوجد متجر مرتبط بحسابك.</span>
         <div class="flex gap-2 mt-2">
-          <a href="index.html#register" class="bg-white text-black font-bold px-4 py-2 rounded-xl">أنشئ متجرك</a>
-          <button onclick="logout()" class="bg-white/10 text-white font-bold px-4 py-2 rounded-xl border border-white/20">تسجيل الخروج</button>
+          <a href="index.html#register" class="bg-brand text-cream font-bold px-4 py-2 rounded-xl">أنشئ متجرك</a>
+          <button onclick="logout()" class="bg-brand/10 text-ink font-bold px-4 py-2 rounded-xl border border-brand/25">تسجيل الخروج</button>
         </div>`;
       return false;
     }
 
-    client = data[0];
+    client = data.store;
     currentClientId = client.id;
+    loadedCategories = (data.categories || []).sort(bySort);
+    loadedProducts = (data.products || []).sort(bySort);
     if (!isSuperAdmin && requestedSlug) history.replaceState(null, '', 'admin.html' + location.hash);
     fillClientUI();
     document.getElementById('auth-loading').remove();
@@ -722,9 +775,7 @@ tailwind.config = {
     document.getElementById('admin-mode-badge').classList.toggle('hidden', !isSuperAdmin);
     document.getElementById('sa-link').classList.toggle('hidden', !isSuperAdmin);
     document.getElementById('sidebar-preview').href = menuUrl();
-    supabaseClient.auth.getUser().then(({ data }) => {
-      document.getElementById('user-email').textContent = (data && data.user && data.user.email) || '';
-    });
+    document.getElementById('user-email').textContent = userEmail;
     document.getElementById('setting-name').value = client.name || '';
     document.getElementById('promo-message-input').value = client.promo_message || '';
     document.getElementById('preview-menu-btn').href = menuUrl();
@@ -745,6 +796,7 @@ tailwind.config = {
     document.getElementById('info-wa-orders').checked = client.whatsapp_orders === true;
     renderWaOrderState();
     renderBusinessType();
+    applyCaloriesSetting();
 
     renderSubscriptionStatus();
     renderPromoState();
@@ -769,23 +821,23 @@ tailwind.config = {
     const live = !suspended && !expired;
 
     let label, color;
-    if (suspended)               { label = 'المتجر موقوف من الإدارة — المنيو لا يظهر للزبائن'; color = 'text-red-400'; }
-    else if (expired)            { label = 'الاشتراك منتهي — المنيو لا يظهر للزبائن'; color = 'text-red-400'; }
-    else if (status === 'trial') { label = 'فترة تجريبية'; color = 'text-blue-400'; }
-    else                         { label = 'مشترك مدفوع نشط'; color = 'text-green-400'; }
+    if (suspended)               { label = 'المتجر موقوف من الإدارة — المنيو لا يظهر للزبائن'; color = 'text-red-600'; }
+    else if (expired)            { label = 'الاشتراك منتهي — المنيو لا يظهر للزبائن'; color = 'text-red-600'; }
+    else if (status === 'trial') { label = 'فترة تجريبية'; color = 'text-blue-600'; }
+    else                         { label = 'مشترك مدفوع نشط'; color = 'text-green-600'; }
 
     const endText = end ? new Date(end).toLocaleDateString('ar-SA-u-ca-gregory') : '';
     const showPlans = !suspended && (!live || status === 'trial' || (left !== null && left <= 7));
     const verb = status === 'active' ? 'جدّد' : 'اشترك';
     box.innerHTML = `
       <p>الحالة: <span class="${color} font-bold">${label}</span></p>
-      ${live && left !== null ? `<p class="text-[11px] text-gray-300">متبقي <b>${daysText(left)}</b> — ينتهي ${esc(endText)}</p>` : ''}
+      ${live && left !== null ? `<p class="text-[11px] text-ink/75">متبقي <b>${daysText(left)}</b> — ينتهي ${esc(endText)}</p>` : ''}
       ${showPlans ? `
         <div class="flex flex-wrap gap-1.5 pt-1">
-          <a href="${esc(renewLink('month'))}" target="_blank" rel="noopener" class="bg-white/10 hover:bg-white/20 border border-white/20 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="fa-brands fa-whatsapp text-green-400"></i> ${verb} شهرياً · ${money(99)}</a>
-          <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/40 text-amber-200 px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="fa-brands fa-whatsapp"></i> ${verb} سنوياً · ${money(1149)}</a>
+          <a href="${esc(renewLink('month'))}" target="_blank" rel="noopener" class="bg-brand/10 hover:bg-brand/15 border border-brand/25 text-ink px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="fa-brands fa-whatsapp text-green-600"></i> ${verb} شهرياً · ${money(99)}</a>
+          <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/40 text-amber-800 px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="fa-brands fa-whatsapp"></i> ${verb} سنوياً · ${money(1149)}</a>
         </div>` : ''}
-      <p class="text-[10px] text-gray-400">معرف المتجر: ${esc(client.client_slug)}</p>`;
+      <p class="text-[10px] text-ink/60">معرف المتجر: ${esc(client.client_slug)}</p>`;
 
     // شريط تنبيه بارز أعلى اللوحة
     const banner = document.getElementById('renew-banner');
@@ -796,13 +848,13 @@ tailwind.config = {
         : `${status === 'trial' ? 'تنتهي تجربتك المجانية' : 'ينتهي اشتراكك'} خلال ${daysText(left)}. جدّد الآن حتى لا يتوقف المنيو.`;
       banner.className = `rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 border ${danger ? 'bg-red-500/10 border-red-500/40' : 'bg-amber-500/10 border-amber-500/40'}`;
       banner.innerHTML = `
-        <p class="text-xs font-bold ${danger ? 'text-red-200' : 'text-amber-200'} flex items-center gap-2">
+        <p class="text-xs font-bold ${danger ? 'text-red-800' : 'text-amber-800'} flex items-center gap-2">
           <i class="fa-solid ${danger ? 'fa-circle-exclamation' : 'fa-clock'}"></i> ${esc(text)}
         </p>
         ${suspended
-          ? `<a href="https://wa.me/${SUPPORT_WA}" target="_blank" rel="noopener" class="bg-white text-black px-3 py-1.5 rounded-lg text-[11px] font-black"><i class="fa-brands fa-whatsapp"></i> تواصل معنا</a>`
+          ? `<a href="https://wa.me/${SUPPORT_WA}" target="_blank" rel="noopener" class="bg-brand text-cream px-3 py-1.5 rounded-lg text-[11px] font-black"><i class="fa-brands fa-whatsapp"></i> تواصل معنا</a>`
           : `<div class="flex gap-2">
-               <a href="${esc(renewLink('month'))}" target="_blank" rel="noopener" class="bg-white text-black px-3 py-1.5 rounded-lg text-[11px] font-black">شهري · ${money(99)}</a>
+               <a href="${esc(renewLink('month'))}" target="_blank" rel="noopener" class="bg-brand text-cream px-3 py-1.5 rounded-lg text-[11px] font-black">شهري · ${money(99)}</a>
                <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400 text-black px-3 py-1.5 rounded-lg text-[11px] font-black">سنوي · ${money(1149)}</a>
              </div>`}`;
       banner.classList.remove('hidden');
@@ -827,11 +879,15 @@ tailwind.config = {
 
   // يحدّث بيانات المتجر ويتأكد إن التحديث تم فعلاً
   async function updateClient(payload) {
-    const { data, error } = await supabaseClient.from('clients').update(payload).eq('id', currentClientId).select('id');
-    if (error || !data || data.length === 0) { console.error(error); return false; }
-    Object.assign(client, payload);
-    renderDashboardSummary();
-    return true;
+    try {
+      const res = await api('update-store', payload);
+      Object.assign(client, res.store || payload);
+      renderDashboardSummary();
+      return true;
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
   }
 
   async function updateRestaurantName() {
@@ -850,8 +906,8 @@ tailwind.config = {
     const typed = input.value.trim();
     document.getElementById('promo-counter').textContent = `${input.value.length}/120`;
     document.getElementById('promo-status').innerHTML = current
-      ? `<span class="inline-flex items-center gap-1.5 bg-green-500/15 text-green-300 border border-green-500/30 px-2.5 py-1 rounded-full font-bold"><span class="w-1.5 h-1.5 rounded-full bg-green-400"></span> منشور الآن في المنيو</span>`
-      : `<span class="inline-flex items-center gap-1.5 bg-white/5 text-gray-400 border border-white/10 px-2.5 py-1 rounded-full font-bold"><span class="w-1.5 h-1.5 rounded-full bg-gray-500"></span> لا يوجد عرض منشور</span>`;
+      ? `<span class="inline-flex items-center gap-1.5 bg-green-500/15 text-green-700 border border-green-500/30 px-2.5 py-1 rounded-full font-bold"><span class="w-1.5 h-1.5 rounded-full bg-green-400"></span> منشور الآن في المنيو</span>`
+      : `<span class="inline-flex items-center gap-1.5 bg-brand/5 text-ink/60 border border-brand/15 px-2.5 py-1 rounded-full font-bold"><span class="w-1.5 h-1.5 rounded-full bg-gray-500"></span> لا يوجد عرض منشور</span>`;
     // الحفظ متاح فقط إذا تغيّر النص وكان غير فارغ، والحذف فقط إذا فيه عرض منشور
     document.getElementById('promo-save-btn').disabled = !typed || typed === current;
     document.getElementById('promo-delete-btn').disabled = !current;
@@ -974,30 +1030,6 @@ tailwind.config = {
   }
 
   // الملفات تنحفظ داخل مجلد رقم المتجر: menu-images/<id>/...
-  // رفع على أجزاء 6 ميجا (الطريقة اللي توصي فيها Supabase للملفات الكبيرة)
-  async function uploadResumable(file, path, onProgress) {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (!session) throw new Error('انتهت الجلسة، سجّل دخولك مرة ثانية');
-    return new Promise((resolve, reject) => {
-      const upload = new tus.Upload(file, {
-        endpoint: `${SUPABASE_URL}/storage/v1/upload/resumable`,
-        retryDelays: [0, 2000, 5000, 10000, 20000],
-        headers: { authorization: `Bearer ${session.access_token}`, apikey: SUPABASE_ANON_KEY, 'x-upsert': 'false' },
-        uploadDataDuringCreation: true,
-        removeFingerprintOnSuccess: true,
-        chunkSize: 6 * 1024 * 1024,
-        metadata: { bucketName: 'menu-images', objectName: path, contentType: file.type, cacheControl: '3600' },
-        onProgress: (sent, total) => onProgress && onProgress(Math.round((sent / total) * 100)),
-        onError: (err) => reject(err),
-        onSuccess: () => resolve()
-      });
-      upload.findPreviousUploads().then(prev => {
-        if (prev.length) upload.resumeFromPreviousUpload(prev[0]);
-        upload.start();
-      });
-    });
-  }
-
   function progressToast(label) {
     let last = -1;
     return (pct) => {
@@ -1007,6 +1039,7 @@ tailwind.config = {
     };
   }
 
+  // الخادم يعطي رابط رفع موقّع لملف واحد داخل مجلد المتجر، والملف يروح مباشرة للتخزين
   async function uploadFile(file, prefix, maxDim = 1600) {
     if (file.type.startsWith('image/')) {
       file = await compressImage(file, maxDim);
@@ -1015,28 +1048,17 @@ tailwind.config = {
         return null;
       }
     }
-    const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
-    const path = `${currentClientId}/${prefix}_${Date.now()}.${ext}`;
-    const big = file.size > 5 * 1024 * 1024;
-
     try {
-      if (big && window.tus) {
-        await uploadResumable(file, path, progressToast(file.type.startsWith('video/') ? 'جاري رفع الفيديو...' : 'جاري الرفع...'));
-      } else {
-        // رفع عادي للملفات الصغيرة، مع إعادة محاولة وحدة لو انقطع الاتصال
-        let { error } = await supabaseClient.storage.from('menu-images').upload(path, file, { contentType: file.type });
-        if (error && /failed to fetch|network|load failed/i.test(error.message || '')) {
-          await new Promise(r => setTimeout(r, 1500));
-          ({ error } = await supabaseClient.storage.from('menu-images').upload(path, file, { contentType: file.type }));
-        }
-        if (error) throw error;
-      }
+      const { upload_url, public_url } = await api('upload-url', { kind: prefix, type: file.type, size: file.size });
+      lastApiError = '';
+      await DM.putFile(upload_url, file, progressToast(file.type.startsWith('video/') ? 'جاري رفع الفيديو...' : 'جاري الرفع...'));
+      return public_url;
     } catch (error) {
-      console.error('Upload error:', error, { size: file.size, type: file.type, path });
+      console.error('Upload error:', error, { size: file.size, type: file.type });
+      lastApiError = '';
       lastUploadError = uploadErrorText(error);
       return null;
     }
-    return supabaseClient.storage.from('menu-images').getPublicUrl(path).data.publicUrl;
   }
 
   async function uploadMedia(type) {
@@ -1179,17 +1201,17 @@ tailwind.config = {
 
     status.innerHTML = ok
       ? `<div class="flex flex-wrap items-center justify-between gap-2 bg-green-500/10 border border-green-500/25 rounded-lg px-3 py-2">
-           <span class="text-green-200">الطلبات تصل إلى: <b dir="ltr">${esc(prettyWa(wa))}</b></span>
+           <span class="text-green-800">الطلبات تصل إلى: <b dir="ltr">${esc(prettyWa(wa))}</b></span>
            <a href="https://wa.me/${esc(wa)}?text=${encodeURIComponent('رسالة تجريبية من DEV MENU ✅')}" target="_blank" rel="noopener"
-              class="bg-green-600 hover:bg-green-500 text-white font-bold px-2.5 py-1 rounded-md text-[10px] transition">
+              class="bg-green-600 hover:bg-green-500 text-ink font-bold px-2.5 py-1 rounded-md text-[10px] transition">
              <i class="fa-brands fa-whatsapp"></i> اختبر الرقم
            </a>
          </div>
-         <p class="text-[10px] text-gray-500 mt-1.5">اضغط "اختبر الرقم": إذا فتحت محادثة في واتساب فالرقم شغال. وإذا ظهرت رسالة إن الرقم غير صالح، صحّحه في روابط التواصل.</p>`
+         <p class="text-[10px] text-ink/50 mt-1.5">اضغط "اختبر الرقم": إذا فتحت محادثة في واتساب فالرقم شغال. وإذا ظهرت رسالة إن الرقم غير صالح، صحّحه في روابط التواصل.</p>`
       : `<div class="flex flex-wrap items-center justify-between gap-2 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
-           <span class="text-amber-200"><i class="fa-solid fa-circle-info"></i> لتفعيل الطلبات، أضف رقم واتساب المطعم واحفظه أولاً.</span>
+           <span class="text-amber-800"><i class="fa-solid fa-circle-info"></i> لتفعيل الطلبات، أضف رقم واتساب المطعم واحفظه أولاً.</span>
            <button type="button" onclick="document.getElementById('social-whatsapp').focus(); document.getElementById('social-whatsapp').scrollIntoView({behavior:'smooth', block:'center'})"
-                   class="bg-white/10 hover:bg-white/20 text-white font-bold px-2.5 py-1 rounded-md text-[10px] border border-white/20 transition">إضافة الرقم</button>
+                   class="bg-brand/10 hover:bg-brand/15 text-ink font-bold px-2.5 py-1 rounded-md text-[10px] border border-brand/25 transition">إضافة الرقم</button>
          </div>`;
   }
 
@@ -1223,46 +1245,47 @@ tailwind.config = {
     statsDays = Number(b.dataset.days);
     document.querySelectorAll('.stats-period').forEach(x => {
       const on = x === b;
-      x.classList.toggle('bg-white', on); x.classList.toggle('text-black', on); x.classList.toggle('text-gray-300', !on);
+      x.classList.toggle('bg-brand', on); x.classList.toggle('text-cream', on); x.classList.toggle('text-ink/75', !on);
     });
     loadStats();
   });
 
   function deltaBadge(cur, prev) {
-    if (!prev && !cur) return '<span class="text-[10px] text-gray-500">—</span>';
-    if (!prev) return '<span class="text-[10px] font-bold text-emerald-400">جديد</span>';
+    if (!prev && !cur) return '<span class="text-[10px] text-ink/50">—</span>';
+    if (!prev) return '<span class="text-[10px] font-bold text-emerald-600">جديد</span>';
     const pct = Math.round(((cur - prev) / prev) * 100);
-    if (pct === 0) return '<span class="text-[10px] font-bold text-gray-400">بدون تغيير</span>';
+    if (pct === 0) return '<span class="text-[10px] font-bold text-ink/60">بدون تغيير</span>';
     const up = pct > 0;
-    return `<span class="text-[10px] font-bold ${up ? 'text-emerald-400' : 'text-red-400'}" dir="ltr">${up ? '▲' : '▼'} ${Math.abs(pct)}%</span>`;
+    return `<span class="text-[10px] font-bold ${up ? 'text-emerald-600' : 'text-red-600'}" dir="ltr">${up ? '▲' : '▼'} ${Math.abs(pct)}%</span>`;
   }
 
   function kpiTile(label, value, sub, icon, color) {
     return `
-      <div class="bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-1">
-        <p class="text-[10px] text-gray-400 flex items-center gap-1.5"><i class="${icon} ${color}"></i> ${label}</p>
-        <p class="text-2xl font-black text-white leading-none">${value}</p>
+      <div class="bg-brand/5 border border-brand/15 rounded-xl p-3.5 space-y-1">
+        <p class="text-[10px] text-ink/60 flex items-center gap-1.5"><i class="${icon} ${color}"></i> ${label}</p>
+        <p class="text-2xl font-black text-ink leading-none">${value}</p>
         <div class="min-h-[14px]">${sub}</div>
       </div>`;
   }
 
-  function barRow(label, value, max, color = 'bg-emerald-500/70', extra = '') {
+  function barRow(label, value, max, color = 'bg-brand/50', extra = '') {
     const w = max ? Math.max(2, (value / max) * 100) : 0;
     return `
       <div class="flex items-center gap-2 text-[11px]">
-        <span class="w-24 shrink-0 truncate text-gray-300">${label}</span>
-        <div class="flex-1 h-2.5 bg-white/5 rounded-full overflow-hidden"><div class="h-full ${color} rounded-full" style="width:${w}%"></div></div>
-        <b class="w-10 text-left text-white shrink-0">${fmtNum(value)}</b>${extra}
+        <span class="w-24 shrink-0 truncate text-ink/75">${label}</span>
+        <div class="flex-1 h-2.5 bg-brand/5 rounded-full overflow-hidden"><div class="h-full ${color} rounded-full" style="width:${w}%"></div></div>
+        <b class="w-10 text-left text-ink shrink-0">${fmtNum(value)}</b>${extra}
       </div>`;
   }
 
   async function loadStats() {
     const body = document.getElementById('stats-body');
-    body.innerHTML = '<p class="text-xs text-gray-500 py-6 text-center"><i class="fa-solid fa-spinner fa-spin"></i> جاري تحميل الإحصائيات...</p>';
-    const { data, error } = await supabaseClient.rpc('get_menu_stats_v2', { p_client_id: currentClientId, p_days: statsDays });
+    body.innerHTML = '<p class="text-xs text-ink/50 py-6 text-center"><i class="fa-solid fa-spinner fa-spin"></i> جاري تحميل الإحصائيات...</p>';
+    let data = null, error = null;
+    try { data = await api(`stats&days=${statsDays}`); } catch (e) { error = e; lastApiError = ''; }
     if (error || !data) {
       console.error(error);
-      body.innerHTML = '<p class="text-xs text-gray-400 py-6 text-center">الإحصائيات غير متاحة حالياً.</p>';
+      body.innerHTML = '<p class="text-xs text-ink/60 py-6 text-center">الإحصائيات غير متاحة حالياً.</p>';
       document.getElementById('stats-export').disabled = true;
       return;
     }
@@ -1280,9 +1303,9 @@ tailwind.config = {
     if (views === 0) {
       body.innerHTML = `
         <div class="text-center py-8 space-y-3">
-          <div class="w-12 h-12 mx-auto rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400"><i class="fa-solid fa-chart-line"></i></div>
-          <p class="text-sm font-bold text-white">ما فيه زيارات خلال آخر ${data.days} يوم</p>
-          <p class="text-[11px] text-gray-400 max-w-sm mx-auto">اطبع بطاقة الـ QR وحطها على الطاولات، أو شارك رابط المنيو في حساباتك. الإحصائيات تبدأ تظهر هنا مع أول زيارة.</p>
+          <div class="w-12 h-12 mx-auto rounded-2xl bg-brand/5 border border-brand/15 flex items-center justify-center text-ink/60"><i class="fa-solid fa-chart-line"></i></div>
+          <p class="text-sm font-bold text-ink">ما فيه زيارات خلال آخر ${data.days} يوم</p>
+          <p class="text-[11px] text-ink/60 max-w-sm mx-auto">اطبع بطاقة الـ QR وحطها على الطاولات، أو شارك رابط المنيو في حساباتك. الإحصائيات تبدأ تظهر هنا مع أول زيارة.</p>
           <button onclick="downloadQrCard()" class="bg-amber-400 hover:bg-amber-300 text-black px-4 py-2 rounded-xl text-[11px] font-black"><i class="fa-solid fa-print"></i> تحميل بطاقة الطاولة</button>
         </div>`;
       return;
@@ -1339,51 +1362,51 @@ tailwind.config = {
     const waEnabled = client.whatsapp_orders === true;
     body.innerHTML = `
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        ${kpiTile('زيارات المنيو', fmtNum(views), `${deltaBadge(views, pv.views)} <span class="text-[10px] text-gray-500">مقارنة بالفترة السابقة</span>`, 'fa-solid fa-eye', 'text-emerald-400')}
-        ${kpiTile('مشاهدات الأطباق', fmtNum(dishOpens), deltaBadge(dishOpens, pv.dishes), 'fa-solid fa-utensils', 'text-blue-300')}
-        ${kpiTile('طلبات واتساب', waEnabled || orders ? fmtNum(orders) : '—', waEnabled || orders ? deltaBadge(orders, pv.orders) : '<span class="text-[10px] text-amber-300">فعّلها من معلومات المطعم</span>', 'fa-brands fa-whatsapp', 'text-green-400')}
-        ${kpiTile('أطباق لكل زيارة', (dishOpens / views).toFixed(1), '<span class="text-[10px] text-gray-500">متوسط الأطباق اللي يفتحها الزبون</span>', 'fa-solid fa-hand-pointer', 'text-amber-300')}
+        ${kpiTile('زيارات المنيو', fmtNum(views), `${deltaBadge(views, pv.views)} <span class="text-[10px] text-ink/50">مقارنة بالفترة السابقة</span>`, 'fa-solid fa-eye', 'text-emerald-600')}
+        ${kpiTile('مشاهدات الأطباق', fmtNum(dishOpens), deltaBadge(dishOpens, pv.dishes), 'fa-solid fa-utensils', 'text-blue-700')}
+        ${kpiTile('طلبات واتساب', waEnabled || orders ? fmtNum(orders) : '—', waEnabled || orders ? deltaBadge(orders, pv.orders) : '<span class="text-[10px] text-amber-700">فعّلها من معلومات المطعم</span>', 'fa-brands fa-whatsapp', 'text-green-600')}
+        ${kpiTile('أطباق لكل زيارة', (dishOpens / views).toFixed(1), '<span class="text-[10px] text-ink/50">متوسط الأطباق اللي يفتحها الزبون</span>', 'fa-solid fa-hand-pointer', 'text-amber-700')}
       </div>
 
       ${insights.length ? `
         <div class="bg-amber-400/5 border border-amber-400/20 rounded-xl p-3.5 space-y-1.5">
-          ${insights.map(x => `<p class="text-[11px] text-gray-200 leading-relaxed"><i class="fa-solid fa-lightbulb text-amber-300 ml-1"></i> ${x}</p>`).join('')}
+          ${insights.map(x => `<p class="text-[11px] text-ink/90 leading-relaxed"><i class="fa-solid fa-lightbulb text-amber-700 ml-1"></i> ${x}</p>`).join('')}
         </div>` : ''}
 
       <div>
         <div class="flex items-center justify-between mb-2">
-          <p class="text-[11px] font-bold text-gray-300">الزيارات اليومية</p>
-          <p class="text-[10px] text-gray-500">أعلى يوم: ${fmtNum(maxDay)} زيارة</p>
+          <p class="text-[11px] font-bold text-ink/75">الزيارات اليومية</p>
+          <p class="text-[10px] text-ink/50">أعلى يوم: ${fmtNum(maxDay)} زيارة</p>
         </div>
-        <div class="flex items-end gap-[2px] h-28 bg-white/[0.02] rounded-lg p-1.5" dir="ltr">
-          ${series.map(d => `<div class="flex-1 rounded-t ${d.v === maxDay && d.v > 0 ? 'bg-emerald-400' : 'bg-emerald-500/60'} hover:bg-emerald-300 transition" style="height:${Math.max(3, (d.v / maxDay) * 100)}%" title="${esc(d.label)}: ${d.v} زيارة"></div>`).join('')}
+        <div class="flex items-end gap-[2px] h-28 bg-brand/[0.03] rounded-lg p-1.5" dir="ltr">
+          ${series.map(d => `<div class="flex-1 rounded-t ${d.v === maxDay && d.v > 0 ? 'bg-brand' : 'bg-brand/60'} hover:bg-brand-light transition" style="height:${Math.max(3, (d.v / maxDay) * 100)}%" title="${esc(d.label)}: ${d.v} زيارة"></div>`).join('')}
         </div>
       </div>
 
       <div class="grid md:grid-cols-2 gap-5">
         <div>
-          <p class="text-[11px] font-bold text-gray-300 mb-2">أوقات الذروة خلال اليوم</p>
+          <p class="text-[11px] font-bold text-ink/75 mb-2">أوقات الذروة خلال اليوم</p>
           <div class="flex items-end gap-[3px] h-24" dir="ltr">
-            ${hours.map((c, h) => `<div class="flex-1 rounded-t ${h === peakHour && c > 0 ? 'bg-amber-400' : 'bg-white/20'} hover:bg-amber-300 transition" style="height:${Math.max(3, (c / maxHour) * 100)}%" title="${hourLabel(h)}: ${c} زيارة"></div>`).join('')}
+            ${hours.map((c, h) => `<div class="flex-1 rounded-t ${h === peakHour && c > 0 ? 'bg-amber-400' : 'bg-brand/15'} hover:bg-amber-300 transition" style="height:${Math.max(3, (c / maxHour) * 100)}%" title="${hourLabel(h)}: ${c} زيارة"></div>`).join('')}
           </div>
-          <div class="flex justify-between text-[9px] text-gray-500 mt-1" dir="ltr">
+          <div class="flex justify-between text-[9px] text-ink/50 mt-1" dir="ltr">
             <span>12 ص</span><span>6 ص</span><span>12 م</span><span>6 م</span><span>11 م</span>
           </div>
         </div>
         <div>
-          <p class="text-[11px] font-bold text-gray-300 mb-2">أيام الأسبوع</p>
+          <p class="text-[11px] font-bold text-ink/75 mb-2">أيام الأسبوع</p>
           <div class="space-y-1.5">
-            ${[0, 1, 2, 3, 4, 5, 6].map(d => barRow(WEEKDAYS[d], week[d], maxWeek, d === peakDay && week[d] > 0 ? 'bg-amber-400' : 'bg-white/30')).join('')}
+            ${[0, 1, 2, 3, 4, 5, 6].map(d => barRow(WEEKDAYS[d], week[d], maxWeek, d === peakDay && week[d] > 0 ? 'bg-amber-400' : 'bg-brand/25')).join('')}
           </div>
         </div>
       </div>
 
       <div>
-        <p class="text-[11px] font-bold text-gray-300 mb-2">أداء الأطباق</p>
+        <p class="text-[11px] font-bold text-ink/75 mb-2">أداء الأطباق</p>
         ${topDishes.length ? `
           <div class="overflow-x-auto">
             <table class="w-full text-[11px]">
-              <thead class="text-gray-500">
+              <thead class="text-ink/50">
                 <tr><th class="text-right font-bold pb-2">الطبق</th><th class="text-right font-bold pb-2 w-2/5">المشاهدات</th><th class="font-bold pb-2 w-16">الطلبات</th></tr>
               </thead>
               <tbody class="divide-y divide-white/5">
@@ -1393,57 +1416,57 @@ tailwind.config = {
                     <tr>
                       <td class="py-2">
                         <div class="flex items-center gap-2 min-w-0">
-                          <span class="w-4 text-gray-500">${i + 1}</span>
-                          ${img ? `<img src="${esc(img)}" alt="" loading="lazy" class="w-8 h-8 rounded-lg object-cover shrink-0">` : '<div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0"><i class="fa-solid fa-utensils text-[10px] text-gray-500"></i></div>'}
-                          <span class="text-gray-100 font-bold truncate">${esc(d.name)}</span>
+                          <span class="w-4 text-ink/50">${i + 1}</span>
+                          ${img ? `<img src="${esc(img)}" alt="" loading="lazy" class="w-8 h-8 rounded-lg object-cover shrink-0">` : '<div class="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center shrink-0"><i class="fa-solid fa-utensils text-[10px] text-ink/50"></i></div>'}
+                          <span class="text-ink font-bold truncate">${esc(d.name)}</span>
                         </div>
                       </td>
                       <td class="py-2">
                         <div class="flex items-center gap-2">
-                          <div class="flex-1 h-2 bg-white/5 rounded-full overflow-hidden"><div class="h-full bg-blue-400/70 rounded-full" style="width:${(d.views / maxDish) * 100}%"></div></div>
-                          <b class="text-white w-8 text-left">${fmtNum(d.views)}</b>
+                          <div class="flex-1 h-2 bg-brand/5 rounded-full overflow-hidden"><div class="h-full bg-brand/60 rounded-full" style="width:${(d.views / maxDish) * 100}%"></div></div>
+                          <b class="text-ink w-8 text-left">${fmtNum(d.views)}</b>
                         </div>
                       </td>
-                      <td class="py-2 text-center ${d.orders ? 'text-green-300 font-bold' : 'text-gray-600'}">${d.orders ? fmtNum(d.orders) : '—'}</td>
+                      <td class="py-2 text-center ${d.orders ? 'text-green-700 font-bold' : 'text-ink/40'}">${d.orders ? fmtNum(d.orders) : '—'}</td>
                     </tr>`;
                 }).join('')}
               </tbody>
             </table>
-          </div>` : '<p class="text-[11px] text-gray-500">ما فتح أحد تفاصيل أي طبق خلال الفترة.</p>'}
+          </div>` : '<p class="text-[11px] text-ink/50">ما فتح أحد تفاصيل أي طبق خلال الفترة.</p>'}
       </div>
 
       <div class="grid md:grid-cols-2 gap-5">
         <div>
-          <p class="text-[11px] font-bold text-gray-300 mb-2">أكثر الأقسام اهتماماً</p>
-          ${catTotals.length ? `<div class="space-y-1.5">${catTotals.slice(0, 6).map(c => barRow(esc(c.name), c.views, maxCat, 'bg-blue-400/60')).join('')}</div>`
-            : '<p class="text-[11px] text-gray-500">لا توجد بيانات كافية بعد.</p>'}
+          <p class="text-[11px] font-bold text-ink/75 mb-2">أكثر الأقسام اهتماماً</p>
+          ${catTotals.length ? `<div class="space-y-1.5">${catTotals.slice(0, 6).map(c => barRow(esc(c.name), c.views, maxCat, 'bg-brand/50')).join('')}</div>`
+            : '<p class="text-[11px] text-ink/50">لا توجد بيانات كافية بعد.</p>'}
         </div>
         <div class="space-y-4">
           <div>
-            <p class="text-[11px] font-bold text-gray-300 mb-2">من وين يجي زبائنك؟</p>
+            <p class="text-[11px] font-bold text-ink/75 mb-2">من وين يجي زبائنك؟</p>
             ${known ? `
-              <div class="flex h-3 rounded-full overflow-hidden bg-white/5">
+              <div class="flex h-3 rounded-full overflow-hidden bg-brand/5">
                 <div class="bg-amber-400" style="width:${qrPct}%"></div>
-                <div class="bg-sky-400/70" style="width:${100 - qrPct}%"></div>
+                <div class="bg-brand/50" style="width:${100 - qrPct}%"></div>
               </div>
               <div class="flex justify-between text-[10px] mt-1.5">
-                <span class="text-amber-300"><i class="fa-solid fa-qrcode"></i> مسح QR · ${qrPct}%</span>
-                <span class="text-sky-300"><i class="fa-solid fa-link"></i> رابط مشارك · ${100 - qrPct}%</span>
-              </div>` : '<p class="text-[10px] text-gray-500">يظهر بعد أول زيارات من رمز QR الجديد.</p>'}
+                <span class="text-amber-700"><i class="fa-solid fa-qrcode"></i> مسح QR · ${qrPct}%</span>
+                <span class="text-brand"><i class="fa-solid fa-link"></i> رابط مشارك · ${100 - qrPct}%</span>
+              </div>` : '<p class="text-[10px] text-ink/50">يظهر بعد أول زيارات من رمز QR الجديد.</p>'}
           </div>
           <div>
-            <p class="text-[11px] font-bold text-gray-300 mb-1">لغة التصفح</p>
-            <p class="text-[11px] text-gray-400"><b class="text-white">${enPct}%</b> من الزيارات تحوّلت للإنجليزي</p>
+            <p class="text-[11px] font-bold text-ink/75 mb-1">لغة التصفح</p>
+            <p class="text-[11px] text-ink/60"><b class="text-ink">${enPct}%</b> من الزيارات تحوّلت للإنجليزي</p>
           </div>
         </div>
       </div>
 
       ${cold.length ? `
         <div>
-          <p class="text-[11px] font-bold text-gray-300 mb-2">أطباق ما فتحها أحد <span class="text-gray-500 font-normal">(${cold.length})</span></p>
+          <p class="text-[11px] font-bold text-ink/75 mb-2">أطباق ما فتحها أحد <span class="text-ink/50 font-normal">(${cold.length})</span></p>
           <div class="flex flex-wrap gap-1.5">
-            ${cold.slice(0, 12).map(d => `<button onclick="startEdit(${Number(d.id)})" class="bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 px-2.5 py-1 rounded-lg text-[10px] transition">${esc(d.name)}${d.image_url ? '' : ' <i class="fa-solid fa-image text-amber-400/70" title="بدون صورة"></i>'}</button>`).join('')}
-            ${cold.length > 12 ? `<span class="text-[10px] text-gray-500 self-center">و${cold.length - 12} غيرها</span>` : ''}
+            ${cold.slice(0, 12).map(d => `<button onclick="startEdit(${Number(d.id)})" class="bg-brand/5 hover:bg-brand/10 border border-brand/15 text-ink/75 px-2.5 py-1 rounded-lg text-[10px] transition">${esc(d.name)}${d.image_url ? '' : ' <i class="fa-solid fa-image text-amber-600" title="بدون صورة"></i>'}</button>`).join('')}
+            ${cold.length > 12 ? `<span class="text-[10px] text-ink/50 self-center">و${cold.length - 12} غيرها</span>` : ''}
           </div>
         </div>` : ''}
     `;
@@ -1478,6 +1501,23 @@ tailwind.config = {
     setTimeout(() => URL.revokeObjectURL(a.href), 3000);
   }
 
+  // ─── عرض السعرات (خيار المتجر) ───
+  const showCalories = () => !client || client.show_calories !== false;
+  function applyCaloriesSetting() {
+    document.getElementById('info-show-calories').checked = showCalories();
+    document.getElementById('calories-field').classList.toggle('hidden', !showCalories());
+  }
+  async function toggleCalories(on) {
+    if (await updateClient({ show_calories: on })) {
+      applyCaloriesSetting();
+      filterProducts();
+      showToast(on ? 'السعرات تظهر الآن في المنيو' : 'تم إخفاء السعرات من المنيو');
+    } else {
+      document.getElementById('info-show-calories').checked = !on;
+      showToast('تعذر حفظ الإعداد', true);
+    }
+  }
+
   // ─── نوع النشاط ───
   const BUSINESS_TYPES = {
     restaurant: ['مطعم', 'fa-utensils', 'أطباق ووجبات'],
@@ -1491,10 +1531,10 @@ tailwind.config = {
     const current = client.business_type || 'restaurant';
     document.getElementById('biz-type').innerHTML = Object.entries(BUSINESS_TYPES).map(([k, [name, icon, hint]]) => `
       <button type="button" onclick="setBusinessType('${k}')"
-        class="text-right p-3 rounded-xl border transition ${k === current ? 'bg-white text-black border-white' : 'bg-white/5 border-white/10 text-gray-200 hover:bg-white/10'}">
-        <i class="fa-solid ${icon} ${k === current ? '' : 'text-gray-400'}"></i>
+        class="text-right p-3 rounded-xl border transition ${k === current ? 'bg-brand text-cream border-brand' : 'bg-brand/5 border-brand/15 text-ink/90 hover:bg-brand/10'}">
+        <i class="fa-solid ${icon} ${k === current ? '' : 'text-ink/60'}"></i>
         <p class="text-xs font-black mt-1.5">${name}</p>
-        <p class="text-[10px] ${k === current ? 'text-black/60' : 'text-gray-500'}">${hint}</p>
+        <p class="text-[10px] ${k === current ? 'text-cream/70' : 'text-ink/50'}">${hint}</p>
       </button>`).join('');
     // حقول القهوة تظهر للمقهى و"مطعم ومقهى" فقط
     const coffeeBox = document.getElementById('coffee-details');
@@ -1527,12 +1567,12 @@ tailwind.config = {
   document.getElementById('coffee-roast').innerHTML = Object.entries(COFFEE_ROAST).map(([k, v]) => `
     <label class="cursor-pointer">
       <input type="radio" name="coffee-roast" value="${k}" class="peer hidden">
-      <span class="block text-center text-[10px] font-bold py-2 rounded-lg border border-white/10 bg-white/5 text-gray-300 peer-checked:bg-amber-400 peer-checked:text-black peer-checked:border-amber-400 transition">${v}</span>
+      <span class="block text-center text-[10px] font-bold py-2 rounded-lg border border-brand/15 bg-brand/5 text-ink/75 peer-checked:bg-amber-400 peer-checked:text-black peer-checked:border-amber-400 transition">${v}</span>
     </label>`).join('');
   document.getElementById('coffee-methods').innerHTML = Object.entries(COFFEE_METHODS).map(([k, v]) => `
     <label class="cursor-pointer">
       <input type="checkbox" value="${k}" class="coffee-method peer hidden">
-      <span class="block text-[10px] font-bold px-2.5 py-1.5 rounded-lg border border-white/10 bg-white/5 text-gray-300 peer-checked:bg-white peer-checked:text-black transition">${v}</span>
+      <span class="block text-[10px] font-bold px-2.5 py-1.5 rounded-lg border border-brand/15 bg-brand/5 text-ink/75 peer-checked:bg-brand peer-checked:text-cream transition">${v}</span>
     </label>`).join('');
   // الضغط مرة ثانية على نفس التحميص يلغي الاختيار
   const roastBox = document.getElementById('coffee-roast');
@@ -1551,12 +1591,12 @@ tailwind.config = {
     const input = document.getElementById('notes-input');
     coffeeNotes.forEach((n, i) => {
       const chip = document.createElement('span');
-      chip.className = 'note-chip inline-flex items-center gap-1 bg-amber-400/15 text-amber-200 border border-amber-400/30 text-[10px] font-bold pr-2 pl-1 py-0.5 rounded-full';
-      chip.innerHTML = `${esc(n)} <button type="button" data-rm="${i}" aria-label="حذف" class="w-4 h-4 rounded-full hover:bg-white/10 text-amber-200/70">×</button>`;
+      chip.className = 'note-chip inline-flex items-center gap-1 bg-amber-400/15 text-amber-800 border border-amber-400/30 text-[10px] font-bold pr-2 pl-1 py-0.5 rounded-full';
+      chip.innerHTML = `${esc(n)} <button type="button" data-rm="${i}" aria-label="حذف" class="w-4 h-4 rounded-full hover:bg-brand/10 text-amber-800/70">×</button>`;
       box.insertBefore(chip, input);
     });
     document.getElementById('notes-suggest').innerHTML = NOTE_SUGGESTIONS.filter(n => !coffeeNotes.includes(n)).slice(0, 10)
-      .map(n => `<button type="button" data-add="${esc(n)}" class="text-[10px] text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 px-2 py-0.5 rounded-full transition">+ ${esc(n)}</button>`).join('');
+      .map(n => `<button type="button" data-add="${esc(n)}" class="text-[10px] text-ink/60 hover:text-ink bg-brand/5 hover:bg-brand/10 border border-brand/15 px-2 py-0.5 rounded-full transition">+ ${esc(n)}</button>`).join('');
   }
   function addNote(raw) {
     const n = String(raw || '').trim().replace(/[،,]+$/, '').slice(0, 25);
@@ -1619,7 +1659,7 @@ tailwind.config = {
     ['fish', 'الأسماك'], ['shellfish', 'القشريات'], ['soy', 'الصويا']
   ];
   document.getElementById('allergen-options').innerHTML = ALLERGENS.map(([k, l]) => `
-    <label class="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 cursor-pointer">
+    <label class="flex items-center gap-1.5 bg-brand/5 border border-brand/15 rounded-lg px-2 py-1.5 cursor-pointer">
       <input type="checkbox" value="${k}" class="allergen-cb accent-amber-400"> ${l}
     </label>`).join('');
   const getAllergens = () => [...document.querySelectorAll('.allergen-cb:checked')].map(x => x.value).join(',');
@@ -1634,12 +1674,12 @@ tailwind.config = {
   const productsInCategory = (cat) => loadedProducts.filter(p => p.category === cat.key || p.category === cat.name).sort(bySort);
 
   async function refreshAll() {
-    const [catRes, prodRes] = await Promise.all([
-      supabaseClient.from('categories').select('*').eq('client_id', currentClientId),
-      supabaseClient.from('products').select('*').eq('client_id', currentClientId)
-    ]);
-    loadedCategories = (catRes.data || []).sort(bySort);
-    loadedProducts = (prodRes.data || []).sort(bySort);
+    try {
+      const data = await api('load');
+      if (data.store) Object.assign(client, data.store);
+      loadedCategories = (data.categories || []).sort(bySort);
+      loadedProducts = (data.products || []).sort(bySort);
+    } catch (e) { console.error(e); lastApiError = ''; }
     renderCategories();
     filterProducts();
     renderDashboardSummary();
@@ -1647,13 +1687,8 @@ tailwind.config = {
 
   // يعيد ترقيم القائمة بالترتيب المطلوب ويحفظ الصفوف اللي تغيّر ترتيبها فقط
   async function saveOrder(table, list) {
-    for (let i = 0; i < list.length; i++) {
-      if (list[i].sort_order === i + 1) continue;
-      const { error } = await supabaseClient.from(table).update({ sort_order: i + 1 })
-        .eq('id', list[i].id).eq('client_id', currentClientId);
-      if (error) throw error;
-      list[i].sort_order = i + 1;
-    }
+    await api('reorder', { table, ids: list.map(x => x.id) });
+    list.forEach((row, i) => { row.sort_order = i + 1; });
   }
 
   async function moveCategory(id, dir) {
@@ -1692,23 +1727,23 @@ tailwind.config = {
 
     const list = document.getElementById('categories-list');
     if (loadedCategories.length === 0) {
-      list.innerHTML = `<p class="text-xs text-gray-400 text-center py-4">لا توجد أقسام بعد. أضف أول قسم من النموذج.</p>`;
+      list.innerHTML = `<p class="text-xs text-ink/60 text-center py-4">لا توجد أقسام بعد. أضف أول قسم من النموذج.</p>`;
       return;
     }
     const last = loadedCategories.length - 1;
     list.innerHTML = loadedCategories.map((c, i) => `
-      <div class="flex items-center justify-between gap-2 bg-white/5 p-3 rounded-xl border border-white/10 text-xs">
+      <div class="flex items-center justify-between gap-2 bg-brand/5 p-3 rounded-xl border border-brand/15 text-xs">
         <div class="flex items-center gap-2 min-w-0">
           <div class="flex flex-col">
-            <button onclick="moveCategory(${Number(c.id)}, -1)" ${i === 0 ? 'disabled' : ''} aria-label="تحريك لأعلى" class="px-1.5 text-gray-400 hover:text-white disabled:opacity-20"><i class="fa-solid fa-chevron-up text-[10px]"></i></button>
-            <button onclick="moveCategory(${Number(c.id)}, 1)" ${i === last ? 'disabled' : ''} aria-label="تحريك لأسفل" class="px-1.5 text-gray-400 hover:text-white disabled:opacity-20"><i class="fa-solid fa-chevron-down text-[10px]"></i></button>
+            <button onclick="moveCategory(${Number(c.id)}, -1)" ${i === 0 ? 'disabled' : ''} aria-label="تحريك لأعلى" class="px-1.5 text-ink/60 hover:text-ink disabled:opacity-20"><i class="fa-solid fa-chevron-up text-[10px]"></i></button>
+            <button onclick="moveCategory(${Number(c.id)}, 1)" ${i === last ? 'disabled' : ''} aria-label="تحريك لأسفل" class="px-1.5 text-ink/60 hover:text-ink disabled:opacity-20"><i class="fa-solid fa-chevron-down text-[10px]"></i></button>
           </div>
           <div class="min-w-0">
-            <p class="font-bold text-white truncate">${esc(c.name)} ${c.name_en ? `<span class="text-gray-500 font-normal" dir="ltr">· ${esc(c.name_en)}</span>` : ''}</p>
-            <p class="text-gray-400 text-[10px]">${productsInCategory(c).length} طبق</p>
+            <p class="font-bold text-ink truncate">${esc(c.name)} ${c.name_en ? `<span class="text-ink/50 font-normal" dir="ltr">· ${esc(c.name_en)}</span>` : ''}</p>
+            <p class="text-ink/60 text-[10px]">${productsInCategory(c).length} طبق</p>
           </div>
         </div>
-        <button onclick="deleteCategory(${Number(c.id)})" class="shrink-0 text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-trash text-[10px]"></i> حذف</button>
+        <button onclick="deleteCategory(${Number(c.id)})" class="shrink-0 text-red-600 hover:text-red-700 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-trash text-[10px]"></i> حذف</button>
       </div>`).join('');
   }
 
@@ -1719,10 +1754,8 @@ tailwind.config = {
     if (!name) return showToast('اكتب اسم القسم', true);
     if (loadedCategories.some(c => c.name === name)) return showToast('يوجد قسم بنفس الاسم', true);
 
-    const key = 'c' + Date.now().toString(36);
-    const sort_order = Math.max(0, ...loadedCategories.map(c => c.sort_order || 0)) + 1;
-    const { error } = await supabaseClient.from('categories').insert([{ name, name_en: nameEn || null, key, sort_order, client_id: currentClientId }]);
-    if (error) { console.error(error); return showToast('تعذر إضافة القسم', true); }
+    try { await api('category-add', { name, name_en: nameEn }); }
+    catch (error) { console.error(error); return showToast('تعذر إضافة القسم', true); }
     showToast('تمت إضافة القسم');
     document.getElementById('add-category-form').reset();
     refreshAll();
@@ -1734,8 +1767,8 @@ tailwind.config = {
     const count = productsInCategory(cat).length;
     if (count > 0) return showToast(`القسم فيه ${count} طبق. انقلها لقسم آخر (زر تعديل) أو احذفها أولاً`, true);
     openDeleteModal('حذف القسم', `هل أنت متأكد من حذف قسم "${cat.name}" نهائياً؟`, async () => {
-      const { data, error } = await supabaseClient.from('categories').delete().eq('id', id).eq('client_id', currentClientId).select('id');
-      if (error || !data || !data.length) return showToast('تعذر حذف القسم', true);
+      try { await api('category-delete', { id }); }
+      catch { return showToast('تعذر حذف القسم', true); }
       showToast('تم حذف القسم');
       refreshAll();
     });
@@ -1759,7 +1792,7 @@ tailwind.config = {
     document.getElementById('products-count').textContent = `${products.length} طبق`;
 
     if (products.length === 0) {
-      list.innerHTML = `<p class="text-xs text-gray-400 text-center py-6">${loadedProducts.length ? 'لا توجد نتائج مطابقة.' : 'لا توجد أطباق بعد. أضف أول طبق من النموذج.'}</p>`;
+      list.innerHTML = `<p class="text-xs text-ink/60 text-center py-6">${loadedProducts.length ? 'لا توجد نتائج مطابقة.' : 'لا توجد أطباق بعد. أضف أول طبق من النموذج.'}</p>`;
       return;
     }
 
@@ -1773,39 +1806,38 @@ tailwind.config = {
       const siblings = cat ? productsInCategory(cat) : [];
       const pos = siblings.findIndex(x => x.id === p.id);
       const header = cat && cat !== lastCat
-        ? `<p class="text-[10px] font-bold text-gray-500 pt-2 first:pt-0">${esc(cat.name)}</p>` : '';
+        ? `<p class="text-[10px] font-bold text-ink/50 pt-2 first:pt-0">${esc(cat.name)}</p>` : '';
       lastCat = cat;
       return `${header}
-        <div class="flex items-center justify-between bg-white/5 p-2.5 rounded-xl border ${editingProductId === id ? 'editing-glow' : 'border-white/10'} text-xs gap-2 transition">
+        <div class="flex items-center justify-between bg-brand/5 p-2.5 rounded-xl border ${editingProductId === id ? 'editing-glow' : 'border-brand/15'} text-xs gap-2 transition">
           <div class="flex items-center gap-2 min-w-0">
             <div class="flex flex-col shrink-0">
-              <button onclick="moveProduct(${id}, -1)" ${pos <= 0 ? 'disabled' : ''} aria-label="تحريك لأعلى" class="px-1 text-gray-400 hover:text-white disabled:opacity-20"><i class="fa-solid fa-chevron-up text-[9px]"></i></button>
-              <button onclick="moveProduct(${id}, 1)" ${pos < 0 || pos >= siblings.length - 1 ? 'disabled' : ''} aria-label="تحريك لأسفل" class="px-1 text-gray-400 hover:text-white disabled:opacity-20"><i class="fa-solid fa-chevron-down text-[9px]"></i></button>
+              <button onclick="moveProduct(${id}, -1)" ${pos <= 0 ? 'disabled' : ''} aria-label="تحريك لأعلى" class="px-1 text-ink/60 hover:text-ink disabled:opacity-20"><i class="fa-solid fa-chevron-up text-[9px]"></i></button>
+              <button onclick="moveProduct(${id}, 1)" ${pos < 0 || pos >= siblings.length - 1 ? 'disabled' : ''} aria-label="تحريك لأسفل" class="px-1 text-ink/60 hover:text-ink disabled:opacity-20"><i class="fa-solid fa-chevron-down text-[9px]"></i></button>
             </div>
-            ${img ? `<img src="${esc(img)}" alt="" loading="lazy" class="w-10 h-10 object-cover rounded-xl border border-white/20 shrink-0">` : `<div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0"><i class="fa-solid fa-utensils text-gray-400 text-xs"></i></div>`}
+            ${img ? `<img src="${esc(img)}" alt="" loading="lazy" class="w-10 h-10 object-cover rounded-xl border border-brand/25 shrink-0">` : `<div class="w-10 h-10 bg-brand/10 rounded-xl flex items-center justify-center shrink-0"><i class="fa-solid fa-utensils text-ink/60 text-xs"></i></div>`}
             <div class="min-w-0">
               <div class="flex items-center gap-1.5">
-                <p class="font-bold text-white truncate ${!isAvailable ? 'line-through text-gray-500' : ''}">${esc(p.name)}</p>
-                ${isBestseller ? `<span class="bg-white/20 text-white text-[9px] px-1.5 py-0.5 rounded font-bold border border-white/30 shrink-0"><i class="fa-solid fa-fire text-amber-400"></i> مميز</span>` : ''}
+                <p class="font-bold text-ink truncate ${!isAvailable ? 'line-through text-ink/50' : ''}">${esc(p.name)}</p>
+                ${isBestseller ? `<span class="bg-brand/15 text-ink text-[9px] px-1.5 py-0.5 rounded font-bold border border-brand/30 shrink-0"><i class="fa-solid fa-fire text-amber-600"></i> مميز</span>` : ''}
               </div>
-              <p class="text-gray-300 font-semibold text-[11px]">${esc(money(p.price))}${p.calories != null ? ` <span class="text-gray-500">· ${Number(p.calories)} سعرة</span>` : ` <span class="text-amber-400/80">· بدون سعرات</span>`}</p>
-              ${p.coffee && allowsCoffee() ? `<p class="text-[10px] text-amber-300/80 truncate"><i class="fa-solid fa-mug-hot"></i> ${esc(coffeeSummary(p.coffee) || 'قهوة مختصة')}</p>` : ''}
+              <p class="text-ink/75 font-semibold text-[11px]">${esc(money(p.price))}${!showCalories() ? '' : p.calories != null ? ` <span class="text-ink/50">· ${Number(p.calories)} سعرة</span>` : ` <span class="text-amber-600">· بدون سعرات</span>`}</p>
+              ${p.coffee && allowsCoffee() ? `<p class="text-[10px] text-amber-700 truncate"><i class="fa-solid fa-mug-hot"></i> ${esc(coffeeSummary(p.coffee) || 'قهوة مختصة')}</p>` : ''}
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
-            <button onclick="startEdit(${id})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border bg-white/5 text-gray-200 border-white/15 hover:bg-white/10 transition"><i class="fa-solid fa-pen text-[9px]"></i> تعديل</button>
-            <button onclick="toggleField(${id}, 'is_bestseller', ${isBestseller})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border ${isBestseller ? 'bg-white text-black border-white' : 'bg-white/5 text-gray-300 border-white/10'}">تمييز</button>
-            <button onclick="toggleField(${id}, 'is_available', ${isAvailable})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border ${isAvailable ? 'bg-green-500/20 text-green-300 border-green-500/30' : 'bg-red-500/20 text-red-300 border-red-500/30'}">${isAvailable ? 'متوفر' : 'نفذت'}</button>
-            <button onclick="deleteProduct(${id})" aria-label="حذف" class="text-red-400 bg-red-500/10 hover:bg-red-500/20 p-2 rounded-lg border border-red-500/20 transition"><i class="fa-solid fa-trash"></i></button>
+            <button onclick="startEdit(${id})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border bg-brand/5 text-ink/90 border-brand/20 hover:bg-brand/10 transition"><i class="fa-solid fa-pen text-[9px]"></i> تعديل</button>
+            <button onclick="toggleField(${id}, 'is_bestseller', ${isBestseller})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border ${isBestseller ? 'bg-brand text-cream border-brand' : 'bg-brand/5 text-ink/75 border-brand/15'}">تمييز</button>
+            <button onclick="toggleField(${id}, 'is_available', ${isAvailable})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border ${isAvailable ? 'bg-green-500/20 text-green-700 border-green-500/30' : 'bg-red-500/20 text-red-700 border-red-500/30'}">${isAvailable ? 'متوفر' : 'نفذت'}</button>
+            <button onclick="deleteProduct(${id})" aria-label="حذف" class="text-red-600 bg-red-500/10 hover:bg-red-500/20 p-2 rounded-lg border border-red-500/20 transition"><i class="fa-solid fa-trash"></i></button>
           </div>
         </div>`;
     }).join('');
   }
 
   async function toggleField(id, field, current) {
-    const { data, error } = await supabaseClient.from('products').update({ [field]: !current })
-      .eq('id', id).eq('client_id', currentClientId).select('id');
-    if (error || !data || !data.length) return showToast('تعذر التحديث', true);
+    try { await api('product-toggle', { id, field, value: !current }); }
+    catch { return showToast('تعذر التحديث', true); }
     if (field === 'is_available') showToast(current ? 'الطبق الآن: نفذت الكمية' : 'الطبق الآن: متوفر');
     else showToast(current ? 'تمت إزالة التمييز' : 'تم تمييز الطبق');
     refreshAll();
@@ -1814,8 +1846,8 @@ tailwind.config = {
   async function deleteProduct(id) {
     const p = loadedProducts.find(x => x.id === id);
     openDeleteModal('حذف الطبق', `هل أنت متأكد من حذف "${p ? p.name : 'الطبق'}" من المنيو؟`, async () => {
-      const { data, error } = await supabaseClient.from('products').delete().eq('id', id).eq('client_id', currentClientId).select('id');
-      if (error || !data || !data.length) return showToast('تعذر حذف الطبق', true);
+      try { await api('product-delete', { id }); }
+      catch { return showToast('تعذر حذف الطبق', true); }
       if (editingProductId === id) cancelEdit();
       showToast('تم حذف الطبق');
       refreshAll();
@@ -1830,6 +1862,8 @@ tailwind.config = {
     document.getElementById('prod-name').value = p.name || '';
     document.getElementById('prod-price').value = p.price ?? '';
     document.getElementById('prod-desc').value = p.description || '';
+    document.getElementById('prod-extra').value = p.extra_info || '';
+    document.getElementById('prod-note').value = p.note || '';
     document.getElementById('prod-calories').value = p.calories ?? '';
     document.getElementById('prod-name-en').value = p.name_en || '';
     document.getElementById('prod-desc-en').value = p.description_en || '';
@@ -1841,7 +1875,7 @@ tailwind.config = {
     document.getElementById('prod-image-file').value = '';
     document.getElementById('image-hint').textContent = p.image_url ? '(اتركها فارغة للإبقاء على الصورة الحالية)' : '';
     document.getElementById('form-title').textContent = `تعديل: ${p.name}`;
-    document.getElementById('form-icon').className = 'fa-solid fa-pen text-amber-400';
+    document.getElementById('form-icon').className = 'fa-solid fa-pen text-amber-600';
     document.getElementById('submit-btn').textContent = 'حفظ التعديلات';
     document.getElementById('cancel-edit-btn').classList.remove('hidden');
     showPage('menu');
@@ -1856,7 +1890,7 @@ tailwind.config = {
     setCoffee(null);
     document.getElementById('image-hint').textContent = '';
     document.getElementById('form-title').textContent = 'إضافة طبق أو منتج جديد';
-    document.getElementById('form-icon').className = 'fa-solid fa-plus text-white';
+    document.getElementById('form-icon').className = 'fa-solid fa-plus text-ink';
     document.getElementById('submit-btn').textContent = 'حفظ وإضافة الطبق';
     document.getElementById('cancel-edit-btn').classList.add('hidden');
     filterProducts();
@@ -1876,18 +1910,21 @@ tailwind.config = {
     if (!name) return showToast('اكتب اسم الطبق', true);
     if (!category) return showToast('أضف قسماً أولاً من تبويب الأقسام', true);
     if (isNaN(price) || price < 0) return showToast('اكتب سعراً صحيحاً', true);
-    if (calories !== null && (isNaN(calories) || calories < 0 || calories > 10000)) return showToast('اكتب عدد سعرات صحيح', true);
+    if (showCalories() && calories !== null && (isNaN(calories) || calories < 0 || calories > 10000)) return showToast('اكتب عدد سعرات صحيح', true);
 
     const btn = document.getElementById('submit-btn');
     btn.disabled = true;
     try {
       const payload = {
-        name, category, price, description, is_bestseller, calories,
+        name, category, price, description, is_bestseller,
+        extra_info: document.getElementById('prod-extra').value.trim(),
+        note: document.getElementById('prod-note').value.trim(),
         name_en: document.getElementById('prod-name-en').value.trim() || null,
         description_en: document.getElementById('prod-desc-en').value.trim() || null,
         allergens: getAllergens() || null
       };
       if (allowsCoffee()) payload.coffee = getCoffee();
+      if (showCalories()) payload.calories = calories;
       if (imageFile) {
         const problem = validateFile(imageFile, 'image');
         if (problem) return showToast(problem, true);
@@ -1897,26 +1934,9 @@ tailwind.config = {
         payload.image_url = url;
       }
 
-      let result;
-      if (editingProductId) {
-        const old = loadedProducts.find(x => x.id === editingProductId);
-        if (old && old.category !== category) {
-          const sameCat = loadedProducts.filter(x => x.category === category);
-          payload.sort_order = Math.max(0, ...sameCat.map(x => x.sort_order || 0)) + 1;
-        }
-        result = await supabaseClient.from('products').update(payload)
-          .eq('id', editingProductId).eq('client_id', currentClientId).select('id');
-      } else {
-        const sameCat = loadedProducts.filter(x => x.category === category);
-        result = await supabaseClient.from('products').insert([{
-          ...payload,
-          image_url: payload.image_url || '',
-          is_available: true,
-          sort_order: Math.max(0, ...sameCat.map(x => x.sort_order || 0)) + 1,
-          client_id: currentClientId
-        }]).select('id');
-      }
-      if (result.error || !result.data || !result.data.length) { console.error(result.error); return showToast('تعذر حفظ الطبق', true); }
+      // الخادم يتحقق من القسم والصورة ويحدد الترتيب بنفسه
+      try { await api('product-save', { ...payload, id: editingProductId }); }
+      catch (e) { console.error(e); return showToast('تعذر حفظ الطبق', true); }
 
       showToast(editingProductId ? 'تم حفظ التعديلات' : 'تمت إضافة الطبق');
       cancelEdit();
@@ -1926,18 +1946,16 @@ tailwind.config = {
     }
   });
 
-  supabaseClient.auth.onAuthStateChange((event) => {
-    if (event === 'SIGNED_OUT') window.location.replace('login.html');
-  });
-
   (async () => {
     if (await initAuth()) {
       showPage(location.hash.slice(1));
-      await refreshAll();
+      // البيانات وصلت مع الدخول، فنعرضها مباشرة بدون طلب ثاني
+      renderCategories();
+      filterProducts();
+      renderDashboardSummary();
       loadStats();
     }
   })();
 </script>
 </body>
 </html>
-
