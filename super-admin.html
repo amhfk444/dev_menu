@@ -9,7 +9,18 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-  body { font-family: 'Cairo', sans-serif; background-color: #0b0b0b; color: #ffffff; min-height: 100vh; }
+  /* رمز الريال السعودي الجديد ⃁ (U+20C1): خط مخصص يُستخدم لهذا الرمز فقط */
+  @font-face {
+    font-family: 'SaudiRiyal';
+    src: url('https://cdn.jsdelivr.net/npm/@emran-alhaddad/saudi-riyal-font@1.1.0/fonts/regular/saudi_riyal.woff2') format('woff2');
+    font-weight: 100 600; font-display: swap; unicode-range: U+20C1;
+  }
+  @font-face {
+    font-family: 'SaudiRiyal';
+    src: url('https://cdn.jsdelivr.net/npm/@emran-alhaddad/saudi-riyal-font@1.1.0/fonts/bold/saudi_riyal.woff2') format('woff2');
+    font-weight: 700 900; font-display: swap; unicode-range: U+20C1;
+  }
+  body { font-family: 'SaudiRiyal', 'Cairo', sans-serif; background-color: #0b0b0b; color: #ffffff; min-height: 100vh; }
   .pro-card { background: rgba(20, 20, 20, 0.95); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; }
   .input-pro { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 0.5rem; color: #fff; font-size: 0.75rem; }
 </style>
@@ -93,6 +104,10 @@
   const SUPABASE_URL = 'https://czdoamcgxgkicrbufpcn.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZG9hbWNneGdraWNyYnVmcGNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwMTA5MzAsImV4cCI6MjEwNTU4NjkzMH0.45zKx4ljXJ27SS-ukc62qiu52movhDgSoC9OEnK9NHk';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // السعر مع رمز الريال الجديد: "⃁ 25" (الرمز يسار الرقم)
+  const SAR = '\u20C1';
+  const money = (n) => `\u2066${SAR} ${n}\u2069`;
+
 
   // حماية من حقن الكود: أي نص قادم من قاعدة البيانات يمر من هنا قبل عرضه
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -295,7 +310,7 @@
       title: `تفعيل اشتراك ${label}`,
       message: `سيتم تفعيل اشتراك ${label} لمتجر "${c ? (c.name || c.client_slug) : id}".`,
       items: [
-        period === 'year' ? 'المبلغ: 1149 ر.س' : 'المبلغ: 99 ر.س',
+        `المبلغ: ${money(period === 'year' ? 1149 : 99)}`,
         'إذا كان الاشتراك سارياً، تُضاف المدة على تاريخ انتهائه الحالي',
         'يعود المنيو للظهور فوراً إذا كان متوقفاً'
       ],
