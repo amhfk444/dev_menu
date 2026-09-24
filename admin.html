@@ -279,6 +279,60 @@ tailwind.config = {
               <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-500">سعرة</span>
             </div>
           </div>
+          <details id="coffee-details" class="bg-amber-900/10 rounded-xl border border-amber-700/30 group">
+            <summary class="cursor-pointer select-none p-2.5 text-[11px] font-bold text-amber-100 flex items-center justify-between">
+              <span><i class="fa-solid fa-mug-hot text-amber-400"></i> تفاصيل القهوة المختصة <span class="text-amber-200/50 font-normal">(للمقاهي، اختياري)</span></span>
+              <i class="fa-solid fa-chevron-down text-[9px] text-amber-200/50 group-open:rotate-180 transition"></i>
+            </summary>
+            <div class="p-2.5 pt-0 space-y-3">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-[10px] text-gray-400 block mb-1">الأصل (الدولة)</label>
+                  <input type="text" id="coffee-origin" list="coffee-origins" placeholder="إثيوبيا" class="input-pro text-xs">
+                  <datalist id="coffee-origins">
+                    <option value="إثيوبيا"><option value="كولومبيا"><option value="البرازيل"><option value="كينيا">
+                    <option value="اليمن"><option value="غواتيمالا"><option value="هندوراس"><option value="بنما">
+                    <option value="رواندا"><option value="بوروندي"><option value="كوستاريكا"><option value="بيرو">
+                    <option value="السلفادور"><option value="نيكاراغوا"><option value="المكسيك"><option value="إندونيسيا">
+                  </datalist>
+                </div>
+                <div>
+                  <label class="text-[10px] text-gray-400 block mb-1">المنطقة / المزرعة</label>
+                  <input type="text" id="coffee-region" placeholder="يرقاتشيفي" class="input-pro text-xs">
+                </div>
+                <div>
+                  <label class="text-[10px] text-gray-400 block mb-1">المعالجة</label>
+                  <select id="coffee-process" class="input-pro bg-zinc-900 text-xs"></select>
+                </div>
+                <div>
+                  <label class="text-[10px] text-gray-400 block mb-1">السلالة</label>
+                  <input type="text" id="coffee-variety" placeholder="Heirloom" class="input-pro text-xs">
+                </div>
+                <div>
+                  <label class="text-[10px] text-gray-400 block mb-1">الارتفاع</label>
+                  <div class="relative">
+                    <input type="number" min="0" max="3500" step="50" id="coffee-altitude" placeholder="2000" class="input-pro text-xs pl-10" dir="ltr">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-500">متر</span>
+                  </div>
+                </div>
+                <div>
+                  <label class="text-[10px] text-gray-400 block mb-1">درجة التحميص</label>
+                  <div id="coffee-roast" class="grid grid-cols-3 gap-1"></div>
+                </div>
+              </div>
+              <div>
+                <label class="text-[10px] text-gray-400 block mb-1">الإيحاءات (النكهات)</label>
+                <div id="notes-box" class="input-pro flex flex-wrap gap-1.5 items-center min-h-[42px] cursor-text">
+                  <input type="text" id="notes-input" placeholder="اكتب إيحاء واضغط Enter" class="bg-transparent outline-none flex-1 min-w-[110px] text-xs">
+                </div>
+                <div id="notes-suggest" class="flex flex-wrap gap-1 mt-1.5"></div>
+              </div>
+              <div>
+                <label class="text-[10px] text-gray-400 block mb-1">طرق التحضير المتاحة</label>
+                <div id="coffee-methods" class="flex flex-wrap gap-1.5"></div>
+              </div>
+            </div>
+          </details>
           <details class="bg-white/5 rounded-xl border border-white/10 group">
             <summary class="cursor-pointer select-none p-2.5 text-[11px] font-bold text-gray-200 flex items-center justify-between">
               <span><i class="fa-solid fa-language text-blue-300"></i> الاسم والوصف بالإنجليزي <span class="text-gray-500 font-normal">(اختياري)</span></span>
@@ -362,6 +416,13 @@ tailwind.config = {
 
       <!-- ═════════════════ صفحة هوية المطعم ═════════════════ -->
       <section data-page="settings" class="hidden space-y-6">
+        <div class="pro-card p-5 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="text-xs font-bold text-white flex items-center gap-2"><i class="fa-solid fa-shop text-gray-300"></i> نوع النشاط</h3>
+            <span class="text-[10px] text-gray-500">يحدد الحقول اللي تظهر لك عند إضافة الأطباق</span>
+          </div>
+          <div id="biz-type" class="grid grid-cols-2 md:grid-cols-4 gap-2"></div>
+        </div>
         <div class="pro-card p-5 space-y-4">
           <h3 class="text-xs font-bold text-white border-b border-white/15 pb-2 flex items-center gap-2">
             <i class="fa-solid fa-palette text-gray-300"></i> الاسم والشعار والخلفية
@@ -683,6 +744,7 @@ tailwind.config = {
     document.getElementById('info-location').value = client.location_url || '';
     document.getElementById('info-wa-orders').checked = client.whatsapp_orders === true;
     renderWaOrderState();
+    renderBusinessType();
 
     renderSubscriptionStatus();
     renderPromoState();
@@ -1416,6 +1478,140 @@ tailwind.config = {
     setTimeout(() => URL.revokeObjectURL(a.href), 3000);
   }
 
+  // ─── نوع النشاط ───
+  const BUSINESS_TYPES = {
+    restaurant: ['مطعم', 'fa-utensils', 'أطباق ووجبات'],
+    cafe:       ['مقهى', 'fa-mug-hot', 'قهوة مختصة ومشروبات'],
+    mixed:      ['مطعم ومقهى', 'fa-burger', 'أطباق وقهوة مختصة'],
+    bakery:     ['مخبز وحلويات', 'fa-bread-slice', 'مخبوزات وحلا']
+  };
+  const allowsCoffee = () => ['cafe', 'mixed'].includes(client && client.business_type);
+
+  function renderBusinessType() {
+    const current = client.business_type || 'restaurant';
+    document.getElementById('biz-type').innerHTML = Object.entries(BUSINESS_TYPES).map(([k, [name, icon, hint]]) => `
+      <button type="button" onclick="setBusinessType('${k}')"
+        class="text-right p-3 rounded-xl border transition ${k === current ? 'bg-white text-black border-white' : 'bg-white/5 border-white/10 text-gray-200 hover:bg-white/10'}">
+        <i class="fa-solid ${icon} ${k === current ? '' : 'text-gray-400'}"></i>
+        <p class="text-xs font-black mt-1.5">${name}</p>
+        <p class="text-[10px] ${k === current ? 'text-black/60' : 'text-gray-500'}">${hint}</p>
+      </button>`).join('');
+    // حقول القهوة تظهر للمقهى و"مطعم ومقهى" فقط
+    const coffeeBox = document.getElementById('coffee-details');
+    coffeeBox.classList.toggle('hidden', !allowsCoffee());
+    if (!allowsCoffee()) coffeeBox.open = false;
+  }
+
+  async function setBusinessType(type) {
+    if (!BUSINESS_TYPES[type] || type === client.business_type) return;
+    const hadCoffee = allowsCoffee();
+    if (await updateClient({ business_type: type })) {
+      renderBusinessType();
+      filterProducts();
+      const hidden = hadCoffee && !allowsCoffee() && loadedProducts.some(p => p.coffee);
+      showToast(hidden ? `تم التغيير إلى "${BUSINESS_TYPES[type][0]}". تفاصيل القهوة مخفية ومحفوظة لو رجعت لها` : `نوع النشاط: ${BUSINESS_TYPES[type][0]}`);
+    } else {
+      showToast('تعذر الحفظ — تأكد من تشغيل ملف 09-business-type.sql', true);
+    }
+  }
+
+  // ─── تفاصيل القهوة المختصة ───
+  const COFFEE_PROCESS = { washed: 'مغسولة', natural: 'مجففة (طبيعية)', honey: 'عسلية', anaerobic: 'لاهوائية', carbonic: 'كربونية', other: 'أخرى' };
+  const COFFEE_ROAST   = { light: 'فاتحة', medium: 'متوسطة', dark: 'داكنة' };
+  const COFFEE_METHODS = { v60: 'V60', chemex: 'كيمكس', aeropress: 'إيروبرس', frenchpress: 'فرنش برس', espresso: 'إسبريسو', coldbrew: 'كولد برو' };
+  const NOTE_SUGGESTIONS = ['توت', 'شوكولاتة', 'كراميل', 'حمضيات', 'ياسمين', 'زهور', 'فانيلا', 'خوخ', 'ليمون', 'عسل', 'تفاح', 'كرز', 'مكسرات', 'فراولة', 'برتقال', 'قرفة'];
+  let coffeeNotes = [];
+
+  document.getElementById('coffee-process').innerHTML = '<option value="">—</option>' +
+    Object.entries(COFFEE_PROCESS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
+  document.getElementById('coffee-roast').innerHTML = Object.entries(COFFEE_ROAST).map(([k, v]) => `
+    <label class="cursor-pointer">
+      <input type="radio" name="coffee-roast" value="${k}" class="peer hidden">
+      <span class="block text-center text-[10px] font-bold py-2 rounded-lg border border-white/10 bg-white/5 text-gray-300 peer-checked:bg-amber-400 peer-checked:text-black peer-checked:border-amber-400 transition">${v}</span>
+    </label>`).join('');
+  document.getElementById('coffee-methods').innerHTML = Object.entries(COFFEE_METHODS).map(([k, v]) => `
+    <label class="cursor-pointer">
+      <input type="checkbox" value="${k}" class="coffee-method peer hidden">
+      <span class="block text-[10px] font-bold px-2.5 py-1.5 rounded-lg border border-white/10 bg-white/5 text-gray-300 peer-checked:bg-white peer-checked:text-black transition">${v}</span>
+    </label>`).join('');
+  // الضغط مرة ثانية على نفس التحميص يلغي الاختيار
+  const roastBox = document.getElementById('coffee-roast');
+  roastBox.addEventListener('pointerdown', (e) => {
+    const input = e.target.closest('label')?.querySelector('input');
+    if (input) input.dataset.was = input.checked ? '1' : '0';
+  });
+  roastBox.addEventListener('click', (e) => {
+    if (e.target.tagName !== 'INPUT') return;
+    if (e.target.dataset.was === '1') { e.target.checked = false; e.target.dataset.was = '0'; }
+  });
+
+  function renderNotes() {
+    const box = document.getElementById('notes-box');
+    box.querySelectorAll('.note-chip').forEach(x => x.remove());
+    const input = document.getElementById('notes-input');
+    coffeeNotes.forEach((n, i) => {
+      const chip = document.createElement('span');
+      chip.className = 'note-chip inline-flex items-center gap-1 bg-amber-400/15 text-amber-200 border border-amber-400/30 text-[10px] font-bold pr-2 pl-1 py-0.5 rounded-full';
+      chip.innerHTML = `${esc(n)} <button type="button" data-rm="${i}" aria-label="حذف" class="w-4 h-4 rounded-full hover:bg-white/10 text-amber-200/70">×</button>`;
+      box.insertBefore(chip, input);
+    });
+    document.getElementById('notes-suggest').innerHTML = NOTE_SUGGESTIONS.filter(n => !coffeeNotes.includes(n)).slice(0, 10)
+      .map(n => `<button type="button" data-add="${esc(n)}" class="text-[10px] text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 px-2 py-0.5 rounded-full transition">+ ${esc(n)}</button>`).join('');
+  }
+  function addNote(raw) {
+    const n = String(raw || '').trim().replace(/[،,]+$/, '').slice(0, 25);
+    if (!n || coffeeNotes.includes(n) || coffeeNotes.length >= 8) return;
+    coffeeNotes.push(n);
+    renderNotes();
+  }
+  document.getElementById('notes-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ',' || e.key === '،') {
+      e.preventDefault();
+      addNote(e.target.value); e.target.value = '';
+    } else if (e.key === 'Backspace' && !e.target.value && coffeeNotes.length) {
+      coffeeNotes.pop(); renderNotes();
+    }
+  });
+  document.getElementById('notes-input').addEventListener('blur', (e) => { if (e.target.value.trim()) { addNote(e.target.value); e.target.value = ''; } });
+  document.getElementById('notes-box').addEventListener('click', (e) => {
+    const rm = e.target.closest('[data-rm]');
+    if (rm) { coffeeNotes.splice(Number(rm.dataset.rm), 1); renderNotes(); return; }
+    document.getElementById('notes-input').focus();
+  });
+  document.getElementById('notes-suggest').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-add]');
+    if (b) addNote(b.dataset.add);
+  });
+
+  function getCoffee() {
+    const v = (id) => document.getElementById(id).value.trim();
+    const alt = parseInt(v('coffee-altitude'), 10);
+    const c = {
+      origin: v('coffee-origin'), region: v('coffee-region'), process: v('coffee-process'), variety: v('coffee-variety'),
+      altitude: Number.isFinite(alt) && alt > 0 ? alt : null,
+      roast: document.querySelector('[name="coffee-roast"]:checked')?.value || '',
+      notes: [...coffeeNotes],
+      methods: [...document.querySelectorAll('.coffee-method:checked')].map(x => x.value)
+    };
+    const empty = !c.origin && !c.region && !c.process && !c.variety && !c.altitude && !c.roast && !c.notes.length && !c.methods.length;
+    return empty ? null : c;
+  }
+  function setCoffee(c) {
+    c = c || {};
+    document.getElementById('coffee-origin').value = c.origin || '';
+    document.getElementById('coffee-region').value = c.region || '';
+    document.getElementById('coffee-process').value = c.process || '';
+    document.getElementById('coffee-variety').value = c.variety || '';
+    document.getElementById('coffee-altitude').value = c.altitude || '';
+    document.querySelectorAll('[name="coffee-roast"]').forEach(r => { r.checked = r.value === c.roast; r.dataset.was = r.checked ? '1' : '0'; });
+    document.querySelectorAll('.coffee-method').forEach(m => { m.checked = (c.methods || []).includes(m.value); });
+    coffeeNotes = Array.isArray(c.notes) ? [...c.notes] : [];
+    renderNotes();
+    document.getElementById('coffee-details').open = !!(c && Object.keys(c).length);
+  }
+  const coffeeSummary = (c) => c ? [c.origin, COFFEE_PROCESS[c.process], COFFEE_ROAST[c.roast] && `تحميص ${COFFEE_ROAST[c.roast]}`].filter(Boolean).join(' · ') : '';
+  renderNotes();
+
   // ─── مسببات الحساسية ───
   const ALLERGENS = [
     ['gluten', 'الغلوتين'], ['milk', 'الحليب'], ['egg', 'البيض'],
@@ -1593,6 +1789,7 @@ tailwind.config = {
                 ${isBestseller ? `<span class="bg-white/20 text-white text-[9px] px-1.5 py-0.5 rounded font-bold border border-white/30 shrink-0"><i class="fa-solid fa-fire text-amber-400"></i> مميز</span>` : ''}
               </div>
               <p class="text-gray-300 font-semibold text-[11px]">${esc(money(p.price))}${p.calories != null ? ` <span class="text-gray-500">· ${Number(p.calories)} سعرة</span>` : ` <span class="text-amber-400/80">· بدون سعرات</span>`}</p>
+              ${p.coffee && allowsCoffee() ? `<p class="text-[10px] text-amber-300/80 truncate"><i class="fa-solid fa-mug-hot"></i> ${esc(coffeeSummary(p.coffee) || 'قهوة مختصة')}</p>` : ''}
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
@@ -1637,6 +1834,7 @@ tailwind.config = {
     document.getElementById('prod-name-en').value = p.name_en || '';
     document.getElementById('prod-desc-en').value = p.description_en || '';
     setAllergens(p.allergens);
+    setCoffee(p.coffee);
     document.getElementById('prod-bestseller').checked = p.is_bestseller === true;
     const cat = categoryOf(p);
     if (cat) document.getElementById('prod-category').value = cat.key;
@@ -1655,6 +1853,7 @@ tailwind.config = {
   function cancelEdit() {
     editingProductId = null;
     document.getElementById('add-product-form').reset();
+    setCoffee(null);
     document.getElementById('image-hint').textContent = '';
     document.getElementById('form-title').textContent = 'إضافة طبق أو منتج جديد';
     document.getElementById('form-icon').className = 'fa-solid fa-plus text-white';
@@ -1688,6 +1887,7 @@ tailwind.config = {
         description_en: document.getElementById('prod-desc-en').value.trim() || null,
         allergens: getAllergens() || null
       };
+      if (allowsCoffee()) payload.coffee = getCoffee();
       if (imageFile) {
         const problem = validateFile(imageFile, 'image');
         if (problem) return showToast(problem, true);
