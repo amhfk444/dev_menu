@@ -102,7 +102,7 @@
     </div>
     <div class="space-y-1">
       <h1 id="project-title" class="text-2xl font-black text-white tracking-widest uppercase">Dev Menu</h1>
-      <p class="text-xs text-gray-300 font-semibold tracking-wider">RESTAURANT &amp; CAFE</p>
+      <p id="project-type" class="text-xs text-gray-300 font-semibold tracking-wider">RESTAURANT &amp; CAFE</p>
     </div>
     <div id="info-bar" class="hidden flex-wrap justify-center gap-2 pt-1"></div>
   </header>
@@ -151,6 +151,7 @@
         <span id="modalPrice" class="text-base font-black text-white bg-white/10 px-3 py-1 rounded-xl border border-white/20"></span>
       </div>
       <p id="modalDesc" class="text-xs text-gray-300 leading-relaxed font-normal"></p>
+      <div id="modalCoffee" class="hidden space-y-3"></div>
       <div id="modalMeta" class="flex flex-wrap gap-1.5"></div>
       <a id="modalOrder" href="#" target="_blank" rel="noopener" class="hidden w-full bg-[#25d366] hover:bg-[#1ebe5b] text-black font-black text-xs py-3 rounded-2xl items-center justify-center gap-2 transition">
         <i class="fa-brands fa-whatsapp text-base"></i> <span id="modalOrderText">اطلب عبر واتساب</span>
@@ -206,6 +207,7 @@
     allProducts.forEach(p => {
       if (!p.name_en && p.name) texts.add(p.name);
       if (!p.description_en && p.description) texts.add(p.description);
+      if (p.coffee) [p.coffee.origin, p.coffee.region, ...(p.coffee.notes || [])].forEach(t => t && texts.add(t));
     });
     if (project && project.promo_message) texts.add(project.promo_message);
     const list = [...texts].filter(t => !translationCache[t]);
@@ -216,6 +218,58 @@
   const productDesc = (p) => currentLang === 'en' ? (p.description_en || tr(p.description)) : (p.description || '');
   const catName = (c) => currentLang === 'en' ? (c.name_en || tr(c.name)) : c.name;
   const bySort = (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id;
+
+  // تفاصيل القهوة المختصة [عربي، إنجليزي]
+  const COFFEE_PROCESS = { washed: ['مغسولة', 'Washed'], natural: ['مجففة (طبيعية)', 'Natural'], honey: ['عسلية', 'Honey'], anaerobic: ['لاهوائية', 'Anaerobic'], carbonic: ['كربونية', 'Carbonic maceration'], other: ['أخرى', 'Other'] };
+  const COFFEE_ROAST   = { light: ['فاتحة', 'Light'], medium: ['متوسطة', 'Medium'], dark: ['داكنة', 'Dark'] };
+  const COFFEE_METHODS = { v60: ['V60', 'V60'], chemex: ['كيمكس', 'Chemex'], aeropress: ['إيروبرس', 'AeroPress'], frenchpress: ['فرنش برس', 'French press'], espresso: ['إسبريسو', 'Espresso'], coldbrew: ['كولد برو', 'Cold brew'] };
+  const L_ = () => currentLang === 'ar' ? 0 : 1;
+  const label = (map, key) => map[key] ? map[key][L_()] : '';
+
+  // تفاصيل القهوة تظهر للمقاهي فقط (إذا كان النوع غير محدد نعرضها لو موجودة)
+  const coffeeOn = () => !project || !project.business_type || ['cafe', 'mixed'].includes(project.business_type);
+
+  function coffeeLine(c) {
+    if (!c || !coffeeOn()) return '';
+    return [tr(c.origin), label(COFFEE_PROCESS, c.process)].filter(Boolean).join(' · ');
+  }
+
+  function renderCoffeeModal(c) {
+    const box = document.getElementById('modalCoffee');
+    if (!c || !coffeeOn()) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    const ar = L_() === 0;
+    const specs = [
+      [ar ? 'الأصل' : 'Origin', tr(c.origin), 'fa-earth-africa'],
+      [ar ? 'المنطقة' : 'Region', tr(c.region), 'fa-location-dot'],
+      [ar ? 'المعالجة' : 'Process', label(COFFEE_PROCESS, c.process), 'fa-droplet'],
+      [ar ? 'السلالة' : 'Variety', c.variety, 'fa-seedling'],
+      [ar ? 'الارتفاع' : 'Altitude', c.altitude ? `${c.altitude} ${ar ? 'م' : 'm'}` : '', 'fa-mountain'],
+      [ar ? 'التحميص' : 'Roast', label(COFFEE_ROAST, c.roast), 'fa-fire']
+    ].filter(x => x[1]);
+    const notes = (c.notes || []).map(tr);
+    const methods = (c.methods || []).map(m => label(COFFEE_METHODS, m)).filter(Boolean);
+
+    box.innerHTML = `
+      ${specs.length ? `
+        <div class="grid grid-cols-2 gap-2">
+          ${specs.map(([k, v, icon]) => `
+            <div class="bg-white/5 border border-white/10 rounded-xl px-3 py-2">
+              <p class="text-[9px] text-gray-400"><i class="fa-solid ${icon} text-amber-300/80"></i> ${k}</p>
+              <p class="text-xs font-bold text-white truncate">${esc(v)}</p>
+            </div>`).join('')}
+        </div>` : ''}
+      ${notes.length ? `
+        <div>
+          <p class="text-[10px] text-gray-400 mb-1.5">${ar ? 'الإيحاءات' : 'Tasting notes'}</p>
+          <div class="flex flex-wrap gap-1.5">${notes.map(n => `<span class="bg-amber-400/15 text-amber-200 border border-amber-400/30 text-[11px] font-bold px-2.5 py-1 rounded-full">${esc(n)}</span>`).join('')}</div>
+        </div>` : ''}
+      ${methods.length ? `
+        <div>
+          <p class="text-[10px] text-gray-400 mb-1.5">${ar ? 'متوفرة على' : 'Available as'}</p>
+          <div class="flex flex-wrap gap-1.5">${methods.map(m => `<span class="bg-white/10 text-gray-100 border border-white/15 text-[11px] font-bold px-2.5 py-1 rounded-full">${esc(m)}</span>`).join('')}</div>
+        </div>` : ''}`;
+    box.classList.remove('hidden');
+  }
 
   const ALLERGEN_LABELS = {
     gluten: ['الغلوتين', 'Gluten'], milk: ['الحليب', 'Milk'], egg: ['البيض', 'Egg'],
@@ -297,6 +351,8 @@
     project = p;
     document.title = `${p.name || 'Dev Menu'} | المنيو الرقمي`;
     document.getElementById('project-title').textContent = p.name || 'Dev Menu';
+    const TYPE_LABELS = { restaurant: 'RESTAURANT', cafe: 'SPECIALTY COFFEE', mixed: 'RESTAURANT &amp; CAFE', bakery: 'BAKERY &amp; SWEETS' };
+    if (p.business_type && TYPE_LABELS[p.business_type]) document.getElementById('project-type').innerHTML = TYPE_LABELS[p.business_type];
     const logo = safeUrl(p.logo_url);
     if (logo) document.getElementById('project-logo').src = logo;
 
@@ -388,6 +444,11 @@
             <span class="font-black text-sm text-white shrink-0">${esc(money(p.price))}</span>
           </div>
           ${desc ? `<p class="text-[11px] text-gray-300 line-clamp-2 mt-1">${esc(desc)}</p>` : ''}
+          ${p.coffee && coffeeOn() ? `
+            <div class="mt-1.5 space-y-1">
+              ${coffeeLine(p.coffee) ? `<p class="text-[10px] text-amber-200/90 font-bold"><i class="fa-solid fa-mug-hot"></i> ${esc(coffeeLine(p.coffee))}</p>` : ''}
+              ${(p.coffee.notes || []).length ? `<div class="flex flex-wrap gap-1">${p.coffee.notes.slice(0, 3).map(n => `<span class="bg-white/10 text-gray-200 text-[9px] font-bold px-1.5 py-0.5 rounded-md">${esc(tr(n))}</span>`).join('')}</div>` : ''}
+            </div>` : ''}
           ${p.calories != null ? `<p class="text-[10px] text-gray-400 mt-1"><i class="fa-solid fa-fire-flame-simple text-amber-400/80"></i> ${Number(p.calories)} ${currentLang === 'ar' ? 'سعرة حرارية' : 'kcal'}</p>` : ''}
           ${!available ? `<p class="text-[10px] font-bold text-red-300 mt-1">${currentLang === 'ar' ? 'غير متوفر حالياً' : 'Currently unavailable'}</p>` : ''}
         </div>
@@ -417,7 +478,8 @@
     const q = document.getElementById('search-input').value.trim().toLowerCase();
     if (!q) return renderMenu(allProducts, false);
     const filtered = allProducts.filter(p =>
-      [p.name, p.description, p.name_en, p.description_en, translationCache[p.name], translationCache[p.description]]
+      [p.name, p.description, p.name_en, p.description_en, translationCache[p.name], translationCache[p.description],
+       ...(p.coffee && coffeeOn() ? [p.coffee.origin, p.coffee.region, p.coffee.variety, ...(p.coffee.notes || []).flatMap(n => [n, translationCache[n]])] : [])]
         .some(t => t && String(t).toLowerCase().includes(q)));
     renderMenu(filtered, true);
   }
@@ -471,6 +533,7 @@
     document.getElementById('modalTitle').textContent = productName(p);
     document.getElementById('modalPrice').textContent = money(p.price);
     document.getElementById('modalDesc').textContent = productDesc(p);
+    renderCoffeeModal(p.coffee);
 
     const L = currentLang === 'ar' ? 0 : 1;
     const meta = [];
