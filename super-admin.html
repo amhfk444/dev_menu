@@ -53,6 +53,7 @@
       <div class="flex flex-wrap items-center gap-2 text-xs">
         <span class="bg-white/10 px-3 py-1 rounded-xl">الكل: <b id="count-all">0</b></span>
         <span class="bg-green-500/15 text-green-300 px-3 py-1 rounded-xl">ساري: <b id="count-live">0</b></span>
+        <span class="bg-amber-500/15 text-amber-300 px-3 py-1 rounded-xl">ينتهي خلال 3 أيام: <b id="count-soon">0</b></span>
         <span class="bg-red-500/15 text-red-300 px-3 py-1 rounded-xl">منتهي/موقوف: <b id="count-dead">0</b></span>
         <button onclick="logout()" class="bg-white/10 hover:bg-white/20 px-3 py-1 rounded-xl border border-white/20"><i class="fa-solid fa-right-from-bracket text-[10px]"></i> خروج</button>
       </div>
@@ -61,7 +62,14 @@
     <div class="pro-card p-5 space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
         <h3 class="text-xs font-bold text-white">قائمة العملاء والمطاعم</h3>
-        <input type="text" id="search" oninput="renderClients()" placeholder="بحث بالاسم أو الرابط أو البريد..." class="input-pro max-w-xs">
+        <div class="flex flex-wrap items-center gap-2">
+          <div id="filter-tabs" class="flex gap-1 text-[11px] font-bold">
+            <button data-f="all" class="ftab px-3 py-1.5 rounded-lg bg-white text-black">الكل</button>
+            <button data-f="soon" class="ftab px-3 py-1.5 rounded-lg bg-white/10 text-white">ينتهي قريباً</button>
+            <button data-f="dead" class="ftab px-3 py-1.5 rounded-lg bg-white/10 text-white">منتهي/موقوف</button>
+          </div>
+          <input type="text" id="search" oninput="renderClients()" placeholder="بحث بالاسم أو الرابط أو البريد..." class="input-pro max-w-xs">
+        </div>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-right text-xs">
@@ -192,12 +200,52 @@
     document.getElementById('count-all').textContent = clients.length;
     document.getElementById('count-live').textContent = liveCount;
     document.getElementById('count-dead').textContent = clients.length - liveCount;
+    document.getElementById('count-soon').textContent = clients.filter(isSoon).length;
     renderClients();
+  }
+
+  let currentFilter = 'all';
+  document.getElementById('filter-tabs').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-f]');
+    if (!b) return;
+    currentFilter = b.dataset.f;
+    document.querySelectorAll('.ftab').forEach(x => {
+      const on = x === b;
+      x.classList.toggle('bg-white', on); x.classList.toggle('text-black', on);
+      x.classList.toggle('bg-white/10', !on); x.classList.toggle('text-white', !on);
+    });
+    renderClients();
+  });
+
+  // ينتهي خلال 3 أيام (ولسا شغال)
+  const isSoon = (c) => { const st = statusOf(c); return st.live && st.left !== null && st.left <= 3; };
+
+  // رسالة واتساب جاهزة لصاحب المتجر
+  // يحوّل 05xxxxxxxx أو +9665xxxxxxxx إلى 9665xxxxxxxx (صيغة واتساب)
+  function waPhone(raw) {
+    let d = String(raw || '').replace(/\D/g, '');
+    if (d.startsWith('00')) d = d.slice(2);
+    if (d.startsWith('05')) d = '966' + d.slice(1);
+    else if (d.startsWith('5') && d.length === 9) d = '966' + d;
+    return /^9665\d{8}$/.test(d) ? d : '';
+  }
+
+  function reminderLink(c) {
+    const phone = waPhone(c.phone);
+    if (!phone) return '';
+    const st = statusOf(c);
+    const menu = new URL(`menu.html?client=${encodeURIComponent(c.client_slug)}`, window.location.href).href;
+    const msg = st.live
+      ? `مرحباً، معك فريق DEV MENU 👋\nنذكّرك إن ${c.subscription_status === 'trial' ? 'التجربة المجانية' : 'اشتراك'} منيو "${c.name}" ينتهي خلال ${st.left} ${st.left === 1 ? 'يوم' : 'أيام'}.\nللتجديد: الباقة الشهرية 99 ر.س أو السنوية 1149 ر.س.\nرابط منيوك: ${menu}`
+      : `مرحباً، معك فريق DEV MENU 👋\nمنيو "${c.name}" متوقف حالياً عن الزبائن بسبب انتهاء الاشتراك.\nتقدر تجدده الآن ويرجع فوراً: الباقة الشهرية 99 ر.س أو السنوية 1149 ر.س.`;
+    return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
   }
 
   function renderClients() {
     const q = document.getElementById('search').value.trim().toLowerCase();
-    const list = clients.filter(c => !q || [c.name, c.client_slug, c.email, c.phone].some(v => v && String(v).toLowerCase().includes(q)));
+    const list = clients
+      .filter(c => currentFilter === 'all' || (currentFilter === 'soon' ? isSoon(c) : !statusOf(c).live))
+      .filter(c => !q || [c.name, c.client_slug, c.email, c.phone].some(v => v && String(v).toLowerCase().includes(q)));
     const tbody = document.getElementById('admin-clients-list');
 
     if (list.length === 0) {
@@ -214,11 +262,12 @@
             <p class="font-bold text-white">${esc(c.name || 'بدون اسم')}</p>
             <p class="text-[10px] text-gray-400 font-mono" dir="ltr">${esc(c.client_slug)}</p>
             <p class="text-[10px] text-gray-400" dir="ltr">${esc(c.email || '— بدون بريد —')}</p>
-            ${c.phone ? `<a href="https://wa.me/${esc(String(c.phone).replace(/\D/g, ''))}" target="_blank" rel="noopener" class="text-[10px] text-green-300" dir="ltr">${esc(c.phone)}</a>` : ''}
+            ${c.phone ? (waPhone(c.phone) ? `<a href="https://wa.me/${waPhone(c.phone)}" target="_blank" rel="noopener" class="text-[10px] text-green-300" dir="ltr">${esc(c.phone)}</a>` : `<p class="text-[10px] text-gray-400" dir="ltr">${esc(c.phone)}</p>`) : ''}
           </td>
           <td class="p-3 space-y-1">
             <span class="${st.badge} px-2 py-0.5 rounded-full text-[10px] font-bold">${st.label}</span>
-            <p class="text-[10px] text-gray-400">ينتهي: ${esc(st.endText)}${st.left !== null && st.left > 0 ? ` (${st.left} يوم)` : ''}</p>
+            <p class="text-[10px] ${isSoon(c) ? 'text-amber-300 font-bold' : 'text-gray-400'}">ينتهي: ${esc(st.endText)}${st.left !== null && st.left > 0 ? ` (${st.left} يوم)` : ''}</p>
+            ${reminderLink(c) ? `<a href="${esc(reminderLink(c))}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 bg-green-600/20 hover:bg-green-600/35 border border-green-500/30 text-green-300 text-[10px] font-bold px-2 py-1 rounded-lg transition"><i class="fa-brands fa-whatsapp"></i> ${st.live ? 'تذكير بالتجديد' : 'رسالة تجديد'}</a>` : ''}
           </td>
           <td class="p-3 space-y-1 min-w-[180px]">
             <input type="text" id="notif-${id}" placeholder="اكتب إشعاراً للعميل..." class="input-pro" value="${esc(c.admin_notification || '')}">
