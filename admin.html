@@ -33,11 +33,24 @@ tailwind.config = {
   .tab-btn.active { background-color: #ffffff; color: #000000; font-weight: 800; }
   #toast { transition: transform 0.3s ease, opacity 0.3s ease; }
   #toast.show { transform: translateY(0); opacity: 1; }
+  .nav-item {
+    display: flex; align-items: center; gap: .65rem; width: 100%; padding: .65rem .85rem;
+    border-radius: .8rem; font-size: .8rem; font-weight: 700; color: #a3a3a3; transition: all .15s;
+  }
+  .nav-item i { width: 1.1rem; text-align: center; }
+  .nav-item:hover { background: rgba(255,255,255,.06); color: #fff; }
+  .nav-item.nav-active { background: #fff; color: #000; }
+  .nav-item.nav-active #nav-count { background: rgba(0,0,0,.1); }
+  .bnav { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 8px; font-size: 10px; font-weight: 700; color: #8a8a8a; }
+  .bnav i { font-size: 16px; }
+  .bnav.nav-active { color: #fff; }
+  .bnav.nav-active i { color: #fbbf24; }
   .editing-glow { border-color: rgba(251, 191, 36, 0.8) !important; box-shadow: 0 0 15px rgba(251, 191, 36, 0.15); }
 </style>
 </head>
 
-<body class="py-6 px-3 md:px-8">
+<body>
+
 
 <!-- رسائل التنبيه Toast -->
 <!-- نافذة تأكيد الحذف -->
@@ -57,7 +70,7 @@ tailwind.config = {
   </div>
 </div>
 
-<div id="toast" class="fixed bottom-5 left-5 z-[70] transform translate-y-10 opacity-0 pointer-events-none bg-white text-black px-5 py-3 rounded-2xl shadow-2xl border border-white/30 text-xs font-bold flex items-center gap-2">
+<div id="toast" class="fixed bottom-20 lg:bottom-5 left-5 z-[70] transform translate-y-10 opacity-0 pointer-events-none bg-white text-black px-5 py-3 rounded-2xl shadow-2xl border border-white/30 text-xs font-bold flex items-center gap-2">
   <i id="toast-icon" class="fa-solid fa-circle-check text-green-600"></i>
   <span id="toast-msg">تمت العملية بنجاح</span>
 </div>
@@ -68,201 +81,144 @@ tailwind.config = {
   <span>جاري التحقق من تسجيل الدخول...</span>
 </div>
 
-<div id="app" class="max-w-6xl mx-auto space-y-5" style="visibility:hidden">
-  
-  <!-- ترويسة اللوحة -->
-  <header class="pro-card p-4 flex flex-wrap items-center justify-between gap-4">
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-xl bg-white/10 text-white border border-white/20 flex items-center justify-center text-lg">
-        <i class="fa-solid fa-gauge-high"></i>
-      </div>
-      <div>
-        <h1 id="header-title" class="text-base font-black tracking-wide">لوحة تحكم المنشأة</h1>
-        <p class="text-[11px] text-gray-400">إدارة الهوية، المنتجات، الاشتراك، ورابط المنيو الرقمي</p>
+<div id="app" style="visibility:hidden">
+
+  <!-- ═════════ القائمة الجانبية (كمبيوتر) ═════════ -->
+  <aside class="hidden lg:flex fixed inset-y-0 right-0 z-30 w-64 flex-col bg-[#101010] border-l border-white/10">
+    <div class="p-5 border-b border-white/10 flex items-center gap-3">
+      <img id="sidebar-logo" src="images/logo.jpeg" alt="" class="w-11 h-11 rounded-xl object-cover border border-white/15 bg-white/5" onerror="this.src='images/logo.jpeg'">
+      <div class="min-w-0">
+        <p id="header-title" class="text-sm font-black truncate">متجري</p>
+        <span id="store-status" class="inline-flex items-center gap-1 text-[10px] font-bold text-gray-400"></span>
       </div>
     </div>
-    <div class="flex items-center gap-2">
-    <button onclick="logout()" class="text-xs bg-white/10 hover:bg-white/20 text-white font-bold px-4 py-2 rounded-xl transition border border-white/20 flex items-center gap-1.5">
-      <i class="fa-solid fa-right-from-bracket text-[10px]"></i> خروج
-    </button>
-    <a id="preview-menu-btn" href="#" target="_blank" class="text-xs bg-white text-black font-bold px-4 py-2 rounded-xl transition hover:bg-gray-200 flex items-center gap-1.5 shadow-lg">
-      <span>معاينة المنيو الحي</span>
-      <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-    </a>
+    <nav class="p-3 space-y-1 flex-1 overflow-y-auto">
+      <button data-nav="dashboard" class="nav-item"><i class="fa-solid fa-gauge-high"></i> الرئيسية</button>
+      <button data-nav="menu" class="nav-item"><i class="fa-solid fa-utensils"></i> المنيو <span id="nav-count" class="mr-auto text-[10px] bg-white/10 px-2 py-0.5 rounded-full">0</span></button>
+      <button data-nav="settings" class="nav-item"><i class="fa-solid fa-palette"></i> هوية المطعم</button>
+      <p class="px-3 pt-5 pb-1 text-[10px] text-gray-500 font-bold">اختصارات</p>
+      <a id="sidebar-preview" href="#" target="_blank" rel="noopener" class="nav-item"><i class="fa-solid fa-arrow-up-right-from-square"></i> معاينة المنيو</a>
+      <button onclick="copyMenuLink()" class="nav-item"><i class="fa-solid fa-link"></i> نسخ رابط المنيو</button>
+      <button onclick="downloadQrCard()" class="nav-item"><i class="fa-solid fa-print"></i> بطاقة الطاولة</button>
+      <a id="sa-link" href="super-admin.html" class="nav-item hidden"><i class="fa-solid fa-crown text-amber-400"></i> لوحة المشتركين</a>
+    </nav>
+    <div class="p-4 border-t border-white/10 space-y-2">
+      <p id="user-email" class="text-[10px] text-gray-500 truncate" dir="ltr"></p>
+      <button onclick="logout()" class="w-full bg-white/5 hover:bg-white/10 text-gray-300 font-bold py-2 rounded-xl text-xs transition border border-white/10 flex items-center justify-center gap-1.5">
+        <i class="fa-solid fa-right-from-bracket text-[10px]"></i> تسجيل الخروج
+      </button>
     </div>
-  </header>
+  </aside>
 
-  <!-- شريط تنبيه انتهاء الاشتراك -->
-  <div id="renew-banner" class="hidden rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 border"></div>
+  <div class="lg:mr-64 min-h-screen flex flex-col">
 
-  <!-- بطاقة معلومات الاشتراك والتنبيهات والـ QR Code -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- ═════════ الشريط العلوي ═════════ -->
+    <header class="sticky top-0 z-20 bg-[#0b0b0b]/85 backdrop-blur-xl border-b border-white/10">
+      <div class="px-4 md:px-8 h-16 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <img id="mobile-logo" src="images/logo.jpeg" alt="" class="lg:hidden w-9 h-9 rounded-lg object-cover border border-white/15" onerror="this.src='images/logo.jpeg'">
+          <div class="min-w-0">
+            <h1 id="page-title" class="text-base font-black leading-tight">الرئيسية</h1>
+            <p id="page-subtitle" class="text-[11px] text-gray-400 truncate"></p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <span id="admin-mode-badge" class="hidden text-[10px] font-bold bg-amber-400/15 text-amber-300 border border-amber-400/30 px-2.5 py-1 rounded-full"><i class="fa-solid fa-crown"></i> وضع المدير العام</span>
+          <a id="preview-menu-btn" href="#" target="_blank" rel="noopener" class="text-xs bg-white text-black font-bold px-3.5 py-2 rounded-xl transition hover:bg-gray-200 flex items-center gap-1.5">
+            <i class="fa-solid fa-eye text-[10px]"></i> <span class="hidden sm:inline">معاينة المنيو</span>
+          </a>
+          <button onclick="logout()" aria-label="خروج" class="lg:hidden bg-white/10 hover:bg-white/20 text-white w-9 h-9 rounded-xl border border-white/20 flex items-center justify-center">
+            <i class="fa-solid fa-right-from-bracket text-xs"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 w-full max-w-[1600px] mx-auto px-4 md:px-8 py-6 pb-28 lg:pb-10">
+
+      <!-- ═════════════════ صفحة الرئيسية ═════════════════ -->
+      <section data-page="dashboard" class="space-y-6">
+        <div class="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 id="greeting" class="text-xl md:text-2xl font-black">أهلاً بك 👋</h2>
+            <p class="text-xs text-gray-400 mt-1">هذا ملخص متجرك وأداء المنيو.</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="goAddDish()" class="bg-white text-black hover:bg-gray-200 px-4 py-2.5 rounded-xl text-xs font-black transition"><i class="fa-solid fa-plus"></i> أضف طبق</button>
+            <button onclick="downloadQrCard()" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-xl text-xs font-bold border border-white/20 transition"><i class="fa-solid fa-print"></i> بطاقة الطاولة</button>
+          </div>
+        </div>
+
+        <div id="renew-banner" class="hidden rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 border"></div>
+
+        <div id="quick-counts" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
+          <div class="xl:col-span-2 space-y-6">
+  <!-- إحصائيات المنيو -->
+            <div class="pro-card p-5 space-y-5">
+              <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/15 pb-3">
+                <h3 class="text-xs font-bold text-white flex items-center gap-2"><i class="fa-solid fa-chart-simple text-emerald-400"></i> إحصائيات المنيو</h3>
+                <div class="flex items-center gap-2">
+                  <div id="stats-periods" class="flex bg-white/5 border border-white/10 rounded-xl p-0.5 text-[11px] font-bold">
+                    <button data-days="7" class="stats-period px-3 py-1.5 rounded-lg text-gray-300">7 أيام</button>
+                    <button data-days="30" class="stats-period px-3 py-1.5 rounded-lg bg-white text-black">30 يوم</button>
+                    <button data-days="90" class="stats-period px-3 py-1.5 rounded-lg text-gray-300">90 يوم</button>
+                  </div>
+                  <button id="stats-export" onclick="exportStatsCsv()" title="تصدير Excel" class="bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition disabled:opacity-40">
+                    <i class="fa-solid fa-file-arrow-down"></i> تصدير
+                  </button>
+                </div>
+              </div>
+              <div id="stats-body" class="text-xs text-gray-400">جاري التحميل...</div>
+            </div>
+          </div>
+          <div class="space-y-6">
     <!-- حالة الاشتراك -->
-    <div class="pro-card p-4 space-y-2 border-l-4 border-l-amber-400">
-      <h3 class="text-xs font-bold text-gray-300 flex items-center gap-1.5"><i class="fa-solid fa-id-card"></i> حالة الاشتراك</h3>
-      <div id="subscription-info" class="text-xs space-y-1 text-gray-200">
-        <p>جاري التحقق من الاشتراك...</p>
-      </div>
-    </div>
+            <div class="pro-card p-5 space-y-2 border-r-4 border-r-amber-400">
+              <h3 class="text-xs font-bold text-gray-300 flex items-center gap-1.5"><i class="fa-solid fa-id-card"></i> حالة الاشتراك</h3>
+              <div id="subscription-info" class="text-xs space-y-1 text-gray-200">
+                <p>جاري التحقق من الاشتراك...</p>
+              </div>
+            </div>
 
     <!-- تنبيهات الإدارة -->
-    <div id="admin-notice-box" class="pro-card p-4 space-y-2 border-l-4 border-l-blue-400 hidden">
-      <h3 class="text-xs font-bold text-blue-300 flex items-center gap-1.5"><i class="fa-solid fa-bell"></i> تنبيه من الإدارة</h3>
-      <p id="admin-notice-text" class="text-xs text-gray-200"></p>
-    </div>
+            <div id="admin-notice-box" class="pro-card p-4 space-y-2 border-r-4 border-r-blue-400 hidden">
+              <h3 class="text-xs font-bold text-blue-300 flex items-center gap-1.5"><i class="fa-solid fa-bell"></i> تنبيه من الإدارة</h3>
+              <p id="admin-notice-text" class="text-xs text-gray-200"></p>
+            </div>
 
     <!-- رابط المنيو والـ QR Code -->
-    <div class="pro-card p-4 flex items-center justify-between gap-3">
-      <div class="space-y-2">
-        <h3 class="text-xs font-bold text-white"><i class="fa-solid fa-qrcode text-amber-400"></i> باركود المنيو الخاص بك</h3>
-        <p class="text-[10px] text-gray-400">امسح الكود لفتح المنيو أو شاركه مع زملائك</p>
-        <div class="flex flex-wrap gap-1.5">
-          <button onclick="copyMenuLink()" class="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold border border-white/20 transition">
-            <i class="fa-solid fa-copy"></i> نسخ الرابط
-          </button>
-          <button id="qr-download-btn" onclick="downloadQrCard()" class="bg-amber-400 hover:bg-amber-300 text-black px-3 py-1.5 rounded-lg text-[10px] font-bold transition">
-            <i class="fa-solid fa-print"></i> تحميل للطباعة
-          </button>
+            <div class="pro-card p-5 flex items-center justify-between gap-4">
+              <div class="space-y-2">
+                <h3 class="text-xs font-bold text-white"><i class="fa-solid fa-qrcode text-amber-400"></i> باركود المنيو الخاص بك</h3>
+                <p class="text-[10px] text-gray-400">امسح الكود لفتح المنيو أو شاركه مع زملائك</p>
+                <div class="flex flex-wrap gap-1.5">
+                  <button onclick="copyMenuLink()" class="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold border border-white/20 transition">
+                    <i class="fa-solid fa-copy"></i> نسخ الرابط
+                  </button>
+                  <button id="qr-download-btn" onclick="downloadQrCard()" class="bg-amber-400 hover:bg-amber-300 text-black px-3 py-1.5 rounded-lg text-[10px] font-bold transition">
+                    <i class="fa-solid fa-print"></i> تحميل للطباعة
+                  </button>
+                </div>
+              </div>
+              <div id="qrcode" class="bg-white p-2 rounded-xl shrink-0 [&_img]:w-24 [&_img]:h-24 [&_canvas]:w-24 [&_canvas]:h-24"></div>
+            </div>
+            <!-- جاهزية المنيو -->
+            <div class="pro-card p-5 space-y-3">
+              <div class="flex items-center justify-between">
+                <h3 class="text-xs font-bold text-white flex items-center gap-2"><i class="fa-solid fa-list-check text-emerald-400"></i> جاهزية المنيو</h3>
+                <span id="checklist-pct" class="text-[11px] font-black text-emerald-300">0%</span>
+              </div>
+              <div class="h-2 bg-white/5 rounded-full overflow-hidden"><div id="checklist-bar" class="h-full bg-emerald-400 rounded-full transition-all" style="width:0%"></div></div>
+              <ul id="checklist-body" class="space-y-1.5"></ul>
+            </div>
+          </div>
         </div>
-      </div>
-      <div id="qrcode" class="bg-white p-2 rounded-xl shrink-0"></div>
-    </div>
-  </div>
+      </section>
 
-  <!-- إحصائيات المنيو -->
-  <div class="pro-card p-5 space-y-5">
-    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/15 pb-3">
-      <h3 class="text-xs font-bold text-white flex items-center gap-2"><i class="fa-solid fa-chart-simple text-emerald-400"></i> إحصائيات المنيو</h3>
-      <div class="flex items-center gap-2">
-        <div id="stats-periods" class="flex bg-white/5 border border-white/10 rounded-xl p-0.5 text-[11px] font-bold">
-          <button data-days="7" class="stats-period px-3 py-1.5 rounded-lg text-gray-300">7 أيام</button>
-          <button data-days="30" class="stats-period px-3 py-1.5 rounded-lg bg-white text-black">30 يوم</button>
-          <button data-days="90" class="stats-period px-3 py-1.5 rounded-lg text-gray-300">90 يوم</button>
-        </div>
-        <button id="stats-export" onclick="exportStatsCsv()" title="تصدير Excel" class="bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition disabled:opacity-40">
-          <i class="fa-solid fa-file-arrow-down"></i> تصدير
-        </button>
-      </div>
-    </div>
-    <div id="stats-body" class="text-xs text-gray-400">جاري التحميل...</div>
-  </div>
-
-  <!-- الهوية والبصرية -->
-  <div class="pro-card p-5 space-y-4">
-    <h3 class="text-xs font-bold text-white border-b border-white/15 pb-2 flex items-center gap-2">
-      <i class="fa-solid fa-sliders text-gray-300"></i> إعدادات المنشأة والهوية البصرية
-    </h3>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
-        <label class="text-[11px] font-bold text-gray-300">اسم المطعم في المنيو</label>
-        <input type="text" id="setting-name" placeholder="اسم المطعم" class="input-pro text-xs">
-        <button onclick="updateRestaurantName()" class="w-full bg-white text-black hover:bg-gray-200 text-xs font-bold py-2 rounded-xl transition">حفظ الاسم</button>
-      </div>
-
-      <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
-        <div class="flex items-center justify-between">
-          <label class="text-[11px] font-bold text-gray-300">شعار المطعم (Logo)</label>
-          <img id="logo-preview" src="images/logo.jpeg" class="w-7 h-7 object-cover rounded-full border border-white/30" onerror="this.src='https://via.placeholder.com/50'">
-        </div>
-        <input type="file" id="logo-file" accept="image/*" class="input-pro text-[10px]">
-        <button onclick="uploadMedia('logo')" class="w-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-2 rounded-xl transition border border-white/20">تحديث الشعار</button>
-      </div>
-
-      <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
-        <label class="text-[11px] font-bold text-gray-300">صورة الخلفية للمنيو</label>
-        <input type="file" id="bg-img-file" accept="image/*" class="input-pro text-[10px]">
-        <button onclick="uploadMedia('bg_image')" class="w-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-2 rounded-xl transition border border-white/20">تحديث الخلفية</button>
-      </div>
-
-      <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
-        <label class="text-[11px] font-bold text-gray-300">فيديو الخلفية (MP4)</label>
-        <input type="file" id="bg-video-file" accept="video/*" class="input-pro text-[10px]">
-        <button onclick="uploadMedia('bg_video')" class="w-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-2 rounded-xl transition border border-white/20">تحديث الفيديو</button>
-      </div>
-    </div>
-
-    <!-- روابط التواصل الاجتماعي -->
-    <div class="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-3">
-      <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
-        <i class="fa-solid fa-share-nodes text-blue-400"></i> روابط منصات التواصل الاجتماعي وموقع المطعم
-      </h4>
-      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <div>
-          <label class="text-[10px] text-gray-300 block mb-1">الموقع الإلكتروني</label>
-          <input type="url" id="social-web" placeholder="https://..." class="input-pro text-xs">
-        </div>
-        <div>
-          <label class="text-[10px] text-gray-300 block mb-1">رابط تيك توك</label>
-          <input type="url" id="social-tiktok" placeholder="https://tiktok.com/@..." class="input-pro text-xs">
-        </div>
-        <div>
-          <label class="text-[10px] text-gray-300 block mb-1">رابط انستجرام</label>
-          <input type="url" id="social-insta" placeholder="https://instagram.com/..." class="input-pro text-xs">
-        </div>
-        <div>
-          <label class="text-[10px] text-gray-300 block mb-1">رقم الواتساب</label>
-          <input type="tel" id="social-whatsapp" placeholder="05xxxxxxxx" class="input-pro text-xs" dir="ltr">
-        </div>
-        <div>
-          <label class="text-[10px] text-gray-300 block mb-1">رابط سناب شات</label>
-          <input type="url" id="social-snap" placeholder="https://snapchat.com/..." class="input-pro text-xs">
-        </div>
-      </div>
-      <button onclick="updateSocialLinks()" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-2 rounded-xl text-xs transition shadow-md">حفظ روابط التواصل</button>
-    </div>
-
-    <!-- معلومات المطعم -->
-    <div class="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-3">
-      <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
-        <i class="fa-solid fa-store text-emerald-400"></i> معلومات المطعم (تظهر أعلى المنيو)
-      </h4>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <label class="text-[10px] text-gray-300 block mb-1">ساعات العمل</label>
-          <input type="text" id="info-hours" maxlength="80" placeholder="مثال: يومياً من 1 ظهراً حتى 1 فجراً" class="input-pro text-xs">
-        </div>
-        <div>
-          <label class="text-[10px] text-gray-300 block mb-1">رابط الموقع على خرائط Google</label>
-          <input type="url" id="info-location" placeholder="https://maps.app.goo.gl/..." class="input-pro text-xs" dir="ltr">
-        </div>
-      </div>
-      <div id="wa-orders-box" class="bg-white/5 p-3 rounded-xl border border-white/10 space-y-2.5">
-        <label id="wa-orders-label" class="flex items-start gap-2.5 cursor-pointer">
-          <input type="checkbox" id="info-wa-orders" class="w-4 h-4 mt-0.5 accent-green-500 cursor-pointer disabled:cursor-not-allowed">
-          <span class="text-xs">
-            <b class="text-white"><i class="fa-brands fa-whatsapp text-green-400"></i> استقبال الطلبات عبر واتساب</b>
-            <span class="block text-[10px] text-gray-400 mt-0.5">يظهر زر "اطلب عبر واتساب" في تفاصيل كل طبق، ويصل الطلب مباشرة إلى واتساب المطعم.</span>
-          </span>
-        </label>
-        <div id="wa-orders-status" class="text-[11px]"></div>
-      </div>
-      <button onclick="updateRestaurantInfo()" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-2 rounded-xl text-xs transition shadow-md">حفظ معلومات المطعم</button>
-    </div>
-
-    <!-- العروض والرسائل الترويجية -->
-    <div class="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-3">
-      <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
-        <i class="fa-solid fa-bullhorn text-amber-300"></i> الرسائل الترويجية والعروض (تظهر أعلى المنيو للعملاء)
-      </h4>
-      <div id="promo-status" class="flex items-center gap-2 text-[11px]"></div>
-      <div class="flex flex-col sm:flex-row gap-2">
-        <div class="relative flex-1">
-          <input type="text" id="promo-message-input" maxlength="120" placeholder="مثال: خصم 20% على جميع الأطباق الرئيسية اليوم!" class="input-pro text-xs pl-14">
-          <span id="promo-counter" class="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-500 font-mono" dir="ltr">0/120</span>
-        </div>
-        <div class="flex gap-2 shrink-0">
-          <button type="button" id="promo-save-btn" onclick="updatePromoMessage()" class="flex-1 sm:flex-none bg-white text-black hover:bg-gray-200 px-5 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
-            <i class="fa-solid fa-floppy-disk text-[11px]"></i> حفظ ونشر
-          </button>
-          <button type="button" id="promo-delete-btn" onclick="deletePromoMessage()" class="flex-1 sm:flex-none bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-4 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
-            <i class="fa-solid fa-trash text-[11px]"></i> حذف الإعلان
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
+      <!-- ═════════════════ صفحة المنيو ═════════════════ -->
+      <section data-page="menu" class="hidden space-y-5">
   <!-- التبويبات -->
   <div class="flex gap-2 border-b border-white/15 pb-2">
     <button onclick="switchTab('products')" id="tab-products" class="tab-btn active px-5 py-2.5 rounded-xl border border-white/20 text-xs font-bold transition flex items-center gap-2">
@@ -276,8 +232,8 @@ tailwind.config = {
   <!-- قسم المنتجات -->
   <div id="section-products" class="space-y-4">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-      <div class="lg:col-span-5">
-        <form id="add-product-form" class="pro-card p-5 space-y-3.5 sticky top-5">
+      <div class="lg:col-span-5 xl:col-span-4">
+        <form id="add-product-form" class="pro-card p-5 space-y-3.5 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
           <h3 class="text-xs font-bold text-white border-b border-white/15 pb-2 flex items-center gap-2">
             <i id="form-icon" class="fa-solid fa-plus text-white"></i> <span id="form-title">إضافة طبق أو منتج جديد</span>
           </h3>
@@ -339,7 +295,7 @@ tailwind.config = {
         </form>
       </div>
 
-      <div class="lg:col-span-7 space-y-3.5">
+      <div class="lg:col-span-7 xl:col-span-8 space-y-3.5">
         <div class="pro-card p-3.5 flex flex-wrap items-center justify-between gap-3">
           <div class="relative flex-1 min-w-[180px]">
             <i class="fa-solid fa-magnifying-glass absolute right-3.5 top-3 text-gray-400 text-xs"></i>
@@ -354,7 +310,7 @@ tailwind.config = {
             <h3 class="text-xs font-bold text-white">الأطباق المتاحة في القائمة</h3>
             <span id="products-count" class="text-[10px] font-bold text-black bg-white px-2.5 py-0.5 rounded-full">0 طبق</span>
           </div>
-          <div id="admin-products-list" class="space-y-2.5 max-h-[550px] overflow-y-auto pr-1">
+          <div id="admin-products-list" class="space-y-2.5">
             <p class="text-xs text-gray-400 text-center py-6">جاري التحميل...</p>
           </div>
         </div>
@@ -389,7 +345,132 @@ tailwind.config = {
       </div>
     </div>
   </div>
+      </section>
 
+      <!-- ═════════════════ صفحة هوية المطعم ═════════════════ -->
+      <section data-page="settings" class="hidden space-y-6">
+        <div class="pro-card p-5 space-y-4">
+          <h3 class="text-xs font-bold text-white border-b border-white/15 pb-2 flex items-center gap-2">
+            <i class="fa-solid fa-palette text-gray-300"></i> الاسم والشعار والخلفية
+          </h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4">
+      <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
+        <label class="text-[11px] font-bold text-gray-300">اسم المطعم في المنيو</label>
+        <input type="text" id="setting-name" placeholder="اسم المطعم" class="input-pro text-xs">
+        <button onclick="updateRestaurantName()" class="w-full bg-white text-black hover:bg-gray-200 text-xs font-bold py-2 rounded-xl transition">حفظ الاسم</button>
+      </div>
+
+      <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
+        <div class="flex items-center justify-between">
+          <label class="text-[11px] font-bold text-gray-300">شعار المطعم (Logo)</label>
+          <img id="logo-preview" src="images/logo.jpeg" class="w-7 h-7 object-cover rounded-full border border-white/30" onerror="this.src='https://via.placeholder.com/50'">
+        </div>
+        <input type="file" id="logo-file" accept="image/*" class="input-pro text-[10px]">
+        <button onclick="uploadMedia('logo')" class="w-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-2 rounded-xl transition border border-white/20">تحديث الشعار</button>
+      </div>
+
+      <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
+        <label class="text-[11px] font-bold text-gray-300">صورة الخلفية للمنيو</label>
+        <input type="file" id="bg-img-file" accept="image/*" class="input-pro text-[10px]">
+        <button onclick="uploadMedia('bg_image')" class="w-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-2 rounded-xl transition border border-white/20">تحديث الخلفية</button>
+      </div>
+
+      <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
+        <label class="text-[11px] font-bold text-gray-300">فيديو الخلفية (MP4)</label>
+        <input type="file" id="bg-video-file" accept="video/*" class="input-pro text-[10px]">
+        <button onclick="uploadMedia('bg_video')" class="w-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-2 rounded-xl transition border border-white/20">تحديث الفيديو</button>
+      </div>
+    </div>
+        </div>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+    <!-- معلومات المطعم -->
+    <div class="pro-card p-5 space-y-3">
+      <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
+        <i class="fa-solid fa-store text-emerald-400"></i> معلومات المطعم (تظهر أعلى المنيو)
+      </h4>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="text-[10px] text-gray-300 block mb-1">ساعات العمل</label>
+          <input type="text" id="info-hours" maxlength="80" placeholder="مثال: يومياً من 1 ظهراً حتى 1 فجراً" class="input-pro text-xs">
+        </div>
+        <div>
+          <label class="text-[10px] text-gray-300 block mb-1">رابط الموقع على خرائط Google</label>
+          <input type="url" id="info-location" placeholder="https://maps.app.goo.gl/..." class="input-pro text-xs" dir="ltr">
+        </div>
+      </div>
+      <div id="wa-orders-box" class="bg-white/5 p-3 rounded-xl border border-white/10 space-y-2.5">
+        <label id="wa-orders-label" class="flex items-start gap-2.5 cursor-pointer">
+          <input type="checkbox" id="info-wa-orders" class="w-4 h-4 mt-0.5 accent-green-500 cursor-pointer disabled:cursor-not-allowed">
+          <span class="text-xs">
+            <b class="text-white"><i class="fa-brands fa-whatsapp text-green-400"></i> استقبال الطلبات عبر واتساب</b>
+            <span class="block text-[10px] text-gray-400 mt-0.5">يظهر زر "اطلب عبر واتساب" في تفاصيل كل طبق، ويصل الطلب مباشرة إلى واتساب المطعم.</span>
+          </span>
+        </label>
+        <div id="wa-orders-status" class="text-[11px]"></div>
+      </div>
+      <button onclick="updateRestaurantInfo()" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-2 rounded-xl text-xs transition shadow-md">حفظ معلومات المطعم</button>
+    </div>
+    <!-- العروض والرسائل الترويجية -->
+    <div class="pro-card p-5 space-y-3">
+      <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
+        <i class="fa-solid fa-bullhorn text-amber-300"></i> الرسائل الترويجية والعروض (تظهر أعلى المنيو للعملاء)
+      </h4>
+      <div id="promo-status" class="flex items-center gap-2 text-[11px]"></div>
+      <div class="flex flex-col sm:flex-row gap-2">
+        <div class="relative flex-1">
+          <input type="text" id="promo-message-input" maxlength="120" placeholder="مثال: خصم 20% على جميع الأطباق الرئيسية اليوم!" class="input-pro text-xs pl-14">
+          <span id="promo-counter" class="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-500 font-mono" dir="ltr">0/120</span>
+        </div>
+        <div class="flex gap-2 shrink-0">
+          <button type="button" id="promo-save-btn" onclick="updatePromoMessage()" class="flex-1 sm:flex-none bg-white text-black hover:bg-gray-200 px-5 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+            <i class="fa-solid fa-floppy-disk text-[11px]"></i> حفظ ونشر
+          </button>
+          <button type="button" id="promo-delete-btn" onclick="deletePromoMessage()" class="flex-1 sm:flex-none bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-4 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+            <i class="fa-solid fa-trash text-[11px]"></i> حذف الإعلان
+          </button>
+        </div>
+      </div>
+    </div>
+        </div>
+    <!-- روابط التواصل الاجتماعي -->
+    <div class="pro-card p-5 space-y-3">
+      <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
+        <i class="fa-solid fa-share-nodes text-blue-400"></i> روابط منصات التواصل الاجتماعي وموقع المطعم
+      </h4>
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div>
+          <label class="text-[10px] text-gray-300 block mb-1">الموقع الإلكتروني</label>
+          <input type="url" id="social-web" placeholder="https://..." class="input-pro text-xs">
+        </div>
+        <div>
+          <label class="text-[10px] text-gray-300 block mb-1">رابط تيك توك</label>
+          <input type="url" id="social-tiktok" placeholder="https://tiktok.com/@..." class="input-pro text-xs">
+        </div>
+        <div>
+          <label class="text-[10px] text-gray-300 block mb-1">رابط انستجرام</label>
+          <input type="url" id="social-insta" placeholder="https://instagram.com/..." class="input-pro text-xs">
+        </div>
+        <div>
+          <label class="text-[10px] text-gray-300 block mb-1">رقم الواتساب</label>
+          <input type="tel" id="social-whatsapp" placeholder="05xxxxxxxx" class="input-pro text-xs" dir="ltr">
+        </div>
+        <div>
+          <label class="text-[10px] text-gray-300 block mb-1">رابط سناب شات</label>
+          <input type="url" id="social-snap" placeholder="https://snapchat.com/..." class="input-pro text-xs">
+        </div>
+      </div>
+      <button onclick="updateSocialLinks()" class="w-full bg-white text-black hover:bg-gray-200 font-bold py-2 rounded-xl text-xs transition shadow-md">حفظ روابط التواصل</button>
+    </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ═════════ شريط التنقل السفلي (جوال) ═════════ -->
+  <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-[#101010]/95 backdrop-blur-xl border-t border-white/10 grid grid-cols-3" style="padding-bottom: env(safe-area-inset-bottom)">
+    <button data-nav="dashboard" class="bnav"><i class="fa-solid fa-gauge-high"></i><span>الرئيسية</span></button>
+    <button data-nav="menu" class="bnav"><i class="fa-solid fa-utensils"></i><span>المنيو</span></button>
+    <button data-nav="settings" class="bnav"><i class="fa-solid fa-palette"></i><span>هوية المطعم</span></button>
+  </nav>
 </div>
 
 <!-- JavaScript البرمجي المنظم -->
@@ -418,7 +499,7 @@ tailwind.config = {
     const toast = document.getElementById('toast');
     document.getElementById('toast-msg').textContent = msg;
     document.getElementById('toast-icon').className = isError ? 'fa-solid fa-circle-xmark text-red-500' : 'fa-solid fa-circle-check text-green-600';
-    toast.className = `fixed bottom-5 left-5 z-50 px-5 py-3 rounded-2xl shadow-2xl border text-xs font-bold flex items-center gap-2 transition-all ${isError ? 'bg-zinc-900 border-red-500 text-white' : 'bg-white border-white text-black'} show`;
+    toast.className = `fixed bottom-20 lg:bottom-5 left-5 z-[70] px-5 py-3 rounded-2xl shadow-2xl border text-xs font-bold flex items-center gap-2 transition-all ${isError ? 'bg-zinc-900 border-red-500 text-white' : 'bg-white border-white text-black'} show`;
     clearTimeout(showToast.t);
     showToast.t = setTimeout(() => { toast.classList.remove('show'); }, 3200);
   }
@@ -428,6 +509,87 @@ tailwind.config = {
     document.getElementById('section-categories').classList.toggle('hidden', tab !== 'categories');
     document.getElementById('tab-products').classList.toggle('active', tab === 'products');
     document.getElementById('tab-categories').classList.toggle('active', tab === 'categories');
+  }
+
+  // ─── التنقل بين الصفحات ───
+  const PAGES = {
+    dashboard: ['الرئيسية', 'نظرة عامة على متجرك وأداء المنيو'],
+    menu:      ['المنيو', 'أضف أطباقك وأقسامك ورتّبها'],
+    settings:  ['هوية المطعم', 'الاسم والشعار والخلفية ومعلومات التواصل']
+  };
+  function showPage(page) {
+    if (!PAGES[page]) page = 'dashboard';
+    document.querySelectorAll('[data-page]').forEach(sec => sec.classList.toggle('hidden', sec.dataset.page !== page));
+    document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('nav-active', b.dataset.nav === page));
+    document.getElementById('page-title').textContent = PAGES[page][0];
+    document.getElementById('page-subtitle').textContent = PAGES[page][1];
+    if (location.hash !== '#' + page) history.replaceState(null, '', location.pathname + location.search + '#' + page);
+    window.scrollTo({ top: 0 });
+  }
+  document.querySelectorAll('[data-nav]').forEach(b => b.addEventListener('click', () => {
+    if (location.hash === '#' + b.dataset.nav) return showPage(b.dataset.nav);
+    location.hash = b.dataset.nav;
+  }));
+  window.addEventListener('hashchange', () => showPage(location.hash.slice(1)));
+
+  function goAddDish() {
+    showPage('menu');
+    switchTab('products');
+    if (editingProductId) cancelEdit();
+    setTimeout(() => document.getElementById('prod-name').focus(), 50);
+  }
+
+  function setStoreName(name) {
+    document.getElementById('header-title').textContent = name;
+    document.getElementById('greeting').textContent = `أهلاً بك في ${name} 👋`;
+  }
+  function setLogo(url) {
+    const logo = safeUrl(url);
+    if (!logo) return;
+    ['logo-preview', 'sidebar-logo', 'mobile-logo'].forEach(id => { document.getElementById(id).src = logo; });
+  }
+
+  // ملخص الرئيسية: الأرقام السريعة + جاهزية المنيو
+  function renderDashboardSummary() {
+    if (!client || !document.getElementById('quick-counts')) return;
+    const total = loadedProducts.length;
+    const available = loadedProducts.filter(p => p.is_available !== false).length;
+    const noImg = loadedProducts.filter(p => !p.image_url).length;
+    const noCal = loadedProducts.filter(p => p.calories == null).length;
+    document.getElementById('nav-count').textContent = total;
+
+    const tile = (label, value, icon, color, page) => `
+      <button onclick="location.hash='${page}'" class="pro-card p-4 text-right hover:border-white/30 transition">
+        <p class="text-[10px] text-gray-400 flex items-center gap-1.5"><i class="fa-solid ${icon} ${color}"></i> ${label}</p>
+        <p class="text-2xl font-black text-white mt-1">${value}</p>
+      </button>`;
+    document.getElementById('quick-counts').innerHTML =
+      tile('الأطباق', total, 'fa-utensils', 'text-blue-300', 'menu') +
+      tile('الأقسام', loadedCategories.length, 'fa-layer-group', 'text-purple-300', 'menu') +
+      tile('متوفر الآن', available, 'fa-circle-check', 'text-green-400', 'menu') +
+      tile('نفذت الكمية', total - available, 'fa-circle-xmark', 'text-red-400', 'menu');
+
+    const items = [
+      ['شعار المطعم', !!client.logo_url, 'settings'],
+      ['خلفية المنيو (صورة أو فيديو)', !!(client.bg_image_url || client.bg_video_url), 'settings'],
+      ['قسم واحد على الأقل', loadedCategories.length > 0, 'menu'],
+      ['5 أطباق أو أكثر', total >= 5, 'menu'],
+      [noImg ? `صور لكل الأطباق (باقي ${noImg})` : 'صور لكل الأطباق', total > 0 && noImg === 0, 'menu'],
+      [noCal ? `السعرات لكل الأطباق (باقي ${noCal})` : 'السعرات لكل الأطباق', total > 0 && noCal === 0, 'menu'],
+      ['رقم واتساب المطعم', isValidWa(client.whatsapp_number), 'settings'],
+      ['ساعات العمل', !!client.opening_hours, 'settings']
+    ];
+    const done = items.filter(i => i[1]).length;
+    const pct = Math.round((done / items.length) * 100);
+    document.getElementById('checklist-pct').textContent = pct === 100 ? 'مكتمل 🎉' : `${pct}%`;
+    document.getElementById('checklist-bar').style.width = `${pct}%`;
+    document.getElementById('checklist-body').innerHTML = items.map(([label, ok, page]) => `
+      <li class="flex items-center justify-between gap-2 text-[11px]">
+        <span class="flex items-center gap-2 ${ok ? 'text-gray-400 line-through decoration-white/20' : 'text-gray-200'}">
+          <i class="fa-solid ${ok ? 'fa-circle-check text-emerald-400' : 'fa-circle text-white/15'}"></i> ${label}
+        </span>
+        ${ok ? '' : `<button onclick="location.hash='${page}'" class="text-[10px] font-bold text-amber-300 hover:text-amber-200">أكمل</button>`}
+      </li>`).join('');
   }
 
   // رابط المنيو مبني على مسار الصفحة الحالية (يشتغل على GitHub Pages داخل مجلد المشروع)
@@ -469,7 +631,7 @@ tailwind.config = {
 
     client = data[0];
     currentClientId = client.id;
-    if (!isSuperAdmin && requestedSlug) history.replaceState(null, '', 'admin.html');
+    if (!isSuperAdmin && requestedSlug) history.replaceState(null, '', 'admin.html' + location.hash);
     fillClientUI();
     document.getElementById('auth-loading').remove();
     document.getElementById('app').style.visibility = 'visible';
@@ -478,7 +640,13 @@ tailwind.config = {
 
   function fillClientUI() {
     const name = client.name || 'المنشأة';
-    document.getElementById('header-title').textContent = `لوحة تحكم | ${name}${isSuperAdmin ? ' (وضع المدير العام)' : ''}`;
+    setStoreName(name);
+    document.getElementById('admin-mode-badge').classList.toggle('hidden', !isSuperAdmin);
+    document.getElementById('sa-link').classList.toggle('hidden', !isSuperAdmin);
+    document.getElementById('sidebar-preview').href = menuUrl();
+    supabaseClient.auth.getUser().then(({ data }) => {
+      document.getElementById('user-email').textContent = (data && data.user && data.user.email) || '';
+    });
     document.getElementById('setting-name').value = client.name || '';
     document.getElementById('promo-message-input').value = client.promo_message || '';
     document.getElementById('preview-menu-btn').href = menuUrl();
@@ -492,8 +660,7 @@ tailwind.config = {
     document.getElementById('social-insta').value = client.instagram_url || '';
     document.getElementById('social-whatsapp').value = client.whatsapp_number || '';
     document.getElementById('social-snap').value = client.snapchat_url || '';
-    const logo = safeUrl(client.logo_url);
-    if (logo) document.getElementById('logo-preview').src = logo;
+    setLogo(client.logo_url);
 
     document.getElementById('info-hours').value = client.opening_hours || '';
     document.getElementById('info-location').value = client.location_url || '';
@@ -564,6 +731,10 @@ tailwind.config = {
       banner.classList.add('hidden');
     }
 
+    const chip = document.getElementById('store-status');
+    const chipColor = live ? (status === 'trial' ? 'bg-blue-400' : 'bg-green-400') : 'bg-red-400';
+    chip.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${chipColor}"></span> ${suspended ? 'موقوف' : !live ? 'منتهي' : status === 'trial' ? 'تجريبي' : 'مشترك'}${live && left !== null ? ` · ${daysText(left)}` : ''}`;
+
     const notice = (client.admin_notification || '').trim();
     document.getElementById('admin-notice-text').textContent = notice;
     document.getElementById('admin-notice-box').classList.toggle('hidden', !notice);
@@ -580,6 +751,7 @@ tailwind.config = {
     const { data, error } = await supabaseClient.from('clients').update(payload).eq('id', currentClientId).select('id');
     if (error || !data || data.length === 0) { console.error(error); return false; }
     Object.assign(client, payload);
+    renderDashboardSummary();
     return true;
   }
 
@@ -588,7 +760,7 @@ tailwind.config = {
     if (!newName) return showToast('يرجى كتابة اسم المطعم', true);
     if (await updateClient({ name: newName })) {
       showToast('تم حفظ الاسم');
-      document.getElementById('header-title').textContent = `لوحة تحكم | ${newName}${isSuperAdmin ? ' (وضع المدير العام)' : ''}`;
+      setStoreName(newName);
     } else showToast('تعذر حفظ الاسم', true);
   }
 
@@ -757,7 +929,7 @@ tailwind.config = {
     if (!url) return showToast(`فشل رفع الملف: ${lastUploadError}`, true);
 
     if (await updateClient(cfg.payload(url))) {
-      if (type === 'logo') document.getElementById('logo-preview').src = url;
+      if (type === 'logo') setLogo(url);
       fileInput.value = '';
       showToast('تم التحديث وظهر في المنيو');
     } else showToast('تم رفع الملف لكن تعذر حفظه في المتجر', true);
@@ -1210,6 +1382,7 @@ tailwind.config = {
     loadedProducts = (prodRes.data || []).sort(bySort);
     renderCategories();
     filterProducts();
+    renderDashboardSummary();
   }
 
   // يعيد ترقيم القائمة بالترتيب المطلوب ويحفظ الصفوف اللي تغيّر ترتيبها فقط
@@ -1409,6 +1582,7 @@ tailwind.config = {
     document.getElementById('form-icon').className = 'fa-solid fa-pen text-amber-400';
     document.getElementById('submit-btn').textContent = 'حفظ التعديلات';
     document.getElementById('cancel-edit-btn').classList.remove('hidden');
+    showPage('menu');
     switchTab('products');
     document.getElementById('add-product-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
     filterProducts();
@@ -1494,6 +1668,7 @@ tailwind.config = {
 
   (async () => {
     if (await initAuth()) {
+      showPage(location.hash.slice(1));
       await refreshAll();
       loadStats();
     }
