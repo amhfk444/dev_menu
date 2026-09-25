@@ -7,6 +7,8 @@ const {
   handler, rest, rpc, q, storage, publicUrl, ownsMediaUrl, SUPABASE_URL, BUCKET,
   ApiError, getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody
 } = require('./_lib/core');
+const { FIELDS, normalizeSettings, riyadhDayStart, positionOf, emailTemplate, statusUrlFor } = require('./_lib/waitlist');
+const { sendMail, mailConfigured } = require('./_lib/mail');
 
 const bySort = (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id;
 const COFFEE_TYPES = ['cafe', 'mixed'];
@@ -15,6 +17,7 @@ const ALLERGENS = ['gluten', 'milk', 'egg', 'nuts', 'peanut', 'sesame', 'fish', 
 const PROCESS = ['washed', 'natural', 'honey', 'anaerobic', 'carbonic', 'other'];
 const ROAST = ['light', 'medium', 'dark'];
 const METHODS = ['v60', 'chemex', 'aeropress', 'frenchpress', 'espresso', 'coldbrew'];
+const DELIVERY = ['hungerstation', 'jahez', 'keeta', 'toyou', 'mrsool', 'thechefz', 'careem', 'shgardi', 'other'];
 
 async function context(req, { needStore = true } = {}) {
   const user = await getUser(req);
@@ -86,6 +89,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
   if (action === 'load') {
     const { user, admin, store } = await context(req, { needStore: false });
     if (!store) return { email: user.email, is_admin: admin, store: null };
+    store.waitlist_settings = normalizeSettings(store.waitlist_settings);
     const [categories, products] = await Promise.all([
       rest(`categories?client_id=eq.${store.id}&select=*`),
       rest(`products?client_id=eq.${store.id}&select=*`)
@@ -100,9 +104,54 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     return await rpc('server_menu_stats', { p_client_id: store.id, p_days: days });
   }
 
+  // ─── قائمة الانتظار: تسجيلات اليوم ───
+  if (action === 'waitlist' && req.method === 'GET') {
+    const { store } = await context(req);
+    if (!store.waitlist_enabled) throw new ApiError(403, 'قائمة الانتظار غير مفعّلة لمتجرك', 'ADDON_OFF');
+    const settings = normalizeSettings(store.waitlist_settings);
+    const entries = await rest(`waitlist_entries?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&select=*&order=id.asc`);
+    entries.forEach(e => Object.assign(e, positionOf(e, entries, settings)));
+    return { settings, entries, mail_ready: mailConfigured() };
+  }
+
   if (req.method !== 'POST') throw new ApiError(404, 'Unknown action');
   const { store } = await context(req);
   const sid = store.id;
+
+  // ─── قائمة الانتظار: الإعدادات ───
+  if (action === 'waitlist-settings') {
+    if (!store.waitlist_enabled) throw new ApiError(403, 'قائمة الانتظار غير مفعّلة لمتجرك', 'ADDON_OFF');
+    const current = normalizeSettings(store.waitlist_settings);
+    const next = normalizeSettings({ ...current, ...b, fields: { ...current.fields, ...(b.fields || {}) } });
+    const saved = await patchStore(sid, { waitlist_settings: next });
+    return { settings: normalizeSettings(saved.waitlist_settings) };
+  }
+
+  // ─── قائمة الانتظار: تغيير حالة عميل (الطاولة جاهزة / جلس / لم يحضر / إلغاء) ───
+  if (action === 'waitlist-update') {
+    if (!store.waitlist_enabled) throw new ApiError(403, 'قائمة الانتظار غير مفعّلة لمتجرك', 'ADDON_OFF');
+    const id = int(b.id);
+    const status = b.status;
+    if (!['waiting', 'notified', 'seated', 'no_show', 'cancelled'].includes(status)) throw new ApiError(400, 'حالة غير صحيحة');
+    const entry = (await rest(`waitlist_entries?id=eq.${id}&client_id=eq.${sid}&select=*`))[0];
+    if (!entry) throw new ApiError(404, 'التسجيل غير موجود');
+    const now = new Date().toISOString();
+    const patch = { status };
+    if (status === 'notified') { patch.notified_at = now; patch.closed_at = null; }
+    else if (status === 'waiting') { patch.notified_at = null; patch.closed_at = null; }
+    else patch.closed_at = now;
+    const updated = (await rest(`waitlist_entries?id=eq.${id}&client_id=eq.${sid}`, { method: 'PATCH', body: patch, prefer: 'return=representation' }))[0];
+
+    let email_sent = null;
+    if (status === 'notified' && updated.email) {
+      const settings = normalizeSettings(store.waitlist_settings);
+      email_sent = await sendMail({
+        to: updated.email, fromName: store.name,
+        ...emailTemplate('ready', { store, entry: updated, statusUrl: statusUrlFor(req, store.client_slug, updated.token), hold: settings.hold_minutes })
+      });
+    }
+    return { entry: updated, email_sent };
+  }
 
   // ─── تعديل بيانات المتجر (حقول محددة فقط) ───
   if (action === 'update-store') {
@@ -115,6 +164,25 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     if (has('opening_hours')) p.opening_hours = str(b.opening_hours, 80, 'ساعات العمل');
     if (has('whatsapp_orders')) p.whatsapp_orders = b.whatsapp_orders === true;
     if (has('show_calories')) p.show_calories = b.show_calories !== false;
+    if (has('delivery_apps')) {
+      // كل تطبيق: نوعه من القائمة + رابط صفحة المطعم فيه (و"أخرى" يحتاج اسم)
+      if (!Array.isArray(b.delivery_apps) || b.delivery_apps.length > 12) throw new ApiError(400, 'قائمة تطبيقات التوصيل غير صحيحة');
+      const seen = new Set();
+      p.delivery_apps = b.delivery_apps.map((d) => {
+        if (!d || !DELIVERY.includes(d.app)) throw new ApiError(400, 'تطبيق توصيل غير معروف');
+        const url = httpUrl(d.url, 'رابط التطبيق');
+        if (!url) throw new ApiError(400, 'أضف رابط صفحتك في كل تطبيق توصيل مختار');
+        const item = { app: d.app, url };
+        if (d.app === 'other') {
+          item.name = str(d.name, 30, 'اسم التطبيق');
+          if (!item.name) throw new ApiError(400, 'اكتب اسم تطبيق التوصيل');
+        } else if (seen.has(d.app)) {
+          throw new ApiError(400, 'تطبيق التوصيل مكرر');
+        }
+        seen.add(d.app);
+        return item;
+      });
+    }
     if (has('business_type')) {
       if (!BUSINESS_TYPES.includes(b.business_type)) throw new ApiError(400, 'نوع نشاط غير صحيح');
       p.business_type = b.business_type;
