@@ -37,6 +37,8 @@ module.exports = handler(['GET', 'POST'], async (req) => {
   if (action === 'set-active') return patch({ is_active: b.active === true });
   if (action === 'notify') return patch({ admin_notification: str(b.message, 300, 'الإشعار') || null });
   if (action === 'featured') return patch({ is_featured: b.featured === true });
+  // إضافة قائمة الانتظار المدفوعة (يفعّلها المدير العام بعد الدفع)
+  if (action === 'waitlist-addon') return patch({ waitlist_enabled: b.enabled === true });
 
   if (action === 'summary') {
     const [products, categories] = await Promise.all([
