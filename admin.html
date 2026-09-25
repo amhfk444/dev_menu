@@ -145,6 +145,7 @@ tailwind.config = {
     <nav class="p-3 pt-4 space-y-1 flex-1 overflow-y-auto">
       <button data-nav="dashboard" class="nav-item"><i class="fa-solid fa-gauge-high"></i> الرئيسية</button>
       <button data-nav="menu" class="nav-item"><i class="fa-solid fa-utensils"></i> المنيو <span id="nav-count" class="mr-auto text-[10px] px-2 py-0.5 rounded-full">0</span></button>
+      <button data-nav="waitlist" class="nav-item"><i class="fa-solid fa-hourglass-half"></i> قائمة الانتظار <span id="nav-waitlist" class="mr-auto hidden text-[10px] bg-amber-400 text-black px-2 py-0.5 rounded-full font-black">0</span></button>
       <button data-nav="settings" class="nav-item"><i class="fa-solid fa-palette"></i> هوية المطعم</button>
       <p class="px-3 pt-5 pb-1 text-[10px] text-cream/45 font-bold">اختصارات</p>
       <a id="sidebar-preview" href="#" target="_blank" rel="noopener" class="nav-item"><i class="fa-solid fa-arrow-up-right-from-square"></i> معاينة المنيو</a>
@@ -464,6 +465,118 @@ tailwind.config = {
   </div>
       </section>
 
+      <!-- ═════════════════ صفحة قائمة الانتظار ═════════════════ -->
+      <section data-page="waitlist" class="hidden space-y-5">
+
+        <!-- غير مفعّلة: تعريف بالإضافة -->
+        <div id="wl-upsell" class="hidden pro-card overflow-hidden">
+          <div class="bg-brand text-cream p-6 md:p-8 space-y-3">
+            <span class="inline-flex items-center gap-1.5 text-[10px] font-black bg-amber-400 text-black px-2.5 py-1 rounded-full"><i class="fa-solid fa-star"></i> إضافة مدفوعة</span>
+            <h2 class="text-xl md:text-2xl font-black">قائمة انتظار ذكية لمطعمك</h2>
+            <p class="text-xs text-cream/75 leading-relaxed max-w-xl">بدل الزحمة عند الباب والأوراق: ضيفك يسجّل من جواله برمز QR، يشوف ترتيبه ووقت الانتظار مباشرة، ويوصله بريد أول ما تجهز طاولته.</p>
+          </div>
+          <div class="p-6 md:p-8 grid md:grid-cols-2 gap-6 items-center">
+            <ul class="space-y-2.5 text-xs font-bold text-ink/80">
+              <li class="flex gap-2"><i class="fa-solid fa-check text-green-600 mt-0.5"></i> رابط ورمز QR خاص للتسجيل في الانتظار</li>
+              <li class="flex gap-2"><i class="fa-solid fa-check text-green-600 mt-0.5"></i> تختار البيانات المطلوبة: الاسم، الجوال، عدد الأشخاص...</li>
+              <li class="flex gap-2"><i class="fa-solid fa-check text-green-600 mt-0.5"></i> رقم دور ووقت انتظار تقريبي يتحدث تلقائياً</li>
+              <li class="flex gap-2"><i class="fa-solid fa-check text-green-600 mt-0.5"></i> بريد تأكيد، وبريد "طاولتك جاهزة" بضغطة زر</li>
+              <li class="flex gap-2"><i class="fa-solid fa-check text-green-600 mt-0.5"></i> إحصائيات: متوسط الانتظار، اللي جلسوا، اللي ما حضروا</li>
+            </ul>
+            <div class="text-center space-y-3 bg-brand/5 border border-brand/15 rounded-2xl p-5">
+              <p class="text-xs font-bold text-ink/60">تنضاف على فاتورة اشتراكك</p>
+              <p class="text-4xl font-black"><span id="wl-price-month"></span></p>
+              <p class="text-[11px] text-ink/60">شهرياً · أو <span id="wl-price-year"></span> سنوياً</p>
+              <a id="wl-request" href="#" target="_blank" rel="noopener" class="block bg-brand hover:bg-brand-dark text-cream font-black text-sm py-3 rounded-xl transition"><i class="fa-brands fa-whatsapp"></i> اطلب التفعيل</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- مفعّلة -->
+        <div id="wl-app" class="hidden space-y-5">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <!-- فتح/إغلاق -->
+            <div class="pro-card p-5 flex items-center justify-between gap-4">
+              <div>
+                <p class="text-xs font-black">استقبال التسجيلات</p>
+                <p id="wl-open-text" class="text-[11px] text-ink/60 mt-0.5"></p>
+              </div>
+              <button id="wl-open-toggle" onclick="toggleWaitlistOpen()" role="switch" class="relative w-14 h-8 rounded-full transition shrink-0">
+                <span class="absolute top-1 w-6 h-6 rounded-full bg-white shadow transition-all"></span>
+              </button>
+            </div>
+            <!-- الرابط -->
+            <div class="pro-card p-5 lg:col-span-2 space-y-2.5">
+              <p class="text-xs font-black flex items-center gap-2"><i class="fa-solid fa-link text-ink/50"></i> رابط التسجيل للضيوف</p>
+              <div class="flex flex-col sm:flex-row gap-2">
+                <input id="wl-link" readonly class="input-pro text-xs flex-1" dir="ltr" onclick="this.select()">
+                <div class="grid grid-cols-3 sm:flex gap-2">
+                  <button onclick="copyWaitlistLink()" class="bg-brand/10 hover:bg-brand/15 border border-brand/20 text-ink px-3 py-2 rounded-xl text-[11px] font-bold"><i class="fa-solid fa-copy"></i> نسخ</button>
+                  <a id="wl-open-link" href="#" target="_blank" rel="noopener" class="bg-brand/10 hover:bg-brand/15 border border-brand/20 text-ink px-3 py-2 rounded-xl text-[11px] font-bold text-center"><i class="fa-solid fa-eye"></i> معاينة</a>
+                  <button id="wl-qr-btn" onclick="downloadWaitlistQr()" class="bg-amber-400 hover:bg-amber-300 text-black px-3 py-2 rounded-xl text-[11px] font-bold disabled:opacity-50"><i class="fa-solid fa-print"></i> QR</button>
+                </div>
+              </div>
+              <p class="text-[10px] text-ink/50">يظهر أيضاً زر "انضم لقائمة الانتظار" داخل المنيو تلقائياً.</p>
+            </div>
+          </div>
+
+          <div id="wl-mail-warning" class="hidden rounded-2xl p-4 border bg-amber-500/10 border-amber-500/40 text-xs font-bold text-amber-900">
+            <i class="fa-solid fa-envelope-circle-check"></i> رسائل البريد غير مفعّلة على الخادم بعد، فالضيوف ما راح توصلهم رسائل. (للمدير: أضف SMTP_USER و SMTP_PASS في Vercel)
+          </div>
+
+          <!-- أرقام اليوم -->
+          <div id="wl-stats" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
+            <!-- القائمة -->
+            <div class="xl:col-span-2 pro-card p-4 md:p-5 space-y-4">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div id="wl-tabs" class="flex bg-brand/5 border border-brand/15 rounded-xl p-0.5 text-[11px] font-bold">
+                  <button data-wltab="active" class="px-3 py-1.5 rounded-lg bg-brand text-cream">بالانتظار <span id="wl-count-active"></span></button>
+                  <button data-wltab="done" class="px-3 py-1.5 rounded-lg text-ink/75">المنتهية اليوم <span id="wl-count-done"></span></button>
+                </div>
+                <button onclick="loadWaitlist(true)" class="text-[11px] font-bold text-ink/60 hover:text-ink"><i class="fa-solid fa-rotate"></i> تحديث</button>
+              </div>
+              <div id="wl-list" class="space-y-2.5"></div>
+            </div>
+
+            <!-- الإعدادات -->
+            <div class="pro-card p-5 space-y-4">
+              <h3 class="text-xs font-black flex items-center gap-2"><i class="fa-solid fa-sliders text-ink/50"></i> إعدادات قائمة الانتظار</h3>
+              <div>
+                <p class="text-[11px] font-bold text-ink/75 mb-2">البيانات المطلوبة من الضيف</p>
+                <div class="rounded-xl border border-brand/15 overflow-hidden">
+                  <div class="grid grid-cols-[1fr_auto_auto] gap-x-4 px-3 py-2 bg-brand/5 text-[10px] font-bold text-ink/55">
+                    <span>الحقل</span><span>يظهر</span><span>إلزامي</span>
+                  </div>
+                  <div id="wl-fields" class="divide-y divide-brand/10"></div>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-[10px] font-bold text-ink/70 block mb-1">دقائق لكل مجموعة</label>
+                  <input id="wl-minutes" type="number" min="1" max="120" class="input-pro text-xs" dir="ltr">
+                </div>
+                <div>
+                  <label class="text-[10px] font-bold text-ink/70 block mb-1">مهلة الحضور (دقيقة)</label>
+                  <input id="wl-hold" type="number" min="2" max="60" class="input-pro text-xs" dir="ltr">
+                </div>
+                <div class="col-span-2">
+                  <label class="text-[10px] font-bold text-ink/70 block mb-1">أقصى عدد أشخاص للمجموعة</label>
+                  <input id="wl-max-party" type="number" min="1" max="100" class="input-pro text-xs" dir="ltr">
+                </div>
+              </div>
+              <p class="text-[10px] text-ink/50 leading-relaxed -mt-1">الوقت التقريبي للضيف = ترتيبه × دقائق كل مجموعة. ومهلة الحضور تظهر له في بريد "طاولتك جاهزة".</p>
+              <div>
+                <label class="text-[10px] font-bold text-ink/70 block mb-1">رسالة للضيوف (اختياري)</label>
+                <input id="wl-message" type="text" maxlength="200" placeholder="مثال: الطاولات الخارجية متاحة للعوائل فقط" class="input-pro text-xs">
+              </div>
+              <button onclick="saveWaitlistSettings()" class="w-full bg-brand hover:bg-brand-dark text-cream font-bold py-2.5 rounded-xl text-xs transition">حفظ الإعدادات</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ═════════════════ صفحة هوية المطعم ═════════════════ -->
       <section data-page="settings" class="hidden space-y-6">
         <div class="pro-card p-5 space-y-3">
@@ -592,15 +705,26 @@ tailwind.config = {
       </div>
       <button onclick="updateSocialLinks()" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2 rounded-xl text-xs transition shadow-md">حفظ روابط التواصل</button>
     </div>
+        <!-- تطبيقات التوصيل -->
+        <div class="pro-card p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="fa-solid fa-motorcycle text-amber-600"></i> تطبيقات التوصيل</h3>
+            <span class="text-[10px] text-ink/50">اختر التطبيقات اللي مطعمك موجود فيها، وتظهر للزبائن في المنيو</span>
+          </div>
+          <div id="delivery-picker" class="grid grid-cols-3 sm:grid-cols-5 gap-2"></div>
+          <div id="delivery-list" class="space-y-2"></div>
+          <button onclick="saveDeliveryApps()" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition">حفظ تطبيقات التوصيل</button>
+        </div>
       </section>
     </main>
   </div>
 
   <!-- ═════════ شريط التنقل السفلي (جوال) ═════════ -->
-  <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-cream/95 backdrop-blur-xl border-t border-brand/15 grid grid-cols-3" style="padding-bottom: env(safe-area-inset-bottom)">
+  <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-cream/95 backdrop-blur-xl border-t border-brand/15 grid grid-cols-4" style="padding-bottom: env(safe-area-inset-bottom)">
     <button data-nav="dashboard" class="bnav"><i class="fa-solid fa-gauge-high"></i><span>الرئيسية</span></button>
     <button data-nav="menu" class="bnav"><i class="fa-solid fa-utensils"></i><span>المنيو</span></button>
-    <button data-nav="settings" class="bnav"><i class="fa-solid fa-palette"></i><span>هوية المطعم</span></button>
+    <button data-nav="waitlist" class="bnav relative"><i class="fa-solid fa-hourglass-half"></i><span>الانتظار</span><span id="bnav-waitlist" class="hidden absolute top-1.5 left-1/2 ml-2 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-400 text-black text-[10px] font-black leading-[18px]">0</span></button>
+    <button data-nav="settings" class="bnav"><i class="fa-solid fa-palette"></i><span>الهوية</span></button>
   </nav>
 </div>
 
@@ -661,6 +785,7 @@ tailwind.config = {
   const PAGES = {
     dashboard: ['الرئيسية', 'نظرة عامة على متجرك وأداء المنيو'],
     menu:      ['المنيو', 'أضف أطباقك وأقسامك ورتّبها'],
+    waitlist:  ['قائمة الانتظار', 'سجّل ضيوفك وبلّغهم لما تجهز طاولتهم'],
     settings:  ['هوية المطعم', 'الاسم والشعار والخلفية ومعلومات التواصل']
   };
   function showPage(page) {
@@ -671,6 +796,7 @@ tailwind.config = {
     document.getElementById('page-subtitle').textContent = PAGES[page][1];
     if (location.hash !== '#' + page) history.replaceState(null, '', location.pathname + location.search + '#' + page);
     window.scrollTo({ top: 0 });
+    if (typeof onWaitlistPage === 'function') onWaitlistPage(page === 'waitlist');
   }
   document.querySelectorAll('[data-nav]').forEach(b => b.addEventListener('click', () => {
     if (location.hash === '#' + b.dataset.nav) return showPage(b.dataset.nav);
@@ -813,6 +939,9 @@ tailwind.config = {
     renderWaOrderState();
     renderBusinessType();
     applyCaloriesSetting();
+    deliveryApps = (Array.isArray(client.delivery_apps) ? client.delivery_apps : []).map(d => ({ ...d }));
+    renderDeliveryPicker();
+    renderWaitlistShell();
 
     renderSubscriptionStatus();
     renderPromoState();
@@ -821,9 +950,14 @@ tailwind.config = {
   // ─── الاشتراك والتجديد ───
   const SUPPORT_WA = '966561161448';
   const daysText = (n) => n === 1 ? 'يوم واحد' : n === 2 ? 'يومين' : n <= 10 ? `${n} أيام` : `${n} يوم`;
-  function renewLink(plan) {
-    const label = plan === 'year' ? 'السنوية (1149 ر.س)' : 'الشهرية (99 ر.س)';
-    const msg = `مرحباً، أبغى أشترك/أجدد متجر "${client.name || ''}" (${client.client_slug}) بالباقة ${label}.`;
+  // الأسعار (عدّلها من هنا) — الإضافات تنضاف على فاتورة الباقة
+  const PLAN_PRICE = { month: 99, year: 1149 };
+  const WAITLIST_PRICE = { month: 49, year: 490 };
+  const planTotal = (plan) => PLAN_PRICE[plan] + (client && client.waitlist_enabled ? WAITLIST_PRICE[plan] : 0);
+  function renewLink(plan, extra = '') {
+    const label = plan === 'year' ? `السنوية (${PLAN_PRICE.year} ر.س)` : `الشهرية (${PLAN_PRICE.month} ر.س)`;
+    const addon = client.waitlist_enabled ? ` + إضافة قائمة الانتظار (${WAITLIST_PRICE[plan]} ر.س)` : '';
+    const msg = extra || `مرحباً، أبغى أشترك/أجدد متجر "${client.name || ''}" (${client.client_slug}) بالباقة ${label}${addon}. المجموع ${planTotal(plan)} ر.س.`;
     return `https://wa.me/${SUPPORT_WA}?text=${encodeURIComponent(msg)}`;
   }
 
@@ -850,9 +984,10 @@ tailwind.config = {
       ${live && left !== null ? `<p class="text-[11px] text-ink/75">متبقي <b>${daysText(left)}</b> — ينتهي ${esc(endText)}</p>` : ''}
       ${showPlans ? `
         <div class="flex flex-wrap gap-1.5 pt-1">
-          <a href="${esc(renewLink('month'))}" target="_blank" rel="noopener" class="bg-brand/10 hover:bg-brand/15 border border-brand/25 text-ink px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="fa-brands fa-whatsapp text-green-600"></i> ${verb} شهرياً · ${money(99)}</a>
-          <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/40 text-amber-800 px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="fa-brands fa-whatsapp"></i> ${verb} سنوياً · ${money(1149)}</a>
+          <a href="${esc(renewLink('month'))}" target="_blank" rel="noopener" class="bg-brand/10 hover:bg-brand/15 border border-brand/25 text-ink px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="fa-brands fa-whatsapp text-green-600"></i> ${verb} شهرياً · ${money(planTotal('month'))}</a>
+          <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/40 text-amber-800 px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="fa-brands fa-whatsapp"></i> ${verb} سنوياً · ${money(planTotal('year'))}</a>
         </div>` : ''}
+      ${client.waitlist_enabled ? `<p class="text-[10px] text-ink/70"><i class="fa-solid fa-hourglass-half text-amber-600"></i> تشمل إضافة قائمة الانتظار (${money(WAITLIST_PRICE.month)} شهرياً)</p>` : ''}
       <p class="text-[10px] text-ink/60">معرف المتجر: ${esc(client.client_slug)}</p>`;
 
     // شريط تنبيه بارز أعلى اللوحة
@@ -870,8 +1005,8 @@ tailwind.config = {
         ${suspended
           ? `<a href="https://wa.me/${SUPPORT_WA}" target="_blank" rel="noopener" class="bg-brand text-cream px-3 py-1.5 rounded-lg text-[11px] font-black"><i class="fa-brands fa-whatsapp"></i> تواصل معنا</a>`
           : `<div class="flex gap-2">
-               <a href="${esc(renewLink('month'))}" target="_blank" rel="noopener" class="bg-brand text-cream px-3 py-1.5 rounded-lg text-[11px] font-black">شهري · ${money(99)}</a>
-               <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400 text-black px-3 py-1.5 rounded-lg text-[11px] font-black">سنوي · ${money(1149)}</a>
+               <a href="${esc(renewLink('month'))}" target="_blank" rel="noopener" class="bg-brand text-cream px-3 py-1.5 rounded-lg text-[11px] font-black">شهري · ${money(planTotal('month'))}</a>
+               <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400 text-black px-3 py-1.5 rounded-lg text-[11px] font-black">سنوي · ${money(planTotal('year'))}</a>
              </div>`}`;
       banner.classList.remove('hidden');
     } else {
@@ -1126,8 +1261,8 @@ tailwind.config = {
     ctx.fillText(text, x, y);
   }
 
-  async function downloadQrCard() {
-    const btn = document.getElementById('qr-download-btn');
+  async function downloadQrCard(opts = {}) {
+    const btn = opts.button || document.getElementById('qr-download-btn');
     btn.disabled = true;
     try {
       const W = 1200, H = 1700, cx = W / 2;
@@ -1161,7 +1296,7 @@ tailwind.config = {
       drawFittedText(ctx, client.name || 'المنيو', cx, logo ? 355 : 250, W - 160, 800, 66, FONT);
 
       const tmp = document.createElement('div');
-      new QRCode(tmp, { text: qrUrl(), width: 740, height: 740, correctLevel: QRCode.CorrectLevel.H });
+      new QRCode(tmp, { text: opts.url || qrUrl(), width: 740, height: 740, correctLevel: QRCode.CorrectLevel.H });
       const qr = tmp.querySelector('canvas');
       const qx = (W - 740) / 2, qy = 540;
       ctx.fillStyle = '#f5f2eb';
@@ -1171,11 +1306,11 @@ tailwind.config = {
       ctx.drawImage(qr, qx, qy, 740, 740);
 
       ctx.fillStyle = '#1b3022';
-      drawFittedText(ctx, 'امسح الرمز لعرض المنيو', cx, 1470, W - 160, 800, 58, FONT);
+      drawFittedText(ctx, opts.caption || 'امسح الرمز لعرض المنيو', cx, 1470, W - 160, 800, 58, FONT);
       ctx.direction = 'ltr';
       ctx.fillStyle = '#5b6b60';
       ctx.font = `600 36px ${FONT}`;
-      ctx.fillText('Scan to view our menu', cx, 1535);
+      ctx.fillText(opts.captionEn || 'Scan to view our menu', cx, 1535);
       ctx.fillStyle = '#9aa39c';
       ctx.font = `700 26px ${FONT}`;
       ctx.fillText('DEV MENU', cx, 1645);
@@ -1183,7 +1318,7 @@ tailwind.config = {
       const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `qr-${client.client_slug}.png`;
+      a.download = `${opts.filePrefix || 'qr'}-${client.client_slug}.png`;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 3000);
       showToast('تم تحميل بطاقة الطاولة، اطبعها بمقاس A6 أو A5');
@@ -1515,6 +1650,325 @@ tailwind.config = {
     a.download = `stats-${client.client_slug}-${lastStats.days}d.csv`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  }
+
+  // ─── قائمة الانتظار ───
+  const WL_FIELDS = { name: 'الاسم', phone: 'رقم الجوال', email: 'البريد الإلكتروني', party_size: 'عدد الأشخاص', seating: 'تفضيل الجلسة', notes: 'ملاحظات' };
+  const WL_SEATING = { indoor: 'داخلي', outdoor: 'خارجي', any: 'أي مكان' };
+  let wl = { settings: null, entries: [], tab: 'active', timer: null, tick: null, seen: new Set(), first: true };
+  const wlUrl = () => new URL(`waitlist.html?client=${encodeURIComponent(client.client_slug)}`, location.href).href;
+  const minsSince = (iso) => Math.max(0, Math.floor((Date.now() - new Date(iso)) / 60000));
+  const minsText = (m) => m < 1 ? 'الآن' : m < 60 ? `${m} د` : `${Math.floor(m / 60)} س ${m % 60} د`;
+
+  function renderWaitlistShell() {
+    const on = client.waitlist_enabled === true;
+    document.getElementById('wl-upsell').classList.toggle('hidden', on);
+    document.getElementById('wl-app').classList.toggle('hidden', !on);
+    document.getElementById('wl-price-month').textContent = money(WAITLIST_PRICE.month);
+    document.getElementById('wl-price-year').textContent = money(WAITLIST_PRICE.year);
+    document.getElementById('wl-request').href = renewLink('month',
+      `مرحباً، أبغى أفعّل إضافة "قائمة الانتظار" لمتجر "${client.name || ''}" (${client.client_slug}) بسعر ${WAITLIST_PRICE.month} ر.س شهرياً.`);
+    if (!on) return;
+    document.getElementById('wl-link').value = wlUrl();
+    document.getElementById('wl-open-link').href = wlUrl();
+  }
+
+  // التحديث التلقائي: كل 15 ثانية داخل الصفحة، وكل 45 ثانية بالخلفية (عشان عدّاد القائمة الجانبية)
+  function onWaitlistPage(active) {
+    clearInterval(wl.timer); clearInterval(wl.tick);
+    if (!client || !client.waitlist_enabled) return;
+    loadWaitlist();
+    wl.timer = setInterval(() => { if (!document.hidden) loadWaitlist(); }, active ? 15000 : 45000);
+    if (active) wl.tick = setInterval(renderWaitlistList, 30000);
+  }
+
+  async function loadWaitlist(manual = false) {
+    try {
+      const data = await api('waitlist');
+      const fresh = data.entries.filter(e => e.status === 'waiting' && !wl.seen.has(e.id));
+      data.entries.forEach(e => wl.seen.add(e.id));
+      wl.entries = data.entries;
+      if (!wl.settings || manual) { wl.settings = data.settings; renderWaitlistSettings(); }
+      document.getElementById('wl-mail-warning').classList.toggle('hidden', data.mail_ready !== false);
+      renderWaitlistOpen();
+      renderWaitlistList();
+      if (!wl.first && fresh.length) { beep(); showToast(`تسجيل جديد في الانتظار: ${fresh[0].name || '#' + fresh[0].ticket}`); }
+      wl.first = false;
+      if (manual) showToast('تم التحديث');
+    } catch (e) { lastApiError = ''; console.error(e); }
+  }
+
+  function beep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination); o.frequency.value = 880; g.gain.value = 0.08;
+      o.start(); o.stop(ctx.currentTime + 0.18);
+    } catch {}
+  }
+
+  function renderWaitlistOpen() {
+    const open = wl.settings && wl.settings.open;
+    const t = document.getElementById('wl-open-toggle');
+    t.setAttribute('aria-checked', open ? 'true' : 'false');
+    t.className = `relative w-14 h-8 rounded-full transition shrink-0 ${open ? 'bg-green-600' : 'bg-brand/25'}`;
+    t.firstElementChild.style.right = open ? '4px' : '28px';
+    document.getElementById('wl-open-text').textContent = open ? 'مفتوحة — الضيوف يقدرون يسجلون' : 'مغلقة — ما يقبل تسجيلات جديدة';
+  }
+
+  async function toggleWaitlistOpen() {
+    const open = !(wl.settings && wl.settings.open);
+    try {
+      const res = await api('waitlist-settings', { open });
+      wl.settings = res.settings; renderWaitlistOpen();
+      showToast(open ? 'قائمة الانتظار مفتوحة' : 'تم إغلاق قائمة الانتظار');
+    } catch { showToast('تعذر التحديث', true); }
+  }
+
+  function renderWaitlistStats() {
+    const E = wl.entries;
+    const waiting = E.filter(e => e.status === 'waiting').length;
+    const notified = E.filter(e => e.status === 'notified').length;
+    const seated = E.filter(e => e.status === 'seated');
+    const noShow = E.filter(e => e.status === 'no_show').length;
+    const waits = E.filter(e => e.notified_at).map(e => (new Date(e.notified_at) - new Date(e.created_at)) / 60000);
+    const avg = waits.length ? Math.round(waits.reduce((a, b) => a + b, 0) / waits.length) : null;
+    const tile = (label, value, icon, color) => `
+      <div class="pro-card p-3 sm:p-4">
+        <p class="text-[10px] text-ink/60 flex items-center gap-1.5"><i class="fa-solid ${icon} ${color}"></i> ${label}</p>
+        <p class="text-xl sm:text-2xl font-black mt-1">${value}</p>
+      </div>`;
+    document.getElementById('wl-stats').innerHTML =
+      tile('بالانتظار الآن', waiting, 'fa-hourglass-half', 'text-amber-600') +
+      tile('تم تنبيههم', notified, 'fa-bell', 'text-blue-600') +
+      tile('جلسوا اليوم', seated.length, 'fa-chair', 'text-green-600') +
+      tile('متوسط الانتظار', avg === null ? '—' : `${avg} د`, 'fa-stopwatch', 'text-ink/60');
+    ['nav-waitlist', 'bnav-waitlist'].forEach(id => {
+      const b = document.getElementById(id);
+      b.textContent = waiting; b.classList.toggle('hidden', waiting === 0);
+    });
+    document.getElementById('wl-count-active').textContent = waiting + notified ? `(${waiting + notified})` : '';
+    const done = seated.length + noShow + E.filter(e => e.status === 'cancelled').length;
+    document.getElementById('wl-count-done').textContent = done ? `(${done})` : '';
+    document.title = waiting ? `(${waiting}) قائمة الانتظار | Dev Menu` : 'لوحة التحكم | Dev Menu';
+  }
+
+  function renderWaitlistList() {
+    if (!client || !client.waitlist_enabled) return;
+    renderWaitlistStats();
+    const active = wl.tab === 'active';
+    const list = wl.entries.filter(e => active ? ['waiting', 'notified'].includes(e.status) : !['waiting', 'notified'].includes(e.status));
+    if (!active) list.reverse();
+    const box = document.getElementById('wl-list');
+    if (!list.length) {
+      box.innerHTML = `<div class="text-center py-10 text-ink/50 text-xs"><i class="fa-solid fa-mug-hot text-2xl mb-2 block"></i>${active ? 'ما فيه أحد بالانتظار الحين' : 'ما فيه تسجيلات منتهية اليوم'}</div>`;
+      return;
+    }
+    const STATUS = {
+      seated: ['جلس', 'bg-green-500/15 text-green-700'], no_show: ['لم يحضر', 'bg-red-500/10 text-red-700'],
+      cancelled: ['ألغى', 'bg-brand/10 text-ink/60']
+    };
+    box.innerHTML = list.map(e => {
+      const waited = minsSince(e.created_at);
+      const notified = e.status === 'notified';
+      const since = notified ? minsSince(e.notified_at) : 0;
+      const late = notified && since > (wl.settings ? wl.settings.hold_minutes : 10);
+      const info = [
+        e.party_size ? `<span><i class="fa-solid fa-user-group"></i> ${esc(e.party_size)}</span>` : '',
+        e.seating ? `<span><i class="fa-solid fa-chair"></i> ${esc(WL_SEATING[e.seating] || e.seating)}</span>` : '',
+        e.phone ? `<a href="tel:${esc(e.phone)}" class="text-blue-700" dir="ltr"><i class="fa-solid fa-phone"></i> ${esc(e.phone)}</a>` : '',
+        e.email ? `<span class="truncate max-w-[180px]" dir="ltr"><i class="fa-solid fa-envelope"></i> ${esc(e.email)}</span>` : ''
+      ].filter(Boolean).join('');
+      const id = Number(e.id);
+      const actions = active ? (notified
+        ? `<button onclick="wlSet(${id},'seated')" class="bg-green-600 text-white">جلس ✓</button>
+           <button onclick="wlSet(${id},'notified',true)" class="bg-brand/10 text-ink border border-brand/20">إعادة التنبيه</button>
+           <button onclick="wlSet(${id},'no_show')" class="bg-red-500/10 text-red-700 border border-red-500/20">لم يحضر</button>`
+        : `<button onclick="wlSet(${id},'notified')" class="bg-brand text-cream col-span-2 sm:col-span-1"><i class="fa-solid fa-bell"></i> الطاولة جاهزة</button>
+           <button onclick="wlSet(${id},'seated')" class="bg-brand/10 text-ink border border-brand/20">جلس مباشرة</button>
+           <button onclick="wlSet(${id},'cancelled')" class="bg-red-500/10 text-red-700 border border-red-500/20">إلغاء</button>`)
+        : `<button onclick="wlSet(${id},'waiting')" class="bg-brand/10 text-ink border border-brand/20"><i class="fa-solid fa-rotate-left"></i> إرجاع للقائمة</button>`;
+      return `
+        <div class="rounded-2xl border p-3 sm:p-3.5 space-y-2.5 ${notified ? (late ? 'border-red-400/60 bg-red-500/5' : 'border-green-500/50 bg-green-500/5') : 'border-brand/15 bg-brand/[0.03]'}">
+          <div class="flex items-start gap-3">
+            <div class="w-12 h-12 rounded-xl ${notified ? 'bg-green-600 text-white' : 'bg-brand text-cream'} flex flex-col items-center justify-center shrink-0 leading-none">
+              <span class="text-[9px] opacity-75">دور</span><span class="text-lg font-black">${e.ticket}</span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-2">
+                <p class="font-black text-sm truncate">${esc(e.name || 'ضيف')}</p>
+                ${active
+                  ? `<span class="text-[10px] font-bold shrink-0 ${notified ? (late ? 'text-red-700' : 'text-green-700') : 'text-ink/60'}">${notified ? `نُبّه ${minsText(since)}${late ? ' · تأخر' : ''}` : `ينتظر ${minsText(waited)}`}</span>`
+                  : `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${STATUS[e.status][1]}">${STATUS[e.status][0]}</span>`}
+              </div>
+              <div class="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ink/70 mt-1">${info}</div>
+              ${e.notes ? `<p class="text-[11px] text-ink/70 bg-amber-100/60 rounded-lg px-2 py-1 mt-1.5"><i class="fa-solid fa-note-sticky text-amber-600"></i> ${esc(e.notes)}</p>` : ''}
+            </div>
+          </div>
+          <div class="grid ${active && !notified ? 'grid-cols-2' : active ? 'grid-cols-3' : 'grid-cols-1'} sm:flex sm:justify-end gap-1.5 [&>button]:px-3 [&>button]:py-2 [&>button]:rounded-lg [&>button]:text-[11px] [&>button]:font-bold">${actions}</div>
+        </div>`;
+    }).join('');
+  }
+
+  document.getElementById('wl-tabs').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-wltab]'); if (!b) return;
+    wl.tab = b.dataset.wltab;
+    document.querySelectorAll('[data-wltab]').forEach(x => {
+      const on = x === b;
+      x.classList.toggle('bg-brand', on); x.classList.toggle('text-cream', on); x.classList.toggle('text-ink/75', !on);
+    });
+    renderWaitlistList();
+  });
+
+  async function wlSet(id, status, resend = false) {
+    try {
+      const res = await api('waitlist-update', { id, status });
+      const i = wl.entries.findIndex(e => e.id === id);
+      if (i >= 0) wl.entries[i] = { ...wl.entries[i], ...res.entry };
+      renderWaitlistList();
+      if (status === 'notified') {
+        showToast(res.email_sent ? (resend ? 'أعدنا إرسال التنبيه للضيف' : 'تم تنبيه الضيف بالبريد ✉️') : 'تم التحديث، لكن البريد ما انرسل', !res.email_sent);
+      } else {
+        showToast({ seated: 'تم تجليس الضيف', no_show: 'سُجّل كـ "لم يحضر"', cancelled: 'تم الإلغاء', waiting: 'رجع للقائمة' }[status]);
+      }
+    } catch { showToast('تعذر التحديث', true); }
+  }
+
+  function renderWaitlistSettings() {
+    const s = wl.settings; if (!s) return;
+    document.getElementById('wl-fields').innerHTML = Object.entries(WL_FIELDS).map(([k, label]) => {
+      const f = s.fields[k], locked = k === 'email';
+      return `
+        <div class="grid grid-cols-[1fr_auto_auto] items-center gap-x-4 px-3 py-2.5 text-xs">
+          <span class="font-bold">${label}${locked ? ' <span class="text-[9px] text-ink/50 font-normal">(للإشعارات)</span>' : ''}</span>
+          <input type="checkbox" data-wlf="${k}" data-kind="on" ${f.on ? 'checked' : ''} ${locked ? 'disabled' : ''} class="w-5 h-5 accent-[#384f3d]">
+          <input type="checkbox" data-wlf="${k}" data-kind="req" ${f.req ? 'checked' : ''} ${locked || !f.on ? 'disabled' : ''} class="w-5 h-5 accent-[#b45309]">
+        </div>`;
+    }).join('');
+    document.getElementById('wl-minutes').value = s.minutes_per_party;
+    document.getElementById('wl-hold').value = s.hold_minutes;
+    document.getElementById('wl-max-party').value = s.max_party;
+    document.getElementById('wl-message').value = s.message || '';
+  }
+  document.getElementById('wl-fields').addEventListener('change', (e) => {
+    const cb = e.target.closest('[data-wlf]'); if (!cb || cb.dataset.kind !== 'on') return;
+    const req = document.querySelector(`[data-wlf="${cb.dataset.wlf}"][data-kind="req"]`);
+    req.disabled = !cb.checked; if (!cb.checked) req.checked = false;
+  });
+
+  async function saveWaitlistSettings() {
+    const fields = {};
+    Object.keys(WL_FIELDS).forEach(k => {
+      fields[k] = {
+        on: document.querySelector(`[data-wlf="${k}"][data-kind="on"]`).checked,
+        req: document.querySelector(`[data-wlf="${k}"][data-kind="req"]`).checked
+      };
+    });
+    try {
+      const res = await api('waitlist-settings', {
+        fields,
+        minutes_per_party: Number(document.getElementById('wl-minutes').value),
+        hold_minutes: Number(document.getElementById('wl-hold').value),
+        max_party: Number(document.getElementById('wl-max-party').value),
+        message: document.getElementById('wl-message').value.trim()
+      });
+      wl.settings = res.settings; renderWaitlistSettings(); renderWaitlistOpen();
+      showToast('تم حفظ إعدادات قائمة الانتظار');
+    } catch { showToast('تعذر حفظ الإعدادات', true); }
+  }
+
+  function copyWaitlistLink() {
+    navigator.clipboard.writeText(wlUrl()).then(() => showToast('تم نسخ رابط قائمة الانتظار')).catch(() => showToast('انسخ الرابط يدوياً من الخانة', true));
+  }
+  function downloadWaitlistQr() {
+    downloadQrCard({
+      url: wlUrl(), caption: 'امسح الرمز للتسجيل في قائمة الانتظار', captionEn: 'Scan to join the waitlist',
+      filePrefix: 'waitlist-qr', button: document.getElementById('wl-qr-btn')
+    });
+  }
+
+  // ─── تطبيقات التوصيل ───
+  // الشعار يُجلب من موقع التطبيق نفسه (أيقونة الموقع الرسمية)
+  const DELIVERY_APPS = {
+    hungerstation: { name: 'هنقرستيشن', domain: 'hungerstation.com' },
+    jahez:         { name: 'جاهز',       domain: 'jahez.net' },
+    keeta:         { name: 'كيتا',       domain: 'keeta.com' },
+    toyou:         { name: 'تويو',       domain: 'toyou.io' },
+    mrsool:        { name: 'مرسول',      domain: 'mrsool.co' },
+    thechefz:      { name: 'ذا شفز',     domain: 'thechefz.co' },
+    careem:        { name: 'كريم',       domain: 'careem.com' },
+    shgardi:       { name: 'شقردي',      domain: 'shgardi.app' },
+    other:         { name: 'تطبيق آخر',  domain: '' }
+  };
+  const favicon = (domain) => domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : '';
+  const hostOf = (u) => { try { return new URL(u).hostname; } catch { return ''; } };
+  let deliveryApps = [];
+
+  function appLogo(item, size = 'w-8 h-8') {
+    const meta = DELIVERY_APPS[item.app] || DELIVERY_APPS.other;
+    const src = favicon(meta.domain || hostOf(item.url));
+    const letter = ((item.app === 'other' ? item.name : meta.name) || '').replace(/[^\p{L}\p{N}]/gu, '').charAt(0) || '•';
+    // إذا ما تحمّل الشعار نعرض أول حرف من الاسم
+    return src
+      ? `<span class="${size} rounded-lg bg-white border border-brand/15 flex items-center justify-center overflow-hidden shrink-0 text-xs font-black text-ink"><img src="${esc(src)}" alt="" data-l="${esc(letter)}" class="w-3/4 h-3/4 object-contain" onerror="this.parentNode.textContent=this.dataset.l"></span>`
+      : `<span class="${size} rounded-lg bg-brand/10 flex items-center justify-center shrink-0 text-xs font-black text-ink">${esc(letter)}</span>`;
+  }
+
+  function renderDeliveryPicker() {
+    const chosen = new Set(deliveryApps.map(d => d.app));
+    document.getElementById('delivery-picker').innerHTML = Object.entries(DELIVERY_APPS).map(([key, meta]) => {
+      const on = key !== 'other' && chosen.has(key);
+      return `
+        <button type="button" onclick="toggleDeliveryApp('${key}')"
+          class="flex flex-col items-center gap-1.5 p-2.5 rounded-xl border text-[11px] font-bold transition ${on ? 'bg-brand text-cream border-brand' : 'bg-brand/5 border-brand/15 text-ink/80 hover:bg-brand/10'}">
+          ${appLogo({ app: key, url: '' })}
+          <span class="truncate max-w-full">${meta.name}</span>
+          ${key === 'other' ? '<span class="text-[9px] opacity-60">+ إضافة</span>' : on ? '<i class="fa-solid fa-check text-[9px]"></i>' : ''}
+        </button>`;
+    }).join('');
+
+    document.getElementById('delivery-list').innerHTML = deliveryApps.length ? deliveryApps.map((d, i) => `
+      <div class="flex flex-col sm:flex-row sm:items-center gap-2 bg-brand/5 border border-brand/15 rounded-xl p-2.5">
+        <div class="flex items-center gap-2 sm:w-40 shrink-0">
+          ${appLogo(d)}
+          ${d.app === 'other'
+            ? `<input type="text" maxlength="30" value="${esc(d.name || '')}" oninput="deliveryApps[${i}].name=this.value" placeholder="اسم التطبيق" class="input-pro !py-1.5 text-xs">`
+            : `<b class="text-xs text-ink">${DELIVERY_APPS[d.app].name}</b>`}
+        </div>
+        <div class="flex items-center gap-2 flex-1">
+          <input type="url" dir="ltr" value="${esc(d.url || '')}" oninput="deliveryApps[${i}].url=this.value.trim()" placeholder="رابط صفحة مطعمك في التطبيق https://..." class="input-pro !py-1.5 text-xs flex-1">
+          <button type="button" onclick="removeDeliveryApp(${i})" aria-label="إزالة" class="shrink-0 w-9 h-9 rounded-lg bg-red-500/10 text-red-600 border border-red-500/20 hover:bg-red-500/20"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>`).join('')
+      : '<p class="text-[11px] text-ink/50 text-center py-2">ما اخترت أي تطبيق توصيل بعد.</p>';
+  }
+
+  function toggleDeliveryApp(key) {
+    if (key === 'other') {
+      deliveryApps.push({ app: 'other', name: '', url: '' });
+    } else {
+      const i = deliveryApps.findIndex(d => d.app === key);
+      if (i >= 0) deliveryApps.splice(i, 1);
+      else deliveryApps.push({ app: key, url: '' });
+    }
+    renderDeliveryPicker();
+    // التركيز على خانة الرابط الجديدة
+    const inputs = document.querySelectorAll('#delivery-list input[type="url"]');
+    if (inputs.length && deliveryApps.length && !deliveryApps[deliveryApps.length - 1].url) inputs[inputs.length - 1].focus();
+  }
+  function removeDeliveryApp(i) { deliveryApps.splice(i, 1); renderDeliveryPicker(); }
+
+  async function saveDeliveryApps() {
+    for (const d of deliveryApps) {
+      const label = d.app === 'other' ? (d.name || 'التطبيق') : DELIVERY_APPS[d.app].name;
+      if (d.app === 'other' && !String(d.name || '').trim()) return showToast('اكتب اسم التطبيق الإضافي', true);
+      if (!safeUrl(d.url)) return showToast(`أضف رابط صحيح لـ ${label} (يبدأ بـ https://)`, true);
+    }
+    if (await updateClient({ delivery_apps: deliveryApps.map(d => ({ ...d })) })) {
+      deliveryApps = (client.delivery_apps || []).map(d => ({ ...d }));
+      renderDeliveryPicker();
+      showToast(deliveryApps.length ? 'تم الحفظ، وتظهر التطبيقات في المنيو' : 'تمت إزالة تطبيقات التوصيل من المنيو');
+    } else showToast('تعذر حفظ تطبيقات التوصيل', true);
   }
 
   // ─── عرض السعرات (خيار المتجر) ───

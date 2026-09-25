@@ -1,0 +1,8 @@
+{
+  "name": "dev-menu",
+  "private": true,
+  "description": "DEV MENU — منصة المنيو الرقمي",
+  "dependencies": {
+    "nodemailer": "^6.9.16"
+  }
+}

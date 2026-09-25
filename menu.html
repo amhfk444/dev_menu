@@ -107,6 +107,18 @@
     <div id="info-bar" class="hidden flex-wrap justify-center gap-2 pt-1"></div>
   </header>
 
+  <!-- قائمة الانتظار -->
+  <a id="waitlist-btn" href="#" class="hidden items-center justify-between gap-3 bg-white text-black rounded-2xl px-4 py-3.5 shadow-2xl active:scale-[.99] transition">
+    <span class="flex items-center gap-3">
+      <span class="w-10 h-10 rounded-xl bg-black text-white flex items-center justify-center"><i class="fa-solid fa-hourglass-half"></i></span>
+      <span class="leading-tight">
+        <b id="waitlist-title" class="block text-sm">انضم لقائمة الانتظار</b>
+        <span id="waitlist-sub" class="block text-[11px] text-gray-600">سجّل دورك ونبلغك لما تجهز طاولتك</span>
+      </span>
+    </span>
+    <i class="fa-solid fa-chevron-left text-gray-400"></i>
+  </a>
+
   <!-- تطبيقات التوصيل -->
   <div id="delivery-bar" class="hidden space-y-2">
     <p id="delivery-title" class="text-[11px] font-bold text-gray-300 text-center">اطلب توصيل عبر</p>
@@ -391,6 +403,16 @@
       </a>`).join('');
   }
 
+  function renderWaitlistBtn() {
+    const btn = document.getElementById('waitlist-btn');
+    const on = project && project.waitlist_open === true;
+    btn.classList.toggle('hidden', !on); btn.classList.toggle('flex', on);
+    if (!on) return;
+    btn.href = `waitlist.html?client=${encodeURIComponent(project.client_slug)}`;
+    document.getElementById('waitlist-title').textContent = currentLang === 'ar' ? 'انضم لقائمة الانتظار' : 'Join the waitlist';
+    document.getElementById('waitlist-sub').textContent = currentLang === 'ar' ? 'سجّل دورك ونبلغك لما تجهز طاولتك' : "Get in line — we'll notify you when your table is ready";
+  }
+
   function renderCalorieNote() {
     const note = document.getElementById('calorie-note');
     const any = caloriesOn() && allProducts.some(p => p.calories != null);
@@ -420,6 +442,7 @@
     if (project && project.promo_message) document.getElementById('promo-text').textContent = tr(project.promo_message);
     renderFilterBar();
     renderInfoBar();
+    renderWaitlistBtn();
     renderDeliveryBar();
     renderCalorieNote();
     renderCartBar();
@@ -483,6 +506,7 @@
     allProducts = (menuData.products || []).sort(bySort);
 
     renderInfoBar();
+    renderWaitlistBtn();
     renderDeliveryBar();
     renderFilterBar();
     loadCart();
