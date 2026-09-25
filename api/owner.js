@@ -114,6 +114,22 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     return { settings, entries, mail_ready: mailConfigured() };
   }
 
+  // ─── قائمة الانتظار: سجل الضيوف (للعرض والتصدير) ───
+  if (action === 'waitlist-history' && req.method === 'GET') {
+    const { store } = await context(req);
+    const days = req.query.days === 'all' ? null : Math.min(3650, Math.max(1, int(req.query.days) || 30));
+    const from = days === null ? null : new Date(Date.now() - days * 86400000).toISOString();
+    const fields = 'ticket,name,phone,email,party_size,seating,notes,status,created_at,notified_at,closed_at';
+    // Supabase يرجّع 1000 صف كحد أقصى في الطلب، فنجيبها على دفعات
+    const entries = [];
+    for (let offset = 0; offset < 20000; offset += 1000) {
+      const page = await rest(`waitlist_entries?client_id=eq.${store.id}${from ? `&created_at=gte.${q(from)}` : ''}&select=${fields}&order=created_at.desc&limit=1000&offset=${offset}`);
+      entries.push(...page);
+      if (page.length < 1000) break;
+    }
+    return { entries, from, store_name: store.name, slug: store.client_slug };
+  }
+
   if (req.method !== 'POST') throw new ApiError(404, 'Unknown action');
   const { store } = await context(req);
   const sid = store.id;
