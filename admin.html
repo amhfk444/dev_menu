@@ -574,6 +574,45 @@ tailwind.config = {
               <button onclick="saveWaitlistSettings()" class="w-full bg-brand hover:bg-brand-dark text-cream font-bold py-2.5 rounded-xl text-xs transition">حفظ الإعدادات</button>
             </div>
           </div>
+
+          <!-- سجل الضيوف -->
+          <div class="pro-card p-4 md:p-5 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 class="text-xs font-black flex items-center gap-2"><i class="fa-solid fa-address-book text-brand"></i> سجل الضيوف</h3>
+                <p class="text-[10px] text-ink/55 mt-0.5">كل تسجيلات قائمة الانتظار محفوظة، وتقدر تنزّلها ملف Excel.</p>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <select id="wlh-range" class="input-pro text-xs !w-auto">
+                  <option value="1">اليوم</option>
+                  <option value="7">آخر 7 أيام</option>
+                  <option value="30" selected>آخر 30 يوم</option>
+                  <option value="90">آخر 90 يوم</option>
+                  <option value="all">كل السجل</option>
+                </select>
+                <button onclick="exportGuests('visits')" class="bg-brand hover:bg-brand-dark text-cream px-3 py-2 rounded-xl text-[11px] font-bold transition disabled:opacity-40"><i class="fa-solid fa-file-arrow-down"></i> كل التسجيلات</button>
+                <button onclick="exportGuests('guests')" class="bg-brand/10 hover:bg-brand/15 border border-brand/20 text-ink px-3 py-2 rounded-xl text-[11px] font-bold transition"><i class="fa-solid fa-users"></i> قائمة الضيوف</button>
+              </div>
+            </div>
+            <div id="wlh-stats" class="grid grid-cols-2 md:grid-cols-4 gap-2"></div>
+            <div class="relative">
+              <i class="fa-solid fa-magnifying-glass absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/40 text-xs"></i>
+              <input id="wlh-search" type="search" placeholder="ابحث بالاسم أو الجوال أو البريد..." class="input-pro text-xs pr-9">
+            </div>
+            <div class="overflow-x-auto rounded-xl border border-brand/15">
+              <table class="w-full text-[11px] whitespace-nowrap">
+                <thead class="bg-brand/5 text-ink/60">
+                  <tr class="text-right">
+                    <th class="px-3 py-2 font-bold">التاريخ</th><th class="px-3 py-2 font-bold">الدور</th><th class="px-3 py-2 font-bold">الاسم</th>
+                    <th class="px-3 py-2 font-bold">الجوال</th><th class="px-3 py-2 font-bold">البريد</th><th class="px-3 py-2 font-bold">الأشخاص</th>
+                    <th class="px-3 py-2 font-bold">الانتظار</th><th class="px-3 py-2 font-bold">الحالة</th>
+                  </tr>
+                </thead>
+                <tbody id="wlh-rows" class="divide-y divide-brand/10"></tbody>
+              </table>
+            </div>
+            <p id="wlh-note" class="text-[10px] text-ink/50"></p>
+          </div>
         </div>
       </section>
 
@@ -1678,6 +1717,7 @@ tailwind.config = {
     clearInterval(wl.timer); clearInterval(wl.tick);
     if (!client || !client.waitlist_enabled) return;
     loadWaitlist();
+    if (active) loadGuestHistory();
     wl.timer = setInterval(() => { if (!document.hidden) loadWaitlist(); }, active ? 15000 : 45000);
     if (active) wl.tick = setInterval(renderWaitlistList, 30000);
   }
@@ -1875,6 +1915,101 @@ tailwind.config = {
       wl.settings = res.settings; renderWaitlistSettings(); renderWaitlistOpen();
       showToast('تم حفظ إعدادات قائمة الانتظار');
     } catch { showToast('تعذر حفظ الإعدادات', true); }
+  }
+
+  // ─── سجل الضيوف + التصدير ───
+  const WL_STATUS_AR = { waiting: 'بالانتظار', notified: 'تم التنبيه', seated: 'جلس', no_show: 'لم يحضر', cancelled: 'ألغى' };
+  let wlh = { entries: [], loaded: null };
+  const fmtDateTime = (iso) => iso ? new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Riyadh', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', '') : '';
+  const waitMins = (e) => e.notified_at ? Math.max(0, Math.round((new Date(e.notified_at) - new Date(e.created_at)) / 60000)) : null;
+  const guestKey = (e) => (e.email || '').toLowerCase() || (e.phone || '').replace(/\D/g, '') || `#${e.ticket}-${e.created_at}`;
+
+  async function loadGuestHistory(force = false) {
+    const days = document.getElementById('wlh-range').value;
+    if (!force && wlh.loaded === days) return renderGuestHistory();
+    document.getElementById('wlh-rows').innerHTML = '<tr><td colspan="8" class="text-center py-6 text-ink/50"><i class="fa-solid fa-spinner fa-spin"></i> جاري التحميل...</td></tr>';
+    try {
+      const data = await api(`waitlist-history&days=${days}`);
+      wlh = { entries: data.entries || [], loaded: days };
+    } catch (e) { lastApiError = ''; wlh = { entries: [], loaded: null }; }
+    renderGuestHistory();
+  }
+
+  function filteredGuests() {
+    const q = document.getElementById('wlh-search').value.trim().toLowerCase();
+    return !q ? wlh.entries : wlh.entries.filter(e => [e.name, e.phone, e.email].some(v => v && String(v).toLowerCase().includes(q)));
+  }
+
+  function renderGuestHistory() {
+    const list = filteredGuests();
+    const unique = new Set(list.map(guestKey)).size;
+    const seated = list.filter(e => e.status === 'seated').length;
+    const waits = list.map(waitMins).filter(v => v !== null);
+    const avg = waits.length ? Math.round(waits.reduce((a, b) => a + b, 0) / waits.length) : null;
+    const tile = (label, value) => `<div class="bg-brand/5 border border-brand/10 rounded-xl p-2.5"><p class="text-[10px] text-ink/55">${label}</p><p class="text-lg font-black">${value}</p></div>`;
+    document.getElementById('wlh-stats').innerHTML =
+      tile('التسجيلات', list.length) + tile('ضيوف مختلفين', unique) + tile('جلسوا', seated) + tile('متوسط الانتظار', avg === null ? '—' : `${avg} د`);
+
+    const shown = list.slice(0, 200);
+    document.getElementById('wlh-rows').innerHTML = shown.length ? shown.map(e => `
+      <tr>
+        <td class="px-3 py-2 text-ink/70" dir="ltr">${esc(fmtDateTime(e.created_at))}</td>
+        <td class="px-3 py-2 font-bold">#${esc(e.ticket)}</td>
+        <td class="px-3 py-2 font-bold">${esc(e.name || '—')}</td>
+        <td class="px-3 py-2" dir="ltr">${e.phone ? `<a href="tel:${esc(e.phone)}" class="text-blue-700">${esc(e.phone)}</a>` : '—'}</td>
+        <td class="px-3 py-2" dir="ltr">${esc(e.email || '—')}</td>
+        <td class="px-3 py-2">${esc(e.party_size ?? '—')}</td>
+        <td class="px-3 py-2">${waitMins(e) === null ? '—' : `${waitMins(e)} د`}</td>
+        <td class="px-3 py-2">${esc(WL_STATUS_AR[e.status] || e.status)}</td>
+      </tr>`).join('') : '<tr><td colspan="8" class="text-center py-6 text-ink/50">لا توجد تسجيلات في هذه الفترة</td></tr>';
+    document.getElementById('wlh-note').textContent = list.length > 200 ? `يظهر أحدث 200 تسجيل من ${list.length}. الملف المصدَّر يحتوي على الكل.` : '';
+  }
+  document.getElementById('wlh-range').addEventListener('change', () => loadGuestHistory(true));
+  document.getElementById('wlh-search').addEventListener('input', renderGuestHistory);
+
+  // ملف CSV يفتح في Excel بالعربي، وفيه حقوق DEV MENU أعلى وأسفل الملف
+  function exportGuests(kind) {
+    const list = filteredGuests();
+    if (!list.length) return showToast('ما فيه بيانات للتصدير في هذه الفترة', true);
+    const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    // نحافظ على الصفر في بداية رقم الجوال لما يفتح الملف في Excel
+    const phoneCell = (p) => p ? `\t${p}` : '';
+    const rangeText = document.getElementById('wlh-range').selectedOptions[0].textContent.trim();
+    const year = new Date().getFullYear();
+    const now = fmtDateTime(new Date().toISOString());
+    const rows = [
+      ['DEV MENU — منصة المنيو الرقمي', 'app.devmenu.digital'],
+      [kind === 'guests' ? 'قائمة ضيوف قائمة الانتظار' : 'سجل تسجيلات قائمة الانتظار', client.name || '', `الفترة: ${rangeText}`, `تاريخ التصدير: ${now}`],
+      []
+    ];
+    if (kind === 'guests') {
+      const map = new Map();
+      list.slice().reverse().forEach(e => {
+        const k = guestKey(e);
+        const g = map.get(k) || { name: e.name, phone: e.phone, email: e.email, visits: 0, seated: 0, first: e.created_at, last: e.created_at };
+        g.visits++; if (e.status === 'seated') g.seated++;
+        g.last = e.created_at; g.name = e.name || g.name; g.phone = e.phone || g.phone; g.email = e.email || g.email;
+        map.set(k, g);
+      });
+      rows.push(['الاسم', 'الجوال', 'البريد الإلكتروني', 'عدد التسجيلات', 'مرات الجلوس', 'أول زيارة', 'آخر زيارة']);
+      [...map.values()].sort((a, b) => b.visits - a.visits).forEach(g =>
+        rows.push([g.name, phoneCell(g.phone), g.email, g.visits, g.seated, fmtDateTime(g.first), fmtDateTime(g.last)]));
+    } else {
+      rows.push(['التاريخ والوقت', 'رقم الدور', 'الاسم', 'الجوال', 'البريد الإلكتروني', 'عدد الأشخاص', 'تفضيل الجلسة', 'الملاحظات', 'الحالة', 'وقت التنبيه', 'مدة الانتظار (دقيقة)']);
+      list.forEach(e => rows.push([
+        fmtDateTime(e.created_at), e.ticket, e.name, phoneCell(e.phone), e.email, e.party_size, WL_SEATING[e.seating] || '', e.notes,
+        WL_STATUS_AR[e.status] || e.status, fmtDateTime(e.notified_at), waitMins(e) ?? ''
+      ]));
+    }
+    rows.push([], [`© ${year} DEV MENU — جميع الحقوق محفوظة. هذه البيانات خاصة بـ "${client.name || ''}" وتُستخدم لخدمة الضيوف فقط، ولا يجوز مشاركتها مع أي طرف آخر.`]);
+
+    const csv = '\ufeff' + rows.map(r => r.map(q).join(',')).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = `DEV-MENU_${kind === 'guests' ? 'guests' : 'waitlist'}_${client.client_slug}_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+    showToast(kind === 'guests' ? `تم تنزيل قائمة ${new Set(list.map(guestKey)).size} ضيف` : `تم تنزيل ${list.length} تسجيل`);
   }
 
   function copyWaitlistLink() {
