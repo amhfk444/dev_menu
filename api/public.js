@@ -15,9 +15,9 @@ module.exports = handler(['GET', 'POST'], async (req) => {
 
   if (action === 'menu' && req.method === 'GET') {
     const slug = String(req.query.slug || '').trim().toLowerCase();
-    if (!/^[a-z0-9_-]{2,60}$/.test(slug)) throw new ApiError(400, 'رابط المنيو غير صحيح', 'BAD_SLUG');
+    if (!slug) throw new ApiError(400, 'رابط المنيو غير صحيح', 'BAD_SLUG');
     
-    // التعديل هنا: البحث مباشرة في جدول clients لجلب المتجر بغض النظر عن حالة اشتراك public_clients
+    // البحث المباشر في جدول clients بالـ slug
     const stores = await rest(`clients?client_slug=eq.${q(slug)}&select=${STORE_FIELDS}&limit=1`);
     const store = stores[0];
     if (!store) throw new ApiError(404, 'المنيو غير متاح حالياً', 'NOT_AVAILABLE');
