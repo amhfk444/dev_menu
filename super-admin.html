@@ -2,239 +2,215 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dev Menu | لوحة تحكم الأدمن العامة</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>لوحة المشتركين | DEV MENU</title>
+
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="js/api.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<style>
-  /* رمز الريال السعودي الجديد ⃁ (U+20C1): خط مخصص يُستخدم لهذا الرمز فقط */
-  @font-face {
-    font-family: 'SaudiRiyal';
-    src: url('https://cdn.jsdelivr.net/npm/@emran-alhaddad/saudi-riyal-font@1.1.0/fonts/regular/saudi_riyal.woff2') format('woff2');
-    font-weight: 100 600; font-display: swap; unicode-range: U+20C1;
-  }
-  @font-face {
-    font-family: 'SaudiRiyal';
-    src: url('https://cdn.jsdelivr.net/npm/@emran-alhaddad/saudi-riyal-font@1.1.0/fonts/bold/saudi_riyal.woff2') format('woff2');
-    font-weight: 700 900; font-display: swap; unicode-range: U+20C1;
-  }
-  body { font-family: 'SaudiRiyal', 'Cairo', sans-serif; background-color: #0b0b0b; color: #ffffff; min-height: 100vh; }
-  .pro-card { background: rgba(20, 20, 20, 0.95); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; }
-  .input-pro { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 0.5rem; color: #fff; font-size: 0.75rem; }
-</style>
-</head>
-<body class="py-6 px-4 max-w-6xl mx-auto space-y-6">
-
-  <div id="auth-loading" class="fixed inset-0 z-40 flex flex-col items-center justify-center gap-3 text-xs text-gray-400 text-center px-6">
-    <i class="fa-solid fa-spinner fa-spin text-lg"></i>
-    <span>جاري التحقق من الصلاحية...</span>
-  </div>
-
-  <div id="toast" class="fixed bottom-5 left-5 z-[60] hidden px-5 py-3 rounded-2xl shadow-2xl border text-xs font-bold"></div>
-
-  <!-- نافذة التأكيد -->
-  <div id="dlg" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-    <div role="dialog" aria-modal="true" aria-labelledby="dlg-title" class="w-full max-w-md bg-zinc-950 border border-white/15 rounded-2xl shadow-2xl overflow-hidden">
-      <div class="p-6 space-y-4">
-        <div class="flex items-start gap-3.5">
-          <div id="dlg-icon" class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"></div>
-          <div class="space-y-1.5 min-w-0 pt-0.5">
-            <h2 id="dlg-title" class="text-sm font-black text-white leading-snug"></h2>
-            <p id="dlg-message" class="text-xs text-gray-400 leading-relaxed"></p>
-          </div>
-        </div>
-        <ul id="dlg-list" class="hidden text-xs text-gray-200 bg-white/[0.04] border border-white/10 rounded-xl p-3.5 space-y-2"></ul>
-        <div id="dlg-confirm-wrap" class="hidden space-y-2">
-          <label for="dlg-input" class="text-[11px] text-gray-400 block">للتأكيد، اكتب رابط المتجر: <b id="dlg-expected" class="text-white font-mono select-all" dir="ltr"></b></label>
-          <input id="dlg-input" type="text" dir="ltr" autocomplete="off" spellcheck="false" class="input-pro font-mono !text-sm !py-2.5 focus:outline-none focus:border-red-500/60">
-        </div>
-      </div>
-      <div class="flex gap-2 justify-end px-6 py-4 bg-white/[0.03] border-t border-white/10">
-        <button id="dlg-cancel" type="button" class="px-4 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/15 text-white transition">إلغاء</button>
-        <button id="dlg-ok" type="button"></button>
-      </div>
-    </div>
-  </div>
-
-  <div id="app" class="space-y-6" style="visibility:hidden">
-    <header class="pro-card p-4 flex flex-wrap gap-3 justify-between items-center">
-      <h1 class="text-base font-black text-amber-400"><i class="fa-solid fa-crown"></i> إدارة مشتركي DEV MENU</h1>
-      <div class="flex flex-wrap items-center gap-2 text-xs">
-        <span class="bg-white/10 px-3 py-1 rounded-xl">الكل: <b id="count-all">0</b></span>
-        <span class="bg-green-500/15 text-green-300 px-3 py-1 rounded-xl">ساري: <b id="count-live">0</b></span>
-        <span class="bg-amber-500/15 text-amber-300 px-3 py-1 rounded-xl">ينتهي خلال 3 أيام: <b id="count-soon">0</b></span>
-        <span class="bg-red-500/15 text-red-300 px-3 py-1 rounded-xl">منتهي/موقوف: <b id="count-dead">0</b></span>
-        <button onclick="logout()" class="bg-white/10 hover:bg-white/20 px-3 py-1 rounded-xl border border-white/20"><i class="fa-solid fa-right-from-bracket text-[10px]"></i> خروج</button>
-      </div>
-    </header>
-
-    <div class="pro-card p-5 space-y-4">
-      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
-        <h3 class="text-xs font-bold text-white">قائمة العملاء والمطاعم</h3>
-        <div class="flex flex-wrap items-center gap-2">
-          <div id="filter-tabs" class="flex gap-1 text-[11px] font-bold">
-            <button data-f="all" class="ftab px-3 py-1.5 rounded-lg bg-white text-black">الكل</button>
-            <button data-f="soon" class="ftab px-3 py-1.5 rounded-lg bg-white/10 text-white">ينتهي قريباً</button>
-            <button data-f="dead" class="ftab px-3 py-1.5 rounded-lg bg-white/10 text-white">منتهي/موقوف</button>
-          </div>
-          <input type="text" id="search" oninput="renderClients()" placeholder="بحث بالاسم أو الرابط أو البريد..." class="input-pro max-w-xs">
-        </div>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="w-full text-right text-xs">
-          <thead class="bg-white/5 text-gray-300 border-b border-white/10">
-            <tr>
-              <th class="p-3">المتجر والتواصل</th>
-              <th class="p-3">الاشتراك</th>
-              <th class="p-3">إشعار للعميل</th>
-              <th class="p-3 text-center">الإجراءات</th>
-            </tr>
-          </thead>
-          <tbody id="admin-clients-list" class="divide-y divide-white/10">
-            <tr><td colspan="4" class="text-center py-6 text-gray-400">جاري التحميل...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Bagel+Fat+One&family=Crimson+Pro:wght@500&display=swap" rel="stylesheet">
 
 <script>
-  // كل عمليات المدير العام تمر عبر خادمنا: /api/admin (يتحقق من الصلاحية بنفسه)
+tailwind.config = { theme: { extend: {
+  colors: { sand: '#efe5dc', cream: '#faf6f1', ink: '#22362a', brand: { DEFAULT: '#384f3d', dark: '#2a3e2f', light: '#4a6650' } },
+  fontFamily: { logo: ['"Bagel Fat One"', 'Cairo', 'sans-serif'], serif: ['"Crimson Pro"', 'Georgia', 'serif'] }
+}}};
+</script>
+
+<style>
+  @font-face { font-family: 'SaudiRiyal'; src: url('https://cdn.jsdelivr.net/npm/@emran-alhaddad/saudi-riyal-font@1.1.0/fonts/regular/saudi_riyal.woff2') format('woff2'); font-weight: 100 600; font-display: swap; unicode-range: U+20C1; }
+  @font-face { font-family: 'SaudiRiyal'; src: url('https://cdn.jsdelivr.net/npm/@emran-alhaddad/saudi-riyal-font@1.1.0/fonts/bold/saudi_riyal.woff2') format('woff2'); font-weight: 700 900; font-display: swap; unicode-range: U+20C1; }
+  body { font-family: 'SaudiRiyal', 'Cairo', sans-serif; background: #efe5dc; color: #22362a; min-height: 100vh; -webkit-text-size-adjust: 100%; }
+  .card { background: #faf6f1; border: 1px solid rgba(56,79,61,.14); border-radius: 18px; box-shadow: 0 1px 2px rgba(34,54,42,.04), 0 12px 32px -20px rgba(34,54,42,.25); }
+  .field { width: 100%; background: #fff; border: 1px solid rgba(56,79,61,.2); border-radius: 12px; padding: .6rem .85rem; font-size: 14px; color: #22362a; }
+  .field:focus { outline: none; border-color: #384f3d; box-shadow: 0 0 0 3px rgba(56,79,61,.12); }
+  @media (max-width: 640px) { .field { font-size: 16px; } }
+  .chip { padding: .45rem .8rem; border-radius: 999px; font-size: 11px; font-weight: 800; border: 1px solid rgba(56,79,61,.18); background: #faf6f1; color: rgba(34,54,42,.75); white-space: nowrap; transition: all .15s; }
+  .chip.on { background: #384f3d; color: #faf6f1; border-color: #384f3d; }
+  .menu-pop { position: absolute; z-index: 30; top: calc(100% + 6px); left: 0; min-width: 210px; background: #fff; border: 1px solid rgba(56,79,61,.15); border-radius: 14px; box-shadow: 0 18px 40px -12px rgba(34,54,42,.35); padding: 6px; }
+  .menu-pop button, .menu-pop a { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border-radius: 10px; font-size: 12px; font-weight: 700; color: #22362a; text-align: right; }
+  .menu-pop button:hover, .menu-pop a:hover { background: rgba(56,79,61,.07); }
+  .menu-pop i { width: 16px; text-align: center; color: rgba(34,54,42,.55); }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+</style>
+</head>
+<body style="padding-bottom: env(safe-area-inset-bottom)">
+
+<div id="auth-loading" class="fixed inset-0 z-40 flex flex-col items-center justify-center gap-3 text-xs text-ink/60 text-center px-6">
+  <p class="font-logo text-3xl text-brand leading-none" dir="ltr">DEV MENU</p>
+  <span class="flex items-center gap-2"><i class="fa-solid fa-spinner fa-spin"></i> جاري التحقق من الصلاحية...</span>
+</div>
+
+<div id="toast" class="fixed bottom-5 left-5 z-[70] hidden px-5 py-3 rounded-2xl shadow-2xl border text-xs font-bold"></div>
+
+<!-- نافذة التأكيد -->
+<div id="dlg" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-ink/40 backdrop-blur-sm">
+  <div role="dialog" aria-modal="true" aria-labelledby="dlg-title" class="w-full max-w-md card overflow-hidden">
+    <div class="p-6 space-y-4">
+      <div class="flex items-start gap-3.5">
+        <div id="dlg-icon" class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"></div>
+        <div class="space-y-1.5 min-w-0 pt-0.5">
+          <h2 id="dlg-title" class="text-sm font-black leading-snug"></h2>
+          <p id="dlg-message" class="text-xs text-ink/65 leading-relaxed"></p>
+        </div>
+      </div>
+      <ul id="dlg-list" class="hidden text-xs text-ink/85 bg-brand/5 border border-brand/10 rounded-xl p-3.5 space-y-2"></ul>
+      <div id="dlg-confirm-wrap" class="hidden space-y-2">
+        <label for="dlg-input" class="text-[11px] text-ink/65 block">للتأكيد، اكتب رابط المتجر: <b id="dlg-expected" class="font-mono select-all" dir="ltr"></b></label>
+        <input id="dlg-input" type="text" dir="ltr" autocomplete="off" spellcheck="false" class="field font-mono">
+      </div>
+    </div>
+    <div class="flex gap-2 justify-end px-6 py-4 bg-brand/[0.04] border-t border-brand/10">
+      <button id="dlg-cancel" type="button" class="px-4 py-2 rounded-xl text-xs font-bold bg-brand/10 hover:bg-brand/15 transition">إلغاء</button>
+      <button id="dlg-ok" type="button"></button>
+    </div>
+  </div>
+</div>
+
+<!-- نافذة الإشعار -->
+<div id="notify-dlg" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-ink/40 backdrop-blur-sm">
+  <div class="w-full max-w-md card p-6 space-y-4">
+    <div>
+      <h2 class="text-sm font-black"><i class="fa-solid fa-bell text-blue-600"></i> إشعار لصاحب المتجر</h2>
+      <p id="notify-store" class="text-xs text-ink/60 mt-1"></p>
+    </div>
+    <textarea id="notify-text" rows="4" maxlength="300" placeholder="مثال: تم تجديد اشتراكك، شكراً لك 🌿" class="field resize-none"></textarea>
+    <p class="text-[10px] text-ink/50">يظهر أعلى لوحة التحكم عنده حتى تحذفه.</p>
+    <div class="flex gap-2 justify-between">
+      <button onclick="saveNotification(true)" class="px-4 py-2 rounded-xl text-xs font-bold bg-red-500/10 text-red-700 border border-red-500/20">حذف الإشعار</button>
+      <div class="flex gap-2">
+        <button onclick="closeNotify()" class="px-4 py-2 rounded-xl text-xs font-bold bg-brand/10">إلغاء</button>
+        <button onclick="saveNotification()" class="px-4 py-2 rounded-xl text-xs font-bold bg-brand text-cream">حفظ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="app" style="visibility:hidden">
+  <!-- الشريط العلوي -->
+  <header class="bg-brand text-cream">
+    <div class="max-w-[1500px] mx-auto px-4 md:px-8 py-4 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="text-center leading-none" dir="ltr">
+          <p class="font-serif text-[10px] text-cream/65">Digital Menu Platform</p>
+          <p class="font-logo text-2xl mt-0.5">DEV MENU</p>
+        </div>
+        <span class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-black bg-amber-400 text-black px-2.5 py-1 rounded-full"><i class="fa-solid fa-crown"></i> لوحة المشتركين</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="admin-email" class="hidden md:inline text-[11px] text-cream/60" dir="ltr"></span>
+        <button onclick="loadClients(true)" aria-label="تحديث" class="w-9 h-9 rounded-xl bg-cream/10 hover:bg-cream/20 flex items-center justify-center"><i class="fa-solid fa-rotate text-xs"></i></button>
+        <button onclick="logout()" class="h-9 px-3 rounded-xl bg-cream/10 hover:bg-cream/20 text-xs font-bold flex items-center gap-1.5"><i class="fa-solid fa-right-from-bracket text-[10px]"></i> <span class="hidden sm:inline">خروج</span></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-[1500px] mx-auto px-3 md:px-8 py-6 space-y-6">
+    <!-- الأرقام -->
+    <section id="kpis" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3"></section>
+
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="card p-5 space-y-3">
+        <p class="text-xs font-black flex items-center gap-2"><i class="fa-solid fa-sack-dollar text-green-700"></i> الدخل الشهري التقديري</p>
+        <p id="mrr" class="text-3xl font-black"></p>
+        <div id="mrr-break" class="space-y-1.5 text-[11px] text-ink/70"></div>
+        <p class="text-[10px] text-ink/45 leading-relaxed">تقدير على أساس الباقة الشهرية لكل مشترك مدفوع ساري، مع الإضافات المفعّلة.</p>
+      </div>
+      <div class="card p-5 lg:col-span-2 space-y-3">
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-black flex items-center gap-2"><i class="fa-solid fa-user-plus text-blue-700"></i> تسجيلات جديدة آخر 30 يوم</p>
+          <p id="signups-total" class="text-[11px] font-bold text-ink/60"></p>
+        </div>
+        <div id="signups-chart" class="flex items-end gap-[3px] h-28" dir="ltr"></div>
+        <div class="flex justify-between text-[9px] text-ink/45" dir="ltr"><span>قبل 30 يوم</span><span>اليوم</span></div>
+      </div>
+    </section>
+
+    <!-- الأدوات -->
+    <section class="card p-3 md:p-4 space-y-3 sticky top-2 z-20">
+      <div class="flex flex-col md:flex-row gap-2">
+        <div class="relative flex-1">
+          <i class="fa-solid fa-magnifying-glass absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/40 text-xs"></i>
+          <input id="search" type="search" placeholder="ابحث بالاسم أو الرابط أو البريد أو الجوال..." class="field pr-9">
+        </div>
+        <div class="flex gap-2">
+          <select id="sort" class="field md:w-52">
+            <option value="new">الأحدث تسجيلاً</option>
+            <option value="expiry">الأقرب انتهاءً</option>
+            <option value="name">الاسم</option>
+          </select>
+          <button onclick="exportCsv()" class="shrink-0 px-3 rounded-xl bg-brand/10 hover:bg-brand/15 border border-brand/20 text-xs font-bold whitespace-nowrap"><i class="fa-solid fa-file-arrow-down"></i> تصدير</button>
+        </div>
+      </div>
+      <div id="filters" class="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5"></div>
+    </section>
+
+    <!-- المتاجر -->
+    <section id="stores" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></section>
+    <p id="empty" class="hidden text-center text-sm text-ink/50 py-16"><i class="fa-solid fa-store-slash text-2xl block mb-2"></i> لا توجد نتائج</p>
+  </main>
+</div>
+
+<script>
   const A = (action) => `/api/admin?action=${action}`;
-  // السعر مع رمز الريال الجديد: "⃁ 25" (الرمز يسار الرقم)
+  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const safeUrl = (u) => { try { const x = new URL(u); return /^https?:$/.test(x.protocol) ? x.href : ''; } catch { return ''; } };
   const SAR = '\u20C1';
-  const money = (n) => `\u2066${SAR} ${n}\u2069`;
+  const money = (n) => `\u2066${SAR} ${Number(n).toLocaleString('en-US')}\u2069`;
 
+  // الأسعار (نفسها في لوحة صاحب المتجر)
+  const PLAN_PRICE = { month: 99, year: 1149 };
+  const WAITLIST_PRICE = { month: 49, year: 490 };
+  const totalFor = (c, period) => PLAN_PRICE[period] + (c && c.waitlist_enabled ? WAITLIST_PRICE[period] : 0);
+  const TYPES = { restaurant: ['مطعم', 'fa-utensils'], cafe: ['مقهى', 'fa-mug-hot'], mixed: ['مطعم ومقهى', 'fa-burger'], bakery: ['مخبز', 'fa-bread-slice'] };
 
-  // حماية من حقن الكود: أي نص قادم من قاعدة البيانات يمر من هنا قبل عرضه
-  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  // يقبل روابط http/https فقط (يمنع روابط javascript:)
-  function safeUrl(u) {
-    if (!u) return '';
-    try { const x = new URL(u); return (x.protocol === 'https:' || x.protocol === 'http:') ? x.href : ''; }
-    catch { return ''; }
-  }
-  let clients = [];
+  let clients = [], filter = 'all', openMenu = null, notifyId = null;
 
+  // ─── أدوات عامة ───
   function showToast(msg, isError = false) {
     const t = document.getElementById('toast');
     t.textContent = msg;
-    t.className = `fixed bottom-5 left-5 z-50 px-5 py-3 rounded-2xl shadow-2xl border text-xs font-bold ${isError ? 'bg-zinc-900 border-red-500 text-white' : 'bg-white border-white text-black'}`;
+    t.className = `fixed bottom-5 left-5 z-[70] px-5 py-3 rounded-2xl shadow-2xl border text-xs font-bold ${isError ? 'bg-red-50 border-red-300 text-red-800' : 'bg-brand border-brand text-cream'}`;
     clearTimeout(showToast.timer);
     showToast.timer = setTimeout(() => t.classList.add('hidden'), 3200);
   }
 
-  // نافذة تأكيد بتصميم اللوحة بدل نوافذ المتصفح
   function confirmDialog({ title, message, items = [], confirmText = 'تأكيد', tone = 'danger', expected = '' }) {
     return new Promise(resolve => {
       const $ = (id) => document.getElementById(id);
       const dlg = $('dlg'), ok = $('dlg-ok'), cancel = $('dlg-cancel'), input = $('dlg-input');
       const tones = {
-        danger:  { icon: 'fa-trash-can',   box: 'bg-red-500/15 text-red-400 border border-red-500/30',             btn: 'bg-red-600 hover:bg-red-500',         item: 'fa-xmark text-red-400' },
-        success: { icon: 'fa-circle-check', box: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30', btn: 'bg-emerald-600 hover:bg-emerald-500', item: 'fa-check text-emerald-400' },
-        warning: { icon: 'fa-pause',        box: 'bg-amber-500/15 text-amber-400 border border-amber-500/30',       btn: 'bg-amber-600 hover:bg-amber-500',     item: 'fa-minus text-amber-400' }
+        danger:  { icon: 'fa-trash-can',    box: 'bg-red-500/10 text-red-700',     btn: 'bg-red-600 hover:bg-red-500',         item: 'fa-xmark text-red-600' },
+        success: { icon: 'fa-circle-check', box: 'bg-green-500/10 text-green-700', btn: 'bg-green-700 hover:bg-green-600',     item: 'fa-check text-green-700' },
+        warning: { icon: 'fa-pause',        box: 'bg-amber-500/15 text-amber-700', btn: 'bg-amber-600 hover:bg-amber-500',     item: 'fa-minus text-amber-700' }
       };
       const t = tones[tone] || tones.danger;
-
       $('dlg-icon').className = `w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${t.box}`;
       $('dlg-icon').innerHTML = `<i class="fa-solid ${t.icon}"></i>`;
       $('dlg-title').textContent = title;
       $('dlg-message').textContent = message;
-      const list = $('dlg-list');
-      list.innerHTML = items.map(x => `<li class="flex items-center gap-2.5"><i class="fa-solid ${t.item} text-[10px] w-3"></i><span>${esc(x)}</span></li>`).join('');
-      list.classList.toggle('hidden', items.length === 0);
+      $('dlg-list').innerHTML = items.map(x => `<li class="flex items-center gap-2.5"><i class="fa-solid ${t.item} text-[10px] w-3"></i><span>${esc(x)}</span></li>`).join('');
+      $('dlg-list').classList.toggle('hidden', !items.length);
       $('dlg-confirm-wrap').classList.toggle('hidden', !expected);
       $('dlg-expected').textContent = expected;
       input.value = '';
       ok.textContent = confirmText;
-      ok.className = `px-4 py-2 rounded-xl text-xs font-bold text-white transition disabled:opacity-40 disabled:cursor-not-allowed ${t.btn}`;
-
+      ok.className = `px-4 py-2 rounded-xl text-xs font-bold text-white transition disabled:opacity-40 ${t.btn}`;
       const valid = () => !expected || input.value.trim().toLowerCase() === expected.toLowerCase();
       ok.disabled = !valid();
-
-      const close = (result) => {
-        dlg.classList.add('hidden'); dlg.classList.remove('flex');
-        document.removeEventListener('keydown', onKey);
-        ok.onclick = cancel.onclick = dlg.onclick = input.oninput = null;
-        resolve(result);
-      };
-      const onKey = (e) => {
-        if (e.key === 'Escape') close(false);
-        if (e.key === 'Enter' && valid() && (expected ? document.activeElement === input : true)) { e.preventDefault(); close(true); }
-      };
+      const close = (r) => { dlg.classList.add('hidden'); dlg.classList.remove('flex'); document.removeEventListener('keydown', onKey); ok.onclick = cancel.onclick = dlg.onclick = input.oninput = null; resolve(r); };
+      const onKey = (e) => { if (e.key === 'Escape') close(false); if (e.key === 'Enter' && valid()) { e.preventDefault(); close(true); } };
       input.oninput = () => { ok.disabled = !valid(); };
-      ok.onclick = () => { if (valid()) close(true); };
+      ok.onclick = () => valid() && close(true);
       cancel.onclick = () => close(false);
       dlg.onclick = (e) => { if (e.target === dlg) close(false); };
       document.addEventListener('keydown', onKey);
-
       dlg.classList.remove('hidden'); dlg.classList.add('flex');
       (expected ? input : tone === 'danger' ? cancel : ok).focus();
     });
   }
 
-  async function logout() {
-    await DM.logout();
-    window.location.replace('login.html');
-  }
-
-  function statusOf(c) {
-    const end = c.subscription_status === 'active' ? c.subscription_end_date : c.trial_ends_at;
-    const left = end ? Math.ceil((new Date(end) - Date.now()) / 86400000) : null;
-    const endText = end ? new Date(end).toLocaleDateString('ar-SA-u-ca-gregory') : 'بدون تاريخ';
-    if (c.is_active === false) return { live: false, badge: 'bg-red-500/20 text-red-300', label: 'موقوف', endText, left };
-    if (c.subscription_status === 'trial' && (left === null || left > 0)) return { live: true, badge: 'bg-blue-500/20 text-blue-300', label: 'تجريبي', endText, left };
-    if (c.subscription_status === 'active' && (left === null || left > 0)) return { live: true, badge: 'bg-green-500/20 text-green-300', label: 'مشترك مدفوع', endText, left };
-    return { live: false, badge: 'bg-red-500/20 text-red-300', label: 'منتهي', endText, left };
-  }
-
-  async function init() {
-    if (!DM.signedIn()) return window.location.replace('login.html');
-    let isAdmin = false;
-    try { await DM.get(A('check'), true); isAdmin = true; }
-    catch (e) { if (e.status === 401) return window.location.replace('login.html'); }
-    if (!isAdmin) {
-      document.getElementById('auth-loading').innerHTML = `
-        <i class="fa-solid fa-lock text-lg"></i><span>هذه الصفحة للمدير العام فقط.</span>
-        <a href="admin.html" class="bg-white text-black font-bold px-4 py-2 rounded-xl mt-2">لوحة متجري</a>`;
-      return;
-    }
-    document.getElementById('auth-loading').remove();
-    document.getElementById('app').style.visibility = 'visible';
-    loadClients();
-  }
-
-  async function loadClients() {
-    try { clients = (await DM.get(A('list'), true)).clients || []; }
-    catch (e) { console.error(e); return showToast(`تعذر تحميل العملاء: ${e.message}`, true); }
-    const liveCount = clients.filter(c => statusOf(c).live).length;
-    document.getElementById('count-all').textContent = clients.length;
-    document.getElementById('count-live').textContent = liveCount;
-    document.getElementById('count-dead').textContent = clients.length - liveCount;
-    document.getElementById('count-soon').textContent = clients.filter(isSoon).length;
-    renderClients();
-  }
-
-  let currentFilter = 'all';
-  document.getElementById('filter-tabs').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-f]');
-    if (!b) return;
-    currentFilter = b.dataset.f;
-    document.querySelectorAll('.ftab').forEach(x => {
-      const on = x === b;
-      x.classList.toggle('bg-white', on); x.classList.toggle('text-black', on);
-      x.classList.toggle('bg-white/10', !on); x.classList.toggle('text-white', !on);
-    });
-    renderClients();
-  });
-
-  // ينتهي خلال 3 أيام (ولسا شغال)
-  const isSoon = (c) => { const st = statusOf(c); return st.live && st.left !== null && st.left <= 3; };
-
-  // رسالة واتساب جاهزة لصاحب المتجر
-  // يحوّل 05xxxxxxxx أو +9665xxxxxxxx إلى 9665xxxxxxxx (صيغة واتساب)
   function waPhone(raw) {
     let d = String(raw || '').replace(/\D/g, '');
     if (d.startsWith('00')) d = d.slice(2);
@@ -243,178 +219,319 @@
     return /^9665\d{8}$/.test(d) ? d : '';
   }
 
+  // حالة الاشتراك
+  function statusOf(c) {
+    const end = c.subscription_status === 'active' ? c.subscription_end_date : c.trial_ends_at;
+    const left = end ? Math.ceil((new Date(end) - Date.now()) / 86400000) : null;
+    const endText = end ? new Date(end).toLocaleDateString('ar-SA-u-ca-gregory') : '—';
+    if (c.is_active === false) return { key: 'suspended', live: false, label: 'موقوف', cls: 'bg-red-500/10 text-red-700 border-red-500/20', endText, left };
+    if (c.subscription_status === 'trial' && (left === null || left > 0)) return { key: 'trial', live: true, label: 'تجريبي', cls: 'bg-blue-500/10 text-blue-700 border-blue-500/20', endText, left };
+    if (c.subscription_status === 'active' && (left === null || left > 0)) return { key: 'paid', live: true, label: 'مشترك', cls: 'bg-green-500/10 text-green-700 border-green-500/20', endText, left };
+    return { key: 'expired', live: false, label: 'منتهي', cls: 'bg-amber-500/15 text-amber-800 border-amber-500/30', endText, left };
+  }
+  const isSoon = (c) => { const s = statusOf(c); return s.live && s.left !== null && s.left <= 3; };
+
+  // ─── الدخول ───
+  async function logout() { await DM.logout(); location.replace('login.html'); }
+
+  async function init() {
+    if (!DM.signedIn()) return location.replace('login.html');
+    try {
+      const me = await DM.get(A('check'), true);
+      document.getElementById('admin-email').textContent = me.email || '';
+    } catch (e) {
+      if (e.status === 401) return location.replace('login.html');
+      document.getElementById('auth-loading').innerHTML = `
+        <i class="fa-solid fa-lock text-lg"></i><span>هذه الصفحة للمدير العام فقط.</span>
+        <a href="admin.html" class="bg-brand text-cream font-bold px-4 py-2 rounded-xl mt-2">لوحة متجري</a>`;
+      return;
+    }
+    document.getElementById('auth-loading').remove();
+    document.getElementById('app').style.visibility = 'visible';
+    loadClients();
+  }
+
+  async function loadClients(manual = false) {
+    try { clients = (await DM.get(A('list'), true)).clients || []; }
+    catch (e) { console.error(e); return showToast(`تعذر تحميل العملاء: ${e.message}`, true); }
+    renderAll();
+    if (manual) showToast('تم التحديث');
+  }
+
+  function renderAll() { renderKpis(); renderRevenue(); renderSignups(); renderFilters(); renderStores(); }
+
+  // ─── الأرقام ───
+  function counts() {
+    const st = clients.map(statusOf);
+    return {
+      all: clients.length,
+      paid: st.filter(s => s.key === 'paid').length,
+      trial: st.filter(s => s.key === 'trial').length,
+      soon: clients.filter(isSoon).length,
+      expired: st.filter(s => s.key === 'expired').length,
+      suspended: st.filter(s => s.key === 'suspended').length,
+      waitlist: clients.filter(c => c.waitlist_enabled).length,
+      featured: clients.filter(c => c.is_featured).length,
+      noEmail: clients.filter(c => !c.email).length
+    };
+  }
+
+  function renderKpis() {
+    const n = counts();
+    const tile = (label, value, icon, color, f) => `
+      <button onclick="setFilter('${f}')" class="card p-4 text-right hover:border-brand/40 transition ${filter === f ? 'ring-2 ring-brand/40' : ''}">
+        <p class="text-[11px] text-ink/60 flex items-center gap-1.5"><i class="fa-solid ${icon} ${color}"></i> ${label}</p>
+        <p class="text-2xl font-black mt-1">${value}</p>
+      </button>`;
+    document.getElementById('kpis').innerHTML =
+      tile('كل المتاجر', n.all, 'fa-store', 'text-ink/60', 'all') +
+      tile('مشتركون', n.paid, 'fa-circle-check', 'text-green-700', 'paid') +
+      tile('تجريبي', n.trial, 'fa-flask', 'text-blue-700', 'trial') +
+      tile('ينتهي خلال 3 أيام', n.soon, 'fa-clock', 'text-amber-600', 'soon') +
+      tile('منتهي', n.expired, 'fa-circle-exclamation', 'text-amber-800', 'expired') +
+      tile('موقوف', n.suspended, 'fa-ban', 'text-red-700', 'suspended');
+  }
+
+  function renderRevenue() {
+    const paid = clients.filter(c => statusOf(c).key === 'paid');
+    const base = paid.length * PLAN_PRICE.month;
+    const addons = paid.filter(c => c.waitlist_enabled).length * WAITLIST_PRICE.month;
+    document.getElementById('mrr').textContent = money(base + addons);
+    document.getElementById('mrr-break').innerHTML = `
+      <div class="flex justify-between"><span>${paid.length} اشتراك × ${money(PLAN_PRICE.month)}</span><b>${money(base)}</b></div>
+      <div class="flex justify-between"><span>إضافة قائمة الانتظار (${paid.filter(c => c.waitlist_enabled).length})</span><b>${money(addons)}</b></div>
+      <div class="flex justify-between border-t border-brand/10 pt-1.5"><span>سنوياً تقريباً</span><b>${money((base + addons) * 12)}</b></div>`;
+  }
+
+  function renderSignups() {
+    const hasDates = clients.some(c => c.created_at);
+    const chart = document.getElementById('signups-chart');
+    if (!hasDates) { chart.innerHTML = '<p class="text-[11px] text-ink/50 m-auto">تاريخ التسجيل غير متوفر في الجدول</p>'; return; }
+    const days = Array.from({ length: 30 }, (_, i) => {
+      const d = new Date(Date.now() - (29 - i) * 86400000);
+      return { key: d.toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' }), label: d.toLocaleDateString('ar-SA-u-ca-gregory', { day: 'numeric', month: 'numeric' }), v: 0 };
+    });
+    const map = Object.fromEntries(days.map(d => [d.key, d]));
+    clients.forEach(c => { if (!c.created_at) return; const k = new Date(c.created_at).toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' }); if (map[k]) map[k].v++; });
+    const max = Math.max(1, ...days.map(d => d.v));
+    const total = days.reduce((a, d) => a + d.v, 0);
+    document.getElementById('signups-total').textContent = `${total} متجر جديد`;
+    chart.innerHTML = days.map(d => `<div class="flex-1 rounded-t ${d.v ? 'bg-brand/70 hover:bg-brand' : 'bg-brand/10'}" style="height:${d.v ? Math.max(8, d.v / max * 100) : 4}%" title="${esc(d.label)}: ${d.v}"></div>`).join('');
+  }
+
+  // ─── الفلاتر والبحث ───
+  const FILTERS = [
+    ['all', 'الكل'], ['paid', 'مشتركون'], ['trial', 'تجريبي'], ['soon', 'ينتهي قريباً'], ['expired', 'منتهي'],
+    ['suspended', 'موقوف'], ['waitlist', 'قائمة الانتظار'], ['featured', 'أمثلة الرئيسية'], ['noEmail', 'بدون بريد']
+  ];
+  function setFilter(f) { filter = f; renderKpis(); renderFilters(); renderStores(); }
+  function renderFilters() {
+    const n = counts();
+    document.getElementById('filters').innerHTML = FILTERS.map(([k, label]) =>
+      `<button onclick="setFilter('${k}')" class="chip ${filter === k ? 'on' : ''}">${label} <span class="opacity-60">${n[k]}</span></button>`).join('');
+  }
+  document.getElementById('search').addEventListener('input', () => renderStores());
+  document.getElementById('sort').addEventListener('change', () => renderStores());
+
+  function visibleClients() {
+    const q = document.getElementById('search').value.trim().toLowerCase();
+    const match = {
+      all: () => true, soon: isSoon, waitlist: c => c.waitlist_enabled, featured: c => c.is_featured, noEmail: c => !c.email,
+      paid: c => statusOf(c).key === 'paid', trial: c => statusOf(c).key === 'trial',
+      expired: c => statusOf(c).key === 'expired', suspended: c => statusOf(c).key === 'suspended'
+    }[filter];
+    const list = clients.filter(match).filter(c => !q || [c.name, c.client_slug, c.email, c.phone].some(v => v && String(v).toLowerCase().includes(q)));
+    const sort = document.getElementById('sort').value;
+    if (sort === 'name') list.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ar'));
+    else if (sort === 'expiry') list.sort((a, b) => (statusOf(a).left ?? 1e9) - (statusOf(b).left ?? 1e9));
+    else list.sort((a, b) => b.id - a.id);
+    return list;
+  }
+
+  // ─── بطاقات المتاجر ───
+  function renderStores() {
+    const list = visibleClients();
+    document.getElementById('empty').classList.toggle('hidden', list.length > 0);
+    document.getElementById('stores').innerHTML = list.map(storeCard).join('');
+  }
+
+  function storeCard(c) {
+    const id = Number(c.id), s = statusOf(c);
+    const slug = encodeURIComponent(c.client_slug || '');
+    const logo = safeUrl(c.logo_url);
+    const type = TYPES[c.business_type] || TYPES.restaurant;
+    const phone = waPhone(c.phone);
+    const days = s.left === null ? '' : s.left > 0 ? ` · باقي ${s.left} يوم` : ` · منذ ${Math.abs(s.left)} يوم`;
+    return `
+      <article class="card p-4 flex flex-col gap-3.5">
+        <div class="flex items-start gap-3">
+          <div class="w-14 h-14 rounded-2xl overflow-hidden bg-white border border-brand/10 flex items-center justify-center shrink-0">
+            ${logo ? `<img src="${esc(logo)}" alt="" loading="lazy" class="w-full h-full object-cover">` : `<span class="text-xl font-black text-ink/40">${esc((c.name || '؟').trim().charAt(0))}</span>`}
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <p class="font-black text-sm truncate">${esc(c.name || 'بدون اسم')}</p>
+              ${c.is_featured ? '<i class="fa-solid fa-star text-amber-500 text-[11px]" title="معروض في الرئيسية"></i>' : ''}
+            </div>
+            <p class="text-[11px] text-ink/55 flex items-center gap-1.5 mt-0.5"><i class="fa-solid ${type[1]} text-[10px]"></i> ${type[0]} · <span class="font-mono" dir="ltr">${esc(c.client_slug)}</span></p>
+            <div class="flex flex-wrap gap-1.5 mt-2">
+              <span class="text-[10px] font-black px-2 py-0.5 rounded-full border ${s.cls}">${s.label}</span>
+              ${c.waitlist_enabled ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-sky-500/10 text-sky-700 border-sky-500/20"><i class="fa-solid fa-hourglass-half"></i> الانتظار</span>' : ''}
+              ${c.admin_notification ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-blue-500/10 text-blue-700 border-blue-500/20"><i class="fa-solid fa-bell"></i> إشعار</span>' : ''}
+            </div>
+          </div>
+        </div>
+
+        <div class="text-[11px] space-y-1 bg-brand/[0.04] border border-brand/10 rounded-xl p-3">
+          <p class="flex justify-between gap-2"><span class="text-ink/55">الاشتراك</span><b class="${isSoon(c) ? 'text-amber-700' : ''}">${esc(s.endText)}${days}</b></p>
+          <p class="flex justify-between gap-2"><span class="text-ink/55">البريد</span><span class="truncate" dir="ltr">${c.email ? esc(c.email) : '<span class="text-red-600 font-bold">— بدون بريد —</span>'}</span></p>
+          <p class="flex justify-between gap-2"><span class="text-ink/55">الجوال</span>${c.phone ? (phone ? `<a href="https://wa.me/${phone}" target="_blank" rel="noopener" class="text-green-700 font-bold" dir="ltr"><i class="fa-brands fa-whatsapp"></i> ${esc(c.phone)}</a>` : `<span dir="ltr">${esc(c.phone)}</span>`) : '<span class="text-ink/40">—</span>'}</p>
+        </div>
+
+        <div class="grid grid-cols-[1fr_1fr_auto] gap-1.5 mt-auto">
+          <button onclick="activate(${id}, 'month')" class="bg-brand hover:bg-brand-dark text-cream rounded-xl py-2 text-[11px] font-black">+ شهر · ${money(totalFor(c, 'month'))}</button>
+          <button onclick="activate(${id}, 'year')" class="bg-amber-400 hover:bg-amber-300 text-black rounded-xl py-2 text-[11px] font-black">+ سنة · ${money(totalFor(c, 'year'))}</button>
+          <div class="relative">
+            <button onclick="toggleMenu(event, ${id})" aria-label="المزيد" class="w-10 h-full rounded-xl bg-brand/10 hover:bg-brand/15 border border-brand/15"><i class="fa-solid fa-ellipsis"></i></button>
+            ${openMenu === id ? moreMenu(c, slug) : ''}
+          </div>
+        </div>
+      </article>`;
+  }
+
+  function moreMenu(c, slug) {
+    const id = Number(c.id);
+    const remind = reminderLink(c);
+    return `
+      <div class="menu-pop" onclick="event.stopPropagation()">
+        <a href="menu.html?client=${slug}" target="_blank" rel="noopener"><i class="fa-solid fa-eye"></i> فتح المنيو</a>
+        <a href="admin.html?client=${slug}" target="_blank" rel="noopener"><i class="fa-solid fa-gauge-high"></i> إدارة لوحته</a>
+        ${remind ? `<a href="${esc(remind)}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" style="color:#16a34a"></i> رسالة تذكير بالتجديد</a>` : ''}
+        <button onclick="openNotify(${id})"><i class="fa-solid fa-bell"></i> ${c.admin_notification ? 'تعديل الإشعار' : 'إرسال إشعار'}</button>
+        <div class="h-px bg-brand/10 my-1"></div>
+        <button onclick="setFeatured(${id}, ${!c.is_featured})"><i class="fa-solid fa-star" ${c.is_featured ? 'style="color:#d97706"' : ''}></i> ${c.is_featured ? 'إزالة من أمثلة الرئيسية' : 'عرضه في أمثلة الرئيسية'}</button>
+        <button onclick="setWaitlistAddon(${id}, ${!c.waitlist_enabled})"><i class="fa-solid fa-hourglass-half" ${c.waitlist_enabled ? 'style="color:#0284c7"' : ''}></i> ${c.waitlist_enabled ? 'إيقاف قائمة الانتظار' : 'تفعيل قائمة الانتظار'}</button>
+        <button onclick="setActive(${id}, ${c.is_active === false})"><i class="fa-solid ${c.is_active === false ? 'fa-play' : 'fa-pause'}"></i> ${c.is_active === false ? 'إعادة تشغيل المتجر' : 'إيقاف المتجر'}</button>
+        <div class="h-px bg-brand/10 my-1"></div>
+        <button onclick="deleteClient(${id})" style="color:#b91c1c"><i class="fa-solid fa-trash" style="color:#b91c1c"></i> حذف المتجر نهائياً</button>
+      </div>`;
+  }
+
+  function toggleMenu(e, id) { e.stopPropagation(); openMenu = openMenu === id ? null : id; renderStores(); }
+  document.addEventListener('click', () => { if (openMenu !== null) { openMenu = null; renderStores(); } });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && openMenu !== null) { openMenu = null; renderStores(); } });
+
   function reminderLink(c) {
     const phone = waPhone(c.phone);
     if (!phone) return '';
-    const st = statusOf(c);
-    const menu = new URL(`menu.html?client=${encodeURIComponent(c.client_slug)}`, window.location.href).href;
-    const msg = st.live
-      ? `مرحباً، معك فريق DEV MENU 👋\nنذكّرك إن ${c.subscription_status === 'trial' ? 'التجربة المجانية' : 'اشتراك'} منيو "${c.name}" ينتهي خلال ${st.left} ${st.left === 1 ? 'يوم' : 'أيام'}.\nللتجديد: الباقة الشهرية 99 ر.س أو السنوية 1149 ر.س.\nرابط منيوك: ${menu}`
-      : `مرحباً، معك فريق DEV MENU 👋\nمنيو "${c.name}" متوقف حالياً عن الزبائن بسبب انتهاء الاشتراك.\nتقدر تجدده الآن ويرجع فوراً: الباقة الشهرية 99 ر.س أو السنوية 1149 ر.س.`;
+    const s = statusOf(c);
+    const menu = new URL(`menu.html?client=${encodeURIComponent(c.client_slug)}`, location.href).href;
+    const msg = s.live
+      ? `مرحباً، معك فريق DEV MENU 👋\nنذكّرك إن ${c.subscription_status === 'trial' ? 'التجربة المجانية' : 'اشتراك'} منيو "${c.name}" ينتهي خلال ${s.left ?? ''} ${s.left === 1 ? 'يوم' : 'أيام'}.\nللتجديد: الشهري ${totalFor(c, 'month')} ر.س أو السنوي ${totalFor(c, 'year')} ر.س.\nرابط منيوك: ${menu}`
+      : `مرحباً، معك فريق DEV MENU 👋\nمنيو "${c.name}" متوقف حالياً عن الزبائن. تقدر تجدده الآن ويرجع فوراً: الشهري ${totalFor(c, 'month')} ر.س أو السنوي ${totalFor(c, 'year')} ر.س.`;
     return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
   }
 
-  function renderClients() {
-    const q = document.getElementById('search').value.trim().toLowerCase();
-    const list = clients
-      .filter(c => currentFilter === 'all' || (currentFilter === 'soon' ? isSoon(c) : !statusOf(c).live))
-      .filter(c => !q || [c.name, c.client_slug, c.email, c.phone].some(v => v && String(v).toLowerCase().includes(q)));
-    const tbody = document.getElementById('admin-clients-list');
-
-    if (list.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-gray-400">${clients.length ? 'لا توجد نتائج' : 'لا يوجد عملاء بعد'}</td></tr>`;
-      return;
-    }
-
-    tbody.innerHTML = list.map(c => {
-      const id = Number(c.id), st = statusOf(c);
-      const slug = encodeURIComponent(c.client_slug || '');
-      return `
-        <tr class="hover:bg-white/5 align-top">
-          <td class="p-3 space-y-0.5">
-            <p class="font-bold text-white">${esc(c.name || 'بدون اسم')}</p>
-            <p class="text-[10px] text-gray-400 font-mono" dir="ltr">${esc(c.client_slug)}</p>
-            <p class="text-[10px] text-gray-400" dir="ltr">${esc(c.email || '— بدون بريد —')}</p>
-            ${c.phone ? (waPhone(c.phone) ? `<a href="https://wa.me/${waPhone(c.phone)}" target="_blank" rel="noopener" class="text-[10px] text-green-300" dir="ltr">${esc(c.phone)}</a>` : `<p class="text-[10px] text-gray-400" dir="ltr">${esc(c.phone)}</p>`) : ''}
-          </td>
-          <td class="p-3 space-y-1">
-            <span class="${st.badge} px-2 py-0.5 rounded-full text-[10px] font-bold">${st.label}</span>
-            <p class="text-[10px] ${isSoon(c) ? 'text-amber-300 font-bold' : 'text-gray-400'}">ينتهي: ${esc(st.endText)}${st.left !== null && st.left > 0 ? ` (${st.left} يوم)` : ''}</p>
-            ${reminderLink(c) ? `<a href="${esc(reminderLink(c))}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 bg-green-600/20 hover:bg-green-600/35 border border-green-500/30 text-green-300 text-[10px] font-bold px-2 py-1 rounded-lg transition"><i class="fa-brands fa-whatsapp"></i> ${st.live ? 'تذكير بالتجديد' : 'رسالة تجديد'}</a>` : ''}
-          </td>
-          <td class="p-3 space-y-1 min-w-[180px]">
-            <input type="text" id="notif-${id}" placeholder="اكتب إشعاراً للعميل..." class="input-pro" value="${esc(c.admin_notification || '')}">
-            <button onclick="sendNotification(${id})" class="bg-blue-600 hover:bg-blue-500 text-white text-[10px] px-2.5 py-1 rounded">حفظ الإشعار</button>
-          </td>
-          <td class="p-3">
-            <div class="flex flex-wrap justify-center gap-1">
-              <button onclick="activate(${id}, 'month')" class="bg-amber-600 hover:bg-amber-500 text-white px-2 py-1.5 rounded text-[10px] font-bold">+ شهر (${totalFor(c, 'month')})</button>
-              <button onclick="activate(${id}, 'year')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1.5 rounded text-[10px] font-bold">+ سنة (${totalFor(c, 'year')})</button>
-              <button onclick="setWaitlistAddon(${id}, ${!c.waitlist_enabled})" title="إضافة قائمة الانتظار المدفوعة" class="${c.waitlist_enabled ? 'bg-sky-600 text-white hover:bg-sky-500' : 'bg-white/10 text-white hover:bg-white/20'} px-2 py-1.5 rounded text-[10px] font-bold"><i class="fa-solid fa-hourglass-half text-[9px]"></i> ${c.waitlist_enabled ? 'الانتظار مفعّل' : 'تفعيل الانتظار'}</button>
-              <button onclick="setActive(${id}, ${c.is_active === false})" class="${c.is_active === false ? 'bg-green-700 hover:bg-green-600' : 'bg-red-600/50 hover:bg-red-600'} text-white px-2 py-1.5 rounded text-[10px]">${c.is_active === false ? 'إعادة تشغيل' : 'إيقاف'}</button>
-              <button onclick="setFeatured(${id}, ${!c.is_featured})" title="عرض المتجر كمثال في الصفحة الرئيسية" class="${c.is_featured ? 'bg-[#c9a227] text-black hover:bg-[#d8b13a]' : 'bg-white/10 text-white hover:bg-white/20'} px-2 py-1.5 rounded text-[10px] font-bold"><i class="fa-solid fa-star text-[9px]"></i> ${c.is_featured ? 'معروض كمثال' : 'اعرضه كمثال'}</button>
-              <a href="admin.html?client=${slug}" target="_blank" class="bg-white/10 hover:bg-white/20 text-white px-2 py-1.5 rounded text-[10px]">لوحته</a>
-              <a href="menu.html?client=${slug}" target="_blank" class="bg-white/10 hover:bg-white/20 text-white px-2 py-1.5 rounded text-[10px]">المنيو</a>
-              <button onclick="deleteClient(${id})" class="bg-red-900/60 hover:bg-red-700 text-red-100 px-2 py-1.5 rounded text-[10px] border border-red-500/40"><i class="fa-solid fa-trash text-[9px]"></i> حذف</button>
-            </div>
-          </td>
-        </tr>`;
-    }).join('');
-  }
+  // ─── الإجراءات ───
+  const find = (id) => clients.find(x => x.id === id);
+  const post = (action, body) => DM.post(A(action), body, true).then(() => null, e => e);
 
   async function activate(id, period) {
-    const c = clients.find(x => x.id === id);
+    const c = find(id);
     const label = period === 'year' ? 'سنة' : 'شهر';
-    const confirmed = await confirmDialog({
-      title: `تفعيل اشتراك ${label}`,
-      message: `سيتم تفعيل اشتراك ${label} لمتجر "${c ? (c.name || c.client_slug) : id}".`,
+    const ok = await confirmDialog({
+      title: `تفعيل اشتراك ${label}`, message: `لمتجر "${c ? (c.name || c.client_slug) : id}".`,
       items: [
-        `المبلغ: ${money(totalFor(c, period))}${c && c.waitlist_enabled ? ` (الباقة ${PLAN_PRICE[period]} + قائمة الانتظار ${WAITLIST_PRICE[period]})` : ''}`,
-        'إذا كان الاشتراك سارياً، تُضاف المدة على تاريخ انتهائه الحالي',
-        'يعود المنيو للظهور فوراً إذا كان متوقفاً'
+        `المبلغ: ${money(totalFor(c, period))}${c && c.waitlist_enabled ? ` (الباقة ${PLAN_PRICE[period]} + الانتظار ${WAITLIST_PRICE[period]})` : ''}`,
+        'إذا كان الاشتراك سارياً، تُضاف المدة على تاريخ انتهائه', 'يرجع المنيو للظهور فوراً إذا كان متوقفاً'
       ],
-      confirmText: `تفعيل ${label}`,
-      tone: 'success'
+      confirmText: `تفعيل ${label}`, tone: 'success'
     });
-    if (!confirmed) return;
-    const error = await DM.post(A('activate'), { id, period }, true).then(() => null, e => e);
-    if (error) { console.error(error); return showToast('تعذر التفعيل', true); }
-    showToast(`تم تفعيل ${label}`);
-    loadClients();
+    if (!ok) return;
+    const error = await post('activate', { id, period });
+    if (error) return showToast(`تعذر التفعيل: ${error.message}`, true);
+    showToast(`تم تفعيل ${label}`); loadClients();
   }
 
   async function setActive(id, active) {
-    const c = clients.find(x => x.id === id);
-    const name = c ? (c.name || c.client_slug) : id;
-    const confirmed = await confirmDialog(active
-      ? { title: 'إعادة تشغيل المتجر', message: `سيعود منيو "${name}" للظهور للزبائن (إذا كان اشتراكه سارياً).`, confirmText: 'إعادة تشغيل', tone: 'success' }
-      : { title: 'إيقاف المتجر', message: `سيختفي منيو "${name}" عن الزبائن فوراً، ويمكنك إعادة تشغيله في أي وقت.`,
-          items: ['لا تُحذف أي بيانات', 'صاحب المتجر يرى تنبيه الإيقاف في لوحته'], confirmText: 'إيقاف المتجر', tone: 'warning' });
-    if (!confirmed) return;
-    const error = await DM.post(A('set-active'), { id, active }, true).then(() => null, e => e);
-    if (error) { console.error(error); return showToast('تعذر تنفيذ العملية', true); }
-    showToast(active ? 'تمت إعادة تشغيل المتجر' : 'تم إيقاف المتجر');
-    loadClients();
-  }
-
-  async function sendNotification(id) {
-    const msg = document.getElementById(`notif-${id}`).value;
-    const error = await DM.post(A('notify'), { id, message: msg }, true).then(() => null, e => e);
-    if (error) { console.error(error); return showToast('تعذر حفظ الإشعار', true); }
-    showToast(msg.trim() ? 'سيظهر الإشعار في لوحة العميل' : 'تم حذف الإشعار');
-    loadClients();
-  }
-
-  // ─── عرض المتجر كمثال حقيقي في الصفحة الرئيسية ───
-  // الأسعار (نفسها في لوحة صاحب المتجر)
-  const PLAN_PRICE = { month: 99, year: 1149 };
-  const WAITLIST_PRICE = { month: 49, year: 490 };
-  const totalFor = (c, period) => PLAN_PRICE[period] + (c && c.waitlist_enabled ? WAITLIST_PRICE[period] : 0);
-
-  // إضافة قائمة الانتظار: تُفعّل بعد دفع قيمتها، وتنضاف على فاتورة التجديد
-  async function setWaitlistAddon(id, enabled) {
-    const c = clients.find(x => x.id === id);
-    const confirmed = await confirmDialog(enabled
-      ? { title: 'تفعيل قائمة الانتظار', message: `لمتجر "${c ? (c.name || c.client_slug) : id}".`,
-          items: [`تنضاف على الفاتورة: ${money(WAITLIST_PRICE.month)} شهرياً أو ${money(WAITLIST_PRICE.year)} سنوياً`, 'تظهر له صفحة "قائمة الانتظار" في لوحته فوراً'],
-          confirmText: 'تفعيل', tone: 'success' }
-      : { title: 'إيقاف قائمة الانتظار', message: 'يختفي زر الانتظار من المنيو وتتوقف التسجيلات. التسجيلات السابقة ما تنحذف.', confirmText: 'إيقاف', tone: 'warning' });
-    if (!confirmed) return;
-    const error = await DM.post(A('waitlist-addon'), { id, enabled }, true).then(() => null, e => e);
-    if (error) { console.error(error); return showToast('تعذر التحديث', true); }
-    showToast(enabled ? 'تم تفعيل قائمة الانتظار' : 'تم إيقاف قائمة الانتظار');
-    loadClients();
+    openMenu = null;
+    const c = find(id), name = c ? (c.name || c.client_slug) : id;
+    const ok = await confirmDialog(active
+      ? { title: 'إعادة تشغيل المتجر', message: `يرجع منيو "${name}" للظهور (إذا كان اشتراكه سارياً).`, confirmText: 'إعادة تشغيل', tone: 'success' }
+      : { title: 'إيقاف المتجر', message: `يختفي منيو "${name}" عن الزبائن فوراً.`, items: ['لا تُحذف أي بيانات', 'تقدر تعيد تشغيله في أي وقت'], confirmText: 'إيقاف', tone: 'warning' });
+    if (!ok) return renderStores();
+    const error = await post('set-active', { id, active });
+    if (error) return showToast('تعذر تنفيذ العملية', true);
+    showToast(active ? 'تمت إعادة تشغيل المتجر' : 'تم إيقاف المتجر'); loadClients();
   }
 
   async function setFeatured(id, featured) {
-    const c = clients.find(x => x.id === id);
-    const error = await DM.post(A('featured'), { id, featured }, true).then(() => null, e => e);
-    if (error) { console.error(error); return showToast('تعذر التحديث', true); }
-    if (featured && c && !statusOf(c).live) showToast('تم، لكنه لن يظهر في الرئيسية حتى يكون اشتراكه سارياً');
-    else showToast(featured ? 'سيظهر المتجر في أمثلة الصفحة الرئيسية' : 'تمت إزالة المتجر من الأمثلة');
+    openMenu = null;
+    const error = await post('featured', { id, featured });
+    if (error) return showToast('تعذر التحديث', true);
+    const c = find(id);
+    showToast(featured && c && !statusOf(c).live ? 'تم، ويظهر في الرئيسية لما يكون اشتراكه سارياً' : featured ? 'يظهر الآن في أمثلة الرئيسية' : 'تمت إزالته من الأمثلة');
     loadClients();
   }
 
-  // ─── حذف متجر نهائياً ───
-  // يحوّل رابط الملف العام إلى مساره داخل bucket menu-images
-  function storagePath(url) {
-    const marker = '/storage/v1/object/public/menu-images/';
-    if (!url) return '';
-    const i = url.indexOf(marker);
-    return i === -1 ? '' : decodeURIComponent(url.slice(i + marker.length).split('?')[0]);
+  async function setWaitlistAddon(id, enabled) {
+    openMenu = null;
+    const c = find(id);
+    const ok = await confirmDialog(enabled
+      ? { title: 'تفعيل قائمة الانتظار', message: `لمتجر "${c ? (c.name || c.client_slug) : id}".`,
+          items: [`تنضاف على الفاتورة: ${money(WAITLIST_PRICE.month)} شهرياً أو ${money(WAITLIST_PRICE.year)} سنوياً`, 'تظهر له صفحة "قائمة الانتظار" فوراً'], confirmText: 'تفعيل', tone: 'success' }
+      : { title: 'إيقاف قائمة الانتظار', message: 'يختفي زر الانتظار من المنيو. التسجيلات السابقة ما تنحذف.', confirmText: 'إيقاف', tone: 'warning' });
+    if (!ok) return renderStores();
+    const error = await post('waitlist-addon', { id, enabled });
+    if (error) return showToast(`تعذر التحديث: ${error.message}`, true);
+    showToast(enabled ? 'تم تفعيل قائمة الانتظار' : 'تم إيقاف قائمة الانتظار'); loadClients();
   }
+
+  function openNotify(id) {
+    openMenu = null; renderStores();
+    notifyId = id;
+    const c = find(id);
+    document.getElementById('notify-store').textContent = c ? (c.name || c.client_slug) : '';
+    document.getElementById('notify-text').value = (c && c.admin_notification) || '';
+    const d = document.getElementById('notify-dlg'); d.classList.remove('hidden'); d.classList.add('flex');
+    document.getElementById('notify-text').focus();
+  }
+  function closeNotify() { const d = document.getElementById('notify-dlg'); d.classList.add('hidden'); d.classList.remove('flex'); }
+  async function saveNotification(clear = false) {
+    const message = clear ? '' : document.getElementById('notify-text').value.trim();
+    const error = await post('notify', { id: notifyId, message });
+    if (error) return showToast('تعذر حفظ الإشعار', true);
+    closeNotify(); showToast(message ? 'سيظهر الإشعار في لوحته' : 'تم حذف الإشعار'); loadClients();
+  }
+  document.getElementById('notify-dlg').addEventListener('click', (e) => { if (e.target.id === 'notify-dlg') closeNotify(); });
 
   async function deleteClient(id) {
-    const c = clients.find(x => x.id === id);
-    if (!c) return;
-    // تجميع ما سيُحذف لعرضه في نافذة التأكيد
-    let counts = { products: 0, categories: 0 };
-    try { counts = await DM.post(A('summary'), { id }, true); } catch (e) { console.warn(e); }
-    const items = [
-      `${counts.products} طبق و ${counts.categories} قسم`,
-      'الشعار والخلفيات وصور الأطباق',
-      'حالة الاشتراك والإشعارات'
-    ];
+    openMenu = null; renderStores();
+    const c = find(id); if (!c) return;
+    let n = { products: 0, categories: 0 };
+    try { n = await DM.post(A('summary'), { id }, true); } catch {}
+    const items = [`${n.products} طبق و ${n.categories} قسم`, 'الشعار والخلفيات وصور الأطباق', 'الاشتراك والإحصائيات وتسجيلات الانتظار'];
     if (c.email) items.push(`حساب الدخول: ${c.email}`);
+    const ok = await confirmDialog({ title: `حذف "${c.name || c.client_slug}" نهائياً`, message: 'لا يمكن التراجع. سيتم حذف:', items, confirmText: 'حذف نهائي', tone: 'danger', expected: c.client_slug });
+    if (!ok) return;
+    showToast('جاري الحذف...');
+    const error = await post('delete', { id });
+    if (error) return showToast(`تعذر الحذف: ${error.message}`, true);
+    showToast('تم حذف المتجر وكل بياناته'); loadClients();
+  }
 
-    const confirmed = await confirmDialog({
-      title: `حذف متجر "${c.name || c.client_slug}" نهائياً`,
-      message: 'لا يمكن التراجع عن هذا الإجراء. سيتم حذف:',
-      items,
-      confirmText: 'حذف نهائي',
-      tone: 'danger',
-      expected: c.client_slug
+  // ─── تصدير ───
+  function exportCsv() {
+    const qv = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const rows = [['الاسم', 'الرابط', 'النوع', 'البريد', 'الجوال', 'الحالة', 'ينتهي', 'قائمة الانتظار', 'مثال في الرئيسية']];
+    visibleClients().forEach(c => {
+      const s = statusOf(c);
+      rows.push([c.name, c.client_slug, (TYPES[c.business_type] || TYPES.restaurant)[0], c.email, c.phone, s.label, s.endText, c.waitlist_enabled ? 'نعم' : 'لا', c.is_featured ? 'نعم' : 'لا']);
     });
-    if (!confirmed) return;
-
-    showToast('جاري حذف المتجر...');
-
-    // الخادم يحذف البيانات والملفات وحساب الدخول
-    try { await DM.post(A('delete'), { id }, true); }
-    catch (e) { console.error(e); return showToast(`تعذر حذف المتجر: ${e.message}`, true); }
-
-    showToast('تم حذف المتجر وكل بياناته');
-    loadClients();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['\ufeff' + rows.map(r => r.map(qv).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+    a.download = `devmenu-clients-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
   }
 
   init();
