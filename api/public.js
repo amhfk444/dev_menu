@@ -6,7 +6,7 @@
 // =====================================================================
 const { handler, rest, rpc, q, ApiError, readBody, int } = require('./_lib/core');
 
-const STORE_FIELDS = 'id,name,client_slug,logo_url,bg_image_url,bg_video_url,promo_message,website_url,tiktok_url,instagram_url,whatsapp_number,snapchat_url,opening_hours,location_url,whatsapp_orders,business_type,show_calories';
+const STORE_FIELDS = 'id,name,client_slug,logo_url,bg_image_url,bg_video_url,promo_message,website_url,tiktok_url,instagram_url,whatsapp_number,snapchat_url,opening_hours,location_url,whatsapp_orders,business_type,show_calories,delivery_apps';
 const PRODUCT_FIELDS = 'id,name,name_en,description,description_en,extra_info,note,price,category,image_url,is_available,is_bestseller,calories,allergens,coffee,sort_order';
 const bySort = (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id;
 
@@ -24,7 +24,10 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       rest(`categories?client_id=eq.${store.id}&select=id,key,name,name_en,sort_order`),
       rest(`products?client_id=eq.${store.id}&select=${PRODUCT_FIELDS}`)
     ]);
-    return { store, categories: categories.sort(bySort), products: products.sort(bySort) };
+    // زر "قائمة الانتظار" في المنيو: فقط لو الإضافة مفعّلة والقائمة مفتوحة
+    const wl = (await rest(`clients?id=eq.${store.id}&select=waitlist_enabled,waitlist_settings`))[0] || {};
+    const waitlist_open = wl.waitlist_enabled === true && !(wl.waitlist_settings && wl.waitlist_settings.open === false);
+    return { store: { ...store, waitlist_open }, categories: categories.sort(bySort), products: products.sort(bySort) };
   }
 
   if (action === 'featured' && req.method === 'GET') {
