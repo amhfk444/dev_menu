@@ -31,16 +31,9 @@ module.exports = handler(['GET', 'POST'], async (req) => {
   }
 
   if (action === 'featured' && req.method === 'GET') {
-    const stores = await rest('public_clients?is_featured=eq.true&select=id,name,client_slug,logo_url,bg_image_url&limit=6');
-    if (!stores.length) return { stores: [] };
-    const ids = stores.map(s => s.id).join(',');
-    const products = await rest(`products?client_id=in.(${ids})&select=name,price,client_id,is_available,is_bestseller&order=is_bestseller.desc,id.desc&limit=300`);
-    const byStore = {};
-    products.filter(p => p.is_available !== false).forEach(p => {
-      (byStore[p.client_id] ||= []);
-      if (byStore[p.client_id].length < 4) byStore[p.client_id].push({ name: p.name, price: p.price });
-    });
-    return { stores: stores.map(s => ({ ...s, items: byStore[s.id] || [] })) };
+    // أمثلة الصفحة الرئيسية: شعار واسم ورابط كل منشأة مختارة (والسارية فقط)
+    const stores = await rest('public_clients?is_featured=eq.true&logo_url=not.is.null&select=name,client_slug,logo_url&order=id.desc&limit=12');
+    return { stores };
   }
 
   if (action === 'track' && req.method === 'POST') {
