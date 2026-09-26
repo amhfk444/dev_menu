@@ -8,8 +8,6 @@
 <!-- Tailwind CSS & FontAwesome -->
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<!-- Supabase SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/api.js"></script>
 
 <!-- Google Fonts -->
@@ -89,7 +87,6 @@
   .toast i { font-size: 14px; }
   .toast-success i { color: #4ade80; }
   .toast-error i { color: #fbbf24; }
-  .toast-info i { color: #93c5fd; }
 </style>
 </head>
 <body>
@@ -110,13 +107,22 @@
 <div class="pro-card p-6 md:p-8 w-full max-w-md space-y-6 my-auto">
   <div class="text-center space-y-2">
     <div class="w-12 h-12 rounded-2xl bg-[#233d2c]/10 text-brand border border-[#233d2c]/20 flex items-center justify-center mx-auto text-xl">
-      <i class="fa-solid fa-user-lock" id="main-icon"></i>
+      <i class="fa-solid fa-user-lock"></i>
     </div>
     <h1 id="main-title" class="text-lg font-black text-brand">تسجيل الدخول</h1>
-    <p id="main-desc" class="text-xs text-gray-600">أدخل بريدك الإلكتروني لتصلك رسالة رمز التحقق، أو تابع باستخدام جوجل.</p>
+    <p id="main-desc" class="text-xs text-gray-600">ادخل بحساب Google، أو ببريدك الإلكتروني ورمز تحقق.</p>
   </div>
 
-  <!-- نموذج إدخال البريد الإلكتروني -->
+  <!-- الدخول بحساب Google -->
+  <button type="button" id="google-btn" onclick="loginWithGoogle()" class="w-full bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 font-bold py-3.5 rounded-xl text-xs flex items-center justify-center gap-3 shadow-sm transition disabled:opacity-60">
+    <svg class="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.13 0-5.78-2.11-6.73-4.96H1.19v3.15C3.18 21.31 7.25 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.19C.43 8.15 0 9.89 0 12s.43 3.85 1.19 5.39l4.08-3.15z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.25 0 3.18 2.69 1.19 6.61l4.08 3.15c.95-2.85 3.6-4.96 6.73-4.96z"/></svg>
+    <span>الدخول بحساب Google</span>
+  </button>
+  <div id="or-line" class="flex items-center gap-3 text-[10px] font-bold text-gray-400">
+    <span class="flex-1 border-t border-gray-200"></span> أو <span class="flex-1 border-t border-gray-200"></span>
+  </div>
+
+  <!-- نموذج إدخال البريد -->
   <form id="login-form" class="space-y-4">
     <div>
       <label class="lbl">البريد الإلكتروني</label>
@@ -125,27 +131,9 @@
         <input type="email" id="identifier-input" placeholder="example@mail.com" required class="input-pro" dir="ltr">
       </div>
     </div>
-    
     <button type="submit" id="send-otp-btn" class="w-full btn-primary font-bold py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
       <span id="btn-text">إرسال رمز التحقق للبريد</span>
       <i id="btn-spinner" class="fa-solid fa-spinner fa-spin hidden"></i>
-    </button>
-
-    <div class="relative flex py-2 items-center">
-      <div class="flex-grow border-t border-gray-200"></div>
-      <span class="flex-shrink mx-4 text-[10px] font-bold text-gray-400">أو</span>
-      <div class="flex-grow border-t border-gray-200"></div>
-    </div>
-
-    <!-- زر تسجيل الدخول عبر جوجل -->
-    <button type="button" onclick="loginWithGoogle()" class="w-full bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-3 shadow-sm transition">
-      <svg class="w-4 h-4" viewBox="0 0 24 24">
-        <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.13 0-5.78-2.11-6.73-4.96H1.19v3.15C3.18 21.31 7.25 24 12 24z"/>
-        <path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.19C.43 8.15 0 9.89 0 12s.43 3.85 1.19 5.39l4.08-3.15z"/>
-        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.25 0 3.18 2.69 1.19 6.61l4.08 3.15c.95-2.85 3.6-4.96 6.73-4.96z"/>
-      </svg>
-      <span>تسجيل الدخول بواسطة Google</span>
     </button>
   </form>
 
@@ -181,19 +169,28 @@
 </div>
 
 <footer class="text-center py-4 text-[11px] text-gray-600 font-bold">
-  © DEV MENU 2026 — منصة المنيو الرقمي 
+  © DEV MENU 2026 — منصة المنيو الرقمي
 </footer>
 
 <script>
-  const SUPABASE_URL = 'https://czdoamcgxgkicrbufpcn.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZG9hbWNneGdraWNyYnVmcGNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwMTA5MzAsImV4cCI6MjEwNTU4NjkzMH0.45zKx4ljXJ27SS-ukc62qiu52movhDgSoC9OEnK9NHk';
-  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // تسجيل الدخول عبر Supabase Auth، والتوجيه حسب رد خادمنا /api
+
+  // حماية من حقن الكود: أي نص قادم من قاعدة البيانات يمر من هنا قبل عرضه
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // يقبل روابط http/https فقط (يمنع روابط javascript:)
+  function safeUrl(u) {
+    if (!u) return '';
+    try { const x = new URL(u); return (x.protocol === 'https:' || x.protocol === 'http:') ? x.href : ''; }
+    catch { return ''; }
+  }
+  let inputEmail = '';
+  const boxes = Array.from(document.querySelectorAll('.otp-box'));
 
   function showToast(msg, type = 'success') {
     const el = document.createElement('div');
     el.className = `toast toast-${type}`;
     const icon = document.createElement('i');
-    icon.className = `fa-solid ${type === 'error' ? 'fa-circle-exclamation' : (type === 'info' ? 'fa-circle-info' : 'fa-circle-check')}`;
+    icon.className = `fa-solid ${type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check'}`;
     const text = document.createElement('span');
     text.textContent = msg;
     el.append(icon, text);
@@ -201,125 +198,145 @@
     setTimeout(() => el.remove(), 3800);
   }
 
-  async function checkStoreAndRedirect() {
+  function setBusy(btnId, spinnerId, busy) {
+    document.getElementById(btnId).disabled = busy;
+    document.getElementById(spinnerId).classList.toggle('hidden', !busy);
+  }
+
+  // بعد الدخول: المدير العام يروح لوحته، وصاحب المتجر يروح لوحة متجره
+  // الخادم يحدد: مدير عام ← لوحة المشتركين، صاحب متجر ← لوحته
+  async function goToDashboard() {
+    let who;
+    try { who = await DM.get('/api/owner?action=whoami', true); }
+    catch (e) {
+      if (e.status === 401) { await DM.logout(); return; }
+      return showToast(e.message, 'error');
+    }
+    if (who.is_admin) { window.location.href = 'super-admin.html'; return; }
+    if (!who.has_store) {
+      await DM.logout();
+      showToast('لا يوجد متجر مرتبط بهذا الحساب. جاري تحويلك لإنشاء متجرك...', 'error');
+      setTimeout(() => { window.location.href = 'index.html#register'; }, 2200);
+      return;
+    }
+    window.location.href = 'admin.html';
+  }
+
+  // الدخول بحساب Google: نروح لصفحة Google ونرجع لهذي الصفحة
+  function loginWithGoogle() {
+    document.getElementById('google-btn').disabled = true;
+    location.href = DM.googleUrl(location.origin + location.pathname);
+  }
+
+  // بعد الرجوع من Google، أو إذا كان داخل مسبقاً: نحوّله للوحته
+  (async () => {
     try {
-      let who = await DM.get('/api/owner?action=whoami', true);
-      if (who.is_admin) {
-        window.location.href = 'super-admin.html';
-        return true;
-      }
-      if (who.has_store) {
-        window.location.href = 'admin.html';
-        return true;
-      }
-      return false;
-    } catch (e) {
-      return false;
-    }
-  }
+      if (await DM.consumeOAuthRedirect()) showToast('تم تسجيل الدخول، جاري تحويلك...', 'success');
+    } catch (e) { return showToast(e.message, 'error'); }
+    if (DM.signedIn()) goToDashboard();
+  })();
 
-  async function loginWithGoogle() {
-    try {
-      const { error } = await supabaseClient.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: window.location.href }
-      });
-      if (error) throw error;
-    } catch (err) {
-      showToast('تعذر تسجيل الدخول بواسطة جوجل', 'error');
-    }
-  }
-
-  async function handleGoogleReturn() {
-    const { data: { session }, error } = await supabaseClient.auth.getSession();
-    if (error || !session) return false;
-
-    const sessionData = {
-      access_token: session.access_token,
-      refresh_token: session.refresh_token,
-      expires_at: session.expires_at || Math.floor(Date.now() / 1000) + 3600,
-      email: session.user.email.toLowerCase()
-    };
-    localStorage.setItem('dm_session', JSON.stringify(sessionData));
-
-    let hasStore = await checkStoreAndRedirect();
-    if (hasStore) return true;
-
-    // إذا لم يكن لديه متجر مسجل مسبقاً، ننبهه ونعيده للصفحة الرئيسية ليسجل متجره الجديد هناك
-    showToast('لا يوجد متجر مرتبط بهذا الحساب، يرجى التسجيل من الصفحة الرئيسية', 'error');
-    setTimeout(() => { window.location.href = 'index.html#register'; }, 2500);
-    return true;
-  }
-
-  window.addEventListener('DOMContentLoaded', async () => {
-    const isGoogleAuth = await handleGoogleReturn();
-    if (isGoogleAuth) return;
-
-    if (DM.signedIn()) {
-      let logged = await checkStoreAndRedirect();
-      if (logged) return;
-    }
-  });
-
-  // نموذج البريد التقليدي (OTP)
-  let inputEmail = '';
-  const boxes = Array.from(document.querySelectorAll('.otp-box'));
-
+  // 1. إرسال الرمز
+  // shouldCreateUser: true حتى تقدر المتاجر القديمة تدخل بدون إضافتها يدوياً.
+  // هذا آمن: الدخول وحده لا يعطي أي صلاحية، الصلاحية مربوطة ببريد المتجر في جدول clients
   document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     inputEmail = document.getElementById('identifier-input').value.trim().toLowerCase();
     if (!inputEmail) return;
 
-    document.getElementById('send-otp-btn').disabled = true;
-    document.getElementById('btn-spinner').classList.remove('hidden');
+    setBusy('send-otp-btn', 'btn-spinner', true);
     let error = null;
     try { await DM.sendOtp(inputEmail); } catch (e) { error = e; }
-    document.getElementById('send-otp-btn').disabled = false;
-    document.getElementById('btn-spinner').classList.add('hidden');
+    setBusy('send-otp-btn', 'btn-spinner', false);
 
     if (error) {
-      showToast('تعذر إرسال الرمز: ' + error.message, 'error');
+      console.error('OTP error:', error);
+      const m = (error.message || '').toLowerCase();
+      let msg;
+      if (error.status === 429 || m.includes('rate limit') || m.includes('security purposes'))
+        msg = 'طلبت رموزاً كثيرة، انتظر دقيقة ثم حاول مرة أخرى';
+      else if (m.includes('signups not allowed') || m.includes('user not found'))
+        msg = 'هذا البريد غير مسجل لدينا. أنشئ متجرك من الصفحة الرئيسية.';
+      else if (m.includes('not authorized'))
+        msg = 'خدمة البريد لا تسمح بالإرسال لهذا العنوان (يلزم إعداد SMTP في Supabase).';
+      else
+        msg = `تعذر إرسال الرمز: ${error.message}`;
+      showToast(msg, 'error');
       return;
     }
 
     document.getElementById('login-form').classList.add('hidden');
+    document.getElementById('google-btn').classList.add('hidden');
+    document.getElementById('or-line').classList.add('hidden');
     document.getElementById('otp-form').classList.remove('hidden');
     document.getElementById('main-title').textContent = 'أدخل رمز التحقق';
     document.getElementById('main-desc').textContent = `تم إرسال الرمز إلى بريدك: ${inputEmail}`;
+    resetBoxes();
     boxes[0].focus();
     showToast('تم إرسال رمز التحقق إلى بريدك', 'success');
   });
 
   function resetBoxes() { boxes.forEach(b => { b.value = ''; b.classList.remove('filled'); }); }
-  function backToLogin() {
-    resetBoxes();
-    document.getElementById('otp-form').classList.add('hidden');
-    document.getElementById('login-form').classList.remove('hidden');
-    document.getElementById('main-title').textContent = 'تسجيل الدخول';
-    document.getElementById('main-desc').textContent = 'أدخل بريدك الإلكتروني لتصلك رسالة رمز التحقق، أو تابع باستخدام جوجل.';
-  }
+  const getOtp = () => boxes.map(b => b.value).join('');
 
+  // تجهيز خانات الرمز مرة واحدة فقط
   boxes.forEach((box, idx) => {
     box.addEventListener('input', () => {
       box.value = box.value.replace(/\D/g, '').slice(0, 1);
       box.classList.toggle('filled', !!box.value);
       if (box.value && idx < boxes.length - 1) boxes[idx + 1].focus();
-      if (boxes.map(b => b.value).join('').length === boxes.length) document.getElementById('otp-form').requestSubmit();
+      if (getOtp().length === boxes.length) document.getElementById('otp-form').requestSubmit();
+    });
+    box.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && !box.value && idx > 0) {
+        boxes[idx - 1].value = '';
+        boxes[idx - 1].classList.remove('filled');
+        boxes[idx - 1].focus();
+      }
+    });
+    box.addEventListener('paste', (e) => {
+      const digits = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, boxes.length);
+      if (!digits) return;
+      e.preventDefault();
+      boxes.forEach((b, i) => { b.value = digits[i] || ''; b.classList.toggle('filled', !!b.value); });
+      boxes[Math.min(digits.length, boxes.length) - 1].focus();
+      if (digits.length === boxes.length) document.getElementById('otp-form').requestSubmit();
     });
   });
 
+  function backToLogin() {
+    resetBoxes();
+    document.getElementById('otp-form').classList.add('hidden');
+    document.getElementById('login-form').classList.remove('hidden');
+    document.getElementById('google-btn').classList.remove('hidden');
+    document.getElementById('or-line').classList.remove('hidden');
+    document.getElementById('main-title').textContent = 'تسجيل الدخول';
+    document.getElementById('main-desc').textContent = 'ادخل بحساب Google، أو ببريدك الإلكتروني ورمز تحقق.';
+  }
+
+  // 2. التحقق من الرمز ثم التحويل
+  let verifying = false;
   document.getElementById('otp-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const otp = boxes.map(b => b.value).join('');
-    if (otp.length < 6) return showToast('يرجى إدخال الرمز كاملاً', 'error');
+    if (verifying) return;
+    const otp = getOtp();
+    if (otp.length < boxes.length) return showToast('يرجى إدخال رمز التحقق كاملاً (6 أرقام)', 'error');
 
+    verifying = true;
+    setBusy('verify-otp-btn', 'v-btn-spinner', true);
     let ok = true;
     try { await DM.verifyOtp(inputEmail, otp); } catch { ok = false; }
-    if (!ok) return showToast('رمز التحقق غير صحيح', 'error');
+
+    if (!ok) {
+      verifying = false;
+      setBusy('verify-otp-btn', 'v-btn-spinner', false);
+      return showToast('رمز التحقق غير صحيح أو منتهي الصلاحية', 'error');
+    }
 
     showToast('تم تسجيل الدخول بنجاح، جاري تحويلك...', 'success');
-    let logged = await checkStoreAndRedirect();
-    if (!logged) showToast('لا يوجد متجر مرتبط بهذا الحساب، يرجى التسجيل من الصفحة الرئيسية', 'error');
+    await goToDashboard();
+    verifying = false;
+    setBusy('verify-otp-btn', 'v-btn-spinner', false);
   });
 </script>
 </body>
