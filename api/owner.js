@@ -19,6 +19,36 @@ const ROAST = ['light', 'medium', 'dark'];
 const METHODS = ['v60', 'chemex', 'aeropress', 'frenchpress', 'espresso', 'coldbrew'];
 const DELIVERY = ['hungerstation', 'jahez', 'keeta', 'toyou', 'mrsool', 'thechefz', 'careem', 'shgardi', 'other'];
 const THEMES = ['dark', 'light', 'sand', 'forest'];
+const MAX_SIZES = 6, MAX_COUPONS = 100;
+const validPrice = (n) => Number.isFinite(n) && n >= 0 && n <= 100000;
+const round2 = (n) => Math.round(n * 100) / 100;
+
+// أحجام الطبق: [{name, name_en, price}] بأسماء غير مكررة
+function cleanSizes(list) {
+  if (list === undefined || list === null) return [];
+  if (!Array.isArray(list) || list.length > MAX_SIZES) throw new ApiError(400, `الأحجام حدها ${MAX_SIZES}`);
+  const seen = new Set();
+  return list.map((z) => {
+    if (!z || typeof z !== 'object') throw new ApiError(400, 'حجم غير صحيح');
+    const name = str(z.name, 30, 'اسم الحجم');
+    if (!name) throw new ApiError(400, 'اكتب اسم كل حجم');
+    if (seen.has(name)) throw new ApiError(400, `الحجم "${name}" مكرر`);
+    seen.add(name);
+    const price = Number(z.price);
+    if (!validPrice(price)) throw new ApiError(400, `اكتب سعراً صحيحاً للحجم "${name}"`);
+    const item = { name, price: round2(price) };
+    const en = str(z.name_en, 30, 'اسم الحجم بالإنجليزي');
+    if (en) item.name_en = en;
+    return item;
+  });
+}
+
+// تاريخ YYYY-MM-DD بتوقيت الرياض: بداية اليوم أو نهايته
+function riyadhDate(v, endOfDay, field) {
+  if (v === undefined || v === null || v === '') return null;
+  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v) || isNaN(Date.parse(v))) throw new ApiError(400, `تاريخ غير صحيح: ${field}`);
+  return `${v}T${endOfDay ? '23:59:59.999' : '00:00:00'}+03:00`;
+}
 const MAX_ORDER_NUMBERS = 5, MAX_CUSTOM_LINKS = 30;
 
 // رقم اتصال: أرقام فقط (9 إلى 15) مع + اختيارية في البداية. المسافات والشرطات تنشال
@@ -139,6 +169,12 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     return { entries, from, store_name: store.name, slug: store.client_slug };
   }
 
+  // ─── كوبونات الخصم: القائمة ───
+  if (action === 'coupons' && req.method === 'GET') {
+    const { store } = await context(req);
+    return { coupons: await rest(`coupons?client_id=eq.${store.id}&select=*&order=id.desc`) };
+  }
+
   if (req.method !== 'POST') throw new ApiError(404, 'Unknown action');
   const { store } = await context(req);
   const sid = store.id;
@@ -253,6 +289,69 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     return { store: await patchStore(sid, p) };
   }
 
+  // ─── كوبونات الخصم ───
+  if (action === 'coupon-save') {
+    const id = b.id == null ? null : int(b.id);
+    const code = String(b.code || '').trim().toUpperCase();
+    if (!/^[A-Z0-9-]{3,20}$/.test(code)) throw new ApiError(400, 'رمز الكوبون من 3 إلى 20 حرف: حروف إنجليزية وأرقام وشرطة', 'BAD_CODE');
+    if (!['percent', 'fixed'].includes(b.type)) throw new ApiError(400, 'نوع الخصم غير صحيح');
+    const value = round2(Number(b.value));
+    if (!Number.isFinite(value) || value <= 0 || value > (b.type === 'percent' ? 100 : 100000)) {
+      throw new ApiError(400, b.type === 'percent' ? 'نسبة الخصم من 1 إلى 100' : 'اكتب مبلغ خصم صحيح');
+    }
+    const scope = b.scope === 'selected' ? 'selected' : 'all';
+    let category_keys = [], product_ids = [];
+    if (scope === 'selected') {
+      const [cats, prods] = await Promise.all([
+        rest(`categories?client_id=eq.${sid}&select=key`),
+        rest(`products?client_id=eq.${sid}&select=id`)
+      ]);
+      const catKeys = new Set(cats.map(c => c.key)), prodIds = new Set(prods.map(p => p.id));
+      category_keys = [...new Set(Array.isArray(b.category_keys) ? b.category_keys : [])].filter(k => catKeys.has(k));
+      product_ids = [...new Set((Array.isArray(b.product_ids) ? b.product_ids : []).map(int))].filter(i => prodIds.has(i));
+      if (!category_keys.length && !product_ids.length) throw new ApiError(400, 'اختر قسم أو صنف واحد على الأقل');
+    }
+    let min_order = null;
+    if (b.min_order !== null && b.min_order !== undefined && b.min_order !== '') {
+      min_order = round2(Number(b.min_order));
+      if (!validPrice(min_order)) throw new ApiError(400, 'الحد الأدنى للطلب غير صحيح');
+    }
+    let max_uses = null;
+    if (b.max_uses !== null && b.max_uses !== undefined && b.max_uses !== '') {
+      max_uses = int(b.max_uses);
+      if (!Number.isInteger(max_uses) || max_uses < 1 || max_uses > 1000000) throw new ApiError(400, 'عدد مرات الاستخدام غير صحيح');
+    }
+    const starts_at = riyadhDate(b.starts_at, false, 'تاريخ البداية');
+    const ends_at = riyadhDate(b.ends_at, true, 'تاريخ النهاية');
+    if (starts_at && ends_at && Date.parse(ends_at) < Date.parse(starts_at)) throw new ApiError(400, 'تاريخ النهاية قبل تاريخ البداية');
+    const row = { code, type: b.type, value, scope, category_keys, product_ids, min_order, max_uses, starts_at, ends_at, is_active: b.is_active !== false };
+    try {
+      if (id) {
+        const rows = await rest(`coupons?id=eq.${id}&client_id=eq.${sid}`, { method: 'PATCH', body: row, prefer: 'return=representation' });
+        if (!rows.length) throw new ApiError(404, 'الكوبون غير موجود');
+        return { coupon: rows[0] };
+      }
+      const count = await rest(`coupons?client_id=eq.${sid}&select=id`);
+      if (count.length >= MAX_COUPONS) throw new ApiError(400, `الكوبونات حدها ${MAX_COUPONS}، احذف القديمة أولاً`);
+      return { coupon: (await rest('coupons', { method: 'POST', body: { ...row, client_id: sid }, prefer: 'return=representation' }))[0] };
+    } catch (e) {
+      if (e.code === '23505') throw new ApiError(409, 'فيه كوبون بنفس الرمز', 'CODE_TAKEN');
+      throw e;
+    }
+  }
+
+  if (action === 'coupon-toggle') {
+    const rows = await rest(`coupons?id=eq.${int(b.id)}&client_id=eq.${sid}`, { method: 'PATCH', body: { is_active: b.value === true }, prefer: 'return=representation' });
+    if (!rows.length) throw new ApiError(404, 'الكوبون غير موجود');
+    return { coupon: rows[0] };
+  }
+
+  if (action === 'coupon-delete') {
+    const rows = await rest(`coupons?id=eq.${int(b.id)}&client_id=eq.${sid}`, { method: 'DELETE', prefer: 'return=representation' });
+    if (!rows.length) throw new ApiError(404, 'الكوبون غير موجود');
+    return { ok: true };
+  }
+
   // ─── تغيير رابط المتجر (يصير النطاق الفرعي: slug.devmenu.digital) ───
   // الرابط القديم ينحفظ في old_slugs: المنيو يفتح منه، وما يقدر متجر ثاني ياخذه
   if (action === 'update-slug') {
@@ -339,8 +438,10 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const id = b.id == null ? null : int(b.id);
     const name = str(b.name, 100, 'اسم الطبق');
     if (!name) throw new ApiError(400, 'اكتب اسم الطبق');
-    const price = Number(b.price);
-    if (!Number.isFinite(price) || price < 0 || price > 100000) throw new ApiError(400, 'اكتب سعراً صحيحاً');
+    // مع الأحجام: سعر الطبق = أقل سعر حجم (للترتيب وعرض "من ...")
+    const sizes = cleanSizes(b.sizes);
+    const price = sizes.length ? Math.min(...sizes.map(z => z.price)) : Number(b.price);
+    if (!validPrice(price)) throw new ApiError(400, 'اكتب سعراً صحيحاً');
     const category = str(b.category, 80, 'القسم');
     const cats = await rest(`categories?client_id=eq.${sid}&select=key,name`);
     if (!cats.some(c => c.key === category || c.name === category)) throw new ApiError(400, 'القسم غير موجود');
@@ -351,7 +452,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       if (!Number.isInteger(calories) || calories < 0 || calories > 10000) throw new ApiError(400, 'عدد السعرات غير صحيح');
     }
     const payload = {
-      name, price, category,
+      name, price, category, sizes,
       description: str(b.description, 500, 'الوصف'),
       extra_info: str(b.extra_info, 200, 'معلومات إضافية') || null,
       note: str(b.note, 200, 'الملاحظة') || null,

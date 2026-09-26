@@ -296,6 +296,9 @@ tailwind.config = {
     <button onclick="switchTab('categories')" id="tab-categories" class="tab-btn bg-brand/5 hover:bg-brand/10 text-ink/75 px-5 py-2.5 rounded-xl border border-brand/25 text-xs font-bold transition flex items-center gap-2">
       <i class="fa-solid fa-layer-group"></i> الأقسام والقوائم
     </button>
+    <button onclick="switchTab('coupons')" id="tab-coupons" class="tab-btn bg-brand/5 hover:bg-brand/10 text-ink/75 px-5 py-2.5 rounded-xl border border-brand/25 text-xs font-bold transition flex items-center gap-2">
+      <i class="fa-solid fa-ticket"></i> الكوبونات
+    </button>
   </div>
 
   <!-- قسم المنتجات -->
@@ -315,10 +318,19 @@ tailwind.config = {
               <label class="text-[11px] text-ink/75 block mb-1">القسم *</label>
               <select id="prod-category" required class="input-pro bg-cream"></select>
             </div>
-            <div>
+            <div id="price-field">
               <label class="text-[11px] text-ink/75 block mb-1">السعر (&#x20C1;) *</label>
-              <input type="number" step="0.5" id="prod-price" placeholder="0.00" required class="input-pro">
+              <input type="number" step="0.5" min="0" id="prod-price" placeholder="0.00" class="input-pro">
             </div>
+          </div>
+          <!-- أحجام وأسعار متعددة -->
+          <div class="bg-brand/5 rounded-xl border border-brand/15 p-2.5 space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[11px] font-bold text-ink"><i class="fa-solid fa-up-right-and-down-left-from-center text-emerald-600"></i> أحجام وأسعار <span class="text-ink/50 font-normal">(اختياري)</span></span>
+              <button type="button" id="size-add-btn" onclick="addSize()" class="text-[10px] font-bold bg-white border border-brand/20 hover:bg-brand/10 text-ink px-2.5 py-1 rounded-lg transition disabled:opacity-40"><i class="fa-solid fa-plus text-[9px]"></i> إضافة حجم</button>
+            </div>
+            <div id="sizes-list" class="space-y-1.5"></div>
+            <p id="sizes-hint" class="hidden text-[10px] text-ink/60">مع الأحجام يتحدد السعر من كل حجم، ويظهر في المنيو "من" أقل سعر.</p>
           </div>
           <div>
             <label class="text-[11px] text-ink/75 block mb-1">صورة الطبق <span id="image-hint" class="text-ink/50"></span></label>
@@ -446,6 +458,88 @@ tailwind.config = {
             <p class="text-xs text-ink/60 text-center py-6">جاري التحميل...</p>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- قسم الكوبونات -->
+  <div id="section-coupons" class="space-y-4 hidden">
+    <div id="coupons-wa-warning" class="hidden rounded-2xl p-3.5 border bg-amber-500/10 border-amber-500/30 text-[11px] font-bold text-amber-800 flex flex-wrap items-center justify-between gap-2">
+      <span><i class="fa-solid fa-circle-info"></i> الكوبونات تشتغل مع سلة الطلب عبر واتساب. فعّل "استقبال الطلبات عبر واتساب" حتى تظهر للزبائن.</span>
+      <button type="button" onclick="location.hash='settings'" class="bg-brand text-cream px-3 py-1.5 rounded-lg text-[10px] font-black">فتح الإعدادات</button>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+      <form id="coupon-form" class="pro-card p-5 space-y-3.5 lg:col-span-5">
+        <h3 class="text-xs font-bold text-ink border-b border-brand/20 pb-2 flex items-center gap-2">
+          <i class="fa-solid fa-ticket text-emerald-600"></i> <span id="coupon-form-title">كوبون جديد</span>
+        </h3>
+        <div>
+          <label class="text-[11px] text-ink/75 block mb-1">رمز الكوبون *</label>
+          <input type="text" id="cp-code" maxlength="20" dir="ltr" autocomplete="off" placeholder="WELCOME10"
+            oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9-]/g,'')" class="input-pro font-bold tracking-wider">
+          <p class="text-[10px] text-ink/50 mt-1">حروف إنجليزية وأرقام وشرطة، من 3 إلى 20 حرف.</p>
+        </div>
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="text-[11px] text-ink/75 block mb-1">نوع الخصم</label>
+            <select id="cp-type" onchange="renderCouponForm()" class="input-pro bg-cream">
+              <option value="percent">نسبة %</option>
+              <option value="fixed">مبلغ ثابت &#x20C1;</option>
+            </select>
+          </div>
+          <div>
+            <label id="cp-value-label" class="text-[11px] text-ink/75 block mb-1">النسبة *</label>
+            <input type="number" id="cp-value" min="0" step="0.5" placeholder="10" class="input-pro" dir="ltr">
+          </div>
+        </div>
+        <div>
+          <label class="text-[11px] text-ink/75 block mb-1">يشمل</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 bg-brand/5 border border-brand/15 rounded-xl p-2.5 text-xs font-bold cursor-pointer"><input type="radio" name="cp-scope" value="all" checked onchange="renderCouponForm()" class="accent-[#384f3d]"> كل الأصناف</label>
+            <label class="flex items-center gap-2 bg-brand/5 border border-brand/15 rounded-xl p-2.5 text-xs font-bold cursor-pointer"><input type="radio" name="cp-scope" value="selected" onchange="renderCouponForm()" class="accent-[#384f3d]"> أقسام وأصناف محددة</label>
+          </div>
+        </div>
+        <div id="cp-targets" class="hidden space-y-2">
+          <div>
+            <p class="text-[10px] font-bold text-ink/60 mb-1">الأقسام</p>
+            <div id="cp-cats" class="flex flex-wrap gap-1.5"></div>
+          </div>
+          <div>
+            <p class="text-[10px] font-bold text-ink/60 mb-1">أصناف محددة</p>
+            <div id="cp-products" class="max-h-52 overflow-y-auto bg-white border border-brand/15 rounded-xl p-2 space-y-2"></div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="text-[11px] text-ink/75 block mb-1">الحد الأدنى للطلب <span class="text-ink/50">(اختياري)</span></label>
+            <input type="number" id="cp-min" min="0" step="1" placeholder="&#x20C1;" class="input-pro" dir="ltr">
+          </div>
+          <div>
+            <label class="text-[11px] text-ink/75 block mb-1">عدد مرات الاستخدام <span class="text-ink/50">(اختياري)</span></label>
+            <input type="number" id="cp-max" min="1" step="1" placeholder="بلا حد" class="input-pro" dir="ltr">
+          </div>
+          <div>
+            <label class="text-[11px] text-ink/75 block mb-1">يبدأ من <span class="text-ink/50">(اختياري)</span></label>
+            <input type="date" id="cp-start" class="input-pro" dir="ltr">
+          </div>
+          <div>
+            <label class="text-[11px] text-ink/75 block mb-1">ينتهي في <span class="text-ink/50">(اختياري)</span></label>
+            <input type="date" id="cp-end" class="input-pro" dir="ltr">
+          </div>
+        </div>
+        <label class="flex items-center gap-2 bg-brand/5 p-2.5 rounded-xl border border-brand/15 cursor-pointer">
+          <input type="checkbox" id="cp-active" checked class="w-4 h-4 accent-[#384f3d]">
+          <span class="text-xs font-bold text-ink">الكوبون فعّال</span>
+        </label>
+        <button type="submit" id="cp-submit" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition disabled:opacity-50">حفظ الكوبون</button>
+        <button type="button" id="cp-cancel" onclick="resetCouponForm()" class="hidden w-full bg-brand/5 hover:bg-brand/10 text-ink/75 font-bold py-2.5 rounded-xl text-xs transition border border-brand/20">إلغاء التعديل</button>
+      </form>
+      <div class="pro-card p-5 space-y-3 lg:col-span-7">
+        <div class="flex items-center justify-between border-b border-brand/20 pb-2">
+          <h3 class="text-xs font-bold text-ink">كوبوناتك</h3>
+          <span id="coupons-count" class="text-[10px] font-bold text-cream bg-brand px-2.5 py-0.5 rounded-full">0</span>
+        </div>
+        <div id="coupons-list" class="space-y-2.5"><p class="text-xs text-ink/60 text-center py-6">جاري التحميل...</p></div>
       </div>
     </div>
   </div>
@@ -911,10 +1005,11 @@ tailwind.config = {
   }
 
   function switchTab(tab) {
-    document.getElementById('section-products').classList.toggle('hidden', tab !== 'products');
-    document.getElementById('section-categories').classList.toggle('hidden', tab !== 'categories');
-    document.getElementById('tab-products').classList.toggle('active', tab === 'products');
-    document.getElementById('tab-categories').classList.toggle('active', tab === 'categories');
+    ['products', 'categories', 'coupons'].forEach(t => {
+      document.getElementById(`section-${t}`).classList.toggle('hidden', tab !== t);
+      document.getElementById(`tab-${t}`).classList.toggle('active', tab === t);
+    });
+    if (tab === 'coupons') openCouponsTab();
   }
 
   // ─── التنقل بين الصفحات ───
@@ -2761,7 +2856,7 @@ tailwind.config = {
                 ${isBestseller ? `<span class="bg-brand/15 text-ink text-[9px] px-1.5 py-0.5 rounded font-bold border border-brand/30 shrink-0"><i class="fa-solid fa-fire text-amber-600"></i> مميز</span>` : ''}
                 ${isHidden ? `<span class="bg-ink/10 text-ink/70 text-[9px] px-1.5 py-0.5 rounded font-bold shrink-0"><i class="fa-solid fa-eye-slash"></i> مخفي</span>` : ''}
               </div>
-              <p class="text-ink/75 font-semibold text-[11px]">${esc(money(p.price))}${!showCalories() ? '' : p.calories != null ? ` <span class="text-ink/50">· ${Number(p.calories)} سعرة</span>` : ` <span class="text-amber-600">· بدون سعرات</span>`}</p>
+              <p class="text-ink/75 font-semibold text-[11px]">${sizesText(p) ? esc(sizesText(p)) : esc(money(p.price))}${!showCalories() ? '' : p.calories != null ? ` <span class="text-ink/50">· ${Number(p.calories)} سعرة</span>` : ` <span class="text-amber-600">· بدون سعرات</span>`}</p>
               ${p.coffee && allowsCoffee() ? `<p class="text-[10px] text-amber-700 truncate"><i class="fa-solid fa-mug-hot"></i> ${esc(coffeeSummary(p.coffee) || 'قهوة مختصة')}</p>` : ''}
             </div>
           </div>
@@ -2796,6 +2891,184 @@ tailwind.config = {
     });
   }
 
+  // ─── أحجام الطبق (صغير، وسط، كبير...) ───
+  const MAX_SIZES = 6;
+  let formSizes = [];
+  const sizesText = (p) => (Array.isArray(p.sizes) && p.sizes.length) ? p.sizes.map(z => `${z.name} ${money(z.price)}`).join(' · ') : '';
+  function renderSizes() {
+    document.getElementById('sizes-list').innerHTML = formSizes.map((z, i) => `
+      <div class="flex items-center gap-1.5">
+        <input type="text" maxlength="30" value="${esc(z.name || '')}" oninput="formSizes[${i}].name=this.value" placeholder="${['صغير', 'وسط', 'كبير'][i] || 'الحجم'}" class="input-pro !py-1.5 text-xs flex-1 min-w-0">
+        <input type="text" maxlength="30" value="${esc(z.name_en || '')}" oninput="formSizes[${i}].name_en=this.value" placeholder="${['Small', 'Medium', 'Large'][i] || 'Size'}" dir="ltr" class="input-pro !py-1.5 text-xs w-20 sm:w-24">
+        <input type="number" min="0" step="0.5" value="${esc(z.price ?? '')}" oninput="formSizes[${i}].price=this.value" placeholder="&#x20C1;" dir="ltr" class="input-pro !py-1.5 text-xs w-20">
+        <button type="button" onclick="formSizes.splice(${i}, 1); renderSizes()" aria-label="حذف الحجم" class="shrink-0 w-9 h-9 rounded-lg bg-red-500/10 text-red-600 border border-red-500/20 hover:bg-red-500/20"><i class="fa-solid fa-xmark"></i></button>
+      </div>`).join('');
+    const on = formSizes.length > 0;
+    document.getElementById('price-field').classList.toggle('hidden', on);
+    document.getElementById('sizes-hint').classList.toggle('hidden', !on);
+    document.getElementById('size-add-btn').disabled = formSizes.length >= MAX_SIZES;
+  }
+  function addSize() {
+    if (formSizes.length >= MAX_SIZES) return;
+    // أول حجم ياخذ السعر المكتوب حالياً
+    const base = document.getElementById('prod-price').value;
+    formSizes.push({ name: '', name_en: '', price: formSizes.length === 0 && base !== '' ? base : '' });
+    renderSizes();
+    const inputs = document.querySelectorAll('#sizes-list input[type="text"]:not([dir])');
+    if (inputs.length) inputs[inputs.length - 1].focus();
+  }
+
+  // ─── كوبونات الخصم ───
+  let coupons = null, editingCouponId = null;
+  const riyadhDay = (ts) => ts ? new Date(Date.parse(ts) + 3 * 3600000).toISOString().slice(0, 10) : '';
+
+  async function openCouponsTab() {
+    document.getElementById('coupons-wa-warning').classList.toggle('hidden', client.whatsapp_orders === true);
+    renderCouponForm();
+    if (coupons) return renderCoupons();
+    try { coupons = (await api('coupons')).coupons || []; }
+    catch { document.getElementById('coupons-list').innerHTML = '<p class="text-xs text-red-600 text-center py-6">تعذر تحميل الكوبونات</p>'; return; }
+    renderCoupons();
+  }
+
+  function couponScopeText(c) {
+    if (c.scope === 'all') return 'كل الأصناف';
+    const cats = loadedCategories.filter(x => (c.category_keys || []).includes(x.key)).map(x => x.name);
+    const n = (c.product_ids || []).length;
+    return [cats.length ? `أقسام: ${cats.join('، ')}` : '', n ? `${n} ${n === 1 ? 'صنف' : n === 2 ? 'صنفين' : 'أصناف'}` : ''].filter(Boolean).join(' + ');
+  }
+  function couponState(c) {
+    const now = Date.now();
+    if (!c.is_active) return ['موقوف', 'bg-ink/10 text-ink/70'];
+    if (c.ends_at && Date.parse(c.ends_at) < now) return ['منتهي', 'bg-red-500/10 text-red-700'];
+    if (c.max_uses != null && c.uses >= c.max_uses) return ['استُنفد', 'bg-red-500/10 text-red-700'];
+    if (c.starts_at && Date.parse(c.starts_at) > now) return ['لم يبدأ', 'bg-blue-500/10 text-blue-700'];
+    return ['فعّال', 'bg-green-500/15 text-green-700'];
+  }
+  function renderCoupons() {
+    document.getElementById('coupons-count').textContent = coupons.length;
+    document.getElementById('coupons-list').innerHTML = coupons.length ? coupons.map(c => {
+      const [state, cls] = couponState(c);
+      const value = c.type === 'percent' ? `${Number(c.value)}%` : money(Number(c.value));
+      const dates = [c.starts_at && `من ${riyadhDay(c.starts_at)}`, c.ends_at && `إلى ${riyadhDay(c.ends_at)}`].filter(Boolean).join(' ');
+      return `
+        <div class="bg-brand/5 border border-brand/15 rounded-xl p-3 space-y-2 ${editingCouponId === c.id ? 'editing-glow' : ''}">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="font-black text-sm text-ink tracking-wider bg-white border border-dashed border-brand/40 px-2.5 py-1 rounded-lg" dir="ltr">${esc(c.code)}</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}">${state}</span>
+            </div>
+            <span class="text-sm font-black text-emerald-700">خصم ${esc(value)}</span>
+          </div>
+          <p class="text-[11px] text-ink/70">${esc(couponScopeText(c))}${c.min_order != null ? ` · أقل طلب ${esc(money(Number(c.min_order)))}` : ''}</p>
+          <p class="text-[10px] text-ink/55">استُخدم ${Number(c.uses)}${c.max_uses != null ? ` من ${Number(c.max_uses)}` : ''} مرة${dates ? ` · ${esc(dates)}` : ''}</p>
+          <div class="flex gap-1.5">
+            <button onclick="editCoupon(${Number(c.id)})" class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold border bg-white text-ink/90 border-brand/20 hover:bg-brand/10"><i class="fa-solid fa-pen text-[9px]"></i> تعديل</button>
+            <button onclick="toggleCoupon(${Number(c.id)})" class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold border ${c.is_active ? 'bg-white text-ink/80 border-brand/20' : 'bg-green-500/15 text-green-700 border-green-500/30'}">${c.is_active ? 'إيقاف' : 'تفعيل'}</button>
+            <button onclick="deleteCoupon(${Number(c.id)})" aria-label="حذف" class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold border bg-red-500/10 text-red-600 border-red-500/20"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>`;
+    }).join('') : '<p class="text-xs text-ink/60 text-center py-6">ما عندك كوبونات للحين. أنشئ أول كوبون من النموذج.</p>';
+  }
+
+  // الأقسام والأصناف المختارة في النموذج
+  let cpCats = new Set(), cpProducts = new Set();
+  function renderCouponForm() {
+    const percent = document.getElementById('cp-type').value === 'percent';
+    document.getElementById('cp-value-label').textContent = percent ? 'النسبة % *' : 'المبلغ (\u20C1) *';
+    document.getElementById('cp-value').max = percent ? 100 : 100000;
+    const selected = document.querySelector('input[name="cp-scope"]:checked').value === 'selected';
+    document.getElementById('cp-targets').classList.toggle('hidden', !selected);
+    if (!selected) return;
+    document.getElementById('cp-cats').innerHTML = loadedCategories.length ? loadedCategories.map(c => `
+      <button type="button" onclick="toggleCpCat('${esc(c.key)}')" class="px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition ${cpCats.has(c.key) ? 'bg-brand text-cream border-brand' : 'bg-white text-ink/80 border-brand/20'}">${esc(c.name)}</button>`).join('')
+      : '<p class="text-[10px] text-ink/50">ما فيه أقسام.</p>';
+    document.getElementById('cp-products').innerHTML = loadedCategories.map(c => {
+      const ps = loadedProducts.filter(p => p.category === c.key || p.category === c.name);
+      if (!ps.length) return '';
+      return `<div><p class="text-[10px] font-black text-ink/50 mb-1">${esc(c.name)}${cpCats.has(c.key) ? ' <span class="text-emerald-700">(القسم كامل مختار)</span>' : ''}</p>
+        ${ps.map(p => `<label class="flex items-center gap-2 text-xs py-0.5 cursor-pointer ${cpCats.has(c.key) ? 'opacity-40' : ''}">
+          <input type="checkbox" ${cpProducts.has(p.id) ? 'checked' : ''} onchange="toggleCpProduct(${Number(p.id)}, this.checked)" class="accent-[#384f3d]"> <span class="truncate">${esc(p.name)}</span></label>`).join('')}</div>`;
+    }).join('') || '<p class="text-[10px] text-ink/50">ما فيه أصناف.</p>';
+  }
+  function toggleCpCat(key) { cpCats.has(key) ? cpCats.delete(key) : cpCats.add(key); renderCouponForm(); }
+  function toggleCpProduct(id, on) { on ? cpProducts.add(id) : cpProducts.delete(id); }
+
+  function resetCouponForm() {
+    editingCouponId = null;
+    document.getElementById('coupon-form').reset();
+    cpCats = new Set(); cpProducts = new Set();
+    document.getElementById('coupon-form-title').textContent = 'كوبون جديد';
+    document.getElementById('cp-cancel').classList.add('hidden');
+    renderCouponForm();
+    if (coupons) renderCoupons();
+  }
+  function editCoupon(id) {
+    const c = coupons.find(x => x.id === id); if (!c) return;
+    editingCouponId = id;
+    document.getElementById('cp-code').value = c.code;
+    document.getElementById('cp-type').value = c.type;
+    document.getElementById('cp-value').value = Number(c.value);
+    document.querySelector(`input[name="cp-scope"][value="${c.scope}"]`).checked = true;
+    cpCats = new Set(c.category_keys || []); cpProducts = new Set((c.product_ids || []).map(Number));
+    document.getElementById('cp-min').value = c.min_order != null ? Number(c.min_order) : '';
+    document.getElementById('cp-max').value = c.max_uses != null ? c.max_uses : '';
+    document.getElementById('cp-start').value = riyadhDay(c.starts_at);
+    document.getElementById('cp-end').value = riyadhDay(c.ends_at);
+    document.getElementById('cp-active').checked = c.is_active;
+    document.getElementById('coupon-form-title').textContent = `تعديل: ${c.code}`;
+    document.getElementById('cp-cancel').classList.remove('hidden');
+    renderCouponForm(); renderCoupons();
+    document.getElementById('coupon-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  document.getElementById('coupon-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const v = (id) => document.getElementById(id).value.trim();
+    const code = v('cp-code'), type = v('cp-type'), value = parseFloat(v('cp-value'));
+    const scope = document.querySelector('input[name="cp-scope"]:checked').value;
+    if (!/^[A-Z0-9-]{3,20}$/.test(code)) return showToast('رمز الكوبون من 3 إلى 20 حرف: حروف إنجليزية وأرقام وشرطة', true);
+    if (isNaN(value) || value <= 0 || (type === 'percent' && value > 100)) return showToast(type === 'percent' ? 'النسبة من 1 إلى 100' : 'اكتب مبلغ خصم صحيح', true);
+    if (scope === 'selected' && !cpCats.size && !cpProducts.size) return showToast('اختر قسم أو صنف واحد على الأقل', true);
+    if (v('cp-start') && v('cp-end') && v('cp-end') < v('cp-start')) return showToast('تاريخ النهاية قبل تاريخ البداية', true);
+    const btn = document.getElementById('cp-submit');
+    btn.disabled = true;
+    try {
+      const res = await api('coupon-save', {
+        id: editingCouponId, code, type, value, scope,
+        category_keys: [...cpCats], product_ids: [...cpProducts],
+        min_order: v('cp-min') || null, max_uses: v('cp-max') || null,
+        starts_at: v('cp-start') || null, ends_at: v('cp-end') || null,
+        is_active: document.getElementById('cp-active').checked
+      });
+      const i = coupons.findIndex(x => x.id === res.coupon.id);
+      if (i >= 0) coupons[i] = res.coupon; else coupons.unshift(res.coupon);
+      showToast(editingCouponId ? 'تم حفظ الكوبون' : `تم إنشاء الكوبون ${res.coupon.code}`);
+      resetCouponForm();
+    } catch { showToast('تعذر حفظ الكوبون', true); }
+    finally { btn.disabled = false; }
+  });
+
+  async function toggleCoupon(id) {
+    const c = coupons.find(x => x.id === id); if (!c) return;
+    try {
+      const res = await api('coupon-toggle', { id, value: !c.is_active });
+      Object.assign(c, res.coupon);
+      renderCoupons();
+      showToast(c.is_active ? 'تم تفعيل الكوبون' : 'تم إيقاف الكوبون');
+    } catch { showToast('تعذر تحديث الكوبون', true); }
+  }
+  function deleteCoupon(id) {
+    const c = coupons.find(x => x.id === id); if (!c) return;
+    openDeleteModal('حذف الكوبون', `هل أنت متأكد من حذف الكوبون "${c.code}"؟`, async () => {
+      try { await api('coupon-delete', { id }); }
+      catch { return showToast('تعذر حذف الكوبون', true); }
+      coupons = coupons.filter(x => x.id !== id);
+      if (editingCouponId === id) resetCouponForm(); else renderCoupons();
+      showToast('تم حذف الكوبون');
+    });
+  }
+
   // ─── إضافة وتعديل الأطباق ───
   function startEdit(id) {
     const p = loadedProducts.find(x => x.id === id);
@@ -2803,6 +3076,8 @@ tailwind.config = {
     editingProductId = id;
     document.getElementById('prod-name').value = p.name || '';
     document.getElementById('prod-price').value = p.price ?? '';
+    formSizes = (Array.isArray(p.sizes) ? p.sizes : []).map(z => ({ ...z }));
+    renderSizes();
     document.getElementById('prod-desc').value = p.description || '';
     document.getElementById('prod-extra').value = p.extra_info || '';
     document.getElementById('prod-note').value = p.note || '';
@@ -2830,6 +3105,8 @@ tailwind.config = {
     editingProductId = null;
     document.getElementById('add-product-form').reset();
     setCoffee(null);
+    formSizes = [];
+    renderSizes();
     document.getElementById('image-hint').textContent = '';
     document.getElementById('form-title').textContent = 'إضافة طبق أو منتج جديد';
     document.getElementById('form-icon').className = 'fa-solid fa-plus text-ink';
@@ -2851,14 +3128,20 @@ tailwind.config = {
 
     if (!name) return showToast('اكتب اسم الطبق', true);
     if (!category) return showToast('أضف قسماً أولاً من تبويب الأقسام', true);
-    if (isNaN(price) || price < 0) return showToast('اكتب سعراً صحيحاً', true);
+    const sizes = formSizes.map(z => ({ name: String(z.name || '').trim(), name_en: String(z.name_en || '').trim(), price: parseFloat(z.price) }));
+    if (sizes.length) {
+      if (sizes.some(z => !z.name)) return showToast('اكتب اسم كل حجم', true);
+      if (new Set(sizes.map(z => z.name)).size !== sizes.length) return showToast('فيه حجم مكرر', true);
+      const bad = sizes.find(z => isNaN(z.price) || z.price < 0);
+      if (bad) return showToast(`اكتب سعراً صحيحاً للحجم "${bad.name}"`, true);
+    } else if (isNaN(price) || price < 0) return showToast('اكتب سعراً صحيحاً', true);
     if (showCalories() && calories !== null && (isNaN(calories) || calories < 0 || calories > 10000)) return showToast('اكتب عدد سعرات صحيح', true);
 
     const btn = document.getElementById('submit-btn');
     btn.disabled = true;
     try {
       const payload = {
-        name, category, price, description, is_bestseller,
+        name, category, price: sizes.length ? Math.min(...sizes.map(z => z.price)) : price, sizes, description, is_bestseller,
         extra_info: document.getElementById('prod-extra').value.trim(),
         note: document.getElementById('prod-note').value.trim(),
         name_en: document.getElementById('prod-name-en').value.trim() || null,
