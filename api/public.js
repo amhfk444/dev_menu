@@ -24,9 +24,10 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       rest(`categories?client_id=eq.${store.id}&select=id,key,name,name_en,sort_order`),
       rest(`products?client_id=eq.${store.id}&select=${PRODUCT_FIELDS}`)
     ]);
-    // زر "قائمة الانتظار" في المنيو: فقط لو الإضافة مفعّلة والقائمة مفتوحة
+    // زر "قائمة الانتظار" في المنيو: الإضافة مفعّلة + القائمة مفتوحة + صاحب المتجر مختار يظهر الزر
     const wl = (await rest(`clients?id=eq.${store.id}&select=waitlist_enabled,waitlist_settings`))[0] || {};
-    const waitlist_open = wl.waitlist_enabled === true && !(wl.waitlist_settings && wl.waitlist_settings.open === false);
+    const ws = wl.waitlist_settings || {};
+    const waitlist_open = wl.waitlist_enabled === true && ws.open !== false && ws.show_in_menu !== false;
     return { store: { ...store, waitlist_open }, categories: categories.sort(bySort), products: products.sort(bySort) };
   }
 
