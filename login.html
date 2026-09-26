@@ -109,15 +109,15 @@
 
 <div class="pro-card p-6 md:p-8 w-full max-w-md space-y-6 my-auto">
   <div class="text-center space-y-2">
-    <div class="w-12 h-12 rounded-2xl bg-[#233d2c]/10 text-brand border border-[#233d2c]/20 flex items-center justify-center mx-auto text-xl">
-      <i class="fa-solid fa-circle-notch fa-spin" id="loading-icon"></i>
+    <div id="icon-container" class="w-12 h-12 rounded-2xl bg-[#233d2c]/10 text-brand border border-[#233d2c]/20 flex items-center justify-center mx-auto text-xl">
+      <i class="fa-solid fa-user-lock" id="main-icon"></i>
     </div>
-    <h1 id="main-title" class="text-lg font-black text-brand">جاري التحقق من حسابك...</h1>
-    <p id="main-desc" class="text-xs text-gray-600">يرجى الانتظار قليلاً.</p>
+    <h1 id="main-title" class="text-lg font-black text-brand">تسجيل الدخول</h1>
+    <p id="main-desc" class="text-xs text-gray-600">أدخل بريدك الإلكتروني أو تابع باستخدام جوجل.</p>
   </div>
 
-  <!-- نموذج إدخال البريد (يظهر عند الحاجة للدخول اليدوي) -->
-  <form id="login-form" class="space-y-4 hidden">
+  <!-- نموذج إدخال البريد (التقليدي) -->
+  <form id="login-form" class="space-y-4">
     <div>
       <label class="lbl">البريد الإلكتروني</label>
       <div class="relative">
@@ -125,9 +125,27 @@
         <input type="email" id="identifier-input" placeholder="example@mail.com" required class="input-pro" dir="ltr">
       </div>
     </div>
+    
     <button type="submit" id="send-otp-btn" class="w-full btn-primary font-bold py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
       <span id="btn-text">إرسال رمز التحقق للبريد</span>
       <i id="btn-spinner" class="fa-solid fa-spinner fa-spin hidden"></i>
+    </button>
+
+    <div class="relative flex py-2 items-center">
+      <div class="flex-grow border-t border-gray-200"></div>
+      <span class="flex-shrink mx-4 text-[10px] font-bold text-gray-400">أو</span>
+      <div class="flex-grow border-t border-gray-200"></div>
+    </div>
+
+    <!-- زر تسجيل الدخول عبر جوجل -->
+    <button type="button" onclick="loginWithGoogle()" class="w-full bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-3 shadow-sm transition">
+      <svg class="w-4 h-4" viewBox="0 0 24 24">
+        <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.13 0-5.78-2.11-6.73-4.96H1.19v3.15C3.18 21.31 7.25 24 12 24z"/>
+        <path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.19C.43 8.15 0 9.89 0 12s.43 3.85 1.19 5.39l4.08-3.15z"/>
+        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.25 0 3.18 2.69 1.19 6.61l4.08 3.15c.95-2.85 3.6-4.96 6.73-4.96z"/>
+      </svg>
+      <span>تسجيل الدخول بواسطة Google</span>
     </button>
   </form>
 
@@ -200,12 +218,28 @@
     }
   }
 
+  // تفعيل تسجيل الدخول عبر جوجل من صفحة الدخول
+  async function loginWithGoogle() {
+    try {
+      const { error } = await supabaseClient.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.href
+        }
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.error(err);
+      showToast('تعذر تسجيل الدخول بواسطة جوجل، حاول مرة أخرى', 'error');
+    }
+  }
+
+  // فحص العودة من جوجل (إذا كان المستخدم ضغط على زر جوجل ورجع للصفحة)
   async function handleGoogleReturn() {
-    // جلب الجلسة من سوبابيس بعد العودة من جوجل
     const { data: { session }, error } = await supabaseClient.auth.getSession();
     if (error || !session) return false;
 
-    // مزامنة توكن جوجل مباشرة مع نظام التخزين المحلي للـ API (dm_session)
+    // حفظ الجلسة للـ API
     const sessionData = {
       access_token: session.access_token,
       refresh_token: session.refresh_token,
@@ -214,11 +248,17 @@
     };
     localStorage.setItem('dm_session', JSON.stringify(sessionData));
 
-    // 1. فحص هل الحساب مسجل ولديه متجر مسبقاً
+    // إظهار حالة التحميل أثناء الفحص
+    document.getElementById('main-icon').className = 'fa-solid fa-circle-notch fa-spin';
+    document.getElementById('main-title').textContent = 'جاري تسجيل الدخول...';
+    document.getElementById('main-desc').textContent = 'يتم التحقق من حسابك ومتجرك.';
+    document.getElementById('login-form').classList.add('hidden');
+
+    // 1. محاولة الدخول المباشر للوحة التحكم إذا كان لديه متجر
     let hasStore = await checkStoreAndRedirect();
     if (hasStore) return true;
 
-    // 2. إذا لم يكن لديه متجر، نفحص هل توجد بيانات متجر جديدة محفوظة في الـ localStorage
+    // 2. إذا لم يكن لديه متجر، نفحص هل توجد بيانات متجر جديدة مخزنة
     const pendingData = localStorage.getItem('pending_store_data');
     if (pendingData) {
       try {
@@ -241,28 +281,21 @@
       }
     }
 
-    // إذا لم تكن هناك بيانات مسجلة مسبقاً ولا بيانات جديدة
+    // إذا لم يكن لديه متجر أساساً
     showToast('لا يوجد متجر مرتبط بهذا الحساب، يرجى التسجيل من الصفحة الرئيسية', 'error');
     setTimeout(() => { window.location.href = 'index.html#register'; }, 2500);
     return true;
   }
 
   window.addEventListener('DOMContentLoaded', async () => {
-    // فحص هل هناك جلسة سابقة مسجلة
+    // 1. فحص هل المستخدم عائد للتو من جوجل
+    const isGoogleAuth = await handleGoogleReturn();
+    if (isGoogleAuth) return;
+
+    // 2. فحص هل لديه جلسة مسجلة مسبقاً
     if (DM.signedIn()) {
       let logged = await checkStoreAndRedirect();
       if (logged) return;
-    }
-
-    // فحص هل عاد المستخدم من مصادقة جوجل الان
-    const isGoogleAuth = await handleGoogleReturn();
-    
-    if (!isGoogleAuth) {
-      // إذا لم يكن قادماً من جوجل، نظهر نموذج تسجيل الدخول بالبريد التقليدي
-      document.getElementById('loading-icon').className = 'fa-solid fa-user-lock';
-      document.getElementById('main-title').textContent = 'تسجيل الدخول';
-      document.getElementById('main-desc').textContent = 'أدخل بريدك الإلكتروني المسجل لنرسل لك رمز التحقق.';
-      document.getElementById('login-form').classList.remove('hidden');
     }
   });
 
@@ -294,6 +327,15 @@
     boxes[0].focus();
     showToast('تم إرسال رمز التحقق إلى بريدك', 'success');
   });
+
+  function resetBoxes() { boxes.forEach(b => { b.value = ''; b.classList.remove('filled'); }); }
+  function backToLogin() {
+    resetBoxes();
+    document.getElementById('otp-form').classList.add('hidden');
+    document.getElementById('login-form').classList.remove('hidden');
+    document.getElementById('main-title').textContent = 'تسجيل الدخول';
+    document.getElementById('main-desc').textContent = 'أدخل بريدك الإلكتروني أو تابع باستخدام جوجل.';
+  }
 
   boxes.forEach((box, idx) => {
     box.addEventListener('input', () => {
