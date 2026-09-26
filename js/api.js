@@ -153,7 +153,20 @@
     return `${page}.html?client=${encodeURIComponent(slug)}`;
   }
 
+  // الرابط الكامل لصفحة متجر (للمشاركة و QR والمعاينة): النطاق المختصر duja.devmenu.digital،
+  // والروابط القديمة اللي ما تصلح كاسم نطاق (مثل اللي فيها _) تبقى بالصيغة العادية
+  function storeUrl(slug, page = 'menu', params = {}) {
+    const s = String(slug || '').toLowerCase();
+    const qs = new URLSearchParams(params).toString();
+    if (/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(s) && s !== 'app' && s !== 'www') {
+      const path = { menu: '/', links: '/links', waitlist: '/waitlist' }[page] || '/';
+      return `https://${s}.devmenu.digital${path}${qs ? `?${qs}` : ''}`;
+    }
+    return new URL(`${page}.html?client=${encodeURIComponent(s)}${qs ? `&${qs}` : ''}`, location.href).href;
+  }
+
   window.DM = {
+    storeUrl,
     hostSlug,
     storePage,
     googleUrl,

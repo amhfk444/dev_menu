@@ -402,7 +402,7 @@ tailwind.config = { theme: { extend: {
     const remind = reminderLink(c);
     return `
       <div class="menu-pop" onclick="event.stopPropagation()">
-        <a href="menu.html?client=${slug}" target="_blank" rel="noopener"><i class="fa-solid fa-eye"></i> فتح المنيو</a>
+        <a href="${esc(DM.storeUrl(c.client_slug))}" target="_blank" rel="noopener"><i class="fa-solid fa-eye"></i> فتح المنيو</a>
         <a href="admin.html?client=${slug}" target="_blank" rel="noopener"><i class="fa-solid fa-gauge-high"></i> إدارة لوحته</a>
         ${remind ? `<a href="${esc(remind)}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" style="color:#16a34a"></i> رسالة تذكير بالتجديد</a>` : ''}
         <button onclick="openNotify(${id})"><i class="fa-solid fa-bell"></i> ${c.admin_notification ? 'تعديل الإشعار' : 'إرسال إشعار'}</button>
@@ -423,7 +423,7 @@ tailwind.config = { theme: { extend: {
     const phone = waPhone(c.phone);
     if (!phone) return '';
     const s = statusOf(c);
-    const menu = new URL(`menu.html?client=${encodeURIComponent(c.client_slug)}`, location.href).href;
+    const menu = DM.storeUrl(c.client_slug);
     const msg = s.live
       ? `مرحباً، معك فريق DEV MENU 👋\nنذكّرك إن ${c.subscription_status === 'trial' ? 'التجربة المجانية' : 'اشتراك'} منيو "${c.name}" ينتهي خلال ${s.left ?? ''} ${s.left === 1 ? 'يوم' : 'أيام'}.\nالاشتراك السنوي ${PLAN_PRICE.year} ر.س ويشمل كل المزايا.\nرابط منيوك: ${menu}`
       : `مرحباً، معك فريق DEV MENU 👋\nمنيو "${c.name}" متوقف حالياً عن الزبائن. تقدر تجدده الآن ويرجع فوراً: الاشتراك السنوي ${PLAN_PRICE.year} ر.س.`;

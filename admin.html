@@ -1002,11 +1002,12 @@ tailwind.config = {
   }
 
   // رابط المنيو مبني على مسار الصفحة الحالية (يشتغل على GitHub Pages داخل مجلد المشروع)
-  const menuUrl = () => new URL(`menu.html?client=${encodeURIComponent(client.client_slug)}`, window.location.href).href;
+  // روابط المتجر بالنطاق المختصر: https://slug.devmenu.digital
+  const menuUrl = () => DM.storeUrl(client.client_slug);
   // رابط رمز QR يحمل src=qr عشان نفرّق في الإحصائيات بين مسح الطاولة والرابط المشارك
-  const qrUrl = () => `${menuUrl()}&src=qr`;
-  const shortUrl = () => `https://${client.client_slug}.devmenu.digital`;
-  const linksUrl = () => new URL(`links.html?client=${encodeURIComponent(client.client_slug)}`, window.location.href).href;
+  const qrUrl = () => DM.storeUrl(client.client_slug, 'menu', { src: 'qr' });
+  const shortUrl = menuUrl;
+  const linksUrl = () => DM.storeUrl(client.client_slug, 'links');
 
   async function logout() {
     await DM.logout();
@@ -1800,7 +1801,7 @@ tailwind.config = {
   const WL_FIELDS = { name: 'الاسم', phone: 'رقم الجوال', email: 'البريد الإلكتروني', party_size: 'عدد الأشخاص', seating: 'تفضيل الجلسة', notes: 'ملاحظات' };
   const WL_SEATING = { indoor: 'داخلي', outdoor: 'خارجي', any: 'أي مكان' };
   let wl = { settings: null, entries: [], tab: 'active', timer: null, tick: null, seen: new Set(), first: true };
-  const wlUrl = () => new URL(`waitlist.html?client=${encodeURIComponent(client.client_slug)}`, location.href).href;
+  const wlUrl = () => DM.storeUrl(client.client_slug, 'waitlist');
   const minsSince = (iso) => Math.max(0, Math.floor((Date.now() - new Date(iso)) / 60000));
   const minsText = (m) => m < 1 ? 'الآن' : m < 60 ? `${m} د` : `${Math.floor(m / 60)} س ${m % 60} د`;
 
