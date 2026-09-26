@@ -134,6 +134,7 @@
 
   <!-- شريط الأقسام السريع -->
   <div class="sticky top-2 z-40">
+    <div id="group-bar" class="hidden gap-2 mb-2 overflow-x-auto no-scrollbar"></div>
     <div id="fast-filter-bar" class="glass-header rounded-2xl p-1.5 flex gap-2 overflow-x-auto no-scrollbar text-xs border border-white/20 shadow-xl"></div>
   </div>
 
@@ -271,6 +272,7 @@
       if (!p.name_en && p.name) texts.add(p.name);
       if (!p.description_en && p.description) texts.add(p.description);
       if (p.extra_info) texts.add(p.extra_info);
+      allCategories.forEach(c => c.group_name && texts.add(c.group_name));
       if (p.note) texts.add(p.note);
       if (p.coffee) [p.coffee.origin, p.coffee.region, p.coffee.process_other, ...(p.coffee.notes || [])].forEach(t => t && texts.add(t));
     });
@@ -538,9 +540,48 @@
   // ─── العرض ───
   const productsIn = (cat, list) => list.filter(p => p.category === cat.key || p.category === cat.name).sort(bySort);
 
-  function renderFilterBar() {
-    const bar = document.getElementById('fast-filter-bar');
+  // ─── الفئات الرئيسية (فطور، غداء، عشاء...) ───
+  const OTHER_GROUP = '__other';
+  let activeGroup = null;
+  function menuGroups() {
     const cats = allCategories.filter(c => productsIn(c, allProducts).length > 0);
+    const names = [...new Set(cats.map(c => c.group_name).filter(Boolean))];
+    if (!names.length) return [];
+    if (cats.some(c => !c.group_name)) names.push(OTHER_GROUP);
+    return names;
+  }
+  const groupOf = (c) => c.group_name || OTHER_GROUP;
+  function visibleCats() {
+    const groups = menuGroups();
+    if (!groups.length) return allCategories;
+    if (!groups.includes(activeGroup)) activeGroup = groups[0];
+    return allCategories.filter(c => groupOf(c) === activeGroup);
+  }
+  function renderGroupBar() {
+    const bar = document.getElementById('group-bar');
+    const groups = menuGroups();
+    bar.classList.toggle('hidden', groups.length === 0);
+    bar.classList.toggle('flex', groups.length > 0);
+    if (!groups.length) return;
+    if (!groups.includes(activeGroup)) activeGroup = groups[0];
+    bar.innerHTML = groups.map(g => `
+      <button type="button" data-group="${esc(g)}" class="shrink-0 px-5 py-2.5 rounded-2xl text-sm font-black transition border ${g === activeGroup ? 'bg-white text-black border-white' : 'bg-black/30 text-white border-white/25'}">
+        ${esc(g === OTHER_GROUP ? (currentLang === 'ar' ? 'أخرى' : 'More') : tr(g))}
+      </button>`).join('');
+  }
+  document.getElementById('group-bar').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-group]'); if (!b) return;
+    activeGroup = b.dataset.group;
+    document.getElementById('search-input').value = '';
+    renderGroupBar(); renderFilterBar(); renderMenu(allProducts, false);
+    const bar = document.getElementById('group-bar');
+    window.scrollTo({ top: bar.getBoundingClientRect().top + window.scrollY - 16, behavior: 'smooth' });
+  });
+
+  function renderFilterBar() {
+    renderGroupBar();
+    const bar = document.getElementById('fast-filter-bar');
+    const cats = visibleCats().filter(c => productsIn(c, allProducts).length > 0);
     bar.parentElement.classList.toggle('hidden', cats.length === 0);
     bar.innerHTML = cats.map((c, i) => `
       <button type="button" data-cat="${esc(c.id)}" class="cat-pill ${i === 0 ? 'active' : ''} px-4 py-2 rounded-xl bg-white/10 border border-white/25 shrink-0 text-xs text-white font-bold transition">
@@ -586,7 +627,8 @@
 
   function renderMenu(products, isSearch) {
     const container = document.getElementById('dynamic-menu-sections');
-    const groups = allCategories.map(c => [c, productsIn(c, products)]).filter(([, ps]) => ps.length > 0);
+    // البحث يشمل كل الأقسام، والتصفح يعرض أقسام الفئة المختارة فقط
+    const groups = (isSearch ? allCategories : visibleCats()).map(c => [c, productsIn(c, products)]).filter(([, ps]) => ps.length > 0);
 
     if (groups.length === 0) {
       const msg = isSearch
