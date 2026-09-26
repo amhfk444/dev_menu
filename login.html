@@ -178,6 +178,34 @@
       <button type="button" onclick="backToLogin()" class="text-xs text-brand/60 hover:text-brand font-bold">تغيير البريد الإلكتروني</button>
     </div>
   </form>
+
+  <!-- نموذج إنشاء متجر جديد مباشرة إذا لم يكن مسجلاً -->
+  <form id="create-store-form" class="space-y-4 hidden">
+    <div class="bg-brand/10 border border-brand/20 rounded-2xl p-3 text-center">
+      <p class="text-xs font-black text-brand">حساب جوجل جديد! يرجى إدخال بيانات متجرك.</p>
+    </div>
+    <div>
+      <label class="lbl">اسم المطعم أو الكافيه</label>
+      <input type="text" id="new-store-name" placeholder="مثال: لانو / كشري وأكثر" required class="input-pro">
+    </div>
+    <div>
+      <label class="lbl">نوع النشاط</label>
+      <select id="new-store-type" class="input-pro" style="padding-inline-start: 1rem;">
+        <option value="restaurant">مطعم</option>
+        <option value="cafe">كافيه</option>
+        <option value="mixed">مطعم وكافيه</option>
+        <option value="bakery">مخبز ومعجنات</option>
+      </select>
+    </div>
+    <div>
+      <label class="lbl">رقم الجوال (للواتساب)</label>
+      <input type="tel" id="new-store-phone" placeholder="05xxxxxxxx" required class="input-pro" dir="ltr">
+    </div>
+    <button type="submit" id="create-store-btn" class="w-full btn-primary font-bold py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+      <span>إنشاء المتجر والدخول لوحة التحكم</span>
+      <i id="create-spinner" class="fa-solid fa-spinner fa-spin hidden"></i>
+    </button>
+  </form>
 </div>
 
 <footer class="text-center py-4 text-[11px] text-gray-600 font-bold">
@@ -218,28 +246,22 @@
     }
   }
 
-  // تفعيل تسجيل الدخول عبر جوجل من صفحة الدخول
   async function loginWithGoogle() {
     try {
       const { error } = await supabaseClient.auth.signInWithOAuth({
         provider: 'google',
-        options: {
-          redirectTo: window.location.href
-        }
+        options: { redirectTo: window.location.href }
       });
       if (error) throw error;
     } catch (err) {
-      console.error(err);
-      showToast('تعذر تسجيل الدخول بواسطة جوجل، حاول مرة أخرى', 'error');
+      showToast('تعذر تسجيل الدخول بواسطة جوجل', 'error');
     }
   }
 
-  // فحص العودة من جوجل (إذا كان المستخدم ضغط على زر جوجل ورجع للصفحة)
   async function handleGoogleReturn() {
     const { data: { session }, error } = await supabaseClient.auth.getSession();
     if (error || !session) return false;
 
-    // حفظ الجلسة للـ API
     const sessionData = {
       access_token: session.access_token,
       refresh_token: session.refresh_token,
@@ -248,54 +270,65 @@
     };
     localStorage.setItem('dm_session', JSON.stringify(sessionData));
 
-    // إظهار حالة التحميل أثناء الفحص
-    document.getElementById('main-icon').className = 'fa-solid fa-circle-notch fa-spin';
-    document.getElementById('main-title').textContent = 'جاري تسجيل الدخول...';
-    document.getElementById('main-desc').textContent = 'يتم التحقق من حسابك ومتجرك.';
-    document.getElementById('login-form').classList.add('hidden');
-
-    // 1. محاولة الدخول المباشر للوحة التحكم إذا كان لديه متجر
+    // 1. محاولة الدخول لوحة التحكم إذا كان لديه متجر مسبقاً
     let hasStore = await checkStoreAndRedirect();
     if (hasStore) return true;
 
-    // 2. إذا لم يكن لديه متجر، نفحص هل توجد بيانات متجر جديدة مخزنة
+    // 2. فحص هل توجد بيانات متجر جديدة مخزنة مسبقاً
     const pendingData = localStorage.getItem('pending_store_data');
     if (pendingData) {
       try {
         const storeInfo = JSON.parse(pendingData);
         localStorage.removeItem('pending_store_data');
-        
-        showToast('جاري إنشاء متجرك الجديد...', 'info');
         await DM.post('/api/owner?action=register', {
           name: storeInfo.name, 
           phone: storeInfo.phone, 
           business_type: storeInfo.businessType
         }, true);
-        
-        showToast('تم إنشاء متجرك بنجاح!', 'success');
-        setTimeout(() => { window.location.href = 'admin.html'; }, 1000);
+        window.location.href = 'admin.html';
         return true;
-      } catch (e) {
-        console.error(e);
-        showToast(e.message || 'تعذر إنشاء المتجر', 'error');
-      }
+      } catch (e) {}
     }
 
-    // إذا لم يكن لديه متجر أساساً
-    showToast('لا يوجد متجر مرتبط بهذا الحساب، يرجى التسجيل من الصفحة الرئيسية', 'error');
-    setTimeout(() => { window.location.href = 'index.html#register'; }, 2500);
+    // 3. إذا لم يكن لديه متجر ولم تمر عبر التسجيل، نعرض له نموذج إنشاء المتجر مباشرة هنا
+    document.getElementById('main-icon').className = 'fa-solid fa-store';
+    document.getElementById('main-title').textContent = 'أهلاً بك!';
+    document.getElementById('main-desc').textContent = 'أكمل بيانات متجرك للبدء فوراً.';
+    document.getElementById('login-form').classList.add('hidden');
+    document.getElementById('create-store-form').classList.remove('hidden');
     return true;
   }
 
   window.addEventListener('DOMContentLoaded', async () => {
-    // 1. فحص هل المستخدم عائد للتو من جوجل
     const isGoogleAuth = await handleGoogleReturn();
     if (isGoogleAuth) return;
 
-    // 2. فحص هل لديه جلسة مسجلة مسبقاً
     if (DM.signedIn()) {
       let logged = await checkStoreAndRedirect();
       if (logged) return;
+    }
+  });
+
+  // معالجة نموذج إنشاء المتجر المباشر
+  document.getElementById('create-store-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('new-store-name').value.trim();
+    const business_type = document.getElementById('new-store-type').value;
+    const phone = document.getElementById('new-store-phone').value.trim();
+
+    if (!name || !phone) return showToast('يرجى تعبئة جميع الحقول', 'error');
+
+    document.getElementById('create-store-btn').disabled = true;
+    document.getElementById('create-spinner').classList.remove('hidden');
+
+    try {
+      await DM.post('/api/owner?action=register', { name, phone, business_type }, true);
+      showToast('تم إنشاء المتجر بنجاح!', 'success');
+      setTimeout(() => { window.location.href = 'admin.html'; }, 1000);
+    } catch (err) {
+      showToast(err.message || 'تعذر إنشاء المتجر', 'error');
+      document.getElementById('create-store-btn').disabled = false;
+      document.getElementById('create-spinner').classList.add('hidden');
     }
   });
 
@@ -357,7 +390,14 @@
 
     showToast('تم تسجيل الدخول بنجاح، جاري تحويلك...', 'success');
     let logged = await checkStoreAndRedirect();
-    if (!logged) showToast('لا يوجد متجر مرتبط بهذا الحساب', 'error');
+    if (!logged) {
+      // إذا أدخل البريد يدوياً ولم يكن له متجر، نظهر له نموذج إنشاء المتجر أيضاً
+      document.getElementById('otp-form').classList.add('hidden');
+      document.getElementById('main-icon').className = 'fa-solid fa-store';
+      document.getElementById('main-title').textContent = 'أهلاً بك!';
+      document.getElementById('main-desc').textContent = 'أكمل بيانات متجرك للبدء فوراً.';
+      document.getElementById('create-store-form').classList.remove('hidden');
+    }
   });
 </script>
 </body>
