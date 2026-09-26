@@ -112,10 +112,10 @@ tailwind.config = { theme: { extend: {
 
     <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <div class="card p-5 space-y-3">
-        <p class="text-xs font-black flex items-center gap-2"><i class="fa-solid fa-sack-dollar text-green-700"></i> الدخل الشهري التقديري</p>
+        <p class="text-xs font-black flex items-center gap-2"><i class="fa-solid fa-sack-dollar text-green-700"></i> الدخل السنوي من المشتركين</p>
         <p id="mrr" class="text-3xl font-black"></p>
         <div id="mrr-break" class="space-y-1.5 text-[11px] text-ink/70"></div>
-        <p class="text-[10px] text-ink/45 leading-relaxed">تقدير على أساس الباقة الشهرية لكل مشترك مدفوع ساري، مع الإضافات المفعّلة.</p>
+        <p class="text-[10px] text-ink/45 leading-relaxed">عدد المشتركين الساريين × سعر الباقة السنوية.</p>
       </div>
       <div class="card p-5 lg:col-span-2 space-y-3">
         <div class="flex items-center justify-between">
@@ -160,9 +160,9 @@ tailwind.config = { theme: { extend: {
   const money = (n) => `\u2066${SAR} ${Number(n).toLocaleString('en-US')}\u2069`;
 
   // الأسعار (نفسها في لوحة صاحب المتجر)
-  const PLAN_PRICE = { month: 99, year: 1149 };
-  const WAITLIST_PRICE = { month: 49, year: 490 };
-  const totalFor = (c, period) => PLAN_PRICE[period] + (c && c.waitlist_enabled ? WAITLIST_PRICE[period] : 0);
+  // باقة واحدة سنوية تشمل كل المزايا (ومنها قائمة الانتظار)
+  const PLAN_PRICE = { year: 349 };
+  const totalFor = () => PLAN_PRICE.year;
   const TYPES = { restaurant: ['مطعم', 'fa-utensils'], cafe: ['مقهى', 'fa-mug-hot'], mixed: ['مطعم ومقهى', 'fa-burger'], bakery: ['مخبز', 'fa-bread-slice'] };
 
   let clients = [], filter = 'all', openMenu = null, notifyId = null;
@@ -293,14 +293,13 @@ tailwind.config = { theme: { extend: {
   }
 
   function renderRevenue() {
-    const paid = clients.filter(c => statusOf(c).key === 'paid');
-    const base = paid.length * PLAN_PRICE.month;
-    const addons = paid.filter(c => c.waitlist_enabled).length * WAITLIST_PRICE.month;
-    document.getElementById('mrr').textContent = money(base + addons);
+    const paid = clients.filter(c => statusOf(c).key === 'paid').length;
+    const trial = clients.filter(c => statusOf(c).key === 'trial').length;
+    document.getElementById('mrr').textContent = money(paid * PLAN_PRICE.year);
     document.getElementById('mrr-break').innerHTML = `
-      <div class="flex justify-between"><span>${paid.length} اشتراك × ${money(PLAN_PRICE.month)}</span><b>${money(base)}</b></div>
-      <div class="flex justify-between"><span>إضافة قائمة الانتظار (${paid.filter(c => c.waitlist_enabled).length})</span><b>${money(addons)}</b></div>
-      <div class="flex justify-between border-t border-brand/10 pt-1.5"><span>سنوياً تقريباً</span><b>${money((base + addons) * 12)}</b></div>`;
+      <div class="flex justify-between"><span>${paid} مشترك × ${money(PLAN_PRICE.year)}</span><b>${money(paid * PLAN_PRICE.year)}</b></div>
+      <div class="flex justify-between"><span>متوسط شهري</span><b>${money(Math.round(paid * PLAN_PRICE.year / 12))}</b></div>
+      <div class="flex justify-between border-t border-brand/10 pt-1.5"><span>لو اشترك كل التجريبيين (${trial})</span><b>+ ${money(trial * PLAN_PRICE.year)}</b></div>`;
   }
 
   function renderSignups() {
@@ -388,9 +387,8 @@ tailwind.config = { theme: { extend: {
           <p class="flex justify-between gap-2"><span class="text-ink/55">الجوال</span>${c.phone ? (phone ? `<a href="https://wa.me/${phone}" target="_blank" rel="noopener" class="text-green-700 font-bold" dir="ltr"><i class="fa-brands fa-whatsapp"></i> ${esc(c.phone)}</a>` : `<span dir="ltr">${esc(c.phone)}</span>`) : '<span class="text-ink/40">—</span>'}</p>
         </div>
 
-        <div class="grid grid-cols-[1fr_1fr_auto] gap-1.5 mt-auto">
-          <button onclick="activate(${id}, 'month')" class="bg-brand hover:bg-brand-dark text-cream rounded-xl py-2 text-[11px] font-black">+ شهر · ${money(totalFor(c, 'month'))}</button>
-          <button onclick="activate(${id}, 'year')" class="bg-amber-400 hover:bg-amber-300 text-black rounded-xl py-2 text-[11px] font-black">+ سنة · ${money(totalFor(c, 'year'))}</button>
+        <div class="grid grid-cols-[1fr_auto] gap-1.5 mt-auto">
+          <button onclick="activate(${id}, 'year')" class="bg-brand hover:bg-brand-dark text-cream rounded-xl py-2.5 text-[12px] font-black">تفعيل سنة · ${money(totalFor(c, 'year'))}</button>
           <div class="relative">
             <button onclick="toggleMenu(event, ${id})" aria-label="المزيد" class="w-10 h-full rounded-xl bg-brand/10 hover:bg-brand/15 border border-brand/15"><i class="fa-solid fa-ellipsis"></i></button>
             ${openMenu === id ? moreMenu(c, slug) : ''}
@@ -427,8 +425,8 @@ tailwind.config = { theme: { extend: {
     const s = statusOf(c);
     const menu = new URL(`menu.html?client=${encodeURIComponent(c.client_slug)}`, location.href).href;
     const msg = s.live
-      ? `مرحباً، معك فريق DEV MENU 👋\nنذكّرك إن ${c.subscription_status === 'trial' ? 'التجربة المجانية' : 'اشتراك'} منيو "${c.name}" ينتهي خلال ${s.left ?? ''} ${s.left === 1 ? 'يوم' : 'أيام'}.\nللتجديد: الشهري ${totalFor(c, 'month')} ر.س أو السنوي ${totalFor(c, 'year')} ر.س.\nرابط منيوك: ${menu}`
-      : `مرحباً، معك فريق DEV MENU 👋\nمنيو "${c.name}" متوقف حالياً عن الزبائن. تقدر تجدده الآن ويرجع فوراً: الشهري ${totalFor(c, 'month')} ر.س أو السنوي ${totalFor(c, 'year')} ر.س.`;
+      ? `مرحباً، معك فريق DEV MENU 👋\nنذكّرك إن ${c.subscription_status === 'trial' ? 'التجربة المجانية' : 'اشتراك'} منيو "${c.name}" ينتهي خلال ${s.left ?? ''} ${s.left === 1 ? 'يوم' : 'أيام'}.\nالاشتراك السنوي ${PLAN_PRICE.year} ر.س ويشمل كل المزايا.\nرابط منيوك: ${menu}`
+      : `مرحباً، معك فريق DEV MENU 👋\nمنيو "${c.name}" متوقف حالياً عن الزبائن. تقدر تجدده الآن ويرجع فوراً: الاشتراك السنوي ${PLAN_PRICE.year} ر.س.`;
     return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
   }
 
@@ -442,7 +440,7 @@ tailwind.config = { theme: { extend: {
     const ok = await confirmDialog({
       title: `تفعيل اشتراك ${label}`, message: `لمتجر "${c ? (c.name || c.client_slug) : id}".`,
       items: [
-        `المبلغ: ${money(totalFor(c, period))}${c && c.waitlist_enabled ? ` (الباقة ${PLAN_PRICE[period]} + الانتظار ${WAITLIST_PRICE[period]})` : ''}`,
+        `المبلغ: ${money(totalFor(c, period))}`,
         'إذا كان الاشتراك سارياً، تُضاف المدة على تاريخ انتهائه', 'يرجع المنيو للظهور فوراً إذا كان متوقفاً'
       ],
       confirmText: `تفعيل ${label}`, tone: 'success'
@@ -479,7 +477,7 @@ tailwind.config = { theme: { extend: {
     const c = find(id);
     const ok = await confirmDialog(enabled
       ? { title: 'تفعيل قائمة الانتظار', message: `لمتجر "${c ? (c.name || c.client_slug) : id}".`,
-          items: [`تنضاف على الفاتورة: ${money(WAITLIST_PRICE.month)} شهرياً أو ${money(WAITLIST_PRICE.year)} سنوياً`, 'تظهر له صفحة "قائمة الانتظار" فوراً'], confirmText: 'تفعيل', tone: 'success' }
+          items: ['مشمولة في الباقة السنوية', 'تظهر له صفحة "قائمة الانتظار" فوراً'], confirmText: 'تفعيل', tone: 'success' }
       : { title: 'إيقاف قائمة الانتظار', message: 'يختفي زر الانتظار من المنيو. التسجيلات السابقة ما تنحذف.', confirmText: 'إيقاف', tone: 'warning' });
     if (!ok) return renderStores();
     const error = await post('waitlist-addon', { id, enabled });
