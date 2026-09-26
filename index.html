@@ -272,12 +272,12 @@
     <div class="text-center md:text-right mb-8">
       <span class="eyebrow">LIVE MENUS</span>
       <h2 class="text-2xl md:text-[1.7rem] font-black text-[#1b3022] mt-1.5">مطاعم ومقاهي تستخدم DEV MENU</h2>
-      <p class="text-xs font-bold text-[#233d2c]/60 mt-2">منيوهات حقيقية تعمل الآن. اضغط على أي منها لتشاهده كما يراه الزبون.</p>
+      <p class="text-xs font-bold text-[#233d2c]/60 mt-2">منيوهات حقيقية تعمل الآن. اضغط على أي شعار لتشاهد منيوه كما يراه الزبون.</p>
     </div>
-    <div id="examples-grid" class="grid md:grid-cols-3 gap-5">
-      <div class="h-[280px] rounded-[26px] bg-white/60 border border-[#233d2c]/10 animate-pulse"></div>
-      <div class="h-[280px] rounded-[26px] bg-white/60 border border-[#233d2c]/10 animate-pulse hidden md:block"></div>
-      <div class="h-[280px] rounded-[26px] bg-white/60 border border-[#233d2c]/10 animate-pulse hidden md:block"></div>
+    <div id="examples-grid" class="flex flex-wrap justify-center md:justify-start gap-4 md:gap-6">
+      <div class="w-24 h-24 md:w-28 md:h-28 rounded-[28px] bg-white/60 border border-[#233d2c]/10 animate-pulse"></div>
+      <div class="w-24 h-24 md:w-28 md:h-28 rounded-[28px] bg-white/60 border border-[#233d2c]/10 animate-pulse"></div>
+      <div class="w-24 h-24 md:w-28 md:h-28 rounded-[28px] bg-white/60 border border-[#233d2c]/10 animate-pulse"></div>
     </div>
   </div>
 </section>
@@ -739,30 +739,15 @@
     catch { return ''; }
   }
 
-  function exampleCard(c, items) {
-    const logo = safeUrl(c.logo_url), cover = safeUrl(c.bg_image_url);
-    const coverStyle = cover
-      ? `background-image:linear-gradient(rgba(12,22,16,.80),rgba(12,22,16,.93)),url("${cover}");background-size:cover;background-position:center;`
-      : '';
+  // شعار المنشأة فقط، والضغط عليه يفتح منيوها
+  function exampleCard(c) {
+    const logo = safeUrl(c.logo_url);
     return `
       <a href="menu.html?client=${encodeURIComponent(c.client_slug)}" target="_blank" rel="noopener"
-         class="example-card block" style="--bg:#15271b; --fg:#f5f2eb; --accent:#c9a227;">
-        <div class="example-body" style="${esc(coverStyle)}">
-          <div class="flex items-center gap-3 min-w-0">
-            <span class="example-logo">${logo ? `<img src="${esc(logo)}" alt="" loading="lazy" class="w-full h-full object-cover">` : '<i class="fa-solid fa-store"></i>'}</span>
-            <div class="leading-tight min-w-0">
-              <p class="text-sm font-black truncate">${esc(c.name)}</p>
-              <p class="text-[10px] font-bold opacity-60">${items.length ? `من المنيو` : 'منيو رقمي'}</p>
-            </div>
-          </div>
-          ${items.length
-            ? `<ul class="example-items">${items.map(p => `<li><span>${esc(p.name)}</span><i></i><b>${esc(money(p.price))}</b></li>`).join('')}</ul>`
-            : `<p class="text-[11px] font-bold opacity-60">اضغط لمشاهدة المنيو كاملاً</p>`}
-        </div>
-        <div class="example-foot">
-          <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> يعمل الآن</span>
-          <span class="text-[#233d2c] font-black">عرض المنيو <i class="fa-solid fa-arrow-left text-[9px]"></i></span>
-        </div>
+         title="${esc(c.name)}" aria-label="منيو ${esc(c.name)}"
+         class="group w-24 h-24 md:w-28 md:h-28 rounded-[28px] bg-white border border-[#233d2c]/12 overflow-hidden flex items-center justify-center
+                shadow-[0_18px_40px_-22px_rgba(35,61,44,.45)] hover:-translate-y-1 hover:shadow-[0_22px_44px_-18px_rgba(35,61,44,.5)] transition">
+        <img src="${esc(logo)}" alt="${esc(c.name)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
       </a>`;
   }
 
@@ -775,9 +760,11 @@
     try {
       // الخادم يرجّع المتاجر المختارة والسارية فقط، مع أبرز 4 أطباق لكل متجر
       const { stores } = await DM.get('/api/public?action=featured');
-      if (!stores || stores.length === 0) return hideExamples();
+      // نعرض المنشآت اللي لها شعار فقط
+      const withLogo = (stores || []).filter(s => safeUrl(s.logo_url));
+      if (withLogo.length === 0) return hideExamples();
       document.getElementById('examples-grid').innerHTML =
-        stores.map(s => exampleCard(s, s.items || [])).join('');
+        withLogo.map(exampleCard).join('');
     } catch (err) {
       console.error(err);
       hideExamples();
