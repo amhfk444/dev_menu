@@ -109,7 +109,41 @@
     });
   }
 
+  // ─── الدخول بحساب Google (عبر Supabase Auth، بدون مكتبات إضافية) ───
+  // يرجع رابط صفحة Google، وبعد الموافقة يرجع المستخدم لنفس الصفحة ومعه الجلسة في الرابط
+  function googleUrl(redirectTo) {
+    return `${AUTH_URL}/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
+  }
+
+  // يقرأ الجلسة من الرابط بعد الرجوع من Google ويحفظها، ثم ينظّف الرابط
+  async function consumeOAuthRedirect() {
+    const hash = new URLSearchParams(location.hash.replace(/^#/, ''));
+    const query = new URLSearchParams(location.search);
+    const clean = () => history.replaceState(null, '', location.pathname + (query.has('error') ? '' : location.search));
+    const err = hash.get('error_description') || query.get('error_description') || hash.get('error') || query.get('error');
+    if (err) { clean(); throw fail('تعذر الدخول بحساب Google: ' + err.replace(/\+/g, ' '), 400, 'OAUTH_ERROR'); }
+    const access = hash.get('access_token');
+    if (!access) return null;
+    clean();
+    let email = '';
+    try {
+      const r = await fetch(`${AUTH_URL}/user`, { headers: { apikey: AUTH_KEY, Authorization: `Bearer ${access}` } });
+      const u = await r.json();
+      email = (u && u.email ? u.email : '').toLowerCase();
+    } catch {}
+    const s = {
+      access_token: access,
+      refresh_token: hash.get('refresh_token'),
+      expires_at: Number(hash.get('expires_at')) || Math.floor(Date.now() / 1000) + (Number(hash.get('expires_in')) || 3600),
+      email
+    };
+    saveSession(s);
+    return s;
+  }
+
   window.DM = {
+    googleUrl,
+    consumeOAuthRedirect,
     session: loadSession,
     signedIn: () => !!loadSession(),
     sendOtp: (email) => auth('otp', { email, create_user: true }),
