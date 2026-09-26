@@ -450,6 +450,12 @@ tailwind.config = {
             <label class="text-[11px] text-ink/75 block mb-1">اسم القسم بالإنجليزي <span class="text-ink/50">(اختياري)</span></label>
             <input type="text" id="cat-name-en" placeholder="Hot Appetizers" class="input-pro" dir="ltr">
           </div>
+          <div>
+            <label class="text-[11px] text-ink/75 block mb-1">الفئة الرئيسية <span class="text-ink/50">(اختياري)</span></label>
+            <input type="text" id="cat-group" list="cat-groups" maxlength="40" placeholder="مثال: فطور، غداء، عشاء" class="input-pro">
+            <datalist id="cat-groups"></datalist>
+            <p class="text-[10px] text-ink/50 mt-1">الأقسام اللي لها نفس الفئة تظهر تحت تبويب واحد أعلى المنيو.</p>
+          </div>
           <button type="submit" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition shadow-lg">حفظ القسم</button>
         </form>
       </div>
@@ -471,7 +477,7 @@ tailwind.config = {
         <!-- غير مفعّلة: تعريف بالإضافة -->
         <div id="wl-upsell" class="hidden pro-card overflow-hidden">
           <div class="bg-brand text-cream p-6 md:p-8 space-y-3">
-            <span class="inline-flex items-center gap-1.5 text-[10px] font-black bg-amber-400 text-black px-2.5 py-1 rounded-full"><i class="fa-solid fa-star"></i> إضافة مدفوعة</span>
+            <span class="inline-flex items-center gap-1.5 text-[10px] font-black bg-amber-400 text-black px-2.5 py-1 rounded-full"><i class="fa-solid fa-star"></i> ضمن باقتك</span>
             <h2 class="text-xl md:text-2xl font-black">قائمة انتظار ذكية لمطعمك</h2>
             <p class="text-xs text-cream/75 leading-relaxed max-w-xl">بدل الزحمة عند الباب والأوراق: ضيفك يسجّل من جواله برمز QR، يشوف ترتيبه ووقت الانتظار مباشرة، ويوصله بريد أول ما تجهز طاولته.</p>
           </div>
@@ -484,9 +490,9 @@ tailwind.config = {
               <li class="flex gap-2"><i class="fa-solid fa-check text-green-600 mt-0.5"></i> إحصائيات: متوسط الانتظار، اللي جلسوا، اللي ما حضروا</li>
             </ul>
             <div class="text-center space-y-3 bg-brand/5 border border-brand/15 rounded-2xl p-5">
-              <p class="text-xs font-bold text-ink/60">تنضاف على فاتورة اشتراكك</p>
-              <p class="text-4xl font-black"><span id="wl-price-month"></span></p>
-              <p class="text-[11px] text-ink/60">شهرياً · أو <span id="wl-price-year"></span> سنوياً</p>
+              <p class="text-xs font-bold text-ink/60">غير مفعّلة لمتجرك حالياً</p>
+              <p class="text-3xl font-black"><span id="wl-price-month"></span></p>
+              <p class="text-[11px] text-ink/60"><span id="wl-price-year"></span></p>
               <a id="wl-request" href="#" target="_blank" rel="noopener" class="block bg-brand hover:bg-brand-dark text-cream font-black text-sm py-3 rounded-xl transition"><i class="fa-brands fa-whatsapp"></i> اطلب التفعيل</a>
             </div>
           </div>
@@ -1000,12 +1006,12 @@ tailwind.config = {
   const SUPPORT_WA = '966561161448';
   const daysText = (n) => n === 1 ? 'يوم واحد' : n === 2 ? 'يومين' : n <= 10 ? `${n} أيام` : `${n} يوم`;
   // الأسعار (عدّلها من هنا) — الإضافات تنضاف على فاتورة الباقة
-  const PLAN_PRICE = { month: 99, year: 1149 };
-  const WAITLIST_PRICE = { month: 49, year: 490 };
-  const planTotal = (plan) => PLAN_PRICE[plan] + (client && client.waitlist_enabled ? WAITLIST_PRICE[plan] : 0);
+  // باقة واحدة سنوية تشمل كل المزايا (ومنها قائمة الانتظار)
+  const PLAN_PRICE = { year: 349 };
+  const planTotal = () => PLAN_PRICE.year;
   function renewLink(plan, extra = '') {
-    const label = plan === 'year' ? `السنوية (${PLAN_PRICE.year} ر.س)` : `الشهرية (${PLAN_PRICE.month} ر.س)`;
-    const addon = client.waitlist_enabled ? ` + إضافة قائمة الانتظار (${WAITLIST_PRICE[plan]} ر.س)` : '';
+    const label = `السنوية (${PLAN_PRICE.year} ر.س)`;
+    const addon = '';
     const msg = extra || `مرحباً، أبغى أشترك/أجدد متجر "${client.name || ''}" (${client.client_slug}) بالباقة ${label}${addon}. المجموع ${planTotal(plan)} ر.س.`;
     return `https://wa.me/${SUPPORT_WA}?text=${encodeURIComponent(msg)}`;
   }
@@ -1033,10 +1039,8 @@ tailwind.config = {
       ${live && left !== null ? `<p class="text-[11px] text-ink/75">متبقي <b>${daysText(left)}</b> — ينتهي ${esc(endText)}</p>` : ''}
       ${showPlans ? `
         <div class="flex flex-wrap gap-1.5 pt-1">
-          <a href="${esc(renewLink('month'))}" target="_blank" rel="noopener" class="bg-brand/10 hover:bg-brand/15 border border-brand/25 text-ink px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="fa-brands fa-whatsapp text-green-600"></i> ${verb} شهرياً · ${money(planTotal('month'))}</a>
           <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/40 text-amber-800 px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="fa-brands fa-whatsapp"></i> ${verb} سنوياً · ${money(planTotal('year'))}</a>
         </div>` : ''}
-      ${client.waitlist_enabled ? `<p class="text-[10px] text-ink/70"><i class="fa-solid fa-hourglass-half text-amber-600"></i> تشمل إضافة قائمة الانتظار (${money(WAITLIST_PRICE.month)} شهرياً)</p>` : ''}
       <p class="text-[10px] text-ink/60">معرف المتجر: ${esc(client.client_slug)}</p>`;
 
     // شريط تنبيه بارز أعلى اللوحة
@@ -1054,7 +1058,6 @@ tailwind.config = {
         ${suspended
           ? `<a href="https://wa.me/${SUPPORT_WA}" target="_blank" rel="noopener" class="bg-brand text-cream px-3 py-1.5 rounded-lg text-[11px] font-black"><i class="fa-brands fa-whatsapp"></i> تواصل معنا</a>`
           : `<div class="flex gap-2">
-               <a href="${esc(renewLink('month'))}" target="_blank" rel="noopener" class="bg-brand text-cream px-3 py-1.5 rounded-lg text-[11px] font-black">شهري · ${money(planTotal('month'))}</a>
                <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400 text-black px-3 py-1.5 rounded-lg text-[11px] font-black">سنوي · ${money(planTotal('year'))}</a>
              </div>`}`;
       banner.classList.remove('hidden');
@@ -1713,10 +1716,10 @@ tailwind.config = {
     const on = client.waitlist_enabled === true;
     document.getElementById('wl-upsell').classList.toggle('hidden', on);
     document.getElementById('wl-app').classList.toggle('hidden', !on);
-    document.getElementById('wl-price-month').textContent = money(WAITLIST_PRICE.month);
-    document.getElementById('wl-price-year').textContent = money(WAITLIST_PRICE.year);
-    document.getElementById('wl-request').href = renewLink('month',
-      `مرحباً، أبغى أفعّل إضافة "قائمة الانتظار" لمتجر "${client.name || ''}" (${client.client_slug}) بسعر ${WAITLIST_PRICE.month} ر.س شهرياً.`);
+    document.getElementById('wl-price-month').textContent = 'مشمولة';
+    document.getElementById('wl-price-year').textContent = 'في باقتك السنوية';
+    document.getElementById('wl-request').href = renewLink('year',
+      `مرحباً، أبغى أفعّل "قائمة الانتظار" لمتجر "${client.name || ''}" (${client.client_slug}).`);
     if (!on) return;
     document.getElementById('wl-link').value = wlUrl();
     document.getElementById('wl-open-link').href = wlUrl();
@@ -2358,7 +2361,23 @@ tailwind.config = {
     catch (e) { console.error(e); showToast('تعذر تغيير الترتيب', true); }
   }
 
+  // الفئة الرئيسية لقسم موجود
+  const categoryGroups = () => [...new Set(loadedCategories.map(c => c.group_name).filter(Boolean))];
+  async function editCategoryGroup(id) {
+    const c = loadedCategories.find(x => x.id === id); if (!c) return;
+    const groups = categoryGroups();
+    const val = prompt(`الفئة الرئيسية لقسم "${c.name}"${groups.length ? `\nالموجودة: ${groups.join('، ')}` : ''}\n(اتركه فاضي لإزالتها)`, c.group_name || '');
+    if (val === null) return;
+    try {
+      const res = await api('category-group', { id, group_name: val.trim() });
+      c.group_name = res.category.group_name;
+      renderCategories();
+      showToast(c.group_name ? `صار القسم تحت "${c.group_name}"` : 'تمت إزالة الفئة الرئيسية');
+    } catch { showToast('تعذر الحفظ', true); }
+  }
+
   function renderCategories() {
+    document.getElementById('cat-groups').innerHTML = categoryGroups().map(g => `<option value="${esc(g)}">`).join('');
     const optionsHtml = loadedCategories.length > 0
       ? loadedCategories.map(c => `<option value="${esc(c.key)}">${esc(c.name)}</option>`).join('')
       : `<option value="">أضف قسماً أولاً من تبويب الأقسام</option>`;
@@ -2386,9 +2405,10 @@ tailwind.config = {
           </div>
           <div class="min-w-0">
             <p class="font-bold text-ink truncate">${esc(c.name)} ${c.name_en ? `<span class="text-ink/50 font-normal" dir="ltr">· ${esc(c.name_en)}</span>` : ''}</p>
-            <p class="text-ink/60 text-[10px]">${productsInCategory(c).length} طبق</p>
+            <p class="text-ink/60 text-[10px]">${productsInCategory(c).length} طبق${c.group_name ? ` · <span class="text-amber-700 font-bold">${esc(c.group_name)}</span>` : ''}</p>
           </div>
         </div>
+        <button onclick="editCategoryGroup(${Number(c.id)})" title="الفئة الرئيسية" class="shrink-0 text-ink/70 hover:text-ink bg-brand/10 hover:bg-brand/15 px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-layer-group text-[10px]"></i> الفئة</button>
         <button onclick="deleteCategory(${Number(c.id)})" class="shrink-0 text-red-600 hover:text-red-700 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-trash text-[10px]"></i> حذف</button>
       </div>`).join('');
   }
@@ -2400,7 +2420,8 @@ tailwind.config = {
     if (!name) return showToast('اكتب اسم القسم', true);
     if (loadedCategories.some(c => c.name === name)) return showToast('يوجد قسم بنفس الاسم', true);
 
-    try { await api('category-add', { name, name_en: nameEn }); }
+    const groupName = document.getElementById('cat-group').value.trim();
+    try { await api('category-add', { name, name_en: nameEn, group_name: groupName }); }
     catch (error) { console.error(error); return showToast('تعذر إضافة القسم', true); }
     showToast('تمت إضافة القسم');
     document.getElementById('add-category-form').reset();
@@ -2447,6 +2468,7 @@ tailwind.config = {
       const id = Number(p.id);
       const isAvailable = p.is_available !== false;
       const isBestseller = p.is_bestseller === true;
+      const isHidden = p.is_hidden === true;
       const img = safeUrl(p.image_url);
       const cat = categoryOf(p);
       const siblings = cat ? productsInCategory(cat) : [];
@@ -2455,7 +2477,7 @@ tailwind.config = {
         ? `<p class="text-[10px] font-bold text-ink/50 pt-2 first:pt-0">${esc(cat.name)}</p>` : '';
       lastCat = cat;
       return `${header}
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-brand/5 p-2.5 rounded-xl border ${editingProductId === id ? 'editing-glow' : 'border-brand/15'} text-xs gap-2.5 sm:gap-2 transition">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between ${isHidden ? 'bg-ink/[0.04] opacity-70' : 'bg-brand/5'} p-2.5 rounded-xl border ${editingProductId === id ? 'editing-glow' : isHidden ? 'border-dashed border-ink/25' : 'border-brand/15'} text-xs gap-2.5 sm:gap-2 transition">
           <div class="flex items-center gap-2 min-w-0 w-full sm:w-auto">
             <div class="flex flex-col shrink-0">
               <button onclick="moveProduct(${id}, -1)" ${pos <= 0 ? 'disabled' : ''} aria-label="تحريك لأعلى" class="px-1.5 py-1 sm:py-0 text-ink/60 hover:text-ink disabled:opacity-20"><i class="fa-solid fa-chevron-up text-[10px] sm:text-[9px]"></i></button>
@@ -2466,15 +2488,17 @@ tailwind.config = {
               <div class="flex items-center gap-1.5">
                 <p class="font-bold text-ink text-[13px] sm:text-xs truncate ${!isAvailable ? 'line-through text-ink/50' : ''}">${esc(p.name)}</p>
                 ${isBestseller ? `<span class="bg-brand/15 text-ink text-[9px] px-1.5 py-0.5 rounded font-bold border border-brand/30 shrink-0"><i class="fa-solid fa-fire text-amber-600"></i> مميز</span>` : ''}
+                ${isHidden ? `<span class="bg-ink/10 text-ink/70 text-[9px] px-1.5 py-0.5 rounded font-bold shrink-0"><i class="fa-solid fa-eye-slash"></i> مخفي</span>` : ''}
               </div>
               <p class="text-ink/75 font-semibold text-[11px]">${esc(money(p.price))}${!showCalories() ? '' : p.calories != null ? ` <span class="text-ink/50">· ${Number(p.calories)} سعرة</span>` : ` <span class="text-amber-600">· بدون سعرات</span>`}</p>
               ${p.coffee && allowsCoffee() ? `<p class="text-[10px] text-amber-700 truncate"><i class="fa-solid fa-mug-hot"></i> ${esc(coffeeSummary(p.coffee) || 'قهوة مختصة')}</p>` : ''}
             </div>
           </div>
-          <div class="grid grid-cols-[1fr_1fr_1fr_auto] sm:flex items-center gap-1.5 shrink-0 w-full sm:w-auto">
+          <div class="grid grid-cols-[1fr_1fr_1fr_auto_auto] sm:flex items-center gap-1.5 shrink-0 w-full sm:w-auto">
             <button onclick="startEdit(${id})" class="px-2.5 py-2 sm:py-1 rounded-lg text-[10px] font-bold border bg-brand/5 text-ink/90 border-brand/20 hover:bg-brand/10 transition"><i class="fa-solid fa-pen text-[9px]"></i> تعديل</button>
             <button onclick="toggleField(${id}, 'is_bestseller', ${isBestseller})" class="px-2.5 py-2 sm:py-1 rounded-lg text-[10px] font-bold border ${isBestseller ? 'bg-brand text-cream border-brand' : 'bg-brand/5 text-ink/75 border-brand/15'}">تمييز</button>
             <button onclick="toggleField(${id}, 'is_available', ${isAvailable})" class="px-2.5 py-2 sm:py-1 rounded-lg text-[10px] font-bold border ${isAvailable ? 'bg-green-500/20 text-green-700 border-green-500/30' : 'bg-red-500/20 text-red-700 border-red-500/30'}">${isAvailable ? 'متوفر' : 'نفذت'}</button>
+            <button onclick="toggleField(${id}, 'is_hidden', ${isHidden})" aria-label="${isHidden ? 'إظهار في المنيو' : 'إخفاء من المنيو'}" title="${isHidden ? 'إظهار في المنيو' : 'إخفاء من المنيو'}" class="px-3 py-2 sm:p-2 rounded-lg border ${isHidden ? 'bg-ink text-cream border-ink' : 'bg-brand/5 text-ink/70 border-brand/15'}"><i class="fa-solid ${isHidden ? 'fa-eye-slash' : 'fa-eye'}"></i></button>
             <button onclick="deleteProduct(${id})" aria-label="حذف" class="text-red-600 bg-red-500/10 hover:bg-red-500/20 px-3 py-2 sm:p-2 rounded-lg border border-red-500/20 transition"><i class="fa-solid fa-trash"></i></button>
           </div>
         </div>`;
@@ -2485,6 +2509,7 @@ tailwind.config = {
     try { await api('product-toggle', { id, field, value: !current }); }
     catch { return showToast('تعذر التحديث', true); }
     if (field === 'is_available') showToast(current ? 'الطبق الآن: نفذت الكمية' : 'الطبق الآن: متوفر');
+    else if (field === 'is_hidden') showToast(current ? 'الطبق ظاهر في المنيو' : 'تم إخفاء الطبق من المنيو');
     else showToast(current ? 'تمت إزالة التمييز' : 'تم تمييز الطبق');
     refreshAll();
   }
