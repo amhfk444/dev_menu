@@ -183,30 +183,35 @@
     setTimeout(() => el.remove(), 3800);
   }
 
-  async function goToDashboard() {
-    let who;
-    try { 
-      who = await DM.get('/api/owner?action=whoami', true); 
+  async function checkStoreAndRedirect() {
+    try {
+      let who = await DM.get('/api/owner?action=whoami', true);
+      if (who.is_admin) {
+        window.location.href = 'super-admin.html';
+        return true;
+      }
+      if (who.has_store) {
+        window.location.href = 'admin.html';
+        return true;
+      }
+      return false;
     } catch (e) {
-      if (e.status === 401) { await DM.logout(); return false; }
       return false;
     }
-    if (who.is_admin) { window.location.href = 'super-admin.html'; return true; }
-    if (who.has_store) { window.location.href = 'admin.html'; return true; }
-    return false;
   }
 
-  // فحص حالة المستخدم القادم من جوجل
   async function handleGoogleReturn() {
-    // التقاط الجلسة من Supabase
+    // ننتظر قليلاً لضمان حفظ جلسة جوجل واستقرار الـ Token
+    await new Promise(r => setTimeout(r, 800));
+
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) return false;
 
-    // 1. محاولة الدخول مباشرة إذا كان البريد مسجلاً ولديه متجر مسبقاً
-    let hasStore = await goToDashboard();
+    // 1. محاولة الدخول إذا كان البريد مسجلاً ولديه متجر مسبقاً
+    let hasStore = await checkStoreAndRedirect();
     if (hasStore) return true;
 
-    // 2. إذا لم يكن لديه متجر، نفحص هل توجد بيانات جديدة محفوظة لأنشاء متجر جديد
+    // 2. إذا لم يكن لديه متجر، نبحث عن بيانات المتجر الجديد المحفوظة
     const pendingData = localStorage.getItem('pending_store_data');
     if (pendingData) {
       try {
@@ -229,24 +234,18 @@
       }
     }
 
-    // إذا لم تكن هناك بيانات مسجلة مسبقاً أو بيانات جديدة، ننبه المستخدم
-    showToast('لا يوجد متجر مرتبـط بهذا الحساب، يرجى التسجيل من الصفحة الرئيسية', 'error');
+    // إذا لم تكن هناك بيانات متجر جديدة ولا قديمة
+    showToast('يرجى إدخال بيانات متجرك من الصفحة الرئيسية أولاً', 'error');
     setTimeout(() => { window.location.href = 'index.html#register'; }, 2000);
     return true;
   }
 
   window.addEventListener('DOMContentLoaded', async () => {
-    // نتحقق أولاً إذا كان المستخدم مسجلاً مسبقاً ولديه كوكي سارية
-    if (DM.signedIn()) {
-      let logged = await goToDashboard();
-      if (logged) return;
-    }
-
-    // فحص هل عاد من مصادقة جوجل
+    // فحص هل عاد من مصادقة جوجل أو لديه جلسة مسجلة
     const isGoogleAuth = await handleGoogleReturn();
     
     if (!isGoogleAuth) {
-      // إظهار نموذج تسجيل الدخول بالبريد الإلكتروني التقليدي للمستخدم العادي
+      // إذا لم يكن قادماً من جوجل، نظهر نموذج تسجيل الدخول التقليدي بالبريد
       document.getElementById('loading-icon').className = 'fa-solid fa-user-lock';
       document.getElementById('main-title').textContent = 'تسجيل الدخول';
       document.getElementById('main-desc').textContent = 'أدخل بريدك الإلكتروني المسجل لنرسل لك رمز التحقق.';
@@ -302,7 +301,8 @@
     if (!ok) return showToast('رمز التحقق غير صحيح', 'error');
 
     showToast('تم تسجيل الدخول بنجاح، جاري تحويلك...', 'success');
-    await goToDashboard();
+    let logged = await checkStoreAndRedirect();
+    if (!logged) showToast('لا يوجد متجر مرتبط بهذا الحساب', 'error');
   });
 </script>
 </body>
