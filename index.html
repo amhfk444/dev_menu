@@ -364,7 +364,7 @@
     const businessType = document.querySelector('[name="reg-type"]:checked')?.value || 'restaurant';
     formDataCache = { name, phone, businessType };
     
-    // حفظ البيانات في localStorage لاستخدامها بعد العودة من مصادقة جوجل
+    // حفظ البيانات في localStorage لاستخدامها لاحقاً
     localStorage.setItem('pending_store_data', JSON.stringify(formDataCache));
 
     document.getElementById('register-form').classList.add('hidden');
@@ -379,13 +379,13 @@
     document.getElementById('step-indicator').textContent = 'الخطوة 1 من 2';
   }
 
-  // تفعيل تسجيل الدخول عبر جوجل عبر Supabase Auth
+  // توجيه المستخدم إلى صفحة تسجيل الدخول / إدخال الكود بعد المصادقة عبر جوجل
   async function loginWithGoogle() {
     try {
       const { error } = await supabaseClient.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin + '/admin.html'
+          redirectTo: window.location.origin + '/login.html'
         }
       });
       if (error) throw error;
@@ -395,36 +395,11 @@
     }
   }
 
-  // عند عودة المستخدم من جوجل، نقوم بإنشاء المتجر تلقائياً إذا كانت البيانات مخزنة
-  async function handleGoogleRedirectCallback() {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (!session) return;
-
-    const pendingData = localStorage.getItem('pending_store_data');
-    if (pendingData) {
-      try {
-        const storeInfo = JSON.parse(pendingData);
-        localStorage.removeItem('pending_store_data');
-        
-        await DM.post('/api/owner?action=register', {
-          name: storeInfo.name, 
-          phone: storeInfo.phone, 
-          business_type: storeInfo.businessType
-        }, true);
-        
-        showToast('تم إنشاء متجرك بنجاح!', 'success');
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  }
-  handleGoogleRedirectCallback();
-
   const io = new IntersectionObserver((entries) => {
     entries.forEach(en => {
       if (en.isIntersecting) { en.target.classList.add('revealed'); io.unobserve(en.target); }
     });
-  }, { timedelta: 0.1 });
+  }, { threshold: 0.1 });
   document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 </script>
 </body>
