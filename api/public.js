@@ -21,8 +21,9 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const store = stores[0];
     if (!store) throw new ApiError(404, 'المنيو غير متاح حالياً', 'NOT_AVAILABLE');
     const [categories, products] = await Promise.all([
-      rest(`categories?client_id=eq.${store.id}&select=id,key,name,name_en,sort_order`),
-      rest(`products?client_id=eq.${store.id}&select=${PRODUCT_FIELDS}`)
+      rest(`categories?client_id=eq.${store.id}&select=id,key,name,name_en,sort_order,group_name`),
+      // المنتجات المخفية ما توصل للزبون أصلاً
+      rest(`products?client_id=eq.${store.id}&is_hidden=is.false&select=${PRODUCT_FIELDS}`)
     ]);
     // زر "قائمة الانتظار" في المنيو: الإضافة مفعّلة + القائمة مفتوحة + صاحب المتجر مختار يظهر الزر
     const wl = (await rest(`clients?id=eq.${store.id}&select=waitlist_enabled,waitlist_settings`))[0] || {};
