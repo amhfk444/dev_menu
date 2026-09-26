@@ -109,14 +109,14 @@
 
 <div class="pro-card p-6 md:p-8 w-full max-w-md space-y-6 my-auto">
   <div class="text-center space-y-2">
-    <div id="icon-container" class="w-12 h-12 rounded-2xl bg-[#233d2c]/10 text-brand border border-[#233d2c]/20 flex items-center justify-center mx-auto text-xl">
+    <div class="w-12 h-12 rounded-2xl bg-[#233d2c]/10 text-brand border border-[#233d2c]/20 flex items-center justify-center mx-auto text-xl">
       <i class="fa-solid fa-user-lock" id="main-icon"></i>
     </div>
     <h1 id="main-title" class="text-lg font-black text-brand">تسجيل الدخول</h1>
-    <p id="main-desc" class="text-xs text-gray-600">أدخل بريدك الإلكتروني أو تابع باستخدام جوجل.</p>
+    <p id="main-desc" class="text-xs text-gray-600">أدخل بريدك الإلكتروني لتصلك رسالة رمز التحقق، أو تابع باستخدام جوجل.</p>
   </div>
 
-  <!-- نموذج إدخال البريد (التقليدي) -->
+  <!-- نموذج إدخال البريد الإلكتروني -->
   <form id="login-form" class="space-y-4">
     <div>
       <label class="lbl">البريد الإلكتروني</label>
@@ -177,34 +177,6 @@
     <div class="text-center">
       <button type="button" onclick="backToLogin()" class="text-xs text-brand/60 hover:text-brand font-bold">تغيير البريد الإلكتروني</button>
     </div>
-  </form>
-
-  <!-- نموذج إنشاء متجر جديد مباشرة إذا لم يكن مسجلاً -->
-  <form id="create-store-form" class="space-y-4 hidden">
-    <div class="bg-brand/10 border border-brand/20 rounded-2xl p-3 text-center">
-      <p class="text-xs font-black text-brand">حساب جوجل جديد! يرجى إدخال بيانات متجرك.</p>
-    </div>
-    <div>
-      <label class="lbl">اسم المطعم أو الكافيه</label>
-      <input type="text" id="new-store-name" placeholder="مثال: لانو / كشري وأكثر" required class="input-pro">
-    </div>
-    <div>
-      <label class="lbl">نوع النشاط</label>
-      <select id="new-store-type" class="input-pro" style="padding-inline-start: 1rem;">
-        <option value="restaurant">مطعم</option>
-        <option value="cafe">كافيه</option>
-        <option value="mixed">مطعم وكافيه</option>
-        <option value="bakery">مخبز ومعجنات</option>
-      </select>
-    </div>
-    <div>
-      <label class="lbl">رقم الجوال (للواتساب)</label>
-      <input type="tel" id="new-store-phone" placeholder="05xxxxxxxx" required class="input-pro" dir="ltr">
-    </div>
-    <button type="submit" id="create-store-btn" class="w-full btn-primary font-bold py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
-      <span>إنشاء المتجر والدخول لوحة التحكم</span>
-      <i id="create-spinner" class="fa-solid fa-spinner fa-spin hidden"></i>
-    </button>
   </form>
 </div>
 
@@ -270,32 +242,12 @@
     };
     localStorage.setItem('dm_session', JSON.stringify(sessionData));
 
-    // 1. محاولة الدخول لوحة التحكم إذا كان لديه متجر مسبقاً
     let hasStore = await checkStoreAndRedirect();
     if (hasStore) return true;
 
-    // 2. فحص هل توجد بيانات متجر جديدة مخزنة مسبقاً
-    const pendingData = localStorage.getItem('pending_store_data');
-    if (pendingData) {
-      try {
-        const storeInfo = JSON.parse(pendingData);
-        localStorage.removeItem('pending_store_data');
-        await DM.post('/api/owner?action=register', {
-          name: storeInfo.name, 
-          phone: storeInfo.phone, 
-          business_type: storeInfo.businessType
-        }, true);
-        window.location.href = 'admin.html';
-        return true;
-      } catch (e) {}
-    }
-
-    // 3. إذا لم يكن لديه متجر ولم تمر عبر التسجيل، نعرض له نموذج إنشاء المتجر مباشرة هنا
-    document.getElementById('main-icon').className = 'fa-solid fa-store';
-    document.getElementById('main-title').textContent = 'أهلاً بك!';
-    document.getElementById('main-desc').textContent = 'أكمل بيانات متجرك للبدء فوراً.';
-    document.getElementById('login-form').classList.add('hidden');
-    document.getElementById('create-store-form').classList.remove('hidden');
+    // إذا لم يكن لديه متجر مسجل مسبقاً، ننبهه ونعيده للصفحة الرئيسية ليسجل متجره الجديد هناك
+    showToast('لا يوجد متجر مرتبط بهذا الحساب، يرجى التسجيل من الصفحة الرئيسية', 'error');
+    setTimeout(() => { window.location.href = 'index.html#register'; }, 2500);
     return true;
   }
 
@@ -306,29 +258,6 @@
     if (DM.signedIn()) {
       let logged = await checkStoreAndRedirect();
       if (logged) return;
-    }
-  });
-
-  // معالجة نموذج إنشاء المتجر المباشر
-  document.getElementById('create-store-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('new-store-name').value.trim();
-    const business_type = document.getElementById('new-store-type').value;
-    const phone = document.getElementById('new-store-phone').value.trim();
-
-    if (!name || !phone) return showToast('يرجى تعبئة جميع الحقول', 'error');
-
-    document.getElementById('create-store-btn').disabled = true;
-    document.getElementById('create-spinner').classList.remove('hidden');
-
-    try {
-      await DM.post('/api/owner?action=register', { name, phone, business_type }, true);
-      showToast('تم إنشاء المتجر بنجاح!', 'success');
-      setTimeout(() => { window.location.href = 'admin.html'; }, 1000);
-    } catch (err) {
-      showToast(err.message || 'تعذر إنشاء المتجر', 'error');
-      document.getElementById('create-store-btn').disabled = false;
-      document.getElementById('create-spinner').classList.add('hidden');
     }
   });
 
@@ -367,7 +296,7 @@
     document.getElementById('otp-form').classList.add('hidden');
     document.getElementById('login-form').classList.remove('hidden');
     document.getElementById('main-title').textContent = 'تسجيل الدخول';
-    document.getElementById('main-desc').textContent = 'أدخل بريدك الإلكتروني أو تابع باستخدام جوجل.';
+    document.getElementById('main-desc').textContent = 'أدخل بريدك الإلكتروني لتصلك رسالة رمز التحقق، أو تابع باستخدام جوجل.';
   }
 
   boxes.forEach((box, idx) => {
@@ -390,14 +319,7 @@
 
     showToast('تم تسجيل الدخول بنجاح، جاري تحويلك...', 'success');
     let logged = await checkStoreAndRedirect();
-    if (!logged) {
-      // إذا أدخل البريد يدوياً ولم يكن له متجر، نظهر له نموذج إنشاء المتجر أيضاً
-      document.getElementById('otp-form').classList.add('hidden');
-      document.getElementById('main-icon').className = 'fa-solid fa-store';
-      document.getElementById('main-title').textContent = 'أهلاً بك!';
-      document.getElementById('main-desc').textContent = 'أكمل بيانات متجرك للبدء فوراً.';
-      document.getElementById('create-store-form').classList.remove('hidden');
-    }
+    if (!logged) showToast('لا يوجد متجر مرتبط بهذا الحساب، يرجى التسجيل من الصفحة الرئيسية', 'error');
   });
 </script>
 </body>
