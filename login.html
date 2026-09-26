@@ -112,11 +112,11 @@
     <div class="w-12 h-12 rounded-2xl bg-[#233d2c]/10 text-brand border border-[#233d2c]/20 flex items-center justify-center mx-auto text-xl">
       <i class="fa-solid fa-circle-notch fa-spin" id="loading-icon"></i>
     </div>
-    <h1 id="main-title" class="text-lg font-black text-brand">جاري إتمام تسجيل الدخول...</h1>
-    <p id="main-desc" class="text-xs text-gray-600">يرجى الانتظار بينما نقوم بربط حسابك وإنشاء متجرك.</p>
+    <h1 id="main-title" class="text-lg font-black text-brand">جاري التحقق من حسابك...</h1>
+    <p id="main-desc" class="text-xs text-gray-600">يرجى الانتظار قليلاً.</p>
   </div>
 
-  <!-- نموذج إدخال البريد (يظهر فقط إذا لم يكن قادماً من جوجل) -->
+  <!-- نموذج إدخال البريد (يظهر عند الحاجة للدخول اليدوي) -->
   <form id="login-form" class="space-y-4 hidden">
     <div>
       <label class="lbl">البريد الإلكتروني</label>
@@ -185,69 +185,76 @@
 
   async function goToDashboard() {
     let who;
-    try { who = await DM.get('/api/owner?action=whoami', true); }
-    catch (e) {
-      if (e.status === 401) { await DM.logout(); return; }
-      return showToast(e.message, 'error');
+    try { 
+      who = await DM.get('/api/owner?action=whoami', true); 
+    } catch (e) {
+      if (e.status === 401) { await DM.logout(); return false; }
+      return false;
     }
-    if (who.is_admin) { window.location.href = 'super-admin.html'; return; }
-    if (!who.has_store) {
-      showToast('لا يوجد متجر مرتبط بهذا الحساب.', 'error');
-      return;
-    }
-    window.location.href = 'admin.html';
-  }
-
-  // فحص ما إذا عاد المستخدم للتو من المصادقة عبر جوجل
-  async function handleGoogleReturn() {
-    // Supabase يقوم تلقائياً بالتقاط التوكن من الرابط (URL Hash) وحفظ الجلسة
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    
-    if (session) {
-      // المستخدم دخل عبر جوجل بنجاح
-      const pendingData = localStorage.getItem('pending_store_data');
-      if (pendingData) {
-        try {
-          const storeInfo = JSON.parse(pendingData);
-          localStorage.removeItem('pending_store_data');
-          
-          showToast('جاري إنشاء متجرك...', 'info');
-          await DM.post('/api/owner?action=register', {
-            name: storeInfo.name, 
-            phone: storeInfo.phone, 
-            business_type: storeInfo.businessType
-          }, true);
-          
-          showToast('تم إنشاء متجرك بنجاح!', 'success');
-        } catch (e) {
-          console.error(e);
-          // إذا كان المتجر مسجلاً مسبقاً، نتجاوز الخطوة وننتقل للوحة التحكم
-        }
-      }
-      
-      // التوجيه المباشر لوحة التحكم بعد نجاح جوجل وإنشاء المتجر
-      setTimeout(() => { goToDashboard(); }, 1000);
-      return true;
-    }
+    if (who.is_admin) { window.location.href = 'super-admin.html'; return true; }
+    if (who.has_store) { window.location.href = 'admin.html'; return true; }
     return false;
   }
 
-  // عند تحميل الصفحة، نتحقق أولاً هل جاء المستخدم من جوجل
+  // فحص حالة المستخدم القادم من جوجل
+  async function handleGoogleReturn() {
+    // التقاط الجلسة من Supabase
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) return false;
+
+    // 1. محاولة الدخول مباشرة إذا كان البريد مسجلاً ولديه متجر مسبقاً
+    let hasStore = await goToDashboard();
+    if (hasStore) return true;
+
+    // 2. إذا لم يكن لديه متجر، نفحص هل توجد بيانات جديدة محفوظة لأنشاء متجر جديد
+    const pendingData = localStorage.getItem('pending_store_data');
+    if (pendingData) {
+      try {
+        const storeInfo = JSON.parse(pendingData);
+        localStorage.removeItem('pending_store_data');
+        
+        showToast('جاري إنشاء متجرك الجديد...', 'info');
+        await DM.post('/api/owner?action=register', {
+          name: storeInfo.name, 
+          phone: storeInfo.phone, 
+          business_type: storeInfo.businessType
+        }, true);
+        
+        showToast('تم إنشاء متجرك بنجاح!', 'success');
+        setTimeout(() => { window.location.href = 'admin.html'; }, 1000);
+        return true;
+      } catch (e) {
+        console.error(e);
+        showToast(e.message || 'تعذر إنشاء المتجر', 'error');
+      }
+    }
+
+    // إذا لم تكن هناك بيانات مسجلة مسبقاً أو بيانات جديدة، ننبه المستخدم
+    showToast('لا يوجد متجر مرتبـط بهذا الحساب، يرجى التسجيل من الصفحة الرئيسية', 'error');
+    setTimeout(() => { window.location.href = 'index.html#register'; }, 2000);
+    return true;
+  }
+
   window.addEventListener('DOMContentLoaded', async () => {
+    // نتحقق أولاً إذا كان المستخدم مسجلاً مسبقاً ولديه كوكي سارية
+    if (DM.signedIn()) {
+      let logged = await goToDashboard();
+      if (logged) return;
+    }
+
+    // فحص هل عاد من مصادقة جوجل
     const isGoogleAuth = await handleGoogleReturn();
     
     if (!isGoogleAuth) {
-      // إذا لم يكن قادماً من جوجل، نعرض نموذج تسجيل الدخول التقليدي بالبريد
+      // إظهار نموذج تسجيل الدخول بالبريد الإلكتروني التقليدي للمستخدم العادي
       document.getElementById('loading-icon').className = 'fa-solid fa-user-lock';
       document.getElementById('main-title').textContent = 'تسجيل الدخول';
       document.getElementById('main-desc').textContent = 'أدخل بريدك الإلكتروني المسجل لنرسل لك رمز التحقق.';
       document.getElementById('login-form').classList.remove('hidden');
-      
-      if (DM.signedIn()) goToDashboard();
     }
   });
 
-  // كود نموذج البريد والـ OTP التقليدي (للبقية إن وجد)
+  // نموذج البريد التقليدي (OTP)
   let inputEmail = '';
   const boxes = Array.from(document.querySelectorAll('.otp-box'));
 
