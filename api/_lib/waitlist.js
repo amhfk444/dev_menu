@@ -7,6 +7,7 @@ const SEATING = { indoor: 'داخلي', outdoor: 'خارجي', any: 'بدون ت
 // الإعدادات الافتراضية؛ البريد إلزامي دائماً لأن الإشعارات تصل عليه
 const DEFAULTS = {
   open: true,
+  show_in_menu: true,   // زر "انضم لقائمة الانتظار" داخل المنيو
   minutes_per_party: 10,
   hold_minutes: 10,
   max_party: 20,
@@ -26,6 +27,7 @@ function normalizeSettings(raw) {
   const num = (v, def, min, max) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : def; };
   const out = {
     open: s.open !== false,
+    show_in_menu: s.show_in_menu !== false,
     minutes_per_party: num(s.minutes_per_party, DEFAULTS.minutes_per_party, 1, 120),
     hold_minutes: num(s.hold_minutes, DEFAULTS.hold_minutes, 2, 60),
     max_party: num(s.max_party, DEFAULTS.max_party, 1, 100),
