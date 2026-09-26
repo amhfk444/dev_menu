@@ -364,8 +364,8 @@
     const businessType = document.querySelector('[name="reg-type"]:checked')?.value || 'restaurant';
     formDataCache = { name, phone, businessType };
     
-    // حفظ البيانات في sessionStorage لاستخدامها بعد العودة من مصادقة جوجل
-    sessionStorage.setItem('pending_store_data', JSON.stringify(formDataCache));
+    // حفظ البيانات في localStorage لاستخدامها بعد العودة من مصادقة جوجل
+    localStorage.setItem('pending_store_data', JSON.stringify(formDataCache));
 
     document.getElementById('register-form').classList.add('hidden');
     document.getElementById('google-auth-section').classList.remove('hidden');
@@ -400,11 +400,11 @@
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) return;
 
-    const pendingData = sessionStorage.getItem('pending_store_data');
+    const pendingData = localStorage.getItem('pending_store_data');
     if (pendingData) {
       try {
         const storeInfo = JSON.parse(pendingData);
-        sessionStorage.removeItem('pending_store_data');
+        localStorage.removeItem('pending_store_data');
         
         await DM.post('/api/owner?action=register', {
           name: storeInfo.name, 
@@ -424,7 +424,7 @@
     entries.forEach(en => {
       if (en.isIntersecting) { en.target.classList.add('revealed'); io.unobserve(en.target); }
     });
-  }, { threshold: 0.1 });
+  }, { timedelta: 0.1 });
   document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 </script>
 </body>
