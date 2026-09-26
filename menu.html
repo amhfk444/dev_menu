@@ -292,12 +292,13 @@
     catch { return ''; }
   }
   const urlParams = new URLSearchParams(window.location.search);
-  const clientSlug = (urlParams.get('client') || '').trim().toLowerCase();
+  const clientSlug = (urlParams.get('client') || DM.hostSlug()).trim().toLowerCase();
   // مصدر الزيارة: رمز QR المطبوع أو رابط مشارك. نشيل src من الرابط حتى لا تُحسب المشاركات كمسح QR
   const visitSource = urlParams.get('src') === 'qr' ? 'qr' : 'link';
   if (urlParams.has('src')) {
     urlParams.delete('src');
-    history.replaceState(null, '', `${location.pathname}?${urlParams.toString()}`);
+    const qs = urlParams.toString();
+    history.replaceState(null, '', location.pathname + (qs ? `?${qs}` : ''));
   }
 
   let project = null, allProducts = [], allCategories = [];
@@ -481,7 +482,7 @@
     const on = project && project.waitlist_open === true;
     btn.classList.toggle('hidden', !on); btn.classList.toggle('flex', on);
     if (!on) return;
-    btn.href = `waitlist.html?client=${encodeURIComponent(project.client_slug)}`;
+    btn.href = DM.storePage('waitlist', project.client_slug);
     document.getElementById('waitlist-title').textContent = currentLang === 'ar' ? 'انضم لقائمة الانتظار' : 'Join the waitlist';
     document.getElementById('waitlist-sub').textContent = currentLang === 'ar' ? 'سجّل دورك ونبلغك لما تجهز طاولتك' : "Get in line — we'll notify you when your table is ready";
   }

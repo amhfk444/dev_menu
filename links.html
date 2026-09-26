@@ -90,7 +90,7 @@
     catch { return ''; }
   }
 
-  const slug = (new URLSearchParams(location.search).get('client') || '').trim().toLowerCase();
+  const slug = (new URLSearchParams(location.search).get('client') || DM.hostSlug()).trim().toLowerCase();
 
   const DELIVERY_APPS = {
     hungerstation: ['هنقرستيشن', 'hungerstation.com'], jahez: ['جاهز', 'jahez.net'], keeta: ['كيتا', 'keeta.com'],
@@ -134,12 +134,11 @@
       h.classList.remove('hidden');
     }
 
-    const enc = encodeURIComponent(p.client_slug);
     const out = [];
 
     // 1) المنيو و 2) قائمة الانتظار
-    out.push(linkBtn({ href: `menu.html?client=${enc}`, label: 'عرض المنيو', icon: 'fa-solid fa-utensils', primary: true, external: false }));
-    if (p.waitlist_open === true) out.push(linkBtn({ href: `waitlist.html?client=${enc}`, label: 'انضم لقائمة الانتظار', icon: 'fa-solid fa-hourglass-half', external: false }));
+    out.push(linkBtn({ href: DM.storePage('menu', p.client_slug), label: 'عرض المنيو', icon: 'fa-solid fa-utensils', primary: true, external: false }));
+    if (p.waitlist_open === true) out.push(linkBtn({ href: DM.storePage('waitlist', p.client_slug), label: 'انضم لقائمة الانتظار', icon: 'fa-solid fa-hourglass-half', external: false }));
 
     // 3) أرقام الطلبات و 4) واتساب
     const contact = (Array.isArray(p.order_numbers) ? p.order_numbers : [])

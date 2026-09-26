@@ -110,6 +110,28 @@ function waNumber(v) {
   if (!ok) throw new ApiError(400, 'رقم الواتساب غير صحيح، اكتبه مثل 05xxxxxxxx');
   return d;
 }
+// ─── روابط المتاجر (client_slug) ───
+// الرابط يصير نطاق فرعي: duja.devmenu.digital، فلازم يكون صالح كاسم نطاق
+const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,28})[a-z0-9]$/;
+const RESERVED_SLUGS = new Set([
+  'app', 'www', 'api', 'admin', 'super-admin', 'dashboard', 'login', 'signup', 'register', 'account',
+  'mail', 'email', 'smtp', 'imap', 'pop', 'ftp', 'ns1', 'ns2', 'dns', 'cdn', 'static', 'assets', 'images', 'img', 'media', 'files',
+  'blog', 'help', 'support', 'docs', 'status', 'dev', 'staging', 'test', 'demo', 'beta', 'preview',
+  'menu', 'links', 'waitlist', 'privacy', 'terms', 'devmenu', 'dev-menu', 'vercel', 'supabase', 'pay', 'billing'
+]);
+
+// متجر ساري من public_clients برابطه الحالي، أو برابط قديم (رموز QR القديمة تبقى شغالة)
+async function findPublicStore(rawSlug, fields) {
+  const slug = String(rawSlug || '').trim().toLowerCase();
+  if (!/^[a-z0-9_-]{2,60}$/.test(slug)) return { slug, store: null, bad: true };
+  const current = (await rest(`public_clients?client_slug=eq.${q(slug)}&select=${fields}&limit=1`))[0];
+  if (current) return { slug, store: current };
+  let old = null;
+  // لو عمود old_slugs ما انضاف للحين (قبل تشغيل ملف SQL) نعتبره غير موجود بدل ما نكسر الطلب
+  try { old = (await rest(`public_clients?old_slugs=cs.${q(`{${slug}}`)}&select=${fields}&limit=1`))[0] || null; } catch {}
+  return { slug, store: old };
+}
+
 const int = (v) => { const n = Number(v); return Number.isInteger(n) ? n : NaN; };
 
 function readBody(req) {
@@ -138,5 +160,6 @@ function handler(methods, fn) {
 
 module.exports = {
   SUPABASE_URL, BUCKET, ApiError, rest, rpc, q, storage, publicUrl, ownsMediaUrl, storagePathFromUrl,
-  getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody, handler
+  getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody, handler,
+  SLUG_RE, RESERVED_SLUGS, findPublicStore
 };

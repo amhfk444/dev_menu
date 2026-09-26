@@ -146,7 +146,7 @@ tailwind.config = { theme: { extend: {
 <script>
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const params = new URLSearchParams(location.search);
-  const slug = (params.get('client') || '').trim().toLowerCase();
+  const slug = (params.get('client') || DM.hostSlug()).trim().toLowerCase();
   const tokenKey = `wl:${slug}`;
   let token = params.get('t') || (() => { try { return localStorage.getItem(tokenKey) || ''; } catch { return ''; } })();
   let settings = null, partySize = 2, pollTimer = null, lastStatus = null;
@@ -221,7 +221,7 @@ tailwind.config = { theme: { extend: {
     try {
       const res = await DM.post('/api/waitlist?action=join', data);
       saveToken(res.token);
-      history.replaceState(null, '', `waitlist.html?client=${encodeURIComponent(slug)}&t=${encodeURIComponent(res.token)}`);
+      history.replaceState(null, '', `${DM.storePage('waitlist', slug)}${DM.hostSlug() ? '?' : '&'}t=${encodeURIComponent(res.token)}`);
       await loadStatus(true);
     } catch (err) {
       formError(err.message || 'تعذر التسجيل، حاول مرة أخرى');
@@ -290,12 +290,12 @@ tailwind.config = { theme: { extend: {
   }
   function newEntry() {
     saveToken('');
-    history.replaceState(null, '', `waitlist.html?client=${encodeURIComponent(slug)}`);
+    history.replaceState(null, '', DM.storePage('waitlist', slug));
     show('loading'); loadForm();
   }
   document.addEventListener('visibilitychange', () => { if (!document.hidden && token && lastStatus) loadStatus(); });
 
-  document.getElementById('menu-link').href = `menu.html?client=${encodeURIComponent(slug)}`;
+  document.getElementById('menu-link').href = DM.storePage('menu', slug);
   if (!slug) unavailable('الرابط غير مكتمل', 'اطلب رابط قائمة الانتظار من المطعم.');
   else if (token) loadStatus(true);
   else loadForm();

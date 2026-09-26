@@ -141,7 +141,21 @@
     return s;
   }
 
+  // ─── روابط المتاجر المختصرة: duja.devmenu.digital ───
+  // الصفحة تعرف المتجر من النطاق إذا ما فيه ?client= (middleware.js يوجّه النطاق للصفحة)
+  function hostSlug() {
+    const m = location.hostname.toLowerCase().match(/^([a-z0-9-]+)\.devmenu\.digital$/);
+    return m && m[1] !== 'app' && m[1] !== 'www' ? m[1] : '';
+  }
+  // رابط صفحة من صفحات المتجر: مختصر على نطاق المتجر، وإلا بالصيغة العادية
+  function storePage(page, slug) {
+    if (hostSlug()) return { menu: '/', links: '/links', waitlist: '/waitlist' }[page];
+    return `${page}.html?client=${encodeURIComponent(slug)}`;
+  }
+
   window.DM = {
+    hostSlug,
+    storePage,
     googleUrl,
     consumeOAuthRedirect,
     session: loadSession,

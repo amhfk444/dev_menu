@@ -6,15 +6,15 @@
 //   POST /api/waitlist?action=cancel          إلغاء التسجيل
 // =====================================================================
 const crypto = require('crypto');
-const { handler, rest, rpc, q, ApiError, readBody, str, int } = require('./_lib/core');
+const { handler, rest, rpc, q, ApiError, readBody, str, int, findPublicStore } = require('./_lib/core');
 const { SEATING, normalizeSettings, riyadhDayStart, positionOf, emailTemplate, statusUrlFor } = require('./_lib/waitlist');
 const { sendMail } = require('./_lib/mail');
 
 // المتجر لازم يكون ساري + مفعّل عنده قائمة الانتظار
 async function loadStore(slug) {
-  slug = String(slug || '').trim().toLowerCase();
-  if (!/^[a-z0-9_-]{2,60}$/.test(slug)) throw new ApiError(400, 'الرابط غير صحيح');
-  const live = (await rest(`public_clients?client_slug=eq.${q(slug)}&select=id,name,client_slug,logo_url,bg_image_url&limit=1`))[0];
+  // يقبل الرابط الحالي أو القديم للمتجر (رموز QR المطبوعة قبل تغيير الرابط)
+  const { store: live, bad } = await findPublicStore(slug, 'id,name,client_slug,logo_url,bg_image_url');
+  if (bad) throw new ApiError(400, 'الرابط غير صحيح');
   if (!live) throw new ApiError(404, 'قائمة الانتظار غير متاحة حالياً', 'NOT_AVAILABLE');
   const extra = (await rest(`clients?id=eq.${live.id}&select=waitlist_enabled,waitlist_settings`))[0] || {};
   if (!extra.waitlist_enabled) throw new ApiError(404, 'قائمة الانتظار غير متاحة حالياً', 'NOT_AVAILABLE');

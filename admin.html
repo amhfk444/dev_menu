@@ -648,6 +648,26 @@ tailwind.config = {
 
       <!-- ═════════════════ صفحة هوية المطعم ═════════════════ -->
       <section data-page="settings" class="hidden space-y-6">
+        <!-- رابط المتجر المختصر -->
+        <div class="pro-card p-5 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="fa-solid fa-link text-emerald-600"></i> رابط متجرك</h3>
+            <span class="text-[10px] text-ink/50">شاركه في البايو والرسائل، ويفتح المنيو مباشرة</span>
+          </div>
+          <div class="flex items-stretch rounded-xl border border-brand/20 bg-white overflow-hidden focus-within:border-brand" dir="ltr">
+            <span class="flex items-center px-3 bg-brand/5 text-ink/50 text-xs font-bold border-r border-brand/15 shrink-0">https://</span>
+            <input type="text" id="slug-input" maxlength="30" autocomplete="off" autocapitalize="off" spellcheck="false"
+              oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')" placeholder="myrestaurant"
+              class="flex-1 min-w-0 px-3 py-2.5 text-sm font-bold text-ink outline-none" style="font-size:16px">
+            <span class="flex items-center px-3 bg-brand/5 text-ink/50 text-xs font-bold border-l border-brand/15 shrink-0">.devmenu.digital</span>
+          </div>
+          <p class="text-[10px] text-ink/60 leading-relaxed">من 3 إلى 30 حرف: حروف إنجليزية صغيرة وأرقام وشرطة (-). عند التغيير، الرابط القديم ورموز QR المطبوعة تبقى شغالة.</p>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <button type="button" id="slug-save-btn" onclick="saveSlug()" class="flex-1 bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition disabled:opacity-50">حفظ الرابط</button>
+            <button type="button" onclick="copyShortLink()" class="sm:w-32 bg-brand/10 hover:bg-brand/15 text-ink font-bold py-2.5 rounded-xl text-xs border border-brand/25 transition"><i class="fa-solid fa-copy text-[10px]"></i> نسخ</button>
+            <a id="short-link-open" href="#" target="_blank" rel="noopener" class="sm:w-32 text-center bg-brand/10 hover:bg-brand/15 text-ink font-bold py-2.5 rounded-xl text-xs border border-brand/25 transition"><i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> فتح</a>
+          </div>
+        </div>
         <div class="pro-card p-5 space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="fa-solid fa-shop text-ink/75"></i> نوع النشاط</h3>
@@ -985,6 +1005,7 @@ tailwind.config = {
   const menuUrl = () => new URL(`menu.html?client=${encodeURIComponent(client.client_slug)}`, window.location.href).href;
   // رابط رمز QR يحمل src=qr عشان نفرّق في الإحصائيات بين مسح الطاولة والرابط المشارك
   const qrUrl = () => `${menuUrl()}&src=qr`;
+  const shortUrl = () => `https://${client.client_slug}.devmenu.digital`;
   const linksUrl = () => new URL(`links.html?client=${encodeURIComponent(client.client_slug)}`, window.location.href).href;
 
   async function logout() {
@@ -1059,6 +1080,8 @@ tailwind.config = {
     deliveryApps = (Array.isArray(client.delivery_apps) ? client.delivery_apps : []).map(d => ({ ...d }));
     renderDeliveryPicker();
     renderAppearance();
+    document.getElementById('slug-input').value = client.client_slug || '';
+    document.getElementById('short-link-open').href = shortUrl();
     orderNumbers = (Array.isArray(client.order_numbers) ? client.order_numbers : []).map(n => ({ ...n }));
     renderOrderNumbers();
     customLinks = (Array.isArray(client.custom_links) ? client.custom_links : []).map(l => ({ ...l }));
@@ -2205,6 +2228,34 @@ tailwind.config = {
       renderDeliveryPicker();
       showToast(deliveryApps.length ? 'تم الحفظ، وتظهر التطبيقات في المنيو' : 'تمت إزالة تطبيقات التوصيل من المنيو');
     } else showToast('تعذر حفظ تطبيقات التوصيل', true);
+  }
+
+  // ─── رابط المتجر المختصر (slug.devmenu.digital) ───
+  const SLUG_OK = /^[a-z0-9](?:[a-z0-9-]{1,28})[a-z0-9]$/;
+  function copyShortLink() {
+    navigator.clipboard.writeText(shortUrl())
+      .then(() => showToast('تم نسخ رابط متجرك'))
+      .catch(() => showToast('تعذر النسخ، انسخ الرابط يدوياً', true));
+  }
+  async function saveSlug() {
+    const input = document.getElementById('slug-input');
+    const slug = input.value.trim().toLowerCase();
+    if (slug === client.client_slug) return showToast('هذا هو رابطك الحالي');
+    if (!SLUG_OK.test(slug) || slug.includes('--')) return showToast('الرابط من 3 إلى 30 حرف: حروف إنجليزية صغيرة وأرقام وشرطة في الوسط فقط', true);
+    const btn = document.getElementById('slug-save-btn');
+    btn.disabled = true;
+    try {
+      const res = await api('update-slug', { slug });
+      Object.assign(client, res.store);
+      // المدير العام يدير المتجر عبر ?client= فلازم نحدّث الرابط للاسم الجديد
+      if (requestedSlug) return location.replace(`admin.html?client=${encodeURIComponent(client.client_slug)}#settings`);
+      fillClientUI();
+      showToast(`صار رابطك: ${client.client_slug}.devmenu.digital`);
+    } catch (e) {
+      showToast('تعذر تغيير الرابط', true);
+    } finally {
+      btn.disabled = false;
+    }
   }
 
   // ─── مظهر المنيو: الثيم ولون الهوية ───

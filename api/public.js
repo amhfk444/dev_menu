@@ -5,19 +5,18 @@
 //   GET  /api/public?action=featured        الأمثلة الحقيقية للصفحة الرئيسية
 //   POST /api/public?action=track           تسجيل زيارة/مشاهدة (مجهولة)
 // =====================================================================
-const { handler, rest, rpc, q, ApiError, readBody, int } = require('./_lib/core');
+const { handler, rest, rpc, ApiError, readBody, int, findPublicStore } = require('./_lib/core');
 
 const STORE_FIELDS = 'id,name,client_slug,logo_url,bg_image_url,bg_video_url,promo_message,website_url,tiktok_url,instagram_url,whatsapp_number,snapchat_url,opening_hours,location_url,whatsapp_orders,business_type,show_calories,delivery_apps,theme,accent_color,order_numbers,custom_links';
 const PRODUCT_FIELDS = 'id,name,name_en,description,description_en,extra_info,note,price,category,image_url,is_available,is_bestseller,calories,allergens,coffee,sort_order';
 const bySort = (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id;
 
 async function findStore(rawSlug) {
-  const slug = String(rawSlug || '').trim().toLowerCase();
-  if (!/^[a-z0-9_-]{2,60}$/.test(slug)) throw new ApiError(400, 'رابط المنيو غير صحيح', 'BAD_SLUG');
   // public_clients تعرض المتاجر السارية فقط: المنتهي أو الموقوف ما يرجع منه شي
-  const stores = await rest(`public_clients?client_slug=eq.${q(slug)}&select=${STORE_FIELDS}&limit=1`);
-  if (!stores[0]) throw new ApiError(404, 'المنيو غير متاح حالياً', 'NOT_AVAILABLE');
-  return stores[0];
+  const { store, bad } = await findPublicStore(rawSlug, STORE_FIELDS);
+  if (bad) throw new ApiError(400, 'رابط المنيو غير صحيح', 'BAD_SLUG');
+  if (!store) throw new ApiError(404, 'المنيو غير متاح حالياً', 'NOT_AVAILABLE');
+  return store;
 }
 
 // زر "قائمة الانتظار": الإضافة مفعّلة + القائمة مفتوحة + صاحب المتجر مختار يظهر الزر

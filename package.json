@@ -3,6 +3,7 @@
   "private": true,
   "description": "DEV MENU — منصة المنيو الرقمي",
   "dependencies": {
-    "nodemailer": "^6.9.16"
+    "nodemailer": "^6.9.16",
+    "@vercel/functions": "^3.9.9"
   }
 }

@@ -5,7 +5,7 @@
 // =====================================================================
 const {
   handler, rest, rpc, q, storage, publicUrl, ownsMediaUrl, SUPABASE_URL, BUCKET,
-  ApiError, getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody
+  ApiError, getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody, SLUG_RE, RESERVED_SLUGS
 } = require('./_lib/core');
 const { FIELDS, normalizeSettings, riyadhDayStart, positionOf, emailTemplate, statusUrlFor } = require('./_lib/waitlist');
 const { sendMail, mailConfigured } = require('./_lib/mail');
@@ -251,6 +251,27 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     if ((has('whatsapp_orders') ? p.whatsapp_orders : store.whatsapp_orders) && !finalWa) p.whatsapp_orders = false;
     if (!Object.keys(p).length) return { store };
     return { store: await patchStore(sid, p) };
+  }
+
+  // ─── تغيير رابط المتجر (يصير النطاق الفرعي: slug.devmenu.digital) ───
+  // الرابط القديم ينحفظ في old_slugs: المنيو يفتح منه، وما يقدر متجر ثاني ياخذه
+  if (action === 'update-slug') {
+    const slug = String(b.slug || '').trim().toLowerCase();
+    if (!SLUG_RE.test(slug) || slug.includes('--')) {
+      throw new ApiError(400, 'الرابط لازم يكون من 3 إلى 30 حرف: حروف إنجليزية صغيرة وأرقام وشرطة (-) في الوسط فقط', 'BAD_SLUG');
+    }
+    if (RESERVED_SLUGS.has(slug)) throw new ApiError(400, 'هذا الرابط محجوز، اختر اسم ثاني', 'RESERVED_SLUG');
+    if (slug === store.client_slug) return { store };
+    const taken = await rest(`clients?or=${q(`(client_slug.eq.${slug},old_slugs.cs.{${slug}})`)}&id=neq.${sid}&select=id&limit=1`);
+    if (taken.length) throw new ApiError(409, 'هذا الرابط مستخدم لمتجر ثاني، اختر اسم ثاني', 'SLUG_TAKEN');
+    const old = (Array.isArray(store.old_slugs) ? store.old_slugs : []).filter(s => s !== slug && s !== store.client_slug);
+    if (old.length >= 20) throw new ApiError(400, 'غيّرت رابط متجرك مرات كثيرة. تواصل مع الدعم', 'SLUG_LIMIT');
+    try {
+      return { store: await patchStore(sid, { client_slug: slug, old_slugs: [...old, store.client_slug] }) };
+    } catch (e) {
+      if (e.code === '23505') throw new ApiError(409, 'هذا الرابط مستخدم لمتجر ثاني، اختر اسم ثاني', 'SLUG_TAKEN');
+      throw e;
+    }
   }
 
   // ─── رابط رفع ملف (الرفع يتم مباشرة للتخزين برابط موقّع صالح لملف واحد) ───
