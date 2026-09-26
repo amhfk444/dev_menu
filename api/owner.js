@@ -240,10 +240,21 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     if (cats.some(c => c.name === name)) throw new ApiError(400, 'يوجد قسم بنفس الاسم');
     const row = {
       client_id: sid, name, name_en: nameEn || null,
+      group_name: str(b.group_name, 40, 'الفئة الرئيسية') || null,
       key: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
       sort_order: Math.max(0, ...cats.map(c => c.sort_order || 0)) + 1
     };
     return { category: (await rest('categories', { method: 'POST', body: row, prefer: 'return=representation' }))[0] };
+  }
+
+  // تعديل الفئة الرئيسية لقسم (فطور، غداء، عشاء...)
+  if (action === 'category-group') {
+    const id = int(b.id);
+    const rows = await rest(`categories?id=eq.${id}&client_id=eq.${sid}`, {
+      method: 'PATCH', body: { group_name: str(b.group_name, 40, 'الفئة الرئيسية') || null }, prefer: 'return=representation'
+    });
+    if (!rows.length) throw new ApiError(404, 'القسم غير موجود');
+    return { category: rows[0] };
   }
 
   if (action === 'category-delete') {
@@ -317,7 +328,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
 
   if (action === 'product-toggle') {
     const id = int(b.id);
-    if (!['is_available', 'is_bestseller'].includes(b.field)) throw new ApiError(400, 'حقل غير صحيح');
+    if (!['is_available', 'is_bestseller', 'is_hidden'].includes(b.field)) throw new ApiError(400, 'حقل غير صحيح');
     const rows = await rest(`products?id=eq.${id}&client_id=eq.${sid}`, { method: 'PATCH', body: { [b.field]: b.value === true }, prefer: 'return=representation' });
     if (!rows.length) throw new ApiError(404, 'الطبق غير موجود');
     return { product: rows[0] };
