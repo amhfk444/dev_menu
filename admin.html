@@ -494,7 +494,7 @@ tailwind.config = {
 
         <!-- مفعّلة -->
         <div id="wl-app" class="hidden space-y-5">
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <!-- فتح/إغلاق -->
             <div class="pro-card p-5 flex items-center justify-between gap-4">
               <div>
@@ -505,8 +505,18 @@ tailwind.config = {
                 <span class="absolute top-1 w-6 h-6 rounded-full bg-white shadow transition-all"></span>
               </button>
             </div>
+            <!-- إظهار الزر في المنيو -->
+            <div class="pro-card p-5 flex items-center justify-between gap-4">
+              <div>
+                <p class="text-xs font-black">زر الانتظار في المنيو</p>
+                <p id="wl-menu-text" class="text-[11px] text-ink/60 mt-0.5"></p>
+              </div>
+              <button id="wl-menu-toggle" onclick="toggleWaitlistInMenu()" role="switch" class="relative w-14 h-8 rounded-full transition shrink-0">
+                <span class="absolute top-1 w-6 h-6 rounded-full bg-white shadow transition-all"></span>
+              </button>
+            </div>
             <!-- الرابط -->
-            <div class="pro-card p-5 lg:col-span-2 space-y-2.5">
+            <div class="pro-card p-5 lg:col-span-3 space-y-2.5">
               <p class="text-xs font-black flex items-center gap-2"><i class="fa-solid fa-link text-ink/50"></i> رابط التسجيل للضيوف</p>
               <div class="flex flex-col sm:flex-row gap-2">
                 <input id="wl-link" readonly class="input-pro text-xs flex-1" dir="ltr" onclick="this.select()">
@@ -516,7 +526,7 @@ tailwind.config = {
                   <button id="wl-qr-btn" onclick="downloadWaitlistQr()" class="bg-amber-400 hover:bg-amber-300 text-black px-3 py-2 rounded-xl text-[11px] font-bold disabled:opacity-50"><i class="fa-solid fa-print"></i> QR</button>
                 </div>
               </div>
-              <p class="text-[10px] text-ink/50">يظهر أيضاً زر "انضم لقائمة الانتظار" داخل المنيو تلقائياً.</p>
+              <p class="text-[10px] text-ink/50">الرابط ورمز QR يشتغلون دائماً طالما القائمة مفتوحة، حتى لو أخفيت الزر من المنيو.</p>
             </div>
           </div>
 
@@ -1754,6 +1764,25 @@ tailwind.config = {
     t.className = `relative w-14 h-8 rounded-full transition shrink-0 ${open ? 'bg-green-600' : 'bg-brand/25'}`;
     t.firstElementChild.style.right = open ? '4px' : '28px';
     document.getElementById('wl-open-text').textContent = open ? 'مفتوحة — الضيوف يقدرون يسجلون' : 'مغلقة — ما يقبل تسجيلات جديدة';
+
+    // زر المنيو
+    const inMenu = wl.settings && wl.settings.show_in_menu !== false;
+    const m = document.getElementById('wl-menu-toggle');
+    m.setAttribute('aria-checked', inMenu ? 'true' : 'false');
+    m.className = `relative w-14 h-8 rounded-full transition shrink-0 ${inMenu ? 'bg-green-600' : 'bg-brand/25'}`;
+    m.firstElementChild.style.right = inMenu ? '4px' : '28px';
+    document.getElementById('wl-menu-text').textContent = !inMenu
+      ? 'مخفي — الضيوف يسجلون من الرابط أو QR فقط'
+      : open ? 'ظاهر — يشوفه الزبون أعلى المنيو' : 'ظاهر لما تفتح القائمة';
+  }
+
+  async function toggleWaitlistInMenu() {
+    const show = !(wl.settings && wl.settings.show_in_menu !== false);
+    try {
+      const res = await api('waitlist-settings', { show_in_menu: show });
+      wl.settings = res.settings; renderWaitlistOpen();
+      showToast(show ? 'زر قائمة الانتظار ظاهر في المنيو' : 'تم إخفاء زر قائمة الانتظار من المنيو');
+    } catch { showToast('تعذر التحديث', true); }
   }
 
   async function toggleWaitlistOpen() {
