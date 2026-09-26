@@ -18,6 +18,15 @@ const PROCESS = ['washed', 'natural', 'honey', 'anaerobic', 'carbonic', 'other']
 const ROAST = ['light', 'medium', 'dark'];
 const METHODS = ['v60', 'chemex', 'aeropress', 'frenchpress', 'espresso', 'coldbrew'];
 const DELIVERY = ['hungerstation', 'jahez', 'keeta', 'toyou', 'mrsool', 'thechefz', 'careem', 'shgardi', 'other'];
+const THEMES = ['dark', 'light', 'sand', 'forest'];
+const MAX_ORDER_NUMBERS = 5, MAX_CUSTOM_LINKS = 30;
+
+// رقم اتصال: أرقام فقط (9 إلى 15) مع + اختيارية في البداية. المسافات والشرطات تنشال
+function phoneNumber(v) {
+  const s = str(v, 30, 'رقم الطلبات').replace(/[\s\-()]/g, '');
+  if (!/^\+?\d{9,15}$/.test(s)) throw new ApiError(400, 'رقم الطلبات غير صحيح: أرقام فقط من 9 إلى 15 رقم');
+  return s;
+}
 
 async function context(req, { needStore = true } = {}) {
   const user = await getUser(req);
@@ -197,6 +206,34 @@ module.exports = handler(['GET', 'POST'], async (req) => {
         }
         seen.add(d.app);
         return item;
+      });
+    }
+    if (has('theme')) {
+      if (!THEMES.includes(b.theme)) throw new ApiError(400, 'ثيم غير معروف');
+      p.theme = b.theme;
+    }
+    if (has('accent_color')) {
+      // null أو فاضي = بدون لون مخصص (يرجع للون الثيم)
+      if (b.accent_color === null || b.accent_color === '') p.accent_color = null;
+      else if (typeof b.accent_color === 'string' && /^#[0-9a-fA-F]{6}$/.test(b.accent_color)) p.accent_color = b.accent_color.toLowerCase();
+      else throw new ApiError(400, 'اللون لازم يكون بصيغة #RRGGBB');
+    }
+    if (has('order_numbers')) {
+      if (!Array.isArray(b.order_numbers) || b.order_numbers.length > MAX_ORDER_NUMBERS) throw new ApiError(400, `أرقام الطلبات حدها ${MAX_ORDER_NUMBERS}`);
+      p.order_numbers = b.order_numbers.map((n) => {
+        if (!n || typeof n !== 'object') throw new ApiError(400, 'رقم طلبات غير صحيح');
+        return { label: str(n.label, 40, 'عنوان الرقم'), phone: phoneNumber(n.phone) };
+      });
+    }
+    if (has('custom_links')) {
+      if (!Array.isArray(b.custom_links) || b.custom_links.length > MAX_CUSTOM_LINKS) throw new ApiError(400, `الروابط حدها ${MAX_CUSTOM_LINKS}`);
+      p.custom_links = b.custom_links.map((l) => {
+        if (!l || typeof l !== 'object') throw new ApiError(400, 'رابط غير صحيح');
+        const title = str(l.title, 40, 'عنوان الرابط');
+        if (!title) throw new ApiError(400, 'اكتب عنوان لكل رابط');
+        const url = httpUrl(l.url, 'الرابط');
+        if (!url) throw new ApiError(400, `أضف رابط صحيح لـ "${title}"`);
+        return { title, url };
       });
     }
     if (has('business_type')) {

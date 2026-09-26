@@ -9,6 +9,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="js/api.js"></script>
+<script src="js/theme.js"></script>
 <!-- مكتبة توليد الـ QR Code -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Bagel+Fat+One&family=Crimson+Pro:wght@500&display=swap" rel="stylesheet">
@@ -255,6 +256,19 @@ tailwind.config = {
                 </div>
               </div>
               <div id="qrcode" class="bg-white p-2 rounded-xl shrink-0 [&_img]:w-24 [&_img]:h-24 [&_canvas]:w-24 [&_canvas]:h-24"></div>
+            </div>
+    <!-- صفحة الروابط السريعة -->
+            <div class="pro-card p-5 space-y-3">
+              <div class="space-y-1">
+                <h3 class="text-xs font-bold text-ink"><i class="fa-solid fa-link text-emerald-600"></i> صفحة الروابط السريعة</h3>
+                <p class="text-[10px] text-ink/60">صفحة وحدة فيها المنيو والطلبات والتوصيل والتواصل. حطها في بايو انستجرام وتيك توك.</p>
+              </div>
+              <input type="text" id="links-url" readonly dir="ltr" onclick="this.select()" class="input-pro text-xs bg-brand/5">
+              <div class="flex flex-wrap gap-1.5">
+                <button onclick="copyLinksPage()" class="bg-brand/10 hover:bg-brand/15 text-ink px-3 py-1.5 rounded-lg text-[10px] font-bold border border-brand/25 transition"><i class="fa-solid fa-copy"></i> نسخ الرابط</button>
+                <a id="links-preview" href="#" target="_blank" rel="noopener" class="bg-brand/10 hover:bg-brand/15 text-ink px-3 py-1.5 rounded-lg text-[10px] font-bold border border-brand/25 transition"><i class="fa-solid fa-eye"></i> معاينة</a>
+                <button id="links-qr-btn" onclick="downloadLinksQr()" class="bg-amber-400 hover:bg-amber-300 text-black px-3 py-1.5 rounded-lg text-[10px] font-bold transition disabled:opacity-50"><i class="fa-solid fa-qrcode"></i> تحميل QR</button>
+              </div>
             </div>
             <!-- جاهزية المنيو -->
             <div class="pro-card p-5 space-y-3">
@@ -674,6 +688,29 @@ tailwind.config = {
       </div>
     </div>
         </div>
+        <!-- مظهر المنيو: الثيم ولون الهوية -->
+        <div class="pro-card p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-brand/20 pb-2">
+            <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="fa-solid fa-swatchbook text-ink/75"></i> مظهر المنيو</h3>
+            <span class="text-[10px] text-ink/50">يتطبق على المنيو وصفحة الروابط</span>
+          </div>
+          <div id="theme-picker" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+          <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <label for="accent-input" class="text-[11px] font-bold text-ink/75">لون الهوية <span class="text-ink/50 font-semibold">(الزر النشط، الأسعار، خط عناوين الأقسام)</span></label>
+              <span id="accent-label" class="text-[10px] font-mono text-ink/60" dir="ltr"></span>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <input type="color" id="accent-input" oninput="pickAccent(this.value)" class="w-11 h-11 rounded-xl border border-brand/20 bg-white p-1 cursor-pointer" aria-label="اختر لون">
+              <div id="accent-presets" class="flex flex-wrap gap-2"></div>
+              <button type="button" onclick="pickAccent(null)" class="text-[10px] font-bold text-ink/70 bg-white border border-brand/20 hover:bg-brand/10 px-3 py-2 rounded-xl transition">لون الثيم الافتراضي</button>
+            </div>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <button onclick="saveAppearance()" class="flex-1 bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition">حفظ المظهر</button>
+            <a id="appearance-preview" href="#" target="_blank" rel="noopener" class="sm:w-40 text-center bg-brand/10 hover:bg-brand/15 text-ink font-bold py-2.5 rounded-xl text-xs border border-brand/25 transition"><i class="fa-solid fa-eye text-[10px]"></i> معاينة المنيو</a>
+          </div>
+        </div>
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
     <!-- معلومات المطعم -->
     <div class="pro-card p-5 space-y-3">
@@ -769,6 +806,30 @@ tailwind.config = {
           <div id="delivery-picker" class="grid grid-cols-3 sm:grid-cols-5 gap-2"></div>
           <div id="delivery-list" class="space-y-2"></div>
           <button onclick="saveDeliveryApps()" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition">حفظ تطبيقات التوصيل</button>
+        </div>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+          <!-- أرقام الطلبات -->
+          <div class="pro-card p-5 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="fa-solid fa-phone text-emerald-600"></i> أرقام الطلبات</h3>
+              <span id="order-numbers-count" class="text-[10px] text-ink/50"></span>
+            </div>
+            <p class="text-[10px] text-ink/60 -mt-2">تظهر كأزرار اتصال أعلى المنيو وفي صفحة الروابط. مثال: "الطلبات الخارجية".</p>
+            <div id="order-numbers-list" class="space-y-2"></div>
+            <button type="button" id="order-numbers-add" onclick="addOrderNumber()" class="w-full bg-brand/5 hover:bg-brand/10 text-ink border border-dashed border-brand/30 font-bold py-2 rounded-xl text-xs transition disabled:opacity-40 disabled:cursor-not-allowed"><i class="fa-solid fa-plus text-[10px]"></i> إضافة رقم</button>
+            <button onclick="saveOrderNumbers()" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition">حفظ أرقام الطلبات</button>
+          </div>
+          <!-- الروابط المخصصة -->
+          <div class="pro-card p-5 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="fa-solid fa-link text-blue-600"></i> روابط إضافية</h3>
+              <span id="custom-links-count" class="text-[10px] text-ink/50"></span>
+            </div>
+            <p class="text-[10px] text-ink/60 -mt-2">أي رابط تبيه: حجز، استبيان، فرع ثاني، برنامج ولاء... تظهر أسفل المنيو وفي صفحة الروابط.</p>
+            <div id="custom-links-list" class="space-y-2"></div>
+            <button type="button" id="custom-links-add" onclick="addCustomLink()" class="w-full bg-brand/5 hover:bg-brand/10 text-ink border border-dashed border-brand/30 font-bold py-2 rounded-xl text-xs transition disabled:opacity-40 disabled:cursor-not-allowed"><i class="fa-solid fa-plus text-[10px]"></i> إضافة رابط</button>
+            <button onclick="saveCustomLinks()" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition">حفظ الروابط</button>
+          </div>
         </div>
       </section>
     </main>
@@ -924,6 +985,7 @@ tailwind.config = {
   const menuUrl = () => new URL(`menu.html?client=${encodeURIComponent(client.client_slug)}`, window.location.href).href;
   // رابط رمز QR يحمل src=qr عشان نفرّق في الإحصائيات بين مسح الطاولة والرابط المشارك
   const qrUrl = () => `${menuUrl()}&src=qr`;
+  const linksUrl = () => new URL(`links.html?client=${encodeURIComponent(client.client_slug)}`, window.location.href).href;
 
   async function logout() {
     await DM.logout();
@@ -996,6 +1058,13 @@ tailwind.config = {
     applyCaloriesSetting();
     deliveryApps = (Array.isArray(client.delivery_apps) ? client.delivery_apps : []).map(d => ({ ...d }));
     renderDeliveryPicker();
+    renderAppearance();
+    orderNumbers = (Array.isArray(client.order_numbers) ? client.order_numbers : []).map(n => ({ ...n }));
+    renderOrderNumbers();
+    customLinks = (Array.isArray(client.custom_links) ? client.custom_links : []).map(l => ({ ...l }));
+    renderCustomLinks();
+    document.getElementById('links-url').value = linksUrl();
+    document.getElementById('links-preview').href = linksUrl();
     renderWaitlistShell();
 
     renderSubscriptionStatus();
@@ -2136,6 +2205,156 @@ tailwind.config = {
       renderDeliveryPicker();
       showToast(deliveryApps.length ? 'تم الحفظ، وتظهر التطبيقات في المنيو' : 'تمت إزالة تطبيقات التوصيل من المنيو');
     } else showToast('تعذر حفظ تطبيقات التوصيل', true);
+  }
+
+  // ─── مظهر المنيو: الثيم ولون الهوية ───
+  let themeDraft = { theme: 'dark', accent: null };
+
+  function renderAppearance(reset = true) {
+    if (reset) themeDraft = { theme: DMTheme.THEMES[client.theme] ? client.theme : 'dark', accent: DMTheme.isHex(client.accent_color) ? client.accent_color : null };
+    document.getElementById('theme-picker').innerHTML = Object.entries(DMTheme.THEMES).map(([key, t]) => {
+      const v = DMTheme.resolve(key, themeDraft.accent).vars;
+      const on = key === themeDraft.theme;
+      const dish = (name, price) => `
+        <div class="rounded-lg px-2 py-1.5 flex items-center justify-between" style="background:${esc(v.surface)};border:1px solid ${esc(v['surface-line'])}">
+          <span class="text-[10px] font-bold" style="color:${esc(v.fg)}">${name}</span>
+          <span class="text-[10px] font-black" style="color:${esc(v.price)}">${price}</span>
+        </div>`;
+      return `
+        <button type="button" onclick="pickTheme('${key}')" aria-pressed="${on}"
+          class="text-right rounded-2xl p-1.5 border-2 transition ${on ? 'border-brand bg-brand/5' : 'border-transparent hover:border-brand/20'}">
+          <div class="rounded-xl p-2.5 space-y-1.5 shadow-inner" style="background:${esc(v.bg)}">
+            <div class="flex gap-1">
+              <span class="text-[9px] font-black rounded-md px-2 py-0.5" style="background:${esc(v.accent)};color:${esc(v['accent-fg'])}">مشروبات</span>
+              <span class="text-[9px] font-bold rounded-md px-2 py-0.5" style="background:${esc(v.chip)};color:${esc(v.fg)}">حلى</span>
+            </div>
+            <p class="text-[10px] font-bold pb-0.5" style="color:${esc(v.fg)};border-bottom:1px solid ${esc(v['sec-line'])}">القهوة</p>
+            ${dish('لاتيه', '18')}
+            ${dish('كابتشينو', '16')}
+          </div>
+          <p class="text-[11px] font-bold text-ink mt-1.5 px-1 flex items-center gap-1.5">${on ? '<i class="fa-solid fa-circle-check text-brand"></i>' : ''} ${esc(t.name)}</p>
+        </button>`;
+    }).join('');
+
+    const accent = themeDraft.accent;
+    document.getElementById('accent-input').value = accent || DMTheme.resolve(themeDraft.theme).vars.accent;
+    document.getElementById('accent-label').textContent = accent ? accent.toUpperCase() : 'لون الثيم';
+    document.getElementById('accent-presets').innerHTML = DMTheme.PRESETS.map(c => `
+      <button type="button" onclick="pickAccent('${c}')" aria-label="${c}" title="${c}"
+        class="w-9 h-9 rounded-full border-2 transition ${accent === c ? 'border-ink scale-110' : 'border-white shadow'}" style="background:${c}"></button>`).join('');
+    document.getElementById('appearance-preview').href = menuUrl();
+  }
+  function pickTheme(key) { themeDraft.theme = key; renderAppearance(false); }
+  function pickAccent(c) { themeDraft.accent = DMTheme.isHex(c) ? c.toLowerCase() : null; renderAppearance(false); }
+
+  async function saveAppearance() {
+    if (await updateClient({ theme: themeDraft.theme, accent_color: themeDraft.accent })) {
+      renderAppearance();
+      showToast('تم حفظ مظهر المنيو');
+    } else showToast('تعذر حفظ المظهر', true);
+  }
+
+  // ─── أرقام الطلبات والروابط المخصصة (نفس أسلوب تطبيقات التوصيل) ───
+  const MAX_ORDER_NUMBERS = 5, MAX_CUSTOM_LINKS = 30;
+  let orderNumbers = [], customLinks = [];
+  const cleanPhone = (v) => String(v || '').replace(/[\s\-()]/g, '');
+  const validPhone = (v) => /^\+?\d{9,15}$/.test(cleanPhone(v));
+
+  // أزرار الترتيب والحذف لكل صف
+  function rowTools(listName, i, total) {
+    const btn = 'shrink-0 w-9 h-9 rounded-lg border transition disabled:opacity-30 disabled:cursor-not-allowed';
+    return `
+      <button type="button" onclick="moveItem('${listName}', ${i}, -1)" ${i === 0 ? 'disabled' : ''} aria-label="لأعلى" class="${btn} bg-white border-brand/20 text-ink/70 hover:bg-brand/10"><i class="fa-solid fa-arrow-up text-[10px]"></i></button>
+      <button type="button" onclick="moveItem('${listName}', ${i}, 1)" ${i === total - 1 ? 'disabled' : ''} aria-label="لأسفل" class="${btn} bg-white border-brand/20 text-ink/70 hover:bg-brand/10"><i class="fa-solid fa-arrow-down text-[10px]"></i></button>
+      <button type="button" onclick="removeItem('${listName}', ${i})" aria-label="إزالة" class="${btn} bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20"><i class="fa-solid fa-xmark"></i></button>`;
+  }
+  const LISTS = { orderNumbers: () => orderNumbers, customLinks: () => customLinks };
+  const RENDER = { orderNumbers: () => renderOrderNumbers(), customLinks: () => renderCustomLinks() };
+  function moveItem(name, i, d) {
+    const list = LISTS[name](), j = i + d;
+    if (j < 0 || j >= list.length) return;
+    [list[i], list[j]] = [list[j], list[i]];
+    RENDER[name]();
+  }
+  function removeItem(name, i) { LISTS[name]().splice(i, 1); RENDER[name](); }
+
+  function renderOrderNumbers() {
+    document.getElementById('order-numbers-list').innerHTML = orderNumbers.length ? orderNumbers.map((n, i) => `
+      <div class="flex flex-col sm:flex-row sm:items-center gap-2 bg-brand/5 border border-brand/15 rounded-xl p-2.5">
+        <input type="text" maxlength="40" value="${esc(n.label || '')}" oninput="orderNumbers[${i}].label=this.value" placeholder="العنوان: الطلبات الخارجية" class="input-pro !py-1.5 text-xs sm:w-44">
+        <div class="flex items-center gap-2 flex-1">
+          <input type="tel" dir="ltr" maxlength="20" value="${esc(n.phone || '')}" oninput="orderNumbers[${i}].phone=this.value.trim()" placeholder="0501234567" class="input-pro !py-1.5 text-xs flex-1 min-w-0">
+          ${rowTools('orderNumbers', i, orderNumbers.length)}
+        </div>
+      </div>`).join('')
+      : '<p class="text-[11px] text-ink/50 text-center py-2">ما أضفت أي رقم بعد.</p>';
+    document.getElementById('order-numbers-count').textContent = `${orderNumbers.length}/${MAX_ORDER_NUMBERS}`;
+    document.getElementById('order-numbers-add').disabled = orderNumbers.length >= MAX_ORDER_NUMBERS;
+  }
+  function addOrderNumber() {
+    if (orderNumbers.length >= MAX_ORDER_NUMBERS) return;
+    orderNumbers.push({ label: '', phone: '' });
+    renderOrderNumbers();
+    const inputs = document.querySelectorAll('#order-numbers-list input[type="text"]');
+    if (inputs.length) inputs[inputs.length - 1].focus();
+  }
+  async function saveOrderNumbers() {
+    for (const n of orderNumbers) {
+      if (!validPhone(n.phone)) return showToast(`رقم غير صحيح${n.label ? ` في "${n.label}"` : ''}: أرقام فقط من 9 إلى 15 رقم`, true);
+    }
+    const payload = orderNumbers.map(n => ({ label: String(n.label || '').trim(), phone: cleanPhone(n.phone) }));
+    if (await updateClient({ order_numbers: payload })) {
+      orderNumbers = (client.order_numbers || []).map(n => ({ ...n }));
+      renderOrderNumbers();
+      showToast(orderNumbers.length ? 'تم الحفظ، وتظهر الأرقام في المنيو' : 'تمت إزالة أرقام الطلبات');
+    } else showToast('تعذر حفظ أرقام الطلبات', true);
+  }
+
+  function renderCustomLinks() {
+    document.getElementById('custom-links-list').innerHTML = customLinks.length ? customLinks.map((l, i) => `
+      <div class="flex flex-col sm:flex-row sm:items-center gap-2 bg-brand/5 border border-brand/15 rounded-xl p-2.5">
+        <input type="text" maxlength="40" value="${esc(l.title || '')}" oninput="customLinks[${i}].title=this.value" placeholder="عنوان الرابط" class="input-pro !py-1.5 text-xs sm:w-44">
+        <div class="flex items-center gap-2 flex-1">
+          <input type="url" dir="ltr" value="${esc(l.url || '')}" oninput="customLinks[${i}].url=this.value.trim()" placeholder="https://..." class="input-pro !py-1.5 text-xs flex-1 min-w-0">
+          ${rowTools('customLinks', i, customLinks.length)}
+        </div>
+      </div>`).join('')
+      : '<p class="text-[11px] text-ink/50 text-center py-2">ما أضفت أي رابط بعد.</p>';
+    document.getElementById('custom-links-count').textContent = `${customLinks.length}/${MAX_CUSTOM_LINKS}`;
+    document.getElementById('custom-links-add').disabled = customLinks.length >= MAX_CUSTOM_LINKS;
+  }
+  function addCustomLink() {
+    if (customLinks.length >= MAX_CUSTOM_LINKS) return;
+    customLinks.push({ title: '', url: '' });
+    renderCustomLinks();
+    const inputs = document.querySelectorAll('#custom-links-list input[type="text"]');
+    if (inputs.length) inputs[inputs.length - 1].focus();
+  }
+  async function saveCustomLinks() {
+    for (const l of customLinks) {
+      const title = String(l.title || '').trim();
+      if (!title) return showToast('اكتب عنوان لكل رابط', true);
+      if (!safeUrl(l.url)) return showToast(`أضف رابط صحيح لـ "${title}" (يبدأ بـ https://)`, true);
+    }
+    const payload = customLinks.map(l => ({ title: String(l.title).trim(), url: l.url }));
+    if (await updateClient({ custom_links: payload })) {
+      customLinks = (client.custom_links || []).map(l => ({ ...l }));
+      renderCustomLinks();
+      showToast(customLinks.length ? 'تم حفظ الروابط' : 'تمت إزالة الروابط');
+    } else showToast('تعذر حفظ الروابط', true);
+  }
+
+  // ─── صفحة الروابط السريعة ───
+  function copyLinksPage() {
+    navigator.clipboard.writeText(linksUrl())
+      .then(() => showToast('تم نسخ رابط صفحة الروابط'))
+      .catch(() => showToast('تعذر النسخ، انسخ الرابط من الخانة', true));
+  }
+  function downloadLinksQr() {
+    downloadQrCard({
+      url: linksUrl(), caption: 'امسح الرمز لكل روابطنا', captionEn: 'Scan for all our links',
+      filePrefix: 'links-qr', button: document.getElementById('links-qr-btn')
+    });
   }
 
   // ─── عرض السعرات (خيار المتجر) ───

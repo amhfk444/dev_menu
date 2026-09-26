@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b0b0b">
+<title>روابطنا | DEV MENU</title>
+<meta name="description" content="كل روابط المطعم في مكان واحد: المنيو، الطلبات، تطبيقات التوصيل، التواصل والموقع.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DEV MENU">
+<meta property="og:title" content="روابطنا | DEV MENU">
+<meta property="og:description" content="كل روابط المطعم في مكان واحد: المنيو، الطلبات، تطبيقات التوصيل، التواصل والموقع.">
+<meta name="twitter:card" content="summary">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="js/api.js"></script>
+<script src="js/theme.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+  /* القيم الافتراضية = الثيم الداكن، و js/theme.js يغيّرها حسب ثيم المطعم */
+  :root {
+    --bg: #0b0b0b; --fg: #ffffff; --fg2: #d1d5db; --fg3: #9ca3af;
+    --surface: rgba(18, 18, 18, 0.8); --surface-line: rgba(255, 255, 255, 0.18);
+    --chip: rgba(255, 255, 255, 0.1); --line: rgba(255, 255, 255, 0.2); --ring-bg: rgba(0, 0, 0, 0.9);
+    --ov-in: rgba(10, 10, 10, 0.4); --ov-out: rgba(10, 10, 10, 0.85); --media-filter: brightness(0.75) contrast(1.05);
+    --accent: #ffffff; --accent-fg: #000000; --accent-glow: rgba(255, 255, 255, 0.25);
+  }
+  html { -webkit-text-size-adjust: 100%; }
+  body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--fg); min-height: 100vh; overflow-x: hidden; }
+  #bg { position: fixed; inset: 0; z-index: -2; }
+  #bg img { width: 100%; height: 100%; object-fit: cover; filter: var(--media-filter); }
+  .overlay { position: fixed; inset: 0; z-index: -1; background: radial-gradient(circle at center, var(--ov-in) 0%, var(--ov-out) 100%); }
+  .t-fg2 { color: var(--fg2); }
+  .t-fg3 { color: var(--fg3); }
+  .logo-ring { background: var(--ring-bg); border: 2px solid var(--line); }
+  .lnk {
+    display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 10px 14px;
+    background: var(--surface); border: 1px solid var(--surface-line); border-radius: 18px;
+    backdrop-filter: blur(12px); color: var(--fg); font-weight: 800; font-size: 14px;
+    transition: transform .15s, background .15s; touch-action: manipulation;
+  }
+  .lnk:active { transform: scale(.98); }
+  .lnk .ico { width: 36px; height: 36px; border-radius: 12px; background: var(--chip); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
+  .lnk .arrow { margin-inline-start: auto; color: var(--fg3); font-size: 11px; }
+  .lnk.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); box-shadow: 0 10px 28px -10px var(--accent-glow); }
+  .lnk.primary .ico { background: rgba(0, 0, 0, 0.12); }
+  .lnk.primary .arrow { color: inherit; opacity: .7; }
+  .group-title { font-size: 11px; font-weight: 800; color: var(--fg3); padding: 8px 4px 0; }
+</style>
+</head>
+<body>
+
+<div id="bg" class="hidden"><img id="bg-img" alt=""></div>
+<div class="overlay"></div>
+
+<main class="w-full max-w-md mx-auto px-4 pt-10 pb-12">
+  <div id="loading" class="min-h-[70vh] flex items-center justify-center t-fg3 text-sm gap-2">
+    <i class="fa-solid fa-spinner fa-spin"></i> جاري التحميل...
+  </div>
+
+  <div id="page" class="hidden space-y-6">
+    <header class="text-center space-y-3">
+      <div class="w-28 h-28 mx-auto p-1.5 rounded-full logo-ring overflow-hidden shadow-2xl">
+        <img id="logo" src="images/logo.jpeg" alt="" class="w-full h-full object-cover rounded-full" onerror="this.onerror=null;this.src='images/logo.jpeg'">
+      </div>
+      <div>
+        <h1 id="name" class="text-2xl font-black"></h1>
+        <p id="type" class="text-xs font-semibold t-fg2 tracking-wider mt-1"></p>
+        <p id="hours" class="hidden text-[11px] t-fg3 mt-2"><i class="fa-regular fa-clock"></i> <span></span></p>
+      </div>
+    </header>
+
+    <nav id="links" class="space-y-2.5"></nav>
+
+    <footer class="text-center pt-4 space-y-1">
+      <a href="index.html" class="text-[11px] font-black t-fg3">DEV MENU — أنشئ منيوك الرقمي</a>
+    </footer>
+  </div>
+</main>
+
+<script>
+  // حماية من حقن الكود: أي نص قادم من قاعدة البيانات يمر من هنا قبل عرضه
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // يقبل روابط http/https فقط (يمنع روابط javascript:)
+  function safeUrl(u) {
+    if (!u) return '';
+    try { const x = new URL(u); return (x.protocol === 'https:' || x.protocol === 'http:') ? x.href : ''; }
+    catch { return ''; }
+  }
+
+  const slug = (new URLSearchParams(location.search).get('client') || '').trim().toLowerCase();
+
+  const DELIVERY_APPS = {
+    hungerstation: ['هنقرستيشن', 'hungerstation.com'], jahez: ['جاهز', 'jahez.net'], keeta: ['كيتا', 'keeta.com'],
+    toyou: ['تويو', 'toyou.io'], mrsool: ['مرسول', 'mrsool.co'], thechefz: ['ذا شفز', 'thechefz.co'],
+    careem: ['كريم', 'careem.com'], shgardi: ['شقردي', 'shgardi.app']
+  };
+  const TYPE_LABELS = { restaurant: 'RESTAURANT', cafe: 'SPECIALTY COFFEE', mixed: 'RESTAURANT & CAFE', bakery: 'BAKERY & SWEETS' };
+
+  // زر واحد: href لازم يكون آمن مسبقاً، والأيقونة إما class أو صورة
+  function linkBtn({ href, label, icon, img, primary = false, external = true }) {
+    const ico = img
+      ? `<span class="ico" style="background:#fff"><img src="${esc(img)}" alt="" data-l="${esc(label.charAt(0))}" class="w-6 h-6 object-contain" onerror="this.parentNode.textContent=this.dataset.l;this.parentNode.style.color='#000'"></span>`
+      : `<span class="ico"><i class="${icon}"></i></span>`;
+    return `<a href="${esc(href)}" ${external ? 'target="_blank" rel="noopener"' : ''} class="lnk${primary ? ' primary' : ''}">
+      ${ico}<span class="truncate">${esc(label)}</span><i class="fa-solid fa-chevron-left arrow"></i></a>`;
+  }
+  const group = (title, items) => items.length ? `<p class="group-title">${esc(title)}</p>${items.join('')}` : '';
+
+  function showUnavailable(title, sub) {
+    document.getElementById('loading').innerHTML = `
+      <div class="text-center space-y-3 px-6">
+        <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-2xl" style="background:var(--chip);border:1px solid var(--line)"><i class="fa-solid fa-store-slash"></i></div>
+        <h1 class="text-lg font-black" style="color:var(--fg)">${esc(title)}</h1>
+        <p class="text-xs t-fg3 max-w-xs leading-relaxed">${esc(sub)}</p>
+        <a href="index.html" class="inline-block mt-3 text-[11px] font-bold t-fg3">DEV MENU</a>
+      </div>`;
+  }
+
+  function render(p) {
+    if (window.DMTheme) DMTheme.apply(p);
+    document.title = `${p.name || 'روابطنا'} | روابطنا`;
+    document.getElementById('name').textContent = p.name || '';
+    document.getElementById('type').textContent = TYPE_LABELS[p.business_type] || '';
+    const logo = safeUrl(p.logo_url);
+    if (logo) document.getElementById('logo').src = logo;
+    const bg = safeUrl(p.bg_image_url);
+    if (bg) { document.getElementById('bg-img').src = bg; document.getElementById('bg').classList.remove('hidden'); }
+    if (p.opening_hours) {
+      const h = document.getElementById('hours');
+      h.querySelector('span').textContent = p.opening_hours;
+      h.classList.remove('hidden');
+    }
+
+    const enc = encodeURIComponent(p.client_slug);
+    const out = [];
+
+    // 1) المنيو و 2) قائمة الانتظار
+    out.push(linkBtn({ href: `menu.html?client=${enc}`, label: 'عرض المنيو', icon: 'fa-solid fa-utensils', primary: true, external: false }));
+    if (p.waitlist_open === true) out.push(linkBtn({ href: `waitlist.html?client=${enc}`, label: 'انضم لقائمة الانتظار', icon: 'fa-solid fa-hourglass-half', external: false }));
+
+    // 3) أرقام الطلبات و 4) واتساب
+    const contact = (Array.isArray(p.order_numbers) ? p.order_numbers : [])
+      .map(n => ({ label: String((n && n.label) || '').trim(), phone: String((n && n.phone) || '').replace(/[^\d+]/g, '') }))
+      .filter(n => /^\+?\d{9,15}$/.test(n.phone))
+      .map(n => linkBtn({ href: `tel:${n.phone}`, label: n.label || `اتصل بنا ${n.phone}`, icon: 'fa-solid fa-phone', external: false }));
+    const wa = String(p.whatsapp_number || '').replace(/\D/g, '');
+    if (wa) contact.push(linkBtn({ href: `https://wa.me/${wa}`, label: 'تواصل عبر واتساب', icon: 'fa-brands fa-whatsapp' }));
+    out.push(group('الطلبات والتواصل', contact));
+
+    // 5) تطبيقات التوصيل بشعاراتها
+    const delivery = (Array.isArray(p.delivery_apps) ? p.delivery_apps : []).map(d => {
+      const url = safeUrl(d && d.url);
+      if (!url) return '';
+      const meta = DELIVERY_APPS[d.app];
+      const name = meta ? meta[0] : String(d.name || '').trim();
+      if (!name) return '';
+      let domain = meta ? meta[1] : '';
+      if (!domain) { try { domain = new URL(url).hostname; } catch {} }
+      return linkBtn({ href: url, label: `اطلب عبر ${name}`, img: `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` });
+    }).filter(Boolean);
+    out.push(group('تطبيقات التوصيل', delivery));
+
+    // 6) روابط التواصل
+    const social = [
+      [safeUrl(p.instagram_url), 'انستجرام', 'fa-brands fa-instagram'],
+      [safeUrl(p.tiktok_url), 'تيك توك', 'fa-brands fa-tiktok'],
+      [safeUrl(p.snapchat_url), 'سناب شات', 'fa-brands fa-snapchat'],
+      [safeUrl(p.website_url), 'موقعنا الإلكتروني', 'fa-solid fa-globe']
+    ].filter(([u]) => u).map(([href, label, icon]) => linkBtn({ href, label, icon }));
+    out.push(group('تابعنا', social));
+
+    // 7) الروابط المخصصة
+    const custom = (Array.isArray(p.custom_links) ? p.custom_links : [])
+      .map(l => ({ title: String((l && l.title) || '').trim(), url: safeUrl(l && l.url) }))
+      .filter(l => l.title && l.url)
+      .map(l => linkBtn({ href: l.url, label: l.title, icon: 'fa-solid fa-link' }));
+    out.push(group('روابط أخرى', custom));
+
+    // 8) الموقع على الخريطة
+    const loc = safeUrl(p.location_url);
+    if (loc) out.push(group('زورونا', [linkBtn({ href: loc, label: 'موقعنا على الخريطة', icon: 'fa-solid fa-location-dot' })]));
+
+    document.getElementById('links').innerHTML = out.join('');
+    document.getElementById('loading').remove();
+    document.getElementById('page').classList.remove('hidden');
+  }
+
+  (async () => {
+    if (!slug) return showUnavailable('الرابط غير مكتمل', 'اطلب الرابط الصحيح من المطعم، أو امسح رمز QR الخاص به.');
+    try {
+      const data = await DM.get(`/api/public?action=links&slug=${encodeURIComponent(slug)}`);
+      render(data.store);
+    } catch (e) {
+      if (e.status === 404 || e.status === 400) return showUnavailable('الصفحة غير متاحة حالياً', 'هذا المتجر غير موجود أو متوقف مؤقتاً.');
+      console.error(e);
+      showUnavailable('تعذر التحميل', 'تحقق من اتصالك بالإنترنت ثم أعد تحميل الصفحة.');
+    }
+  })();
+</script>
+</body>
+</html>

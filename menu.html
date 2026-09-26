@@ -3,12 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b0b0b">
 <title>المنيو الرقمي | Dev Menu</title>
 
 <!-- Tailwind CSS & FontAwesome -->
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="js/api.js"></script>
+<script src="js/theme.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
 <style>
@@ -23,10 +25,25 @@
     src: url('https://cdn.jsdelivr.net/npm/@emran-alhaddad/saudi-riyal-font@1.1.0/fonts/bold/saudi_riyal.woff2') format('woff2');
     font-weight: 700 900; font-display: swap; unicode-range: U+20C1;
   }
+  /* ─── الثيم: القيم الافتراضية هنا = الثيم الداكن الأصلي، و js/theme.js يغيّرها حسب اختيار المطعم ─── */
+  :root {
+    --bg: #0b0b0b; --body-fg: #f5f5f5; --fg: #ffffff; --fg2: #d1d5db; --fg3: #9ca3af;
+    --surface: rgba(18, 18, 18, 0.8); --surface-line: rgba(255, 255, 255, 0.18);
+    --header: rgba(15, 15, 15, 0.85); --header-line: rgba(255, 255, 255, 0.15);
+    --chip: rgba(255, 255, 255, 0.1); --chip2: rgba(255, 255, 255, 0.2);
+    --line: rgba(255, 255, 255, 0.2); --line2: rgba(255, 255, 255, 0.3);
+    --input-bg: rgba(0, 0, 0, 0.6); --ring-bg: rgba(0, 0, 0, 0.9);
+    --modal: #18181b; --modal-head: rgba(24, 24, 27, 0.95);
+    --ov-in: rgba(10, 10, 10, 0.4); --ov-out: rgba(10, 10, 10, 0.85); --media-filter: brightness(0.75) contrast(1.05);
+    --dot: rgba(255, 255, 255, 0.3); --img-line: rgba(255, 255, 255, 0.2);
+    --grp-bg: rgba(0, 0, 0, 0.3); --grp-fg: #ffffff; --grp-line: rgba(255, 255, 255, 0.25);
+    --accent: #ffffff; --accent-fg: #000000; --accent-glow: rgba(255, 255, 255, 0.25);
+    --price: #ffffff; --sec-line: rgba(255, 255, 255, 0.3);
+  }
   body {
     font-family: 'SaudiRiyal', 'Cairo', sans-serif;
-    background-color: #0b0b0b;
-    color: #f5f5f5;
+    background-color: var(--bg);
+    color: var(--body-fg);
     min-height: 100vh;
     overflow-x: hidden;
   }
@@ -34,29 +51,59 @@
     position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: -2; overflow: hidden;
   }
   #bg-video, #bg-image {
-    width: 100%; height: 100%; object-fit: cover; filter: brightness(0.75) contrast(1.05);
+    width: 100%; height: 100%; object-fit: cover; filter: var(--media-filter);
   }
   .bg-overlay {
-    position: fixed; inset: 0; background: radial-gradient(circle at center, rgba(10,10,10,0.4) 0%, rgba(10,10,10,0.85) 100%); z-index: -1;
+    position: fixed; inset: 0; background: radial-gradient(circle at center, var(--ov-in) 0%, var(--ov-out) 100%); z-index: -1;
   }
   .glass-card {
-    background: rgba(18, 18, 18, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 18px;
+    background: var(--surface); backdrop-filter: blur(12px); border: 1px solid var(--surface-line); border-radius: 18px;
     transition: all 0.3s ease;
   }
   .glass-card:active { transform: scale(0.98); }
   .glass-header {
-    background: rgba(15, 15, 15, 0.85); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    background: var(--header); backdrop-filter: blur(16px); border-bottom: 1px solid var(--header-line);
   }
   .leader-line {
-    flex: 1 1 10px; border-bottom: 1.5px dotted rgba(255, 255, 255, 0.3); margin: 0 8px 6px 8px;
+    flex: 1 1 10px; border-bottom: 1.5px dotted var(--dot); margin: 0 8px 6px 8px;
   }
   .product-img {
-    width: 90px; height: 90px; object-fit: cover; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.2); flex-shrink: 0;
+    width: 90px; height: 90px; object-fit: cover; border-radius: 14px; border: 1px solid var(--img-line); flex-shrink: 0;
   }
   .no-scrollbar::-webkit-scrollbar { display: none; }
-  .cat-pill.active {
-    background: #ffffff; color: #000000; font-weight: 800; box-shadow: 0 4px 15px rgba(255, 255, 255, 0.25);
+  /* body + :not() حتى يغلب تحويل ألوان الثيم الفاتح بالأسفل */
+  body .cat-pill.active, body.tone-light .cat-pill.active:not(.keep-c) {
+    background: var(--accent); color: var(--accent-fg); font-weight: 800; box-shadow: 0 4px 15px var(--accent-glow);
   }
+  /* الفئات الرئيسية (فطور، غداء...) */
+  .grp-btn { background: var(--grp-bg); color: var(--grp-fg); border-color: var(--grp-line); }
+  .grp-btn.grp-on { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+  .price { color: var(--price); }
+  .sec-title { border-color: var(--sec-line); }
+  .modal-panel { background-color: var(--modal); }
+  .modal-head { background-color: var(--modal-head); }
+
+  /* ─── الثيمات الفاتحة (فاتح / بيج): الصفحة مكتوبة بألوان داكنة ثابتة من Tailwind،
+         فنحوّل ألوانها للمتغيرات هنا فقط. الثيم الداكن ما يتأثر بهذا الجزء أبداً ─── */
+  body.tone-light .text-white:not(.keep-c), body.tone-light .text-gray-100 { color: var(--fg); }
+  body.tone-light .text-white\/80, body.tone-light .text-gray-200, body.tone-light .text-gray-300 { color: var(--fg2); }
+  body.tone-light .text-white\/60, body.tone-light .text-gray-400, body.tone-light .text-gray-500, body.tone-light .text-gray-600 { color: var(--fg3); }
+  body.tone-light .bg-white\/5, body.tone-light .bg-white\/10 { background-color: var(--chip); }
+  body.tone-light .bg-white\/15, body.tone-light .bg-white\/20,
+  body.tone-light .hover\:bg-white\/20:hover { background-color: var(--chip2); }
+  body.tone-light .border-white\/10, body.tone-light .border-white\/15, body.tone-light .border-white\/20,
+  body.tone-light .border-white\/25 { border-color: var(--line); }
+  body.tone-light .border-white, body.tone-light .border-white\/30, body.tone-light .border-white\/40,
+  body.tone-light .focus\:border-white:focus, body.tone-light .focus\:border-white\/40:focus { border-color: var(--line2); }
+  body.tone-light .bg-black\/60 { background-color: var(--input-bg); }
+  body.tone-light .bg-black\/90 { background-color: var(--ring-bg); }
+  body.tone-light .placeholder-gray-400::placeholder, body.tone-light .placeholder-gray-500::placeholder { color: var(--fg3); }
+  body.tone-light .hover\:text-white:hover { color: var(--fg); }
+  body.tone-light .text-amber-200, body.tone-light .text-amber-200\/90, body.tone-light .text-amber-300,
+  body.tone-light .text-amber-300\/80, body.tone-light .hover\:text-amber-300:hover { color: #a16207; }
+  body.tone-light .text-red-300, body.tone-light .hover\:text-red-300:hover { color: #dc2626; }
+  body.tone-light .text-green-300 { color: #15803d; }
+  body.tone-light #promo-banner, body.tone-light #waitlist-btn { box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.25); border: 1px solid var(--line); }
 </style>
 </head>
 
@@ -83,7 +130,7 @@
 
   <!-- شريط العروض والرسائل الترويجية -->
   <div id="promo-banner" class="hidden bg-white text-black p-3.5 rounded-2xl shadow-2xl flex items-center gap-3 border border-white">
-    <div class="w-8 h-8 rounded-xl bg-black text-white flex items-center justify-center shrink-0 text-xs">
+    <div class="w-8 h-8 rounded-xl bg-black text-white keep-c flex items-center justify-center shrink-0 text-xs">
       <i class="fa-solid fa-bullhorn"></i>
     </div>
     <div class="flex-1 min-w-0">
@@ -110,7 +157,7 @@
   <!-- قائمة الانتظار -->
   <a id="waitlist-btn" href="#" class="hidden items-center justify-between gap-3 bg-white text-black rounded-2xl px-4 py-3.5 shadow-2xl active:scale-[.99] transition">
     <span class="flex items-center gap-3">
-      <span class="w-10 h-10 rounded-xl bg-black text-white flex items-center justify-center"><i class="fa-solid fa-hourglass-half"></i></span>
+      <span class="w-10 h-10 rounded-xl bg-black text-white keep-c flex items-center justify-center"><i class="fa-solid fa-hourglass-half"></i></span>
       <span class="leading-tight">
         <b id="waitlist-title" class="block text-sm">انضم لقائمة الانتظار</b>
         <span id="waitlist-sub" class="block text-[11px] text-gray-600">سجّل دورك ونبلغك لما تجهز طاولتك</span>
@@ -147,6 +194,9 @@
   <!-- أزرار التواصل الاجتماعي -->
   <div id="social-links-container" class="hidden pt-4 pb-2 border-t border-white/10 flex justify-center items-center gap-3"></div>
 
+  <!-- الروابط المخصصة -->
+  <div id="custom-links" class="hidden space-y-2"></div>
+
   <!-- التذييل (مُلغى منه زر تسجيل الدخول نهائياً) -->
   <footer class="text-center pt-8 mt-6 border-t border-white/10 space-y-2">
     <a href="index.html" class="inline-block text-xs font-black text-white/80 hover:text-amber-300 transition">DEV MENU — أنشئ منيوك الرقمي</a>
@@ -157,8 +207,8 @@
 
 <!-- Modal تفاصيل المنتج -->
 <div id="productModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-xl opacity-0 pointer-events-none transition-all duration-300">
-  <div class="bg-zinc-900 border border-white/20 w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden overflow-y-auto overscroll-contain max-h-[92vh] shadow-2xl relative text-right" style="padding-bottom: env(safe-area-inset-bottom)">
-    <button onclick="closeModal()" class="absolute top-4 left-4 z-20 w-8 h-8 rounded-full bg-black/80 text-white flex items-center justify-center border border-white/30">
+  <div class="modal-panel border border-white/20 w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden overflow-y-auto overscroll-contain max-h-[92vh] shadow-2xl relative text-right" style="padding-bottom: env(safe-area-inset-bottom)">
+    <button onclick="closeModal()" class="absolute top-4 left-4 z-20 w-8 h-8 rounded-full bg-black/80 text-white keep-c flex items-center justify-center border border-white/30">
       <i class="fas fa-xmark"></i>
     </button>
     <div class="relative h-60 bg-black">
@@ -168,7 +218,7 @@
     <div class="p-5 space-y-3">
       <h3 id="modalTitle" class="font-black text-xl text-white leading-snug"></h3>
       <div id="modalDetails" class="space-y-1.5 text-xs text-gray-300 leading-relaxed"></div>
-      <p id="modalPrice" class="text-lg font-black text-white"></p>
+      <p id="modalPrice" class="text-lg font-black price"></p>
       <div id="modalCoffee" class="hidden space-y-3"></div>
       <div id="modalMeta" class="flex flex-wrap gap-1.5"></div>
       <div id="modalOrderBox" class="hidden items-center gap-2 pt-1">
@@ -198,8 +248,8 @@
 
 <!-- نافذة الطلب -->
 <div id="cartModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-xl opacity-0 pointer-events-none transition-all duration-300">
-  <div class="bg-zinc-900 border border-white/20 w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl overflow-y-auto overscroll-contain max-h-[92vh] shadow-2xl text-right" style="padding-bottom: env(safe-area-inset-bottom)">
-    <div class="sticky top-0 bg-zinc-900/95 backdrop-blur px-5 pt-5 pb-3 flex items-center justify-between border-b border-white/10">
+  <div class="modal-panel border border-white/20 w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl overflow-y-auto overscroll-contain max-h-[92vh] shadow-2xl text-right" style="padding-bottom: env(safe-area-inset-bottom)">
+    <div class="sticky top-0 modal-head backdrop-blur px-5 pt-5 pb-3 flex items-center justify-between border-b border-white/10">
       <h3 id="cartTitle" class="font-black text-lg text-white flex items-center gap-2"><i class="fa-brands fa-whatsapp text-[#25d366]"></i> طلبك</h3>
       <button type="button" onclick="closeCart()" aria-label="إغلاق" class="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center"><i class="fas fa-xmark"></i></button>
     </div>
@@ -363,9 +413,30 @@
     if (project.opening_hours) items.push(`<span class="${chip}"><i class="fa-regular fa-clock"></i> ${esc(project.opening_hours)}</span>`);
     const loc = safeUrl(project.location_url);
     if (loc) items.push(`<a href="${esc(loc)}" target="_blank" rel="noopener" class="${chip} hover:bg-white/20 transition"><i class="fa-solid fa-location-dot"></i> ${currentLang === 'ar' ? 'موقعنا' : 'Location'}</a>`);
+    orderNumbers().forEach(n => items.push(`<a href="tel:${esc(n.phone)}" class="${chip} hover:bg-white/20 transition"><i class="fa-solid fa-phone"></i> ${esc(n.label || (currentLang === 'ar' ? 'اتصل بنا' : 'Call us'))}</a>`));
     bar.innerHTML = items.join('');
     bar.classList.toggle('hidden', items.length === 0);
     bar.classList.toggle('flex', items.length > 0);
+  }
+
+  // أرقام الطلبات: أرقام فقط مع + اختيارية (نفس تحقق الخادم)
+  function orderNumbers() {
+    return (Array.isArray(project.order_numbers) ? project.order_numbers : [])
+      .map(n => ({ label: String((n && n.label) || '').trim(), phone: String((n && n.phone) || '').replace(/[^\d+]/g, '') }))
+      .filter(n => /^\+?\d{9,15}$/.test(n.phone));
+  }
+
+  function renderCustomLinks() {
+    const box = document.getElementById('custom-links');
+    const links = (Array.isArray(project.custom_links) ? project.custom_links : [])
+      .map(l => ({ title: String((l && l.title) || '').trim(), url: safeUrl(l && l.url) }))
+      .filter(l => l.title && l.url);
+    box.classList.toggle('hidden', links.length === 0);
+    box.innerHTML = links.map(l => `
+      <a href="${esc(l.url)}" target="_blank" rel="noopener" class="glass-card flex items-center justify-between gap-3 px-4 py-3 text-sm font-bold text-white">
+        <span class="flex items-center gap-2.5 min-w-0"><i class="fa-solid fa-link text-xs text-gray-400"></i><span class="truncate">${esc(l.title)}</span></span>
+        <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-gray-400 shrink-0"></i>
+      </a>`).join('');
   }
 
   // ─── تطبيقات التوصيل (الشعار من موقع التطبيق نفسه) ───
@@ -477,6 +548,7 @@
     const p = menuData.store;
 
     project = p;
+    if (window.DMTheme) DMTheme.apply(p);
     document.title = `${p.name || 'Dev Menu'} | المنيو الرقمي`;
     document.getElementById('project-title').textContent = p.name || 'Dev Menu';
     const TYPE_LABELS = { restaurant: 'RESTAURANT', cafe: 'SPECIALTY COFFEE', mixed: 'RESTAURANT &amp; CAFE', bakery: 'BAKERY &amp; SWEETS' };
@@ -491,6 +563,7 @@
     }
 
     renderSocialLinks(p);
+    renderCustomLinks();
 
     const video = safeUrl(p.bg_video_url), image = safeUrl(p.bg_image_url);
     if (video) {
@@ -565,7 +638,7 @@
     if (!groups.length) return;
     if (!groups.includes(activeGroup)) activeGroup = groups[0];
     bar.innerHTML = groups.map(g => `
-      <button type="button" data-group="${esc(g)}" class="shrink-0 px-5 py-2.5 rounded-2xl text-sm font-black transition border ${g === activeGroup ? 'bg-white text-black border-white' : 'bg-black/30 text-white border-white/25'}">
+      <button type="button" data-group="${esc(g)}" class="grp-btn shrink-0 px-5 py-2.5 rounded-2xl text-sm font-black transition border ${g === activeGroup ? 'grp-on' : ''}">
         ${esc(g === OTHER_GROUP ? (currentLang === 'ar' ? 'أخرى' : 'More') : tr(g))}
       </button>`).join('');
   }
@@ -610,7 +683,7 @@
           <div class="flex items-start justify-between gap-2">
             <h4 class="font-bold text-[15px] sm:text-sm text-white leading-snug line-clamp-2 min-w-0">${esc(name)}</h4>
             <span class="leader-line hidden sm:block self-end"></span>
-            <span class="font-black text-[15px] sm:text-sm text-white shrink-0 whitespace-nowrap">${esc(money(p.price))}</span>
+            <span class="price font-black text-[15px] sm:text-sm shrink-0 whitespace-nowrap">${esc(money(p.price))}</span>
           </div>
           ${p.is_bestseller === true ? `<span class="inline-flex items-center gap-1 mt-1 bg-white/15 text-white text-[10px] px-2 py-0.5 rounded-md font-bold border border-white/25"><i class="fa-solid fa-fire text-amber-400"></i> ${currentLang === 'ar' ? 'مميز' : 'Featured'}</span>` : ''}
           ${desc ? `<p class="text-[11px] text-gray-300 line-clamp-2 mt-1">${esc(desc)}</p>` : ''}
@@ -640,7 +713,7 @@
 
     container.innerHTML = groups.map(([cat, ps]) => `
       <section id="section-${esc(cat.id)}" class="space-y-3 scroll-mt-24">
-        <h3 class="font-bold text-base text-white tracking-wide border-b border-white/30 pb-1.5">${esc(catName(cat))}</h3>
+        <h3 class="sec-title font-bold text-base text-white tracking-wide border-b pb-1.5">${esc(catName(cat))}</h3>
         <div class="space-y-2.5">${ps.map(productCard).join('')}</div>
       </section>`).join('');
   }
