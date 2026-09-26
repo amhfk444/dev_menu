@@ -201,17 +201,24 @@
   }
 
   async function handleGoogleReturn() {
-    // ننتظر قليلاً لضمان حفظ جلسة جوجل واستقرار الـ Token
-    await new Promise(r => setTimeout(r, 800));
+    // جلب الجلسة من سوبابيس بعد العودة من جوجل
+    const { data: { session }, error } = await supabaseClient.auth.getSession();
+    if (error || !session) return false;
 
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (!session) return false;
+    // مزامنة توكن جوجل مباشرة مع نظام التخزين المحلي للـ API (dm_session)
+    const sessionData = {
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+      expires_at: session.expires_at || Math.floor(Date.now() / 1000) + 3600,
+      email: session.user.email.toLowerCase()
+    };
+    localStorage.setItem('dm_session', JSON.stringify(sessionData));
 
-    // 1. محاولة الدخول إذا كان البريد مسجلاً ولديه متجر مسبقاً
+    // 1. فحص هل الحساب مسجل ولديه متجر مسبقاً
     let hasStore = await checkStoreAndRedirect();
     if (hasStore) return true;
 
-    // 2. إذا لم يكن لديه متجر، نبحث عن بيانات المتجر الجديد المحفوظة
+    // 2. إذا لم يكن لديه متجر، نفحص هل توجد بيانات متجر جديدة محفوظة في الـ localStorage
     const pendingData = localStorage.getItem('pending_store_data');
     if (pendingData) {
       try {
@@ -234,18 +241,24 @@
       }
     }
 
-    // إذا لم تكن هناك بيانات متجر جديدة ولا قديمة
-    showToast('يرجى إدخال بيانات متجرك من الصفحة الرئيسية أولاً', 'error');
-    setTimeout(() => { window.location.href = 'index.html#register'; }, 2000);
+    // إذا لم تكن هناك بيانات مسجلة مسبقاً ولا بيانات جديدة
+    showToast('لا يوجد متجر مرتبط بهذا الحساب، يرجى التسجيل من الصفحة الرئيسية', 'error');
+    setTimeout(() => { window.location.href = 'index.html#register'; }, 2500);
     return true;
   }
 
   window.addEventListener('DOMContentLoaded', async () => {
-    // فحص هل عاد من مصادقة جوجل أو لديه جلسة مسجلة
+    // فحص هل هناك جلسة سابقة مسجلة
+    if (DM.signedIn()) {
+      let logged = await checkStoreAndRedirect();
+      if (logged) return;
+    }
+
+    // فحص هل عاد المستخدم من مصادقة جوجل الان
     const isGoogleAuth = await handleGoogleReturn();
     
     if (!isGoogleAuth) {
-      // إذا لم يكن قادماً من جوجل، نظهر نموذج تسجيل الدخول التقليدي بالبريد
+      // إذا لم يكن قادماً من جوجل، نظهر نموذج تسجيل الدخول بالبريد التقليدي
       document.getElementById('loading-icon').className = 'fa-solid fa-user-lock';
       document.getElementById('main-title').textContent = 'تسجيل الدخول';
       document.getElementById('main-desc').textContent = 'أدخل بريدك الإلكتروني المسجل لنرسل لك رمز التحقق.';
