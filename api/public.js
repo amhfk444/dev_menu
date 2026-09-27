@@ -1,12 +1,14 @@
 // =====================================================================
 // DEV MENU — نقاط API العامة (بدون تسجيل دخول)
 //   GET  /api/public?action=menu&slug=xxx   منيو متجر (فقط لو اشتراكه ساري)
+//   GET  /api/public?action=menu-version&slug=xxx  بصمة المنيو (للتحديث التلقائي، مخزنة 5 ثواني في CDN)
 //   GET  /api/public?action=links&slug=xxx  بيانات صفحة الروابط السريعة (بدون الأطباق)
 //   GET  /api/public?action=featured        الأمثلة الحقيقية للصفحة الرئيسية
 //   POST /api/public?action=coupon          فحص كوبون خصم على سلة الطلب وحساب الخصم
 //   POST /api/public?action=coupon-redeem   تسجيل استخدام الكوبون عند إرسال الطلب
 //   POST /api/public?action=track           تسجيل زيارة/مشاهدة (مجهولة)
 // =====================================================================
+const crypto = require('crypto');
 const { handler, rest, rpc, q, ApiError, readBody, int, findPublicStore } = require('./_lib/core');
 
 const STORE_FIELDS = 'id,name,client_slug,logo_url,bg_image_url,bg_video_url,promo_message,website_url,tiktok_url,instagram_url,whatsapp_number,snapchat_url,opening_hours,location_url,whatsapp_orders,business_type,show_calories,delivery_apps,theme,accent_color,order_numbers,custom_links';
@@ -142,21 +144,38 @@ async function waitlistOpen(storeId) {
   return wl.waitlist_enabled === true && ws.open !== false && ws.show_in_menu !== false;
 }
 
-module.exports = handler(['GET', 'POST'], async (req) => {
+// كل بيانات المنيو العام لمتجر
+async function menuPayload(slug) {
+  const store = await findStore(slug);
+  const [categories, products, waitlist_open, has_coupons, occasion, promos] = await Promise.all([
+    rest(`categories?client_id=eq.${store.id}&select=id,key,name,name_en,sort_order,group_name`),
+    // المنتجات المخفية ما توصل للزبون أصلاً
+    rest(`products?client_id=eq.${store.id}&is_hidden=is.false&select=${PRODUCT_FIELDS}`),
+    waitlistOpen(store.id),
+    hasCoupons(store.id),
+    activeOccasion(store.id),
+    menuPromos(store.id)
+  ]);
+  return { store: { ...store, waitlist_open, has_coupons, occasion, promos }, categories: categories.sort(bySort), products: products.sort(bySort) };
+}
+const versionOf = (data) => crypto.createHash('sha1').update(JSON.stringify(data)).digest('hex').slice(0, 16);
+
+module.exports = handler(['GET', 'POST'], async (req, res) => {
   const action = req.query.action;
 
   if (action === 'menu' && req.method === 'GET') {
-    const store = await findStore(req.query.slug);
-    const [categories, products, waitlist_open, has_coupons, occasion, promos] = await Promise.all([
-      rest(`categories?client_id=eq.${store.id}&select=id,key,name,name_en,sort_order,group_name`),
-      // المنتجات المخفية ما توصل للزبون أصلاً
-      rest(`products?client_id=eq.${store.id}&is_hidden=is.false&select=${PRODUCT_FIELDS}`),
-      waitlistOpen(store.id),
-      hasCoupons(store.id),
-      activeOccasion(store.id),
-      menuPromos(store.id)
-    ]);
-    return { store: { ...store, waitlist_open, has_coupons, occasion, promos }, categories: categories.sort(bySort), products: products.sort(bySort) };
+    const data = await menuPayload(req.query.slug);
+    return { ...data, version: versionOf(data) };
+  }
+
+  // المنيو المفتوح عند الزبون يسأل هنا كل كم ثانية: لو تغيّرت البصمة يجيب المنيو من جديد.
+  // الرد يتخزن 5 ثواني في CDN، فمهما كثر الزبائن ما ينفذ الخادم إلا مرة كل 5 ثواني لكل متجر
+  if (action === 'menu-version' && req.method === 'GET') {
+    let v;
+    try { v = versionOf(await menuPayload(req.query.slug)); }
+    catch (e) { if (e.status === 404 || e.status === 400) v = 'off'; else throw e; }
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=5, stale-while-revalidate=10');
+    return { v };
   }
 
   // صفحة الروابط السريعة: نفس بيانات المتجر بدون الأقسام والأطباق

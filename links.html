@@ -193,11 +193,29 @@
     }
   }
 
+  // التحديث التلقائي: لو تغيّر شي من لوحة التحكم نعيد تحميل الصفحة (نفس بصمة المنيو)
+  function watchChanges() {
+    let base = null, busy = false;
+    const check = async () => {
+      if (busy || document.hidden) return;
+      busy = true;
+      try {
+        const { v } = await DM.get(`/api/public?action=menu-version&slug=${encodeURIComponent(slug)}`);
+        if (base === null) base = v;
+        else if (v && v !== base) location.reload();
+      } catch {} finally { busy = false; }
+    };
+    check();
+    setInterval(check, 12000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+  }
+
   (async () => {
     if (!slug) return showUnavailable('الرابط غير مكتمل', 'اطلب الرابط الصحيح من المطعم، أو امسح رمز QR الخاص به.');
     try {
       const data = await DM.get(`/api/public?action=links&slug=${encodeURIComponent(slug)}`);
       render(data.store);
+      watchChanges();
     } catch (e) {
       if (e.status === 404 || e.status === 400) return showUnavailable('الصفحة غير متاحة حالياً', 'هذا المتجر غير موجود أو متوقف مؤقتاً.');
       console.error(e);

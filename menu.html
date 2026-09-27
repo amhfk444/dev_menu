@@ -630,42 +630,46 @@
       console.error(e);
       return showUnavailable('تعذر تحميل المنيو', 'تحقق من اتصالك بالإنترنت ثم أعد تحميل الصفحة.');
     }
-    const p = menuData.store;
+    applyMenu(menuData, true);
+    trackOnce(`v:${project.id}`, 'view', null, visitSource);
+    startLiveUpdates();
+  }
 
+  // يعرض بيانات المنيو. first = أول تحميل، وغيره = تحديث تلقائي (نحافظ على السلة والبحث والتمرير)
+  let menuVersion = null;
+  function applyMenu(menuData, first) {
+    const p = menuData.store;
+    const prevOccasion = project ? JSON.stringify(project.occasion || null) : null;
     project = p;
+    menuVersion = menuData.version || null;
+
     if (window.DMTheme) DMTheme.apply(p);
     document.title = `${p.name || 'Dev Menu'} | المنيو الرقمي`;
     document.getElementById('project-title').textContent = p.name || 'Dev Menu';
     const TYPE_LABELS = { restaurant: 'RESTAURANT', cafe: 'SPECIALTY COFFEE', mixed: 'RESTAURANT &amp; CAFE', bakery: 'BAKERY &amp; SWEETS' };
     if (p.business_type && TYPE_LABELS[p.business_type]) document.getElementById('project-type').innerHTML = TYPE_LABELS[p.business_type];
     const logo = safeUrl(p.logo_url);
-    if (logo) document.getElementById('project-logo').src = logo;
+    const logoEl = document.getElementById('project-logo');
+    if (logo) { if (logoEl.getAttribute('src') !== logo) logoEl.src = logo; }
+    else if (!first) logoEl.src = 'images/logo.jpeg';
 
-    const promoBanner = document.getElementById('promo-banner');
-    if (p.promo_message && p.promo_message.trim() !== '') {
-      document.getElementById('promo-text').textContent = p.promo_message;
-      promoBanner.classList.remove('hidden');
-    }
+    const promo = (p.promo_message || '').trim();
+    document.getElementById('promo-text').textContent = tr(promo);
+    document.getElementById('promo-banner').classList.toggle('hidden', !promo);
 
     renderSocialLinks(p);
     renderCustomLinks();
-    // زينة المناسبة الجارية (رمضان، العيد، اليوم الوطني...)
-    if (window.DMOccasions && p.occasion) {
-      try { DMOccasions.render(p.occasion, { header: document.getElementById('menu-header'), greet: document.getElementById('occasion-greeting') }); }
-      catch (e) { console.warn('occasion', e); }
+    // زينة المناسبة الجارية: نعيد رسمها فقط لو تغيّرت (حتى ما تنعاد القصاصات مع كل تحديث)
+    if (window.DMOccasions) {
+      const header = document.getElementById('menu-header'), greet = document.getElementById('occasion-greeting');
+      try {
+        if (first || JSON.stringify(p.occasion || null) !== prevOccasion) {
+          if (p.occasion) DMOccasions.render(p.occasion, { header, greet, lang: currentLang });
+          else DMOccasions.clear(header, greet);
+        }
+      } catch (e) { console.warn('occasion', e); }
     }
-
-    const video = safeUrl(p.bg_video_url), image = safeUrl(p.bg_image_url);
-    if (video) {
-      const bgVideo = document.getElementById('bg-video');
-      bgVideo.src = video;
-      bgVideo.classList.remove('hidden');
-      bgVideo.play().catch(e => console.log('Autoplay failed:', e));
-    } else if (image) {
-      const bgImage = document.getElementById('bg-image');
-      bgImage.src = image;
-      bgImage.classList.remove('hidden');
-    }
+    setBackground(p);
 
     allCategories = (menuData.categories || []).sort(bySort);
     allProducts = (menuData.products || []).sort(bySort);
@@ -675,11 +679,48 @@
     renderDeliveryBar();
     renderPromoCodes();
     renderFilterBar();
-    loadCart();
-    renderMenu(allProducts, false);
+    loadCart();   // يشيل من السلة أي صنف انحذف أو صار غير متوفر
+    if (first) renderMenu(allProducts, false); else handleSearch();
     renderCartBar();
     renderCalorieNote();
-    trackOnce(`v:${p.id}`, 'view', null, visitSource);
+    if (!first && coupon && cart.length) applyCoupon(true);
+  }
+
+  function setBackground(p) {
+    const video = safeUrl(p.bg_video_url), image = safeUrl(p.bg_image_url);
+    const v = document.getElementById('bg-video'), img = document.getElementById('bg-image');
+    if (video) {
+      if (v.getAttribute('src') !== video) { v.src = video; v.play().catch(e => console.log('Autoplay failed:', e)); }
+      v.classList.remove('hidden'); img.classList.add('hidden');
+      return;
+    }
+    if (v.getAttribute('src')) { v.pause(); v.removeAttribute('src'); v.load(); }
+    v.classList.add('hidden');
+    if (image) { if (img.getAttribute('src') !== image) img.src = image; img.classList.remove('hidden'); }
+    else img.classList.add('hidden');
+  }
+
+  // ─── التحديث التلقائي: أي تعديل من لوحة التحكم يوصل للمنيو المفتوح بدون تحديث الصفحة ───
+  // نسأل عن "بصمة" المنيو كل 12 ثانية (والصفحة ظاهرة فقط)، ولو تغيّرت نجيب المنيو من جديد
+  const LIVE_EVERY = 12000;
+  let liveTimer = null, liveChecking = false, lastPolledVersion = null;
+  async function checkForUpdates() {
+    if (liveChecking || document.hidden || !menuVersion) return;
+    liveChecking = true;
+    try {
+      const { v } = await DM.get(`/api/public?action=menu-version&slug=${encodeURIComponent(clientSlug)}`);
+      if (v === 'off') { clearInterval(liveTimer); return showUnavailable('المنيو غير متاح حالياً', 'هذا المنيو غير موجود أو متوقف مؤقتاً.'); }
+      if (v && v !== menuVersion && v !== lastPolledVersion) {
+        lastPolledVersion = v;
+        applyMenu(await DM.get(`/api/public?action=menu&slug=${encodeURIComponent(clientSlug)}`), false);
+      }
+    } catch (e) {
+      if (e.status === 404) { clearInterval(liveTimer); showUnavailable('المنيو غير متاح حالياً', 'هذا المنيو غير موجود أو متوقف مؤقتاً.'); }
+    } finally { liveChecking = false; }
+  }
+  function startLiveUpdates() {
+    liveTimer = setInterval(checkForUpdates, LIVE_EVERY);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdates(); });
   }
 
   function renderSocialLinks(p) {
