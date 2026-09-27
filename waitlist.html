@@ -9,6 +9,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="js/api.js"></script>
+<script src="js/dialog.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 
 <script>
@@ -284,7 +285,7 @@ tailwind.config = { theme: { extend: {
   }
 
   async function cancelEntry() {
-    if (!confirm('متأكد تبي تلغي تسجيلك في قائمة الانتظار؟')) return;
+    if (!(await DMDialog.confirm({ title: 'إلغاء التسجيل', message: 'متأكد تبي تلغي تسجيلك في قائمة الانتظار؟ بتفقد دورك الحالي.', confirmText: 'نعم، ألغِ التسجيل', cancelText: 'لا، أبقى' }))) return;
     try { await DM.post('/api/waitlist?action=cancel', { slug, t: token }); } catch {}
     loadStatus();
   }

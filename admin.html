@@ -9,6 +9,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="js/api.js"></script>
+<script src="js/dialog.js"></script>
 <script src="js/theme.js"></script>
 <script src="js/occasions.js"></script>
 <!-- مكتبة توليد الـ QR Code -->
@@ -2476,13 +2477,16 @@ tailwind.config = {
   }
   async function renameBranch(id) {
     const b = branches.find(x => x.id === id); if (!b) return;
-    const name = prompt('اسم الفرع', b.name || '');
-    if (name === null) return;
-    if (!name.trim()) return showToast('اكتب اسم الفرع', true);
+    const r = await DMDialog.form({
+      title: 'تعديل اسم الفرع', subtitle: 'يظهر هذا الاسم أعلى المنيو ولوحة التحكم.', icon: 'fa-code-branch',
+      fields: [{ name: 'name', label: 'اسم الفرع', value: b.name || '', maxlength: 80, required: true, placeholder: 'مثال: دجئ - فرع النخيل' }]
+    });
+    if (!r || r.name === b.name) return;
+    const name = r.name;
     try {
-      const res = await api('branch-rename', { id, name: name.trim() });
+      const res = await api('branch-rename', { id, name });
       branches = branches.map(x => ({ ...x, ...(res.family.find(f => f.id === x.id) || {}) }));
-      if (id === client.id) { client.name = name.trim(); setStoreName(client.name); document.getElementById('setting-name').value = client.name; }
+      if (id === client.id) { client.name = name; setStoreName(client.name); document.getElementById('setting-name').value = client.name; }
       renderBranchSwitch(); renderBranchesCard();
       showToast('تم تعديل اسم الفرع');
     } catch { showToast('تعذر تعديل الاسم', true); }
@@ -3227,13 +3231,16 @@ tailwind.config = {
   const categoryGroups = () => [...new Set(loadedCategories.map(c => c.group_name).filter(Boolean))];
   async function renameCategory(id) {
     const c = loadedCategories.find(x => x.id === id); if (!c) return;
-    const name = prompt('اسم القسم بالعربي', c.name || '');
-    if (name === null) return;
-    if (!name.trim()) return showToast('اكتب اسم القسم', true);
-    const en = prompt('اسم القسم بالإنجليزي (اختياري)', c.name_en || '');
-    if (en === null) return;
+    const r = await DMDialog.form({
+      title: 'تعديل اسم القسم', subtitle: branches.length > 1 ? 'الاسم الجديد يتطبق على نفس القسم في كل الفروع.' : '', icon: 'fa-layer-group',
+      fields: [
+        { name: 'name', label: 'اسم القسم', value: c.name || '', maxlength: 60, required: true, placeholder: 'مثال: المشروبات الساخنة' },
+        { name: 'en', label: 'الاسم بالإنجليزي', value: c.name_en || '', maxlength: 60, dir: 'ltr', placeholder: 'Hot drinks' }
+      ]
+    });
+    if (!r) return;
     try {
-      await api('category-rename', { id, name: name.trim(), name_en: en.trim() });
+      await api('category-rename', { id, name: r.name, name_en: r.en });
       showToast('تم تعديل اسم القسم');
       refreshAll();
     } catch { showToast('تعذر تعديل الاسم', true); }
@@ -3242,10 +3249,13 @@ tailwind.config = {
   async function editCategoryGroup(id) {
     const c = loadedCategories.find(x => x.id === id); if (!c) return;
     const groups = categoryGroups();
-    const val = prompt(`الفئة الرئيسية لقسم "${c.name}"${groups.length ? `\nالموجودة: ${groups.join('، ')}` : ''}\n(اتركه فاضي لإزالتها)`, c.group_name || '');
-    if (val === null) return;
+    const r = await DMDialog.form({
+      title: 'الفئة الرئيسية', subtitle: `لقسم "${c.name}". الأقسام اللي لها نفس الفئة تظهر تحت تبويب واحد أعلى المنيو.`, icon: 'fa-layer-group',
+      fields: [{ name: 'group', label: 'الفئة', value: c.group_name || '', maxlength: 40, placeholder: 'مثال: فطور، غداء، عشاء', suggestions: groups, hint: 'اتركها فاضية لإزالة الفئة.' }]
+    });
+    if (!r) return;
     try {
-      const res = await api('category-group', { id, group_name: val.trim() });
+      const res = await api('category-group', { id, group_name: r.group });
       c.group_name = res.category.group_name;
       renderCategories();
       showToast(c.group_name ? `صار القسم تحت "${c.group_name}"` : 'تمت إزالة الفئة الرئيسية');

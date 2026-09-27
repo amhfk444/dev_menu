@@ -9,6 +9,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="js/api.js"></script>
+<script src="js/dialog.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Bagel+Fat+One&family=Crimson+Pro:wght@500&display=swap" rel="stylesheet">
 
 <script>
@@ -448,8 +449,12 @@ tailwind.config = { theme: { extend: {
   async function renameStore(id) {
     openMenu = null; renderStores();
     const c = find(id); if (!c) return;
-    const name = (prompt(c.parent_id ? 'اسم الفرع' : 'اسم المتجر', c.name || '') || '').trim();
-    if (!name || name === c.name) return;
+    const r = await DMDialog.form({
+      title: c.parent_id ? 'تعديل اسم الفرع' : 'تعديل اسم المتجر', subtitle: c.client_slug, icon: 'fa-pen',
+      fields: [{ name: 'name', label: c.parent_id ? 'اسم الفرع' : 'اسم المتجر', value: c.name || '', maxlength: 80, required: true }]
+    });
+    if (!r || r.name === c.name) return;
+    const name = r.name;
     const error = await post('rename', { id, name });
     if (error) return showToast(`تعذر تعديل الاسم: ${error.message}`, true);
     showToast('تم تعديل الاسم'); loadClients();
@@ -459,21 +464,22 @@ tailwind.config = { theme: { extend: {
   async function addBranch(id) {
     openMenu = null; renderStores();
     const c = find(id); if (!c) return;
-    const name = (prompt(`اسم الفرع الجديد لـ "${c.name}"\nمثال: ${c.name} - فرع النخيل`, `${c.name} - `) || '').trim();
-    if (!name) return;
-    const copyMenu = confirm('تبي تنسخ منيو المتجر الرئيسي للفرع؟\n\nموافق = نسخة من الأقسام والأطباق (تتعدل لحالها بعدين)\nإلغاء = منيو فارغ يبدأ من الصفر');
-    const slug = (prompt('رابط الفرع بالإنجليزي (اختياري)\nاتركه فاضي ونختاره تلقائياً مثل ' + `${c.client_slug}-2`, '') || '').trim().toLowerCase();
-    const ok = await confirmDialog({
-      title: 'إضافة فرع', message: `"${name}" كفرع لـ "${c.name}".`,
-      items: [
-        `السعر: ${money(PLAN_PRICE.branch)} سنوياً`,
-        copyMenu ? 'ينسخ المنيو (الأقسام والأطباق) والهوية، وبعدها كل فرع منفصل تماماً' : 'منيو فارغ، وياخذ هوية المتجر (الشعار والثيم) بس',
-        'صاحب المتجر يديره من لوحته عبر قائمة الفروع أعلى الصفحة',
-        'اشتراك الفرع يبدأ بنفس حالة المتجر الرئيسي، وتقدر تفعّله سنة من بطاقته'
+    const r = await DMDialog.form({
+      title: 'إضافة فرع', subtitle: `فرع جديد لـ "${c.name}"`, icon: 'fa-code-branch', confirmText: 'إنشاء الفرع',
+      fields: [
+        { name: 'name', label: 'اسم الفرع', value: `${c.name} - `, maxlength: 80, required: true, placeholder: `${c.name} - فرع النخيل` },
+        { name: 'menu', label: 'منيو الفرع', type: 'choice', value: 'copy', options: [
+          { value: 'copy', label: 'نسخة من منيو المتجر', desc: 'الأقسام والأطباق مربوطة: الاسم والصورة والوصف تتعدل في الكل، والسعر والإخفاء لكل فرع', icon: 'fa-copy' },
+          { value: 'empty', label: 'منيو فارغ', desc: 'يبدأ من الصفر، وياخذ الشعار والثيم بس', icon: 'fa-file' }
+        ] },
+        { name: 'slug', label: 'رابط الفرع', value: '', dir: 'ltr', maxlength: 30, placeholder: `${c.client_slug}-2`,
+          hint: 'حروف إنجليزية صغيرة وأرقام وشرطة. اتركه فاضي ونختاره تلقائياً.',
+          validate: (v) => v && !/^[a-z0-9](?:[a-z0-9-]{1,28})[a-z0-9]$/.test(v.toLowerCase()) ? 'الرابط من 3 إلى 30 حرف: حروف إنجليزية صغيرة وأرقام وشرطة' : '' }
       ],
-      confirmText: 'إنشاء الفرع', tone: 'success'
+      note: `السعر ${money(PLAN_PRICE.branch)} سنوياً. اشتراك الفرع يبدأ بنفس حالة المتجر الرئيسي، وصاحب المتجر يديره من قائمة الفروع في لوحته.`
     });
-    if (!ok) return;
+    if (!r) return;
+    const name = r.name, copyMenu = r.menu !== 'empty', slug = r.slug.toLowerCase();
     try {
       const res = await DM.post(A('branch-create'), { id, name, slug, empty_menu: !copyMenu }, true).catch(e => { throw forbidden(e); });
       showToast(`تم إنشاء الفرع: ${res.client.client_slug}`);
