@@ -89,6 +89,8 @@ tailwind.config = {
   .bnav i { font-size: 16px; }
   .bnav.nav-active { color: #384f3d; }
   .bnav.nav-active i { color: #384f3d; }
+  /* خلفية شطرنج توضح الشفافية في معاينة الملصقات */
+  .bg-checker { background-color: #fff; background-image: linear-gradient(45deg, #e5e1d8 25%, transparent 25%), linear-gradient(-45deg, #e5e1d8 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e5e1d8 75%), linear-gradient(-45deg, transparent 75%, #e5e1d8 75%); background-size: 14px 14px; background-position: 0 0, 0 7px, 7px -7px, -7px 0; }
   .editing-glow { border-color: rgba(180, 130, 20, 0.7) !important; background: rgba(251, 191, 36, 0.08) !important; box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15); }
 </style>
 </head>
@@ -878,11 +880,25 @@ tailwind.config = {
               <p id="occ-date-hint" class="hidden text-[10px] text-amber-800 bg-amber-500/10 border border-amber-500/25 rounded-lg px-2.5 py-1.5"><i class="fa-solid fa-circle-info"></i> التاريخ مقترح حسب تقويم أم القرى، وممكن يختلف يوم حسب رؤية الهلال. عدّله إذا لزم.</p>
               <div class="space-y-2">
                 <div class="flex items-center justify-between gap-2">
-                  <p class="text-[11px] font-bold text-ink/75">ملصقاتك وشخصياتك <span class="text-ink/50 font-normal">(حتى 3، PNG أو GIF بخلفية شفافة)</span></p>
+                  <p class="text-[11px] font-bold text-ink/75">ملصقاتك وشخصياتك <span class="text-ink/50 font-normal">(حتى 3 — نشيل الخلفية تلقائياً)</span></p>
                   <label id="occ-upload-btn" class="shrink-0 cursor-pointer text-[10px] font-bold bg-white border border-brand/20 hover:bg-brand/10 text-ink px-2.5 py-1.5 rounded-lg transition">
                     <i class="fa-solid fa-upload text-[9px]"></i> رفع ملصق
                     <input type="file" id="occ-sticker-file" accept="image/png,image/webp,image/gif,image/jpeg" class="hidden" onchange="uploadSticker(this)">
                   </label>
+                </div>
+                <!-- إزالة الخلفية: قبل / بعد -->
+                <div id="bg-panel" class="hidden bg-white border border-brand/20 rounded-2xl p-3 space-y-2.5">
+                  <p id="bg-status" class="text-[11px] font-bold text-ink flex items-center gap-2"></p>
+                  <div id="bg-progress" class="hidden h-1.5 bg-brand/10 rounded-full overflow-hidden"><div id="bg-progress-bar" class="h-full bg-brand transition-all" style="width:0%"></div></div>
+                  <div id="bg-compare" class="hidden grid grid-cols-2 gap-2">
+                    <figure class="space-y-1"><div class="bg-checker rounded-xl h-28 flex items-center justify-center p-2"><img id="bg-before" alt="" class="max-h-full max-w-full object-contain"></div><figcaption class="text-[10px] text-center text-ink/60">الأصلية</figcaption></figure>
+                    <figure class="space-y-1"><div class="bg-checker rounded-xl h-28 flex items-center justify-center p-2 ring-2 ring-brand"><img id="bg-after" alt="" class="max-h-full max-w-full object-contain"></div><figcaption class="text-[10px] text-center text-ink font-bold">بدون خلفية</figcaption></figure>
+                  </div>
+                  <div id="bg-actions" class="hidden grid grid-cols-2 gap-2">
+                    <button type="button" data-bg="cut" class="bg-brand text-cream hover:bg-brand-dark font-bold py-2 rounded-xl text-[11px]">استخدم بدون خلفية</button>
+                    <button type="button" data-bg="orig" class="bg-brand/10 hover:bg-brand/15 text-ink font-bold py-2 rounded-xl text-[11px] border border-brand/25">استخدم الأصلية</button>
+                  </div>
+                  <button type="button" data-bg="cancel" class="w-full text-[10px] font-bold text-ink/55 hover:text-ink">إلغاء</button>
                 </div>
                 <div id="occ-stickers" class="space-y-2"></div>
               </div>
@@ -2511,7 +2527,8 @@ tailwind.config = {
     const opts = (map, v) => Object.entries(map).map(([k, t]) => `<option value="${k}" ${k === v ? 'selected' : ''}>${t}</option>`).join('');
     document.getElementById('occ-stickers').innerHTML = o.stickers.length ? o.stickers.map((k, i) => `
       <div class="flex flex-wrap items-center gap-1.5 bg-white border border-brand/15 rounded-xl p-2">
-        <img src="${esc(safeUrl(k.url))}" alt="" class="w-10 h-10 object-contain rounded-lg bg-brand/5">
+        <img src="${esc(safeUrl(k.url))}" alt="" class="w-10 h-10 object-contain rounded-lg bg-checker">
+        <button type="button" onclick="cutExistingSticker(${i})" title="إزالة الخلفية" class="text-[10px] font-bold bg-white border border-brand/20 hover:bg-brand/10 text-ink px-2 h-9 rounded-lg"><i class="fa-solid fa-scissors"></i> إزالة الخلفية</button>
         <select onchange="occDraft().stickers[${i}].position=this.value; renderOccasionPreview()" class="input-pro !py-1.5 text-[11px] !w-auto flex-1 min-w-[110px] bg-cream">${opts(DMOccasions.POSITIONS, k.position)}</select>
         <select onchange="occDraft().stickers[${i}].size=this.value; renderOccasionPreview()" class="input-pro !py-1.5 text-[11px] !w-auto bg-cream">${opts(DMOccasions.SIZES, k.size)}</select>
         <select onchange="occDraft().stickers[${i}].animation=this.value; renderOccasionPreview()" class="input-pro !py-1.5 text-[11px] !w-auto bg-cream">${opts(DMOccasions.ANIMS, k.animation)}</select>
@@ -2522,16 +2539,165 @@ tailwind.config = {
   async function uploadSticker(input) {
     const file = input.files[0]; input.value = '';
     const o = occDraft(); if (!file || !o) return;
-    if (!/^image\/(png|webp|gif|jpeg)$/.test(file.type)) return showToast('الملصق لازم يكون PNG أو WebP أو GIF', true);
-    if (file.size > 8 * 1024 * 1024) return showToast('حجم الملصق كبير، الحد 8 ميجا قبل الضغط', true);
+    if (!/^image\/(png|webp|gif|jpeg)$/.test(file.type)) return showToast('الملصق لازم يكون صورة PNG أو JPG أو WebP أو GIF', true);
+    if (file.size > 8 * 1024 * 1024) return showToast('حجم الملصق كبير، الحد 8 ميجا', true);
     if (file.type === 'image/gif' && file.size > 2 * 1024 * 1024) return showToast('ملف GIF لازم يكون أقل من 2 ميجا', true);
-    showToast('جاري رفع الملصق...');
-    const url = await uploadFile(file, 'sticker', 600);
-    if (!url) return showToast(`فشل رفع الملصق: ${lastUploadError}`, true);
+    // GIF المتحرك يترفع كما هو (إزالة الخلفية تخرب الحركة)، والصورة الشفافة أصلاً ما تحتاج
+    let final = file;
+    if (file.type !== 'image/gif' && !(await hasTransparency(file))) {
+      final = await chooseBackground(file);
+      if (!final) return;
+    }
+    const url = await uploadStickerFile(final);
+    if (!url) return;
     o.stickers.push({ url, position: ['logo-right', 'logo-left', 'float'][o.stickers.length] || 'float', size: 'm', animation: 'float' });
     renderStickerRows(); renderOccasionPreview(); renderOccasionList();
     showToast('تم رفع الملصق، لا تنسَ "حفظ المناسبات"');
   }
+  async function uploadStickerFile(file) {
+    showToast('جاري رفع الملصق...');
+    const url = await uploadFile(file, 'sticker', 600);
+    if (!url) showToast(`فشل رفع الملصق: ${lastUploadError}`, true);
+    return url;
+  }
+  // ملصق مرفوع سابقاً: نشيل خلفيته ونستبدله
+  async function cutExistingSticker(i) {
+    const o = occDraft(); const k = o && o.stickers[i]; if (!k) return;
+    let blob;
+    try { blob = await (await fetch(safeUrl(k.url))).blob(); } catch { return showToast('تعذر تحميل الملصق', true); }
+    const file = new File([blob], 'sticker', { type: blob.type || 'image/png' });
+    if (file.type === 'image/gif') return showToast('ملفات GIF المتحركة ما نشيل خلفيتها حتى ما تخرب الحركة', true);
+    const final = await chooseBackground(file, { skipIfSame: true });
+    if (!final || final === file) return;
+    const url = await uploadStickerFile(final);
+    if (!url) return;
+    k.url = url;
+    renderStickerRows(); renderOccasionPreview();
+    showToast('تم، لا تنسَ "حفظ المناسبات"');
+  }
+
+  // ─── إزالة الخلفية بالذكاء الاصطناعي داخل المتصفح (الصورة ما تطلع لأي خدمة خارجية) ───
+  // النموذج ormbg (Apache-2.0) ينحمّل مرة وحدة (~44 ميجا) ويبقى محفوظ في المتصفح
+  // نسخة +esm من jsDelivr تحوّل استيرادات onnxruntime لروابط CDN
+  const BG_LIB = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0/+esm';
+  let bgRemover = null, bgProgress = null;
+  function getBgRemover() {
+    if (!bgRemover) {
+      bgRemover = (async () => {
+        const { pipeline } = await import(BG_LIB);
+        return pipeline('background-removal', 'onnx-community/ormbg-ONNX', {
+          dtype: 'q8',
+          progress_callback: (e) => { if (bgProgress && e.status === 'progress' && /\.onnx$/.test(e.file || '')) bgProgress(e.progress); }
+        });
+      })().catch((e) => { bgRemover = null; throw e; });
+    }
+    return bgRemover;
+  }
+  // هل الصورة فيها شفافية أصلاً؟
+  async function hasTransparency(file) {
+    try {
+      const bmp = await createImageBitmap(file);
+      const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+      const ctx = c.getContext('2d'); ctx.drawImage(bmp, 0, 0, 64, 64);
+      const d = ctx.getImageData(0, 0, 64, 64).data;
+      let clear = 0; for (let i = 3; i < d.length; i += 4) if (d[i] < 250) clear++;
+      return clear > 64 * 64 * 0.03;
+    } catch { return false; }
+  }
+  // النموذج أحياناً يخلي الأجزاء البيضاء (مثل جسم رجل الثلج) شبه شفافة:
+  // كل شي داخل حدود الشكل يصير معتم، والأطراف (3 بكسل) تبقى ناعمة، والظلال الخفيفة تنشال
+  function solidify(d, w, h, cut = 20, edge = 3) {
+    const INF = 1e9, dist = new Float32Array(w * h);
+    for (let i = 0; i < w * h; i++) dist[i] = d[i * 4 + 3] >= cut ? INF : 0;
+    // المسافة لأقرب بكسل خارج الشكل (chamfer 3-4، مرورين)
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = y * w + x; if (!dist[i]) continue;
+      let m = dist[i];
+      m = Math.min(m, x > 0 ? dist[i - 1] + 3 : 3);
+      if (y > 0) { m = Math.min(m, dist[i - w] + 3); if (x > 0) m = Math.min(m, dist[i - w - 1] + 4); if (x < w - 1) m = Math.min(m, dist[i - w + 1] + 4); } else m = Math.min(m, 3);
+      dist[i] = m;
+    }
+    for (let y = h - 1; y >= 0; y--) for (let x = w - 1; x >= 0; x--) {
+      const i = y * w + x; if (!dist[i]) continue;
+      let m = dist[i];
+      m = Math.min(m, x < w - 1 ? dist[i + 1] + 3 : 3);
+      if (y < h - 1) { m = Math.min(m, dist[i + w] + 3); if (x < w - 1) m = Math.min(m, dist[i + w + 1] + 4); if (x > 0) m = Math.min(m, dist[i + w - 1] + 4); } else m = Math.min(m, 3);
+      dist[i] = m;
+    }
+    for (let i = 0; i < w * h; i++) {
+      const a = d[i * 4 + 3], px = dist[i] / 3;
+      d[i * 4 + 3] = a < cut ? 0 : px >= edge ? 255 : Math.max(a, Math.round(px / edge * 255));
+    }
+  }
+  // نقص الأطراف الشفافة ونصغّر لـ 600 بكسل
+  async function trimToFile(source) {
+    const w = source.width, h = source.height;
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const ctx = c.getContext('2d'); ctx.drawImage(source, 0, 0);
+    const img = ctx.getImageData(0, 0, w, h);
+    solidify(img.data, w, h);
+    ctx.putImageData(img, 0, 0);
+    const d = img.data;
+    let x0 = w, y0 = h, x1 = -1, y1 = -1;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 16) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    if (x1 < 0) return null;
+    const pad = 6; x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(w - 1, x1 + pad); y1 = Math.min(h - 1, y1 + pad);
+    const cw = x1 - x0 + 1, ch = y1 - y0 + 1, scale = Math.min(1, 600 / Math.max(cw, ch));
+    const out = document.createElement('canvas'); out.width = Math.round(cw * scale); out.height = Math.round(ch * scale);
+    out.getContext('2d').drawImage(c, x0, y0, cw, ch, 0, 0, out.width, out.height);
+    const blob = await new Promise(r => out.toBlob(r, 'image/png'));
+    return blob && new File([blob], 'sticker.png', { type: 'image/png' });
+  }
+  async function removeBackground(file) {
+    const seg = await getBgRemover();
+    const url = URL.createObjectURL(file);
+    try {
+      const res = await seg(url);
+      const mask = Array.isArray(res) ? res[0] : res;
+      return await trimToFile(mask.toCanvas());
+    } finally { URL.revokeObjectURL(url); }
+  }
+  // يعرض قبل/بعد ويرجع الملف اللي اختاره صاحب المتجر (أو null لو ألغى)
+  function chooseBackground(file) {
+    const panel = document.getElementById('bg-panel');
+    const status = document.getElementById('bg-status'), bar = document.getElementById('bg-progress-bar');
+    const show = (id, on) => document.getElementById(id).classList.toggle('hidden', !on);
+    const before = URL.createObjectURL(file);
+    let after = null, cut = null, done = false;
+    panel.classList.remove('hidden'); show('bg-compare', false); show('bg-actions', false); show('bg-progress', false);
+    status.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري إزالة الخلفية...';
+    bgProgress = (p) => { show('bg-progress', true); bar.style.width = `${Math.round(p)}%`; status.innerHTML = `<i class="fa-solid fa-download"></i> تجهيز أداة إزالة الخلفية لأول مرة... ${Math.round(p)}%`; };
+    return new Promise((resolve) => {
+      const finish = (v) => {
+        if (done) return; done = true;
+        panel.classList.add('hidden'); panel.onclick = null; bgProgress = null;
+        URL.revokeObjectURL(before); if (after) URL.revokeObjectURL(after);
+        resolve(v);
+      };
+      panel.onclick = (e) => {
+        const b = e.target.closest('[data-bg]'); if (!b) return;
+        finish(b.dataset.bg === 'cut' ? cut : b.dataset.bg === 'orig' ? file : null);
+      };
+      removeBackground(file).then((f) => {
+        if (done) return;
+        if (!f) throw new Error('empty');
+        cut = f; after = URL.createObjectURL(f);
+        document.getElementById('bg-before').src = before;
+        document.getElementById('bg-after').src = after;
+        show('bg-progress', false); show('bg-compare', true); show('bg-actions', true);
+        status.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles text-emerald-600"></i> تمت إزالة الخلفية، اختر النسخة اللي تبيها';
+      }).catch((e) => {
+        console.warn('background removal failed', e);
+        if (done) return;
+        show('bg-progress', false);
+        status.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-amber-600"></i> تعذر إزالة الخلفية على هذا الجهاز. تقدر ترفع الصورة الأصلية.';
+        document.getElementById('bg-before').src = before;
+        show('bg-compare', false); show('bg-actions', true);
+        panel.querySelector('[data-bg="cut"]').classList.add('hidden');
+      });
+    }).then((v) => { panel.querySelector('[data-bg="cut"]').classList.remove('hidden'); return v; });
+  }
+
   function renderOccasionPreview() {
     const o = occDraft(); if (!o) return;
     const box = document.getElementById('occ-preview');
