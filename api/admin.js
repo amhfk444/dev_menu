@@ -7,6 +7,19 @@ const {
   ApiError, getUser, isSuperAdmin, str, int, readBody, SLUG_RE, RESERVED_SLUGS
 } = require('./_lib/core');
 
+const { sendMail, mailConfigured } = require('./_lib/mail');
+const { PLAN_PRICE, invoiceNumber, invoiceEmail, branchProration } = require('./_lib/invoice');
+
+// يرسل الفاتورة لبريد صاحب الحساب (المتجر الرئيسي). ما يوقف العملية لو فشل
+async function sendInvoice(main, invoice) {
+  if (!main.email) return { sent: false, reason: 'NO_EMAIL' };
+  if (!mailConfigured()) return { sent: false, reason: 'MAIL_NOT_CONFIGURED' };
+  const number = invoiceNumber(main.id);
+  const mail = invoiceEmail({ ...invoice, store: main, number });
+  const sent = await sendMail({ to: main.email, subject: mail.subject, html: mail.html, text: mail.text });
+  return { sent, reason: sent ? null : 'SEND_FAILED', to: main.email, number, total: mail.total };
+}
+
 // رابط متاح؟ (ما يستخدمه متجر حالياً ولا سابقاً)
 async function slugFree(slug) {
   if (!SLUG_RE.test(slug) || slug.includes('--') || RESERVED_SLUGS.has(slug)) return false;
@@ -51,7 +64,18 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     if (target.parent_id) throw new ApiError(400, 'اشتراك الفرع تابع للمتجر الرئيسي، جدّد من بطاقة المتجر الرئيسي', 'BRANCH_FOLLOWS_PARENT');
     await rpc('server_activate', { p_client_id: id, p_period: b.period });
     await syncBranchSubscriptions(id);
-    return { ok: true };
+    // فاتورة مدفوعة: المتجر + كل فرع
+    const main = (await rest(`clients?id=eq.${id}&select=id,name,email,subscription_end_date`))[0];
+    let branches = [];
+    try { branches = await rest(`clients?parent_id=eq.${id}&select=name,client_slug&order=id.asc`); } catch {}
+    const invoice = await sendInvoice(main, {
+      status: 'paid', validUntil: main.subscription_end_date,
+      lines: [
+        { label: `الباقة السنوية — ${main.name}`, detail: 'كل المزايا لمدة سنة', amount: PLAN_PRICE.year },
+        ...branches.map(br => ({ label: `فرع — ${br.name || br.client_slug}`, detail: 'ضمن نفس الاشتراك لمدة سنة', amount: PLAN_PRICE.branch }))
+      ]
+    });
+    return { ok: true, invoice };
   }
   // إيقاف/تشغيل المتجر الرئيسي يشمل فروعه، والفرع يقدر ينوقف لحاله
   if (action === 'set-active') {
@@ -92,7 +116,19 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       await rest(`categories?client_id=eq.${newId}`, { method: 'DELETE' });
     }
     await syncBranchSubscriptions(id);
-    return { client: (await rest(`clients?id=eq.${newId}&select=*`))[0] };
+    const client = (await rest(`clients?id=eq.${newId}&select=*`))[0];
+    // فرع في نص الاشتراك: فاتورة مستحقة عن الأيام الباقية لين تجديد الحساب
+    const main = (await rest(`clients?id=eq.${id}&select=id,name,email,subscription_status,subscription_end_date`))[0];
+    const pr = branchProration(main);
+    let invoice = null;
+    if (pr && pr.amount > 0) {
+      invoice = await sendInvoice(main, {
+        status: 'due', validUntil: pr.end,
+        lines: [{ label: `فرع جديد — ${client.name}`, detail: `${pr.days} يوم لين تجديد الحساب`, amount: pr.amount }],
+        note: `بعد تاريخ التجديد يتجدد الفرع مع الحساب بـ ${PLAN_PRICE.branch} ر.س سنوياً. للدفع تواصل معنا عبر واتساب.`
+      });
+    }
+    return { client, invoice };
   }
 
   if (action === 'summary') {

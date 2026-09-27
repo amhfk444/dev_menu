@@ -529,11 +529,22 @@ tailwind.config = { theme: { extend: {
         : '';
       const send = await DMDialog.confirm({
         title: 'تم إنشاء الفرع', icon: 'fa-circle-check', tone: 'success',
-        message: `${res.client.name} · ${res.client.client_slug}\n\n${pr.text}`,
+        message: `${res.client.name} · ${res.client.client_slug}\n\n${pr.text}${res.invoice ? (res.invoice.sent ? `\n\nانرسلت الفاتورة المستحقة إلى ${res.invoice.to}.` : `\n\nالفاتورة ما انرسلت بالبريد${invoiceNote(res.invoice).replace(/^،? ?/, ': ')}`) : ''}`,
         confirmText: msg && phone ? 'أرسل الفاتورة واتساب' : 'تم', cancelText: 'إغلاق'
       });
       if (send && msg && phone) window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
     } catch (e) { showToast(`تعذر إنشاء الفرع: ${e.message}`, true); }
+  }
+
+  // حالة إرسال الفاتورة بالبريد (للرسائل)
+  function invoiceNote(inv) {
+    if (!inv) return '';
+    if (inv.sent) return `، وانرسلت الفاتورة إلى ${inv.to}`;
+    return {
+      NO_EMAIL: ' (ما عنده بريد لإرسال الفاتورة)',
+      MAIL_NOT_CONFIGURED: '، لكن البريد غير مهيأ في الخادم فما انرسلت الفاتورة',
+      SEND_FAILED: '، لكن تعذر إرسال الفاتورة بالبريد'
+    }[inv.reason] || '';
   }
 
   async function activate(id, period) {
@@ -545,14 +556,17 @@ tailwind.config = { theme: { extend: {
         ...(c && branchesOf(c).length
           ? [`المتجر الرئيسي: ${money(PLAN_PRICE.year)}`, `${branchesOf(c).length} ${branchesOf(c).length === 1 ? 'فرع' : 'فروع'} × ${money(PLAN_PRICE.branch)}`, `المجموع: ${money(totalFor(c))}`]
           : [`المبلغ: ${money(totalFor(c))}`]),
-        'إذا كان الاشتراك سارياً، تُضاف المدة على تاريخ انتهائه', 'يتجدد المتجر وكل فروعه بنفس التاريخ'
+        'إذا كان الاشتراك سارياً، تُضاف المدة على تاريخ انتهائه', 'يتجدد المتجر وكل فروعه بنفس التاريخ',
+        c && c.email ? `تنرسل فاتورة مدفوعة لبريد ${c.email}` : 'ما عنده بريد، فما بتنرسل فاتورة'
       ],
       confirmText: `تفعيل ${label}`, tone: 'success'
     });
     if (!ok) return;
-    const error = await post('activate', { id, period });
-    if (error) return showToast(`تعذر التفعيل: ${error.message}`, true);
-    showToast(`تم تفعيل ${label}`); loadClients();
+    let res;
+    try { res = await DM.post(A('activate'), { id, period }, true); }
+    catch (e) { forbidden(e); return showToast(`تعذر التفعيل: ${e.message}`, true); }
+    showToast(`تم تفعيل ${label}${invoiceNote(res.invoice)}`, res.invoice && !res.invoice.sent && res.invoice.reason !== 'NO_EMAIL');
+    loadClients();
   }
 
   async function setActive(id, active) {
