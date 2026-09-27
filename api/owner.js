@@ -121,6 +121,24 @@ async function familyOf(store, fields = 'id,name,client_slug,parent_id') {
   return rest(`clients?or=${q(`(id.eq.${root},parent_id.eq.${root})`)}&select=${fields}&order=id.asc`);
 }
 
+// قسم بنفس الاسم في متجر/فرع ثاني، وينشأ لو ما هو موجود
+async function categoryIn(clientId, src) {
+  const cats = await rest(`categories?client_id=eq.${clientId}&select=key,name,sort_order`);
+  const found = cats.find(c => c.name === src.name);
+  if (found) return found;
+  return (await rest('categories', { method: 'POST', prefer: 'return=representation', body: {
+    client_id: clientId, name: src.name, name_en: src.name_en || null, group_name: src.group_name || null,
+    key: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+    sort_order: Math.max(0, ...cats.map(c => c.sort_order || 0)) + 1
+  } }))[0];
+}
+const nextOrderIn = async (clientId, category) => {
+  const same = await rest(`products?client_id=eq.${clientId}&category=eq.${q(category)}&select=sort_order`);
+  return Math.max(0, ...same.map(x => x.sort_order || 0)) + 1;
+};
+// حقول الطبق المشتركة بين الفروع (السعر والإخفاء والتوفر والتمييز والترتيب لكل فرع لحاله)
+const SHARED_PRODUCT_FIELDS = ['name', 'name_en', 'description', 'description_en', 'extra_info', 'note', 'image_url', 'calories', 'allergens', 'coffee'];
+
 async function patchStore(id, payload) {
   const rows = await rest(`clients?id=eq.${id}`, { method: 'PATCH', body: payload, prefer: 'return=representation' });
   return rows[0];
@@ -515,8 +533,21 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const rows = await rest(`categories?id=eq.${id}&client_id=eq.${sid}`, {
       method: 'PATCH', body: { name, name_en: str(b.name_en, 60, 'الاسم الإنجليزي') || null }, prefer: 'return=representation'
     });
+    const name_en = str(b.name_en, 60, 'الاسم الإنجليزي') || null;
     // أطباق قديمة مربوطة باسم القسم بدل مفتاحه: نحدّثها للاسم الجديد
-    if (cat.name !== name) await rest(`products?client_id=eq.${sid}&category=eq.${q(cat.name)}`, { method: 'PATCH', body: { category: name } });
+    const renameIn = async (clientId) => {
+      if (cat.name !== name) await rest(`products?client_id=eq.${clientId}&category=eq.${q(cat.name)}`, { method: 'PATCH', body: { category: name } });
+    };
+    await renameIn(sid);
+    // نفس القسم (بنفس الاسم) في الفروع الثانية ياخذ الاسم الجديد
+    if (cat.name !== name) {
+      for (const f of (await familyOf(store)).filter(f => f.id !== sid)) {
+        const taken = await rest(`categories?client_id=eq.${f.id}&name=eq.${q(name)}&select=id&limit=1`);
+        if (taken.length) continue;
+        const moved = await rest(`categories?client_id=eq.${f.id}&name=eq.${q(cat.name)}`, { method: 'PATCH', body: { name, name_en }, prefer: 'return=representation' });
+        if (moved.length) await renameIn(f.id);
+      }
+    }
     return { category: rows[0] };
   }
 
@@ -580,35 +611,52 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       return Math.max(0, ...same.map(x => x.sort_order || 0)) + 1;
     };
 
+    const srcCat = cats.find(c => c.key === category || c.name === category);
+    const srcCatFull = () => rest(`categories?client_id=eq.${sid}&key=eq.${q(srcCat.key)}&select=name,name_en,group_name`).then(r => r[0] || srcCat);
+
     if (id) {
-      const old = (await rest(`products?id=eq.${id}&client_id=eq.${sid}&select=category`))[0];
+      const old = (await rest(`products?id=eq.${id}&client_id=eq.${sid}&select=*`))[0];
       if (!old) throw new ApiError(404, 'الطبق غير موجود');
       if (old.category !== category) payload.sort_order = await nextOrder();
       const rows = await rest(`products?id=eq.${id}&client_id=eq.${sid}`, { method: 'PATCH', body: payload, prefer: 'return=representation' });
-      return { product: rows[0] };
+
+      // الطبق مربوط بنفس الطبق في الفروع الثانية: نحدّث الحقول المشتركة، والسعر يبقى لكل فرع
+      let synced = 0;
+      if (old.link_id) {
+        const others = (await familyOf(store)).map(f => f.id).filter(x => x !== sid);
+        const linked = others.length ? await rest(`products?link_id=eq.${q(old.link_id)}&client_id=in.(${others.join(',')})&select=id,client_id,category,sizes`) : [];
+        const src = linked.length ? await srcCatFull() : null;
+        for (const t of linked) {
+          const patch = {};
+          SHARED_PRODUCT_FIELDS.forEach(k => { if (Object.prototype.hasOwnProperty.call(payload, k)) patch[k] = payload[k]; });
+          const tc = await categoryIn(t.client_id, src);
+          if (t.category !== tc.key) { patch.category = tc.key; patch.sort_order = await nextOrderIn(t.client_id, tc.key); }
+          // الأحجام: نفس الأسماء في كل الفروع، وسعر كل حجم يبقى حسب الفرع
+          const theirs = new Map((Array.isArray(t.sizes) ? t.sizes : []).map(z => [z.name, z.price]));
+          if (sizes.length) {
+            patch.sizes = sizes.map(z => ({ ...z, price: theirs.has(z.name) ? theirs.get(z.name) : z.price }));
+            patch.price = Math.min(...patch.sizes.map(z => z.price));
+          } else if (theirs.size) patch.sizes = [];
+          await rest(`products?id=eq.${t.id}`, { method: 'PATCH', body: patch });
+          synced++;
+        }
+      }
+      return { product: rows[0], synced };
     }
     const row = { ...payload, client_id: sid, is_available: true, image_url: payload.image_url || '', sort_order: await nextOrder() };
     const created = (await rest('products', { method: 'POST', body: row, prefer: 'return=representation' }))[0];
 
-    // "أضف أيضاً في الفروع": نسخة مستقلة في كل فرع مختار، تحت قسم بنفس الاسم (ينشأ لو ما هو موجود)
+    // "أضف أيضاً في الفروع": نفس الطبق (مربوط بنفس link_id) تحت قسم بنفس الاسم في كل فرع مختار
     const also = [...new Set((Array.isArray(b.also_branch_ids) ? b.also_branch_ids : []).map(int))].filter(x => x !== sid);
     const copied = [];
     if (also.length) {
       const family = (await familyOf(store)).map(f => f.id);
-      const srcCat = cats.find(c => c.key === category || c.name === category);
-      const srcCatFull = (await rest(`categories?client_id=eq.${sid}&key=eq.${q(srcCat.key)}&select=name,name_en,group_name`))[0] || srcCat;
+      const src = await srcCatFull();
       for (const bid of also.filter(x => family.includes(x))) {
-        const bcats = await rest(`categories?client_id=eq.${bid}&select=key,name,sort_order`);
-        let target = bcats.find(c => c.name === srcCatFull.name);
-        if (!target) {
-          target = (await rest('categories', { method: 'POST', prefer: 'return=representation', body: {
-            client_id: bid, name: srcCatFull.name, name_en: srcCatFull.name_en || null, group_name: srcCatFull.group_name || null,
-            key: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
-            sort_order: Math.max(0, ...bcats.map(c => c.sort_order || 0)) + 1
-          } }))[0];
-        }
-        const same = await rest(`products?client_id=eq.${bid}&category=eq.${q(target.key)}&select=sort_order`);
-        await rest('products', { method: 'POST', body: { ...row, client_id: bid, category: target.key, sort_order: Math.max(0, ...same.map(x => x.sort_order || 0)) + 1 } });
+        const target = await categoryIn(bid, src);
+        const copy = { ...row, client_id: bid, category: target.key, sort_order: await nextOrderIn(bid, target.key) };
+        if (created.link_id) copy.link_id = created.link_id;
+        await rest('products', { method: 'POST', body: copy });
         copied.push(bid);
       }
     }

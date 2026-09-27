@@ -447,10 +447,13 @@ tailwind.config = {
             </label>
           </div>
           <div id="also-branches" class="hidden bg-emerald-500/5 border border-emerald-600/20 rounded-xl p-2.5 space-y-1.5">
-            <p class="text-[11px] font-bold text-ink"><i class="fa-solid fa-code-branch text-emerald-700"></i> أضف الطبق أيضاً في:</p>
+            <p class="text-[11px] font-bold text-ink"><i class="fa-solid fa-code-branch text-emerald-700"></i> يظهر الطبق أيضاً في:</p>
             <div id="also-branches-list" class="flex flex-wrap gap-1.5"></div>
-            <p class="text-[10px] text-ink/55">ينضاف كنسخة مستقلة تحت قسم بنفس الاسم في كل فرع مختار.</p>
           </div>
+          <p id="linked-note" class="hidden text-[10px] leading-relaxed text-emerald-800 bg-emerald-500/5 border border-emerald-600/20 rounded-xl px-2.5 py-2">
+            <i class="fa-solid fa-link"></i> الطبق مربوط بكل الفروع: الاسم والوصف والصورة والقسم والسعرات تتعدل في الكل.
+            <b>السعر والإخفاء والحذف والتوفر لكل فرع لحاله.</b>
+          </p>
           <button type="submit" id="submit-btn" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition shadow-lg">حفظ وإضافة الطبق</button>
           <button type="button" id="cancel-edit-btn" onclick="cancelEdit()" class="hidden w-full bg-brand/5 hover:bg-brand/10 text-ink/75 font-bold py-2.5 rounded-xl text-xs transition border border-brand/20">إلغاء التعديل</button>
         </form>
@@ -3380,7 +3383,7 @@ tailwind.config = {
 
   async function deleteProduct(id) {
     const p = loadedProducts.find(x => x.id === id);
-    openDeleteModal('حذف الطبق', `هل أنت متأكد من حذف "${p ? p.name : 'الطبق'}" من المنيو؟`, async () => {
+    openDeleteModal('حذف الطبق', `هل أنت متأكد من حذف "${p ? p.name : 'الطبق'}" من المنيو؟${branches.length > 1 ? ' ينحذف من هذا الفرع فقط، ويبقى في الفروع الثانية.' : ''}`, async () => {
       try { await api('product-delete', { id }); }
       catch { return showToast('تعذر حذف الطبق', true); }
       if (editingProductId === id) cancelEdit();
@@ -3618,7 +3621,8 @@ tailwind.config = {
     document.getElementById('also-branches').classList.toggle('hidden', !on);
     document.getElementById('also-branches-list').innerHTML = others.map(b => `
       <label class="flex items-center gap-1.5 bg-white border border-brand/15 rounded-lg px-2.5 py-1.5 text-[11px] font-bold cursor-pointer">
-        <input type="checkbox" value="${Number(b.id)}" class="accent-[#384f3d]"> ${esc(b.name || b.client_slug)}</label>`).join('');
+        <input type="checkbox" value="${Number(b.id)}" checked class="accent-[#384f3d]"> ${esc(b.name || b.client_slug)}</label>`).join('');
+    document.getElementById('linked-note').classList.toggle('hidden', others.length === 0);
   }
 
   function cancelEdit() {
@@ -3686,8 +3690,11 @@ tailwind.config = {
       try { res = await api('product-save', { ...payload, id: editingProductId }); }
       catch (e) { console.error(e); return showToast('تعذر حفظ الطبق', true); }
 
-      const n = (res && res.copied_to || []).length;
-      showToast(editingProductId ? 'تم حفظ التعديلات' : n ? `تمت إضافة الطبق هنا وفي ${n === 1 ? 'فرع ثاني' : `${n} فروع`}` : 'تمت إضافة الطبق');
+      const n = (res && res.copied_to || []).length, synced = (res && res.synced) || 0;
+      const where = (k) => k === 1 ? 'فرع ثاني' : `${k} فروع`;
+      showToast(editingProductId
+        ? (synced ? `تم حفظ التعديلات هنا وفي ${where(synced)} (السعر لهذا الفرع فقط)` : 'تم حفظ التعديلات')
+        : n ? `تمت إضافة الطبق هنا وفي ${where(n)}` : 'تمت إضافة الطبق');
       cancelEdit();
       refreshAll();
     } finally {
