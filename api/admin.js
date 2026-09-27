@@ -42,6 +42,11 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     return { ok: true };
   }
   if (action === 'set-active') return patch({ is_active: b.active === true });
+  if (action === 'rename') {
+    const name = str(b.name, 80, 'الاسم');
+    if (!name) throw new ApiError(400, 'اكتب الاسم');
+    return patch({ name });
+  }
   if (action === 'notify') return patch({ admin_notification: str(b.message, 300, 'الإشعار') || null });
   if (action === 'featured') return patch({ is_featured: b.featured === true });
   // إضافة قائمة الانتظار المدفوعة (يفعّلها المدير العام بعد الدفع)
@@ -63,8 +68,13 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       for (let n = 2; n < 100 && !slug; n++) if (await slugFree(`${base}-${n}`)) slug = `${base}-${n}`;
       if (!slug) throw new ApiError(400, 'تعذر اختيار رابط للفرع، اكتبه يدوياً');
     }
-    const newId = await rpc('server_create_branch', { p_parent_id: id, p_name: name, p_slug: slug });
-    return { client: (await rest(`clients?id=eq.${int(newId)}&select=*`))[0] };
+    const newId = int(await rpc('server_create_branch', { p_parent_id: id, p_name: name, p_slug: slug }));
+    // منيو فارغ: الفرع ياخذ الهوية والإعدادات بس، بدون الأقسام والأطباق
+    if (b.empty_menu === true) {
+      await rest(`products?client_id=eq.${newId}`, { method: 'DELETE' });
+      await rest(`categories?client_id=eq.${newId}`, { method: 'DELETE' });
+    }
+    return { client: (await rest(`clients?id=eq.${newId}&select=*`))[0] };
   }
 
   if (action === 'summary') {

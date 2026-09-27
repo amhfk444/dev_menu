@@ -261,6 +261,14 @@ tailwind.config = {
               </div>
               <div id="qrcode" class="bg-white p-2 rounded-xl shrink-0 [&_img]:w-24 [&_img]:h-24 [&_canvas]:w-24 [&_canvas]:h-24"></div>
             </div>
+    <!-- الفروع -->
+            <div id="branches-card" class="hidden pro-card p-5 space-y-3">
+              <div class="flex items-center justify-between">
+                <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="fa-solid fa-code-branch text-emerald-600"></i> فروعك</h3>
+                <span class="text-[10px] text-ink/50">كل فرع له منيو مستقل</span>
+              </div>
+              <div id="branches-list" class="space-y-2"></div>
+            </div>
     <!-- صفحة الروابط السريعة -->
             <div class="pro-card p-5 space-y-3">
               <div class="space-y-1">
@@ -437,6 +445,11 @@ tailwind.config = {
             <label for="prod-bestseller" class="text-xs font-bold text-ink cursor-pointer flex items-center gap-1.5">
               <i class="fa-solid fa-fire text-amber-600"></i> تمييز كـ "طبق مميز / الأكثر مبيعاً"
             </label>
+          </div>
+          <div id="also-branches" class="hidden bg-emerald-500/5 border border-emerald-600/20 rounded-xl p-2.5 space-y-1.5">
+            <p class="text-[11px] font-bold text-ink"><i class="fa-solid fa-code-branch text-emerald-700"></i> أضف الطبق أيضاً في:</p>
+            <div id="also-branches-list" class="flex flex-wrap gap-1.5"></div>
+            <p class="text-[10px] text-ink/55">ينضاف كنسخة مستقلة تحت قسم بنفس الاسم في كل فرع مختار.</p>
           </div>
           <button type="submit" id="submit-btn" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition shadow-lg">حفظ وإضافة الطبق</button>
           <button type="button" id="cancel-edit-btn" onclick="cancelEdit()" class="hidden w-full bg-brand/5 hover:bg-brand/10 text-ink/75 font-bold py-2.5 rounded-xl text-xs transition border border-brand/20">إلغاء التعديل</button>
@@ -877,6 +890,10 @@ tailwind.config = {
                   <input type="date" id="occ-end" onchange="occDraft().ends_on=this.value; renderOccasionList()" class="input-pro text-xs" dir="ltr">
                 </div>
               </div>
+              <div id="occ-branches-wrap" class="hidden">
+                <p class="text-[11px] text-ink/75 mb-1">تظهر في الفروع</p>
+                <div id="occ-branches" class="flex flex-wrap gap-1.5"></div>
+              </div>
               <p id="occ-date-hint" class="hidden text-[10px] text-amber-800 bg-amber-500/10 border border-amber-500/25 rounded-lg px-2.5 py-1.5"><i class="fa-solid fa-circle-info"></i> التاريخ مقترح حسب تقويم أم القرى، وممكن يختلف يوم حسب رؤية الهلال. عدّله إذا لزم.</p>
               <div class="space-y-2">
                 <div class="flex items-center justify-between gap-2">
@@ -1251,6 +1268,8 @@ tailwind.config = {
     setStoreName(name);
     document.getElementById('admin-mode-badge').classList.toggle('hidden', !isSuperAdmin);
     renderBranchSwitch();
+    renderBranchesCard();
+    renderAlsoBranches();
     document.getElementById('sa-link').classList.toggle('hidden', !isSuperAdmin);
     document.getElementById('sidebar-preview').href = menuUrl();
     document.getElementById('user-email').textContent = userEmail;
@@ -1278,7 +1297,7 @@ tailwind.config = {
     deliveryApps = (Array.isArray(client.delivery_apps) ? client.delivery_apps : []).map(d => ({ ...d }));
     renderDeliveryPicker();
     renderAppearance();
-    occasions = (Array.isArray(client.occasions) ? client.occasions : []).map(o => ({ ...o, stickers: (o.stickers || []).map(k => ({ ...k })) }));
+    occasions = familyOccasions();
     occEditing = -1;
     renderOccasions();
     document.getElementById('slug-input').value = client.client_slug || '';
@@ -2438,6 +2457,32 @@ tailwind.config = {
     if (branches.length < 2) return;
     sel.innerHTML = branches.map(b => `<option value="${Number(b.id)}" ${b.id === client.id ? 'selected' : ''}>${b.parent_id ? '' : '★ '}${esc(b.name || b.client_slug)}</option>`).join('');
   }
+  function renderBranchesCard() {
+    document.getElementById('branches-card').classList.toggle('hidden', branches.length < 2);
+    document.getElementById('branches-list').innerHTML = branches.map(b => `
+      <div class="flex items-center gap-2 bg-brand/5 border ${b.id === client.id ? 'border-brand' : 'border-brand/15'} rounded-xl p-2.5">
+        <div class="min-w-0 flex-1">
+          <p class="text-xs font-black text-ink truncate">${b.parent_id ? '' : '<i class="fa-solid fa-star text-amber-500 text-[9px]"></i> '}${esc(b.name || b.client_slug)}${b.id === client.id ? ' <span class="text-[9px] font-bold text-emerald-700">(مفتوح الحين)</span>' : ''}</p>
+          <a href="${esc(DM.storeUrl(b.client_slug))}" target="_blank" rel="noopener" class="text-[10px] text-ink/55 hover:text-ink" dir="ltr">${esc(b.client_slug)}.devmenu.digital</a>
+        </div>
+        <button type="button" onclick="renameBranch(${Number(b.id)})" title="تعديل الاسم" class="w-8 h-8 rounded-lg bg-white border border-brand/20 text-ink/70 hover:bg-brand/10"><i class="fa-solid fa-pen text-[10px]"></i></button>
+        ${b.id === client.id ? '' : `<button type="button" onclick="switchBranch(${Number(b.id)})" class="px-2.5 h-8 rounded-lg bg-brand text-cream text-[10px] font-bold">إدارة</button>`}
+      </div>`).join('');
+  }
+  async function renameBranch(id) {
+    const b = branches.find(x => x.id === id); if (!b) return;
+    const name = prompt('اسم الفرع', b.name || '');
+    if (name === null) return;
+    if (!name.trim()) return showToast('اكتب اسم الفرع', true);
+    try {
+      const res = await api('branch-rename', { id, name: name.trim() });
+      branches = branches.map(x => ({ ...x, ...(res.family.find(f => f.id === x.id) || {}) }));
+      if (id === client.id) { client.name = name.trim(); setStoreName(client.name); document.getElementById('setting-name').value = client.name; }
+      renderBranchSwitch(); renderBranchesCard();
+      showToast('تم تعديل اسم الفرع');
+    } catch { showToast('تعذر تعديل الاسم', true); }
+  }
+
   function switchBranch(id) {
     const main = branches.find(b => !b.parent_id);
     const q = new URLSearchParams();
@@ -2447,6 +2492,21 @@ tailwind.config = {
   }
 
   // ─── المناسبات والزينة ───
+  // مع الفروع: نعرض مناسبات كل الفروع، ولكل مناسبة الفروع اللي تظهر فيها (branch_ids)
+  const multiBranch = () => branches.length > 1;
+  function familyOccasions() {
+    const own = (Array.isArray(client.occasions) ? client.occasions : []);
+    if (!multiBranch()) return own.map(o => ({ ...o, stickers: (o.stickers || []).map(k => ({ ...k })), branch_ids: [client.id] }));
+    const byId = new Map();
+    // نبدأ بمناسبات الفرع المفتوح حتى يكون محتواها هو المعروض
+    [{ id: client.id, occasions: own }, ...branches.filter(b => b.id !== client.id)].forEach(b => (b.occasions || []).forEach(o => {
+      if (!byId.has(o.id)) byId.set(o.id, { ...o, stickers: (o.stickers || []).map(k => ({ ...k })), branch_ids: [] });
+      byId.get(o.id).branch_ids.push(b.id);
+    }));
+    return [...byId.values()];
+  }
+  const branchName = (id) => { const b = branches.find(x => x.id === id); return b ? (b.name || b.client_slug) : ''; };
+
   const MAX_OCCASIONS = 20, MAX_STICKERS = 3;
   let occasions = [], occEditing = -1;
   const occDraft = () => occasions[occEditing];
@@ -2479,6 +2539,7 @@ tailwind.config = {
           <div class="min-w-0 flex-1">
             <p class="text-xs font-black text-ink truncate">${esc(o.title || p.name)}</p>
             <p class="text-[10px] text-ink/55" dir="ltr" style="text-align:right">${esc(o.starts_on || '—')} → ${esc(o.ends_on || '—')}${o.stickers && o.stickers.length ? ` · ${o.stickers.length} 🖼️` : ''}</p>
+            ${multiBranch() ? `<p class="text-[10px] font-bold ${o.branch_ids.length ? 'text-emerald-700' : 'text-red-600'} truncate"><i class="fa-solid fa-code-branch"></i> ${o.branch_ids.length ? o.branch_ids.map(branchName).map(esc).join('، ') : 'ما تظهر في أي فرع'}</p>` : ''}
           </div>
           <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}">${state}</span>
           <div class="flex gap-1">
@@ -2493,7 +2554,7 @@ tailwind.config = {
     if (occasions.length >= MAX_OCCASIONS) return showToast(`المناسبات حدها ${MAX_OCCASIONS}، احذف القديمة`, true);
     const p = DMOccasions.PRESETS[preset];
     const d = DMOccasions.suggestDates(preset);
-    occasions.push({ id: newId(), preset, title: preset === 'custom' ? '' : p.name, greeting: '', starts_on: d.start, ends_on: d.end, enabled: true, stickers: [] });
+    occasions.push({ id: newId(), preset, title: preset === 'custom' ? '' : p.name, greeting: '', starts_on: d.start, ends_on: d.end, enabled: true, stickers: [], branch_ids: [client.id] });
     editOccasion(occasions.length - 1);
     if (preset === 'custom') document.getElementById('occ-title').focus();
   }
@@ -2512,11 +2573,25 @@ tailwind.config = {
     document.getElementById('occ-start').value = o.starts_on || '';
     document.getElementById('occ-end').value = o.ends_on || '';
     document.getElementById('occ-date-hint').classList.toggle('hidden', !HIJRI_PRESETS.includes(o.preset));
+    renderOccasionBranches();
     renderOccasionList();
     renderStickerRows();
     renderOccasionPreview();
     document.getElementById('occ-editor').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
+  function renderOccasionBranches() {
+    const o = occDraft(); if (!o) return;
+    document.getElementById('occ-branches-wrap').classList.toggle('hidden', !multiBranch());
+    document.getElementById('occ-branches').innerHTML = branches.map(b => `
+      <label class="flex items-center gap-1.5 bg-white border border-brand/15 rounded-lg px-2.5 py-1.5 text-[11px] font-bold cursor-pointer">
+        <input type="checkbox" ${o.branch_ids.includes(b.id) ? 'checked' : ''} onchange="toggleOccasionBranch(${Number(b.id)}, this.checked)" class="accent-[#384f3d]"> ${esc(b.name || b.client_slug)}</label>`).join('');
+  }
+  function toggleOccasionBranch(id, on) {
+    const o = occDraft(); if (!o) return;
+    o.branch_ids = on ? [...new Set([...o.branch_ids, id])] : o.branch_ids.filter(x => x !== id);
+    renderOccasionList();
+  }
+
   function closeOccasionEditor() {
     occEditing = -1;
     document.getElementById('occ-editor').classList.add('hidden');
@@ -2715,7 +2790,20 @@ tailwind.config = {
       if (o.ends_on < o.starts_on) return showToast(`تاريخ النهاية قبل البداية في "${o.title}"`, true);
     }
     const payload = occasions.map(o => ({ ...o, title: o.title.trim(), greeting: String(o.greeting || '').trim() }));
-    if (await updateClient({ occasions: payload })) {
+    if (multiBranch()) {
+      if (payload.some(o => !o.branch_ids.length) && !confirm('فيه مناسبات ما اخترت لها أي فرع، وبتنحذف. تكمل؟')) return;
+      try {
+        const res = await api('occasions-sync', { occasions: payload });
+        branches = res.family;
+        client.occasions = (branches.find(b => b.id === client.id) || {}).occasions || [];
+        occasions = familyOccasions();
+        if (occEditing >= occasions.length) closeOccasionEditor();
+        renderOccasionList();
+        showToast('تم حفظ المناسبات في الفروع المختارة');
+      } catch { showToast('تعذر حفظ المناسبات', true); }
+      return;
+    }
+    if (await updateClient({ occasions: payload.map(({ branch_ids, ...o }) => o) })) {
       showToast('تم حفظ المناسبات، وتظهر في المنيو خلال تواريخها');
       renderOccasionList();
     } else showToast('تعذر حفظ المناسبات', true);
@@ -3124,6 +3212,20 @@ tailwind.config = {
 
   // الفئة الرئيسية لقسم موجود
   const categoryGroups = () => [...new Set(loadedCategories.map(c => c.group_name).filter(Boolean))];
+  async function renameCategory(id) {
+    const c = loadedCategories.find(x => x.id === id); if (!c) return;
+    const name = prompt('اسم القسم بالعربي', c.name || '');
+    if (name === null) return;
+    if (!name.trim()) return showToast('اكتب اسم القسم', true);
+    const en = prompt('اسم القسم بالإنجليزي (اختياري)', c.name_en || '');
+    if (en === null) return;
+    try {
+      await api('category-rename', { id, name: name.trim(), name_en: en.trim() });
+      showToast('تم تعديل اسم القسم');
+      refreshAll();
+    } catch { showToast('تعذر تعديل الاسم', true); }
+  }
+
   async function editCategoryGroup(id) {
     const c = loadedCategories.find(x => x.id === id); if (!c) return;
     const groups = categoryGroups();
@@ -3169,6 +3271,7 @@ tailwind.config = {
             <p class="text-ink/60 text-[10px]">${productsInCategory(c).length} طبق${c.group_name ? ` · <span class="text-amber-700 font-bold">${esc(c.group_name)}</span>` : ''}</p>
           </div>
         </div>
+        <button onclick="renameCategory(${Number(c.id)})" title="تعديل الاسم" class="shrink-0 text-ink/70 hover:text-ink bg-brand/10 hover:bg-brand/15 px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-pen text-[10px]"></i> الاسم</button>
         <button onclick="editCategoryGroup(${Number(c.id)})" title="الفئة الرئيسية" class="shrink-0 text-ink/70 hover:text-ink bg-brand/10 hover:bg-brand/15 px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-layer-group text-[10px]"></i> الفئة</button>
         <button onclick="deleteCategory(${Number(c.id)})" class="shrink-0 text-red-600 hover:text-red-700 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-trash text-[10px]"></i> حذف</button>
       </div>`).join('');
@@ -3502,10 +3605,20 @@ tailwind.config = {
     document.getElementById('form-icon').className = 'fa-solid fa-pen text-amber-600';
     document.getElementById('submit-btn').textContent = 'حفظ التعديلات';
     document.getElementById('cancel-edit-btn').classList.remove('hidden');
+    renderAlsoBranches();
     showPage('menu');
     switchTab('products');
     document.getElementById('add-product-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
     filterProducts();
+  }
+
+  function renderAlsoBranches() {
+    const others = branches.filter(b => b.id !== client.id);
+    const on = others.length > 0 && !editingProductId;
+    document.getElementById('also-branches').classList.toggle('hidden', !on);
+    document.getElementById('also-branches-list').innerHTML = others.map(b => `
+      <label class="flex items-center gap-1.5 bg-white border border-brand/15 rounded-lg px-2.5 py-1.5 text-[11px] font-bold cursor-pointer">
+        <input type="checkbox" value="${Number(b.id)}" class="accent-[#384f3d]"> ${esc(b.name || b.client_slug)}</label>`).join('');
   }
 
   function cancelEdit() {
@@ -3519,6 +3632,7 @@ tailwind.config = {
     document.getElementById('form-icon').className = 'fa-solid fa-plus text-ink';
     document.getElementById('submit-btn').textContent = 'حفظ وإضافة الطبق';
     document.getElementById('cancel-edit-btn').classList.add('hidden');
+    renderAlsoBranches();
     filterProducts();
   }
 
@@ -3567,10 +3681,13 @@ tailwind.config = {
       }
 
       // الخادم يتحقق من القسم والصورة ويحدد الترتيب بنفسه
-      try { await api('product-save', { ...payload, id: editingProductId }); }
+      if (!editingProductId) payload.also_branch_ids = [...document.querySelectorAll('#also-branches-list input:checked')].map(x => Number(x.value));
+      let res;
+      try { res = await api('product-save', { ...payload, id: editingProductId }); }
       catch (e) { console.error(e); return showToast('تعذر حفظ الطبق', true); }
 
-      showToast(editingProductId ? 'تم حفظ التعديلات' : 'تمت إضافة الطبق');
+      const n = (res && res.copied_to || []).length;
+      showToast(editingProductId ? 'تم حفظ التعديلات' : n ? `تمت إضافة الطبق هنا وفي ${n === 1 ? 'فرع ثاني' : `${n} فروع`}` : 'تمت إضافة الطبق');
       cancelEdit();
       refreshAll();
     } finally {

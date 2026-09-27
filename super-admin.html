@@ -413,6 +413,7 @@ tailwind.config = { theme: { extend: {
         <a href="admin.html?client=${slug}" target="_blank" rel="noopener"><i class="fa-solid fa-gauge-high"></i> إدارة لوحته</a>
         ${remind ? `<a href="${esc(remind)}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" style="color:#16a34a"></i> رسالة تذكير بالتجديد</a>` : ''}
         ${!c.parent_id ? `<button onclick="addBranch(${id})"><i class="fa-solid fa-code-branch" style="color:#047857"></i> إضافة فرع · ${money(PLAN_PRICE.branch)}/سنة</button>` : ''}
+        <button onclick="renameStore(${id})"><i class="fa-solid fa-pen"></i> تعديل الاسم</button>
         <button onclick="openNotify(${id})"><i class="fa-solid fa-bell"></i> ${c.admin_notification ? 'تعديل الإشعار' : 'إرسال إشعار'}</button>
         <div class="h-px bg-brand/10 my-1"></div>
         <button onclick="setFeatured(${id}, ${!c.is_featured})"><i class="fa-solid fa-star" ${c.is_featured ? 'style="color:#d97706"' : ''}></i> ${c.is_featured ? 'إزالة من أمثلة الرئيسية' : 'عرضه في أمثلة الرئيسية'}</button>
@@ -444,18 +445,29 @@ tailwind.config = { theme: { extend: {
   const forbidden = (e) => { if (e && e.code === 'FORBIDDEN') { showToast('الحساب الحالي ليس مدير عام، سجّل دخول بحساب المدير', true); setTimeout(() => location.reload(), 1800); } return e; };
   const post = (action, body) => DM.post(A(action), body, true).then(() => null, forbidden);
 
+  async function renameStore(id) {
+    openMenu = null; renderStores();
+    const c = find(id); if (!c) return;
+    const name = (prompt(c.parent_id ? 'اسم الفرع' : 'اسم المتجر', c.name || '') || '').trim();
+    if (!name || name === c.name) return;
+    const error = await post('rename', { id, name });
+    if (error) return showToast(`تعذر تعديل الاسم: ${error.message}`, true);
+    showToast('تم تعديل الاسم'); loadClients();
+  }
+
   // ─── الفروع ───
   async function addBranch(id) {
     openMenu = null; renderStores();
     const c = find(id); if (!c) return;
     const name = (prompt(`اسم الفرع الجديد لـ "${c.name}"\nمثال: ${c.name} - فرع النخيل`, `${c.name} - `) || '').trim();
     if (!name) return;
+    const copyMenu = confirm('تبي تنسخ منيو المتجر الرئيسي للفرع؟\n\nموافق = نسخة من الأقسام والأطباق (تتعدل لحالها بعدين)\nإلغاء = منيو فارغ يبدأ من الصفر');
     const slug = (prompt('رابط الفرع بالإنجليزي (اختياري)\nاتركه فاضي ونختاره تلقائياً مثل ' + `${c.client_slug}-2`, '') || '').trim().toLowerCase();
     const ok = await confirmDialog({
       title: 'إضافة فرع', message: `"${name}" كفرع لـ "${c.name}".`,
       items: [
         `السعر: ${money(PLAN_PRICE.branch)} سنوياً`,
-        'ينسخ المنيو كامل (الأقسام والأطباق والهوية)، وبعدها كل فرع يتعدل لحاله',
+        copyMenu ? 'ينسخ المنيو (الأقسام والأطباق) والهوية، وبعدها كل فرع منفصل تماماً' : 'منيو فارغ، وياخذ هوية المتجر (الشعار والثيم) بس',
         'صاحب المتجر يديره من لوحته عبر قائمة الفروع أعلى الصفحة',
         'اشتراك الفرع يبدأ بنفس حالة المتجر الرئيسي، وتقدر تفعّله سنة من بطاقته'
       ],
@@ -463,7 +475,7 @@ tailwind.config = { theme: { extend: {
     });
     if (!ok) return;
     try {
-      const res = await DM.post(A('branch-create'), { id, name, slug }, true).catch(e => { throw forbidden(e); });
+      const res = await DM.post(A('branch-create'), { id, name, slug, empty_menu: !copyMenu }, true).catch(e => { throw forbidden(e); });
       showToast(`تم إنشاء الفرع: ${res.client.client_slug}`);
       loadClients();
     } catch (e) { showToast(`تعذر إنشاء الفرع: ${e.message}`, true); }

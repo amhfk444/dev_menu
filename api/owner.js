@@ -28,8 +28,8 @@ const MAX_OCCASIONS = 20, MAX_STICKERS = 3;
 const isDay = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(Date.parse(v));
 
 // مناسبات المتجر: [{id, preset, title, greeting, starts_on, ends_on, enabled, stickers}]
-function cleanOccasions(list, sid) {
-  if (!Array.isArray(list) || list.length > MAX_OCCASIONS) throw new ApiError(400, `المناسبات حدها ${MAX_OCCASIONS}`);
+function cleanOccasions(list, sid, ownerIds = [sid], max = MAX_OCCASIONS) {
+  if (!Array.isArray(list) || list.length > max) throw new ApiError(400, `المناسبات حدها ${max}`);
   const ids = new Set();
   return list.map((o) => {
     if (!o || typeof o !== 'object') throw new ApiError(400, 'مناسبة غير صحيحة');
@@ -44,7 +44,7 @@ function cleanOccasions(list, sid) {
     if ((Date.parse(o.ends_on) - Date.parse(o.starts_on)) / 86400000 > 180) throw new ApiError(400, `مدة "${title}" أطول من 180 يوم`);
     if (o.stickers !== undefined && (!Array.isArray(o.stickers) || o.stickers.length > MAX_STICKERS)) throw new ApiError(400, `الملصقات حدها ${MAX_STICKERS} لكل مناسبة`);
     const stickers = (o.stickers || []).map((k) => {
-      if (!k || !ownsMediaUrl(k.url, sid)) throw new ApiError(400, 'ملصق غير تابع لمتجرك');
+      if (!k || !ownerIds.some(id => ownsMediaUrl(k.url, id))) throw new ApiError(400, 'ملصق غير تابع لمتجرك');
       return {
         url: k.url,
         position: STICKER_POSITIONS.includes(k.position) ? k.position : 'logo-right',
@@ -115,6 +115,12 @@ async function context(req, { needStore = true } = {}) {
   return { user, admin, store };
 }
 
+// المتجر الرئيسي وكل فروعه
+async function familyOf(store, fields = 'id,name,client_slug,parent_id') {
+  const root = store.parent_id || store.id;
+  return rest(`clients?or=${q(`(id.eq.${root},parent_id.eq.${root})`)}&select=${fields}&order=id.asc`);
+}
+
 async function patchStore(id, payload) {
   const rows = await rest(`clients?id=eq.${id}`, { method: 'PATCH', body: payload, prefer: 'return=representation' });
   return rows[0];
@@ -177,7 +183,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       rest(`categories?client_id=eq.${store.id}&select=*`),
       rest(`products?client_id=eq.${store.id}&select=*`),
       // المتجر الرئيسي وفروعه (لقائمة التبديل بين الفروع)
-      rest(`clients?or=${q(`(id.eq.${root},parent_id.eq.${root})`)}&select=id,name,client_slug,parent_id&order=id.asc`).catch(() => [])
+      familyOf(store, 'id,name,client_slug,parent_id,occasions').catch(() => [])
     ]);
     return { email: user.email, is_admin: admin, store, branches, categories: categories.sort(bySort), products: products.sort(bySort) };
   }
@@ -336,6 +342,35 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     return { store: await patchStore(sid, p) };
   }
 
+  // ─── المناسبات على مستوى الفروع: كل مناسبة تحدد الفروع اللي تظهر فيها ───
+  // body.occasions = كل مناسبات العائلة، ولكل وحدة branch_ids. نكتب لكل فرع مناسباته
+  if (action === 'occasions-sync') {
+    const family = await familyOf(store, 'id,occasions');
+    const ids = family.map(f => f.id);
+    const list = Array.isArray(b.occasions) ? b.occasions : null;
+    if (!list || list.length > 100) throw new ApiError(400, 'قائمة المناسبات غير صحيحة');
+    const clean = cleanOccasions(list.map(({ branch_ids, ...o }) => o), sid, ids, 100).map((o, i) => ({
+      ...o, branch_ids: [...new Set((Array.isArray(list[i].branch_ids) ? list[i].branch_ids : [sid]).map(int))].filter(x => ids.includes(x))
+    }));
+    for (const f of family) {
+      const mine = clean.filter(o => o.branch_ids.includes(f.id)).map(({ branch_ids, ...o }) => o);
+      if (mine.length > MAX_OCCASIONS) throw new ApiError(400, `الفرع الواحد حده ${MAX_OCCASIONS} مناسبة`);
+      if (JSON.stringify(mine) !== JSON.stringify(f.occasions || [])) await patchStore(f.id, { occasions: mine });
+    }
+    return { family: await familyOf(store, 'id,name,client_slug,parent_id,occasions') };
+  }
+
+  // ─── اسم فرع (من لوحة صاحب المتجر) ───
+  if (action === 'branch-rename') {
+    const id = int(b.id);
+    const family = await familyOf(store);
+    if (!family.some(f => f.id === id)) throw new ApiError(404, 'الفرع غير موجود');
+    const name = str(b.name, 80, 'اسم الفرع');
+    if (!name) throw new ApiError(400, 'اكتب اسم الفرع');
+    await patchStore(id, { name });
+    return { family: await familyOf(store) };
+  }
+
   // ─── كوبونات الخصم ───
   if (action === 'coupon-save') {
     const id = b.id == null ? null : int(b.id);
@@ -469,6 +504,22 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     return { category: rows[0] };
   }
 
+  if (action === 'category-rename') {
+    const id = int(b.id);
+    const cat = (await rest(`categories?id=eq.${id}&client_id=eq.${sid}&select=id,name`))[0];
+    if (!cat) throw new ApiError(404, 'القسم غير موجود');
+    const name = str(b.name, 60, 'اسم القسم');
+    if (!name) throw new ApiError(400, 'اكتب اسم القسم');
+    const dup = await rest(`categories?client_id=eq.${sid}&name=eq.${q(name)}&id=neq.${id}&select=id&limit=1`);
+    if (dup.length) throw new ApiError(400, 'يوجد قسم بنفس الاسم');
+    const rows = await rest(`categories?id=eq.${id}&client_id=eq.${sid}`, {
+      method: 'PATCH', body: { name, name_en: str(b.name_en, 60, 'الاسم الإنجليزي') || null }, prefer: 'return=representation'
+    });
+    // أطباق قديمة مربوطة باسم القسم بدل مفتاحه: نحدّثها للاسم الجديد
+    if (cat.name !== name) await rest(`products?client_id=eq.${sid}&category=eq.${q(cat.name)}`, { method: 'PATCH', body: { category: name } });
+    return { category: rows[0] };
+  }
+
   if (action === 'category-delete') {
     const id = int(b.id);
     const cat = (await rest(`categories?id=eq.${id}&client_id=eq.${sid}&select=key,name`))[0];
@@ -537,7 +588,31 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       return { product: rows[0] };
     }
     const row = { ...payload, client_id: sid, is_available: true, image_url: payload.image_url || '', sort_order: await nextOrder() };
-    return { product: (await rest('products', { method: 'POST', body: row, prefer: 'return=representation' }))[0] };
+    const created = (await rest('products', { method: 'POST', body: row, prefer: 'return=representation' }))[0];
+
+    // "أضف أيضاً في الفروع": نسخة مستقلة في كل فرع مختار، تحت قسم بنفس الاسم (ينشأ لو ما هو موجود)
+    const also = [...new Set((Array.isArray(b.also_branch_ids) ? b.also_branch_ids : []).map(int))].filter(x => x !== sid);
+    const copied = [];
+    if (also.length) {
+      const family = (await familyOf(store)).map(f => f.id);
+      const srcCat = cats.find(c => c.key === category || c.name === category);
+      const srcCatFull = (await rest(`categories?client_id=eq.${sid}&key=eq.${q(srcCat.key)}&select=name,name_en,group_name`))[0] || srcCat;
+      for (const bid of also.filter(x => family.includes(x))) {
+        const bcats = await rest(`categories?client_id=eq.${bid}&select=key,name,sort_order`);
+        let target = bcats.find(c => c.name === srcCatFull.name);
+        if (!target) {
+          target = (await rest('categories', { method: 'POST', prefer: 'return=representation', body: {
+            client_id: bid, name: srcCatFull.name, name_en: srcCatFull.name_en || null, group_name: srcCatFull.group_name || null,
+            key: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+            sort_order: Math.max(0, ...bcats.map(c => c.sort_order || 0)) + 1
+          } }))[0];
+        }
+        const same = await rest(`products?client_id=eq.${bid}&category=eq.${q(target.key)}&select=sort_order`);
+        await rest('products', { method: 'POST', body: { ...row, client_id: bid, category: target.key, sort_order: Math.max(0, ...same.map(x => x.sort_order || 0)) + 1 } });
+        copied.push(bid);
+      }
+    }
+    return { product: created, copied_to: copied };
   }
 
   if (action === 'product-toggle') {
