@@ -1329,12 +1329,15 @@ tailwind.config = {
   const daysText = (n) => n === 1 ? 'يوم واحد' : n === 2 ? 'يومين' : n <= 10 ? `${n} أيام` : `${n} يوم`;
   // الأسعار (عدّلها من هنا) — الإضافات تنضاف على فاتورة الباقة
   // باقة واحدة سنوية تشمل كل المزايا (ومنها قائمة الانتظار)
-  const PLAN_PRICE = { year: 349 };
-  const planTotal = () => PLAN_PRICE.year;
+  // الحساب = المتجر الرئيسي وفروعه باشتراك واحد: 349 للمتجر + 199 لكل فرع
+  const PLAN_PRICE = { year: 349, branch: 199 };
+  const branchCount = () => branches.filter(b => b.parent_id).length;
+  const planTotal = () => PLAN_PRICE.year + branchCount() * PLAN_PRICE.branch;
   function renewLink(plan, extra = '') {
-    const label = `السنوية (${PLAN_PRICE.year} ر.س)`;
+    const main = branches.find(b => !b.parent_id) || client;
+    const label = branchCount() ? `السنوية للحساب: المتجر ${PLAN_PRICE.year} + ${branchCount()} فرع × ${PLAN_PRICE.branch} ر.س` : `السنوية (${PLAN_PRICE.year} ر.س)`;
     const addon = '';
-    const msg = extra || `مرحباً، أبغى أشترك/أجدد متجر "${client.name || ''}" (${client.client_slug}) بالباقة ${label}${addon}. المجموع ${planTotal(plan)} ر.س.`;
+    const msg = extra || `مرحباً، أبغى أشترك/أجدد متجر "${main.name || ''}" (${main.client_slug})${branchCount() ? ` وفروعه` : ''} بالباقة ${label}${addon}. المجموع ${planTotal(plan)} ر.س.`;
     return `https://wa.me/${SUPPORT_WA}?text=${encodeURIComponent(msg)}`;
   }
 
@@ -1358,6 +1361,7 @@ tailwind.config = {
     const verb = status === 'active' ? 'جدّد' : 'اشترك';
     box.innerHTML = `
       <p>الحالة: <span class="${color} font-bold">${label}</span></p>
+      ${branchCount() ? `<p class="text-[11px] text-emerald-800 font-bold"><i class="fa-solid fa-sitemap"></i> ${client.parent_id ? 'اشتراك الفرع تابع لحساب المتجر الرئيسي' : `اشتراك واحد للمتجر و ${branchCount()} ${branchCount() === 1 ? 'فرع' : 'فروع'}`} · ${money(planTotal())} سنوياً</p>` : ''}
       ${live && left !== null ? `<p class="text-[11px] text-ink/75">متبقي <b>${daysText(left)}</b> — ينتهي ${esc(endText)}</p>` : ''}
       ${showPlans ? `
         <div class="flex flex-wrap gap-1.5 pt-1">

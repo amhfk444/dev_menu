@@ -14,6 +14,14 @@ async function slugFree(slug) {
   return taken.length === 0;
 }
 
+// الحساب = المتجر الرئيسي وفروعه باشتراك واحد: الفروع تاخذ حالة اشتراك المتجر الرئيسي
+const SUBSCRIPTION_FIELDS = 'subscription_status,subscription_end_date,trial_ends_at';
+async function syncBranchSubscriptions(parentId) {
+  const parent = (await rest(`clients?id=eq.${parentId}&select=${SUBSCRIPTION_FIELDS}`))[0];
+  if (!parent) return;
+  try { await rest(`clients?parent_id=eq.${parentId}`, { method: 'PATCH', body: parent }); } catch {}
+}
+
 module.exports = handler(['GET', 'POST'], async (req) => {
   const user = await getUser(req);
   if (!(await isSuperAdmin(user.email))) throw new ApiError(403, 'هذه الصفحة للمدير العام فقط', 'FORBIDDEN');
@@ -38,10 +46,19 @@ module.exports = handler(['GET', 'POST'], async (req) => {
 
   if (action === 'activate') {
     if (!['month', 'year'].includes(b.period)) throw new ApiError(400, 'مدة غير صحيحة');
+    const target = (await rest(`clients?id=eq.${id}&select=id,parent_id`))[0];
+    if (!target) throw new ApiError(404, 'المتجر غير موجود');
+    if (target.parent_id) throw new ApiError(400, 'اشتراك الفرع تابع للمتجر الرئيسي، جدّد من بطاقة المتجر الرئيسي', 'BRANCH_FOLLOWS_PARENT');
     await rpc('server_activate', { p_client_id: id, p_period: b.period });
+    await syncBranchSubscriptions(id);
     return { ok: true };
   }
-  if (action === 'set-active') return patch({ is_active: b.active === true });
+  // إيقاف/تشغيل المتجر الرئيسي يشمل فروعه، والفرع يقدر ينوقف لحاله
+  if (action === 'set-active') {
+    const out = await patch({ is_active: b.active === true });
+    if (!out.client.parent_id) { try { await rest(`clients?parent_id=eq.${id}`, { method: 'PATCH', body: { is_active: b.active === true } }); } catch {} }
+    return out;
+  }
   if (action === 'rename') {
     const name = str(b.name, 80, 'الاسم');
     if (!name) throw new ApiError(400, 'اكتب الاسم');
@@ -74,6 +91,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       await rest(`products?client_id=eq.${newId}`, { method: 'DELETE' });
       await rest(`categories?client_id=eq.${newId}`, { method: 'DELETE' });
     }
+    await syncBranchSubscriptions(id);
     return { client: (await rest(`clients?id=eq.${newId}&select=*`))[0] };
   }
 

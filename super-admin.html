@@ -164,7 +164,17 @@ tailwind.config = { theme: { extend: {
   // باقة واحدة سنوية تشمل كل المزايا (ومنها قائمة الانتظار)
   // الفرع الإضافي له سعر سنوي مستقل
   const PLAN_PRICE = { year: 349, branch: 199 };
-  const totalFor = (c) => c && c.parent_id ? PLAN_PRICE.branch : PLAN_PRICE.year;
+  const branchesOf = (c) => clients.filter(x => x.parent_id === c.id);
+  // فاتورة الحساب: المتجر الرئيسي + كل فرع
+  const totalFor = (c) => c && c.parent_id ? PLAN_PRICE.branch : PLAN_PRICE.year + (c ? branchesOf(c).length : 0) * PLAN_PRICE.branch;
+  // فرع ينضاف في نص الاشتراك: يدفع الأيام الباقية لين تاريخ تجديد الحساب، وبعدها يتجدد مع الحساب كامل
+  function branchProration(parent) {
+    const s = statusOf(parent);
+    if (s.key === 'trial') return { amount: 0, days: s.left, text: 'الحساب في الفترة التجريبية: الفرع بدون رسوم الحين، ويدخل في فاتورة الاشتراك.' };
+    if (s.key !== 'paid' || !s.left) return { amount: PLAN_PRICE.branch, days: 365, text: `الحساب غير مشترك حالياً: الفرع يتفعّل مع تجديد الحساب (${money(PLAN_PRICE.branch)} سنوياً).` };
+    const amount = Math.round(PLAN_PRICE.branch * s.left / 365);
+    return { amount, days: s.left, text: `المستحق الآن ${money(amount)} عن ${s.left} يوم الباقية لين تجديد الحساب في ${s.endText}، وبعدها يتجدد مع الحساب بـ ${money(PLAN_PRICE.branch)} سنوياً.` };
+  }
   const TYPES = { restaurant: ['مطعم', 'fa-utensils'], cafe: ['مقهى', 'fa-mug-hot'], mixed: ['مطعم ومقهى', 'fa-burger'], bakery: ['مخبز', 'fa-bread-slice'] };
 
   let clients = [], filter = 'all', openMenu = null, notifyId = null;
@@ -265,17 +275,18 @@ tailwind.config = { theme: { extend: {
 
   // ─── الأرقام ───
   function counts() {
-    const st = clients.map(statusOf);
+    const accounts = clients.filter(c => !c.parent_id);
+    const st = accounts.map(statusOf);
     return {
-      all: clients.length,
+      all: accounts.length,
       paid: st.filter(s => s.key === 'paid').length,
       trial: st.filter(s => s.key === 'trial').length,
-      soon: clients.filter(isSoon).length,
+      soon: accounts.filter(isSoon).length,
       expired: st.filter(s => s.key === 'expired').length,
       suspended: st.filter(s => s.key === 'suspended').length,
-      waitlist: clients.filter(c => c.waitlist_enabled).length,
-      featured: clients.filter(c => c.is_featured).length,
-      noEmail: clients.filter(c => !c.email).length
+      waitlist: accounts.filter(c => c.waitlist_enabled).length,
+      featured: accounts.filter(c => c.is_featured).length,
+      noEmail: accounts.filter(c => !c.email).length
     };
   }
 
@@ -345,7 +356,8 @@ tailwind.config = { theme: { extend: {
       paid: c => statusOf(c).key === 'paid', trial: c => statusOf(c).key === 'trial',
       expired: c => statusOf(c).key === 'expired', suspended: c => statusOf(c).key === 'suspended'
     }[filter];
-    const list = clients.filter(match).filter(c => !q || [c.name, c.client_slug, c.email, c.phone].some(v => v && String(v).toLowerCase().includes(q)));
+    const hit = (c) => [c.name, c.client_slug, c.email, c.phone].some(v => v && String(v).toLowerCase().includes(q));
+    const list = clients.filter(c => !c.parent_id).filter(match).filter(c => !q || hit(c) || branchesOf(c).some(hit));
     const sort = document.getElementById('sort').value;
     if (sort === 'name') list.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ar'));
     else if (sort === 'expiry') list.sort((a, b) => (statusOf(a).left ?? 1e9) - (statusOf(b).left ?? 1e9));
@@ -378,8 +390,7 @@ tailwind.config = { theme: { extend: {
               <p class="font-black text-sm truncate">${esc(c.name || 'بدون اسم')}</p>
               ${c.is_featured ? '<i class="fa-solid fa-star text-amber-500 text-[11px]" title="معروض في الرئيسية"></i>' : ''}
             </div>
-            ${c.parent_id ? `<p class="text-[10px] font-bold text-emerald-700 mt-0.5"><i class="fa-solid fa-code-branch"></i> فرع من ${esc((find(c.parent_id) || {}).name || 'متجر رئيسي')}</p>` : ''}
-            ${!c.parent_id && clients.some(x => x.parent_id === c.id) ? `<p class="text-[10px] font-bold text-emerald-700 mt-0.5"><i class="fa-solid fa-sitemap"></i> ${clients.filter(x => x.parent_id === c.id).length} فرع</p>` : ''}
+            ${branchesOf(c).length ? `<p class="text-[10px] font-bold text-emerald-700 mt-0.5"><i class="fa-solid fa-sitemap"></i> حساب واحد: المتجر + ${branchesOf(c).length} ${branchesOf(c).length === 1 ? 'فرع' : 'فروع'}</p>` : ''}
             <p class="text-[11px] text-ink/55 flex items-center gap-1.5 mt-0.5"><i class="fa-solid ${type[1]} text-[10px]"></i> ${type[0]} · <span class="font-mono" dir="ltr">${esc(c.client_slug)}</span></p>
             <div class="flex flex-wrap gap-1.5 mt-2">
               <span class="text-[10px] font-black px-2 py-0.5 rounded-full border ${s.cls}">${s.label}</span>
@@ -395,14 +406,42 @@ tailwind.config = { theme: { extend: {
           <p class="flex justify-between gap-2"><span class="text-ink/55">الجوال</span>${c.phone ? (phone ? `<a href="https://wa.me/${phone}" target="_blank" rel="noopener" class="text-green-700 font-bold" dir="ltr"><i class="fa-brands fa-whatsapp"></i> ${esc(c.phone)}</a>` : `<span dir="ltr">${esc(c.phone)}</span>`) : '<span class="text-ink/40">—</span>'}</p>
         </div>
 
+        ${branchesOf(c).length ? branchesBox(c) : ''}
+
         <div class="grid grid-cols-[1fr_auto] gap-1.5 mt-auto">
-          <button onclick="activate(${id}, 'year')" class="bg-brand hover:bg-brand-dark text-cream rounded-xl py-2.5 text-[12px] font-black">تفعيل سنة · ${money(totalFor(c, 'year'))}</button>
+          <button onclick="activate(${id}, 'year')" class="bg-brand hover:bg-brand-dark text-cream rounded-xl py-2.5 text-[12px] font-black">${branchesOf(c).length ? 'تجديد الحساب' : 'تفعيل سنة'} · ${money(totalFor(c))}</button>
           <div class="relative">
             <button onclick="toggleMenu(event, ${id})" aria-label="المزيد" class="w-10 h-full rounded-xl bg-brand/10 hover:bg-brand/15 border border-brand/15"><i class="fa-solid fa-ellipsis"></i></button>
             ${openMenu === id ? moreMenu(c, slug) : ''}
           </div>
         </div>
       </article>`;
+  }
+
+  // فروع الحساب داخل بطاقة المتجر الرئيسي
+  function branchesBox(c) {
+    return `
+      <div class="rounded-xl border border-emerald-600/20 bg-emerald-500/[0.05] p-2.5 space-y-1.5">
+        <p class="text-[10px] font-black text-emerald-800 flex items-center justify-between gap-2">
+          <span><i class="fa-solid fa-code-branch"></i> الفروع · ضمن نفس الاشتراك</span>
+          <span>${branchesOf(c).length} × ${money(PLAN_PRICE.branch)}</span>
+        </p>
+        ${branchesOf(c).map(b => {
+          const bid = Number(b.id), off = b.is_active === false;
+          return `
+          <div class="flex items-center gap-2 bg-white rounded-lg border border-brand/10 px-2.5 py-1.5">
+            <div class="min-w-0 flex-1">
+              <p class="text-[12px] font-black truncate">${esc(b.name || b.client_slug)}</p>
+              <p class="text-[10px] text-ink/50 font-mono truncate" dir="ltr">${esc(b.client_slug)}</p>
+            </div>
+            ${off ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-red-500/10 text-red-700 border-red-500/20">موقوف</span>' : ''}
+            <div class="relative">
+              <button onclick="toggleMenu(event, ${bid})" aria-label="خيارات الفرع" class="w-8 h-8 rounded-lg bg-brand/10 hover:bg-brand/15 border border-brand/15"><i class="fa-solid fa-ellipsis text-xs"></i></button>
+              ${openMenu === bid ? moreMenu(b, encodeURIComponent(b.client_slug || '')) : ''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
   }
 
   function moreMenu(c, slug) {
@@ -412,16 +451,16 @@ tailwind.config = { theme: { extend: {
       <div class="menu-pop" onclick="event.stopPropagation()">
         <a href="${esc(DM.storeUrl(c.client_slug))}" target="_blank" rel="noopener"><i class="fa-solid fa-eye"></i> فتح المنيو</a>
         <a href="admin.html?client=${slug}" target="_blank" rel="noopener"><i class="fa-solid fa-gauge-high"></i> إدارة لوحته</a>
-        ${remind ? `<a href="${esc(remind)}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" style="color:#16a34a"></i> رسالة تذكير بالتجديد</a>` : ''}
+        ${remind && !c.parent_id ? `<a href="${esc(remind)}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" style="color:#16a34a"></i> رسالة تذكير بالتجديد</a>` : ''}
         ${!c.parent_id ? `<button onclick="addBranch(${id})"><i class="fa-solid fa-code-branch" style="color:#047857"></i> إضافة فرع · ${money(PLAN_PRICE.branch)}/سنة</button>` : ''}
         <button onclick="renameStore(${id})"><i class="fa-solid fa-pen"></i> تعديل الاسم</button>
         <button onclick="openNotify(${id})"><i class="fa-solid fa-bell"></i> ${c.admin_notification ? 'تعديل الإشعار' : 'إرسال إشعار'}</button>
         <div class="h-px bg-brand/10 my-1"></div>
-        <button onclick="setFeatured(${id}, ${!c.is_featured})"><i class="fa-solid fa-star" ${c.is_featured ? 'style="color:#d97706"' : ''}></i> ${c.is_featured ? 'إزالة من أمثلة الرئيسية' : 'عرضه في أمثلة الرئيسية'}</button>
+        ${c.parent_id ? '' : `<button onclick="setFeatured(${id}, ${!c.is_featured})"><i class="fa-solid fa-star" ${c.is_featured ? 'style="color:#d97706"' : ''}></i> ${c.is_featured ? 'إزالة من أمثلة الرئيسية' : 'عرضه في أمثلة الرئيسية'}</button>`}
         <button onclick="setWaitlistAddon(${id}, ${!c.waitlist_enabled})"><i class="fa-solid fa-hourglass-half" ${c.waitlist_enabled ? 'style="color:#0284c7"' : ''}></i> ${c.waitlist_enabled ? 'إيقاف قائمة الانتظار' : 'تفعيل قائمة الانتظار'}</button>
-        <button onclick="setActive(${id}, ${c.is_active === false})"><i class="fa-solid ${c.is_active === false ? 'fa-play' : 'fa-pause'}"></i> ${c.is_active === false ? 'إعادة تشغيل المتجر' : 'إيقاف المتجر'}</button>
+        <button onclick="setActive(${id}, ${c.is_active === false})"><i class="fa-solid ${c.is_active === false ? 'fa-play' : 'fa-pause'}"></i> ${c.is_active === false ? (c.parent_id ? 'إعادة تشغيل الفرع' : 'إعادة تشغيل المتجر') : (c.parent_id ? 'إيقاف الفرع' : 'إيقاف المتجر')}</button>
         <div class="h-px bg-brand/10 my-1"></div>
-        <button onclick="deleteClient(${id})" style="color:#b91c1c"><i class="fa-solid fa-trash" style="color:#b91c1c"></i> حذف المتجر نهائياً</button>
+        <button onclick="deleteClient(${id})" style="color:#b91c1c"><i class="fa-solid fa-trash" style="color:#b91c1c"></i> ${c.parent_id ? 'حذف الفرع نهائياً' : 'حذف المتجر نهائياً'}</button>
       </div>`;
   }
 
@@ -435,8 +474,8 @@ tailwind.config = { theme: { extend: {
     const s = statusOf(c);
     const menu = DM.storeUrl(c.client_slug);
     const msg = s.live
-      ? `مرحباً، معك فريق DEV MENU 👋\nنذكّرك إن ${c.subscription_status === 'trial' ? 'التجربة المجانية' : 'اشتراك'} منيو "${c.name}" ينتهي خلال ${s.left ?? ''} ${s.left === 1 ? 'يوم' : 'أيام'}.\nالاشتراك السنوي ${PLAN_PRICE.year} ر.س ويشمل كل المزايا.\nرابط منيوك: ${menu}`
-      : `مرحباً، معك فريق DEV MENU 👋\nمنيو "${c.name}" متوقف حالياً عن الزبائن. تقدر تجدده الآن ويرجع فوراً: الاشتراك السنوي ${PLAN_PRICE.year} ر.س.`;
+      ? `مرحباً، معك فريق DEV MENU 👋\nنذكّرك إن ${c.subscription_status === 'trial' ? 'التجربة المجانية' : 'اشتراك'} منيو "${c.name}" ينتهي خلال ${s.left ?? ''} ${s.left === 1 ? 'يوم' : 'أيام'}.\nالاشتراك السنوي ${totalFor(c)} ر.س${branchesOf(c).length ? ` (المتجر ${PLAN_PRICE.year} + ${branchesOf(c).length} فرع × ${PLAN_PRICE.branch})` : ''} ويشمل كل المزايا.\nرابط منيوك: ${menu}`
+      : `مرحباً، معك فريق DEV MENU 👋\nمنيو "${c.name}" متوقف حالياً عن الزبائن. تقدر تجدده الآن ويرجع فوراً: الاشتراك السنوي ${totalFor(c)} ر.س.`;
     return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
   }
 
@@ -476,14 +515,24 @@ tailwind.config = { theme: { extend: {
           hint: 'حروف إنجليزية صغيرة وأرقام وشرطة. اتركه فاضي ونختاره تلقائياً.',
           validate: (v) => v && !/^[a-z0-9](?:[a-z0-9-]{1,28})[a-z0-9]$/.test(v.toLowerCase()) ? 'الرابط من 3 إلى 30 حرف: حروف إنجليزية صغيرة وأرقام وشرطة' : '' }
       ],
-      note: `السعر ${money(PLAN_PRICE.branch)} سنوياً. اشتراك الفرع يبدأ بنفس حالة المتجر الرئيسي، وصاحب المتجر يديره من قائمة الفروع في لوحته.`
+      note: `${branchProration(c).text} الفرع ضمن نفس اشتراك الحساب، وصاحب المتجر يديره من قائمة الفروع في لوحته.`
     });
     if (!r) return;
     const name = r.name, copyMenu = r.menu !== 'empty', slug = r.slug.toLowerCase();
     try {
       const res = await DM.post(A('branch-create'), { id, name, slug, empty_menu: !copyMenu }, true).catch(e => { throw forbidden(e); });
-      showToast(`تم إنشاء الفرع: ${res.client.client_slug}`);
       loadClients();
+      // فاتورة الفرع: الأيام الباقية لين تجديد الحساب
+      const pr = branchProration(c), phone = waPhone(c.phone);
+      const msg = pr.amount
+        ? `مرحباً، معك فريق DEV MENU 👋\nتم إضافة فرع "${name}" لحساب "${c.name}".\nالمستحق الآن: ${pr.amount} ر.س عن ${pr.days} يوم الباقية لين تجديد اشتراكك في ${statusOf(c).endText}.\nبعدها يتجدد الفرع مع الحساب بـ ${PLAN_PRICE.branch} ر.س سنوياً.\nرابط الفرع: ${DM.storeUrl(res.client.client_slug)}`
+        : '';
+      const send = await DMDialog.confirm({
+        title: 'تم إنشاء الفرع', icon: 'fa-circle-check', tone: 'success',
+        message: `${res.client.name} · ${res.client.client_slug}\n\n${pr.text}`,
+        confirmText: msg && phone ? 'أرسل الفاتورة واتساب' : 'تم', cancelText: 'إغلاق'
+      });
+      if (send && msg && phone) window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
     } catch (e) { showToast(`تعذر إنشاء الفرع: ${e.message}`, true); }
   }
 
@@ -493,8 +542,10 @@ tailwind.config = { theme: { extend: {
     const ok = await confirmDialog({
       title: `تفعيل اشتراك ${label}`, message: `لمتجر "${c ? (c.name || c.client_slug) : id}".`,
       items: [
-        `المبلغ: ${money(totalFor(c, period))}`,
-        'إذا كان الاشتراك سارياً، تُضاف المدة على تاريخ انتهائه', 'يرجع المنيو للظهور فوراً إذا كان متوقفاً'
+        ...(c && branchesOf(c).length
+          ? [`المتجر الرئيسي: ${money(PLAN_PRICE.year)}`, `${branchesOf(c).length} ${branchesOf(c).length === 1 ? 'فرع' : 'فروع'} × ${money(PLAN_PRICE.branch)}`, `المجموع: ${money(totalFor(c))}`]
+          : [`المبلغ: ${money(totalFor(c))}`]),
+        'إذا كان الاشتراك سارياً، تُضاف المدة على تاريخ انتهائه', 'يتجدد المتجر وكل فروعه بنفس التاريخ'
       ],
       confirmText: `تفعيل ${label}`, tone: 'success'
     });
