@@ -893,9 +893,11 @@ tailwind.config = {
                   <input type="date" id="occ-end" onchange="occDraft().ends_on=this.value; renderOccasionList()" class="input-pro text-xs" dir="ltr">
                 </div>
               </div>
-              <div id="occ-branches-wrap" class="hidden">
-                <p class="text-[11px] text-ink/75 mb-1">تظهر في الفروع</p>
+              <button type="button" onclick="startOccasionToday()" class="text-[10px] font-bold bg-white border border-brand/20 hover:bg-brand/10 text-ink px-2.5 py-1.5 rounded-lg"><i class="fa-solid fa-bolt text-amber-600"></i> ابدأ من اليوم</button>
+              <div id="occ-branches-wrap" class="hidden bg-emerald-500/5 border border-emerald-600/20 rounded-xl p-2.5">
+                <p class="text-[11px] font-bold text-ink mb-1"><i class="fa-solid fa-copy text-emerald-700"></i> انسخها لفروع ثانية عند الحفظ</p>
                 <div id="occ-branches" class="flex flex-wrap gap-1.5"></div>
+                <p class="text-[10px] text-ink/55 mt-1">تنسخ بنفس الإعدادات والملصقات، وبعدها تعدّلها في كل فرع لحاله. النسخ مرة ثانية يستبدل النسخة السابقة.</p>
               </div>
               <p id="occ-date-hint" class="hidden text-[10px] text-amber-800 bg-amber-500/10 border border-amber-500/25 rounded-lg px-2.5 py-1.5"><i class="fa-solid fa-circle-info"></i> التاريخ مقترح حسب تقويم أم القرى، وممكن يختلف يوم حسب رؤية الهلال. عدّله إذا لزم.</p>
               <div class="space-y-2">
@@ -2495,18 +2497,10 @@ tailwind.config = {
   }
 
   // ─── المناسبات والزينة ───
-  // مع الفروع: نعرض مناسبات كل الفروع، ولكل مناسبة الفروع اللي تظهر فيها (branch_ids)
+  // كل فرع له مناسباته. copy_to (مؤقت) = الفروع اللي ننسخ لها المناسبة عند الحفظ
   const multiBranch = () => branches.length > 1;
   function familyOccasions() {
-    const own = (Array.isArray(client.occasions) ? client.occasions : []);
-    if (!multiBranch()) return own.map(o => ({ ...o, stickers: (o.stickers || []).map(k => ({ ...k })), branch_ids: [client.id] }));
-    const byId = new Map();
-    // نبدأ بمناسبات الفرع المفتوح حتى يكون محتواها هو المعروض
-    [{ id: client.id, occasions: own }, ...branches.filter(b => b.id !== client.id)].forEach(b => (b.occasions || []).forEach(o => {
-      if (!byId.has(o.id)) byId.set(o.id, { ...o, stickers: (o.stickers || []).map(k => ({ ...k })), branch_ids: [] });
-      byId.get(o.id).branch_ids.push(b.id);
-    }));
-    return [...byId.values()];
+    return (Array.isArray(client.occasions) ? client.occasions : []).map(o => ({ ...o, stickers: (o.stickers || []).map(k => ({ ...k })), copy_to: [] }));
   }
   const branchName = (id) => { const b = branches.find(x => x.id === id); return b ? (b.name || b.client_slug) : ''; };
 
@@ -2522,7 +2516,7 @@ tailwind.config = {
     if (!o.enabled) return ['موقوفة', 'bg-ink/10 text-ink/70'];
     if (!o.starts_on || !o.ends_on) return ['بدون تاريخ', 'bg-amber-500/15 text-amber-800'];
     if (o.ends_on < t) return ['انتهت', 'bg-ink/10 text-ink/60'];
-    if (o.starts_on > t) return ['قادمة', 'bg-blue-500/10 text-blue-700'];
+    if (o.starts_on > t) { const d = Math.round((Date.parse(o.starts_on) - Date.parse(t)) / 86400000); return [`قادمة · تبدأ بعد ${d === 1 ? 'يوم' : d === 2 ? 'يومين' : `${d} يوم`}`, 'bg-blue-500/10 text-blue-700']; }
     return ['تظهر الحين', 'bg-green-500/15 text-green-700'];
   }
   function renderOccasions() {
@@ -2542,7 +2536,7 @@ tailwind.config = {
           <div class="min-w-0 flex-1">
             <p class="text-xs font-black text-ink truncate">${esc(o.title || p.name)}</p>
             <p class="text-[10px] text-ink/55" dir="ltr" style="text-align:right">${esc(o.starts_on || '—')} → ${esc(o.ends_on || '—')}${o.stickers && o.stickers.length ? ` · ${o.stickers.length} 🖼️` : ''}</p>
-            ${multiBranch() ? `<p class="text-[10px] font-bold ${o.branch_ids.length ? 'text-emerald-700' : 'text-red-600'} truncate"><i class="fa-solid fa-code-branch"></i> ${o.branch_ids.length ? o.branch_ids.map(branchName).map(esc).join('، ') : 'ما تظهر في أي فرع'}</p>` : ''}
+            ${o.copy_to && o.copy_to.length ? `<p class="text-[10px] font-bold text-emerald-700 truncate"><i class="fa-solid fa-copy"></i> تنسخ عند الحفظ إلى: ${o.copy_to.map(branchName).map(esc).join('، ')}</p>` : ''}
           </div>
           <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}">${state}</span>
           <div class="flex gap-1">
@@ -2557,7 +2551,7 @@ tailwind.config = {
     if (occasions.length >= MAX_OCCASIONS) return showToast(`المناسبات حدها ${MAX_OCCASIONS}، احذف القديمة`, true);
     const p = DMOccasions.PRESETS[preset];
     const d = DMOccasions.suggestDates(preset);
-    occasions.push({ id: newId(), preset, title: preset === 'custom' ? '' : p.name, greeting: '', starts_on: d.start, ends_on: d.end, enabled: true, stickers: [], branch_ids: [client.id] });
+    occasions.push({ id: newId(), preset, title: preset === 'custom' ? '' : p.name, greeting: '', starts_on: d.start, ends_on: d.end, enabled: true, stickers: [], copy_to: [] });
     editOccasion(occasions.length - 1);
     if (preset === 'custom') document.getElementById('occ-title').focus();
   }
@@ -2584,15 +2578,28 @@ tailwind.config = {
   }
   function renderOccasionBranches() {
     const o = occDraft(); if (!o) return;
-    document.getElementById('occ-branches-wrap').classList.toggle('hidden', !multiBranch());
-    document.getElementById('occ-branches').innerHTML = branches.map(b => `
+    const others = branches.filter(b => b.id !== client.id);
+    document.getElementById('occ-branches-wrap').classList.toggle('hidden', !others.length);
+    document.getElementById('occ-branches').innerHTML = others.map(b => `
       <label class="flex items-center gap-1.5 bg-white border border-brand/15 rounded-lg px-2.5 py-1.5 text-[11px] font-bold cursor-pointer">
-        <input type="checkbox" ${o.branch_ids.includes(b.id) ? 'checked' : ''} onchange="toggleOccasionBranch(${Number(b.id)}, this.checked)" class="accent-[#384f3d]"> ${esc(b.name || b.client_slug)}</label>`).join('');
+        <input type="checkbox" ${o.copy_to.includes(b.id) ? 'checked' : ''} onchange="toggleOccasionCopy(${Number(b.id)}, this.checked)" class="accent-[#384f3d]"> ${esc(b.name || b.client_slug)}</label>`).join('');
   }
-  function toggleOccasionBranch(id, on) {
+  function toggleOccasionCopy(id, on) {
     const o = occDraft(); if (!o) return;
-    o.branch_ids = on ? [...new Set([...o.branch_ids, id])] : o.branch_ids.filter(x => x !== id);
+    o.copy_to = on ? [...new Set([...o.copy_to, id])] : o.copy_to.filter(x => x !== id);
     renderOccasionList();
+  }
+  // يبدأ اليوم، ويحافظ على المدة (أو أسبوع لو التاريخ القديم انتهى)
+  function startOccasionToday() {
+    const o = occDraft(); if (!o) return;
+    const t = todayRiyadh();
+    const span = o.starts_on && o.ends_on ? Math.max(0, Math.round((Date.parse(o.ends_on) - Date.parse(o.starts_on)) / 86400000)) : 7;
+    o.starts_on = t;
+    o.ends_on = new Date(Date.parse(t) + span * 86400000).toISOString().slice(0, 10);
+    document.getElementById('occ-start').value = o.starts_on;
+    document.getElementById('occ-end').value = o.ends_on;
+    renderOccasionList();
+    showToast('صارت تبدأ من اليوم، اضغط "حفظ المناسبات"');
   }
 
   function closeOccasionEditor() {
@@ -2794,19 +2801,22 @@ tailwind.config = {
     }
     const payload = occasions.map(o => ({ ...o, title: o.title.trim(), greeting: String(o.greeting || '').trim() }));
     if (multiBranch()) {
-      if (payload.some(o => !o.branch_ids.length) && !confirm('فيه مناسبات ما اخترت لها أي فرع، وبتنحذف. تكمل؟')) return;
       try {
-        const res = await api('occasions-sync', { occasions: payload });
+        const res = await api('occasions-save', {
+          occasions: payload.map(({ copy_to, ...o }) => o),
+          copies: payload.filter(o => o.copy_to.length).map(o => ({ id: o.id, branch_ids: o.copy_to }))
+        });
         branches = res.family;
-        client.occasions = (branches.find(b => b.id === client.id) || {}).occasions || [];
+        client.occasions = res.occasions;
         occasions = familyOccasions();
-        if (occEditing >= occasions.length) closeOccasionEditor();
+        if (occEditing >= occasions.length) closeOccasionEditor(); else if (occEditing >= 0) renderOccasionBranches();
         renderOccasionList();
-        showToast('تم حفظ المناسبات في الفروع المختارة');
+        const n = res.copied_to.length;
+        showToast(n ? `تم الحفظ، ونسخت المناسبات لـ ${n === 1 ? 'فرع' : `${n} فروع`}. عدّلها من صفحة كل فرع` : 'تم حفظ المناسبات');
       } catch { showToast('تعذر حفظ المناسبات', true); }
       return;
     }
-    if (await updateClient({ occasions: payload.map(({ branch_ids, ...o }) => o) })) {
+    if (await updateClient({ occasions: payload.map(({ copy_to, ...o }) => o) })) {
       showToast('تم حفظ المناسبات، وتظهر في المنيو خلال تواريخها');
       renderOccasionList();
     } else showToast('تعذر حفظ المناسبات', true);

@@ -52,7 +52,9 @@ function cleanOccasions(list, sid, ownerIds = [sid], max = MAX_OCCASIONS) {
         animation: STICKER_ANIMS.includes(k.animation) ? k.animation : 'float'
       };
     });
-    return { id, preset: o.preset, title, greeting: str(o.greeting, 60, 'نص التهنئة'), starts_on: o.starts_on, ends_on: o.ends_on, enabled: o.enabled !== false, stickers };
+    const out = { id, preset: o.preset, title, greeting: str(o.greeting, 60, 'نص التهنئة'), starts_on: o.starts_on, ends_on: o.ends_on, enabled: o.enabled !== false, stickers };
+    if (typeof o.origin === 'string' && /^[a-z0-9]{6,16}$/.test(o.origin)) out.origin = o.origin;
+    return out;
   });
 }
 const validPrice = (n) => Number.isFinite(n) && n >= 0 && n <= 100000;
@@ -360,22 +362,28 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     return { store: await patchStore(sid, p) };
   }
 
-  // ─── المناسبات على مستوى الفروع: كل مناسبة تحدد الفروع اللي تظهر فيها ───
-  // body.occasions = كل مناسبات العائلة، ولكل وحدة branch_ids. نكتب لكل فرع مناسباته
-  if (action === 'occasions-sync') {
+  // ─── المناسبات: كل فرع له مناسباته، ونقدر ننسخ مناسبة لفروع ثانية ───
+  // النسخة مستقلة (تتعدل في فرعها لحاله). النسخ مرة ثانية يستبدل النسخة السابقة من نفس المصدر
+  if (action === 'occasions-save') {
     const family = await familyOf(store, 'id,occasions');
     const ids = family.map(f => f.id);
-    const list = Array.isArray(b.occasions) ? b.occasions : null;
-    if (!list || list.length > 100) throw new ApiError(400, 'قائمة المناسبات غير صحيحة');
-    const clean = cleanOccasions(list.map(({ branch_ids, ...o }) => o), sid, ids, 100).map((o, i) => ({
-      ...o, branch_ids: [...new Set((Array.isArray(list[i].branch_ids) ? list[i].branch_ids : [sid]).map(int))].filter(x => ids.includes(x))
-    }));
-    for (const f of family) {
-      const mine = clean.filter(o => o.branch_ids.includes(f.id)).map(({ branch_ids, ...o }) => o);
-      if (mine.length > MAX_OCCASIONS) throw new ApiError(400, `الفرع الواحد حده ${MAX_OCCASIONS} مناسبة`);
-      if (JSON.stringify(mine) !== JSON.stringify(f.occasions || [])) await patchStore(f.id, { occasions: mine });
+    const mine = cleanOccasions(b.occasions, sid, ids);
+    await patchStore(sid, { occasions: mine });
+    const newId = () => (Math.random().toString(36).slice(2) + Date.now().toString(36)).replace(/[^a-z0-9]/g, '').slice(0, 12);
+    const copiedTo = new Set();
+    for (const c of (Array.isArray(b.copies) ? b.copies : []).slice(0, 20)) {
+      const src = mine.find(o => o.id === c.id); if (!src) continue;
+      for (const bid of [...new Set((Array.isArray(c.branch_ids) ? c.branch_ids : []).map(int))]) {
+        const f = family.find(x => x.id === bid); if (!f || bid === sid) continue;
+        const originId = src.origin || src.id;
+        const list = (Array.isArray(f.occasions) ? f.occasions : []).filter(o => o.origin !== originId && o.id !== originId);
+        if (list.length >= MAX_OCCASIONS) throw new ApiError(400, `الفرع وصل حد ${MAX_OCCASIONS} مناسبة`);
+        f.occasions = [...list, { ...src, id: newId(), origin: originId }];
+        copiedTo.add(bid);
+      }
     }
-    return { family: await familyOf(store, 'id,name,client_slug,parent_id,occasions') };
+    for (const bid of copiedTo) await patchStore(bid, { occasions: family.find(x => x.id === bid).occasions });
+    return { occasions: mine, copied_to: [...copiedTo], family: await familyOf(store, 'id,name,client_slug,parent_id,occasions') };
   }
 
   // ─── اسم فرع (من لوحة صاحب المتجر) ───
