@@ -386,6 +386,12 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     return { occasions: mine, copied_to: [...copiedTo], family: await familyOf(store, 'id,name,client_slug,parent_id,occasions') };
   }
 
+  // ─── إخفاء تنبيه الإدارة بعد قراءته ───
+  if (action === 'notice-dismiss') {
+    await patchStore(sid, { admin_notification: null });
+    return { ok: true };
+  }
+
   // ─── اسم فرع (من لوحة صاحب المتجر) ───
   if (action === 'branch-rename') {
     const id = int(b.id);
