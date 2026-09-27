@@ -165,7 +165,18 @@
     return new URL(`${page}.html?client=${encodeURIComponent(s)}${qs ? `&${qs}` : ''}`, location.href).href;
   }
 
+  // كل التبويبات تشترك في نفس الدخول: لو تغيّر الحساب من تبويب ثاني نعيد تحميل الصفحة،
+  // حتى ما تنرسل تعديلات لوحة مفتوحة باسم حساب ثاني
+  function watchAccount() {
+    const startEmail = (loadSession() || {}).email || '';
+    window.addEventListener('storage', (e) => {
+      if (e.key !== STORE_KEY) return;
+      if (((loadSession() || {}).email || '') !== startEmail) location.reload();
+    });
+  }
+
   window.DM = {
+    watchAccount,
     storeUrl,
     hostSlug,
     storePage,

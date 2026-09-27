@@ -1211,6 +1211,7 @@ tailwind.config = {
   // ─── التحقق من الدخول وتحميل المتجر ───
   async function initAuth() {
     if (!DM.signedIn()) { window.location.replace('login.html'); return false; }
+    DM.watchAccount();
     let data;
     try { data = await api('load'); }
     catch (e) {

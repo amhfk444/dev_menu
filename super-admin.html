@@ -237,6 +237,7 @@ tailwind.config = { theme: { extend: {
 
   async function init() {
     if (!DM.signedIn()) return location.replace('login.html');
+    DM.watchAccount();
     try {
       const me = await DM.get(A('check'), true);
       document.getElementById('admin-email').textContent = me.email || '';
@@ -439,7 +440,9 @@ tailwind.config = { theme: { extend: {
 
   // ─── الإجراءات ───
   const find = (id) => clients.find(x => x.id === id);
-  const post = (action, body) => DM.post(A(action), body, true).then(() => null, e => e);
+  // لو الحساب الحالي مو مدير عام (تغيّر الدخول من تبويب ثاني) نعيد التحميل حتى تظهر الحالة الصحيحة
+  const forbidden = (e) => { if (e && e.code === 'FORBIDDEN') { showToast('الحساب الحالي ليس مدير عام، سجّل دخول بحساب المدير', true); setTimeout(() => location.reload(), 1800); } return e; };
+  const post = (action, body) => DM.post(A(action), body, true).then(() => null, forbidden);
 
   // ─── الفروع ───
   async function addBranch(id) {
@@ -460,7 +463,7 @@ tailwind.config = { theme: { extend: {
     });
     if (!ok) return;
     try {
-      const res = await DM.post(A('branch-create'), { id, name, slug }, true);
+      const res = await DM.post(A('branch-create'), { id, name, slug }, true).catch(e => { throw forbidden(e); });
       showToast(`تم إنشاء الفرع: ${res.client.client_slug}`);
       loadClients();
     } catch (e) { showToast(`تعذر إنشاء الفرع: ${e.message}`, true); }
