@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="js/api.js"></script>
 <script src="js/theme.js"></script>
+<script src="js/occasions.js"></script>
 <!-- مكتبة توليد الـ QR Code -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Bagel+Fat+One&family=Crimson+Pro:wght@500&display=swap" rel="stylesheet">
@@ -176,6 +177,7 @@ tailwind.config = {
           </div>
         </div>
         <div class="flex items-center gap-2 shrink-0">
+          <select id="branch-switch" onchange="switchBranch(this.value)" aria-label="الفرع" class="hidden max-w-[150px] sm:max-w-[220px] text-xs font-bold bg-cream border border-brand/25 rounded-xl px-2.5 py-2 text-ink"></select>
           <span id="admin-mode-badge" class="hidden text-[10px] font-bold bg-amber-400/15 text-amber-700 border border-amber-400/30 px-2.5 py-1 rounded-full"><i class="fa-solid fa-crown"></i> وضع المدير العام</span>
           <a id="preview-menu-btn" href="#" target="_blank" rel="noopener" class="text-xs bg-brand text-cream font-bold px-3.5 py-2 rounded-xl transition hover:bg-brand-dark flex items-center gap-1.5">
             <i class="fa-solid fa-eye text-[10px]"></i> <span class="hidden sm:inline">معاينة المنيو</span>
@@ -297,7 +299,7 @@ tailwind.config = {
       <i class="fa-solid fa-layer-group"></i> الأقسام والقوائم
     </button>
     <button onclick="switchTab('coupons')" id="tab-coupons" class="tab-btn bg-brand/5 hover:bg-brand/10 text-ink/75 px-5 py-2.5 rounded-xl border border-brand/25 text-xs font-bold transition flex items-center gap-2">
-      <i class="fa-solid fa-ticket"></i> الكوبونات
+      <i class="fa-solid fa-ticket"></i> الخصومات
     </button>
   </div>
 
@@ -465,7 +467,7 @@ tailwind.config = {
   <!-- قسم الكوبونات -->
   <div id="section-coupons" class="space-y-4 hidden">
     <div id="coupons-wa-warning" class="hidden rounded-2xl p-3.5 border bg-amber-500/10 border-amber-500/30 text-[11px] font-bold text-amber-800 flex flex-wrap items-center justify-between gap-2">
-      <span><i class="fa-solid fa-circle-info"></i> الكوبونات تشتغل مع سلة الطلب عبر واتساب. فعّل "استقبال الطلبات عبر واتساب" حتى تظهر للزبائن.</span>
+      <span><i class="fa-solid fa-circle-info"></i> الكوبونات بكود تشتغل مع سلة الطلب عبر واتساب، ففعّل "استقبال الطلبات عبر واتساب". الخصم التلقائي يظهر في المنيو حتى بدونها.</span>
       <button type="button" onclick="location.hash='settings'" class="bg-brand text-cream px-3 py-1.5 rounded-lg text-[10px] font-black">فتح الإعدادات</button>
     </div>
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
@@ -474,10 +476,23 @@ tailwind.config = {
           <i class="fa-solid fa-ticket text-emerald-600"></i> <span id="coupon-form-title">كوبون جديد</span>
         </h3>
         <div>
+          <label class="text-[11px] text-ink/75 block mb-1">نوع العرض</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-start gap-2 bg-brand/5 border border-brand/15 rounded-xl p-2.5 cursor-pointer"><input type="radio" name="cp-kind" value="code" checked onchange="renderCouponForm()" class="accent-[#384f3d] mt-0.5">
+              <span class="text-xs font-bold">كوبون بكود<span class="block text-[10px] font-normal text-ink/60">الزبون يكتبه في سلة الطلب</span></span></label>
+            <label class="flex items-start gap-2 bg-brand/5 border border-brand/15 rounded-xl p-2.5 cursor-pointer"><input type="radio" name="cp-kind" value="auto" onchange="renderCouponForm()" class="accent-[#384f3d] mt-0.5">
+              <span class="text-xs font-bold">خصم تلقائي<span class="block text-[10px] font-normal text-ink/60">بدون كود، السعر ينزل في المنيو</span></span></label>
+          </div>
+        </div>
+        <div id="cp-code-wrap">
           <label class="text-[11px] text-ink/75 block mb-1">رمز الكوبون *</label>
           <input type="text" id="cp-code" maxlength="20" dir="ltr" autocomplete="off" placeholder="WELCOME10"
             oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9-]/g,'')" class="input-pro font-bold tracking-wider">
           <p class="text-[10px] text-ink/50 mt-1">حروف إنجليزية وأرقام وشرطة، من 3 إلى 20 حرف.</p>
+          <label class="flex items-center gap-2 mt-2 cursor-pointer">
+            <input type="checkbox" id="cp-show" class="w-4 h-4 accent-[#384f3d]">
+            <span class="text-[11px] font-bold text-ink">أظهر الكوبون في المنيو <span class="font-normal text-ink/60">(شريط بالكود + شارة على الأصناف)</span></span>
+          </label>
         </div>
         <div class="grid grid-cols-2 gap-2.5">
           <div>
@@ -510,11 +525,11 @@ tailwind.config = {
           </div>
         </div>
         <div class="grid grid-cols-2 gap-2.5">
-          <div>
+          <div class="cp-code-only">
             <label class="text-[11px] text-ink/75 block mb-1">الحد الأدنى للطلب <span class="text-ink/50">(اختياري)</span></label>
             <input type="number" id="cp-min" min="0" step="1" placeholder="&#x20C1;" class="input-pro" dir="ltr">
           </div>
-          <div>
+          <div class="cp-code-only">
             <label class="text-[11px] text-ink/75 block mb-1">عدد مرات الاستخدام <span class="text-ink/50">(اختياري)</span></label>
             <input type="number" id="cp-max" min="1" step="1" placeholder="بلا حد" class="input-pro" dir="ltr">
           </div>
@@ -825,6 +840,71 @@ tailwind.config = {
             <a id="appearance-preview" href="#" target="_blank" rel="noopener" class="sm:w-40 text-center bg-brand/10 hover:bg-brand/15 text-ink font-bold py-2.5 rounded-xl text-xs border border-brand/25 transition"><i class="fa-solid fa-eye text-[10px]"></i> معاينة المنيو</a>
           </div>
         </div>
+        <!-- المناسبات والزينة -->
+        <div class="pro-card p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-brand/20 pb-2">
+            <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles text-amber-600"></i> المناسبات والزينة</h3>
+            <span class="text-[10px] text-ink/50">زينة وتهنئة تظهر في المنيو تلقائياً خلال تواريخ المناسبة</span>
+          </div>
+          <div>
+            <p class="text-[11px] font-bold text-ink/75 mb-2">أضف مناسبة</p>
+            <div id="occ-presets" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+          </div>
+          <div id="occ-list" class="space-y-2"></div>
+          <div id="occ-editor" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-4 bg-brand/5 border border-brand/15 rounded-2xl p-3.5">
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <p id="occ-editor-title" class="text-xs font-black text-ink"></p>
+                <button type="button" onclick="closeOccasionEditor()" class="text-[10px] font-bold text-ink/60 hover:text-ink">إغلاق <i class="fa-solid fa-xmark"></i></button>
+              </div>
+              <div>
+                <label class="text-[11px] text-ink/75 block mb-1">اسم المناسبة *</label>
+                <input type="text" id="occ-title" maxlength="40" oninput="occDraft().title=this.value; renderOccasionList()" class="input-pro text-xs">
+              </div>
+              <div>
+                <label class="text-[11px] text-ink/75 block mb-1">نص التهنئة <span class="text-ink/50">(اختياري)</span></label>
+                <input type="text" id="occ-greeting" maxlength="60" oninput="occDraft().greeting=this.value; renderOccasionPreview()" class="input-pro text-xs">
+              </div>
+              <div class="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label class="text-[11px] text-ink/75 block mb-1">من</label>
+                  <input type="date" id="occ-start" onchange="occDraft().starts_on=this.value; renderOccasionList()" class="input-pro text-xs" dir="ltr">
+                </div>
+                <div>
+                  <label class="text-[11px] text-ink/75 block mb-1">إلى</label>
+                  <input type="date" id="occ-end" onchange="occDraft().ends_on=this.value; renderOccasionList()" class="input-pro text-xs" dir="ltr">
+                </div>
+              </div>
+              <p id="occ-date-hint" class="hidden text-[10px] text-amber-800 bg-amber-500/10 border border-amber-500/25 rounded-lg px-2.5 py-1.5"><i class="fa-solid fa-circle-info"></i> التاريخ مقترح حسب تقويم أم القرى، وممكن يختلف يوم حسب رؤية الهلال. عدّله إذا لزم.</p>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="text-[11px] font-bold text-ink/75">ملصقاتك وشخصياتك <span class="text-ink/50 font-normal">(حتى 3، PNG أو GIF بخلفية شفافة)</span></p>
+                  <label id="occ-upload-btn" class="shrink-0 cursor-pointer text-[10px] font-bold bg-white border border-brand/20 hover:bg-brand/10 text-ink px-2.5 py-1.5 rounded-lg transition">
+                    <i class="fa-solid fa-upload text-[9px]"></i> رفع ملصق
+                    <input type="file" id="occ-sticker-file" accept="image/png,image/webp,image/gif,image/jpeg" class="hidden" onchange="uploadSticker(this)">
+                  </label>
+                </div>
+                <div id="occ-stickers" class="space-y-2"></div>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <p class="text-[11px] font-bold text-ink/75">معاينة</p>
+              <div id="occ-preview" class="relative overflow-hidden rounded-2xl border border-brand/20 h-72" style="background:var(--bg)">
+                <div id="occ-preview-header" class="relative text-center pt-10 space-y-2">
+                  <img id="occ-preview-logo" src="images/logo.jpeg" alt="" class="relative z-[1] w-20 h-20 mx-auto rounded-full object-cover border-2" style="border-color:var(--line)">
+                  <p id="occ-preview-name" class="relative z-[1] text-sm font-black" style="color:var(--fg)"></p>
+                  <div id="occ-preview-greet" class="hidden relative z-[1]"></div>
+                </div>
+                <div class="absolute inset-x-4 bottom-4 space-y-2">
+                  <div class="h-9 rounded-xl" style="background:var(--surface);border:1px solid var(--surface-line)"></div>
+                  <div class="h-9 rounded-xl" style="background:var(--surface);border:1px solid var(--surface-line)"></div>
+                </div>
+              </div>
+              <button type="button" onclick="renderOccasionPreview()" class="w-full text-[10px] font-bold text-ink/70 hover:text-ink"><i class="fa-solid fa-rotate-right"></i> إعادة تشغيل الحركة</button>
+            </div>
+          </div>
+          <button onclick="saveOccasions()" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition">حفظ المناسبات</button>
+        </div>
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
     <!-- معلومات المطعم -->
     <div class="pro-card p-5 space-y-3">
@@ -976,6 +1056,9 @@ tailwind.config = {
   }
   const params = new URLSearchParams(window.location.search);
   const requestedSlug = (params.get('client') || '').trim().toLowerCase();
+  // الفرع المختار (صاحب المتجر يدير فروعه من نفس اللوحة)
+  const requestedBranch = /^\d+$/.test(params.get('branch') || '') ? params.get('branch') : '';
+  let branches = [];
   const MAX_IMAGE_MB = 5, MAX_VIDEO_MB = 30;
 
   let client = null, currentClientId = null, isSuperAdmin = false, userEmail = '';
@@ -983,7 +1066,7 @@ tailwind.config = {
   let lastUploadError = '', lastApiError = '';
 
   // طلبات الخادم: المدير العام يمرر ?client= لإدارة متجر معيّن (الخادم يتجاهلها لغيره)
-  const O = (action) => `/api/owner?action=${action}${requestedSlug ? `&client=${encodeURIComponent(requestedSlug)}` : ''}`;
+  const O = (action) => `/api/owner?action=${action}${requestedSlug ? `&client=${encodeURIComponent(requestedSlug)}` : ''}${requestedBranch ? `&branch=${requestedBranch}` : ''}`;
   async function api(action, body) {
     try {
       return body === undefined ? await DM.get(O(action), true) : await DM.post(O(action), body, true);
@@ -1138,7 +1221,8 @@ tailwind.config = {
     currentClientId = client.id;
     loadedCategories = (data.categories || []).sort(bySort);
     loadedProducts = (data.products || []).sort(bySort);
-    if (!isSuperAdmin && requestedSlug) history.replaceState(null, '', 'admin.html' + location.hash);
+    branches = data.branches || [];
+    if (!isSuperAdmin && requestedSlug) history.replaceState(null, '', 'admin.html' + (requestedBranch ? `?branch=${requestedBranch}` : '') + location.hash);
     fillClientUI();
     document.getElementById('auth-loading').remove();
     document.getElementById('app').style.visibility = 'visible';
@@ -1149,6 +1233,7 @@ tailwind.config = {
     const name = client.name || 'المنشأة';
     setStoreName(name);
     document.getElementById('admin-mode-badge').classList.toggle('hidden', !isSuperAdmin);
+    renderBranchSwitch();
     document.getElementById('sa-link').classList.toggle('hidden', !isSuperAdmin);
     document.getElementById('sidebar-preview').href = menuUrl();
     document.getElementById('user-email').textContent = userEmail;
@@ -1176,6 +1261,9 @@ tailwind.config = {
     deliveryApps = (Array.isArray(client.delivery_apps) ? client.delivery_apps : []).map(d => ({ ...d }));
     renderDeliveryPicker();
     renderAppearance();
+    occasions = (Array.isArray(client.occasions) ? client.occasions : []).map(o => ({ ...o, stickers: (o.stickers || []).map(k => ({ ...k })) }));
+    occEditing = -1;
+    renderOccasions();
     document.getElementById('slug-input').value = client.client_slug || '';
     document.getElementById('short-link-open').href = shortUrl();
     orderNumbers = (Array.isArray(client.order_numbers) ? client.order_numbers : []).map(n => ({ ...n }));
@@ -2326,6 +2414,146 @@ tailwind.config = {
     } else showToast('تعذر حفظ تطبيقات التوصيل', true);
   }
 
+  // ─── الفروع: التبديل بين المتجر الرئيسي وفروعه ───
+  function renderBranchSwitch() {
+    const sel = document.getElementById('branch-switch');
+    sel.classList.toggle('hidden', branches.length < 2);
+    if (branches.length < 2) return;
+    sel.innerHTML = branches.map(b => `<option value="${Number(b.id)}" ${b.id === client.id ? 'selected' : ''}>${b.parent_id ? '' : '★ '}${esc(b.name || b.client_slug)}</option>`).join('');
+  }
+  function switchBranch(id) {
+    const main = branches.find(b => !b.parent_id);
+    const q = new URLSearchParams();
+    if (requestedSlug) q.set('client', requestedSlug);
+    if (!main || String(main.id) !== String(id)) q.set('branch', id);
+    location.href = `admin.html${q.toString() ? `?${q}` : ''}${location.hash}`;
+  }
+
+  // ─── المناسبات والزينة ───
+  const MAX_OCCASIONS = 20, MAX_STICKERS = 3;
+  let occasions = [], occEditing = -1;
+  const occDraft = () => occasions[occEditing];
+  const todayRiyadh = () => new Date(Date.now() + 3 * 3600000).toISOString().slice(0, 10);
+  const newId = () => (Math.random().toString(36).slice(2) + Date.now().toString(36)).replace(/[^a-z0-9]/g, '').slice(0, 12);
+  const HIJRI_PRESETS = ['ramadan', 'eid_fitr', 'eid_adha', 'hijri_new_year'];
+
+  function occState(o) {
+    const t = todayRiyadh();
+    if (!o.enabled) return ['موقوفة', 'bg-ink/10 text-ink/70'];
+    if (!o.starts_on || !o.ends_on) return ['بدون تاريخ', 'bg-amber-500/15 text-amber-800'];
+    if (o.ends_on < t) return ['انتهت', 'bg-ink/10 text-ink/60'];
+    if (o.starts_on > t) return ['قادمة', 'bg-blue-500/10 text-blue-700'];
+    return ['تظهر الحين', 'bg-green-500/15 text-green-700'];
+  }
+  function renderOccasions() {
+    document.getElementById('occ-presets').innerHTML = Object.entries(DMOccasions.PRESETS).map(([key, p]) => `
+      <button type="button" onclick="addOccasion('${key}')" class="flex items-center gap-2 p-2.5 rounded-xl border bg-white border-brand/15 hover:border-brand/40 hover:bg-brand/5 text-[11px] font-bold text-ink transition text-right">
+        <span class="text-base">${p.icon}</span><span class="truncate">${esc(p.name)}</span><i class="fa-solid fa-plus text-[9px] text-ink/40 mr-auto"></i>
+      </button>`).join('');
+    renderOccasionList();
+  }
+  function renderOccasionList() {
+    document.getElementById('occ-list').innerHTML = occasions.length ? occasions.map((o, i) => {
+      const p = DMOccasions.PRESETS[o.preset] || DMOccasions.PRESETS.custom;
+      const [state, cls] = occState(o);
+      return `
+        <div class="flex flex-wrap items-center gap-2 bg-white border ${i === occEditing ? 'border-brand ring-2 ring-brand/15' : 'border-brand/15'} rounded-xl p-2.5">
+          <span class="text-lg">${p.icon}</span>
+          <div class="min-w-0 flex-1">
+            <p class="text-xs font-black text-ink truncate">${esc(o.title || p.name)}</p>
+            <p class="text-[10px] text-ink/55" dir="ltr" style="text-align:right">${esc(o.starts_on || '—')} → ${esc(o.ends_on || '—')}${o.stickers && o.stickers.length ? ` · ${o.stickers.length} 🖼️` : ''}</p>
+          </div>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}">${state}</span>
+          <div class="flex gap-1">
+            <button type="button" onclick="editOccasion(${i})" class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold border bg-brand/5 text-ink/90 border-brand/20 hover:bg-brand/10"><i class="fa-solid fa-pen text-[9px]"></i> تعديل</button>
+            <button type="button" onclick="occasions[${i}].enabled=!occasions[${i}].enabled; renderOccasionList()" class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold border ${o.enabled ? 'bg-white text-ink/80 border-brand/20' : 'bg-green-500/15 text-green-700 border-green-500/30'}">${o.enabled ? 'إيقاف' : 'تفعيل'}</button>
+            <button type="button" onclick="removeOccasion(${i})" aria-label="حذف" class="px-2.5 py-1.5 rounded-lg text-[10px] border bg-red-500/10 text-red-600 border-red-500/20"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>`;
+    }).join('') : '<p class="text-[11px] text-ink/50 text-center py-2">ما أضفت أي مناسبة. اختر من الأعلى، ونقترح لك التواريخ.</p>';
+  }
+  function addOccasion(preset) {
+    if (occasions.length >= MAX_OCCASIONS) return showToast(`المناسبات حدها ${MAX_OCCASIONS}، احذف القديمة`, true);
+    const p = DMOccasions.PRESETS[preset];
+    const d = DMOccasions.suggestDates(preset);
+    occasions.push({ id: newId(), preset, title: preset === 'custom' ? '' : p.name, greeting: '', starts_on: d.start, ends_on: d.end, enabled: true, stickers: [] });
+    editOccasion(occasions.length - 1);
+    if (preset === 'custom') document.getElementById('occ-title').focus();
+  }
+  function removeOccasion(i) {
+    occasions.splice(i, 1);
+    if (occEditing === i) closeOccasionEditor(); else { if (occEditing > i) occEditing--; renderOccasionList(); }
+  }
+  function editOccasion(i) {
+    occEditing = i;
+    const o = occDraft(), p = DMOccasions.PRESETS[o.preset];
+    document.getElementById('occ-editor').classList.remove('hidden');
+    document.getElementById('occ-editor-title').textContent = `${p.icon} ${p.name}`;
+    document.getElementById('occ-title').value = o.title || '';
+    document.getElementById('occ-greeting').value = o.greeting || '';
+    document.getElementById('occ-greeting').placeholder = p.greet[0] || 'مثال: خصم 20% بمناسبة افتتاح فرعنا';
+    document.getElementById('occ-start').value = o.starts_on || '';
+    document.getElementById('occ-end').value = o.ends_on || '';
+    document.getElementById('occ-date-hint').classList.toggle('hidden', !HIJRI_PRESETS.includes(o.preset));
+    renderOccasionList();
+    renderStickerRows();
+    renderOccasionPreview();
+    document.getElementById('occ-editor').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  function closeOccasionEditor() {
+    occEditing = -1;
+    document.getElementById('occ-editor').classList.add('hidden');
+    DMOccasions.clear(document.getElementById('occ-preview-header'), document.getElementById('occ-preview-greet'), document.getElementById('occ-preview'));
+    renderOccasionList();
+  }
+  function renderStickerRows() {
+    const o = occDraft(); if (!o) return;
+    const opts = (map, v) => Object.entries(map).map(([k, t]) => `<option value="${k}" ${k === v ? 'selected' : ''}>${t}</option>`).join('');
+    document.getElementById('occ-stickers').innerHTML = o.stickers.length ? o.stickers.map((k, i) => `
+      <div class="flex flex-wrap items-center gap-1.5 bg-white border border-brand/15 rounded-xl p-2">
+        <img src="${esc(safeUrl(k.url))}" alt="" class="w-10 h-10 object-contain rounded-lg bg-brand/5">
+        <select onchange="occDraft().stickers[${i}].position=this.value; renderOccasionPreview()" class="input-pro !py-1.5 text-[11px] !w-auto flex-1 min-w-[110px] bg-cream">${opts(DMOccasions.POSITIONS, k.position)}</select>
+        <select onchange="occDraft().stickers[${i}].size=this.value; renderOccasionPreview()" class="input-pro !py-1.5 text-[11px] !w-auto bg-cream">${opts(DMOccasions.SIZES, k.size)}</select>
+        <select onchange="occDraft().stickers[${i}].animation=this.value; renderOccasionPreview()" class="input-pro !py-1.5 text-[11px] !w-auto bg-cream">${opts(DMOccasions.ANIMS, k.animation)}</select>
+        <button type="button" onclick="occDraft().stickers.splice(${i}, 1); renderStickerRows(); renderOccasionPreview(); renderOccasionList()" aria-label="حذف الملصق" class="w-9 h-9 rounded-lg bg-red-500/10 text-red-600 border border-red-500/20"><i class="fa-solid fa-xmark"></i></button>
+      </div>`).join('') : '<p class="text-[10px] text-ink/50">اختياري: ارفع شخصية مطعمك أو أي ملصق، والمنصة تحرّكه.</p>';
+    document.getElementById('occ-upload-btn').classList.toggle('hidden', o.stickers.length >= MAX_STICKERS);
+  }
+  async function uploadSticker(input) {
+    const file = input.files[0]; input.value = '';
+    const o = occDraft(); if (!file || !o) return;
+    if (!/^image\/(png|webp|gif|jpeg)$/.test(file.type)) return showToast('الملصق لازم يكون PNG أو WebP أو GIF', true);
+    if (file.size > 8 * 1024 * 1024) return showToast('حجم الملصق كبير، الحد 8 ميجا قبل الضغط', true);
+    if (file.type === 'image/gif' && file.size > 2 * 1024 * 1024) return showToast('ملف GIF لازم يكون أقل من 2 ميجا', true);
+    showToast('جاري رفع الملصق...');
+    const url = await uploadFile(file, 'sticker', 600);
+    if (!url) return showToast(`فشل رفع الملصق: ${lastUploadError}`, true);
+    o.stickers.push({ url, position: ['logo-right', 'logo-left', 'float'][o.stickers.length] || 'float', size: 'm', animation: 'float' });
+    renderStickerRows(); renderOccasionPreview(); renderOccasionList();
+    showToast('تم رفع الملصق، لا تنسَ "حفظ المناسبات"');
+  }
+  function renderOccasionPreview() {
+    const o = occDraft(); if (!o) return;
+    const box = document.getElementById('occ-preview');
+    DMTheme.apply({ theme: client.theme, accent_color: client.accent_color }, box);
+    const logo = safeUrl(client.logo_url);
+    if (logo) document.getElementById('occ-preview-logo').src = logo;
+    document.getElementById('occ-preview-name').textContent = client.name || '';
+    DMOccasions.render(o, { header: document.getElementById('occ-preview-header'), greet: document.getElementById('occ-preview-greet'), host: box, contained: true });
+  }
+  async function saveOccasions() {
+    for (const o of occasions) {
+      if (!String(o.title || '').trim()) return showToast('اكتب اسم كل مناسبة', true);
+      if (!o.starts_on || !o.ends_on) return showToast(`حدد تواريخ "${o.title}"`, true);
+      if (o.ends_on < o.starts_on) return showToast(`تاريخ النهاية قبل البداية في "${o.title}"`, true);
+    }
+    const payload = occasions.map(o => ({ ...o, title: o.title.trim(), greeting: String(o.greeting || '').trim() }));
+    if (await updateClient({ occasions: payload })) {
+      showToast('تم حفظ المناسبات، وتظهر في المنيو خلال تواريخها');
+      renderOccasionList();
+    } else showToast('تعذر حفظ المناسبات', true);
+  }
+
   // ─── رابط المتجر المختصر (slug.devmenu.digital) ───
   const SLUG_OK = /^[a-z0-9](?:[a-z0-9-]{1,28})[a-z0-9]$/;
   function copyShortLink() {
@@ -2955,13 +3183,16 @@ tailwind.config = {
         <div class="bg-brand/5 border border-brand/15 rounded-xl p-3 space-y-2 ${editingCouponId === c.id ? 'editing-glow' : ''}">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div class="flex items-center gap-2 min-w-0">
-              <span class="font-black text-sm text-ink tracking-wider bg-white border border-dashed border-brand/40 px-2.5 py-1 rounded-lg" dir="ltr">${esc(c.code)}</span>
+              ${c.auto_apply
+                ? '<span class="font-black text-xs text-cream bg-brand px-2.5 py-1 rounded-lg"><i class="fa-solid fa-tag"></i> خصم تلقائي</span>'
+                : `<span class="font-black text-sm text-ink tracking-wider bg-white border border-dashed border-brand/40 px-2.5 py-1 rounded-lg" dir="ltr">${esc(c.code)}</span>`}
               <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}">${state}</span>
+              ${!c.auto_apply && c.show_in_menu ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-800"><i class="fa-solid fa-eye"></i> ظاهر في المنيو</span>' : ''}
             </div>
             <span class="text-sm font-black text-emerald-700">خصم ${esc(value)}</span>
           </div>
           <p class="text-[11px] text-ink/70">${esc(couponScopeText(c))}${c.min_order != null ? ` · أقل طلب ${esc(money(Number(c.min_order)))}` : ''}</p>
-          <p class="text-[10px] text-ink/55">استُخدم ${Number(c.uses)}${c.max_uses != null ? ` من ${Number(c.max_uses)}` : ''} مرة${dates ? ` · ${esc(dates)}` : ''}</p>
+          <p class="text-[10px] text-ink/55">${c.auto_apply ? 'يظهر على الأصناف في المنيو مباشرة' : `استُخدم ${Number(c.uses)}${c.max_uses != null ? ` من ${Number(c.max_uses)}` : ''} مرة`}${dates ? ` · ${esc(dates)}` : ''}</p>
           <div class="flex gap-1.5">
             <button onclick="editCoupon(${Number(c.id)})" class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold border bg-white text-ink/90 border-brand/20 hover:bg-brand/10"><i class="fa-solid fa-pen text-[9px]"></i> تعديل</button>
             <button onclick="toggleCoupon(${Number(c.id)})" class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold border ${c.is_active ? 'bg-white text-ink/80 border-brand/20' : 'bg-green-500/15 text-green-700 border-green-500/30'}">${c.is_active ? 'إيقاف' : 'تفعيل'}</button>
@@ -2973,7 +3204,11 @@ tailwind.config = {
 
   // الأقسام والأصناف المختارة في النموذج
   let cpCats = new Set(), cpProducts = new Set();
+  const cpAuto = () => document.querySelector('input[name="cp-kind"]:checked').value === 'auto';
   function renderCouponForm() {
+    const auto = cpAuto();
+    document.getElementById('cp-code-wrap').classList.toggle('hidden', auto);
+    document.querySelectorAll('.cp-code-only').forEach(x => x.classList.toggle('hidden', auto));
     const percent = document.getElementById('cp-type').value === 'percent';
     document.getElementById('cp-value-label').textContent = percent ? 'النسبة % *' : 'المبلغ (\u20C1) *';
     document.getElementById('cp-value').max = percent ? 100 : 100000;
@@ -3006,7 +3241,9 @@ tailwind.config = {
   function editCoupon(id) {
     const c = coupons.find(x => x.id === id); if (!c) return;
     editingCouponId = id;
-    document.getElementById('cp-code').value = c.code;
+    document.querySelector(`input[name="cp-kind"][value="${c.auto_apply ? 'auto' : 'code'}"]`).checked = true;
+    document.getElementById('cp-code').value = c.auto_apply ? '' : c.code;
+    document.getElementById('cp-show').checked = c.show_in_menu === true;
     document.getElementById('cp-type').value = c.type;
     document.getElementById('cp-value').value = Number(c.value);
     document.querySelector(`input[name="cp-scope"][value="${c.scope}"]`).checked = true;
@@ -3016,7 +3253,7 @@ tailwind.config = {
     document.getElementById('cp-start').value = riyadhDay(c.starts_at);
     document.getElementById('cp-end').value = riyadhDay(c.ends_at);
     document.getElementById('cp-active').checked = c.is_active;
-    document.getElementById('coupon-form-title').textContent = `تعديل: ${c.code}`;
+    document.getElementById('coupon-form-title').textContent = c.auto_apply ? 'تعديل: خصم تلقائي' : `تعديل: ${c.code}`;
     document.getElementById('cp-cancel').classList.remove('hidden');
     renderCouponForm(); renderCoupons();
     document.getElementById('coupon-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -3027,7 +3264,9 @@ tailwind.config = {
     const v = (id) => document.getElementById(id).value.trim();
     const code = v('cp-code'), type = v('cp-type'), value = parseFloat(v('cp-value'));
     const scope = document.querySelector('input[name="cp-scope"]:checked').value;
-    if (!/^[A-Z0-9-]{3,20}$/.test(code)) return showToast('رمز الكوبون من 3 إلى 20 حرف: حروف إنجليزية وأرقام وشرطة', true);
+    const auto = cpAuto();
+    if (!auto && !/^[A-Z0-9-]{3,20}$/.test(code)) return showToast('رمز الكوبون من 3 إلى 20 حرف: حروف إنجليزية وأرقام وشرطة', true);
+    if (!auto && code.startsWith('AUTO-')) return showToast('الرموز اللي تبدأ بـ AUTO- محجوزة', true);
     if (isNaN(value) || value <= 0 || (type === 'percent' && value > 100)) return showToast(type === 'percent' ? 'النسبة من 1 إلى 100' : 'اكتب مبلغ خصم صحيح', true);
     if (scope === 'selected' && !cpCats.size && !cpProducts.size) return showToast('اختر قسم أو صنف واحد على الأقل', true);
     if (v('cp-start') && v('cp-end') && v('cp-end') < v('cp-start')) return showToast('تاريخ النهاية قبل تاريخ البداية', true);
@@ -3035,7 +3274,8 @@ tailwind.config = {
     btn.disabled = true;
     try {
       const res = await api('coupon-save', {
-        id: editingCouponId, code, type, value, scope,
+        id: editingCouponId, code: auto ? (coupons.find(x => x.id === editingCouponId) || {}).code : code, type, value, scope,
+        auto_apply: auto, show_in_menu: document.getElementById('cp-show').checked,
         category_keys: [...cpCats], product_ids: [...cpProducts],
         min_order: v('cp-min') || null, max_uses: v('cp-max') || null,
         starts_at: v('cp-start') || null, ends_at: v('cp-end') || null,
@@ -3043,7 +3283,7 @@ tailwind.config = {
       });
       const i = coupons.findIndex(x => x.id === res.coupon.id);
       if (i >= 0) coupons[i] = res.coupon; else coupons.unshift(res.coupon);
-      showToast(editingCouponId ? 'تم حفظ الكوبون' : `تم إنشاء الكوبون ${res.coupon.code}`);
+      showToast(editingCouponId ? 'تم حفظ العرض' : res.coupon.auto_apply ? 'تم إنشاء الخصم التلقائي، ويظهر في المنيو' : `تم إنشاء الكوبون ${res.coupon.code}`);
       resetCouponForm();
     } catch { showToast('تعذر حفظ الكوبون', true); }
     finally { btn.disabled = false; }

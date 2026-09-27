@@ -20,6 +20,41 @@ const METHODS = ['v60', 'chemex', 'aeropress', 'frenchpress', 'espresso', 'coldb
 const DELIVERY = ['hungerstation', 'jahez', 'keeta', 'toyou', 'mrsool', 'thechefz', 'careem', 'shgardi', 'other'];
 const THEMES = ['dark', 'light', 'sand', 'forest'];
 const MAX_SIZES = 6, MAX_COUPONS = 100;
+const OCCASION_PRESETS = ['ramadan', 'eid_fitr', 'eid_adha', 'national_day', 'founding_day', 'hijri_new_year', 'winter', 'custom'];
+const STICKER_POSITIONS = ['logo-right', 'logo-left', 'float'];
+const STICKER_SIZES = ['s', 'm', 'l'];
+const STICKER_ANIMS = ['float', 'swing', 'bounce', 'pulse', 'none'];
+const MAX_OCCASIONS = 20, MAX_STICKERS = 3;
+const isDay = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(Date.parse(v));
+
+// مناسبات المتجر: [{id, preset, title, greeting, starts_on, ends_on, enabled, stickers}]
+function cleanOccasions(list, sid) {
+  if (!Array.isArray(list) || list.length > MAX_OCCASIONS) throw new ApiError(400, `المناسبات حدها ${MAX_OCCASIONS}`);
+  const ids = new Set();
+  return list.map((o) => {
+    if (!o || typeof o !== 'object') throw new ApiError(400, 'مناسبة غير صحيحة');
+    const id = String(o.id || '');
+    if (!/^[a-z0-9]{6,16}$/.test(id) || ids.has(id)) throw new ApiError(400, 'معرّف المناسبة غير صحيح');
+    ids.add(id);
+    if (!OCCASION_PRESETS.includes(o.preset)) throw new ApiError(400, 'نوع المناسبة غير معروف');
+    const title = str(o.title, 40, 'اسم المناسبة');
+    if (!title) throw new ApiError(400, 'اكتب اسم كل مناسبة');
+    if (!isDay(o.starts_on) || !isDay(o.ends_on)) throw new ApiError(400, `حدد تاريخ البداية والنهاية لـ "${title}"`);
+    if (o.ends_on < o.starts_on) throw new ApiError(400, `تاريخ النهاية قبل البداية في "${title}"`);
+    if ((Date.parse(o.ends_on) - Date.parse(o.starts_on)) / 86400000 > 180) throw new ApiError(400, `مدة "${title}" أطول من 180 يوم`);
+    if (o.stickers !== undefined && (!Array.isArray(o.stickers) || o.stickers.length > MAX_STICKERS)) throw new ApiError(400, `الملصقات حدها ${MAX_STICKERS} لكل مناسبة`);
+    const stickers = (o.stickers || []).map((k) => {
+      if (!k || !ownsMediaUrl(k.url, sid)) throw new ApiError(400, 'ملصق غير تابع لمتجرك');
+      return {
+        url: k.url,
+        position: STICKER_POSITIONS.includes(k.position) ? k.position : 'logo-right',
+        size: STICKER_SIZES.includes(k.size) ? k.size : 'm',
+        animation: STICKER_ANIMS.includes(k.animation) ? k.animation : 'float'
+      };
+    });
+    return { id, preset: o.preset, title, greeting: str(o.greeting, 60, 'نص التهنئة'), starts_on: o.starts_on, ends_on: o.ends_on, enabled: o.enabled !== false, stickers };
+  });
+}
 const validPrice = (n) => Number.isFinite(n) && n >= 0 && n <= 100000;
 const round2 = (n) => Math.round(n * 100) / 100;
 
@@ -69,6 +104,14 @@ async function context(req, { needStore = true } = {}) {
     store = (await rpc('server_client_by_email', { p_email: user.email }))[0] || null;
   }
   if (!store && needStore) throw new ApiError(404, 'لا يوجد متجر مرتبط بحسابك', 'NO_STORE');
+  // الفروع: صاحب المتجر الرئيسي يدير فروعه عبر ?branch=id
+  const bid = int(req.query.branch);
+  if (store && Number.isInteger(bid) && bid !== store.id) {
+    const branch = (await rest(`clients?id=eq.${bid}&select=*&limit=1`))[0];
+    const root = store.parent_id || store.id;
+    if (!branch || (branch.parent_id !== root && branch.id !== root)) throw new ApiError(404, 'الفرع غير موجود', 'NO_BRANCH');
+    store = branch;
+  }
   return { user, admin, store };
 }
 
@@ -129,11 +172,14 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const { user, admin, store } = await context(req, { needStore: false });
     if (!store) return { email: user.email, is_admin: admin, store: null };
     store.waitlist_settings = normalizeSettings(store.waitlist_settings);
-    const [categories, products] = await Promise.all([
+    const root = store.parent_id || store.id;
+    const [categories, products, branches] = await Promise.all([
       rest(`categories?client_id=eq.${store.id}&select=*`),
-      rest(`products?client_id=eq.${store.id}&select=*`)
+      rest(`products?client_id=eq.${store.id}&select=*`),
+      // المتجر الرئيسي وفروعه (لقائمة التبديل بين الفروع)
+      rest(`clients?or=${q(`(id.eq.${root},parent_id.eq.${root})`)}&select=id,name,client_slug,parent_id&order=id.asc`).catch(() => [])
     ]);
-    return { email: user.email, is_admin: admin, store, categories: categories.sort(bySort), products: products.sort(bySort) };
+    return { email: user.email, is_admin: admin, store, branches, categories: categories.sort(bySort), products: products.sort(bySort) };
   }
 
   // ─── الإحصائيات ───
@@ -272,6 +318,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
         return { title, url };
       });
     }
+    if (has('occasions')) p.occasions = cleanOccasions(b.occasions, sid);
     if (has('business_type')) {
       if (!BUSINESS_TYPES.includes(b.business_type)) throw new ApiError(400, 'نوع نشاط غير صحيح');
       p.business_type = b.business_type;
@@ -292,8 +339,12 @@ module.exports = handler(['GET', 'POST'], async (req) => {
   // ─── كوبونات الخصم ───
   if (action === 'coupon-save') {
     const id = b.id == null ? null : int(b.id);
-    const code = String(b.code || '').trim().toUpperCase();
+    // خصم تلقائي: بدون كود، يظهر في المنيو على الأصناف مباشرة (نولّد له رمز داخلي)
+    const auto = b.auto_apply === true;
+    let code = String(b.code || '').trim().toUpperCase();
+    if (auto && !/^AUTO-[A-Z0-9]{6}$/.test(code)) code = 'AUTO-' + Math.random().toString(36).slice(2, 8).toUpperCase().padEnd(6, 'X');
     if (!/^[A-Z0-9-]{3,20}$/.test(code)) throw new ApiError(400, 'رمز الكوبون من 3 إلى 20 حرف: حروف إنجليزية وأرقام وشرطة', 'BAD_CODE');
+    if (!auto && code.startsWith('AUTO-')) throw new ApiError(400, 'الرموز اللي تبدأ بـ AUTO- محجوزة للخصم التلقائي', 'BAD_CODE');
     if (!['percent', 'fixed'].includes(b.type)) throw new ApiError(400, 'نوع الخصم غير صحيح');
     const value = round2(Number(b.value));
     if (!Number.isFinite(value) || value <= 0 || value > (b.type === 'percent' ? 100 : 100000)) {
@@ -324,7 +375,11 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const starts_at = riyadhDate(b.starts_at, false, 'تاريخ البداية');
     const ends_at = riyadhDate(b.ends_at, true, 'تاريخ النهاية');
     if (starts_at && ends_at && Date.parse(ends_at) < Date.parse(starts_at)) throw new ApiError(400, 'تاريخ النهاية قبل تاريخ البداية');
-    const row = { code, type: b.type, value, scope, category_keys, product_ids, min_order, max_uses, starts_at, ends_at, is_active: b.is_active !== false };
+    if (auto) { min_order = null; max_uses = null; }
+    const row = {
+      code, type: b.type, value, scope, category_keys, product_ids, min_order, max_uses, starts_at, ends_at, is_active: b.is_active !== false,
+      auto_apply: auto, show_in_menu: auto || b.show_in_menu === true
+    };
     try {
       if (id) {
         const rows = await rest(`coupons?id=eq.${id}&client_id=eq.${sid}`, { method: 'PATCH', body: row, prefer: 'return=representation' });
@@ -376,13 +431,13 @@ module.exports = handler(['GET', 'POST'], async (req) => {
   // ─── رابط رفع ملف (الرفع يتم مباشرة للتخزين برابط موقّع صالح لملف واحد) ───
   if (action === 'upload-url') {
     const kind = b.kind;
-    if (!['logo', 'bg_image', 'bg_video', 'prod'].includes(kind)) throw new ApiError(400, 'نوع ملف غير صحيح');
+    if (!['logo', 'bg_image', 'bg_video', 'prod', 'sticker'].includes(kind)) throw new ApiError(400, 'نوع ملف غير صحيح');
     const isVideo = kind === 'bg_video';
     const ext = (isVideo ? VIDEO_TYPES : IMAGE_TYPES)[b.type];
     if (!ext) throw new ApiError(400, isVideo ? 'الملف لازم يكون فيديو MP4' : 'صيغة الصورة غير مدعومة، استخدم JPG أو PNG أو WebP');
     const size = int(b.size);
-    const max = (isVideo ? 30 : 5) * 1024 * 1024;
-    if (!Number.isInteger(size) || size <= 0 || size > max) throw new ApiError(400, `حجم الملف أكبر من المسموح (${isVideo ? 30 : 5} ميجا)`);
+    const maxMb = isVideo ? 30 : kind === 'sticker' ? 2 : 5;
+    if (!Number.isInteger(size) || size <= 0 || size > maxMb * 1024 * 1024) throw new ApiError(400, `حجم الملف أكبر من المسموح (${maxMb} ميجا)`);
     const path = `${sid}/${kind}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const signed = await storage(`object/upload/sign/${BUCKET}/${path.split('/').map(encodeURIComponent).join('/')}`, { body: {} });
     return { upload_url: `${SUPABASE_URL}/storage/v1${signed.url}`, public_url: publicUrl(path) };

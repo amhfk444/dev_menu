@@ -161,8 +161,9 @@ tailwind.config = { theme: { extend: {
 
   // الأسعار (نفسها في لوحة صاحب المتجر)
   // باقة واحدة سنوية تشمل كل المزايا (ومنها قائمة الانتظار)
-  const PLAN_PRICE = { year: 349 };
-  const totalFor = () => PLAN_PRICE.year;
+  // الفرع الإضافي له سعر سنوي مستقل
+  const PLAN_PRICE = { year: 349, branch: 199 };
+  const totalFor = (c) => c && c.parent_id ? PLAN_PRICE.branch : PLAN_PRICE.year;
   const TYPES = { restaurant: ['مطعم', 'fa-utensils'], cafe: ['مقهى', 'fa-mug-hot'], mixed: ['مطعم ومقهى', 'fa-burger'], bakery: ['مخبز', 'fa-bread-slice'] };
 
   let clients = [], filter = 'all', openMenu = null, notifyId = null;
@@ -293,12 +294,15 @@ tailwind.config = { theme: { extend: {
   }
 
   function renderRevenue() {
-    const paid = clients.filter(c => statusOf(c).key === 'paid').length;
-    const trial = clients.filter(c => statusOf(c).key === 'trial').length;
-    document.getElementById('mrr').textContent = money(paid * PLAN_PRICE.year);
+    const paidList = clients.filter(c => statusOf(c).key === 'paid');
+    const paidMain = paidList.filter(c => !c.parent_id).length, paidBranches = paidList.length - paidMain;
+    const trial = clients.filter(c => statusOf(c).key === 'trial' && !c.parent_id).length;
+    const total = paidMain * PLAN_PRICE.year + paidBranches * PLAN_PRICE.branch;
+    document.getElementById('mrr').textContent = money(total);
     document.getElementById('mrr-break').innerHTML = `
-      <div class="flex justify-between"><span>${paid} مشترك × ${money(PLAN_PRICE.year)}</span><b>${money(paid * PLAN_PRICE.year)}</b></div>
-      <div class="flex justify-between"><span>متوسط شهري</span><b>${money(Math.round(paid * PLAN_PRICE.year / 12))}</b></div>
+      <div class="flex justify-between"><span>${paidMain} مشترك × ${money(PLAN_PRICE.year)}</span><b>${money(paidMain * PLAN_PRICE.year)}</b></div>
+      ${paidBranches ? `<div class="flex justify-between"><span>${paidBranches} فرع × ${money(PLAN_PRICE.branch)}</span><b>${money(paidBranches * PLAN_PRICE.branch)}</b></div>` : ''}
+      <div class="flex justify-between"><span>متوسط شهري</span><b>${money(Math.round(total / 12))}</b></div>
       <div class="flex justify-between border-t border-brand/10 pt-1.5"><span>لو اشترك كل التجريبيين (${trial})</span><b>+ ${money(trial * PLAN_PRICE.year)}</b></div>`;
   }
 
@@ -372,6 +376,8 @@ tailwind.config = { theme: { extend: {
               <p class="font-black text-sm truncate">${esc(c.name || 'بدون اسم')}</p>
               ${c.is_featured ? '<i class="fa-solid fa-star text-amber-500 text-[11px]" title="معروض في الرئيسية"></i>' : ''}
             </div>
+            ${c.parent_id ? `<p class="text-[10px] font-bold text-emerald-700 mt-0.5"><i class="fa-solid fa-code-branch"></i> فرع من ${esc((find(c.parent_id) || {}).name || 'متجر رئيسي')}</p>` : ''}
+            ${!c.parent_id && clients.some(x => x.parent_id === c.id) ? `<p class="text-[10px] font-bold text-emerald-700 mt-0.5"><i class="fa-solid fa-sitemap"></i> ${clients.filter(x => x.parent_id === c.id).length} فرع</p>` : ''}
             <p class="text-[11px] text-ink/55 flex items-center gap-1.5 mt-0.5"><i class="fa-solid ${type[1]} text-[10px]"></i> ${type[0]} · <span class="font-mono" dir="ltr">${esc(c.client_slug)}</span></p>
             <div class="flex flex-wrap gap-1.5 mt-2">
               <span class="text-[10px] font-black px-2 py-0.5 rounded-full border ${s.cls}">${s.label}</span>
@@ -383,7 +389,7 @@ tailwind.config = { theme: { extend: {
 
         <div class="text-[11px] space-y-1 bg-brand/[0.04] border border-brand/10 rounded-xl p-3">
           <p class="flex justify-between gap-2"><span class="text-ink/55">الاشتراك</span><b class="${isSoon(c) ? 'text-amber-700' : ''}">${esc(s.endText)}${days}</b></p>
-          <p class="flex justify-between gap-2"><span class="text-ink/55">البريد</span><span class="truncate" dir="ltr">${c.email ? esc(c.email) : '<span class="text-red-600 font-bold">— بدون بريد —</span>'}</span></p>
+          <p class="flex justify-between gap-2"><span class="text-ink/55">البريد</span><span class="truncate" dir="ltr">${c.email ? esc(c.email) : c.parent_id ? '<span class="text-ink/50">يديره صاحب المتجر الرئيسي</span>' : '<span class="text-red-600 font-bold">— بدون بريد —</span>'}</span></p>
           <p class="flex justify-between gap-2"><span class="text-ink/55">الجوال</span>${c.phone ? (phone ? `<a href="https://wa.me/${phone}" target="_blank" rel="noopener" class="text-green-700 font-bold" dir="ltr"><i class="fa-brands fa-whatsapp"></i> ${esc(c.phone)}</a>` : `<span dir="ltr">${esc(c.phone)}</span>`) : '<span class="text-ink/40">—</span>'}</p>
         </div>
 
@@ -405,6 +411,7 @@ tailwind.config = { theme: { extend: {
         <a href="${esc(DM.storeUrl(c.client_slug))}" target="_blank" rel="noopener"><i class="fa-solid fa-eye"></i> فتح المنيو</a>
         <a href="admin.html?client=${slug}" target="_blank" rel="noopener"><i class="fa-solid fa-gauge-high"></i> إدارة لوحته</a>
         ${remind ? `<a href="${esc(remind)}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" style="color:#16a34a"></i> رسالة تذكير بالتجديد</a>` : ''}
+        ${!c.parent_id ? `<button onclick="addBranch(${id})"><i class="fa-solid fa-code-branch" style="color:#047857"></i> إضافة فرع · ${money(PLAN_PRICE.branch)}/سنة</button>` : ''}
         <button onclick="openNotify(${id})"><i class="fa-solid fa-bell"></i> ${c.admin_notification ? 'تعديل الإشعار' : 'إرسال إشعار'}</button>
         <div class="h-px bg-brand/10 my-1"></div>
         <button onclick="setFeatured(${id}, ${!c.is_featured})"><i class="fa-solid fa-star" ${c.is_featured ? 'style="color:#d97706"' : ''}></i> ${c.is_featured ? 'إزالة من أمثلة الرئيسية' : 'عرضه في أمثلة الرئيسية'}</button>
@@ -433,6 +440,31 @@ tailwind.config = { theme: { extend: {
   // ─── الإجراءات ───
   const find = (id) => clients.find(x => x.id === id);
   const post = (action, body) => DM.post(A(action), body, true).then(() => null, e => e);
+
+  // ─── الفروع ───
+  async function addBranch(id) {
+    openMenu = null; renderStores();
+    const c = find(id); if (!c) return;
+    const name = (prompt(`اسم الفرع الجديد لـ "${c.name}"\nمثال: ${c.name} - فرع النخيل`, `${c.name} - `) || '').trim();
+    if (!name) return;
+    const slug = (prompt('رابط الفرع بالإنجليزي (اختياري)\nاتركه فاضي ونختاره تلقائياً مثل ' + `${c.client_slug}-2`, '') || '').trim().toLowerCase();
+    const ok = await confirmDialog({
+      title: 'إضافة فرع', message: `"${name}" كفرع لـ "${c.name}".`,
+      items: [
+        `السعر: ${money(PLAN_PRICE.branch)} سنوياً`,
+        'ينسخ المنيو كامل (الأقسام والأطباق والهوية)، وبعدها كل فرع يتعدل لحاله',
+        'صاحب المتجر يديره من لوحته عبر قائمة الفروع أعلى الصفحة',
+        'اشتراك الفرع يبدأ بنفس حالة المتجر الرئيسي، وتقدر تفعّله سنة من بطاقته'
+      ],
+      confirmText: 'إنشاء الفرع', tone: 'success'
+    });
+    if (!ok) return;
+    try {
+      const res = await DM.post(A('branch-create'), { id, name, slug }, true);
+      showToast(`تم إنشاء الفرع: ${res.client.client_slug}`);
+      loadClients();
+    } catch (e) { showToast(`تعذر إنشاء الفرع: ${e.message}`, true); }
+  }
 
   async function activate(id, period) {
     const c = find(id);

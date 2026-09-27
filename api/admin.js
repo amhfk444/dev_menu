@@ -4,8 +4,15 @@
 // =====================================================================
 const {
   handler, rest, rpc, q, storage, storagePathFromUrl, BUCKET,
-  ApiError, getUser, isSuperAdmin, str, int, readBody
+  ApiError, getUser, isSuperAdmin, str, int, readBody, SLUG_RE, RESERVED_SLUGS
 } = require('./_lib/core');
+
+// رابط متاح؟ (ما يستخدمه متجر حالياً ولا سابقاً)
+async function slugFree(slug) {
+  if (!SLUG_RE.test(slug) || slug.includes('--') || RESERVED_SLUGS.has(slug)) return false;
+  const taken = await rest(`clients?or=${q(`(client_slug.eq.${slug},old_slugs.cs.{${slug}})`)}&select=id&limit=1`);
+  return taken.length === 0;
+}
 
 module.exports = handler(['GET', 'POST'], async (req) => {
   const user = await getUser(req);
@@ -40,6 +47,26 @@ module.exports = handler(['GET', 'POST'], async (req) => {
   // إضافة قائمة الانتظار المدفوعة (يفعّلها المدير العام بعد الدفع)
   if (action === 'waitlist-addon') return patch({ waitlist_enabled: b.enabled === true });
 
+  // ─── إضافة فرع: نسخة من المنيو يديرها صاحب المتجر الرئيسي من لوحته ───
+  if (action === 'branch-create') {
+    const parent = (await rest(`clients?id=eq.${id}&select=id,client_slug,parent_id`))[0];
+    if (!parent) throw new ApiError(404, 'المتجر غير موجود');
+    if (parent.parent_id) throw new ApiError(400, 'هذا فرع، أضف الفرع للمتجر الرئيسي');
+    const name = str(b.name, 80, 'اسم الفرع');
+    if (!name) throw new ApiError(400, 'اكتب اسم الفرع');
+    let slug = String(b.slug || '').trim().toLowerCase();
+    if (slug) {
+      if (!(await slugFree(slug))) throw new ApiError(400, 'رابط الفرع غير صالح أو مستخدم', 'SLUG_TAKEN');
+    } else {
+      // تلقائي: رابط الرئيسي + رقم (duja-2، duja-3...)
+      const base = parent.client_slug.replace(/_/g, '-').slice(0, 26).replace(/-+$/, '');
+      for (let n = 2; n < 100 && !slug; n++) if (await slugFree(`${base}-${n}`)) slug = `${base}-${n}`;
+      if (!slug) throw new ApiError(400, 'تعذر اختيار رابط للفرع، اكتبه يدوياً');
+    }
+    const newId = await rpc('server_create_branch', { p_parent_id: id, p_name: name, p_slug: slug });
+    return { client: (await rest(`clients?id=eq.${int(newId)}&select=*`))[0] };
+  }
+
   if (action === 'summary') {
     const [products, categories] = await Promise.all([
       rest(`products?client_id=eq.${id}&select=id`),
@@ -51,11 +78,15 @@ module.exports = handler(['GET', 'POST'], async (req) => {
   if (action === 'delete') {
     const client = (await rest(`clients?id=eq.${id}&select=logo_url,bg_image_url,bg_video_url`))[0];
     if (!client) throw new ApiError(404, 'المتجر غير موجود');
+    let branches = [];
+    try { branches = await rest(`clients?parent_id=eq.${id}&select=id&limit=1`); } catch {}
+    if (branches.length) throw new ApiError(400, 'المتجر له فروع، احذف الفروع أولاً', 'HAS_BRANCHES');
     // 1) نجمع مسارات الملفات قبل حذف البيانات
     const products = await rest(`products?client_id=eq.${id}&select=image_url`);
     const paths = new Set();
+    // ملفات هذا المتجر فقط: الفرع يستخدم صور المتجر الرئيسي، فما نحذفها معه
     [client.logo_url, client.bg_image_url, client.bg_video_url, ...products.map(p => p.image_url)]
-      .forEach(u => { const p = storagePathFromUrl(u); if (p) paths.add(p); });
+      .forEach(u => { const p = storagePathFromUrl(u); if (p && p.startsWith(`${id}/`)) paths.add(p); });
     try {
       const listed = await storage(`object/list/${BUCKET}`, { body: { prefix: `${id}/`, limit: 1000 } });
       (listed || []).forEach(f => { if (f && f.id && f.name) paths.add(`${id}/${f.name}`); });
