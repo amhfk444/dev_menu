@@ -178,6 +178,7 @@ async function ringTicket(store, t) {
     : { title: `🔔 تذكير: طلبك جاهز! رقم ${t.number}`, body: `طلبك ينتظرك عند الكاشير (${n}/${PAGER_MAX_RINGS})` };
   // وسم مختلف لكل رنّة عشان الجوال يرن كل مرة (الآيفون ما يعيد التنبيه لنفس الوسم)
   const result = await sendPush(t.push_sub, { ...payload, url, tag: `pager-${t.id}-${n}` });
+  console.log('PAGER_RING', store.id, t.id, n, result);
   const patch = result === 'gone' ? { push_sub: null } : { ring_count: n, last_ring_at: new Date().toISOString() };
   await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: patch }).catch(() => {});
   return result;
@@ -293,6 +294,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     let t = rows[0];
     // "جاهز" = أول رنّة، والعدّاد يبدأ من جديد (لو رجع للتجهيز ثم جاهز مرة ثانية)
     let push = 'off';
+    if (status === 'ready' && !t.push_sub) console.log('PAGER_READY_NO_SUB', sid, t.id);
     if (status === 'ready') {
       await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { ring_count: 0, last_ring_at: null, acked_at: null } }).catch(() => {});
       t = { ...t, ring_count: 0, acked_at: null };

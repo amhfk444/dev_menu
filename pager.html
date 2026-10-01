@@ -75,6 +75,14 @@
     </div>
     <div id="push-on" class="hidden text-[13px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl py-3 px-3">✅ الإشعارات مفعّلة — بيوصلك التنبيه حتى لو قفلت الجوال</div>
     <button id="push-btn" class="btn btn-brand hidden"><i class="fa-solid fa-bell"></i> فعّل الإشعارات (يوصلك والجوال مقفول)</button>
+    <div id="push-ios" class="hidden text-right text-[13px] font-bold bg-amber-50 border-2 border-amber-300 text-amber-900 rounded-2xl p-4 leading-relaxed">
+      <b>⚠️ التنبيه يوصلك بس والصفحة مفتوحة</b><br>
+      عشان يوصلك حتى لو قفلت الجوال (آيفون):<br>
+      1) اضغط زر المشاركة <i class="fa-solid fa-arrow-up-from-bracket"></i> تحت<br>
+      2) اختر <b>«إضافة إلى الشاشة الرئيسية»</b><br>
+      3) افتح <b>«البيجر»</b> من الشاشة الرئيسية وخذ رقمك من هناك
+    </div>
+    <p id="push-unsupported" class="hidden text-[12px] font-bold text-amber-900 bg-amber-50 border border-amber-200 rounded-2xl p-3">متصفحك ما يدعم الإشعارات — خلّ هذي الصفحة مفتوحة والشاشة شغالة عشان يرن جوالك.</p>
     <p id="push-denied" class="hidden text-[12px] font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-2xl p-3">الإشعارات مرفوضة في متصفحك — خلّ هذي الصفحة مفتوحة عشان يرن جوالك.</p>
     <button id="unlock-btn" class="btn btn-brand hidden"><i class="fa-solid fa-volume-high"></i> فعّل صوت التنبيه</button>
     <ul class="text-[12.5px] font-bold opacity-70 space-y-1.5 text-right bg-[#f5f2eb] rounded-2xl p-4">
@@ -179,11 +187,16 @@
     try { if (Notification.permission === 'default') await Notification.requestPermission(); } catch {}
     await subscribePush(); renderPush();
   }
+  // نوضّح للعميل دايماً هل التنبيه بيوصله والجوال مقفول، وإذا لا ليش
   function renderPush() {
-    const on = pushDone(), denied = 'Notification' in window && Notification.permission === 'denied';
+    const on = pushDone(), supported = pushSupported();
+    const denied = supported && Notification.permission === 'denied';
+    const iosNeedsHome = !!pushKey && isIOS && !standalone;
     $('push-on').classList.toggle('hidden', !on);
-    $('push-denied').classList.toggle('hidden', on || !denied || !pushSupported());
-    $('push-btn').classList.toggle('hidden', on || denied || !pushSupported());
+    $('push-ios').classList.toggle('hidden', on || !iosNeedsHome);
+    $('push-unsupported').classList.toggle('hidden', on || iosNeedsHome || supported || !pushKey);
+    $('push-denied').classList.toggle('hidden', on || !denied);
+    $('push-btn').classList.toggle('hidden', on || denied || !supported);
   }
 
   function setStore(s) {

@@ -61,6 +61,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const rows = await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=in.(waiting,ready)`,
       { method: 'PATCH', body: { push_sub: sub }, prefer: 'return=representation' });
     if (!rows.length) throw new ApiError(404, 'الرقم غير موجود أو انتهى', 'NOT_FOUND');
+    console.log('PAGER_SUBSCRIBED', store.id, new URL(sub.endpoint).host);
     return { ok: true };
   }
 
