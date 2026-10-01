@@ -65,7 +65,8 @@
   <section id="v-waiting" class="card p-7 text-center space-y-5 hidden">
     <p class="text-sm font-black opacity-60">رقمك</p>
     <div id="w-number" class="num">—</div>
-    <p class="text-sm font-black">قل هذا الرقم للكاشير مع طلبك</p>
+    <p id="w-tell" class="text-sm font-black">ورّ هذا الرقم للكاشير مع طلبك</p>
+    <p id="w-invoice" class="hidden text-base font-black text-[#233d2c] bg-[#f5f2eb] rounded-2xl py-2.5">🧾 فاتورتك: <span dir="ltr"></span></p>
     <div class="flex items-center justify-center gap-2 text-[13px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-2xl py-3">
       <span class="pulse-dot"></span> جاري التجهيز… بنرن جوالك أول ما يجهز
     </div>
@@ -86,6 +87,7 @@
     <div class="text-6xl">🔔</div>
     <h2 class="text-3xl font-black">طلبك جاهز!</h2>
     <div id="r-number" class="num">—</div>
+    <p id="r-invoice" class="hidden text-base font-black">🧾 فاتورة <span dir="ltr"></span></p>
     <p class="text-sm font-bold opacity-70">تفضّل استلمه من الكاشير</p>
     <button id="got-btn" class="btn btn-brand"><i class="fa-solid fa-check"></i> استلمت طلبي</button>
   </section>
@@ -209,6 +211,9 @@
     setStore(r.store);
     const st = r.ticket.status;
     $('w-number').textContent = r.ticket.number; $('r-number').textContent = r.ticket.number;
+    const inv = r.ticket.invoice_no || '';
+    ['w-invoice', 'r-invoice'].forEach(id => { $(id).classList.toggle('hidden', !inv); $(id).querySelector('span').textContent = inv; });
+    $('w-tell').classList.toggle('hidden', !!inv);
     if (st === 'waiting') { show('waiting'); keepAwake(); renderPush(); if (!audioReady()) $('unlock-btn').classList.remove('hidden'); }
     else if (st === 'ready') { show('ready'); if (!dismissed) startRinging(); if (!document.hidden) ack(); }
     else {

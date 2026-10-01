@@ -270,7 +270,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const { store } = await context(req);
     const base = `pager_tickets?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&order=number.asc&select=id,number,status,created_at,ready_at,closed_at,push_sub`;
     // أعمدة التكرار من 21-pager-repeat.sql — لو ما انضافت نكمل بدونها
-    const tickets = await rest(`${base},ring_count,acked_at`).catch(() => rest(base));
+    const tickets = await rest(`${base},ring_count,acked_at,invoice_no`).catch(() => rest(`${base},ring_count,acked_at`)).catch(() => rest(base));
     return { tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub })), slug: store.client_slug, name: store.name, max_rings: PAGER_MAX_RINGS };
   }
 
@@ -301,6 +301,22 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       push = await ringTicket(store, t);
     }
     return { ticket: { id: t.id, number: t.number, status: t.status, created_at: t.created_at, ready_at: t.ready_at, closed_at: t.closed_at, has_push: !!t.push_sub, ring_count: t.ring_count || 0, acked_at: t.acked_at || null }, push };
+  }
+
+  // ─── البيجر: الكاشير يربط رقم البيجر برقم الفاتورة ───
+  if (action === 'pager-invoice') {
+    const id = int(b.id);
+    // الأرقام العربية (١٢٣) والفارسية تتحول لأرقام عادية
+    const invoice = String(b.invoice ?? '').trim().replace(/\s+/g, '').replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15));
+    if (invoice && !/^[A-Za-z0-9#\-_/]{1,20}$/.test(invoice)) throw new ApiError(400, 'رقم الفاتورة: أرقام وحروف إنجليزية فقط (حتى 20)');
+    if (invoice) {
+      // نفس الفاتورة ما تنربط برقمين بيجر في نفس اليوم
+      const dup = await rest(`pager_tickets?client_id=eq.${sid}&invoice_no=eq.${q(invoice)}&id=neq.${id}&created_at=gte.${q(riyadhDayStart())}&status=in.(waiting,ready)&select=number&limit=1`);
+      if (dup.length) throw new ApiError(409, `الفاتورة ${invoice} مربوطة برقم البيجر ${dup[0].number}`, 'DUPLICATE');
+    }
+    const rows = await rest(`pager_tickets?id=eq.${id}&client_id=eq.${sid}`, { method: 'PATCH', body: { invoice_no: invoice || null }, prefer: 'return=representation' });
+    if (!rows.length) throw new ApiError(404, 'الرقم غير موجود');
+    return { ticket: { id: rows[0].id, number: rows[0].number, invoice_no: rows[0].invoice_no } };
   }
 
   // ─── البيجر: إعادة الرنين — شاشة الكاشير تطلبه كل 30 ثانية ───

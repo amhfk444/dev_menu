@@ -46,6 +46,10 @@
       <h2 class="text-lg font-black">قيد التجهيز <span id="wait-count" class="text-sm opacity-50"></span></h2>
       <span class="text-[11px] font-bold opacity-50"><i class="fa-solid fa-rotate"></i> يتحدث تلقائياً</span>
     </div>
+    <div class="relative mb-4">
+      <i class="fa-solid fa-magnifying-glass absolute start-4 top-1/2 -translate-y-1/2 opacity-40"></i>
+      <input id="search" type="text" inputmode="numeric" autocomplete="off" placeholder="ابحث برقم الفاتورة أو رقم البيجر…" class="w-full bg-[#f5f2eb] border border-[#233d2c]/15 rounded-2xl py-3 ps-11 pe-4 text-base font-black outline-none focus:border-[#233d2c]">
+    </div>
     <div id="wait-grid" class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-7 gap-3"></div>
     <p id="wait-empty" class="text-center text-sm font-bold opacity-50 py-8 hidden">ما فيه أرقام تنتظر. أول ما يمسح العميل الـ QR يطلع رقمه هنا.</p>
   </section>
@@ -56,6 +60,19 @@
     <p id="ready-empty" class="text-center text-sm font-bold opacity-50 py-6 hidden">ما فيه طلبات جاهزة.</p>
   </section>
 </main>
+
+<!-- رقم الفاتورة -->
+<div id="inv-modal" class="fixed inset-0 z-50 bg-black/50 hidden items-center justify-center p-5">
+  <form id="inv-form" class="bg-white rounded-[28px] p-7 w-full max-w-sm space-y-4">
+    <h3 class="text-lg font-black">🧾 رقم الفاتورة للبيجر <span id="inv-num" class="text-[#c9a227]"></span></h3>
+    <input id="inv-input" type="text" inputmode="numeric" autocomplete="off" dir="ltr" maxlength="20" placeholder="1045" class="w-full text-center text-3xl font-black tracking-widest bg-[#f5f2eb] border-2 border-[#233d2c]/15 rounded-2xl py-4 outline-none focus:border-[#233d2c]">
+    <p id="inv-err" class="hidden text-sm font-bold text-rose-700"></p>
+    <div class="flex gap-2">
+      <button type="submit" id="inv-save" class="flex-1 bg-[#233d2c] text-[#f5f2eb] font-black rounded-2xl py-3">حفظ</button>
+      <button type="button" id="inv-cancel" class="flex-1 bg-white border border-[#233d2c]/20 font-black rounded-2xl py-3">إلغاء</button>
+    </div>
+  </form>
+</div>
 
 <!-- QR -->
 <div id="qr-modal" class="fixed inset-0 z-50 bg-black/50 hidden items-center justify-center p-5">
@@ -87,6 +104,33 @@
     catch (e) { if (e.status === 401) { location.replace('login.html'); } throw e; }
   }
 
+  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const normDigits = (v) => String(v).replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15));
+
+  // ─── رقم الفاتورة ───
+  let invId = null;
+  function openInvoice(id) {
+    const t = tickets.find(x => x.id === id); if (!t) return;
+    invId = id; $('inv-num').textContent = t.number; $('inv-input').value = t.invoice_no || '';
+    $('inv-err').classList.add('hidden'); $('inv-modal').classList.replace('hidden', 'flex');
+    setTimeout(() => $('inv-input').focus(), 50);
+  }
+  const closeInvoice = () => { invId = null; $('inv-modal').classList.replace('flex', 'hidden'); };
+  $('inv-cancel').onclick = closeInvoice;
+  $('inv-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const invoice = normDigits($('inv-input').value.trim());
+    $('inv-save').disabled = true;
+    try {
+      const r = await call('pager-invoice', { id: invId, invoice });
+      tickets = tickets.map(t => t.id === r.ticket.id ? { ...t, invoice_no: r.ticket.invoice_no } : t);
+      toast(invoice ? `🧾 الفاتورة ${invoice} ← بيجر ${r.ticket.number}` : 'انشال رقم الفاتورة');
+      closeInvoice(); render();
+    } catch (err) { $('inv-err').textContent = err.message || 'حدث خطأ'; $('inv-err').classList.remove('hidden'); }
+    $('inv-save').disabled = false;
+  };
+  $('search').addEventListener('input', () => render());
+
   function ringLabel(t) {
     if (t.acked_at) return '<span class="text-emerald-700"><i class="fa-solid fa-circle-check"></i> شاف التنبيه</span>';
     if (!t.has_push) return `<i class="fa-solid fa-bell fa-shake"></i> جاهز من ${ago(t.ready_at)}`;
@@ -104,21 +148,30 @@
   }
 
   function render() {
-    const waiting = tickets.filter(t => t.status === 'waiting');
-    const ready = tickets.filter(t => t.status === 'ready');
+    const term = normDigits($('search').value.trim());
+    const match = (t) => !term || String(t.number) === term || String(t.invoice_no || '').includes(term);
+    const waiting = tickets.filter(t => t.status === 'waiting' && match(t));
+    const ready = tickets.filter(t => t.status === 'ready' && match(t));
     $('wait-count').textContent = waiting.length ? `(${waiting.length})` : '';
     $('ready-count').textContent = ready.length ? `(${ready.length})` : '';
     $('wait-empty').classList.toggle('hidden', waiting.length > 0);
     $('ready-empty').classList.toggle('hidden', ready.length > 0);
     $('wait-grid').innerHTML = waiting.map(t => `
-      <button class="tile tile-wait" data-ready="${t.id}" ${busy.has(t.id) ? 'disabled' : ''}>
+      <div class="tile tile-wait">
+        <div class="text-[10px] opacity-60">بيجر</div>
         <div class="n">${t.number}</div>
-        <div class="text-[12px] mt-2 opacity-80">${busy.has(t.id) ? '<i class="fa-solid fa-spinner fa-spin"></i>' : '<i class="fa-solid fa-bell"></i> جاهز'}</div>
-        <div class="text-[10px] mt-1 opacity-50">${ago(t.created_at)}${t.has_push ? ' · <i class="fa-solid fa-mobile-screen" title="الإشعارات مفعّلة"></i>' : ''}</div>
-      </button>`).join('');
+        <button class="mini w-full mt-2 ${t.invoice_no ? 'bg-white/15 text-white' : 'bg-[#c9a227] text-[#15271b]'}" data-invoice="${t.id}">
+          ${t.invoice_no ? `🧾 ${esc(t.invoice_no)}` : '🧾 أضف الفاتورة'}
+        </button>
+        <button class="mini w-full mt-1.5 bg-white text-[#233d2c]" data-ready="${t.id}" ${busy.has(t.id) ? 'disabled' : ''}>
+          ${busy.has(t.id) ? '<i class="fa-solid fa-spinner fa-spin"></i>' : '<i class="fa-solid fa-bell"></i> جاهز'}
+        </button>
+        <div class="text-[10px] mt-1.5 opacity-50">${ago(t.created_at)}${t.has_push ? ' · <i class="fa-solid fa-mobile-screen" title="الإشعارات مفعّلة"></i>' : ''}</div>
+      </div>`).join('');
     $('ready-grid').innerHTML = ready.map(t => `
       <div class="tile tile-ready">
         <div class="n">${t.number}</div>
+        ${t.invoice_no ? `<div class="text-[12px] font-black mt-1">🧾 ${esc(t.invoice_no)}</div>` : ''}
         <div class="text-[11px] mt-1 opacity-70">${ringLabel(t)}</div>
         <div class="flex gap-1.5 mt-3">
           <button class="mini flex-1 bg-[#233d2c] text-white" data-done="${t.id}"><i class="fa-solid fa-check"></i> استلم</button>
@@ -138,7 +191,8 @@
   }
 
   document.addEventListener('click', (e) => {
-    const r = e.target.closest('[data-ready]'), d = e.target.closest('[data-done]'), u = e.target.closest('[data-undo]');
+    const r = e.target.closest('[data-ready]'), d = e.target.closest('[data-done]'), u = e.target.closest('[data-undo]'), inv = e.target.closest('[data-invoice]');
+    if (inv) return openInvoice(+inv.dataset.invoice);
     if (r) setStatus(+r.dataset.ready, 'ready', '🔔 جوال رقم # يرن الحين');
     if (d) setStatus(+d.dataset.done, 'done', '✓ رقم # استلم طلبه');
     if (u) setStatus(+u.dataset.undo, 'waiting', 'رقم # رجع للتجهيز');
@@ -152,6 +206,7 @@
       slug = r.slug; $('store-name').textContent = r.name || ''; maxRings = r.max_rings || 5;
       // ما نلمس الأرقام اللي جاري تحديثها
       tickets = r.tickets.map(t => busy.has(t.id) ? (tickets.find(x => x.id === t.id) || t) : t);
+      if (invId) return void (timer = setTimeout(load, 4000));   // النافذة مفتوحة: لا نعيد الرسم
       render(); ringDue();
     } catch (e) { if (e.status !== 401) toast(e.message || 'تعذر التحديث'); }
     timer = setTimeout(load, document.hidden ? 15000 : 4000);

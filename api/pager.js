@@ -45,11 +45,12 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const store = await loadStore(req.query.slug);
     const token = String(req.query.t || '');
     if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
-    const t = (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&select=number,status,created_at,ready_at`))[0];
+    const sel = `pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&select=number,status,created_at,ready_at`;
+    const t = (await rest(`${sel},invoice_no`).catch(() => rest(sel)))[0];
     if (!t) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
     // رقم من يوم سابق ما زال ينتظر = منتهي
     const stale = t.status === 'waiting' && Date.now() - Date.parse(t.created_at) > 18 * 3600e3;
-    return { store: { name: store.name, logo_url: store.logo_url }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at } };
+    return { store: { name: store.name, logo_url: store.logo_url }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null } };
   }
 
   if (action === 'subscribe' && req.method === 'POST') {
