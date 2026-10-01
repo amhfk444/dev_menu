@@ -77,7 +77,7 @@
   const extra = `${P.get('client') ? `&client=${encodeURIComponent(P.get('client'))}` : ''}${P.get('branch') ? `&branch=${encodeURIComponent(P.get('branch'))}` : ''}`;
   const O = (a) => `/api/owner?action=${a}${extra}`;
   const $ = (id) => document.getElementById(id);
-  let slug = '', tickets = [], busy = new Set();
+  let slug = '', tickets = [], busy = new Set(), maxRings = 5;
 
   function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.remove('hidden'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.add('hidden'), 2600); }
   const ago = (iso) => { const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000)); return m < 1 ? 'الآن' : `${m} د`; };
@@ -85,6 +85,22 @@
   async function call(action, body) {
     try { return body === undefined ? await DM.get(O(action), true) : await DM.post(O(action), body, true); }
     catch (e) { if (e.status === 401) { location.replace('login.html'); } throw e; }
+  }
+
+  function ringLabel(t) {
+    if (t.acked_at) return '<span class="text-emerald-700"><i class="fa-solid fa-circle-check"></i> شاف التنبيه</span>';
+    if (!t.has_push) return `<i class="fa-solid fa-bell fa-shake"></i> جاهز من ${ago(t.ready_at)}`;
+    const n = t.ring_count || 0;
+    return n >= maxRings ? `<i class="fa-solid fa-bell-slash"></i> رنّ ${n} مرات — نادِه` : `<i class="fa-solid fa-bell fa-shake"></i> رنّة ${n}/${maxRings}`;
+  }
+
+  // تكرار الإشعار: كل 30 ثانية نطلب من الخادم يعيد الرنين لمن ما شاف التنبيه
+  let lastRing = 0;
+  async function ringDue() {
+    const pending = tickets.some(t => t.status === 'ready' && t.has_push && !t.acked_at && (t.ring_count || 0) < maxRings);
+    if (!pending || Date.now() - lastRing < 30000) return;
+    lastRing = Date.now();
+    try { const r = await call('pager-ring', {}); if (r.rang) load(); } catch {}
   }
 
   function render() {
@@ -103,7 +119,7 @@
     $('ready-grid').innerHTML = ready.map(t => `
       <div class="tile tile-ready">
         <div class="n">${t.number}</div>
-        <div class="text-[11px] mt-1 opacity-70"><i class="fa-solid fa-bell fa-shake"></i> يرن من ${ago(t.ready_at)}</div>
+        <div class="text-[11px] mt-1 opacity-70">${ringLabel(t)}</div>
         <div class="flex gap-1.5 mt-3">
           <button class="mini flex-1 bg-[#233d2c] text-white" data-done="${t.id}"><i class="fa-solid fa-check"></i> استلم</button>
           <button class="mini bg-white border border-[#c9a227]/40" data-undo="${t.id}" title="إرجاع للتجهيز"><i class="fa-solid fa-rotate-left"></i></button>
@@ -133,10 +149,10 @@
     clearTimeout(timer);
     try {
       const r = await call('pager');
-      slug = r.slug; $('store-name').textContent = r.name || '';
+      slug = r.slug; $('store-name').textContent = r.name || ''; maxRings = r.max_rings || 5;
       // ما نلمس الأرقام اللي جاري تحديثها
       tickets = r.tickets.map(t => busy.has(t.id) ? (tickets.find(x => x.id === t.id) || t) : t);
-      render();
+      render(); ringDue();
     } catch (e) { if (e.status !== 401) toast(e.message || 'تعذر التحديث'); }
     timer = setTimeout(load, document.hidden ? 15000 : 4000);
   }

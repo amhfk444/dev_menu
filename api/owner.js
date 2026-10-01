@@ -167,6 +167,22 @@ function cleanCoffee(c) {
 const IMAGE_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
 const VIDEO_TYPES = { 'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov' };
 
+// ─── البيجر: إرسال رنّة واحدة وتسجيلها ───
+const PAGER_MAX_RINGS = 5;
+async function ringTicket(store, t) {
+  if (!t.push_sub) return 'off';
+  const n = (t.ring_count || 0) + 1;
+  const url = `https://${store.client_slug}.devmenu.digital/pager`;
+  const payload = n === 1
+    ? { title: `🔔 طلبك جاهز! رقم ${t.number}`, body: `تفضّل استلمه من ${store.name}` }
+    : { title: `🔔 تذكير: طلبك جاهز! رقم ${t.number}`, body: `طلبك ينتظرك عند الكاشير (${n}/${PAGER_MAX_RINGS})` };
+  // وسم مختلف لكل رنّة عشان الجوال يرن كل مرة (الآيفون ما يعيد التنبيه لنفس الوسم)
+  const result = await sendPush(t.push_sub, { ...payload, url, tag: `pager-${t.id}-${n}` });
+  const patch = result === 'gone' ? { push_sub: null } : { ring_count: n, last_ring_at: new Date().toISOString() };
+  await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: patch }).catch(() => {});
+  return result;
+}
+
 module.exports = handler(['GET', 'POST'], async (req) => {
   const action = req.query.action;
   const b = req.method === 'POST' ? readBody(req) : {};
@@ -251,8 +267,10 @@ module.exports = handler(['GET', 'POST'], async (req) => {
   // ─── البيجر: أرقام اليوم ───
   if (action === 'pager' && req.method === 'GET') {
     const { store } = await context(req);
-    const tickets = await rest(`pager_tickets?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&select=id,number,status,created_at,ready_at,closed_at,push_sub&order=number.asc`);
-    return { tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub })), slug: store.client_slug, name: store.name };
+    const base = `pager_tickets?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&order=number.asc&select=id,number,status,created_at,ready_at,closed_at,push_sub`;
+    // أعمدة التكرار من 21-pager-repeat.sql — لو ما انضافت نكمل بدونها
+    const tickets = await rest(`${base},ring_count,acked_at`).catch(() => rest(base));
+    return { tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub })), slug: store.client_slug, name: store.name, max_rings: PAGER_MAX_RINGS };
   }
 
   if (req.method !== 'POST') throw new ApiError(404, 'Unknown action');
@@ -269,18 +287,30 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     if (status === 'ready') { patch.ready_at = now; patch.closed_at = null; }
     else if (status === 'waiting') { patch.ready_at = null; patch.closed_at = null; }
     else patch.closed_at = now;
+    if (status === 'done' || status === 'cancelled') patch.push_sub = null;
     const rows = await rest(`pager_tickets?id=eq.${id}&client_id=eq.${sid}`, { method: 'PATCH', body: patch, prefer: 'return=representation' });
     if (!rows.length) throw new ApiError(404, 'الرقم غير موجود');
-    const t = rows[0];
-    // إشعار الجوال (يوصل حتى لو الجوال مقفول) — الصفحة نفسها ترن كمان لو مفتوحة
+    let t = rows[0];
+    // "جاهز" = أول رنّة، والعدّاد يبدأ من جديد (لو رجع للتجهيز ثم جاهز مرة ثانية)
     let push = 'off';
-    if (status === 'ready' && t.push_sub) {
-      const url = `https://${store.client_slug}.devmenu.digital/pager`;
-      push = await sendPush(t.push_sub, { title: `🔔 طلبك جاهز! رقم ${t.number}`, body: `تفضّل استلمه من ${store.name}`, url, tag: `pager-${t.id}` });
-      if (push === 'gone') await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { push_sub: null } }).catch(() => {});
+    if (status === 'ready') {
+      await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { ring_count: 0, last_ring_at: null, acked_at: null } }).catch(() => {});
+      t = { ...t, ring_count: 0, acked_at: null };
+      push = await ringTicket(store, t);
     }
-    if (status === 'done' || status === 'cancelled') await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { push_sub: null } }).catch(() => {});
-    return { ticket: { id: t.id, number: t.number, status: t.status, created_at: t.created_at, ready_at: t.ready_at, closed_at: t.closed_at, has_push: !!t.push_sub }, push };
+    return { ticket: { id: t.id, number: t.number, status: t.status, created_at: t.created_at, ready_at: t.ready_at, closed_at: t.closed_at, has_push: !!t.push_sub, ring_count: t.ring_count || 0, acked_at: t.acked_at || null }, push };
+  }
+
+  // ─── البيجر: إعادة الرنين — شاشة الكاشير تطلبه كل 30 ثانية ───
+  // يرن لكل رقم جاهز ما شافه العميل، بعد 25 ثانية على الأقل من آخر رنّة، بحد أقصى PAGER_MAX_RINGS
+  if (action === 'pager-ring') {
+    const before = new Date(Date.now() - 25e3).toISOString();
+    let due = [];
+    try {
+      due = await rest(`pager_tickets?client_id=eq.${sid}&status=eq.ready&acked_at=is.null&push_sub=not.is.null&ring_count=lt.${PAGER_MAX_RINGS}&or=${q(`(last_ring_at.is.null,last_ring_at.lt."${before}")`)}&select=id,number,push_sub,ring_count`);
+    } catch { return { rang: 0 }; }   // أعمدة التكرار ما انضافت بعد
+    const results = await Promise.all(due.map(t => ringTicket(store, t)));
+    return { rang: results.filter(r => r === 'sent').length };
   }
 
   // ─── قائمة الانتظار: الإعدادات ───

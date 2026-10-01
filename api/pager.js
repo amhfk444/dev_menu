@@ -4,6 +4,7 @@
 //   POST /api/pager?action=take            رقم جديد للعميل { slug } ← { token, number }
 //   GET  /api/pager?action=status&slug=&t= حالة الرقم (waiting / ready / done / cancelled)
 //   POST /api/pager?action=subscribe       اشتراك إشعارات الجوال للرقم { slug, t, sub }
+//   POST /api/pager?action=ack             العميل شاف التنبيه ← يوقف تكرار الإشعار { slug, t }
 // الكاشير يغيّر الحالة من /api/owner?action=pager-update
 // =====================================================================
 const crypto = require('crypto');
@@ -60,6 +61,15 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const rows = await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=in.(waiting,ready)`,
       { method: 'PATCH', body: { push_sub: sub }, prefer: 'return=representation' });
     if (!rows.length) throw new ApiError(404, 'الرقم غير موجود أو انتهى', 'NOT_FOUND');
+    return { ok: true };
+  }
+
+  if (action === 'ack' && req.method === 'POST') {
+    const store = await loadStore(b.slug);
+    const token = String(b.t || '');
+    if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
+    await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=eq.ready&acked_at=is.null`,
+      { method: 'PATCH', body: { acked_at: new Date().toISOString() } }).catch(() => {});
     return { ok: true };
   }
 

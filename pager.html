@@ -209,7 +209,7 @@
     const st = r.ticket.status;
     $('w-number').textContent = r.ticket.number; $('r-number').textContent = r.ticket.number;
     if (st === 'waiting') { show('waiting'); keepAwake(); renderPush(); if (!audioReady()) $('unlock-btn').classList.remove('hidden'); }
-    else if (st === 'ready') { show('ready'); if (!dismissed) startRinging(); }
+    else if (st === 'ready') { show('ready'); if (!dismissed) startRinging(); if (!document.hidden) ack(); }
     else {
       stopRinging(); saveToken('');
       $('d-title').textContent = st === 'cancelled' ? 'تم إلغاء الرقم' : st === 'expired' ? 'انتهت صلاحية الرقم' : 'بالعافية!';
@@ -220,7 +220,14 @@
     pollTimer = setTimeout(poll, document.hidden ? 8000 : 3000);
   }
 
-  let dismissed = false;
+  let dismissed = false, acked = '';
+  // العميل شاف التنبيه (الصفحة ظاهرة قدامه) ← نوقف تكرار الإشعارات من الخادم
+  function ack() {
+    const t = loadToken();
+    if (!t || acked === t) return;
+    acked = t;
+    DM.post('/api/pager?action=ack', { slug, t }).catch(() => { acked = ''; });
+  }
   $('take-btn').onclick = async () => {
     unlockAudio();
     // طلب الإذن لازم يبدأ من ضغطة العميل نفسها
@@ -239,7 +246,7 @@
   $('unlock-btn').onclick = unlockAudio;
   $('push-btn').onclick = askPush;
   $('test-btn').onclick = () => { unlockAudio(); ringOnce(); };
-  $('got-btn').onclick = () => { dismissed = true; stopRinging(); $('d-title').textContent = 'بالعافية!'; $('d-sub').textContent = 'نتشرف بزيارتك مرة ثانية.'; saveToken(''); show('done'); };
+  $('got-btn').onclick = () => { ack(); dismissed = true; stopRinging(); $('d-title').textContent = 'بالعافية!'; $('d-sub').textContent = 'نتشرف بزيارتك مرة ثانية.'; saveToken(''); show('done'); };
   $('new-btn').onclick = () => { saveToken(''); show('start'); };
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { keepAwake(); if (loadToken()) poll(); } });
 
