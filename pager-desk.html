@@ -98,7 +98,7 @@
       <button class="tile tile-wait" data-ready="${t.id}" ${busy.has(t.id) ? 'disabled' : ''}>
         <div class="n">${t.number}</div>
         <div class="text-[12px] mt-2 opacity-80">${busy.has(t.id) ? '<i class="fa-solid fa-spinner fa-spin"></i>' : '<i class="fa-solid fa-bell"></i> جاهز'}</div>
-        <div class="text-[10px] mt-1 opacity-50">${ago(t.created_at)}</div>
+        <div class="text-[10px] mt-1 opacity-50">${ago(t.created_at)}${t.has_push ? ' · <i class="fa-solid fa-mobile-screen" title="الإشعارات مفعّلة"></i>' : ''}</div>
       </button>`).join('');
     $('ready-grid').innerHTML = ready.map(t => `
       <div class="tile tile-ready">
@@ -116,7 +116,7 @@
     try {
       const r = await call('pager-update', { id, status });
       tickets = tickets.map(t => t.id === id ? { ...t, ...r.ticket } : t);
-      if (msg) toast(msg.replace('#', r.ticket.number));
+      if (msg) toast(msg.replace('#', r.ticket.number) + (status === 'ready' && r.push === 'sent' ? ' 📲 وانرسل له إشعار' : ''));
     } catch (e) { toast(e.message || 'حدث خطأ'); }
     busy.delete(id); render();
   }

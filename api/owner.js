@@ -9,6 +9,7 @@ const {
 } = require('./_lib/core');
 const { FIELDS, normalizeSettings, riyadhDayStart, positionOf, emailTemplate, statusUrlFor } = require('./_lib/waitlist');
 const { sendMail, mailConfigured } = require('./_lib/mail');
+const { sendPush } = require('./_lib/push');
 
 const bySort = (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id;
 const COFFEE_TYPES = ['cafe', 'mixed'];
@@ -250,8 +251,8 @@ module.exports = handler(['GET', 'POST'], async (req) => {
   // ─── البيجر: أرقام اليوم ───
   if (action === 'pager' && req.method === 'GET') {
     const { store } = await context(req);
-    const tickets = await rest(`pager_tickets?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&select=id,number,status,created_at,ready_at,closed_at&order=number.asc`);
-    return { tickets, slug: store.client_slug, name: store.name };
+    const tickets = await rest(`pager_tickets?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&select=id,number,status,created_at,ready_at,closed_at,push_sub&order=number.asc`);
+    return { tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub })), slug: store.client_slug, name: store.name };
   }
 
   if (req.method !== 'POST') throw new ApiError(404, 'Unknown action');
@@ -271,7 +272,15 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const rows = await rest(`pager_tickets?id=eq.${id}&client_id=eq.${sid}`, { method: 'PATCH', body: patch, prefer: 'return=representation' });
     if (!rows.length) throw new ApiError(404, 'الرقم غير موجود');
     const t = rows[0];
-    return { ticket: { id: t.id, number: t.number, status: t.status, created_at: t.created_at, ready_at: t.ready_at, closed_at: t.closed_at } };
+    // إشعار الجوال (يوصل حتى لو الجوال مقفول) — الصفحة نفسها ترن كمان لو مفتوحة
+    let push = 'off';
+    if (status === 'ready' && t.push_sub) {
+      const url = `https://${store.client_slug}.devmenu.digital/pager`;
+      push = await sendPush(t.push_sub, { title: `🔔 طلبك جاهز! رقم ${t.number}`, body: `تفضّل استلمه من ${store.name}`, url, tag: `pager-${t.id}` });
+      if (push === 'gone') await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { push_sub: null } }).catch(() => {});
+    }
+    if (status === 'done' || status === 'cancelled') await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { push_sub: null } }).catch(() => {});
+    return { ticket: { id: t.id, number: t.number, status: t.status, created_at: t.created_at, ready_at: t.ready_at, closed_at: t.closed_at, has_push: !!t.push_sub }, push };
   }
 
   // ─── قائمة الانتظار: الإعدادات ───

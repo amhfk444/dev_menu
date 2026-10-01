@@ -3,10 +3,12 @@
 //   GET  /api/pager?action=info&slug=     اسم المتجر وشعاره
 //   POST /api/pager?action=take            رقم جديد للعميل { slug } ← { token, number }
 //   GET  /api/pager?action=status&slug=&t= حالة الرقم (waiting / ready / done / cancelled)
+//   POST /api/pager?action=subscribe       اشتراك إشعارات الجوال للرقم { slug, t, sub }
 // الكاشير يغيّر الحالة من /api/owner?action=pager-update
 // =====================================================================
 const crypto = require('crypto');
 const { handler, rest, rpc, q, ApiError, readBody, findPublicStore } = require('./_lib/core');
+const { pushPublicKey, cleanSubscription } = require('./_lib/push');
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{10,64}$/;
 
@@ -23,7 +25,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
 
   if (action === 'info' && req.method === 'GET') {
     const store = await loadStore(req.query.slug);
-    return { store: { name: store.name, logo_url: store.logo_url } };
+    return { store: { name: store.name, logo_url: store.logo_url }, push_key: pushPublicKey() };
   }
 
   if (action === 'take' && req.method === 'POST') {
@@ -47,6 +49,18 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     // رقم من يوم سابق ما زال ينتظر = منتهي
     const stale = t.status === 'waiting' && Date.now() - Date.parse(t.created_at) > 18 * 3600e3;
     return { store: { name: store.name, logo_url: store.logo_url }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at } };
+  }
+
+  if (action === 'subscribe' && req.method === 'POST') {
+    const store = await loadStore(b.slug);
+    const token = String(b.t || '');
+    if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
+    const sub = cleanSubscription(b.sub);
+    if (!sub) throw new ApiError(400, 'اشتراك الإشعارات غير صالح');
+    const rows = await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=in.(waiting,ready)`,
+      { method: 'PATCH', body: { push_sub: sub }, prefer: 'return=representation' });
+    if (!rows.length) throw new ApiError(404, 'الرقم غير موجود أو انتهى', 'NOT_FOUND');
+    return { ok: true };
   }
 
   throw new ApiError(404, 'Unknown action');

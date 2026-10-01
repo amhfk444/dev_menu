@@ -1,0 +1,12 @@
+{
+  "name": "البيجر — DEV MENU",
+  "short_name": "البيجر",
+  "lang": "ar",
+  "dir": "rtl",
+  "display": "standalone",
+  "background_color": "#f5f2eb",
+  "theme_color": "#233d2c",
+  "icons": [
+    { "src": "/images/logo-web.jpg", "sizes": "700x700", "type": "image/jpeg", "purpose": "any" }
+  ]
+}

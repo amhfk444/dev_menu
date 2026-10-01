@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#233d2c">
+<link rel="manifest" href="/pager-manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="البيجر">
+<link rel="apple-touch-icon" href="/images/logo-web.jpg">
 <title>البيجر | DEV MENU</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -55,6 +59,10 @@
       <p class="text-sm font-bold opacity-65 mt-2 leading-relaxed">بعدها قل الرقم للكاشير مع طلبك. ولما يجهز طلبك، بيرن جوالك تلقائياً.</p>
     </div>
     <button id="take-btn" class="btn btn-brand"><i class="fa-solid fa-ticket"></i> خذ رقمي وفعّل التنبيه</button>
+    <div id="ios-hint" class="hidden text-right text-[12.5px] font-bold bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-4 leading-relaxed">
+      <b>📱 مستخدم آيفون؟</b> عشان يوصلك التنبيه حتى لو قفلت الجوال:<br>
+      اضغط زر المشاركة <i class="fa-solid fa-arrow-up-from-bracket"></i> تحت ← <b>إضافة إلى الشاشة الرئيسية</b>، وافتح «البيجر» من الشاشة الرئيسية وخذ رقمك من هناك.
+    </div>
   </section>
 
   <!-- ينتظر -->
@@ -65,6 +73,9 @@
     <div class="flex items-center justify-center gap-2 text-[13px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-2xl py-3">
       <span class="pulse-dot"></span> جاري التجهيز… بنرن جوالك أول ما يجهز
     </div>
+    <div id="push-on" class="hidden text-[13px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl py-3 px-3">✅ الإشعارات مفعّلة — بيوصلك التنبيه حتى لو قفلت الجوال</div>
+    <button id="push-btn" class="btn btn-brand hidden"><i class="fa-solid fa-bell"></i> فعّل الإشعارات (يوصلك والجوال مقفول)</button>
+    <p id="push-denied" class="hidden text-[12px] font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-2xl p-3">الإشعارات مرفوضة في متصفحك — خلّ هذي الصفحة مفتوحة عشان يرن جوالك.</p>
     <button id="unlock-btn" class="btn btn-brand hidden"><i class="fa-solid fa-volume-high"></i> فعّل صوت التنبيه</button>
     <ul class="text-[12.5px] font-bold opacity-70 space-y-1.5 text-right bg-[#f5f2eb] rounded-2xl p-4">
       <li><i class="fa-solid fa-mobile-screen ml-1"></i> خلّ هذي الصفحة مفتوحة والشاشة شغالة</li>
@@ -143,6 +154,38 @@
   let wakeLock = null;
   async function keepAwake() { try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } } catch {} }
 
+  // ─── إشعارات Web Push (توصل والجوال مقفول) ───
+  let pushKey = '';
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const pushSupported = () => !!pushKey && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  const pushDone = () => { try { return localStorage.getItem(`${KEY}_push`) === loadToken(); } catch { return false; } };
+  const b64 = (s) => { const p = '='.repeat((4 - s.length % 4) % 4); const r = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from([...r].map(c => c.charCodeAt(0))); };
+
+  async function subscribePush() {
+    const token = loadToken();
+    if (!pushSupported() || !token || Notification.permission !== 'granted') return false;
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.ready;
+      const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(pushKey) });
+      await DM.post('/api/pager?action=subscribe', { slug, t: token, sub: sub.toJSON() });
+      try { localStorage.setItem(`${KEY}_push`, token); } catch {}
+      return true;
+    } catch (e) { console.warn('push subscribe failed', e); return false; }
+  }
+  async function askPush() {
+    if (!pushSupported()) return;
+    try { if (Notification.permission === 'default') await Notification.requestPermission(); } catch {}
+    await subscribePush(); renderPush();
+  }
+  function renderPush() {
+    const on = pushDone(), denied = 'Notification' in window && Notification.permission === 'denied';
+    $('push-on').classList.toggle('hidden', !on);
+    $('push-denied').classList.toggle('hidden', on || !denied || !pushSupported());
+    $('push-btn').classList.toggle('hidden', on || denied || !pushSupported());
+  }
+
   function setStore(s) {
     if (!s) return;
     $('store-name').textContent = s.name || '';
@@ -165,7 +208,7 @@
     setStore(r.store);
     const st = r.ticket.status;
     $('w-number').textContent = r.ticket.number; $('r-number').textContent = r.ticket.number;
-    if (st === 'waiting') { show('waiting'); keepAwake(); if (!audioReady()) $('unlock-btn').classList.remove('hidden'); }
+    if (st === 'waiting') { show('waiting'); keepAwake(); renderPush(); if (!audioReady()) $('unlock-btn').classList.remove('hidden'); }
     else if (st === 'ready') { show('ready'); if (!dismissed) startRinging(); }
     else {
       stopRinging(); saveToken('');
@@ -180,15 +223,21 @@
   let dismissed = false;
   $('take-btn').onclick = async () => {
     unlockAudio();
+    // طلب الإذن لازم يبدأ من ضغطة العميل نفسها
+    const perm = pushSupported() && Notification.permission === 'default' ? Notification.requestPermission().catch(() => {}) : null;
     const btn = $('take-btn'); btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
     try {
       const r = await DM.post('/api/pager?action=take', { slug });
-      saveToken(r.token); setStore(r.store); dismissed = false; await poll();
+      saveToken(r.token); setStore(r.store); dismissed = false;
+      if (perm) await perm;
+      await subscribePush();
+      await poll();
     } catch (e) {
       unavailable(e.code === 'FULL' ? 'وصلنا الحد اليومي للأرقام' : 'تعذر أخذ رقم', 'اسأل الكاشير.');
     } finally { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-ticket"></i> خذ رقمي وفعّل التنبيه'; }
   };
   $('unlock-btn').onclick = unlockAudio;
+  $('push-btn').onclick = askPush;
   $('test-btn').onclick = () => { unlockAudio(); ringOnce(); };
   $('got-btn').onclick = () => { dismissed = true; stopRinging(); $('d-title').textContent = 'بالعافية!'; $('d-sub').textContent = 'نتشرف بزيارتك مرة ثانية.'; saveToken(''); show('done'); };
   $('new-btn').onclick = () => { saveToken(''); show('start'); };
@@ -196,10 +245,12 @@
 
   (async function init() {
     if (!slug) return unavailable('الرابط غير صحيح', 'امسح رمز QR من عند الكاشير.');
-    if (loadToken()) return poll();
-    // نتأكد إن المتجر موجود قبل عرض زر أخذ الرقم
-    try { setStore((await DM.get(`/api/pager?action=info&slug=${encodeURIComponent(slug)}`)).store); }
+    // نتأكد إن المتجر موجود، ونجيب مفتاح الإشعارات
+    try { const info = await DM.get(`/api/pager?action=info&slug=${encodeURIComponent(slug)}`); setStore(info.store); pushKey = info.push_key || ''; }
     catch (e) { return unavailable('البيجر غير متاح حالياً', 'اسأل الكاشير.'); }
+    if ('serviceWorker' in navigator && pushKey) navigator.serviceWorker.register('/sw.js').catch(() => {});
+    $('ios-hint').classList.toggle('hidden', !(isIOS && !standalone && pushKey));
+    if (loadToken()) return poll();
     show('start');
   })();
 </script>
