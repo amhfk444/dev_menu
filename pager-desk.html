@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#233d2c">
+<title>شاشة البيجر | DEV MENU</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="js/api.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root { --brand: #233d2c; --sand: #f5f2eb; --gold: #c9a227; }
+  body { font-family: 'Cairo', sans-serif; background: var(--sand); color: #1b3022; }
+  .panel { background: #fff; border: 1.5px solid rgba(35,61,44,.12); border-radius: 26px; }
+  .tile { border-radius: 22px; padding: 18px 10px 14px; text-align: center; font-weight: 900; transition: transform .12s, box-shadow .2s; user-select: none; }
+  .tile:active { transform: scale(.96); }
+  .tile-wait { background: var(--brand); color: var(--sand); box-shadow: 0 14px 26px -16px rgba(35,61,44,.7); cursor: pointer; }
+  .tile-wait:hover { box-shadow: 0 18px 30px -14px rgba(35,61,44,.8); }
+  .tile-ready { background: #fff7dc; color: #8a6d0f; border: 2px solid rgba(201,162,39,.5); }
+  .tile .n { font-size: 46px; line-height: 1; }
+  .mini { font-size: 12px; font-weight: 800; border-radius: 12px; padding: 7px 10px; }
+  @media print { body * { visibility: hidden; } #print-card, #print-card * { visibility: visible; } #print-card { position: fixed; inset: 0; margin: auto; } }
+</style>
+</head>
+<body class="min-h-screen">
+<div id="toast" class="fixed top-4 inset-x-0 mx-auto w-fit z-50 hidden bg-[#15271b] text-[#f5f2eb] text-sm font-black px-5 py-3 rounded-2xl shadow-xl"></div>
+
+<header class="sticky top-0 z-40 bg-[#f5f2eb]/90 backdrop-blur border-b border-[#233d2c]/10">
+  <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
+    <div class="flex items-center gap-3 min-w-0">
+      <a href="admin.html" class="w-10 h-10 rounded-xl bg-white border border-[#233d2c]/15 grid place-items-center text-[#233d2c]" title="لوحة التحكم"><i class="fa-solid fa-arrow-right"></i></a>
+      <div class="min-w-0">
+        <h1 class="text-base font-black truncate"><i class="fa-solid fa-bell text-[#c9a227]"></i> شاشة البيجر — <span id="store-name">…</span></h1>
+        <p class="text-[11px] font-bold opacity-55">اضغط على الرقم لما يجهز الطلب، ويرن جوال العميل</p>
+      </div>
+    </div>
+    <button id="qr-btn" class="mini bg-white border border-[#233d2c]/15 shrink-0"><i class="fa-solid fa-qrcode"></i> QR للطباعة</button>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 py-6 space-y-6">
+  <section class="panel p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-black">قيد التجهيز <span id="wait-count" class="text-sm opacity-50"></span></h2>
+      <span class="text-[11px] font-bold opacity-50"><i class="fa-solid fa-rotate"></i> يتحدث تلقائياً</span>
+    </div>
+    <div id="wait-grid" class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-7 gap-3"></div>
+    <p id="wait-empty" class="text-center text-sm font-bold opacity-50 py-8 hidden">ما فيه أرقام تنتظر. أول ما يمسح العميل الـ QR يطلع رقمه هنا.</p>
+  </section>
+
+  <section class="panel p-5">
+    <h2 class="text-lg font-black mb-4">جاهز — بانتظار الاستلام <span id="ready-count" class="text-sm opacity-50"></span></h2>
+    <div id="ready-grid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3"></div>
+    <p id="ready-empty" class="text-center text-sm font-bold opacity-50 py-6 hidden">ما فيه طلبات جاهزة.</p>
+  </section>
+</main>
+
+<!-- QR -->
+<div id="qr-modal" class="fixed inset-0 z-50 bg-black/50 hidden items-center justify-center p-5">
+  <div id="print-card" class="bg-white rounded-[28px] p-8 w-full max-w-sm text-center space-y-4">
+    <h3 id="qr-store" class="text-xl font-black"></h3>
+    <p class="text-base font-black text-[#233d2c]"><i class="fa-solid fa-bell text-[#c9a227]"></i> امسح وخذ رقمك</p>
+    <div id="qr-box" class="mx-auto w-fit p-3 bg-white rounded-2xl border border-[#233d2c]/10"></div>
+    <p class="text-sm font-bold opacity-70 leading-relaxed">قل رقمك للكاشير مع طلبك،<br>وبنرن جوالك لما يجهز طلبك</p>
+    <p id="qr-url" class="text-[11px] font-bold opacity-50 break-all" dir="ltr"></p>
+    <div class="flex gap-2 pt-2 print:hidden">
+      <button onclick="window.print()" class="flex-1 bg-[#233d2c] text-[#f5f2eb] font-black rounded-2xl py-3"><i class="fa-solid fa-print"></i> طباعة</button>
+      <button id="qr-close" class="flex-1 bg-white border border-[#233d2c]/20 font-black rounded-2xl py-3">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const P = new URLSearchParams(location.search);
+  const extra = `${P.get('client') ? `&client=${encodeURIComponent(P.get('client'))}` : ''}${P.get('branch') ? `&branch=${encodeURIComponent(P.get('branch'))}` : ''}`;
+  const O = (a) => `/api/owner?action=${a}${extra}`;
+  const $ = (id) => document.getElementById(id);
+  let slug = '', tickets = [], busy = new Set();
+
+  function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.remove('hidden'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.add('hidden'), 2600); }
+  const ago = (iso) => { const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000)); return m < 1 ? 'الآن' : `${m} د`; };
+
+  async function call(action, body) {
+    try { return body === undefined ? await DM.get(O(action), true) : await DM.post(O(action), body, true); }
+    catch (e) { if (e.status === 401) { location.replace('login.html'); } throw e; }
+  }
+
+  function render() {
+    const waiting = tickets.filter(t => t.status === 'waiting');
+    const ready = tickets.filter(t => t.status === 'ready');
+    $('wait-count').textContent = waiting.length ? `(${waiting.length})` : '';
+    $('ready-count').textContent = ready.length ? `(${ready.length})` : '';
+    $('wait-empty').classList.toggle('hidden', waiting.length > 0);
+    $('ready-empty').classList.toggle('hidden', ready.length > 0);
+    $('wait-grid').innerHTML = waiting.map(t => `
+      <button class="tile tile-wait" data-ready="${t.id}" ${busy.has(t.id) ? 'disabled' : ''}>
+        <div class="n">${t.number}</div>
+        <div class="text-[12px] mt-2 opacity-80">${busy.has(t.id) ? '<i class="fa-solid fa-spinner fa-spin"></i>' : '<i class="fa-solid fa-bell"></i> جاهز'}</div>
+        <div class="text-[10px] mt-1 opacity-50">${ago(t.created_at)}</div>
+      </button>`).join('');
+    $('ready-grid').innerHTML = ready.map(t => `
+      <div class="tile tile-ready">
+        <div class="n">${t.number}</div>
+        <div class="text-[11px] mt-1 opacity-70"><i class="fa-solid fa-bell fa-shake"></i> يرن من ${ago(t.ready_at)}</div>
+        <div class="flex gap-1.5 mt-3">
+          <button class="mini flex-1 bg-[#233d2c] text-white" data-done="${t.id}"><i class="fa-solid fa-check"></i> استلم</button>
+          <button class="mini bg-white border border-[#c9a227]/40" data-undo="${t.id}" title="إرجاع للتجهيز"><i class="fa-solid fa-rotate-left"></i></button>
+        </div>
+      </div>`).join('');
+  }
+
+  async function setStatus(id, status, msg) {
+    busy.add(id); render();
+    try {
+      const r = await call('pager-update', { id, status });
+      tickets = tickets.map(t => t.id === id ? { ...t, ...r.ticket } : t);
+      if (msg) toast(msg.replace('#', r.ticket.number));
+    } catch (e) { toast(e.message || 'حدث خطأ'); }
+    busy.delete(id); render();
+  }
+
+  document.addEventListener('click', (e) => {
+    const r = e.target.closest('[data-ready]'), d = e.target.closest('[data-done]'), u = e.target.closest('[data-undo]');
+    if (r) setStatus(+r.dataset.ready, 'ready', '🔔 جوال رقم # يرن الحين');
+    if (d) setStatus(+d.dataset.done, 'done', '✓ رقم # استلم طلبه');
+    if (u) setStatus(+u.dataset.undo, 'waiting', 'رقم # رجع للتجهيز');
+  });
+
+  let timer = null;
+  async function load() {
+    clearTimeout(timer);
+    try {
+      const r = await call('pager');
+      slug = r.slug; $('store-name').textContent = r.name || '';
+      // ما نلمس الأرقام اللي جاري تحديثها
+      tickets = r.tickets.map(t => busy.has(t.id) ? (tickets.find(x => x.id === t.id) || t) : t);
+      render();
+    } catch (e) { if (e.status !== 401) toast(e.message || 'تعذر التحديث'); }
+    timer = setTimeout(load, document.hidden ? 15000 : 4000);
+  }
+
+  $('qr-btn').onclick = () => {
+    if (!slug) return;
+    const url = DM.storeUrl(slug, 'pager');
+    $('qr-store').textContent = $('store-name').textContent;
+    $('qr-url').textContent = url;
+    $('qr-box').innerHTML = '';
+    new QRCode($('qr-box'), { text: url, width: 220, height: 220, colorDark: '#15271b', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    $('qr-modal').classList.replace('hidden', 'flex');
+  };
+  $('qr-close').onclick = () => $('qr-modal').classList.replace('flex', 'hidden');
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
+
+  if (!DM.signedIn()) location.replace('login.html');
+  else { DM.watchAccount(); load(); }
+</script>
+</body>
+</html>

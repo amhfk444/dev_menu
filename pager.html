@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#233d2c">
+<title>البيجر | DEV MENU</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="js/api.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root { --brand: #233d2c; --sand: #f5f2eb; --gold: #c9a227; }
+  body { font-family: 'Cairo', sans-serif; background: var(--sand); color: #1b3022; min-height: 100vh; min-height: 100dvh; -webkit-text-size-adjust: 100%; }
+  .card { background: #fff; border: 1.5px solid rgba(35,61,44,.12); border-radius: 28px; box-shadow: 0 30px 60px -36px rgba(35,61,44,.45); }
+  .btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; border-radius: 18px; padding: 18px; font-weight: 900; font-size: 17px; transition: transform .15s; }
+  .btn:active { transform: scale(.98); }
+  .btn-brand { background: var(--brand); color: var(--sand); box-shadow: 0 16px 30px -14px rgba(35,61,44,.6); }
+  .btn-ghost { background: #fff; color: var(--brand); border: 1.5px solid rgba(35,61,44,.2); }
+  .num { font-size: 120px; line-height: 1; font-weight: 900; letter-spacing: -2px; color: var(--brand); }
+  .pulse-dot { width: 10px; height: 10px; border-radius: 50%; background: #10b981; box-shadow: 0 0 0 0 rgba(16,185,129,.6); animation: pd 1.8s infinite; }
+  @keyframes pd { 70% { box-shadow: 0 0 0 12px rgba(16,185,129,0); } 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); } }
+  body.ringing { animation: flash 0.9s infinite; }
+  @keyframes flash { 0%, 100% { background: #233d2c; } 50% { background: #c9a227; } }
+  body.ringing .card { animation: shake .5s infinite; }
+  body.ringing > header, body.ringing > p { color: #fff; }
+  @keyframes shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-2deg); } 75% { transform: rotate(2deg); } }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body class="flex flex-col items-center px-5 py-8">
+
+<header class="text-center mb-6">
+  <img id="logo" alt="" class="w-16 h-16 rounded-2xl object-cover mx-auto mb-3 bg-white border border-[#233d2c]/10 hidden">
+  <h1 id="store-name" class="text-xl font-black">…</h1>
+  <p class="text-xs font-bold opacity-60"><i class="fa-solid fa-bell"></i> البيجر الرقمي</p>
+</header>
+
+<main class="w-full max-w-sm space-y-4">
+  <!-- جاري التحميل -->
+  <section id="v-loading" class="card p-10 text-center"><i class="fa-solid fa-spinner fa-spin text-2xl opacity-50"></i></section>
+
+  <!-- غير متاح -->
+  <section id="v-unavailable" class="card p-8 text-center space-y-2 hidden">
+    <i class="fa-solid fa-circle-exclamation text-3xl text-amber-600"></i>
+    <h2 id="u-title" class="text-lg font-black">البيجر غير متاح حالياً</h2>
+    <p id="u-sub" class="text-sm font-bold opacity-60">اسأل الكاشير.</p>
+  </section>
+
+  <!-- أخذ رقم -->
+  <section id="v-start" class="card p-7 text-center space-y-5 hidden">
+    <div class="w-20 h-20 rounded-3xl bg-[#233d2c] text-[#c9a227] grid place-items-center mx-auto text-3xl"><i class="fa-solid fa-bell"></i></div>
+    <div>
+      <h2 class="text-2xl font-black">خذ رقمك</h2>
+      <p class="text-sm font-bold opacity-65 mt-2 leading-relaxed">بعدها قل الرقم للكاشير مع طلبك. ولما يجهز طلبك، بيرن جوالك تلقائياً.</p>
+    </div>
+    <button id="take-btn" class="btn btn-brand"><i class="fa-solid fa-ticket"></i> خذ رقمي وفعّل التنبيه</button>
+  </section>
+
+  <!-- ينتظر -->
+  <section id="v-waiting" class="card p-7 text-center space-y-5 hidden">
+    <p class="text-sm font-black opacity-60">رقمك</p>
+    <div id="w-number" class="num">—</div>
+    <p class="text-sm font-black">قل هذا الرقم للكاشير مع طلبك</p>
+    <div class="flex items-center justify-center gap-2 text-[13px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-2xl py-3">
+      <span class="pulse-dot"></span> جاري التجهيز… بنرن جوالك أول ما يجهز
+    </div>
+    <button id="unlock-btn" class="btn btn-brand hidden"><i class="fa-solid fa-volume-high"></i> فعّل صوت التنبيه</button>
+    <ul class="text-[12.5px] font-bold opacity-70 space-y-1.5 text-right bg-[#f5f2eb] rounded-2xl p-4">
+      <li><i class="fa-solid fa-mobile-screen ml-1"></i> خلّ هذي الصفحة مفتوحة والشاشة شغالة</li>
+      <li><i class="fa-solid fa-volume-high ml-1"></i> ارفع صوت الجوال، وطفّ الوضع الصامت</li>
+    </ul>
+    <button id="test-btn" class="text-xs font-black opacity-60 underline">جرّب صوت التنبيه</button>
+  </section>
+
+  <!-- جاهز -->
+  <section id="v-ready" class="card p-7 text-center space-y-5 hidden">
+    <div class="text-6xl">🔔</div>
+    <h2 class="text-3xl font-black">طلبك جاهز!</h2>
+    <div id="r-number" class="num">—</div>
+    <p class="text-sm font-bold opacity-70">تفضّل استلمه من الكاشير</p>
+    <button id="got-btn" class="btn btn-brand"><i class="fa-solid fa-check"></i> استلمت طلبي</button>
+  </section>
+
+  <!-- انتهى -->
+  <section id="v-done" class="card p-8 text-center space-y-4 hidden">
+    <i class="fa-solid fa-circle-check text-4xl text-emerald-600"></i>
+    <h2 id="d-title" class="text-xl font-black">بالعافية!</h2>
+    <p id="d-sub" class="text-sm font-bold opacity-60">نتشرف بزيارتك مرة ثانية.</p>
+    <button id="new-btn" class="btn btn-ghost"><i class="fa-solid fa-ticket"></i> خذ رقم جديد</button>
+  </section>
+</main>
+
+<p class="text-[11px] font-bold opacity-40 mt-8">DEV MENU</p>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const slug = (params.get('client') || DM.hostSlug()).trim().toLowerCase();
+  const KEY = `dm_pager_${slug}`;
+  const VIEWS = ['loading', 'unavailable', 'start', 'waiting', 'ready', 'done'];
+  const $ = (id) => document.getElementById(id);
+  const show = (v) => VIEWS.forEach(x => $(`v-${x}`).classList.toggle('hidden', x !== v));
+  const saveToken = (t) => { try { t ? localStorage.setItem(KEY, t) : localStorage.removeItem(KEY); } catch {} };
+  const loadToken = () => { try { return localStorage.getItem(KEY) || ''; } catch { return ''; } };
+
+  // ─── الصوت: يحتاج ضغطة من العميل قبل ما يسمح المتصفح بالتشغيل ───
+  let ctx = null;
+  function unlockAudio() {
+    try {
+      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+      if (ctx.state === 'suspended') ctx.resume();
+      const o = ctx.createOscillator(), g = ctx.createGain(); g.gain.value = 0.0001;
+      o.connect(g).connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.02);
+    } catch {}
+    $('unlock-btn').classList.add('hidden');
+  }
+  const audioReady = () => ctx && ctx.state === 'running';
+  function beep(at, freq, dur) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'square'; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(0.5, at + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    o.connect(g).connect(ctx.destination); o.start(at); o.stop(at + dur + 0.02);
+  }
+  function ringOnce() {
+    if (audioReady()) { const t = ctx.currentTime; [0, 0.18, 0.36, 0.7, 0.88, 1.06].forEach((d, i) => beep(t + d, i % 2 ? 1320 : 990, 0.14)); }
+    if (navigator.vibrate) navigator.vibrate([400, 150, 400, 150, 400]);
+  }
+  let ringTimer = null;
+  function startRinging() {
+    if (ringTimer) return;
+    document.body.classList.add('ringing');
+    ringOnce(); ringTimer = setInterval(ringOnce, 1600);
+    let on = false; titleTimer = setInterval(() => { document.title = (on = !on) ? '🔔 طلبك جاهز!' : 'البيجر | DEV MENU'; }, 800);
+  }
+  let titleTimer = null;
+  function stopRinging() {
+    clearInterval(ringTimer); clearInterval(titleTimer); ringTimer = titleTimer = null;
+    document.body.classList.remove('ringing'); document.title = 'البيجر | DEV MENU';
+    if (navigator.vibrate) navigator.vibrate(0);
+  }
+
+  // ─── إبقاء الشاشة شغالة وقت الانتظار ───
+  let wakeLock = null;
+  async function keepAwake() { try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } } catch {} }
+
+  function setStore(s) {
+    if (!s) return;
+    $('store-name').textContent = s.name || '';
+    if (s.logo_url) { $('logo').src = s.logo_url; $('logo').classList.remove('hidden'); }
+  }
+  function unavailable(title, sub) { $('u-title').textContent = title; $('u-sub').textContent = sub; show('unavailable'); }
+
+  let pollTimer = null, lastStatus = '';
+  async function poll() {
+    clearTimeout(pollTimer);
+    const token = loadToken();
+    if (!token) return show('start');
+    let r;
+    try { r = await DM.get(`/api/pager?action=status&slug=${encodeURIComponent(slug)}&t=${encodeURIComponent(token)}`); }
+    catch (e) {
+      if (e.status === 404 && e.code === 'NOT_FOUND') { saveToken(''); return show('start'); }
+      if (e.status === 404 || e.status === 400) return unavailable('البيجر غير متاح حالياً', 'اسأل الكاشير.');
+      pollTimer = setTimeout(poll, 5000); return;   // انقطاع مؤقت: نعيد المحاولة
+    }
+    setStore(r.store);
+    const st = r.ticket.status;
+    $('w-number').textContent = r.ticket.number; $('r-number').textContent = r.ticket.number;
+    if (st === 'waiting') { show('waiting'); keepAwake(); if (!audioReady()) $('unlock-btn').classList.remove('hidden'); }
+    else if (st === 'ready') { show('ready'); if (!dismissed) startRinging(); }
+    else {
+      stopRinging(); saveToken('');
+      $('d-title').textContent = st === 'cancelled' ? 'تم إلغاء الرقم' : st === 'expired' ? 'انتهت صلاحية الرقم' : 'بالعافية!';
+      $('d-sub').textContent = st === 'done' ? 'نتشرف بزيارتك مرة ثانية.' : 'تقدر تاخذ رقم جديد.';
+      show('done'); lastStatus = st; return;
+    }
+    lastStatus = st;
+    pollTimer = setTimeout(poll, document.hidden ? 8000 : 3000);
+  }
+
+  let dismissed = false;
+  $('take-btn').onclick = async () => {
+    unlockAudio();
+    const btn = $('take-btn'); btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    try {
+      const r = await DM.post('/api/pager?action=take', { slug });
+      saveToken(r.token); setStore(r.store); dismissed = false; await poll();
+    } catch (e) {
+      unavailable(e.code === 'FULL' ? 'وصلنا الحد اليومي للأرقام' : 'تعذر أخذ رقم', 'اسأل الكاشير.');
+    } finally { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-ticket"></i> خذ رقمي وفعّل التنبيه'; }
+  };
+  $('unlock-btn').onclick = unlockAudio;
+  $('test-btn').onclick = () => { unlockAudio(); ringOnce(); };
+  $('got-btn').onclick = () => { dismissed = true; stopRinging(); $('d-title').textContent = 'بالعافية!'; $('d-sub').textContent = 'نتشرف بزيارتك مرة ثانية.'; saveToken(''); show('done'); };
+  $('new-btn').onclick = () => { saveToken(''); show('start'); };
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { keepAwake(); if (loadToken()) poll(); } });
+
+  (async function init() {
+    if (!slug) return unavailable('الرابط غير صحيح', 'امسح رمز QR من عند الكاشير.');
+    if (loadToken()) return poll();
+    // نتأكد إن المتجر موجود قبل عرض زر أخذ الرقم
+    try { setStore((await DM.get(`/api/pager?action=info&slug=${encodeURIComponent(slug)}`)).store); }
+    catch (e) { return unavailable('البيجر غير متاح حالياً', 'اسأل الكاشير.'); }
+    show('start');
+  })();
+</script>
+</body>
+</html>

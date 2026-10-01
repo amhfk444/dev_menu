@@ -3,6 +3,7 @@
 //   duja.devmenu.digital            → المنيو
 //   duja.devmenu.digital/links      → صفحة الروابط
 //   duja.devmenu.digital/waitlist   → قائمة الانتظار
+//   duja.devmenu.digital/pager      → البيجر الرقمي
 // الرابط في المتصفح يبقى مختصر (rewrite مو redirect)، والصفحة تعرف المتجر من النطاق.
 // app و www وأي نطاق ثاني ما يتأثر.
 // =====================================================================
@@ -13,10 +14,11 @@ const NOT_STORES = new Set(['app', 'www']);
 const PAGES = {
   '/': 'menu.html', '/menu': 'menu.html',
   '/links': 'links.html',
-  '/waitlist': 'waitlist.html'
+  '/waitlist': 'waitlist.html',
+  '/pager': 'pager.html'
 };
 
-export const config = { matcher: ['/', '/menu', '/links', '/waitlist'] };
+export const config = { matcher: ['/', '/menu', '/links', '/waitlist', '/pager'] };
 
 export default function middleware(request) {
   const url = new URL(request.url);

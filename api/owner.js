@@ -247,9 +247,32 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     return { coupons: await rest(`coupons?client_id=eq.${store.id}&select=*&order=id.desc`) };
   }
 
+  // ─── البيجر: أرقام اليوم ───
+  if (action === 'pager' && req.method === 'GET') {
+    const { store } = await context(req);
+    const tickets = await rest(`pager_tickets?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&select=id,number,status,created_at,ready_at,closed_at&order=number.asc`);
+    return { tickets, slug: store.client_slug, name: store.name };
+  }
+
   if (req.method !== 'POST') throw new ApiError(404, 'Unknown action');
   const { store } = await context(req);
   const sid = store.id;
+
+  // ─── البيجر: الطلب جاهز (يرن جوال العميل) / تم التسليم / إلغاء / إرجاع للانتظار ───
+  if (action === 'pager-update') {
+    const id = int(b.id);
+    const status = b.status;
+    if (!['waiting', 'ready', 'done', 'cancelled'].includes(status)) throw new ApiError(400, 'حالة غير صحيحة');
+    const now = new Date().toISOString();
+    const patch = { status };
+    if (status === 'ready') { patch.ready_at = now; patch.closed_at = null; }
+    else if (status === 'waiting') { patch.ready_at = null; patch.closed_at = null; }
+    else patch.closed_at = now;
+    const rows = await rest(`pager_tickets?id=eq.${id}&client_id=eq.${sid}`, { method: 'PATCH', body: patch, prefer: 'return=representation' });
+    if (!rows.length) throw new ApiError(404, 'الرقم غير موجود');
+    const t = rows[0];
+    return { ticket: { id: t.id, number: t.number, status: t.status, created_at: t.created_at, ready_at: t.ready_at, closed_at: t.closed_at } };
+  }
 
   // ─── قائمة الانتظار: الإعدادات ───
   if (action === 'waitlist-settings') {
