@@ -1,0 +1,19 @@
+{
+  "appId": "digital.devmenu.app",
+  "appName": "DEV MENU",
+  "webDir": "www",
+  "server": {
+    "url": "https://app.devmenu.digital/admin.html",
+    "allowNavigation": ["app.devmenu.digital", "*.devmenu.digital", "czdoamcgxgkicrbufpcn.supabase.co"],
+    "errorPath": "offline.html"
+  },
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#f5f2eb",
+    "limitsNavigationsToAppBoundDomains": false
+  },
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 1200, "backgroundColor": "#f5f2eb", "showSpinner": false },
+    "PushNotifications": { "presentationOptions": ["badge", "sound", "alert"] }
+  }
+}

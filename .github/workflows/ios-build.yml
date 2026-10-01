@@ -1,0 +1,30 @@
+# بناء تطبيق DEV MENU للآيفون في السحابة (بدون Xcode على الجهاز)
+# المرحلة الحالية: يتأكد إن التطبيق ينبني للمحاكي بدون توقيع.
+# بعد تفعيل حساب Apple Developer: نضيف التوقيع والرفع لـ TestFlight.
+name: iOS build
+
+on:
+  push:
+    branches: [ios-app]
+    paths: ['mobile/**', '.github/workflows/ios-build.yml']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npx cap sync ios
+      - name: Build for iOS Simulator (no signing)
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App \
+            -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build | tail -40
