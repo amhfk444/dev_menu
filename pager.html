@@ -59,10 +59,6 @@
       <p class="text-sm font-bold opacity-65 mt-2 leading-relaxed">بعدها قل الرقم للكاشير مع طلبك. ولما يجهز طلبك، بيرن جوالك تلقائياً.</p>
     </div>
     <button id="take-btn" class="btn btn-brand"><i class="fa-solid fa-ticket"></i> خذ رقمي وفعّل التنبيه</button>
-    <div id="ios-hint" class="hidden text-right text-[12.5px] font-bold bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-4 leading-relaxed">
-      <b>📱 مستخدم آيفون؟</b> عشان يوصلك التنبيه حتى لو قفلت الجوال:<br>
-      اضغط زر المشاركة <i class="fa-solid fa-arrow-up-from-bracket"></i> تحت ← <b>إضافة إلى الشاشة الرئيسية</b>، وافتح «البيجر» من الشاشة الرئيسية وخذ رقمك من هناك.
-    </div>
   </section>
 
   <!-- ينتظر -->
@@ -75,13 +71,6 @@
     </div>
     <div id="push-on" class="hidden text-[13px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl py-3 px-3">✅ الإشعارات مفعّلة — بيوصلك التنبيه حتى لو قفلت الجوال</div>
     <button id="push-btn" class="btn btn-brand hidden"><i class="fa-solid fa-bell"></i> فعّل الإشعارات (يوصلك والجوال مقفول)</button>
-    <div id="push-ios" class="hidden text-right text-[13px] font-bold bg-amber-50 border-2 border-amber-300 text-amber-900 rounded-2xl p-4 leading-relaxed">
-      <b>⚠️ التنبيه يوصلك بس والصفحة مفتوحة</b><br>
-      عشان يوصلك حتى لو قفلت الجوال (آيفون):<br>
-      1) اضغط زر المشاركة <i class="fa-solid fa-arrow-up-from-bracket"></i> تحت<br>
-      2) اختر <b>«إضافة إلى الشاشة الرئيسية»</b><br>
-      3) افتح <b>«البيجر»</b> من الشاشة الرئيسية وخذ رقمك من هناك
-    </div>
     <p id="push-unsupported" class="hidden text-[12px] font-bold text-amber-900 bg-amber-50 border border-amber-200 rounded-2xl p-3">متصفحك ما يدعم الإشعارات — خلّ هذي الصفحة مفتوحة والشاشة شغالة عشان يرن جوالك.</p>
     <p id="push-denied" class="hidden text-[12px] font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-2xl p-3">الإشعارات مرفوضة في متصفحك — خلّ هذي الصفحة مفتوحة عشان يرن جوالك.</p>
     <button id="unlock-btn" class="btn btn-brand hidden"><i class="fa-solid fa-volume-high"></i> فعّل صوت التنبيه</button>
@@ -193,7 +182,6 @@
     const denied = supported && Notification.permission === 'denied';
     const iosNeedsHome = !!pushKey && isIOS && !standalone;
     $('push-on').classList.toggle('hidden', !on);
-    $('push-ios').classList.toggle('hidden', on || !iosNeedsHome);
     $('push-unsupported').classList.toggle('hidden', on || iosNeedsHome || supported || !pushKey);
     $('push-denied').classList.toggle('hidden', on || !denied);
     $('push-btn').classList.toggle('hidden', on || denied || !supported);
@@ -269,7 +257,6 @@
     try { const info = await DM.get(`/api/pager?action=info&slug=${encodeURIComponent(slug)}`); setStore(info.store); pushKey = info.push_key || ''; }
     catch (e) { return unavailable('البيجر غير متاح حالياً', 'اسأل الكاشير.'); }
     if ('serviceWorker' in navigator && pushKey) navigator.serviceWorker.register('/sw.js').catch(() => {});
-    $('ios-hint').classList.toggle('hidden', !(isIOS && !standalone && pushKey));
     if (loadToken()) return poll();
     show('start');
   })();
