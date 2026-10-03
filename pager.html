@@ -80,6 +80,7 @@
       <li><i class="fa-solid fa-volume-high ml-1"></i> ارفع صوت الجوال (صوت الوسائط)</li>
       <li><i class="fa-solid fa-music ml-1"></i> لا تشغّل مقطع أو موسيقى ثانية وانت تنتظر</li>
     </ul>
+    <div id="mix-debug" class="hidden text-[11px] font-bold text-right bg-sky-50 border border-sky-200 text-sky-900 rounded-2xl p-3 space-y-1" dir="rtl"></div>
     <button id="test-btn" class="text-xs font-black opacity-60 underline">جرّب صوت التنبيه</button>
   </section>
 
@@ -155,12 +156,30 @@
     const x = t - RING_AT[i], env = Math.min(1, x / 0.01, (0.14 - x) / 0.01);
     return (Math.sin(2 * Math.PI * (i % 2 ? 1320 : 990) * x) > 0 ? 0.6 : -0.6) * env;
   };
+  // ─── وضع تجربة: pager?mix=1 ← صوت "يتعايش" مع التطبيقات الثانية بدل ما يوقفه فيديو تيك توك ───
+  // ‏?mix=1 أو mix=ambient · mix=transient · mix=playback (للمقارنة). يطبع سجل أحداث الصوت تحت الرقم.
+  const MIX = { '1': 'ambient', ambient: 'ambient', transient: 'transient', 'transient-solo': 'transient-solo', playback: 'playback' }[params.get('mix') || ''] || '';
+  const mixLog = [];
+  function mixNote(msg) {
+    if (!MIX) return;
+    mixLog.unshift(`${new Date().toLocaleTimeString('en-GB')} — ${msg}`); mixLog.length = Math.min(mixLog.length, 12);
+    const el = $('mix-debug'); el.classList.remove('hidden');
+    const type = navigator.audioSession ? navigator.audioSession.type : 'غير مدعوم';
+    el.innerHTML = `<div class="font-black">🧪 وضع التجربة: ${type}</div>` + mixLog.map(l => `<div dir="ltr" class="text-left">${l}</div>`).join('');
+  }
+  if (MIX && navigator.audioSession) { try { navigator.audioSession.type = MIX; } catch (e) { console.warn('audioSession', e); } }
   const keeper = new Audio(); keeper.loop = true; keeper.setAttribute('playsinline', '');
   let keeperMode = '', silentUrl = '', ringUrl = '', storeInfo = {}, curNumber = '';
   const keeperOn = () => !!keeperMode && !keeper.paused;
   // فيديو في تطبيق ثاني (تيك توك/انستقرام) ياخذ الصوت ويوقف مقطعنا. نحاول نرجّعه كل ثانيتين:
   // أول ما يوقف الفيديو ويرجّع iOS الصوت لـ Safari ← يشتغل المقطع، نسأل عن الحالة فوراً، ويرن لو الطلب جاهز
   let resumeTimer = null, interrupted = false;
+  if (MIX) {
+    keeper.addEventListener('playing', () => mixNote(`playing (${keeperMode})`));
+    keeper.addEventListener('pause', () => mixNote(`pause (${keeperMode || 'stopped'})`));
+    document.addEventListener('visibilitychange', () => mixNote(document.hidden ? 'page hidden' : 'page visible'));
+    if (navigator.audioSession) navigator.audioSession.addEventListener('statechange', () => mixNote(`session ${navigator.audioSession.state}`));
+  }
   keeper.addEventListener('playing', () => {
     clearInterval(resumeTimer); resumeTimer = null;
     if (interrupted) { interrupted = false; if (loadToken()) poll(); }
@@ -285,6 +304,7 @@
     const inv = r.ticket.invoice_no || '';
     ['w-invoice', 'r-invoice'].forEach(id => { $(id).classList.toggle('hidden', !inv); $(id).querySelector('span').textContent = inv; });
     $('w-tell').classList.toggle('hidden', !!inv);
+    if (st === 'ready' && lastStatus !== 'ready') mixNote('READY received');
     if (st === 'waiting') { show('waiting'); keepAwake(); renderPush(); if (keeperMode === 'silent') setMedia(`رقمك ${curNumber} — جاري تجهيز طلبك`); }
     else if (st === 'ready') { show('ready'); if (!dismissed) startRinging(); if (!document.hidden) ack(); }
     else {
