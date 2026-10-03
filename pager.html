@@ -158,8 +158,23 @@
   const keeper = new Audio(); keeper.loop = true; keeper.setAttribute('playsinline', '');
   let keeperMode = '', silentUrl = '', ringUrl = '', storeInfo = {}, curNumber = '';
   const keeperOn = () => !!keeperMode && !keeper.paused;
-  keeper.addEventListener('playing', () => renderPush());
-  keeper.addEventListener('pause', () => renderPush());
+  // فيديو في تطبيق ثاني (تيك توك/انستقرام) ياخذ الصوت ويوقف مقطعنا. نحاول نرجّعه كل ثانيتين:
+  // أول ما يوقف الفيديو ويرجّع iOS الصوت لـ Safari ← يشتغل المقطع، نسأل عن الحالة فوراً، ويرن لو الطلب جاهز
+  let resumeTimer = null, interrupted = false;
+  keeper.addEventListener('playing', () => {
+    clearInterval(resumeTimer); resumeTimer = null;
+    if (interrupted) { interrupted = false; if (loadToken()) poll(); }
+    renderPush();
+  });
+  keeper.addEventListener('pause', () => {
+    renderPush();
+    if (!keeperMode || resumeTimer) return;
+    interrupted = true;
+    resumeTimer = setInterval(() => {
+      if (!keeperMode) { clearInterval(resumeTimer); resumeTimer = null; return; }
+      if (keeper.paused) keeper.play().catch(() => {});
+    }, 2000);
+  });
   function setMedia(title) {
     if (!('mediaSession' in navigator)) return;
     try { navigator.mediaSession.metadata = title ? new MediaMetadata({ title, artist: storeInfo.name || 'البيجر الرقمي', album: 'DEV MENU', artwork: storeInfo.logo_url ? [{ src: storeInfo.logo_url, sizes: '512x512' }] : [] }) : null; } catch {}
@@ -169,11 +184,11 @@
     if (keeperOn()) return;
     silentUrl = silentUrl || wavUrl(3, () => (Math.random() - 0.5) * 0.0002);
     if (keeperMode !== 'ring') { keeper.src = silentUrl; keeperMode = 'silent'; }
-    keeper.play().catch(() => { keeperMode = ''; renderPush(); });
+    keeper.play().catch(() => { if (!interrupted) { keeperMode = ''; renderPush(); } });
     setMedia(curNumber ? `رقمك ${curNumber} — جاري تجهيز طلبك` : 'البيجر — جاري تجهيز طلبك');
   }
   function keeperRing() {
-    if (!keeperOn()) return false;
+    if (!keeperMode) return false;   // حتى لو موقوف مؤقتاً، نجهّز الرنين عشان يشتغل أول ما يرجع الصوت
     ringUrl = ringUrl || wavUrl(1.6, ringWave);
     keeperMode = 'ring'; keeper.src = ringUrl;
     keeper.play().catch(() => {});
@@ -182,15 +197,16 @@
   }
   function stopKeeper() {
     if (!keeperMode) return;
-    keeperMode = ''; keeper.pause(); keeper.removeAttribute('src'); keeper.load(); setMedia('');
+    keeperMode = ''; interrupted = false; clearInterval(resumeTimer); resumeTimer = null; keeper.pause(); keeper.removeAttribute('src'); keeper.load(); setMedia('');
   }
 
   let ringTimer = null;
   function startRinging() {
     if (ringTimer) return;
     document.body.classList.add('ringing');
-    const viaKeeper = keeperRing();
-    ringOnce(!viaKeeper); ringTimer = setInterval(() => ringOnce(!viaKeeper), 1600);
+    keeperRing();
+    const tick = () => ringOnce(!(keeperMode === 'ring' && !keeper.paused));
+    tick(); ringTimer = setInterval(tick, 1600);
     let on = false; titleTimer = setInterval(() => { document.title = (on = !on) ? '🔔 طلبك جاهز!' : 'البيجر | DEV MENU'; }, 800);
   }
   let titleTimer = null;
@@ -311,7 +327,7 @@
   $('test-btn').onclick = () => { unlockAudio(); ringOnce(); };
   $('got-btn').onclick = () => { ack(); dismissed = true; stopRinging(); $('d-title').textContent = 'بالعافية!'; $('d-sub').textContent = 'نتشرف بزيارتك مرة ثانية.'; saveToken(''); show('done'); };
   $('new-btn').onclick = () => { saveToken(''); show('start'); };
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) { keepAwake(); if (loadToken()) poll(); } });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { keepAwake(); if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {}); if (keeperMode && keeper.paused) keeper.play().catch(() => {}); if (loadToken()) poll(); } });
 
   (async function init() {
     if (!slug) return unavailable('الرابط غير صحيح', 'امسح رمز QR من عند الكاشير.');
