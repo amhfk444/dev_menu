@@ -72,12 +72,13 @@
     </div>
     <div id="push-on" class="hidden text-[13px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl py-3 px-3">✅ الإشعارات مفعّلة — بيوصلك التنبيه حتى لو قفلت الجوال</div>
     <button id="push-btn" class="btn btn-brand hidden"><i class="fa-solid fa-bell"></i> فعّل الإشعارات (يوصلك والجوال مقفول)</button>
-    <p id="push-unsupported" class="hidden text-[12px] font-bold text-amber-900 bg-amber-50 border border-amber-200 rounded-2xl p-3">متصفحك ما يدعم الإشعارات — خلّ هذي الصفحة مفتوحة والشاشة شغالة عشان يرن جوالك.</p>
-    <p id="push-denied" class="hidden text-[12px] font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-2xl p-3">الإشعارات مرفوضة في متصفحك — خلّ هذي الصفحة مفتوحة عشان يرن جوالك.</p>
+    <div id="keep-on" class="hidden text-[13px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl py-3 px-3">✅ التنبيه شغّال — بيرن جوالك حتى لو طلعت من الصفحة أو قفلت الشاشة</div>
+    <button id="keep-btn" class="btn btn-brand hidden"><i class="fa-solid fa-bell"></i> فعّل التنبيه وانت برا الصفحة</button>
     <button id="unlock-btn" class="btn btn-brand hidden"><i class="fa-solid fa-volume-high"></i> فعّل صوت التنبيه</button>
     <ul class="text-[12.5px] font-bold opacity-70 space-y-1.5 text-right bg-[#f5f2eb] rounded-2xl p-4">
-      <li><i class="fa-solid fa-mobile-screen ml-1"></i> خلّ هذي الصفحة مفتوحة والشاشة شغالة</li>
-      <li><i class="fa-solid fa-volume-high ml-1"></i> ارفع صوت الجوال، وطفّ الوضع الصامت</li>
+      <li><i class="fa-solid fa-mobile-screen ml-1"></i> تقدر تطلع من الصفحة وتقفل الجوال، بس لا تسكّر المتصفح</li>
+      <li><i class="fa-solid fa-volume-high ml-1"></i> ارفع صوت الجوال (صوت الوسائط)</li>
+      <li><i class="fa-solid fa-music ml-1"></i> لا تشغّل مقطع أو موسيقى ثانية وانت تنتظر</li>
     </ul>
     <button id="test-btn" class="text-xs font-black opacity-60 underline">جرّب صوت التنبيه</button>
   </section>
@@ -131,21 +132,72 @@
     g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(0.5, at + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
     o.connect(g).connect(ctx.destination); o.start(at); o.stop(at + dur + 0.02);
   }
-  function ringOnce() {
-    if (audioReady()) { const t = ctx.currentTime; [0, 0.18, 0.36, 0.7, 0.88, 1.06].forEach((d, i) => beep(t + d, i % 2 ? 1320 : 990, 0.14)); }
+  function ringOnce(sound = true) {
+    if (sound && audioReady()) { const t = ctx.currentTime; [0, 0.18, 0.36, 0.7, 0.88, 1.06].forEach((d, i) => beep(t + d, i % 2 ? 1320 : 990, 0.14)); }
     if (navigator.vibrate) navigator.vibrate([400, 150, 400, 150, 400]);
   }
+  // ─── إبقاء الصفحة حيّة بالخلفية بدون تثبيت (للآيفون: Safari ما يسمح بالإشعارات إلا من الشاشة الرئيسية) ───
+  // مقطع صوت شبه صامت يشتغل بتكرار ← Safari يعامل الصفحة كمشغّل صوت ويخليها تشتغل والجوال مقفول،
+  // فيكمل الاستعلام عن الحالة. لما يجهز الطلب نبدّل المقطع لصوت الرنين على نفس العنصر.
+  function wavUrl(sec, fn) {
+    const rate = 22050, n = Math.floor(rate * sec), v = new DataView(new ArrayBuffer(44 + n * 2));
+    const w = (o, str) => [...str].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+    w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true);
+    v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true);
+    v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 2, true);
+    for (let i = 0; i < n; i++) v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, fn(i / rate))) * 32767 | 0, true);
+    return URL.createObjectURL(new Blob([v.buffer], { type: 'audio/wav' }));
+  }
+  const RING_AT = [0, 0.18, 0.36, 0.7, 0.88, 1.06];
+  const ringWave = (t) => {
+    const i = RING_AT.findIndex(d => t >= d && t < d + 0.14);
+    if (i < 0) return 0;
+    const x = t - RING_AT[i], env = Math.min(1, x / 0.01, (0.14 - x) / 0.01);
+    return (Math.sin(2 * Math.PI * (i % 2 ? 1320 : 990) * x) > 0 ? 0.6 : -0.6) * env;
+  };
+  const keeper = new Audio(); keeper.loop = true; keeper.setAttribute('playsinline', '');
+  let keeperMode = '', silentUrl = '', ringUrl = '', storeInfo = {}, curNumber = '';
+  const keeperOn = () => !!keeperMode && !keeper.paused;
+  keeper.addEventListener('playing', () => renderPush());
+  keeper.addEventListener('pause', () => renderPush());
+  function setMedia(title) {
+    if (!('mediaSession' in navigator)) return;
+    try { navigator.mediaSession.metadata = title ? new MediaMetadata({ title, artist: storeInfo.name || 'البيجر الرقمي', album: 'DEV MENU', artwork: storeInfo.logo_url ? [{ src: storeInfo.logo_url, sizes: '512x512' }] : [] }) : null; } catch {}
+  }
+  // لازم تنادى من ضغطة العميل نفسها
+  function startKeeper() {
+    if (keeperOn()) return;
+    silentUrl = silentUrl || wavUrl(3, () => (Math.random() - 0.5) * 0.0002);
+    if (keeperMode !== 'ring') { keeper.src = silentUrl; keeperMode = 'silent'; }
+    keeper.play().catch(() => { keeperMode = ''; renderPush(); });
+    setMedia(curNumber ? `رقمك ${curNumber} — جاري تجهيز طلبك` : 'البيجر — جاري تجهيز طلبك');
+  }
+  function keeperRing() {
+    if (!keeperOn()) return false;
+    ringUrl = ringUrl || wavUrl(1.6, ringWave);
+    keeperMode = 'ring'; keeper.src = ringUrl;
+    keeper.play().catch(() => {});
+    setMedia(`🔔 طلبك جاهز! رقم ${curNumber}`);
+    return true;
+  }
+  function stopKeeper() {
+    if (!keeperMode) return;
+    keeperMode = ''; keeper.pause(); keeper.removeAttribute('src'); keeper.load(); setMedia('');
+  }
+
   let ringTimer = null;
   function startRinging() {
     if (ringTimer) return;
     document.body.classList.add('ringing');
-    ringOnce(); ringTimer = setInterval(ringOnce, 1600);
+    const viaKeeper = keeperRing();
+    ringOnce(!viaKeeper); ringTimer = setInterval(() => ringOnce(!viaKeeper), 1600);
     let on = false; titleTimer = setInterval(() => { document.title = (on = !on) ? '🔔 طلبك جاهز!' : 'البيجر | DEV MENU'; }, 800);
   }
   let titleTimer = null;
   function stopRinging() {
     clearInterval(ringTimer); clearInterval(titleTimer); ringTimer = titleTimer = null;
     document.body.classList.remove('ringing'); document.title = 'البيجر | DEV MENU';
+    stopKeeper();
     if (navigator.vibrate) navigator.vibrate(0);
   }
 
@@ -155,8 +207,6 @@
 
   // ─── إشعارات Web Push (توصل والجوال مقفول) ───
   let pushKey = '';
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   const pushSupported = () => !!pushKey && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
   const pushDone = () => { try { return localStorage.getItem(`${KEY}_push`) === loadToken(); } catch { return false; } };
   const b64 = (s) => { const p = '='.repeat((4 - s.length % 4) % 4); const r = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from([...r].map(c => c.charCodeAt(0))); };
@@ -170,27 +220,31 @@
       const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(pushKey) });
       await DM.post('/api/pager?action=subscribe', { slug, t: token, sub: sub.toJSON() });
       try { localStorage.setItem(`${KEY}_push`, token); } catch {}
+      if (keeperMode === 'silent') stopKeeper();   // الإشعار يكفي، ما نحتاج الصوت بالخلفية
       return true;
     } catch (e) { console.warn('push subscribe failed', e); return false; }
   }
   async function askPush() {
     if (!pushSupported()) return;
+    startKeeper();
     try { if (Notification.permission === 'default') await Notification.requestPermission(); } catch {}
     await subscribePush(); renderPush();
   }
-  // نوضّح للعميل دايماً هل التنبيه بيوصله والجوال مقفول، وإذا لا ليش
+  // نوضّح للعميل دايماً هل التنبيه بيوصله وهو برا الصفحة: إشعار (أندرويد) أو صوت بالخلفية (آيفون بدون تثبيت)
   function renderPush() {
     const on = pushDone(), supported = pushSupported();
     const denied = supported && Notification.permission === 'denied';
-    const iosNeedsHome = !!pushKey && isIOS && !standalone;
+    const kept = keeperOn();
     $('push-on').classList.toggle('hidden', !on);
-    $('push-unsupported').classList.toggle('hidden', on || iosNeedsHome || supported || !pushKey);
-    $('push-denied').classList.toggle('hidden', on || !denied);
+    $('keep-on').classList.toggle('hidden', on || !kept);
     $('push-btn').classList.toggle('hidden', on || denied || !supported);
+    $('keep-btn').classList.toggle('hidden', on || kept || (supported && !denied));
+    $('unlock-btn').classList.toggle('hidden', !on || audioReady());
   }
 
   function setStore(s) {
     if (!s) return;
+    storeInfo = s;
     $('store-name').textContent = s.name || '';
     if (s.logo_url) { $('logo').src = s.logo_url; $('logo').classList.remove('hidden'); }
   }
@@ -210,11 +264,12 @@
     }
     setStore(r.store);
     const st = r.ticket.status;
+    curNumber = r.ticket.number;
     $('w-number').textContent = r.ticket.number; $('r-number').textContent = r.ticket.number;
     const inv = r.ticket.invoice_no || '';
     ['w-invoice', 'r-invoice'].forEach(id => { $(id).classList.toggle('hidden', !inv); $(id).querySelector('span').textContent = inv; });
     $('w-tell').classList.toggle('hidden', !!inv);
-    if (st === 'waiting') { show('waiting'); keepAwake(); renderPush(); if (!audioReady()) $('unlock-btn').classList.remove('hidden'); }
+    if (st === 'waiting') { show('waiting'); keepAwake(); renderPush(); if (keeperMode === 'silent') setMedia(`رقمك ${curNumber} — جاري تجهيز طلبك`); }
     else if (st === 'ready') { show('ready'); if (!dismissed) startRinging(); if (!document.hidden) ack(); }
     else {
       stopRinging(); saveToken('');
@@ -223,7 +278,7 @@
       show('done'); lastStatus = st; return;
     }
     lastStatus = st;
-    pollTimer = setTimeout(poll, document.hidden ? 8000 : 3000);
+    pollTimer = setTimeout(poll, document.hidden ? 5000 : 3000);
   }
 
   let dismissed = false, acked = '';
@@ -235,7 +290,7 @@
     DM.post('/api/pager?action=ack', { slug, t }).catch(() => { acked = ''; });
   }
   $('take-btn').onclick = async () => {
-    unlockAudio();
+    unlockAudio(); startKeeper();
     // طلب الإذن لازم يبدأ من ضغطة العميل نفسها
     const perm = pushSupported() && Notification.permission === 'default' ? Notification.requestPermission().catch(() => {}) : null;
     const btn = $('take-btn'); btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
@@ -246,10 +301,12 @@
       await subscribePush();
       await poll();
     } catch (e) {
+      stopKeeper();
       unavailable(e.code === 'FULL' ? 'وصلنا الحد اليومي للأرقام' : 'تعذر أخذ رقم', 'اسأل الكاشير.');
     } finally { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-ticket"></i> خذ رقمي وفعّل التنبيه'; }
   };
   $('unlock-btn').onclick = unlockAudio;
+  $('keep-btn').onclick = () => { unlockAudio(); startKeeper(); };
   $('push-btn').onclick = askPush;
   $('test-btn').onclick = () => { unlockAudio(); ringOnce(); };
   $('got-btn').onclick = () => { ack(); dismissed = true; stopRinging(); $('d-title').textContent = 'بالعافية!'; $('d-sub').textContent = 'نتشرف بزيارتك مرة ثانية.'; saveToken(''); show('done'); };
