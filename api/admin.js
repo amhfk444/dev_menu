@@ -2,9 +2,10 @@
 // DEV MENU — API المدير العام (السوبر أدمن)
 // كل طلب يتحقق من إن البريد موجود في جدول super_admins قبل أي شي
 // =====================================================================
+const crypto = require('crypto');
 const {
   handler, rest, rpc, q, storage, storagePathFromUrl, BUCKET,
-  ApiError, getUser, isSuperAdmin, str, int, readBody, SLUG_RE, RESERVED_SLUGS
+  ApiError, getUser, isSuperAdmin, str, int, readBody, waNumber, SLUG_RE, RESERVED_SLUGS
 } = require('./_lib/core');
 
 const { sendMail, mailConfigured } = require('./_lib/mail');
@@ -19,6 +20,8 @@ async function sendInvoice(main, invoice) {
   const sent = await sendMail({ to: main.email, subject: mail.subject, html: mail.html, text: mail.text });
   return { sent, reason: sent ? null : 'SEND_FAILED', to: main.email, number, total: mail.total };
 }
+
+const escHtml = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // رابط متاح؟ (ما يستخدمه متجر حالياً ولا سابقاً)
 async function slugFree(slug) {
@@ -49,6 +52,29 @@ module.exports = handler(['GET', 'POST'], async (req) => {
 
   if (req.method !== 'POST') throw new ApiError(404, 'Unknown action');
   const b = readBody(req);
+
+  // ─── منيو جاهز لعميل محتمل: متجر بدون صاحب (بدون بريد) يجهّزه المدير العام ويرسل رابطه ───
+  // ما أحد يقدر يدخل لوحته غير المدير العام، لين يُنقل لبريد صاحب المطعم بـ "transfer"
+  if (action === 'prospect-create') {
+    const name = str(b.name, 80, 'اسم المطعم');
+    if (!name) throw new ApiError(400, 'اكتب اسم المطعم');
+    let phone = '';
+    try { phone = waNumber(b.phone); } catch { throw new ApiError(400, 'رقم الجوال غير صحيح'); }
+    const slugWanted = String(b.slug || '').trim().toLowerCase();
+    if (slugWanted && !(await slugFree(slugWanted))) throw new ApiError(400, 'الرابط غير صالح أو مستخدم', 'SLUG_TAKEN');
+    // نستخدم نفس دالة التسجيل ببريد مؤقت ما يستقبل رسائل (.invalid)، وبعدها نشيله
+    const temp = `prospect-${crypto.randomBytes(6).toString('hex')}@prospect.invalid`;
+    const slug = await rpc('server_register_client', { p_email: temp, p_name: name, p_phone: phone, p_type: 'restaurant' });
+    const row = (await rest(`clients?email=eq.${q(temp)}&select=id&limit=1`))[0];
+    if (!row) throw new ApiError(500, 'تعذر إنشاء المتجر');
+    // فترة تجربة أطول (30 يوم) عشان يبقى رابط العرض شغال لين يرد العميل
+    const extra = { trial_ends_at: new Date(Date.now() + 30 * 86400e3).toISOString() };
+    if (slugWanted && slugWanted !== slug) extra.client_slug = slugWanted;
+    await rest(`clients?id=eq.${row.id}`, { method: 'PATCH', body: extra });
+    try { await rest(`clients?id=eq.${row.id}`, { method: 'PATCH', body: { email: null } }); } catch {}   // لو العمود ما يقبل فاضي يبقى البريد المؤقت
+    return { client: (await rest(`clients?id=eq.${row.id}&select=*`))[0] };
+  }
+
   const id = int(b.id);
   if (!Number.isInteger(id)) throw new ApiError(400, 'معرف المتجر غير صحيح');
   const patch = async (payload) => {
@@ -87,6 +113,35 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const name = str(b.name, 80, 'الاسم');
     if (!name) throw new ApiError(400, 'اكتب الاسم');
     return patch({ name });
+  }
+  // ─── نقل المتجر لصاحب المطعم: يدخل ببريده (رمز تحقق أو Google) ويلقى المنيو جاهز ───
+  if (action === 'transfer') {
+    const email = String(b.email || '').trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 120) throw new ApiError(400, 'البريد غير صحيح');
+    const target = (await rest(`clients?id=eq.${id}&select=id,name,client_slug,parent_id,subscription_status`))[0];
+    if (!target) throw new ApiError(404, 'المتجر غير موجود');
+    if (target.parent_id) throw new ApiError(400, 'الفرع يتبع صاحب المتجر الرئيسي، انقل المتجر الرئيسي');
+    const taken = await rest(`clients?email=eq.${q(email)}&id=neq.${id}&select=id&limit=1`);
+    if (taken.length) throw new ApiError(409, 'هذا البريد مرتبط بمتجر ثاني', 'EMAIL_TAKEN');
+    const body = { email };
+    // التجربة المجانية (7 أيام) تبدأ من يوم استلامه للمتجر
+    if (target.subscription_status === 'trial') body.trial_ends_at = new Date(Date.now() + 7 * 86400e3).toISOString();
+    const out = await patch(body);
+    let mailed = false;
+    if (mailConfigured()) {
+      const url = `https://${target.client_slug}.devmenu.digital/`;
+      mailed = await sendMail({
+        to: email, fromName: 'DEV MENU',
+        subject: `منيو ${target.name} جاهز على DEV MENU`,
+        text: `مرحباً،\n\nجهّزنا منيو "${target.name}" الرقمي على DEV MENU:\n${url}\n\nلإدارته (تعديل الأسعار والأطباق): ادخل على https://www.devmenu.digital/login.html بهذا البريد (${email}).\nتجربتك المجانية 7 أيام.\n\nفريق DEV MENU`,
+        html: `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;line-height:1.9;color:#1b3022">
+          <h2 style="margin:0 0 10px">منيو ${escHtml(target.name)} جاهز</h2>
+          <p>جهّزنا منيو مطعمك الرقمي على DEV MENU: <a href="${url}">${url}</a></p>
+          <p>لإدارته (تعديل الأسعار والأطباق والصور) ادخل على <a href="https://www.devmenu.digital/login.html">صفحة الدخول</a> بهذا البريد: <b dir="ltr">${escHtml(email)}</b></p>
+          <p>تجربتك المجانية 7 أيام.</p><p style="color:#6b7280">فريق DEV MENU</p></div>`
+      }).catch(() => false);
+    }
+    return { ...out, mailed };
   }
   if (action === 'notify') return patch({ admin_notification: str(b.message, 300, 'الإشعار') || null });
   if (action === 'featured') return patch({ is_featured: b.featured === true });

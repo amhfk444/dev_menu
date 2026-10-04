@@ -144,6 +144,7 @@ tailwind.config = { theme: { extend: {
             <option value="expiry">الأقرب انتهاءً</option>
             <option value="name">الاسم</option>
           </select>
+          <button onclick="createProspect()" class="shrink-0 px-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold whitespace-nowrap"><i class="fa-solid fa-wand-magic-sparkles"></i> منيو لعميل محتمل</button>
           <button onclick="exportCsv()" class="shrink-0 px-3 rounded-xl bg-brand/10 hover:bg-brand/15 border border-brand/20 text-xs font-bold whitespace-nowrap"><i class="fa-solid fa-file-arrow-down"></i> تصدير</button>
         </div>
       </div>
@@ -397,6 +398,7 @@ tailwind.config = { theme: { extend: {
             <p class="text-[11px] text-ink/55 flex items-center gap-1.5 mt-0.5"><i class="fa-solid ${type[1]} text-[10px]"></i> ${type[0]} · <span class="font-mono" dir="ltr">${esc(c.client_slug)}</span></p>
             <div class="flex flex-wrap gap-1.5 mt-2">
               <span class="text-[10px] font-black px-2 py-0.5 rounded-full border ${s.cls}">${s.label}</span>
+              ${isProspect(c) ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-purple-500/10 text-purple-700 border-purple-500/20"><i class="fa-solid fa-wand-magic-sparkles"></i> عميل محتمل</span>' : ''}
               ${c.waitlist_enabled ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-sky-500/10 text-sky-700 border-sky-500/20"><i class="fa-solid fa-hourglass-half"></i> الانتظار</span>' : ''}
               ${c.admin_notification ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-blue-500/10 text-blue-700 border-blue-500/20"><i class="fa-solid fa-bell"></i> إشعار</span>' : ''}
             </div>
@@ -405,7 +407,7 @@ tailwind.config = { theme: { extend: {
 
         <div class="text-[11px] space-y-1 bg-brand/[0.04] border border-brand/10 rounded-xl p-3">
           <p class="flex justify-between gap-2"><span class="text-ink/55">الاشتراك</span><b class="${isSoon(c) ? 'text-amber-700' : ''}">${esc(s.endText)}${days}</b></p>
-          <p class="flex justify-between gap-2"><span class="text-ink/55">البريد</span><span class="truncate" dir="ltr">${c.email ? esc(c.email) : c.parent_id ? '<span class="text-ink/50">يديره صاحب المتجر الرئيسي</span>' : '<span class="text-red-600 font-bold">— بدون بريد —</span>'}</span></p>
+          <p class="flex justify-between gap-2"><span class="text-ink/55">البريد</span><span class="truncate" dir="ltr">${isProspect(c) ? '<span class="text-purple-700 font-bold">ما تسلّمه صاحبه بعد</span>' : c.email ? esc(c.email) : c.parent_id ? '<span class="text-ink/50">يديره صاحب المتجر الرئيسي</span>' : '<span class="text-red-600 font-bold">— بدون بريد —</span>'}</span></p>
           <p class="flex justify-between gap-2"><span class="text-ink/55">الجوال</span>${c.phone ? (phone ? `<a href="https://wa.me/${phone}" target="_blank" rel="noopener" class="text-green-700 font-bold" dir="ltr"><i class="fa-brands fa-whatsapp"></i> ${esc(c.phone)}</a>` : `<span dir="ltr">${esc(c.phone)}</span>`) : '<span class="text-ink/40">—</span>'}</p>
         </div>
 
@@ -454,6 +456,8 @@ tailwind.config = { theme: { extend: {
       <div class="menu-pop" onclick="event.stopPropagation()">
         <a href="${esc(DM.storeUrl(c.client_slug))}" target="_blank" rel="noopener"><i class="fa-solid fa-eye"></i> فتح المنيو</a>
         <a href="admin.html?client=${slug}" target="_blank" rel="noopener"><i class="fa-solid fa-gauge-high"></i> إدارة لوحته</a>
+        ${isProspect(c) ? `<a href="${esc(pitchLink(c))}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" style="color:#16a34a"></i> أرسل له المنيو واتساب</a>
+        <button onclick="transferStore(${id})"><i class="fa-solid fa-key" style="color:#7c3aed"></i> تسليم المتجر لصاحبه</button>` : ''}
         ${remind && !c.parent_id ? `<a href="${esc(remind)}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" style="color:#16a34a"></i> رسالة تذكير بالتجديد</a>` : ''}
         ${!c.parent_id ? `<button onclick="addBranch(${id})"><i class="fa-solid fa-code-branch" style="color:#047857"></i> إضافة فرع · ${money(PLAN_PRICE.branch)}/سنة</button>` : ''}
         <button onclick="renameStore(${id})"><i class="fa-solid fa-pen"></i> تعديل الاسم</button>
@@ -537,6 +541,63 @@ tailwind.config = { theme: { extend: {
       });
       if (send && msg && phone) window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
     } catch (e) { showToast(`تعذر إنشاء الفرع: ${e.message}`, true); }
+  }
+
+  // ─── منيو جاهز لعميل محتمل ───
+  // متجر بدون بريد: يجهّزه المدير العام من لوحته، ولما يوافق صاحب المطعم يتسلّمه ببريده
+  const isProspect = (c) => !c.parent_id && (!c.email || /@prospect\.invalid$/i.test(c.email));
+  function pitchLink(c) {
+    const phone = waPhone(c.phone);
+    const msg = `السلام عليكم 👋\nمعك فريق DEV MENU.\nجهّزنا لكم منيو رقمي جاهز لـ "${c.name}" بنفس أطباقكم وصوركم، تقدرون تشوفونه من هنا:\n${DM.storeUrl(c.client_slug)}\n\nإذا عجبكم نسلّمه لكم مجاناً تجربة 7 أيام، وتعدلون عليه الأسعار والأطباق من جوالكم.`;
+    return phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  }
+  async function createProspect() {
+    const r = await DMDialog.form({
+      title: 'منيو جاهز لعميل محتمل', subtitle: 'متجر بدون صاحب، تجهّزه أنت وترسل رابطه', icon: 'fa-wand-magic-sparkles', confirmText: 'إنشاء',
+      fields: [
+        { name: 'name', label: 'اسم المطعم', maxlength: 80, required: true, placeholder: 'مثال: مطعم أوسلو برجر' },
+        { name: 'slug', label: 'الرابط', dir: 'ltr', maxlength: 30, placeholder: 'oslo-burger',
+          hint: 'حروف إنجليزية صغيرة وأرقام وشرطة. اتركه فاضي ونختاره تلقائياً.',
+          validate: (v) => v && !/^[a-z0-9](?:[a-z0-9-]{1,28})[a-z0-9]$/.test(v.toLowerCase()) ? 'الرابط من 3 إلى 30 حرف: حروف إنجليزية صغيرة وأرقام وشرطة' : '' },
+        { name: 'phone', label: 'جوال المطعم (اختياري، لإرسال الرابط واتساب)', dir: 'ltr', maxlength: 20, placeholder: '05xxxxxxxx أو +971...' }
+      ],
+      note: 'يبدأ بتجربة 30 يوم عشان يبقى الرابط شغال لين يرد العميل. لما يوافق: من قائمة المتجر اختر "تسليم المتجر لصاحبه" واكتب بريده.'
+    });
+    if (!r) return;
+    try {
+      const res = await DM.post(A('prospect-create'), { name: r.name, slug: r.slug.toLowerCase(), phone: r.phone }, true).catch(e => { throw forbidden(e); });
+      await loadClients();
+      const c = res.client;
+      const go = await DMDialog.confirm({
+        title: 'تم إنشاء المتجر', icon: 'fa-circle-check', tone: 'success',
+        message: `${c.name} · ${DM.storeUrl(c.client_slug)}\n\nالخطوة الجاية: افتح لوحته وأضف الأقسام والأطباق والصور، وبعدها أرسل الرابط للمطعم.`,
+        confirmText: 'افتح لوحته وجهّز المنيو', cancelText: 'لاحقاً'
+      });
+      if (go) window.open(`admin.html?client=${encodeURIComponent(c.client_slug)}`, '_blank', 'noopener');
+    } catch (e) { showToast(`تعذر الإنشاء: ${e.message}`, true); }
+  }
+  async function transferStore(id) {
+    openMenu = null; renderStores();
+    const c = find(id); if (!c) return;
+    const r = await DMDialog.form({
+      title: 'تسليم المتجر لصاحبه', subtitle: c.name, icon: 'fa-key', confirmText: 'تسليم',
+      fields: [{ name: 'email', label: 'بريد صاحب المطعم', dir: 'ltr', maxlength: 120, required: true, placeholder: 'owner@example.com',
+        validate: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? '' : 'اكتب بريد صحيح' }],
+      note: 'يدخل بهذا البريد من صفحة الدخول (رمز تحقق أو Google) ويلقى المنيو جاهز بكل أطباقه. تبدأ تجربته المجانية 7 أيام من الآن.'
+    });
+    if (!r) return;
+    try {
+      const res = await DM.post(A('transfer'), { id, email: r.email.trim() }, true).catch(e => { throw forbidden(e); });
+      await loadClients();
+      const phone = waPhone(c.phone);
+      const msg = `مبروك 🎉 صار منيو "${c.name}" باسمكم.\nالمنيو: ${DM.storeUrl(c.client_slug)}\nللتعديل على الأسعار والأطباق ادخلوا هنا بالبريد ${res.client.email}:\nhttps://www.devmenu.digital/login.html\nتجربتكم المجانية 7 أيام.`;
+      const send = await DMDialog.confirm({
+        title: 'تم التسليم', icon: 'fa-circle-check', tone: 'success',
+        message: `${c.name} صار باسم ${res.client.email}.${res.mailed ? '\n\nانرسل له بريد فيه رابط الدخول.' : '\n\nما انرسل بريد، أرسل له طريقة الدخول بنفسك.'}`,
+        confirmText: phone ? 'أرسل له التفاصيل واتساب' : 'تم', cancelText: 'إغلاق'
+      });
+      if (send && phone) window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
+    } catch (e) { showToast(`تعذر التسليم: ${e.message}`, true); }
   }
 
   // حالة إرسال الفاتورة بالبريد (للرسائل)
