@@ -334,13 +334,36 @@
   const translationCache = {};
 
   // ─── الترجمة ───
+  // أقسام شائعة بترجمة ثابتة (خدمة الترجمة أحياناً ترجّع "الفطور" بالعربي أو بحروف كبيرة)
+  const GLOSSARY = {
+    'الفطور': 'Breakfast', 'الافطار': 'Breakfast', 'الإفطار': 'Breakfast', 'فطور': 'Breakfast',
+    'الغداء': 'Lunch', 'غداء': 'Lunch', 'العشاء': 'Dinner', 'عشاء': 'Dinner',
+    'المشروبات': 'Drinks', 'مشروبات': 'Drinks', 'المشروبات الباردة': 'Cold Drinks', 'المشروبات الساخنة': 'Hot Drinks',
+    'القهوة': 'Coffee', 'قهوة': 'Coffee', 'الحلى': 'Desserts', 'الحلويات': 'Desserts', 'حلى': 'Desserts',
+    'السلطات': 'Salads', 'سلطات': 'Salads', 'المقبلات': 'Appetizers', 'مقبلات': 'Appetizers',
+    'الأطباق الرئيسية': 'Main Dishes', 'الاطباق الرئيسية': 'Main Dishes', 'الشوربات': 'Soups', 'العصائر': 'Juices', 'عصائر': 'Juices',
+    'المخبوزات': 'Bakery', 'الساندويتشات': 'Sandwiches', 'السندويتشات': 'Sandwiches', 'البيتزا': 'Pizza', 'البرجر': 'Burgers'
+  };
+  const hasArabic = (s) => /[؀-ۿ]/.test(s);
+  // "SALADS" ← "Salads" و "Breakfast." ← "Breakfast" للنصوص القصيرة فقط
+  function tidy(t, src) {
+    t = String(t).trim();
+    if (src.split(/\s+/).length > 3) return t;
+    t = t.replace(/[.。]+$/, '');
+    if (t.length > 3 && t === t.toUpperCase()) t = t.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+    return t;
+  }
   async function translateText(text) {
     if (!text || translationCache[text]) return;
+    const fixed = GLOSSARY[text.trim()];
+    if (fixed) { translationCache[text] = fixed; return; }
     try {
       const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=ar|en`);
       const data = await res.json();
-      const t = data && data.responseData && data.responseData.translatedText;
-      if (t) translationCache[text] = t;
+      // نرفض أي "ترجمة" فيها حروف عربية ونجرب البدائل
+      const options = [data && data.responseData && data.responseData.translatedText, ...((data && data.matches) || []).map(m => m.translation)];
+      const t = options.find(o => o && !hasArabic(o));
+      if (t) translationCache[text] = tidy(t, text);
     } catch (e) { console.error(e); }
   }
   // يترجم كل النصوص دفعة وحدة (6 طلبات بالتوازي) بدل طبق طبق
