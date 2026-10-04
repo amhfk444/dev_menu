@@ -132,6 +132,13 @@ async function findPublicStore(rawSlug, fields) {
   return { slug, store: old };
 }
 
+// عملات المنيو المسموحة (نفس قائمة js/api.js)
+const CURRENCIES = {
+  SAR: 'ر.س', AED: 'د.إ', KWD: 'د.ك', QAR: 'ر.ق', BHD: 'د.ب', OMR: 'ر.ع', EGP: 'ج.م', JOD: 'د.أ', IQD: 'د.ع',
+  LBP: 'ل.ل', YER: 'ر.ي', SYP: 'ل.س', MAD: 'د.م', DZD: 'د.ج', TND: 'د.ت', LYD: 'د.ل', SDG: 'ج.س', TRY: '₺',
+  PKR: 'روبية', INR: '₹', GBP: '£', USD: '$', EUR: '€'
+};
+
 const int = (v) => { const n = Number(v); return Number.isInteger(n) ? n : NaN; };
 
 function readBody(req) {
@@ -161,5 +168,5 @@ function handler(methods, fn) {
 module.exports = {
   SUPABASE_URL, BUCKET, ApiError, rest, rpc, q, storage, publicUrl, ownsMediaUrl, storagePathFromUrl,
   getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody, handler,
-  SLUG_RE, RESERVED_SLUGS, findPublicStore
+  SLUG_RE, RESERVED_SLUGS, findPublicStore, CURRENCIES
 };

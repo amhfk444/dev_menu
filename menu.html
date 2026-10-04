@@ -306,9 +306,8 @@
 
 <script>
   // البيانات كلها تجي من خادمنا: /api/public
-  // السعر مع رمز الريال الجديد: "⃁ 25" (الرمز يسار الرقم)
-  const SAR = '\u20C1';
-  const money = (n) => `\u2066${SAR} ${n}\u2069`;
+  // السعر بعملة المتجر (الافتراضي الريال الجديد "⃁ 25")
+  const money = (n) => DM.money(n, project && project.currency, currentLang);
 
 
   // حماية من حقن الكود: أي نص قادم من قاعدة البيانات يمر من هنا قبل عرضه
@@ -1182,21 +1181,22 @@
   function sendCart() {
     if (!cart.length || !orderingOn()) return;
     const ar = currentLang === 'ar';
+    const cur = DM.currencyText(project && project.currency, currentLang);
     const lines = cart.map(c => {
       const p = productById(c.id); if (!p) return '';
       const u = unitPrice(p, c.size); if (u == null) return '';
       const sub = round2(u * c.qty);
-      return ar ? `• ${c.qty} × ${p.name}${c.size ? ` (${c.size})` : ''} — ${sub} ر.س` : `• ${c.qty} × ${lineName(p, c)} — ${sub} SAR`;
+      return ar ? `• ${c.qty} × ${p.name}${c.size ? ` (${c.size})` : ''} — ${sub} ${cur}` : `• ${c.qty} × ${lineName(p, c)} — ${sub} ${cur}`;
     }).filter(Boolean);
     const { total } = cartTotals();
     const baseTotal = round2(cart.reduce((n, c) => { const p = productById(c.id); const b = p && basePrice(p, c.size); return b == null ? n : n + b * c.qty; }, 0));
     const autoSaved = round2(baseTotal - total);
-    const dealLine = autoSaved > 0 ? [ar ? `خصم العروض: ${autoSaved} ر.س (الأسعار أعلاه بعد الخصم)` : `Deals: −${autoSaved} SAR (prices above are discounted)`] : [];
+    const dealLine = autoSaved > 0 ? [ar ? `خصم العروض: ${autoSaved} ${cur} (الأسعار أعلاه بعد الخصم)` : `Deals: −${autoSaved} ${cur} (prices above are discounted)`] : [];
     // مع الكوبون: المجموع قبل الخصم + الخصم + المطلوب دفعه (أرقام الخادم)
     const totals = coupon
-      ? (ar ? [`المجموع: ${coupon.subtotal} ر.س`, `كوبون ${coupon.coupon.code}: خصم ${coupon.discount} ر.س`, `المطلوب: ${coupon.total} ر.س`]
-            : [`Subtotal: ${coupon.subtotal} SAR`, `Coupon ${coupon.coupon.code}: −${coupon.discount} SAR`, `Total: ${coupon.total} SAR`])
-      : [ar ? `المجموع: ${total} ر.س` : `Total: ${total} SAR`];
+      ? (ar ? [`المجموع: ${coupon.subtotal} ${cur}`, `كوبون ${coupon.coupon.code}: خصم ${coupon.discount} ${cur}`, `المطلوب: ${coupon.total} ${cur}`]
+            : [`Subtotal: ${coupon.subtotal} ${cur}`, `Coupon ${coupon.coupon.code}: −${coupon.discount} ${cur}`, `Total: ${coupon.total} ${cur}`])
+      : [ar ? `المجموع: ${total} ${cur}` : `Total: ${total} ${cur}`];
     const note = document.getElementById('cartNote').value.trim();
     const msg = ar
       ? [`مرحباً ${project.name || ''} 👋`, 'أبغى أطلب:', ...lines, '', ...dealLine, ...totals, ...(note ? [`ملاحظات: ${note}`] : []), '', '(طلب من المنيو الرقمي)'].join('\n')

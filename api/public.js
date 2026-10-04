@@ -9,7 +9,7 @@
 //   POST /api/public?action=track           تسجيل زيارة/مشاهدة (مجهولة)
 // =====================================================================
 const crypto = require('crypto');
-const { handler, rest, rpc, q, ApiError, readBody, int, findPublicStore } = require('./_lib/core');
+const { handler, rest, rpc, q, ApiError, readBody, int, findPublicStore, CURRENCIES } = require('./_lib/core');
 
 const STORE_FIELDS = 'id,name,client_slug,logo_url,bg_image_url,bg_video_url,promo_message,website_url,tiktok_url,instagram_url,whatsapp_number,snapchat_url,opening_hours,location_url,whatsapp_orders,business_type,show_calories,delivery_apps,theme,accent_color,order_numbers,custom_links';
 const PRODUCT_FIELDS = 'id,name,name_en,description,description_en,extra_info,note,price,category,image_url,is_available,is_bestseller,calories,allergens,coffee,sort_order,sizes';
@@ -17,14 +17,18 @@ const bySort = (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.i
 
 async function findStore(rawSlug) {
   // public_clients تعرض المتاجر السارية فقط: المنتهي أو الموقوف ما يرجع منه شي
-  const { store, bad } = await findPublicStore(rawSlug, STORE_FIELDS);
+  // عمود العملة من 23-currency.sql — لو ما انضاف للحين نكمل بدونه (الريال افتراضياً)
+  let found;
+  try { found = await findPublicStore(rawSlug, `${STORE_FIELDS},currency`); }
+  catch { found = await findPublicStore(rawSlug, STORE_FIELDS); }
+  const { store, bad } = found;
   if (bad) throw new ApiError(400, 'رابط المنيو غير صحيح', 'BAD_SLUG');
   if (!store) throw new ApiError(404, 'المنيو غير متاح حالياً', 'NOT_AVAILABLE');
   return store;
 }
 
 const round2 = (n) => Math.round(n * 100) / 100;
-const money = (n) => `${round2(n)} ر.س`;
+const money = (n, cur) => `${round2(n)} ${CURRENCIES[cur] || CURRENCIES.SAR}`;
 
 // المناسبة الجارية اليوم (بتوقيت الرياض). لو فيه أكثر من وحدة نختار الأحدث بداية
 // نرسل الجارية فقط، فمناسبات المتجر القادمة ما تنكشف
@@ -130,7 +134,7 @@ async function priceCart(store, coupon, rawItems) {
   }
   subtotal = round2(subtotal); eligible = round2(eligible);
   if (coupon.min_order != null && subtotal < Number(coupon.min_order)) {
-    throw new ApiError(400, `الكوبون يحتاج طلب بقيمة ${money(coupon.min_order)} أو أكثر`, 'COUPON_MIN_ORDER');
+    throw new ApiError(400, `الكوبون يحتاج طلب بقيمة ${money(coupon.min_order, store.currency)} أو أكثر`, 'COUPON_MIN_ORDER');
   }
   if (eligible <= 0) throw new ApiError(400, 'الكوبون ما يشمل الأصناف اللي في طلبك', 'COUPON_NOT_ELIGIBLE');
   const discount = round2(coupon.type === 'percent' ? eligible * Number(coupon.value) / 100 : Math.min(Number(coupon.value), eligible));

@@ -340,8 +340,8 @@ tailwind.config = {
               <select id="prod-category" required class="input-pro bg-cream"></select>
             </div>
             <div id="price-field">
-              <label class="text-[11px] text-ink/75 block mb-1">السعر (&#x20C1;) *</label>
-              <input type="number" step="0.5" min="0" id="prod-price" placeholder="0.00" class="input-pro">
+              <label class="text-[11px] text-ink/75 block mb-1">السعر (<span class="cur-sign">&#x20C1;</span>) *</label>
+              <input type="number" step="any" min="0" id="prod-price" placeholder="0.00" class="input-pro">
             </div>
           </div>
           <!-- أحجام وأسعار متعددة -->
@@ -526,12 +526,12 @@ tailwind.config = {
             <label class="text-[11px] text-ink/75 block mb-1">نوع الخصم</label>
             <select id="cp-type" onchange="renderCouponForm()" class="input-pro bg-cream">
               <option value="percent">نسبة %</option>
-              <option value="fixed">مبلغ ثابت &#x20C1;</option>
+              <option value="fixed" id="cp-fixed-opt">مبلغ ثابت &#x20C1;</option>
             </select>
           </div>
           <div>
             <label id="cp-value-label" class="text-[11px] text-ink/75 block mb-1">النسبة *</label>
-            <input type="number" id="cp-value" min="0" step="0.5" placeholder="10" class="input-pro" dir="ltr">
+            <input type="number" id="cp-value" min="0" step="any" placeholder="10" class="input-pro" dir="ltr">
           </div>
         </div>
         <div>
@@ -554,7 +554,7 @@ tailwind.config = {
         <div class="grid grid-cols-2 gap-2.5">
           <div class="cp-code-only">
             <label class="text-[11px] text-ink/75 block mb-1">الحد الأدنى للطلب <span class="text-ink/50">(اختياري)</span></label>
-            <input type="number" id="cp-min" min="0" step="1" placeholder="&#x20C1;" class="input-pro" dir="ltr">
+            <input type="number" id="cp-min" min="0" step="any" placeholder="&#x20C1;" class="input-pro" dir="ltr">
           </div>
           <div class="cp-code-only">
             <label class="text-[11px] text-ink/75 block mb-1">عدد مرات الاستخدام <span class="text-ink/50">(اختياري)</span></label>
@@ -975,6 +975,11 @@ tailwind.config = {
           <span class="block text-[10px] text-ink/60 mt-0.5">عند الإيقاف: يختفي حقل السعرات من نموذج الأطباق، ولا تظهر السعرات للزبائن. السعرات المحفوظة تبقى ولا تنحذف.</span>
         </span>
       </label>
+      <div class="bg-brand/5 p-3 rounded-xl border border-brand/15">
+        <label for="info-currency" class="text-xs font-bold text-ink block mb-1.5"><i class="fa-solid fa-coins text-amber-600"></i> عملة المنيو</label>
+        <select id="info-currency" onchange="changeCurrency(this.value)" class="input-pro text-xs cursor-pointer"></select>
+        <span class="block text-[10px] text-ink/60 mt-1">تظهر بجانب كل الأسعار في المنيو وفي رسائل طلبات واتساب. تغيير العملة ما يغيّر أرقام الأسعار نفسها.</span>
+      </div>
       <div id="wa-orders-box" class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2.5">
         <label id="wa-orders-label" class="flex items-start gap-2.5 cursor-pointer">
           <input type="checkbox" id="info-wa-orders" class="w-4 h-4 mt-0.5 accent-green-500 cursor-pointer disabled:cursor-not-allowed">
@@ -1088,9 +1093,11 @@ tailwind.config = {
 <!-- JavaScript البرمجي المنظم -->
 <script>
   // كل البيانات عبر خادمنا /api/owner — المتصفح ما يتصل بقاعدة البيانات
-  // السعر مع رمز الريال الجديد: "⃁ 25" (الرمز يسار الرقم)
-  const SAR = '\u20C1';
-  const money = (n) => `\u2066${SAR} ${n}\u2069`;
+  // السعر بعملة المتجر (الافتراضي الريال الجديد "⃁ 25")
+  const money = (n) => DM.money(n, client && client.currency, 'ar');
+  const curSign = () => DM.currencySign(client && client.currency);
+  // اشتراك DEV MENU دايماً بالريال السعودي، مهما كانت عملة المتجر
+  const sar = (n) => DM.money(n, 'SAR', 'ar');
 
 
   // حماية من حقن الكود: أي نص قادم من قاعدة البيانات يمر من هنا قبل عرضه
@@ -1309,6 +1316,7 @@ tailwind.config = {
     renderWaOrderState();
     renderBusinessType();
     applyCaloriesSetting();
+    applyCurrencySetting();
     deliveryApps = (Array.isArray(client.delivery_apps) ? client.delivery_apps : []).map(d => ({ ...d }));
     renderDeliveryPicker();
     renderAppearance();
@@ -1366,11 +1374,11 @@ tailwind.config = {
     const verb = status === 'active' ? 'جدّد' : 'اشترك';
     box.innerHTML = `
       <p>الحالة: <span class="${color} font-bold">${label}</span></p>
-      ${branchCount() ? `<p class="text-[11px] text-emerald-800 font-bold"><i class="fa-solid fa-sitemap"></i> ${client.parent_id ? 'اشتراك الفرع تابع لحساب المتجر الرئيسي' : `اشتراك واحد للمتجر و ${branchCount()} ${branchCount() === 1 ? 'فرع' : 'فروع'}`} · ${money(planTotal())} سنوياً</p>` : ''}
+      ${branchCount() ? `<p class="text-[11px] text-emerald-800 font-bold"><i class="fa-solid fa-sitemap"></i> ${client.parent_id ? 'اشتراك الفرع تابع لحساب المتجر الرئيسي' : `اشتراك واحد للمتجر و ${branchCount()} ${branchCount() === 1 ? 'فرع' : 'فروع'}`} · ${sar(planTotal())} سنوياً</p>` : ''}
       ${live && left !== null ? `<p class="text-[11px] text-ink/75">متبقي <b>${daysText(left)}</b> — ينتهي ${esc(endText)}</p>` : ''}
       ${showPlans ? `
         <div class="flex flex-wrap gap-1.5 pt-1">
-          <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/40 text-amber-800 px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="fa-brands fa-whatsapp"></i> ${verb} سنوياً · ${money(planTotal('year'))}</a>
+          <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/40 text-amber-800 px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="fa-brands fa-whatsapp"></i> ${verb} سنوياً · ${sar(planTotal('year'))}</a>
         </div>` : ''}
       <p class="text-[10px] text-ink/60">معرف المتجر: ${esc(client.client_slug)}</p>`;
 
@@ -1389,7 +1397,7 @@ tailwind.config = {
         ${suspended
           ? `<a href="https://wa.me/${SUPPORT_WA}" target="_blank" rel="noopener" class="bg-brand text-cream px-3 py-1.5 rounded-lg text-[11px] font-black"><i class="fa-brands fa-whatsapp"></i> تواصل معنا</a>`
           : `<div class="flex gap-2">
-               <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400 text-black px-3 py-1.5 rounded-lg text-[11px] font-black">سنوي · ${money(planTotal('year'))}</a>
+               <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400 text-black px-3 py-1.5 rounded-lg text-[11px] font-black">سنوي · ${sar(planTotal('year'))}</a>
              </div>`}`;
       banner.classList.remove('hidden');
     } else {
@@ -3053,6 +3061,25 @@ tailwind.config = {
     }
   }
 
+  // ─── عملة المتجر ───
+  function applyCurrencySetting() {
+    const code = (client && client.currency) || 'SAR';
+    document.getElementById('info-currency').innerHTML = DM.currencyOptions(code);
+    document.querySelectorAll('.cur-sign').forEach(el => { el.textContent = curSign(); });
+    document.getElementById('cp-min').placeholder = curSign();
+    document.getElementById('cp-fixed-opt').textContent = `مبلغ ثابت ${curSign()}`;
+  }
+  async function changeCurrency(code) {
+    if (await updateClient({ currency: code })) {
+      applyCurrencySetting();
+      filterProducts();
+      showToast(`صارت أسعار المنيو تظهر بـ ${DM.currencyText(code)}`);
+    } else {
+      applyCurrencySetting();
+      showToast('تعذر حفظ العملة', true);
+    }
+  }
+
   // ─── نوع النشاط ───
   const BUSINESS_TYPES = {
     restaurant: ['مطعم', 'fa-utensils', 'أطباق ووجبات'],
@@ -3453,7 +3480,7 @@ tailwind.config = {
       <div class="flex items-center gap-1.5">
         <input type="text" maxlength="30" value="${esc(z.name || '')}" oninput="formSizes[${i}].name=this.value" placeholder="${['صغير', 'وسط', 'كبير'][i] || 'الحجم'}" class="input-pro !py-1.5 text-xs flex-1 min-w-0">
         <input type="text" maxlength="30" value="${esc(z.name_en || '')}" oninput="formSizes[${i}].name_en=this.value" placeholder="${['Small', 'Medium', 'Large'][i] || 'Size'}" dir="ltr" class="input-pro !py-1.5 text-xs w-20 sm:w-24">
-        <input type="number" min="0" step="0.5" value="${esc(z.price ?? '')}" oninput="formSizes[${i}].price=this.value" placeholder="&#x20C1;" dir="ltr" class="input-pro !py-1.5 text-xs w-20">
+        <input type="number" min="0" step="any" value="${esc(z.price ?? '')}" oninput="formSizes[${i}].price=this.value" placeholder="${esc(curSign())}" dir="ltr" class="input-pro !py-1.5 text-xs w-20">
         <button type="button" onclick="formSizes.splice(${i}, 1); renderSizes()" aria-label="حذف الحجم" class="shrink-0 w-9 h-9 rounded-lg bg-red-500/10 text-red-600 border border-red-500/20 hover:bg-red-500/20"><i class="fa-solid fa-xmark"></i></button>
       </div>`).join('');
     const on = formSizes.length > 0;
@@ -3535,7 +3562,7 @@ tailwind.config = {
     document.getElementById('cp-code-wrap').classList.toggle('hidden', auto);
     document.querySelectorAll('.cp-code-only').forEach(x => x.classList.toggle('hidden', auto));
     const percent = document.getElementById('cp-type').value === 'percent';
-    document.getElementById('cp-value-label').textContent = percent ? 'النسبة % *' : 'المبلغ (\u20C1) *';
+    document.getElementById('cp-value-label').textContent = percent ? 'النسبة % *' : `المبلغ (${curSign()}) *`;
     document.getElementById('cp-value').max = percent ? 100 : 100000;
     const selected = document.querySelector('input[name="cp-scope"]:checked').value === 'selected';
     document.getElementById('cp-targets').classList.toggle('hidden', !selected);

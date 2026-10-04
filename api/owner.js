@@ -5,7 +5,7 @@
 // =====================================================================
 const {
   handler, rest, rpc, q, storage, publicUrl, ownsMediaUrl, SUPABASE_URL, BUCKET,
-  ApiError, getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody, SLUG_RE, RESERVED_SLUGS
+  ApiError, getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody, SLUG_RE, RESERVED_SLUGS, CURRENCIES
 } = require('./_lib/core');
 const { FIELDS, normalizeSettings, riyadhDayStart, positionOf, emailTemplate, statusUrlFor } = require('./_lib/waitlist');
 const { sendMail, mailConfigured } = require('./_lib/mail');
@@ -377,6 +377,10 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     if (has('opening_hours')) p.opening_hours = str(b.opening_hours, 80, 'ساعات العمل');
     if (has('whatsapp_orders')) p.whatsapp_orders = b.whatsapp_orders === true;
     if (has('show_calories')) p.show_calories = b.show_calories !== false;
+    if (has('currency')) {
+      if (!Object.prototype.hasOwnProperty.call(CURRENCIES, b.currency)) throw new ApiError(400, 'العملة غير مدعومة');
+      p.currency = b.currency;
+    }
     if (has('delivery_apps')) {
       // كل تطبيق: نوعه من القائمة + رابط صفحة المطعم فيه (و"أخرى" يحتاج اسم)
       if (!Array.isArray(b.delivery_apps) || b.delivery_apps.length > 12) throw new ApiError(400, 'قائمة تطبيقات التوصيل غير صحيحة');

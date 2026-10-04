@@ -198,6 +198,32 @@
     return { code: hit, local: hit === '966' ? `0${local}` : local };
   }
 
+  // ─── عملة المتجر ───
+  // [الرمز، الاسم، الاختصار العربي، رمز يُكتب يسار الرقم (اختياري)]
+  const CURRENCIES = [
+    ['SAR', 'ريال سعودي', 'ر.س', '⃁'], ['AED', 'درهم إماراتي', 'د.إ'], ['KWD', 'دينار كويتي', 'د.ك'],
+    ['QAR', 'ريال قطري', 'ر.ق'], ['BHD', 'دينار بحريني', 'د.ب'], ['OMR', 'ريال عماني', 'ر.ع'],
+    ['EGP', 'جنيه مصري', 'ج.م'], ['JOD', 'دينار أردني', 'د.أ'], ['IQD', 'دينار عراقي', 'د.ع'],
+    ['LBP', 'ليرة لبنانية', 'ل.ل'], ['YER', 'ريال يمني', 'ر.ي'], ['SYP', 'ليرة سورية', 'ل.س'],
+    ['MAD', 'درهم مغربي', 'د.م'], ['DZD', 'دينار جزائري', 'د.ج'], ['TND', 'دينار تونسي', 'د.ت'],
+    ['LYD', 'دينار ليبي', 'د.ل'], ['SDG', 'جنيه سوداني', 'ج.س'], ['TRY', 'ليرة تركية', '₺', '₺'],
+    ['PKR', 'روبية باكستانية', 'روبية', 'Rs'], ['INR', 'روبية هندية', '₹', '₹'], ['GBP', 'جنيه إسترليني', '£', '£'],
+    ['USD', 'دولار أمريكي', '$', '$'], ['EUR', 'يورو', '€', '€']
+  ];
+  const currency = (code) => CURRENCIES.find(c => c[0] === code) || CURRENCIES[0];
+  const currencyOptions = (selected = 'SAR') =>
+    CURRENCIES.map(([c, name, ab]) => `<option value="${c}"${c === selected ? ' selected' : ''}>${name} (${ab})</option>`).join('');
+  // السعر للعرض: "⃁ 25" أو "$ 25" (الرمز يسار)، أو "25 د.إ" بالعربي و "AED 25" بالإنجليزي
+  function money(n, code = 'SAR', lang = 'ar') {
+    const [c, , ab, sym] = currency(code);
+    if (sym) return `⁦${sym} ${n}⁩`;
+    return lang === 'ar' ? `⁧${n} ${ab}⁩` : `⁦${c} ${n}⁩`;
+  }
+  // اختصار العملة كنص عادي (رسائل واتساب والعناوين): ر.س / SAR
+  const currencyText = (code = 'SAR', lang = 'ar') => { const [c, , ab] = currency(code); return lang === 'ar' ? ab : c; };
+  // للخانات (السعر، المبلغ): الرمز إن وُجد وإلا الاختصار
+  const currencySign = (code = 'SAR') => { const [, , ab, sym] = currency(code); return sym || ab; };
+
   // كل التبويبات تشترك في نفس الدخول: لو تغيّر الحساب من تبويب ثاني نعيد تحميل الصفحة،
   // حتى ما تنرسل تعديلات لوحة مفتوحة باسم حساب ثاني
   function watchAccount() {
@@ -211,6 +237,11 @@
   window.DM = {
     watchAccount,
     countryOptions,
+    CURRENCY_CODES: CURRENCIES.map(c => c[0]),
+    currencyOptions,
+    money,
+    currencyText,
+    currencySign,
     intlPhone,
     splitPhone,
     storeUrl,
