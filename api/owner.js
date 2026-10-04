@@ -10,6 +10,7 @@ const {
 const { FIELDS, normalizeSettings, riyadhDayStart, positionOf, emailTemplate, statusUrlFor } = require('./_lib/waitlist');
 const { sendMail, mailConfigured } = require('./_lib/mail');
 const { sendPush } = require('./_lib/push');
+const { encrypt, SECRET_RE, paySettings, moyasar } = require('./_lib/payments');
 
 const bySort = (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id;
 const COFFEE_TYPES = ['cafe', 'mixed'];
@@ -270,13 +271,56 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const { store } = await context(req);
     const base = `pager_tickets?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&order=number.asc&select=id,number,status,created_at,ready_at,closed_at,push_sub`;
     // أعمدة التكرار من 21-pager-repeat.sql — لو ما انضافت نكمل بدونها
-    const tickets = await rest(`${base},ring_count,acked_at,invoice_no`).catch(() => rest(`${base},ring_count,acked_at`)).catch(() => rest(base));
-    return { tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub })), slug: store.client_slug, name: store.name, max_rings: PAGER_MAX_RINGS };
+    const tickets = await rest(`${base},ring_count,acked_at,invoice_no,order_id`)
+      .catch(() => rest(`${base},ring_count,acked_at,invoice_no`)).catch(() => rest(`${base},ring_count,acked_at`)).catch(() => rest(base));
+    // الطلبات المدفوعة من المنيو: الأصناف والمبلغ تظهر على رقمها
+    const orderIds = tickets.map(t => t.order_id).filter(Boolean);
+    const orders = orderIds.length
+      ? await rest(`orders?id=in.(${orderIds.join(',')})&client_id=eq.${store.id}&select=id,items,total,currency,customer_name,note,status`).catch(() => [])
+      : [];
+    const byId = new Map(orders.map(o => [o.id, { ...o, total: Number(o.total) }]));
+    return {
+      tickets: tickets.map(({ push_sub, order_id, ...t }) => ({ ...t, has_push: !!push_sub, order: order_id ? byId.get(order_id) || null : null })),
+      slug: store.client_slug, name: store.name, max_rings: PAGER_MAX_RINGS, currency: store.currency || 'SAR'
+    };
+  }
+
+  // ─── الدفع الإلكتروني (Moyasar): حالة الربط بدون كشف المفتاح ───
+  if (action === 'payment-settings' && req.method === 'GET') {
+    const { store } = await context(req);
+    const pay = await paySettings(store.id);
+    return { enabled: !!(pay && pay.enabled), connected: !!(pay && pay.hasSecret), live: !!(pay && pay.live) };
   }
 
   if (req.method !== 'POST') throw new ApiError(404, 'Unknown action');
   const { store } = await context(req);
   const sid = store.id;
+
+  // ربط حساب Moyasar / تفعيل وإيقاف الدفع. المفتاح يتجرّب على Moyasar قبل الحفظ
+  if (action === 'payment-settings-save') {
+    const current = await paySettings(sid);
+    const row = { client_id: sid, provider: 'moyasar', updated_at: new Date().toISOString() };
+    const key = String(b.secret_key || '').trim();
+    if (key) {
+      if (!SECRET_RE.test(key)) throw new ApiError(400, 'المفتاح السري يبدأ بـ sk_live_ أو sk_test_');
+      await moyasar(key, 'GET', 'invoices?page=1');   // يرمي "مفتاح Moyasar غير صحيح" لو مرفوض
+      row.secret_key_enc = encrypt(key);
+      row.live = key.startsWith('sk_live_');
+    }
+    if (b.disconnect === true) { row.secret_key_enc = null; row.live = false; row.enabled = false; }
+    else if (Object.prototype.hasOwnProperty.call(b, 'enabled')) {
+      if (b.enabled === true && !key && !(current && current.hasSecret)) throw new ApiError(400, 'اربط حساب Moyasar أولاً');
+      row.enabled = b.enabled === true;
+    }
+    try {
+      await rest('payment_settings?on_conflict=client_id', { method: 'POST', body: row, prefer: 'resolution=merge-duplicates' });
+    } catch (e) {
+      if (/payment_settings/.test(e.dbMessage || '')) throw new ApiError(400, 'شغّل ملف 24-online-orders.sql في Supabase أولاً');
+      throw e;
+    }
+    const pay = await paySettings(sid);
+    return { enabled: !!(pay && pay.enabled), connected: !!(pay && pay.hasSecret), live: !!(pay && pay.live) };
+  }
 
   // ─── البيجر: الطلب جاهز (يرن جوال العميل) / تم التسليم / إلغاء / إرجاع للانتظار ───
   if (action === 'pager-update') {

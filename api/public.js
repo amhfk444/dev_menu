@@ -10,6 +10,7 @@
 // =====================================================================
 const crypto = require('crypto');
 const { handler, rest, rpc, q, ApiError, readBody, int, findPublicStore, CURRENCIES } = require('./_lib/core');
+const { paySettings, moyasar, minorUnits, refreshOrder } = require('./_lib/payments');
 
 const STORE_FIELDS = 'id,name,client_slug,logo_url,bg_image_url,bg_video_url,promo_message,website_url,tiktok_url,instagram_url,whatsapp_number,snapchat_url,opening_hours,location_url,whatsapp_orders,business_type,show_calories,delivery_apps,theme,accent_color,order_numbers,custom_links';
 const PRODUCT_FIELDS = 'id,name,name_en,description,description_en,extra_info,note,price,category,image_url,is_available,is_bestseller,calories,allergens,coffee,sort_order,sizes';
@@ -101,6 +102,7 @@ async function loadCoupon(storeId, rawCode) {
 }
 
 // الخصم يُحسب هنا بأسعار قاعدة البيانات، مو بالأسعار اللي يرسلها المتصفح
+// coupon اختياري (null = بدون كوبون). lines = أسطر الطلب بالأسماء والأسعار (للطلب المدفوع)
 async function priceCart(store, coupon, rawItems) {
   if (!Array.isArray(rawItems) || !rawItems.length || rawItems.length > 100) throw new ApiError(400, 'السلة فاضية');
   const items = rawItems.map(i => ({ id: int(i && i.id), qty: int(i && i.qty), size: i && i.size != null ? String(i.size) : null }))
@@ -108,7 +110,7 @@ async function priceCart(store, coupon, rawItems) {
   if (!items.length) throw new ApiError(400, 'السلة فاضية');
   const ids = [...new Set(items.map(i => i.id))];
   const [products, categories, promos] = await Promise.all([
-    rest(`products?client_id=eq.${store.id}&id=in.(${ids.join(',')})&is_hidden=is.false&select=id,price,category,sizes,is_available`),
+    rest(`products?client_id=eq.${store.id}&id=in.(${ids.join(',')})&is_hidden=is.false&select=id,name,price,category,sizes,is_available`),
     rest(`categories?client_id=eq.${store.id}&select=key,name`),
     menuPromos(store.id)
   ]);
@@ -117,6 +119,7 @@ async function priceCart(store, coupon, rawItems) {
   const catKeyOf = (cat) => nameToKey.get(cat) || cat;
   const autos = promos.filter(x => x.auto);
   let subtotal = 0, eligible = 0;
+  const lines = [];
   for (const i of items) {
     const p = byId.get(i.id);
     if (!p || p.is_available === false) continue;
@@ -128,17 +131,21 @@ async function priceCart(store, coupon, rawItems) {
       unit = Number(z.price);
     }
     // الخصم التلقائي أولاً، ثم الكوبون على السعر بعد الخصم
-    const line = autoPrice(unit, p, autos, catKeyOf) * i.qty;
+    const after = autoPrice(unit, p, autos, catKeyOf);
+    const line = after * i.qty;
     subtotal += line;
-    if (promoCovers(coupon, p, catKeyOf)) eligible += line;
+    lines.push({ id: p.id, name: p.name, size: sizes.length ? i.size : null, qty: i.qty, unit: round2(after), total: round2(line) });
+    if (coupon && promoCovers(coupon, p, catKeyOf)) eligible += line;
   }
   subtotal = round2(subtotal); eligible = round2(eligible);
+  if (!lines.length) throw new ApiError(400, 'الأصناف المطلوبة غير متوفرة حالياً', 'EMPTY_CART');
+  if (!coupon) return { subtotal, eligible: 0, discount: 0, total: subtotal, lines };
   if (coupon.min_order != null && subtotal < Number(coupon.min_order)) {
     throw new ApiError(400, `الكوبون يحتاج طلب بقيمة ${money(coupon.min_order, store.currency)} أو أكثر`, 'COUPON_MIN_ORDER');
   }
   if (eligible <= 0) throw new ApiError(400, 'الكوبون ما يشمل الأصناف اللي في طلبك', 'COUPON_NOT_ELIGIBLE');
   const discount = round2(coupon.type === 'percent' ? eligible * Number(coupon.value) / 100 : Math.min(Number(coupon.value), eligible));
-  return { subtotal, eligible, discount, total: round2(subtotal - discount) };
+  return { subtotal, eligible, discount, total: round2(subtotal - discount), lines };
 }
 
 // زر "قائمة الانتظار": الإضافة مفعّلة + القائمة مفتوحة + صاحب المتجر مختار يظهر الزر
@@ -160,7 +167,8 @@ async function menuPayload(slug) {
     activeOccasion(store.id),
     menuPromos(store.id)
   ]);
-  return { store: { ...store, waitlist_open, has_coupons, occasion, promos }, categories: categories.sort(bySort), products: products.sort(bySort) };
+  const pay = await paySettings(store.id);
+  return { store: { ...store, waitlist_open, has_coupons, occasion, promos, online_pay: !!(pay && pay.enabled) }, categories: categories.sort(bySort), products: products.sort(bySort) };
 }
 const versionOf = (data) => crypto.createHash('sha1').update(JSON.stringify(data)).digest('hex').slice(0, 16);
 
@@ -199,8 +207,69 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const b = readBody(req);
     const store = await findStore(b.slug);
     const coupon = await loadCoupon(store.id, b.code);
-    const totals = await priceCart(store, coupon, b.items);
+    const { lines, ...totals } = await priceCart(store, coupon, b.items);
     return { coupon: { code: coupon.code, type: coupon.type, value: Number(coupon.value) }, ...totals };
+  }
+
+  // ─── الدفع الإلكتروني: إنشاء طلب + فاتورة Moyasar ← المتصفح يروح لصفحة الدفع ───
+  if (action === 'checkout' && req.method === 'POST') {
+    const b = readBody(req);
+    const store = await findStore(b.slug);
+    const pay = await paySettings(store.id);
+    if (!pay || !pay.enabled) throw new ApiError(400, 'الدفع الإلكتروني غير مفعّل في هذا المتجر', 'PAY_OFF');
+    const coupon = b.code ? await loadCoupon(store.id, b.code) : null;
+    const t = await priceCart(store, coupon, b.items);
+    if (!(t.total > 0)) throw new ApiError(400, 'مبلغ الطلب غير صحيح');
+    const currency = store.currency || 'SAR';
+    const token = crypto.randomBytes(18).toString('base64url');
+    const name = String(b.name || '').trim().slice(0, 60) || null;
+    const note = String(b.note || '').trim().slice(0, 300) || null;
+    const order = (await rest('orders', {
+      method: 'POST', prefer: 'return=representation',
+      body: { client_id: store.id, token, items: t.lines, subtotal: t.subtotal, discount: t.discount, total: t.total, currency,
+              coupon_id: coupon ? coupon.id : null, coupon_code: coupon ? coupon.code : null, customer_name: name, note }
+    }))[0];
+    const base = `https://${store.client_slug}.devmenu.digital`;
+    const inv = await moyasar(pay.secret, 'POST', 'invoices', {
+      amount: minorUnits(t.total, currency), currency,
+      description: `طلب #${order.id} — ${store.name}`.slice(0, 250),
+      success_url: `${base}/order?o=${token}`,
+      back_url: `${base}/`,
+      callback_url: 'https://www.devmenu.digital/api/public?action=pay-callback',
+      expired_at: new Date(Date.now() + 30 * 60e3).toISOString(),
+      metadata: { order_id: String(order.id), store: store.client_slug }
+    });
+    await rest(`orders?id=eq.${order.id}`, { method: 'PATCH', body: { payment_ref: inv.id } });
+    return { url: inv.url, token };
+  }
+
+  // صفحة الطلب: حالة الدفع (ولو لسا معلّق نسأل Moyasar) + رقم البيجر بعد الدفع
+  if (action === 'order' && req.method === 'GET') {
+    const store = await findStore(req.query.slug);
+    const token = String(req.query.o || '');
+    if (!/^[A-Za-z0-9_-]{10,64}$/.test(token)) throw new ApiError(404, 'الطلب غير موجود', 'NOT_FOUND');
+    let order = (await rest(`orders?token=eq.${q(token)}&client_id=eq.${store.id}&select=*`))[0];
+    if (!order) throw new ApiError(404, 'الطلب غير موجود', 'NOT_FOUND');
+    order = await refreshOrder(order);
+    let pager = null;
+    if (order.pager_ticket_id) pager = (await rest(`pager_tickets?id=eq.${order.pager_ticket_id}&select=number,token,status`))[0] || null;
+    return {
+      store: { name: store.name, logo_url: store.logo_url, client_slug: store.client_slug },
+      order: { id: order.id, status: order.status, items: order.items, subtotal: Number(order.subtotal), discount: Number(order.discount),
+               total: Number(order.total), currency: order.currency, coupon_code: order.coupon_code, created_at: order.created_at },
+      pager: pager && { number: pager.number, token: pager.token, status: pager.status }
+    };
+  }
+
+  // إشعار Moyasar بعد الدفع: نتحقق بنفسنا من الفاتورة (ما نثق بمحتوى الإشعار)
+  if (action === 'pay-callback' && req.method === 'POST') {
+    const b = readBody(req);
+    const ref = String((b && (b.id || (b.data && b.data.id) || (b.invoice && b.invoice.id))) || '');
+    if (/^[A-Za-z0-9_-]{8,80}$/.test(ref)) {
+      const order = (await rest(`orders?payment_ref=eq.${q(ref)}&select=*&limit=1`))[0];
+      if (order) await refreshOrder(order);
+    }
+    return { ok: true };
   }
 
   // عند إرسال الطلب لواتساب: نزيد عداد الاستخدام (إذا خلص الحد ما يزيد)

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" sizes="192x192" href="/images/icon-192.png">
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+<meta name="theme-color" content="#233d2c">
+<meta name="robots" content="noindex">
+<title>طلبك | DEV MENU</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="js/api.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  /* رمز الريال السعودي الجديد ⃁ (U+20C1) */
+  @font-face { font-family: 'SaudiRiyal'; src: url('https://cdn.jsdelivr.net/npm/@emran-alhaddad/saudi-riyal-font@1.1.0/fonts/bold/saudi_riyal.woff2') format('woff2'); font-weight: 100 900; font-display: swap; unicode-range: U+20C1; }
+  :root { --brand: #233d2c; --sand: #f5f2eb; --gold: #c9a227; }
+  body { font-family: 'SaudiRiyal', 'Cairo', sans-serif; background: var(--sand); color: #1b3022; min-height: 100vh; min-height: 100dvh; }
+  .card { background: #fff; border: 1.5px solid rgba(35,61,44,.12); border-radius: 28px; box-shadow: 0 30px 60px -36px rgba(35,61,44,.45); }
+  .btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; border-radius: 18px; padding: 17px; font-weight: 900; font-size: 16px; transition: transform .15s; }
+  .btn:active { transform: scale(.98); }
+  .btn-brand { background: var(--brand); color: var(--sand); box-shadow: 0 16px 30px -14px rgba(35,61,44,.6); }
+  .btn-ghost { background: #fff; color: var(--brand); border: 1.5px solid rgba(35,61,44,.2); }
+  .num { font-size: 104px; line-height: 1; font-weight: 900; letter-spacing: -2px; color: var(--brand); }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body class="flex flex-col items-center px-5 py-8">
+
+<header class="text-center mb-6">
+  <img id="logo" alt="" class="w-16 h-16 rounded-2xl object-cover mx-auto mb-3 bg-white border border-[#233d2c]/10 hidden">
+  <h1 id="store-name" class="text-xl font-black">…</h1>
+  <p class="text-xs font-bold opacity-60"><i class="fa-solid fa-receipt"></i> طلبك</p>
+</header>
+
+<main class="w-full max-w-sm space-y-4">
+  <section id="v-loading" class="card p-10 text-center space-y-3">
+    <i class="fa-solid fa-spinner fa-spin text-2xl opacity-50"></i>
+    <p id="loading-text" class="text-sm font-bold opacity-60">جاري تأكيد الدفع…</p>
+  </section>
+
+  <section id="v-error" class="card p-8 text-center space-y-3 hidden">
+    <i class="fa-solid fa-circle-exclamation text-3xl text-amber-600"></i>
+    <h2 id="e-title" class="text-lg font-black">الطلب غير موجود</h2>
+    <p id="e-sub" class="text-sm font-bold opacity-60">تأكد من الرابط أو اسأل الكاشير.</p>
+    <a id="e-menu" href="/" class="btn btn-ghost"><i class="fa-solid fa-utensils"></i> رجوع للمنيو</a>
+  </section>
+
+  <section id="v-failed" class="card p-8 text-center space-y-4 hidden">
+    <i class="fa-solid fa-circle-xmark text-4xl text-rose-600"></i>
+    <h2 class="text-xl font-black">ما تم الدفع</h2>
+    <p class="text-sm font-bold opacity-60">ما انخصم منك شي. تقدر ترجع للمنيو وتحاول مرة ثانية.</p>
+    <a id="f-menu" href="/" class="btn btn-brand"><i class="fa-solid fa-rotate-left"></i> رجوع للمنيو</a>
+  </section>
+
+  <section id="v-pending" class="card p-8 text-center space-y-4 hidden">
+    <i class="fa-solid fa-hourglass-half text-3xl text-amber-600"></i>
+    <h2 class="text-lg font-black">ما وصلنا تأكيد الدفع للحين</h2>
+    <p class="text-sm font-bold opacity-60">لو دفعت، انتظر لحظات واضغط تحديث. لو ما دفعت، ارجع للمنيو.</p>
+    <button id="p-retry" class="btn btn-brand"><i class="fa-solid fa-rotate"></i> تحديث</button>
+    <a id="p-menu" href="/" class="btn btn-ghost"><i class="fa-solid fa-utensils"></i> رجوع للمنيو</a>
+  </section>
+
+  <section id="v-paid" class="hidden space-y-4">
+    <div class="card p-7 text-center space-y-4">
+      <div class="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 grid place-items-center mx-auto text-3xl"><i class="fa-solid fa-check"></i></div>
+      <h2 class="text-2xl font-black">تم الدفع</h2>
+      <div id="paid-num-box" class="hidden">
+        <p class="text-sm font-black opacity-60">رقم طلبك</p>
+        <div id="paid-num" class="num">—</div>
+      </div>
+      <p class="text-sm font-bold opacity-70 leading-relaxed">طلبك وصل للمطعم وجاري تجهيزه.<br>بنرن جوالك أول ما يجهز.</p>
+      <a id="track-btn" href="#" class="btn btn-brand hidden"><i class="fa-solid fa-bell"></i> تابع طلبك وفعّل التنبيه</a>
+    </div>
+    <div class="card p-5 space-y-3">
+      <h3 class="text-sm font-black">ملخص الطلب <span id="order-ref" class="opacity-50 font-bold" dir="ltr"></span></h3>
+      <ul id="items" class="space-y-2 text-sm"></ul>
+      <div id="sum" class="border-t border-[#233d2c]/10 pt-3 space-y-1 text-sm"></div>
+    </div>
+  </section>
+</main>
+
+<p class="text-[11px] font-bold opacity-40 mt-8">DEV MENU</p>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const slug = (params.get('client') || DM.hostSlug()).trim().toLowerCase();
+  const token = params.get('o') || '';
+  const VIEWS = ['loading', 'error', 'failed', 'pending', 'paid'];
+  const $ = (id) => document.getElementById(id);
+  const show = (v) => VIEWS.forEach(x => $(`v-${x}`).classList.toggle('hidden', x !== v));
+  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const menuUrl = () => DM.storePage('menu', slug);
+
+  function setStore(s) {
+    if (!s) return;
+    $('store-name').textContent = s.name || '';
+    if (s.logo_url) { $('logo').src = s.logo_url; $('logo').classList.remove('hidden'); }
+  }
+
+  function renderPaid(r) {
+    const o = r.order, money = (n) => DM.money(n, o.currency, 'ar');
+    $('order-ref').textContent = `#${o.id}`;
+    $('items').innerHTML = (o.items || []).map(i => `
+      <li class="flex justify-between gap-3"><span class="font-bold">${i.qty} × ${esc(i.name)}${i.size ? ` <span class="opacity-60">(${esc(i.size)})</span>` : ''}</span><span class="font-black whitespace-nowrap">${esc(money(i.total))}</span></li>`).join('');
+    $('sum').innerHTML = (o.discount > 0 ? `<p class="flex justify-between text-emerald-700 font-bold"><span>الخصم${o.coupon_code ? ` (${esc(o.coupon_code)})` : ''}</span><span>− ${esc(money(o.discount))}</span></p>` : '')
+      + `<p class="flex justify-between font-black text-base"><span>المدفوع</span><span>${esc(money(o.total))}</span></p>`;
+    if (r.pager) {
+      $('paid-num').textContent = r.pager.number;
+      $('paid-num-box').classList.remove('hidden');
+      // صفحة البيجر تعرف الرقم من هذا التوكن: تتابع حالة الطلب وترن الجوال لما يجهز
+      try { localStorage.setItem(`dm_pager_${slug}`, r.pager.token); } catch {}
+      $('track-btn').href = DM.storePage('pager', slug);
+      $('track-btn').classList.remove('hidden');
+    }
+    // الطلب انرسل: نفضّي سلة المنيو
+    try { Object.keys(sessionStorage).filter(k => k.startsWith('cart:')).forEach(k => sessionStorage.removeItem(k)); } catch {}
+    show('paid');
+  }
+
+  let tries = 0;
+  async function load() {
+    let r;
+    try { r = await DM.get(`/api/public?action=order&slug=${encodeURIComponent(slug)}&o=${encodeURIComponent(token)}`); }
+    catch (e) {
+      if (e.status === 404) { $('e-menu').href = menuUrl(); return show('error'); }
+      if (++tries < 15) return setTimeout(load, 2000);
+      $('e-title').textContent = 'تعذر الاتصال'; $('e-sub').textContent = 'تحقق من الإنترنت وحدّث الصفحة.'; $('e-menu').href = menuUrl();
+      return show('error');
+    }
+    setStore(r.store);
+    if (r.order.status === 'paid') return renderPaid(r);
+    if (r.order.status === 'failed' || r.order.status === 'cancelled') { $('f-menu').href = menuUrl(); return show('failed'); }
+    // معلّق: Moyasar أحياناً يتأخر ثواني في تأكيد الدفع
+    if (++tries < 15) { $('loading-text').textContent = 'جاري تأكيد الدفع…'; return setTimeout(load, 2000); }
+    $('p-menu').href = menuUrl();
+    show('pending');
+  }
+  $('p-retry').onclick = () => { tries = 10; show('loading'); load(); };
+
+  if (!slug || !token) { $('e-menu').href = slug ? menuUrl() : '/'; show('error'); }
+  else load();
+</script>
+</body>
+</html>

@@ -97,7 +97,7 @@
   const extra = `${P.get('client') ? `&client=${encodeURIComponent(P.get('client'))}` : ''}${P.get('branch') ? `&branch=${encodeURIComponent(P.get('branch'))}` : ''}`;
   const O = (a) => `/api/owner?action=${a}${extra}`;
   const $ = (id) => document.getElementById(id);
-  let slug = '', tickets = [], busy = new Set(), maxRings = 5;
+  let slug = '', tickets = [], busy = new Set(), maxRings = 5, currency = 'SAR';
 
   function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.remove('hidden'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.add('hidden'), 2600); }
   const ago = (iso) => { const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000)); return m < 1 ? 'الآن' : `${m} د`; };
@@ -150,6 +150,18 @@
     try { const r = await call('pager-ring', {}); if (r.rang) load(); } catch {}
   }
 
+  // طلب مدفوع من المنيو: الأصناف والمبلغ على رقمه
+  function orderBox(t, light) {
+    const o = t.order; if (!o) return '';
+    const items = (o.items || []).map(i => `${i.qty}× ${esc(i.name)}${i.size ? ` (${esc(i.size)})` : ''}`).join('<br>');
+    return `<div class="text-right text-[10.5px] leading-snug mt-2 rounded-lg p-1.5 ${light ? 'bg-white/10' : 'bg-[#233d2c]/5'}">
+        <div class="font-black mb-0.5"><i class="fa-solid fa-credit-card"></i> مدفوع · ${esc(DM.money(o.total, o.currency || currency, 'ar'))}</div>
+        ${o.customer_name ? `<div class="font-bold opacity-80">${esc(o.customer_name)}</div>` : ''}
+        <div class="opacity-90">${items}</div>
+        ${o.note ? `<div class="mt-0.5 font-bold opacity-80">📝 ${esc(o.note)}</div>` : ''}
+      </div>`;
+  }
+
   function render() {
     const term = normDigits($('search').value.trim());
     const match = (t) => !term || String(t.number) === term || String(t.invoice_no || '').includes(term);
@@ -163,6 +175,7 @@
       <div class="tile tile-wait">
         <div class="text-[10px] opacity-60">بيجر</div>
         <div class="n">${t.number}</div>
+        ${orderBox(t, true)}
         <button class="mini w-full mt-2 ${t.invoice_no ? 'bg-white/15 text-white' : 'bg-[#c9a227] text-[#15271b]'}" data-invoice="${t.id}">
           ${t.invoice_no ? `🧾 ${esc(t.invoice_no)}` : '🧾 أضف الفاتورة'}
         </button>
@@ -175,6 +188,7 @@
       <div class="tile tile-ready">
         <div class="n">${t.number}</div>
         ${t.invoice_no ? `<div class="text-[12px] font-black mt-1">🧾 ${esc(t.invoice_no)}</div>` : ''}
+        ${orderBox(t, false)}
         <div class="text-[11px] mt-1 opacity-70">${ringLabel(t)}</div>
         <div class="flex gap-1.5 mt-3">
           <button class="mini flex-1 bg-[#233d2c] text-white" data-done="${t.id}"><i class="fa-solid fa-check"></i> استلم</button>
@@ -206,7 +220,7 @@
     clearTimeout(timer);
     try {
       const r = await call('pager');
-      slug = r.slug; $('store-name').textContent = r.name || ''; maxRings = r.max_rings || 5;
+      slug = r.slug; $('store-name').textContent = r.name || ''; maxRings = r.max_rings || 5; currency = r.currency || 'SAR';
       // ما نلمس الأرقام اللي جاري تحديثها
       tickets = r.tickets.map(t => busy.has(t.id) ? (tickets.find(x => x.id === t.id) || t) : t);
       if (invId) return void (timer = setTimeout(load, 4000));   // النافذة مفتوحة: لا نعيد الرسم

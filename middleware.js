@@ -4,6 +4,7 @@
 //   duja.devmenu.digital/links      → صفحة الروابط
 //   duja.devmenu.digital/waitlist   → قائمة الانتظار
 //   duja.devmenu.digital/pager      → البيجر الرقمي
+//   duja.devmenu.digital/order      → حالة الطلب المدفوع
 // الرابط في المتصفح يبقى مختصر (rewrite مو redirect)، والصفحة تعرف المتجر من النطاق.
 // app و www وأي نطاق ثاني ما يتأثر.
 // =====================================================================
@@ -15,10 +16,11 @@ const PAGES = {
   '/': 'menu.html', '/menu': 'menu.html',
   '/links': 'links.html',
   '/waitlist': 'waitlist.html',
-  '/pager': 'pager.html'
+  '/pager': 'pager.html',
+  '/order': 'order.html'
 };
 
-export const config = { matcher: ['/', '/menu', '/links', '/waitlist', '/pager'] };
+export const config = { matcher: ['/', '/menu', '/links', '/waitlist', '/pager', '/order'] };
 
 export default function middleware(request) {
   const url = new URL(request.url);

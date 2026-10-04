@@ -149,7 +149,7 @@
   }
   // رابط صفحة من صفحات المتجر: مختصر على نطاق المتجر، وإلا بالصيغة العادية
   function storePage(page, slug) {
-    if (hostSlug()) return { menu: '/', links: '/links', waitlist: '/waitlist', pager: '/pager' }[page];
+    if (hostSlug()) return { menu: '/', links: '/links', waitlist: '/waitlist', pager: '/pager', order: '/order' }[page];
     return `${page}.html?client=${encodeURIComponent(slug)}`;
   }
 
@@ -159,7 +159,7 @@
     const s = String(slug || '').toLowerCase();
     const qs = new URLSearchParams(params).toString();
     if (/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(s) && s !== 'app' && s !== 'www') {
-      const path = { menu: '/', links: '/links', waitlist: '/waitlist', pager: '/pager' }[page] || '/';
+      const path = { menu: '/', links: '/links', waitlist: '/waitlist', pager: '/pager', order: '/order' }[page] || '/';
       return `https://${s}.devmenu.digital${path}${qs ? `?${qs}` : ''}`;
     }
     return new URL(`${page}.html?client=${encodeURIComponent(s)}${qs ? `&${qs}` : ''}`, location.href).href;
