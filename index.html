@@ -440,9 +440,33 @@
 
         <div>
           <label for="reg-phone" class="lbl">رقم الجوال *</label>
-          <div class="relative">
-            <i class="fa-solid fa-mobile-screen-button absolute start-3.5 top-1/2 -translate-y-1/2 text-[#233d2c]/35 text-xs"></i>
-            <input type="tel" id="reg-phone" inputmode="numeric" placeholder="05xxxxxxxx" maxlength="14" required class="input-pro" dir="ltr">
+          <div class="flex gap-2" dir="ltr">
+            <select id="reg-country" aria-label="رمز الدولة" class="input-pro !w-auto shrink-0 !px-2.5 cursor-pointer">
+              <option value="966" selected>🇸🇦 +966</option>
+              <option value="971">🇦🇪 +971</option>
+              <option value="965">🇰🇼 +965</option>
+              <option value="974">🇶🇦 +974</option>
+              <option value="973">🇧🇭 +973</option>
+              <option value="968">🇴🇲 +968</option>
+              <option value="20">🇪🇬 +20</option>
+              <option value="962">🇯🇴 +962</option>
+              <option value="964">🇮🇶 +964</option>
+              <option value="961">🇱🇧 +961</option>
+              <option value="967">🇾🇪 +967</option>
+              <option value="963">🇸🇾 +963</option>
+              <option value="970">🇵🇸 +970</option>
+              <option value="249">🇸🇩 +249</option>
+              <option value="218">🇱🇾 +218</option>
+              <option value="216">🇹🇳 +216</option>
+              <option value="213">🇩🇿 +213</option>
+              <option value="212">🇲🇦 +212</option>
+              <option value="90">🇹🇷 +90</option>
+              <option value="92">🇵🇰 +92</option>
+              <option value="91">🇮🇳 +91</option>
+              <option value="44">🇬🇧 +44</option>
+              <option value="1">🇺🇸 +1</option>
+            </select>
+            <input type="tel" id="reg-phone" inputmode="tel" autocomplete="tel-national" placeholder="05xxxxxxxx" maxlength="18" required class="input-pro flex-1 min-w-0">
           </div>
         </div>
 
@@ -659,14 +683,24 @@
     return 'حدث خطأ أثناء إنشاء المتجر، حاول مرة أخرى';
   }
 
-  // يقبل: 05xxxxxxxx أو 5xxxxxxxx أو 9665xxxxxxxx أو +9665xxxxxxxx ← ويحفظه بصيغة 9665xxxxxxxx
-  function normalizeSaudiMobile(raw) {
-    let d = String(raw || '').replace(/\D/g, '');
-    if (d.startsWith('00966')) d = d.slice(2);
-    if (d.startsWith('966')) d = d.slice(3);
-    if (d.startsWith('0')) d = d.slice(1);
-    return /^5\d{8}$/.test(d) ? `966${d}` : '';
+  // رقم الجوال من أي دولة: رمز الدولة المختار + الرقم المحلي ← يحفظه دولياً بدون + (مثل 9665xxxxxxxx أو 971501234567)
+  // لو كتب العميل الرقم كامل بـ + أو 00 نعتمده كما هو. السعودي لازم يكون جوال 9665xxxxxxxx
+  function normalizeMobile(raw) {
+    const text = String(raw || '').trim();
+    const code = document.getElementById('reg-country').value;
+    let d = text.replace(/\D/g, '');
+    if (text.startsWith('+')) {}
+    else if (d.startsWith('00')) d = d.slice(2);
+    else {
+      d = d.replace(/^0+/, '');
+      if (!(d.startsWith(code) && d.length > code.length + 7)) d = code + d;
+    }
+    const ok = d.startsWith('966') ? /^9665\d{8}$/.test(d) : /^[1-9]\d{10,14}$/.test(d);
+    return ok ? d : '';
   }
+  document.getElementById('reg-country').addEventListener('change', (e) => {
+    document.getElementById('reg-phone').placeholder = e.target.value === '966' ? '05xxxxxxxx' : 'رقم الجوال';
+  });
 
   function setRegisterBusy(busy) {
     document.getElementById('submit-btn').disabled = busy;
@@ -699,12 +733,12 @@
     e.preventDefault();
     const name  = document.getElementById('reg-name').value.trim();
     const email = document.getElementById('reg-email').value.trim().toLowerCase();
-    const phone = normalizeSaudiMobile(document.getElementById('reg-phone').value);
+    const phone = normalizeMobile(document.getElementById('reg-phone').value);
 
     if (!name || !document.getElementById('reg-phone').value.trim()) return showToast('اكتب اسم المطعم ورقم الجوال', 'error');
     if (!email) { document.getElementById('reg-email').focus(); return showToast('اكتب بريدك الإلكتروني لنرسل لك رمز التحقق، أو سجّل بحساب Google', 'error'); }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast('البريد الإلكتروني غير صحيح', 'error');
-    if (!phone) return showToast('رقم الجوال غير صحيح، اكتبه بصيغة 05xxxxxxxx', 'error');
+    if (!phone) return showToast('رقم الجوال غير صحيح، تأكد من رمز الدولة والرقم', 'error');
 
     setRegisterBusy(true);
     try {
@@ -825,9 +859,9 @@
   const PENDING_KEY = 'dm_pending_store';
   function registerWithGoogle() {
     const name  = document.getElementById('reg-name').value.trim();
-    const phone = normalizeSaudiMobile(document.getElementById('reg-phone').value);
+    const phone = normalizeMobile(document.getElementById('reg-phone').value);
     if (!name) { document.getElementById('reg-name').focus(); return showToast('اكتب اسم المطعم أو الكافيه', 'error'); }
-    if (!phone) { document.getElementById('reg-phone').focus(); return showToast('رقم الجوال غير صحيح، اكتبه بصيغة 05xxxxxxxx', 'error'); }
+    if (!phone) { document.getElementById('reg-phone').focus(); return showToast('رقم الجوال غير صحيح، تأكد من رمز الدولة والرقم', 'error'); }
     const businessType = document.querySelector('[name="reg-type"]:checked')?.value || 'restaurant';
     try { localStorage.setItem(PENDING_KEY, JSON.stringify({ name, phone, businessType, at: Date.now() })); } catch {}
     document.getElementById('google-btn').disabled = true;
