@@ -441,31 +441,7 @@
         <div>
           <label for="reg-phone" class="lbl">رقم الجوال *</label>
           <div class="flex gap-2" dir="ltr">
-            <select id="reg-country" aria-label="رمز الدولة" class="input-pro !w-auto shrink-0 !px-2.5 cursor-pointer">
-              <option value="966" selected>🇸🇦 +966</option>
-              <option value="971">🇦🇪 +971</option>
-              <option value="965">🇰🇼 +965</option>
-              <option value="974">🇶🇦 +974</option>
-              <option value="973">🇧🇭 +973</option>
-              <option value="968">🇴🇲 +968</option>
-              <option value="20">🇪🇬 +20</option>
-              <option value="962">🇯🇴 +962</option>
-              <option value="964">🇮🇶 +964</option>
-              <option value="961">🇱🇧 +961</option>
-              <option value="967">🇾🇪 +967</option>
-              <option value="963">🇸🇾 +963</option>
-              <option value="970">🇵🇸 +970</option>
-              <option value="249">🇸🇩 +249</option>
-              <option value="218">🇱🇾 +218</option>
-              <option value="216">🇹🇳 +216</option>
-              <option value="213">🇩🇿 +213</option>
-              <option value="212">🇲🇦 +212</option>
-              <option value="90">🇹🇷 +90</option>
-              <option value="92">🇵🇰 +92</option>
-              <option value="91">🇮🇳 +91</option>
-              <option value="44">🇬🇧 +44</option>
-              <option value="1">🇺🇸 +1</option>
-            </select>
+            <select id="reg-country" aria-label="رمز الدولة" class="input-pro !w-auto shrink-0 !px-2.5 cursor-pointer"></select>
             <input type="tel" id="reg-phone" inputmode="tel" autocomplete="tel-national" placeholder="05xxxxxxxx" maxlength="18" required class="input-pro flex-1 min-w-0">
           </div>
         </div>
@@ -683,21 +659,9 @@
     return 'حدث خطأ أثناء إنشاء المتجر، حاول مرة أخرى';
   }
 
-  // رقم الجوال من أي دولة: رمز الدولة المختار + الرقم المحلي ← يحفظه دولياً بدون + (مثل 9665xxxxxxxx أو 971501234567)
-  // لو كتب العميل الرقم كامل بـ + أو 00 نعتمده كما هو. السعودي لازم يكون جوال 9665xxxxxxxx
-  function normalizeMobile(raw) {
-    const text = String(raw || '').trim();
-    const code = document.getElementById('reg-country').value;
-    let d = text.replace(/\D/g, '');
-    if (text.startsWith('+')) {}
-    else if (d.startsWith('00')) d = d.slice(2);
-    else {
-      d = d.replace(/^0+/, '');
-      if (!(d.startsWith(code) && d.length > code.length + 7)) d = code + d;
-    }
-    const ok = d.startsWith('966') ? /^9665\d{8}$/.test(d) : /^[1-9]\d{10,14}$/.test(d);
-    return ok ? d : '';
-  }
+  // رقم الجوال من أي دولة (رمز الدولة المختار + الرقم) ← صيغة دولية بدون +
+  document.getElementById('reg-country').innerHTML = DM.countryOptions();
+  const normalizeMobile = (raw) => DM.intlPhone(raw, document.getElementById('reg-country').value);
   document.getElementById('reg-country').addEventListener('change', (e) => {
     document.getElementById('reg-phone').placeholder = e.target.value === '966' ? '05xxxxxxxx' : 'رقم الجوال';
   });

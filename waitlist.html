@@ -82,7 +82,7 @@ tailwind.config = { theme: { extend: {
       </div>
       <div data-field="phone">
         <label class="lbl" for="f-phone">رقم الجوال <span class="req hidden">*</span></label>
-        <input id="f-phone" type="tel" inputmode="tel" maxlength="16" autocomplete="tel" placeholder="05xxxxxxxx" class="field" dir="ltr">
+        <div class="flex gap-2" dir="ltr"><select id="f-phone-cc" aria-label="رمز الدولة" class="field !w-auto shrink-0 !px-2.5"></select><input id="f-phone" type="tel" inputmode="tel" maxlength="18" autocomplete="tel-national" placeholder="05xxxxxxxx" class="field flex-1 min-w-0"></div>
       </div>
       <div data-field="email">
         <label class="lbl" for="f-email">البريد الإلكتروني <span class="req hidden">*</span></label>
@@ -154,6 +154,8 @@ tailwind.config = { theme: { extend: {
   const tokenKey = `wl:${slug}`;
   let token = params.get('t') || (() => { try { return localStorage.getItem(tokenKey) || ''; } catch { return ''; } })();
   let settings = null, partySize = 2, pollTimer = null, lastStatus = null;
+  document.getElementById('f-phone-cc').innerHTML = DM.countryOptions();
+  document.getElementById('f-phone-cc').addEventListener('change', (e) => { document.getElementById('f-phone').placeholder = e.target.value === '966' ? '05xxxxxxxx' : 'رقم الجوال'; });
 
   const views = ['loading', 'unavailable', 'form', 'closed', 'status'];
   function show(name) { views.forEach(v => document.getElementById(`view-${v}`).classList.toggle('hidden', v !== name)); }
@@ -211,6 +213,7 @@ tailwind.config = { theme: { extend: {
       slug,
       name: document.getElementById('f-name').value.trim(),
       phone: document.getElementById('f-phone').value.trim(),
+      phoneCode: document.getElementById('f-phone-cc').value,
       email: document.getElementById('f-email').value.trim(),
       party_size: F.party_size.on ? partySize : null,
       seating: (document.querySelector('[name="seating"]:checked') || {}).value || '',
@@ -219,6 +222,13 @@ tailwind.config = { theme: { extend: {
     const labels = { name: 'الاسم', phone: 'رقم الجوال', email: 'البريد الإلكتروني', seating: 'تفضيل الجلسة', notes: 'الملاحظات' };
     for (const k of Object.keys(labels)) if (F[k].on && F[k].req && !data[k]) return formError(`${labels[k]} مطلوب`);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return formError('البريد الإلكتروني غير صحيح');
+    // الجوال بالصيغة الدولية مع + عشان زر الاتصال يشتغل من أي دولة
+    if (data.phone) {
+      const intl = DM.intlPhone(data.phone, data.phoneCode);
+      if (!intl) return formError('رقم الجوال غير صحيح، تأكد من رمز الدولة والرقم');
+      data.phone = `+${intl}`;
+    }
+    delete data.phoneCode;
 
     const btn = document.getElementById('join-btn');
     btn.disabled = true;

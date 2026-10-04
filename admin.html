@@ -1029,7 +1029,7 @@ tailwind.config = {
         </div>
         <div>
           <label class="text-[10px] text-ink/75 block mb-1">رقم الواتساب</label>
-          <input type="tel" id="social-whatsapp" placeholder="05xxxxxxxx" class="input-pro text-xs" dir="ltr">
+          <div class="flex gap-1.5" dir="ltr"><select id="social-whatsapp-cc" aria-label="رمز الدولة" class="input-pro text-xs !w-auto shrink-0 !px-2 cursor-pointer"></select><input type="tel" id="social-whatsapp" placeholder="05xxxxxxxx" class="input-pro text-xs flex-1 min-w-0"></div>
         </div>
         <div>
           <label class="text-[10px] text-ink/75 block mb-1">رابط سناب شات</label>
@@ -1298,7 +1298,8 @@ tailwind.config = {
     document.getElementById('social-web').value = client.website_url || '';
     document.getElementById('social-tiktok').value = client.tiktok_url || '';
     document.getElementById('social-insta').value = client.instagram_url || '';
-    document.getElementById('social-whatsapp').value = client.whatsapp_number || '';
+    setWaInput(client.whatsapp_number);
+    document.getElementById('social-whatsapp-cc').onchange = (e) => { document.getElementById('social-whatsapp').placeholder = e.target.value === '966' ? '05xxxxxxxx' : 'رقم الواتساب'; };
     document.getElementById('social-snap').value = client.snapchat_url || '';
     setLogo(client.logo_url);
 
@@ -1518,13 +1519,11 @@ tailwind.config = {
       if (v && !safeUrl(v)) return showToast('رابط غير صحيح: يجب أن يبدأ بـ https://', true);
       payload[col] = v;
     }
-    let wa = document.getElementById('social-whatsapp').value.replace(/\D/g, '');
-    if (wa.startsWith('00')) wa = wa.slice(2);
-    if (wa.startsWith('05')) wa = '966' + wa.slice(1);
-    else if (wa.startsWith('5') && wa.length === 9) wa = '966' + wa;
-    if (wa && !isValidWa(wa)) return showToast('رقم الواتساب غير صحيح، اكتبه مثل 05xxxxxxxx', true);
+    const waRaw = document.getElementById('social-whatsapp').value;
+    const wa = DM.intlPhone(waRaw, document.getElementById('social-whatsapp-cc').value);
+    if (waRaw.trim() && !wa) return showToast('رقم الواتساب غير صحيح، تأكد من رمز الدولة والرقم', true);
     payload.whatsapp_number = wa;
-    document.getElementById('social-whatsapp').value = payload.whatsapp_number;
+    setWaInput(wa);
 
     if (!isValidWa(payload.whatsapp_number) && client.whatsapp_orders) payload.whatsapp_orders = false;
     if (await updateClient(payload)) {
@@ -1726,6 +1725,14 @@ tailwind.config = {
   }
 
   // ─── رقم واتساب الطلبات ───
+  // الخانة تعرض الرقم المحلي، ورمز الدولة في القائمة جنبها
+  function setWaInput(intl) {
+    const { code, local } = intl ? DM.splitPhone(intl) : { code: '966', local: '' };
+    const cc = document.getElementById('social-whatsapp-cc');
+    cc.innerHTML = DM.countryOptions(code);
+    document.getElementById('social-whatsapp').value = local;
+    document.getElementById('social-whatsapp').placeholder = code === '966' ? '05xxxxxxxx' : 'رقم الواتساب';
+  }
   // رقم صالح: جوال سعودي 9665xxxxxxxx، أو رقم دولي كامل (11–15 رقم)
   function isValidWa(n) {
     const d = String(n || '');

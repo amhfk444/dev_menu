@@ -165,6 +165,39 @@
     return new URL(`${page}.html?client=${encodeURIComponent(s)}${qs ? `&${qs}` : ''}`, location.href).href;
   }
 
+  // ─── أرقام الجوال الدولية: قائمة رموز الدول + التحويل للصيغة الدولية بدون + ───
+  const COUNTRIES = [
+    ['966', '🇸🇦'], ['971', '🇦🇪'], ['965', '🇰🇼'], ['974', '🇶🇦'], ['973', '🇧🇭'], ['968', '🇴🇲'],
+    ['20', '🇪🇬'], ['962', '🇯🇴'], ['964', '🇮🇶'], ['961', '🇱🇧'], ['967', '🇾🇪'], ['963', '🇸🇾'],
+    ['970', '🇵🇸'], ['249', '🇸🇩'], ['218', '🇱🇾'], ['216', '🇹🇳'], ['213', '🇩🇿'], ['212', '🇲🇦'],
+    ['90', '🇹🇷'], ['92', '🇵🇰'], ['91', '🇮🇳'], ['44', '🇬🇧'], ['1', '🇺🇸']
+  ];
+  const countryOptions = (selected = '966') =>
+    COUNTRIES.map(([c, f]) => `<option value="${c}"${c === selected ? ' selected' : ''}>${f} +${c}</option>`).join('');
+  // رمز الدولة المختار + الرقم المحلي ← 9665xxxxxxxx / 971501234567. لو كُتب الرقم كامل بـ + أو 00 يُعتمد كما هو.
+  // السعودي لازم جوال (9665 + 8 أرقام)، والباقي 11–15 رقم. يرجّع '' لو الرقم غير صالح.
+  function intlPhone(raw, code = '966') {
+    const text = String(raw || '').trim();
+    let d = text.replace(/\D/g, '');
+    if (!d) return '';
+    if (text.startsWith('+')) {}
+    else if (d.startsWith('00')) d = d.slice(2);
+    else {
+      d = d.replace(/^0+/, '');
+      if (!(d.startsWith(code) && d.length > code.length + 7)) d = code + d;
+    }
+    const ok = d.startsWith('966') ? /^9665\d{8}$/.test(d) : /^[1-9]\d{10,14}$/.test(d);
+    return ok ? d : '';
+  }
+  // العكس للتعبئة: 966501234567 ← { code: '966', local: '0501234567' }
+  function splitPhone(intl) {
+    const d = String(intl || '').replace(/\D/g, '');
+    const hit = COUNTRIES.map(([c]) => c).sort((a, b) => b.length - a.length).find(c => d.startsWith(c) && d.length > c.length + 6);
+    if (!hit) return { code: '966', local: d };
+    const local = d.slice(hit.length);
+    return { code: hit, local: hit === '966' ? `0${local}` : local };
+  }
+
   // كل التبويبات تشترك في نفس الدخول: لو تغيّر الحساب من تبويب ثاني نعيد تحميل الصفحة،
   // حتى ما تنرسل تعديلات لوحة مفتوحة باسم حساب ثاني
   function watchAccount() {
@@ -177,6 +210,9 @@
 
   window.DM = {
     watchAccount,
+    countryOptions,
+    intlPhone,
+    splitPhone,
     storeUrl,
     hostSlug,
     storePage,
