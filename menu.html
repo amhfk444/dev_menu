@@ -291,15 +291,6 @@
         <span id="cartTotalLabel" class="text-sm font-bold text-gray-300">المجموع</span>
         <span id="cartTotal" class="text-lg font-black text-white"></span>
       </div>
-      <div id="payBox" class="hidden space-y-2">
-        <input id="payName" type="text" maxlength="60" autocomplete="given-name" placeholder="اسمك (اختياري)"
-          class="w-full bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-white/40" style="font-size:16px">
-        <button type="button" id="payBtn" onclick="checkout()" class="w-full bg-[#111827] hover:bg-black text-white border border-white/25 shadow-lg font-black text-sm py-3.5 rounded-2xl flex items-center justify-center gap-2 transition disabled:opacity-60">
-          <i class="fa-solid fa-credit-card text-base"></i> <span id="payBtnText">ادفع الآن</span>
-        </button>
-        <p id="payHint" class="text-[10px] text-gray-400 text-center font-bold">مدى · Apple Pay · بطاقة ائتمانية — دفع آمن عبر Moyasar</p>
-        <p id="payMsg" class="hidden text-[11px] font-bold text-red-300 text-center"></p>
-      </div>
       <button type="button" id="cartSend" onclick="sendCart()" class="w-full bg-[#25d366] hover:bg-[#1ebe5b] text-black font-black text-sm py-3.5 rounded-2xl flex items-center justify-center gap-2 transition">
         <i class="fa-brands fa-whatsapp text-lg"></i> <span id="cartSendText">إرسال الطلب عبر واتساب</span>
       </button>
@@ -1029,14 +1020,11 @@
   let coupon = null; // نتيجة فحص الكوبون من الخادم: { coupon, subtotal, discount, total }
   const cartKey = () => `cart:${project.id}`;
   const waNumber = () => String((project && project.whatsapp_number) || '').replace(/\D/g, '');
-  // الطلب عبر واتساب، و/أو الدفع الإلكتروني (لو المطعم ربط حساب Moyasar)
-  const waOrderingOn = () => {
+  const orderingOn = () => {
     const wa = waNumber();
     const valid = wa.startsWith('966') ? /^9665\d{8}$/.test(wa) : /^[1-9]\d{10,14}$/.test(wa);
     return !!(project && project.whatsapp_orders && valid);
   };
-  const payOn = () => !!(project && project.online_pay);
-  const orderingOn = () => waOrderingOn() || payOn();
   const cartQty = (id) => cart.filter(c => String(c.id) === String(id)).reduce((n, c) => n + c.qty, 0);
   const sameLine = (c, id, size) => String(c.id) === String(id) && (c.size || null) === (size || null);
   const lineName = (p, c) => productName(p) + (c.size ? ` (${sizeName(sizesOf(p).find(z => z.name === c.size) || { name: c.size })})` : '');
@@ -1175,14 +1163,7 @@
 
   function openCart() {
     if (!cart.length) return;
-    document.getElementById('cartTitle').innerHTML = `<i class="${payOn() ? 'fa-solid fa-bag-shopping text-white' : 'fa-brands fa-whatsapp text-[#25d366]'}"></i> ${T('طلبك', 'Your order')}`;
-    document.getElementById('payBox').classList.toggle('hidden', !payOn());
-    document.getElementById('cartSend').classList.toggle('hidden', !waOrderingOn());
-    document.getElementById('cartSend').classList.toggle('flex', waOrderingOn());
-    document.getElementById('payName').placeholder = T('اسمك (اختياري)', 'Your name (optional)');
-    document.getElementById('payBtnText').textContent = T('ادفع الآن', 'Pay now');
-    document.getElementById('payHint').textContent = T('مدى · Apple Pay · بطاقة ائتمانية — دفع آمن عبر Moyasar', 'mada · Apple Pay · card — secure payment by Moyasar');
-    document.getElementById('payMsg').classList.add('hidden');
+    document.getElementById('cartTitle').innerHTML = `<i class="fa-brands fa-whatsapp text-[#25d366]"></i> ${T('طلبك', 'Your order')}`;
     document.getElementById('cartNoteLabel').textContent = T('ملاحظات على الطلب (اختياري)', 'Order notes (optional)');
     document.getElementById('cartNote').placeholder = T('مثال: بدون بصل، سكر خفيف...', 'e.g. no onions, less sugar...');
     document.getElementById('cartTotalLabel').textContent = T('المجموع', 'Total');
@@ -1197,32 +1178,8 @@
   function clearCart() { cart = []; resetCoupon(); saveCart(); closeCart(); }
 
   // رسالة واحدة فيها كل الأصناف والكميات والمجموع
-  // الدفع الإلكتروني: الخادم يحسب المبلغ بأسعار قاعدة البيانات وينشئ فاتورة Moyasar، ونروح لصفحة الدفع
-  async function checkout() {
-    if (!cart.length || !payOn()) return;
-    const btn = document.getElementById('payBtn'), msg = document.getElementById('payMsg');
-    btn.disabled = true; msg.classList.add('hidden');
-    document.getElementById('payBtnText').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-    try {
-      const r = await DM.post('/api/public?action=checkout', {
-        slug: project.client_slug,
-        items: cart.map(c => ({ id: c.id, size: c.size, qty: c.qty })),
-        code: coupon ? coupon.coupon.code : null,
-        name: document.getElementById('payName').value.trim(),
-        note: document.getElementById('cartNote').value.trim()
-      });
-      cart.forEach(c => DM.post('/api/public?action=track', { client_id: project.id, kind: 'order', product_id: c.id }).catch(() => {}));
-      location.href = r.url;
-    } catch (e) {
-      msg.textContent = e.status === 0 ? T('تعذر الاتصال، حاول مرة ثانية', 'Connection failed, try again') : (currentLang === 'ar' ? e.message : 'Payment could not be started, try again');
-      msg.classList.remove('hidden');
-      btn.disabled = false;
-      document.getElementById('payBtnText').textContent = T('ادفع الآن', 'Pay now');
-    }
-  }
-
   function sendCart() {
-    if (!cart.length || !waOrderingOn()) return;
+    if (!cart.length || !orderingOn()) return;
     const ar = currentLang === 'ar';
     const cur = DM.currencyText(project && project.currency, currentLang);
     const lines = cart.map(c => {

@@ -980,22 +980,6 @@ tailwind.config = {
         <select id="info-currency" onchange="changeCurrency(this.value)" class="input-pro text-xs cursor-pointer"></select>
         <span class="block text-[10px] text-ink/60 mt-1">تظهر بجانب كل الأسعار في المنيو وفي رسائل طلبات واتساب. تغيير العملة ما يغيّر أرقام الأسعار نفسها.</span>
       </div>
-      <div id="pay-box" class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2.5">
-        <div class="flex items-start justify-between gap-2">
-          <b class="text-xs text-ink"><i class="fa-solid fa-credit-card text-emerald-700"></i> الدفع الإلكتروني من المنيو</b>
-          <span id="pay-status" class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-ink/5 text-ink/60 border-ink/10">غير مربوط</span>
-        </div>
-        <p class="text-[10px] text-ink/60 leading-relaxed">عميلك يدفع من المنيو (مدى، Apple Pay، بطاقة)، والطلب يوصلك في <a href="pager-desk.html" onclick="this.href='pager-desk.html'+location.search" class="font-bold underline">شاشة البيجر</a> برقم، ويرن جواله لما تضغط "جاهز". الفلوس تنزل في حسابك عند <b>Moyasar</b> مباشرة.</p>
-        <label class="flex items-center gap-2 text-xs font-bold cursor-pointer">
-          <input type="checkbox" id="pay-enabled" onchange="savePay({ enabled: this.checked })" class="w-4 h-4 accent-[#384f3d] cursor-pointer"> إظهار زر "ادفع الآن" في المنيو
-        </label>
-        <div class="flex gap-1.5" dir="ltr">
-          <input type="password" id="pay-key" autocomplete="off" placeholder="sk_live_... أو sk_test_..." class="input-pro text-xs flex-1 min-w-0">
-          <button type="button" onclick="savePayKey()" id="pay-key-btn" class="shrink-0 px-3 rounded-xl bg-brand text-cream text-xs font-black">ربط</button>
-        </div>
-        <p class="text-[10px] text-ink/55 leading-relaxed">المفتاح السري من لوحة Moyasar ← الإعدادات ← مفاتيح API. يتخزن مشفّر وما يظهر لأحد. جرّب أول بمفتاح <span dir="ltr">sk_test_</span> وبطاقة تجريبية، وبعدها حط مفتاح <span dir="ltr">sk_live_</span>.</p>
-        <button type="button" id="pay-disconnect" onclick="disconnectPay()" class="hidden text-[10px] font-bold text-red-700 underline">فصل حساب Moyasar</button>
-      </div>
       <div id="wa-orders-box" class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2.5">
         <label id="wa-orders-label" class="flex items-start gap-2.5 cursor-pointer">
           <input type="checkbox" id="info-wa-orders" class="w-4 h-4 mt-0.5 accent-green-500 cursor-pointer disabled:cursor-not-allowed">
@@ -1333,7 +1317,6 @@ tailwind.config = {
     renderBusinessType();
     applyCaloriesSetting();
     applyCurrencySetting();
-    loadPay();
     deliveryApps = (Array.isArray(client.delivery_apps) ? client.delivery_apps : []).map(d => ({ ...d }));
     renderDeliveryPicker();
     renderAppearance();
@@ -3076,46 +3059,6 @@ tailwind.config = {
       document.getElementById('info-show-calories').checked = !on;
       showToast('تعذر حفظ الإعداد', true);
     }
-  }
-
-  // ─── الدفع الإلكتروني (Moyasar) ───
-  let pay = { enabled: false, connected: false, live: false };
-  function renderPay() {
-    const st = document.getElementById('pay-status');
-    st.textContent = !pay.connected ? 'غير مربوط' : pay.enabled ? (pay.live ? 'مفعّل' : 'مفعّل · وضع تجريبي') : (pay.live ? 'مربوط · غير ظاهر' : 'مربوط تجريبي · غير ظاهر');
-    st.className = `text-[10px] font-black px-2 py-0.5 rounded-full border ${pay.enabled ? (pay.live ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20' : 'bg-amber-500/10 text-amber-700 border-amber-500/20') : 'bg-ink/5 text-ink/60 border-ink/10'}`;
-    document.getElementById('pay-enabled').checked = pay.enabled;
-    document.getElementById('pay-enabled').disabled = !pay.connected;
-    document.getElementById('pay-key-btn').textContent = pay.connected ? 'تغيير المفتاح' : 'ربط';
-    document.getElementById('pay-disconnect').classList.toggle('hidden', !pay.connected);
-  }
-  async function loadPay() {
-    try { pay = await api('payment-settings'); } catch { pay = { enabled: false, connected: false, live: false }; }
-    renderPay();
-  }
-  async function savePay(body, okMsg) {
-    try {
-      pay = await api('payment-settings-save', body);
-      renderPay();
-      showToast(okMsg || (pay.enabled ? 'زر "ادفع الآن" ظاهر في المنيو' : 'تم إخفاء الدفع من المنيو'));
-      return true;
-    } catch (e) {
-      renderPay();
-      showToast(e.message || 'تعذر الحفظ', true);
-      return false;
-    }
-  }
-  async function savePayKey() {
-    const input = document.getElementById('pay-key'), key = input.value.trim();
-    if (!/^sk_(test|live)_/.test(key)) return showToast('حط المفتاح السري من Moyasar (يبدأ بـ sk_live_ أو sk_test_)', true);
-    const btn = document.getElementById('pay-key-btn'); btn.disabled = true;
-    const ok = await savePay({ secret_key: key, enabled: true }, key.startsWith('sk_test_') ? 'انربط حساب Moyasar (تجريبي) والزر ظاهر في المنيو' : 'انربط حساب Moyasar والزر ظاهر في المنيو');
-    btn.disabled = false;
-    if (ok) input.value = '';
-  }
-  async function disconnectPay() {
-    if (!(await DMDialog.confirm({ title: 'فصل حساب Moyasar؟', message: 'يختفي زر الدفع من المنيو، ويتمسح المفتاح المحفوظ.', confirmText: 'فصل', tone: 'danger' }))) return;
-    await savePay({ disconnect: true }, 'انفصل حساب Moyasar');
   }
 
   // ─── عملة المتجر ───
