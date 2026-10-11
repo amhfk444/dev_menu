@@ -1098,10 +1098,11 @@ tailwind.config = {
   </div>
 
   <!-- ═════════ شريط التنقل السفلي (جوال) ═════════ -->
-  <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-cream/95 backdrop-blur-xl border-t border-brand/15 grid grid-cols-4" style="padding-bottom: env(safe-area-inset-bottom)">
+  <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-cream/95 backdrop-blur-xl border-t border-brand/15 grid grid-cols-5" style="padding-bottom: env(safe-area-inset-bottom)">
     <button data-nav="dashboard" class="bnav"><i class="fa-solid fa-gauge-high"></i><span>الرئيسية</span></button>
     <button data-nav="menu" class="bnav"><i class="fa-solid fa-utensils"></i><span>المنيو</span></button>
     <button data-nav="waitlist" class="bnav relative"><i class="fa-solid fa-hourglass-half"></i><span>الانتظار</span><span id="bnav-waitlist" class="hidden absolute top-1.5 left-1/2 ml-2 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-400 text-black text-[10px] font-black leading-[18px]">0</span></button>
+    <a href="pager-desk.html" onclick="this.href='pager-desk.html'+location.search" class="bnav"><i class="fa-solid fa-bell"></i><span>البيجر</span></a>
     <button data-nav="settings" class="bnav"><i class="fa-solid fa-palette"></i><span>الهوية</span></button>
   </nav>
 </div>
