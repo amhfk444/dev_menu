@@ -142,6 +142,43 @@ const nextOrderIn = async (clientId, category) => {
 // حقول الطبق المشتركة بين الفروع (السعر والإخفاء والتوفر والتمييز والترتيب لكل فرع لحاله)
 const SHARED_PRODUCT_FIELDS = ['name', 'name_en', 'description', 'description_en', 'extra_info', 'note', 'image_url', 'calories', 'allergens', 'coffee'];
 
+// هوية الضيف: البريد و/أو آخر 9 أرقام من الجوال (0501234567 و +966501234567 نفس الشخص)
+const guestKeysOf = (e) => {
+  const keys = [];
+  const email = String(e.email || '').trim().toLowerCase();
+  if (email) keys.push(`e:${email}`);
+  const d = String(e.phone || '').replace(/\D/g, '');
+  if (d.length >= 7) keys.push(`p:${d.slice(-9)}`);
+  return keys;
+};
+
+// زيارات ضيوف اليوم السابقة عند المتجر: كم مرة سجّل، وكم مرة جلس، ولم يحضر، وآخر زيارة
+async function guestHistory(storeId, entries, beforeIso) {
+  const phones = new Set(), emails = new Set();
+  entries.forEach(e => guestKeysOf(e).forEach(k => (k.startsWith('e:') ? emails : phones).add(k.slice(2))));
+  const conds = [
+    ...[...emails].slice(0, 80).map(m => `email.ilike.${m.replace(/[,()*]/g, '')}`),
+    ...[...phones].slice(0, 80).map(d => `phone.like.*${d}`)
+  ];
+  const out = {};
+  if (!conds.length) return out;
+  const rows = [];
+  for (let offset = 0; offset < 10000; offset += 1000) {
+    const page = await rest(`waitlist_entries?client_id=eq.${storeId}&created_at=lt.${q(beforeIso)}&or=${q(`(${conds.join(',')})`)}&select=phone,email,status,created_at&order=created_at.desc&limit=1000&offset=${offset}`);
+    rows.push(...page);
+    if (page.length < 1000) break;
+  }
+  // كل تسجيل سابق ينحسب تحت بريده وجواله، فالضيف ينعرف بأي واحد منهم
+  rows.forEach(r => guestKeysOf(r).forEach(k => {
+    const g = out[k] || (out[k] = { visits: 0, seated: 0, no_show: 0, last: null });
+    g.visits++;
+    if (r.status === 'seated') g.seated++;
+    if (r.status === 'no_show') g.no_show++;
+    if (!g.last || r.created_at > g.last) g.last = r.created_at;
+  }));
+  return out;
+}
+
 async function patchStore(id, payload) {
   const rows = await rest(`clients?id=eq.${id}`, { method: 'PATCH', body: payload, prefer: 'return=representation' });
   return rows[0];
@@ -238,8 +275,24 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const { store } = await context(req);
     if (!store.waitlist_enabled) throw new ApiError(403, 'قائمة الانتظار غير مفعّلة لمتجرك', 'ADDON_OFF');
     const settings = normalizeSettings(store.waitlist_settings);
-    const entries = await rest(`waitlist_entries?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&select=*&order=id.asc`);
+    const dayStart = riyadhDayStart();
+    const entries = await rest(`waitlist_entries?client_id=eq.${store.id}&created_at=gte.${q(dayStart)}&select=*&order=id.asc`);
     entries.forEach(e => Object.assign(e, positionOf(e, entries, settings)));
+    // كم مرة جاء كل ضيف قبل (الأيام السابقة + تسجيلاته الأقدم اليوم)
+    let past = {};
+    try { past = await guestHistory(store.id, entries, dayStart); } catch (err) { console.warn('guest history', err.message); }
+    entries.forEach((e, i) => {
+      const keys = guestKeysOf(e);
+      // نختار المفتاح اللي له سجل أكبر (البريد أو الجوال)
+      const best = keys.map(k => past[k]).filter(Boolean).sort((a, b) => b.visits - a.visits)[0];
+      const h = { ...(best || { visits: 0, seated: 0, no_show: 0, last: null }) };
+      const same = (x) => guestKeysOf(x).some(k => keys.includes(k));
+      if (keys.length) entries.slice(0, i).filter(same).forEach(x => {
+        h.visits++; if (x.status === 'seated') h.seated++; if (x.status === 'no_show') h.no_show++;
+        if (!h.last || x.created_at > h.last) h.last = x.created_at;
+      });
+      e.history = keys.length ? h : null;
+    });
     return { settings, entries, mail_ready: mailConfigured() };
   }
 

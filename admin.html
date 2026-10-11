@@ -761,11 +761,27 @@ tailwind.config = {
               </div>
             </div>
             <div id="wlh-stats" class="grid grid-cols-2 md:grid-cols-4 gap-2"></div>
+            <div id="wlh-view" class="flex bg-brand/5 border border-brand/15 rounded-xl p-0.5 text-[11px] font-bold w-fit">
+              <button data-wlhview="guests" class="px-3 py-1.5 rounded-lg bg-brand text-cream"><i class="fa-solid fa-users"></i> الضيوف وعدد زياراتهم</button>
+              <button data-wlhview="visits" class="px-3 py-1.5 rounded-lg text-ink/75"><i class="fa-solid fa-list"></i> كل التسجيلات</button>
+            </div>
             <div class="relative">
               <i class="fa-solid fa-magnifying-glass absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/40 text-xs"></i>
               <input id="wlh-search" type="search" placeholder="ابحث بالاسم أو الجوال أو البريد..." class="input-pro text-xs pr-9">
             </div>
-            <div class="overflow-x-auto rounded-xl border border-brand/15">
+            <div id="wlh-guests-wrap" class="overflow-x-auto rounded-xl border border-brand/15">
+              <table class="w-full text-[11px] whitespace-nowrap">
+                <thead class="bg-brand/5 text-ink/60">
+                  <tr class="text-right">
+                    <th class="px-3 py-2 font-bold">الضيف</th><th class="px-3 py-2 font-bold">الجوال</th><th class="px-3 py-2 font-bold">البريد</th>
+                    <th class="px-3 py-2 font-bold">مرات الحضور</th><th class="px-3 py-2 font-bold">التسجيلات</th><th class="px-3 py-2 font-bold">لم يحضر</th>
+                    <th class="px-3 py-2 font-bold">آخر زيارة</th>
+                  </tr>
+                </thead>
+                <tbody id="wlh-guest-rows" class="divide-y divide-brand/10"></tbody>
+              </table>
+            </div>
+            <div id="wlh-visits-wrap" class="hidden overflow-x-auto rounded-xl border border-brand/15">
               <table class="w-full text-[11px] whitespace-nowrap">
                 <thead class="bg-brand/5 text-ink/60">
                   <tr class="text-right">
@@ -2183,6 +2199,22 @@ tailwind.config = {
     document.title = waiting ? `(${waiting}) قائمة الانتظار | Dev Menu` : 'لوحة التحكم | Dev Menu';
   }
 
+  // كم مرة جاء الضيف قبل (من تسجيلاته السابقة بنفس الجوال أو البريد)
+  const timesText = (n) => n === 1 ? 'مرة' : n === 2 ? 'مرتين' : n <= 10 ? `${n} مرات` : `${n} مرة`;
+  const shortDate = (iso) => iso ? new Date(iso).toLocaleDateString('ar-SA-u-ca-gregory', { timeZone: 'Asia/Riyadh', day: 'numeric', month: 'short' }) : '';
+  function historyBadge(h) {
+    if (!h) return '';
+    const chip = (cls, html) => `<span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}">${html}</span>`;
+    if (!h.visits) return `<div class="flex flex-wrap gap-1.5 mt-1.5">${chip('bg-blue-500/10 text-blue-700', '<i class="fa-solid fa-seedling"></i> أول زيارة')}</div>`;
+    const out = [];
+    if (h.seated) out.push(chip(h.seated >= 3 ? 'bg-amber-400/20 text-amber-800' : 'bg-green-500/15 text-green-700',
+      `<i class="fa-solid ${h.seated >= 3 ? 'fa-star' : 'fa-rotate-left'}"></i> زارك ${timesText(h.seated)} قبل${h.seated >= 3 ? ' · عميل دائم' : ''}`));
+    else out.push(chip('bg-brand/10 text-ink/70', `<i class="fa-solid fa-clock-rotate-left"></i> سجّل ${timesText(h.visits)} قبل`));
+    if (h.no_show) out.push(chip('bg-red-500/10 text-red-700', `<i class="fa-solid fa-triangle-exclamation"></i> لم يحضر ${timesText(h.no_show)}`));
+    if (h.last) out.push(`<span class="text-[10px] text-ink/50">آخر زيارة ${esc(shortDate(h.last))}</span>`);
+    return `<div class="flex flex-wrap items-center gap-1.5 mt-1.5">${out.join('')}</div>`;
+  }
+
   function renderWaitlistList() {
     if (!client || !client.waitlist_enabled) return;
     renderWaitlistStats();
@@ -2232,6 +2264,7 @@ tailwind.config = {
                   : `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${STATUS[e.status][1]}">${STATUS[e.status][0]}</span>`}
               </div>
               <div class="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ink/70 mt-1">${info}</div>
+              ${historyBadge(e.history)}
               ${e.notes ? `<p class="text-[11px] text-ink/70 bg-amber-100/60 rounded-lg px-2 py-1 mt-1.5"><i class="fa-solid fa-note-sticky text-amber-600"></i> ${esc(e.notes)}</p>` : ''}
             </div>
           </div>
@@ -2312,7 +2345,33 @@ tailwind.config = {
   let wlh = { entries: [], loaded: null };
   const fmtDateTime = (iso) => iso ? new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Riyadh', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', '') : '';
   const waitMins = (e) => e.notified_at ? Math.max(0, Math.round((new Date(e.notified_at) - new Date(e.created_at)) / 60000)) : null;
-  const guestKey = (e) => (e.email || '').toLowerCase() || (e.phone || '').replace(/\D/g, '') || `#${e.ticket}-${e.created_at}`;
+  // نفس الضيف لو تطابق البريد أو آخر 9 أرقام من الجوال
+  const guestKeys = (e) => {
+    const k = [];
+    const m = String(e.email || '').trim().toLowerCase(); if (m) k.push(`e:${m}`);
+    const d = String(e.phone || '').replace(/\D/g, ''); if (d.length >= 7) k.push(`p:${d.slice(-9)}`);
+    return k.length ? k : [`#${e.ticket}-${e.created_at}`];
+  };
+  // يجمع التسجيلات حسب الضيف (union-find على البريد والجوال)
+  function groupGuests(list) {
+    const parent = new Map();
+    const find = (x) => { while (parent.get(x) !== x) { parent.set(x, parent.get(parent.get(x))); x = parent.get(x); } return x; };
+    list.forEach(e => {
+      const ks = guestKeys(e);
+      ks.forEach(k => { if (!parent.has(k)) parent.set(k, k); });
+      ks.slice(1).forEach(k => parent.set(find(k), find(ks[0])));
+    });
+    const groups = new Map();
+    list.slice().sort((a, b) => (a.created_at < b.created_at ? -1 : 1)).forEach(e => {
+      const root = find(guestKeys(e)[0]);
+      const g = groups.get(root) || { name: '', phone: '', email: '', visits: 0, seated: 0, no_show: 0, first: e.created_at, last: e.created_at };
+      g.visits++; if (e.status === 'seated') g.seated++; if (e.status === 'no_show') g.no_show++;
+      g.last = e.created_at; g.name = e.name || g.name; g.phone = e.phone || g.phone; g.email = e.email || g.email;
+      groups.set(root, g);
+    });
+    return [...groups.values()].sort((a, b) => b.seated - a.seated || b.visits - a.visits || (a.last < b.last ? 1 : -1));
+  }
+  let wlhView = 'guests';
 
   async function loadGuestHistory(force = false) {
     const days = document.getElementById('wlh-range').value;
@@ -2332,13 +2391,30 @@ tailwind.config = {
 
   function renderGuestHistory() {
     const list = filteredGuests();
-    const unique = new Set(list.map(guestKey)).size;
+    const groups = groupGuests(list);
+    const unique = groups.length;
+    const regulars = groups.filter(g => g.seated >= 2).length;
     const seated = list.filter(e => e.status === 'seated').length;
     const waits = list.map(waitMins).filter(v => v !== null);
     const avg = waits.length ? Math.round(waits.reduce((a, b) => a + b, 0) / waits.length) : null;
     const tile = (label, value) => `<div class="bg-brand/5 border border-brand/10 rounded-xl p-2.5"><p class="text-[10px] text-ink/55">${label}</p><p class="text-lg font-black">${value}</p></div>`;
     document.getElementById('wlh-stats').innerHTML =
-      tile('التسجيلات', list.length) + tile('ضيوف مختلفين', unique) + tile('جلسوا', seated) + tile('متوسط الانتظار', avg === null ? '—' : `${avg} د`);
+      tile('التسجيلات', list.length) + tile('ضيوف مختلفين', unique) + tile('رجعوا أكثر من مرة', regulars) + tile('متوسط الانتظار', avg === null ? '—' : `${avg} د`);
+
+    // عرض الضيوف: كل ضيف وكم مرة جاء
+    document.getElementById('wlh-guests-wrap').classList.toggle('hidden', wlhView !== 'guests');
+    document.getElementById('wlh-visits-wrap').classList.toggle('hidden', wlhView !== 'visits');
+    const gShown = groups.slice(0, 300);
+    document.getElementById('wlh-guest-rows').innerHTML = gShown.length ? gShown.map(g => `
+      <tr>
+        <td class="px-3 py-2 font-bold">${esc(g.name || 'ضيف')}${g.seated >= 3 ? ' <i class="fa-solid fa-star text-amber-500" title="عميل دائم"></i>' : ''}</td>
+        <td class="px-3 py-2" dir="ltr">${g.phone ? `<a href="tel:${esc(g.phone)}" class="text-blue-700">${esc(g.phone)}</a>` : '—'}</td>
+        <td class="px-3 py-2" dir="ltr">${esc(g.email || '—')}</td>
+        <td class="px-3 py-2"><span class="inline-block min-w-[26px] text-center font-black px-2 py-0.5 rounded-full ${g.seated >= 3 ? 'bg-amber-400/20 text-amber-800' : g.seated ? 'bg-green-500/15 text-green-700' : 'bg-brand/10 text-ink/60'}">${g.seated}</span></td>
+        <td class="px-3 py-2">${g.visits}</td>
+        <td class="px-3 py-2 ${g.no_show ? 'text-red-700 font-bold' : 'text-ink/40'}">${g.no_show || '—'}</td>
+        <td class="px-3 py-2 text-ink/70" dir="ltr">${esc(fmtDateTime(g.last))}</td>
+      </tr>`).join('') : '<tr><td colspan="7" class="text-center py-6 text-ink/50">لا يوجد ضيوف في هذه الفترة</td></tr>';
 
     const shown = list.slice(0, 200);
     document.getElementById('wlh-rows').innerHTML = shown.length ? shown.map(e => `
@@ -2352,10 +2428,21 @@ tailwind.config = {
         <td class="px-3 py-2">${waitMins(e) === null ? '—' : `${waitMins(e)} د`}</td>
         <td class="px-3 py-2">${esc(WL_STATUS_AR[e.status] || e.status)}</td>
       </tr>`).join('') : '<tr><td colspan="8" class="text-center py-6 text-ink/50">لا توجد تسجيلات في هذه الفترة</td></tr>';
-    document.getElementById('wlh-note').textContent = list.length > 200 ? `يظهر أحدث 200 تسجيل من ${list.length}. الملف المصدَّر يحتوي على الكل.` : '';
+    document.getElementById('wlh-note').textContent = wlhView === 'guests'
+      ? `مرات الحضور = عدد المرات اللي جلس فيها الضيف فعلاً${groups.length > 300 ? ` · يظهر أول 300 ضيف من ${groups.length}` : ''}. الضيف ينعرف بجواله أو بريده.`
+      : (list.length > 200 ? `يظهر أحدث 200 تسجيل من ${list.length}. الملف المصدَّر يحتوي على الكل.` : '');
   }
   document.getElementById('wlh-range').addEventListener('change', () => loadGuestHistory(true));
   document.getElementById('wlh-search').addEventListener('input', renderGuestHistory);
+  document.getElementById('wlh-view').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-wlhview]'); if (!b) return;
+    wlhView = b.dataset.wlhview;
+    document.querySelectorAll('[data-wlhview]').forEach(x => {
+      const on = x === b;
+      x.classList.toggle('bg-brand', on); x.classList.toggle('text-cream', on); x.classList.toggle('text-ink/75', !on);
+    });
+    renderGuestHistory();
+  });
 
   // ملف CSV يفتح في Excel بالعربي، وفيه حقوق DEV MENU أعلى وأسفل الملف
   function exportGuests(kind) {
@@ -2373,17 +2460,9 @@ tailwind.config = {
       []
     ];
     if (kind === 'guests') {
-      const map = new Map();
-      list.slice().reverse().forEach(e => {
-        const k = guestKey(e);
-        const g = map.get(k) || { name: e.name, phone: e.phone, email: e.email, visits: 0, seated: 0, first: e.created_at, last: e.created_at };
-        g.visits++; if (e.status === 'seated') g.seated++;
-        g.last = e.created_at; g.name = e.name || g.name; g.phone = e.phone || g.phone; g.email = e.email || g.email;
-        map.set(k, g);
-      });
-      rows.push(['الاسم', 'الجوال', 'البريد الإلكتروني', 'عدد التسجيلات', 'مرات الجلوس', 'أول زيارة', 'آخر زيارة']);
-      [...map.values()].sort((a, b) => b.visits - a.visits).forEach(g =>
-        rows.push([g.name, phoneCell(g.phone), g.email, g.visits, g.seated, fmtDateTime(g.first), fmtDateTime(g.last)]));
+      rows.push(['الاسم', 'الجوال', 'البريد الإلكتروني', 'مرات الحضور', 'عدد التسجيلات', 'لم يحضر', 'أول زيارة', 'آخر زيارة']);
+      groupGuests(list).forEach(g =>
+        rows.push([g.name, phoneCell(g.phone), g.email, g.seated, g.visits, g.no_show, fmtDateTime(g.first), fmtDateTime(g.last)]));
     } else {
       rows.push(['التاريخ والوقت', 'رقم الدور', 'الاسم', 'الجوال', 'البريد الإلكتروني', 'عدد الأشخاص', 'تفضيل الجلسة', 'الملاحظات', 'الحالة', 'وقت التنبيه', 'مدة الانتظار (دقيقة)']);
       list.forEach(e => rows.push([
@@ -2399,7 +2478,7 @@ tailwind.config = {
     a.download = `DEV-MENU_${kind === 'guests' ? 'guests' : 'waitlist'}_${client.client_slug}_${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 3000);
-    showToast(kind === 'guests' ? `تم تنزيل قائمة ${new Set(list.map(guestKey)).size} ضيف` : `تم تنزيل ${list.length} تسجيل`);
+    showToast(kind === 'guests' ? `تم تنزيل قائمة ${groupGuests(list).length} ضيف` : `تم تنزيل ${list.length} تسجيل`);
   }
 
   function copyWaitlistLink() {
