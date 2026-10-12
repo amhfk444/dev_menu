@@ -18,6 +18,8 @@
 <script src="js/occasions.js"></script>
 <!-- مكتبة توليد الـ QR Code -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- سحب وإفلات لترتيب الأقسام (يشتغل باللمس) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Bagel+Fat+One&display=swap" rel="stylesheet">
@@ -157,6 +159,22 @@ tailwind.config = {
   #dish-menu hr { border: 0; border-top: 1px solid var(--line); margin: 4px 2px; }
   #dish-menu .danger, #dish-menu .danger i { color: var(--brick); }
   @media (max-width: 480px) { .avail-label { display: none; } .dish-leader { display: none; } .dish-main { gap: 10px; } }
+  /* ─── ترتيب الأقسام ─── */
+  .cat-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); background: var(--paper); }
+  .cat-row:last-child { border-bottom: 0; }
+  .cat-grip { width: 36px; height: 44px; display: grid; place-items: center; color: var(--ink-3); cursor: grab; touch-action: none; border-radius: 8px; flex-shrink: 0; }
+  .cat-grip:hover { background: rgba(56, 79, 61, .07); color: var(--ink); }
+  .cat-pos { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; background: rgba(56, 79, 61, .09); color: var(--ink-2); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .cat-arrow { width: 36px; height: 40px; border-radius: 9px; color: var(--ink-2); flex-shrink: 0; }
+  .cat-arrow:hover:not(:disabled) { background: rgba(56, 79, 61, .08); color: var(--ink); }
+  .cat-arrow:disabled { opacity: .25; }
+  .cat-act { height: 36px; padding: 0 10px; border-radius: 9px; font-size: 12px; font-weight: 600; color: var(--ink-2); flex-shrink: 0; }
+  .cat-act:hover { background: rgba(56, 79, 61, .08); color: var(--ink); }
+  .cat-act.danger { color: var(--brick); }
+  .cat-act.danger:hover { background: rgba(168, 67, 46, .09); }
+  .cat-ghost { opacity: .35; }
+  .cat-drag { box-shadow: 0 10px 24px -10px rgba(34, 54, 42, .45); border-radius: 12px; }
+  @media (max-width: 640px) { .cat-act span { display: none; } .cat-act { width: 36px; padding: 0; } }
   .editing-glow { border-color: rgba(180, 130, 20, 0.7) !important; background: rgba(251, 191, 36, 0.08) !important; box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15); }
 </style>
 </head>
@@ -672,9 +690,10 @@ tailwind.config = {
         </form>
       </div>
       <div class="md:col-span-7">
-        <div class="pro-card p-5 space-y-3">
-          <h3 class="text-xs font-bold text-ink border-b border-brand/20 pb-2">الأقسام الحالية</h3>
-          <div id="categories-list" class="space-y-2.5">
+        <div class="pro-card px-4 sm:px-5 pt-4 pb-2">
+          <h3 class="text-[15px] font-bold text-ink">ترتيب الأقسام في المنيو</h3>
+          <p class="text-xs text-ink/55 mt-1">اسحب القسم من <i class="fa-solid fa-grip-vertical"></i> أو استخدم الأسهم. نفس الترتيب يظهر لعملائك في المنيو.</p>
+          <div id="categories-list" class="mt-3">
             <p class="text-xs text-ink/60 text-center py-4">لا توجد أقسام بعد.</p>
           </div>
         </div>
@@ -3414,7 +3433,7 @@ tailwind.config = {
     const i = list.findIndex(c => c.id === id), j = i + dir;
     if (i < 0 || j < 0 || j >= list.length) return;
     [list[i], list[j]] = [list[j], list[i]];
-    try { await saveOrder('categories', list); refreshAll(); }
+    try { await saveOrder('categories', list); showToast('تم حفظ ترتيب الأقسام'); refreshAll(); }
     catch (e) { console.error(e); showToast('تعذر تغيير الترتيب', true); }
   }
 
@@ -3486,21 +3505,38 @@ tailwind.config = {
     }
     const last = loadedCategories.length - 1;
     list.innerHTML = loadedCategories.map((c, i) => `
-      <div class="flex items-center justify-between gap-2 bg-brand/5 p-3 rounded-xl border border-brand/15 text-xs">
-        <div class="flex items-center gap-2 min-w-0">
-          <div class="flex flex-col">
-            <button onclick="moveCategory(${Number(c.id)}, -1)" ${i === 0 ? 'disabled' : ''} aria-label="تحريك لأعلى" class="px-1.5 text-ink/60 hover:text-ink disabled:opacity-20"><i class="fa-solid fa-chevron-up text-[10px]"></i></button>
-            <button onclick="moveCategory(${Number(c.id)}, 1)" ${i === last ? 'disabled' : ''} aria-label="تحريك لأسفل" class="px-1.5 text-ink/60 hover:text-ink disabled:opacity-20"><i class="fa-solid fa-chevron-down text-[10px]"></i></button>
-          </div>
-          <div class="min-w-0">
-            <p class="font-bold text-ink truncate">${esc(c.name)} ${c.name_en ? `<span class="text-ink/50 font-normal" dir="ltr">· ${esc(c.name_en)}</span>` : ''}</p>
-            <p class="text-ink/60 text-[10px]">${productsInCategory(c).length} طبق${c.group_name ? ` · <span class="text-amber-700 font-bold">${esc(c.group_name)}</span>` : ''}</p>
-          </div>
+      <div class="cat-row" data-id="${Number(c.id)}">
+        <span class="cat-grip" aria-hidden="true" title="اسحب لتغيير الترتيب"><i class="fa-solid fa-grip-vertical"></i></span>
+        <span class="cat-pos">${i + 1}</span>
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-semibold text-ink truncate">${esc(c.name)}${c.name_en ? ` <span class="text-ink/50 font-normal text-xs" dir="ltr">${esc(c.name_en)}</span>` : ''}</p>
+          <p class="text-xs text-ink/55 mt-0.5"><span class="tnum">${productsInCategory(c).length}</span> طبق${c.group_name ? ` · <span class="text-amber-800 font-semibold">${esc(c.group_name)}</span>` : ''}</p>
         </div>
-        <button onclick="renameCategory(${Number(c.id)})" title="تعديل الاسم" class="shrink-0 text-ink/70 hover:text-ink bg-brand/10 hover:bg-brand/15 px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-pen text-[10px]"></i> الاسم</button>
-        <button onclick="editCategoryGroup(${Number(c.id)})" title="الفئة الرئيسية" class="shrink-0 text-ink/70 hover:text-ink bg-brand/10 hover:bg-brand/15 px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-layer-group text-[10px]"></i> الفئة</button>
-        <button onclick="deleteCategory(${Number(c.id)})" class="shrink-0 text-red-600 hover:text-red-700 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-trash text-[10px]"></i> حذف</button>
+        <button onclick="moveCategory(${Number(c.id)}, -1)" ${i === 0 ? 'disabled' : ''} aria-label="تحريك ${esc(c.name)} لأعلى" class="cat-arrow"><i class="fa-solid fa-arrow-up text-xs"></i></button>
+        <button onclick="moveCategory(${Number(c.id)}, 1)" ${i === last ? 'disabled' : ''} aria-label="تحريك ${esc(c.name)} لأسفل" class="cat-arrow"><i class="fa-solid fa-arrow-down text-xs"></i></button>
+        <button onclick="renameCategory(${Number(c.id)})" aria-label="تعديل اسم ${esc(c.name)}" class="cat-act"><i class="fa-solid fa-pen text-[11px]"></i> <span>الاسم</span></button>
+        <button onclick="editCategoryGroup(${Number(c.id)})" aria-label="فئة ${esc(c.name)}" class="cat-act"><i class="fa-solid fa-layer-group text-[11px]"></i> <span>الفئة</span></button>
+        <button onclick="deleteCategory(${Number(c.id)})" aria-label="حذف ${esc(c.name)}" class="cat-act danger"><i class="fa-solid fa-trash text-[11px]"></i> <span>حذف</span></button>
       </div>`).join('');
+    enableCategoryDrag(list);
+  }
+
+  // سحب وإفلات: نحفظ الترتيب الجديد كامل بعد ما يفلت القسم
+  let catSortable = null;
+  function enableCategoryDrag(list) {
+    if (!window.Sortable) return;   // لو المكتبة ما تحمّلت تبقى الأسهم شغالة
+    if (catSortable) catSortable.destroy();
+    catSortable = Sortable.create(list, {
+      handle: '.cat-grip', animation: 160, ghostClass: 'cat-ghost', chosenClass: 'cat-drag', delay: 0,
+      onEnd: async (e) => {
+        if (e.oldIndex === e.newIndex) return;
+        const ids = [...list.querySelectorAll('.cat-row')].map(el => Number(el.dataset.id));
+        const ordered = ids.map(id => loadedCategories.find(c => Number(c.id) === id)).filter(Boolean);
+        try { await saveOrder('categories', ordered); showToast('تم حفظ ترتيب الأقسام'); }
+        catch (err) { console.error(err); showToast('تعذر حفظ الترتيب', true); }
+        refreshAll();
+      }
+    });
   }
 
   document.getElementById('add-category-form').addEventListener('submit', async (e) => {
