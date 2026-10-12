@@ -2,6 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<link rel="stylesheet" href="/css/base.css">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/icon-192.png">
@@ -17,19 +18,28 @@
 <script src="js/occasions.js"></script>
 <!-- مكتبة توليد الـ QR Code -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Bagel+Fat+One&family=Crimson+Pro:wght@500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Bagel+Fat+One&display=swap" rel="stylesheet">
 
 <script>
 tailwind.config = {
   theme: { extend: {
     // ألوان هوية DEV MENU (مأخوذة من الشعار)
     colors: {
-      sand:  '#efe5dc',
-      cream: '#faf6f1',
-      ink:   '#22362a',
-      brand: { DEFAULT: '#384f3d', dark: '#2a3e2f', light: '#4a6650' }
+      sand:    '#ece3d7',
+      cream:   '#fbf8f3',
+      ink:     '#22362a',
+      brand:   { DEFAULT: '#384f3d', dark: '#2a3e2f', light: '#4a6650' },
+      saffron: '#c9a227',
+      // الأزرار الصفراء في اللوحة تاخذ زعفراني الهوية بدل أصفر Tailwind الفاقع
+      amber: { 300: '#e3c66b', 400: '#d6b13f', 500: '#c9a227' },
+      brick:   '#a8432e'
     },
-    fontFamily: { logo: ['"Bagel Fat One"', 'Cairo', 'sans-serif'], serif: ['"Crimson Pro"', 'Georgia', 'serif'] }
+    fontFamily: {
+      sans: ['SaudiRiyal', '"IBM Plex Sans Arabic"', 'system-ui', 'sans-serif'],
+      logo: ['"Bagel Fat One"', '"IBM Plex Sans Arabic"', 'sans-serif']
+    }
   }}
 }
 </script>
@@ -46,24 +56,36 @@ tailwind.config = {
     src: url('https://cdn.jsdelivr.net/npm/@emran-alhaddad/saudi-riyal-font@1.1.0/fonts/bold/saudi_riyal.woff2') format('woff2');
     font-weight: 700 900; font-display: swap; unicode-range: U+20C1;
   }
-  body { font-family: 'SaudiRiyal', 'Cairo', sans-serif; background-color: #efe5dc; color: #22362a; min-height: 100vh; }
-  ::selection { background: #384f3d; color: #faf6f1; }
-  .pro-card {
-    background: #faf6f1; border: 1px solid rgba(56, 79, 61, 0.14); border-radius: 18px;
-    box-shadow: 0 1px 2px rgba(34, 54, 42, 0.04), 0 12px 32px -20px rgba(34, 54, 42, 0.25);
+  /* ─── نظام التصميم: ألوان الشعار (أخضر + رملي)، والزعفراني للي يحتاج انتباه، والطوبي لـ"نفدت" ─── */
+  :root {
+    --page: #ece3d7; --paper: #fbf8f3; --ink: #22362a; --ink-2: #4d5e52; --ink-3: #6f7d72;
+    --brand: #384f3d; --brand-dark: #2a3e2f; --line: rgba(56, 79, 61, .13); --line-2: rgba(56, 79, 61, .22);
+    --saffron: #c9a227; --brick: #a8432e; --ok: #2f7a4b;
   }
+  body {
+    font-family: 'SaudiRiyal', 'IBM Plex Sans Arabic', system-ui, sans-serif; background-color: var(--page); color: var(--ink);
+    min-height: 100vh; font-feature-settings: 'tnum' 1; -webkit-font-smoothing: antialiased;
+  }
+  /* الخط يوصل لـ 700؛ نخلي 800 و900 نفس الوزن بدل التضخيم الصناعي */
+  .font-black, .font-extrabold { font-weight: 700; }
+  .tnum { font-variant-numeric: tabular-nums; }
+  ::selection { background: #384f3d; color: #faf6f1; }
+  /* البطاقة: ورقة مسطحة بخط رفيع، بدون ظل منتشر */
+  .pro-card { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 1px 0 rgba(34, 54, 42, .04); }
   .input-pro {
-    width: 100%; background-color: #ffffff;
-    border: 1px solid rgba(56, 79, 61, 0.2); border-radius: 0.75rem;
-    padding: 0.65rem 0.85rem; font-size: 0.813rem; color: #22362a; transition: all 0.2s;
+    width: 100%; min-height: 44px; background-color: #ffffff;
+    border: 1px solid var(--line-2); border-radius: 10px;
+    padding: 0.6rem 0.8rem; font-size: 0.875rem; color: var(--ink); transition: border-color .15s, box-shadow .15s;
   }
   .input-pro::placeholder { color: rgba(34, 54, 42, 0.35); }
-  .input-pro:focus { outline: none; border-color: #384f3d; box-shadow: 0 0 0 3px rgba(56, 79, 61, 0.12); }
+  .input-pro:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(56, 79, 61, 0.14); }
   select.input-pro { background-color: #ffffff; }
   input[type="file"].input-pro::file-selector-button {
     background: #384f3d; color: #faf6f1; border: 0; border-radius: .5rem; padding: .3rem .7rem; margin-inline-end: .6rem; font-family: inherit; font-weight: 700; cursor: pointer;
   }
-  .tab-btn { background: #faf6f1; color: rgba(34,54,42,.7); }
+  /* تبويبات المنيو: مفتاح مقسّم واحد بدل ثلاث بطاقات */
+  .tab-btn { background: transparent; color: var(--ink-2); border-color: transparent !important; box-shadow: none !important; }
+  .tab-btn:hover { color: var(--ink); background: rgba(56, 79, 61, .06); }
 
   /* ─── الجوال ─── */
   @media (max-width: 640px) {
@@ -75,26 +97,66 @@ tailwind.config = {
   }
   html { -webkit-text-size-adjust: 100%; }
   button, a { touch-action: manipulation; }
-  .tab-btn.active { background-color: #384f3d; color: #faf6f1; border-color: #384f3d; font-weight: 800; }
+  .tab-btn.active { background-color: var(--paper); color: var(--ink); font-weight: 700; box-shadow: 0 1px 2px rgba(34, 54, 42, .12) !important; }
 
   /* القائمة الجانبية الخضراء */
+  /* القائمة الجانبية: الصفحة الحالية بخط زعفراني على جنبها، مو كبسولة فاتحة */
   .nav-item {
-    display: flex; align-items: center; gap: .65rem; width: 100%; padding: .65rem .85rem;
-    border-radius: .8rem; font-size: .8rem; font-weight: 700; color: rgba(250, 246, 241, 0.75); transition: all .15s;
+    position: relative; display: flex; align-items: center; gap: .7rem; width: 100%; min-height: 42px; padding: .55rem .85rem;
+    border-radius: 10px; font-size: .875rem; font-weight: 500; color: rgba(251, 248, 243, 0.72); transition: background-color .15s, color .15s;
   }
-  .nav-item i { width: 1.1rem; text-align: center; }
-  .nav-item:hover { background: rgba(250, 246, 241, 0.08); color: #faf6f1; }
-  .nav-item.nav-active { background: #faf6f1; color: #2a3e2f; }
-  #nav-count { background: rgba(250, 246, 241, 0.15); }
-  .nav-item.nav-active #nav-count { background: rgba(56, 79, 61, 0.12); }
+  .nav-item i { width: 1.1rem; text-align: center; font-size: .85rem; opacity: .85; }
+  .nav-item:hover { background: rgba(251, 248, 243, 0.07); color: #fbf8f3; }
+  .nav-item.nav-active { background: rgba(251, 248, 243, 0.11); color: #fbf8f3; font-weight: 700; }
+  .nav-item.nav-active::before { content: ''; position: absolute; inset-inline-start: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 3px; background: var(--saffron); }
+  .nav-item.nav-active i { opacity: 1; color: var(--saffron); }
+  #nav-count { background: rgba(251, 248, 243, 0.13); font-variant-numeric: tabular-nums; }
 
   /* شريط الجوال السفلي */
   .bnav { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 8px; font-size: 10px; font-weight: 700; color: rgba(34, 54, 42, 0.5); }
   .bnav i { font-size: 16px; }
-  .bnav.nav-active { color: #384f3d; }
+  .bnav.nav-active { color: var(--brand); font-weight: 700; }
   .bnav.nav-active i { color: #384f3d; }
   /* خلفية شطرنج توضح الشفافية في معاينة الملصقات */
   .bg-checker { background-color: #fff; background-image: linear-gradient(45deg, #e5e1d8 25%, transparent 25%), linear-gradient(-45deg, #e5e1d8 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e5e1d8 75%), linear-gradient(-45deg, transparent 75%, #e5e1d8 75%); background-size: 14px 14px; background-position: 0 0, 0 7px, 7px -7px, -7px 0; }
+  /* ─── قائمة الأطباق: مثل المنيو المطبوع — الاسم، خط نقاط، السعر ─── */
+  .dish-cat { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-top: 20px; padding-bottom: 7px; border-bottom: 1.5px solid var(--ink); }
+  .dish-cat:first-child { margin-top: 8px; }
+  .dish-cat h4 { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .dish-cat span { font-size: 12px; color: var(--ink-3); }
+  .dish-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+  .dish-row:last-child { border-bottom: 0; }
+  .dish-row.is-editing { background: rgba(201, 162, 39, .1); margin-inline: -10px; padding-inline: 10px; border-radius: 10px; }
+  .dish-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; text-align: start; border-radius: 8px; padding: 2px 0; }
+  .dish-main:hover .dish-name { text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 4px; }
+  .dish-thumb { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; flex-shrink: 0; background: rgba(56, 79, 61, .08); border: 1px solid var(--line); display: grid; place-items: center; color: var(--ink-3); font-size: 13px; }
+  .dish-text { min-width: 0; flex: 0 1 auto; }
+  .dish-name { font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dish-meta { font-size: 12px; color: var(--ink-3); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dish-leader { flex: 1 1 24px; min-width: 16px; align-self: flex-end; margin-bottom: 9px; border-bottom: 1.5px dotted var(--line-2); }
+  .dish-price { font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .dish-tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 0 6px; border-radius: 5px; margin-inline-start: 6px; vertical-align: 1px; }
+  .dish-row.sold-out .dish-name, .dish-row.sold-out .dish-price { color: var(--ink-3); }
+  .dish-row.sold-out .dish-price { text-decoration: line-through; }
+  .dish-row.is-hidden .dish-main { opacity: .55; }
+  /* مفتاح التوفر: أكثر شي يستخدمه صاحب المطعم وقت الدوام */
+  .avail { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 2px; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+  .avail-track { position: relative; width: 40px; height: 24px; border-radius: 999px; background: var(--brick); transition: background-color .18s; flex-shrink: 0; }
+  .avail-track::after { content: ''; position: absolute; top: 3px; inset-inline-start: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .25); transition: inset-inline-start .18s; }
+  .avail[aria-checked="true"] .avail-track { background: var(--ok); }
+  .avail[aria-checked="true"] .avail-track::after { inset-inline-start: 19px; }
+  .avail-label { width: 3.2em; color: var(--brick); }
+  .avail[aria-checked="true"] .avail-label { color: var(--ok); }
+  .more-btn { width: 40px; height: 44px; border-radius: 10px; color: var(--ink-2); flex-shrink: 0; }
+  .more-btn:hover, .more-btn[aria-expanded="true"] { background: rgba(56, 79, 61, .08); color: var(--ink); }
+  #dish-menu { position: fixed; z-index: 55; min-width: 200px; background: #fff; border: 1px solid var(--line-2); border-radius: 12px; padding: 6px; box-shadow: 0 12px 32px -12px rgba(34, 54, 42, .35); }
+  #dish-menu button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 0 10px; border-radius: 8px; font-size: 13px; color: var(--ink); text-align: start; }
+  #dish-menu button:hover:not(:disabled), #dish-menu button:focus-visible { background: rgba(56, 79, 61, .07); }
+  #dish-menu button:disabled { opacity: .35; }
+  #dish-menu button i { width: 16px; text-align: center; color: var(--ink-3); }
+  #dish-menu hr { border: 0; border-top: 1px solid var(--line); margin: 4px 2px; }
+  #dish-menu .danger, #dish-menu .danger i { color: var(--brick); }
+  @media (max-width: 480px) { .avail-label { display: none; } .dish-leader { display: none; } .dish-main { gap: 10px; } }
   .editing-glow { border-color: rgba(180, 130, 20, 0.7) !important; background: rgba(251, 191, 36, 0.08) !important; box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15); }
 </style>
 </head>
@@ -137,8 +199,7 @@ tailwind.config = {
   <aside class="hidden lg:flex fixed inset-y-0 right-0 z-30 w-64 flex-col bg-brand text-cream">
     <!-- شعار المنصة -->
     <div class="px-6 pt-7 pb-5 text-center" dir="ltr">
-      <p class="font-serif text-[13px] text-cream/70 tracking-wide leading-none">Digital Menu Platform</p>
-      <p class="font-logo text-[34px] leading-[0.95] mt-1.5 text-cream">DEV<br>MENU</p>
+      <p class="font-logo text-[26px] leading-[0.95] text-cream">DEV<br>MENU</p>
     </div>
 
     <!-- المتجر الحالي -->
@@ -202,7 +263,7 @@ tailwind.config = {
       <section data-page="dashboard" class="space-y-6">
         <div class="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 id="greeting" class="text-xl md:text-2xl font-black">أهلاً بك 👋</h2>
+            <h2 id="greeting" class="text-xl md:text-2xl font-black">أهلاً بك</h2>
             <p class="text-xs text-ink/60 mt-1">هذا ملخص متجرك وأداء المنيو.</p>
           </div>
           <div class="flex gap-2">
@@ -213,7 +274,7 @@ tailwind.config = {
 
         <div id="renew-banner" class="hidden rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 border"></div>
 
-        <div id="quick-counts" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+        <div id="quick-counts" class="pro-card grid grid-cols-2 lg:grid-cols-4 overflow-hidden"></div>
 
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
           <div class="xl:col-span-2 space-y-6">
@@ -310,15 +371,15 @@ tailwind.config = {
         <button onclick="goAddDish()" aria-label="أضف طبق" class="lg:hidden fixed bottom-24 left-4 z-30 bg-brand text-cream w-14 h-14 rounded-2xl shadow-xl flex items-center justify-center text-lg active:scale-95 transition"
                 style="margin-bottom: env(safe-area-inset-bottom)"><i class="fa-solid fa-plus"></i></button>
   <!-- التبويبات -->
-  <div class="flex gap-2 border-b border-brand/20 pb-2">
-    <button onclick="switchTab('products')" id="tab-products" class="tab-btn active px-5 py-2.5 rounded-xl border border-brand/25 text-xs font-bold transition flex items-center gap-2">
-      <i class="fa-solid fa-box"></i> المنتجات والأطباق
+  <div class="inline-flex gap-1 p-1 rounded-xl bg-brand/[0.07] max-w-full" role="tablist">
+    <button onclick="switchTab('products')" id="tab-products" class="tab-btn active px-4 py-2 rounded-lg border text-[13px] font-medium transition flex items-center gap-2">
+      <i class="fa-solid fa-utensils text-[11px]"></i> الأطباق
     </button>
-    <button onclick="switchTab('categories')" id="tab-categories" class="tab-btn bg-brand/5 hover:bg-brand/10 text-ink/75 px-5 py-2.5 rounded-xl border border-brand/25 text-xs font-bold transition flex items-center gap-2">
-      <i class="fa-solid fa-layer-group"></i> الأقسام والقوائم
+    <button onclick="switchTab('categories')" id="tab-categories" class="tab-btn px-4 py-2 rounded-lg border text-[13px] font-medium transition flex items-center gap-2">
+      <i class="fa-solid fa-layer-group text-[11px]"></i> الأقسام
     </button>
-    <button onclick="switchTab('coupons')" id="tab-coupons" class="tab-btn bg-brand/5 hover:bg-brand/10 text-ink/75 px-5 py-2.5 rounded-xl border border-brand/25 text-xs font-bold transition flex items-center gap-2">
-      <i class="fa-solid fa-ticket"></i> الخصومات
+    <button onclick="switchTab('coupons')" id="tab-coupons" class="tab-btn px-4 py-2 rounded-lg border text-[13px] font-medium transition flex items-center gap-2">
+      <i class="fa-solid fa-ticket text-[11px]"></i> الخصومات
     </button>
   </div>
 
@@ -478,12 +539,13 @@ tailwind.config = {
             <option value="all">جميع الأقسام</option>
           </select>
         </div>
-        <div class="pro-card p-4 space-y-3">
-          <div class="flex items-center justify-between border-b border-brand/20 pb-2">
-            <h3 class="text-xs font-bold text-ink">الأطباق المتاحة في القائمة</h3>
-            <span id="products-count" class="text-[10px] font-bold text-cream bg-brand px-2.5 py-0.5 rounded-full">0 طبق</span>
+        <div class="pro-card px-4 sm:px-5 pt-4 pb-2">
+          <div class="flex items-baseline justify-between gap-3">
+            <h3 class="text-[15px] font-bold text-ink">أطباق المنيو</h3>
+            <span id="products-count" class="text-xs text-ink/60 tnum">0 طبق</span>
           </div>
-          <div id="admin-products-list" class="space-y-2.5">
+          <p class="text-xs text-ink/55 mt-1">اضغط على الطبق لتعديله. والمفتاح يخلّيه متوفر أو نفدت الكمية.</p>
+          <div id="admin-products-list" class="mt-2">
             <p class="text-xs text-ink/60 text-center py-6">جاري التحميل...</p>
           </div>
         </div>
@@ -1199,7 +1261,7 @@ tailwind.config = {
 
   function setStoreName(name) {
     document.getElementById('header-title').textContent = name;
-    document.getElementById('greeting').textContent = `أهلاً بك في ${name} 👋`;
+    document.getElementById('greeting').textContent = `أهلاً بك في ${name}`;
   }
   function setLogo(url) {
     const logo = safeUrl(url);
@@ -1216,16 +1278,18 @@ tailwind.config = {
     const noCal = loadedProducts.filter(p => p.calories == null).length;
     document.getElementById('nav-count').textContent = total;
 
-    const tile = (label, value, icon, color, page) => `
-      <button onclick="location.hash='${page}'" class="pro-card p-3 sm:p-4 text-right hover:border-brand/40 transition">
-        <p class="text-[10px] text-ink/60 flex items-center gap-1.5"><i class="fa-solid ${icon} ${color}"></i> ${label}</p>
-        <p class="text-xl sm:text-2xl font-black text-ink mt-1">${value}</p>
+    // شريط واحد بأرقام المنيو؛ "نفدت الكمية" يتلون بس لما فيه أطباق نافدة
+    const soldOut = total - available;
+    const cell = (label, value, page, warn = false) => `
+      <button onclick="location.hash='${page}'" class="text-right px-4 py-3.5 sm:px-5 sm:py-4 border-brand/10 [&:nth-child(odd)]:border-l lg:border-l lg:last:border-l-0 [&:nth-child(-n+2)]:border-b lg:[&:nth-child(-n+2)]:border-b-0 hover:bg-brand/[0.04] transition ${warn ? 'bg-brick/[0.06]' : ''}">
+        <span class="block text-[26px] leading-none font-bold tnum ${warn ? 'text-brick' : 'text-ink'}">${value}</span>
+        <span class="block text-[13px] mt-1.5 ${warn ? 'text-brick font-semibold' : 'text-ink/60'}">${label}</span>
       </button>`;
     document.getElementById('quick-counts').innerHTML =
-      tile('الأطباق', total, 'fa-utensils', 'text-blue-700', 'menu') +
-      tile('الأقسام', loadedCategories.length, 'fa-layer-group', 'text-purple-700', 'menu') +
-      tile('متوفر الآن', available, 'fa-circle-check', 'text-green-600', 'menu') +
-      tile('نفذت الكمية', total - available, 'fa-circle-xmark', 'text-red-600', 'menu');
+      cell(total === 1 ? 'طبق في المنيو' : 'أطباق في المنيو', total, 'menu') +
+      cell('أقسام', loadedCategories.length, 'menu') +
+      cell('متوفر الآن', available, 'menu') +
+      cell('نفدت الكمية', soldOut, 'menu', soldOut > 0);
 
     const items = [
       ['شعار المطعم', !!client.logo_url, 'settings'],
@@ -3483,9 +3547,10 @@ tailwind.config = {
   function renderProductsList(products) {
     const list = document.getElementById('admin-products-list');
     document.getElementById('products-count').textContent = `${products.length} طبق`;
+    closeDishMenu();
 
     if (products.length === 0) {
-      list.innerHTML = `<p class="text-xs text-ink/60 text-center py-6">${loadedProducts.length ? 'لا توجد نتائج مطابقة.' : 'لا توجد أطباق بعد. أضف أول طبق من النموذج.'}</p>`;
+      list.innerHTML = `<p class="text-sm text-ink/60 text-center py-8">${loadedProducts.length ? 'ما فيه طبق بهذا الاسم أو في هذا القسم.' : 'ما أضفت أطباق للحين. أضف أول طبق من النموذج.'}</p>`;
       return;
     }
 
@@ -3497,44 +3562,76 @@ tailwind.config = {
       const isHidden = p.is_hidden === true;
       const img = safeUrl(p.image_url);
       const cat = categoryOf(p);
-      const siblings = cat ? productsInCategory(cat) : [];
-      const pos = siblings.findIndex(x => x.id === p.id);
       const header = cat && cat !== lastCat
-        ? `<p class="text-[10px] font-bold text-ink/50 pt-2 first:pt-0">${esc(cat.name)}</p>` : '';
+        ? `<div class="dish-cat"><h4>${esc(cat.name)}</h4><span class="tnum">${productsInCategory(cat).length} طبق</span></div>` : '';
       lastCat = cat;
+      const meta = [
+        p.coffee && allowsCoffee() ? esc(coffeeSummary(p.coffee) || 'قهوة مختصة') : '',
+        !showCalories() ? '' : p.calories != null ? `${Number(p.calories)} سعرة` : '<span class="text-amber-700">بدون سعرات</span>'
+      ].filter(Boolean).join(' · ');
       return `${header}
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between ${isHidden ? 'bg-ink/[0.04] opacity-70' : 'bg-brand/5'} p-2.5 rounded-xl border ${editingProductId === id ? 'editing-glow' : isHidden ? 'border-dashed border-ink/25' : 'border-brand/15'} text-xs gap-2.5 sm:gap-2 transition">
-          <div class="flex items-center gap-2 min-w-0 w-full sm:w-auto">
-            <div class="flex flex-col shrink-0">
-              <button onclick="moveProduct(${id}, -1)" ${pos <= 0 ? 'disabled' : ''} aria-label="تحريك لأعلى" class="px-1.5 py-1 sm:py-0 text-ink/60 hover:text-ink disabled:opacity-20"><i class="fa-solid fa-chevron-up text-[10px] sm:text-[9px]"></i></button>
-              <button onclick="moveProduct(${id}, 1)" ${pos < 0 || pos >= siblings.length - 1 ? 'disabled' : ''} aria-label="تحريك لأسفل" class="px-1.5 py-1 sm:py-0 text-ink/60 hover:text-ink disabled:opacity-20"><i class="fa-solid fa-chevron-down text-[10px] sm:text-[9px]"></i></button>
-            </div>
-            ${img ? `<img src="${esc(img)}" alt="" loading="lazy" class="w-12 h-12 sm:w-10 sm:h-10 object-cover rounded-xl border border-brand/25 shrink-0">` : `<div class="w-12 h-12 sm:w-10 sm:h-10 bg-brand/10 rounded-xl flex items-center justify-center shrink-0"><i class="fa-solid fa-utensils text-ink/60 text-xs"></i></div>`}
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-1.5">
-                <p class="font-bold text-ink text-[13px] sm:text-xs truncate ${!isAvailable ? 'line-through text-ink/50' : ''}">${esc(p.name)}</p>
-                ${isBestseller ? `<span class="bg-brand/15 text-ink text-[9px] px-1.5 py-0.5 rounded font-bold border border-brand/30 shrink-0"><i class="fa-solid fa-fire text-amber-600"></i> مميز</span>` : ''}
-                ${isHidden ? `<span class="bg-ink/10 text-ink/70 text-[9px] px-1.5 py-0.5 rounded font-bold shrink-0"><i class="fa-solid fa-eye-slash"></i> مخفي</span>` : ''}
-              </div>
-              <p class="text-ink/75 font-semibold text-[11px]">${sizesText(p) ? esc(sizesText(p)) : esc(money(p.price))}${!showCalories() ? '' : p.calories != null ? ` <span class="text-ink/50">· ${Number(p.calories)} سعرة</span>` : ` <span class="text-amber-600">· بدون سعرات</span>`}</p>
-              ${p.coffee && allowsCoffee() ? `<p class="text-[10px] text-amber-700 truncate"><i class="fa-solid fa-mug-hot"></i> ${esc(coffeeSummary(p.coffee) || 'قهوة مختصة')}</p>` : ''}
-            </div>
-          </div>
-          <div class="grid grid-cols-[1fr_1fr_1fr_auto_auto] sm:flex items-center gap-1.5 shrink-0 w-full sm:w-auto">
-            <button onclick="startEdit(${id})" class="px-2.5 py-2 sm:py-1 rounded-lg text-[10px] font-bold border bg-brand/5 text-ink/90 border-brand/20 hover:bg-brand/10 transition"><i class="fa-solid fa-pen text-[9px]"></i> تعديل</button>
-            <button onclick="toggleField(${id}, 'is_bestseller', ${isBestseller})" class="px-2.5 py-2 sm:py-1 rounded-lg text-[10px] font-bold border ${isBestseller ? 'bg-brand text-cream border-brand' : 'bg-brand/5 text-ink/75 border-brand/15'}">تمييز</button>
-            <button onclick="toggleField(${id}, 'is_available', ${isAvailable})" class="px-2.5 py-2 sm:py-1 rounded-lg text-[10px] font-bold border ${isAvailable ? 'bg-green-500/20 text-green-700 border-green-500/30' : 'bg-red-500/20 text-red-700 border-red-500/30'}">${isAvailable ? 'متوفر' : 'نفذت'}</button>
-            <button onclick="toggleField(${id}, 'is_hidden', ${isHidden})" aria-label="${isHidden ? 'إظهار في المنيو' : 'إخفاء من المنيو'}" title="${isHidden ? 'إظهار في المنيو' : 'إخفاء من المنيو'}" class="px-3 py-2 sm:p-2 rounded-lg border ${isHidden ? 'bg-ink text-cream border-ink' : 'bg-brand/5 text-ink/70 border-brand/15'}"><i class="fa-solid ${isHidden ? 'fa-eye-slash' : 'fa-eye'}"></i></button>
-            <button onclick="deleteProduct(${id})" aria-label="حذف" class="text-red-600 bg-red-500/10 hover:bg-red-500/20 px-3 py-2 sm:p-2 rounded-lg border border-red-500/20 transition"><i class="fa-solid fa-trash"></i></button>
-          </div>
+        <div class="dish-row ${!isAvailable ? 'sold-out' : ''} ${isHidden ? 'is-hidden' : ''} ${editingProductId === id ? 'is-editing' : ''}">
+          <button type="button" class="dish-main" onclick="startEdit(${id})" aria-label="تعديل ${esc(p.name)}">
+            ${img ? `<img src="${esc(img)}" alt="" loading="lazy" class="dish-thumb">` : `<span class="dish-thumb"><i class="fa-solid fa-utensils"></i></span>`}
+            <span class="dish-text">
+              <span class="dish-name block">${esc(p.name)}${isBestseller ? '<span class="dish-tag bg-saffron/15 text-amber-800">مميز</span>' : ''}${isHidden ? '<span class="dish-tag bg-ink/10 text-ink/70">مخفي</span>' : ''}</span>
+              ${meta ? `<span class="dish-meta block">${meta}</span>` : ''}
+            </span>
+            <span class="dish-leader" aria-hidden="true"></span>
+            <span class="dish-price">${sizesText(p) ? esc(sizesText(p)) : esc(money(p.price))}</span>
+          </button>
+          <button type="button" role="switch" aria-checked="${isAvailable}" aria-label="متوفر: ${esc(p.name)}" class="avail" onclick="toggleField(${id}, 'is_available', ${isAvailable})">
+            <span class="avail-track"></span><span class="avail-label">${isAvailable ? 'متوفر' : 'نفدت'}</span>
+          </button>
+          <button type="button" class="more-btn" aria-haspopup="menu" aria-expanded="false" aria-label="خيارات ${esc(p.name)}" onclick="openDishMenu(event, ${id})"><i class="fa-solid fa-ellipsis-vertical"></i></button>
         </div>`;
     }).join('');
   }
 
+  // قائمة خيارات الطبق (⋯): تعديل، تمييز، إخفاء، ترتيب، حذف
+  let dishMenuFor = null;
+  function closeDishMenu() {
+    const m = document.getElementById('dish-menu');
+    if (m) m.remove();
+    document.querySelectorAll('.more-btn[aria-expanded="true"]').forEach(b => b.setAttribute('aria-expanded', 'false'));
+    dishMenuFor = null;
+  }
+  function openDishMenu(e, id) {
+    e.stopPropagation();
+    if (dishMenuFor === id) return closeDishMenu();
+    closeDishMenu();
+    const p = loadedProducts.find(x => Number(x.id) === id); if (!p) return;
+    const cat = categoryOf(p), siblings = cat ? productsInCategory(cat) : [], pos = siblings.findIndex(x => x.id === p.id);
+    const btn = e.currentTarget, r = btn.getBoundingClientRect();
+    const m = document.createElement('div');
+    m.id = 'dish-menu'; m.setAttribute('role', 'menu');
+    const item = (icon, label, fn, extra = '') => `<button type="button" role="menuitem" ${extra} onclick="closeDishMenu(); ${fn}"><i class="fa-solid ${icon}"></i> ${label}</button>`;
+    m.innerHTML = [
+      item('fa-pen', 'تعديل الطبق', `startEdit(${id})`),
+      item('fa-fire', p.is_bestseller ? 'إلغاء التمييز' : 'تمييز الطبق', `toggleField(${id}, 'is_bestseller', ${p.is_bestseller === true})`),
+      item(p.is_hidden ? 'fa-eye' : 'fa-eye-slash', p.is_hidden ? 'إظهار في المنيو' : 'إخفاء من المنيو', `toggleField(${id}, 'is_hidden', ${p.is_hidden === true})`),
+      '<hr>',
+      item('fa-arrow-up', 'تحريك لأعلى', `moveProduct(${id}, -1)`, pos <= 0 ? 'disabled' : ''),
+      item('fa-arrow-down', 'تحريك لأسفل', `moveProduct(${id}, 1)`, pos < 0 || pos >= siblings.length - 1 ? 'disabled' : ''),
+      '<hr>',
+      item('fa-trash', 'حذف الطبق', `deleteProduct(${id})`, 'class="danger"')
+    ].join('');
+    document.body.appendChild(m);
+    const w = m.offsetWidth, h = m.offsetHeight;
+    m.style.left = `${Math.max(8, Math.min(r.left, innerWidth - w - 8))}px`;
+    m.style.top = `${r.bottom + h + 8 > innerHeight ? Math.max(8, r.top - h - 4) : r.bottom + 4}px`;
+    btn.setAttribute('aria-expanded', 'true');
+    dishMenuFor = id;
+    m.querySelector('button:not(:disabled)').focus();
+  }
+  document.addEventListener('click', (e) => { if (dishMenuFor !== null && !e.target.closest('#dish-menu')) closeDishMenu(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && dishMenuFor !== null) closeDishMenu(); });
+  window.addEventListener('scroll', () => { if (dishMenuFor !== null) closeDishMenu(); }, { passive: true });
+
   async function toggleField(id, field, current) {
     try { await api('product-toggle', { id, field, value: !current }); }
     catch { return showToast('تعذر التحديث', true); }
-    if (field === 'is_available') showToast(current ? 'الطبق الآن: نفذت الكمية' : 'الطبق الآن: متوفر');
+    if (field === 'is_available') showToast(current ? 'صار الطبق: نفدت الكمية' : 'صار الطبق: متوفر');
     else if (field === 'is_hidden') showToast(current ? 'الطبق ظاهر في المنيو' : 'تم إخفاء الطبق من المنيو');
     else showToast(current ? 'تمت إزالة التمييز' : 'تم تمييز الطبق');
     refreshAll();
