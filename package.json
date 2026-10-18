@@ -3,8 +3,9 @@
   "private": true,
   "description": "DEV MENU — منصة المنيو الرقمي",
   "dependencies": {
-    "nodemailer": "^6.9.16",
+    "@anthropic-ai/sdk": "^0.135.0",
     "@vercel/functions": "^3.9.9",
+    "nodemailer": "^6.9.16",
     "web-push": "^3.6.7"
   }
 }

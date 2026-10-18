@@ -147,6 +147,8 @@ module.exports = handler(['GET', 'POST'], async (req) => {
   if (action === 'featured') return patch({ is_featured: b.featured === true });
   // إضافة قائمة الانتظار المدفوعة (يفعّلها المدير العام بعد الدفع)
   if (action === 'waitlist-addon') return patch({ waitlist_enabled: b.enabled === true });
+  // إضافة ردود التقييمات بالذكاء الاصطناعي
+  if (action === 'reviews-addon') return patch({ reviews_enabled: b.enabled === true });
 
   // ─── إضافة فرع: نسخة من المنيو يديرها صاحب المتجر الرئيسي من لوحته ───
   if (action === 'branch-create') {

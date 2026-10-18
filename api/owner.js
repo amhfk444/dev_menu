@@ -9,6 +9,7 @@ const {
 } = require('./_lib/core');
 const { FIELDS, normalizeSettings, riyadhDayStart, positionOf, emailTemplate, statusUrlFor } = require('./_lib/waitlist');
 const { sendMail, mailConfigured } = require('./_lib/mail');
+const { draftReviewReply } = require('./_lib/ai');
 const { sendPush } = require('./_lib/push');
 
 const bySort = (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id;
@@ -327,9 +328,39 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     return { tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub })), slug: store.client_slug, name: store.name, max_rings: PAGER_MAX_RINGS };
   }
 
+  // ─── ردود التقييمات: آخر الردود المكتوبة ───
+  if (action === 'review-drafts' && req.method === 'GET') {
+    const { store, admin } = await context(req);
+    if (!store.reviews_enabled && !admin) throw new ApiError(403, 'ردود التقييمات غير مفعّلة لمتجرك', 'ADDON_OFF');
+    const drafts = await rest(`review_drafts?client_id=eq.${store.id}&select=id,reviewer,rating,review,reply,created_at&order=id.desc&limit=15`).catch(() => []);
+    return { drafts };
+  }
+
   if (req.method !== 'POST') throw new ApiError(404, 'Unknown action');
-  const { store } = await context(req);
+  const { store, admin } = await context(req);
   const sid = store.id;
+
+  // ─── ردود التقييمات: الذكاء الاصطناعي يكتب رد على تعليق قوقل ماب (إضافة مدفوعة) ───
+  if (action === 'review-draft') {
+    if (!store.reviews_enabled && !admin) throw new ApiError(403, 'ردود التقييمات غير مفعّلة لمتجرك', 'ADDON_OFF');
+    const review = str(b.review, 4000, 'التعليق');
+    if (!review || review.length < 2) throw new ApiError(400, 'الصق نص التعليق');
+    const rating = int(b.rating);
+    if (!(rating >= 1 && rating <= 5)) throw new ApiError(400, 'اختر عدد النجوم');
+    const reviewer = str(b.reviewer, 60, 'اسم صاحب التعليق');
+    const note = str(b.note, 500, 'الملاحظة');
+    const tone = b.tone === 'formal' ? 'formal' : 'friendly';
+    // حد يومي يحمي من الاستخدام الزائد
+    const since = new Date(Date.now() - 864e5).toISOString();
+    const used = await rest(`review_drafts?client_id=eq.${sid}&created_at=gte.${q(since)}&select=id`).catch(() => []);
+    if (used.length >= 60) throw new ApiError(429, 'وصلت حد 60 رد في اليوم، جرّب بكرة');
+    const reply = await draftReviewReply({ storeName: store.name, businessType: store.business_type, review, rating, reviewer, note, tone });
+    const row = (await rest('review_drafts', {
+      method: 'POST', prefer: 'return=representation',
+      body: { client_id: sid, reviewer: reviewer || null, rating, review, note: note || null, tone, reply }
+    }).catch(() => []))[0];
+    return { reply, id: row ? row.id : null };
+  }
 
   // ─── البيجر: الطلب جاهز (يرن جوال العميل) / تم التسليم / إلغاء / إرجاع للانتظار ───
   if (action === 'pager-update') {
