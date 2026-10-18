@@ -7,7 +7,6 @@
 .ph-arrow-clockwise:before { content: "\e036"; }
 .ph-arrow-counter-clockwise:before { content: "\e038"; }
 .ph-arrow-down:before { content: "\e03e"; }
-.ph-arrow-left:before { content: "\e058"; }
 .ph-arrow-right:before { content: "\e06c"; }
 .ph-arrow-square-out:before { content: "\e5de"; }
 .ph-arrow-up:before { content: "\e08e"; }
@@ -94,7 +93,6 @@
 .ph-prohibit:before { content: "\e3de"; }
 .ph-qr-code:before { content: "\e3e6"; }
 .ph-question:before { content: "\e3e8"; }
-.ph-rocket-launch:before { content: "\e3fe"; }
 .ph-scissors:before { content: "\eae0"; }
 .ph-share-network:before { content: "\e408"; }
 .ph-shuffle:before { content: "\e422"; }

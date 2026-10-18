@@ -1,7 +1,6 @@
 // إعدادات كل صفحة (منقولة من tailwind.config اللي كان داخل كل صفحة)
 const brand = { DEFAULT: '#384f3d', dark: '#2a3e2f', light: '#4a6650' };
 module.exports = {
-  index: {},
   login: {},
   links: {},
   pager: {},
