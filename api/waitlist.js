@@ -7,6 +7,7 @@
 // =====================================================================
 const crypto = require('crypto');
 const { handler, rest, rpc, q, ApiError, readBody, str, int, findPublicStore } = require('./_lib/core');
+const { topic, poke } = require('./_lib/live');
 const { SEATING, normalizeSettings, riyadhDayStart, positionOf, emailTemplate, statusUrlFor } = require('./_lib/waitlist');
 const { sendMail } = require('./_lib/mail');
 
@@ -35,7 +36,8 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       store,
       settings: { open: settings.open, fields: settings.fields, message: settings.message, max_party: settings.max_party },
       waiting,
-      eta: (waiting + 1) * settings.minutes_per_party
+      eta: (waiting + 1) * settings.minutes_per_party,
+      live: topic('wl', store.id)
     };
   }
 
@@ -76,6 +78,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       throw e;
     }
     if (res.duplicate) return { token: res.token, ticket: res.ticket, duplicate: true };
+    await poke(topic('wl', store.id));
 
     // الترتيب والوقت ثم بريد التأكيد
     const entries = await todayEntries(store.id);
@@ -100,7 +103,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     return {
       store: { name: store.name, logo_url: store.logo_url },
       entry: { ticket: me.ticket, name: me.name, party_size: me.party_size, status: expired ? 'expired' : me.status, created_at: me.created_at, notified_at: me.notified_at },
-      position, eta, hold_minutes: settings.hold_minutes
+      position, eta, hold_minutes: settings.hold_minutes, live: topic('wl', store.id)
     };
   }
 
@@ -110,6 +113,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const rows = await rest(`waitlist_entries?token=eq.${q(token)}&client_id=eq.${store.id}&status=in.(waiting,notified)`,
       { method: 'PATCH', body: { status: 'cancelled', closed_at: new Date().toISOString() }, prefer: 'return=representation' });
     if (!rows.length) throw new ApiError(404, 'التسجيل غير موجود أو انتهى', 'NOT_FOUND');
+    await poke(topic('wl', store.id));
     return { ok: true };
   }
 

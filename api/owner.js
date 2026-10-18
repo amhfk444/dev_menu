@@ -13,6 +13,7 @@ const { draftReviewReply } = require('./_lib/ai');
 const { sendPush, pushPublicKey, cleanSubscription } = require('./_lib/push');
 const google = require('./_lib/google');
 const { syncStore } = require('./_lib/reviews');
+const { topic, storeTopics, poke } = require('./_lib/live');
 
 const bySort = (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id;
 const COFFEE_TYPES = ['cafe', 'mixed'];
@@ -224,7 +225,7 @@ async function ringTicket(store, t) {
   return result;
 }
 
-module.exports = handler(['GET', 'POST'], async (req) => {
+async function main(req) {
   const action = req.query.action;
   const b = req.method === 'POST' ? readBody(req) : {};
 
@@ -263,7 +264,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       // المتجر الرئيسي وفروعه (لقائمة التبديل بين الفروع)
       familyOf(store, 'id,name,client_slug,parent_id,occasions').catch(() => [])
     ]);
-    return { email: user.email, is_admin: admin, store, branches, categories: categories.sort(bySort), products: products.sort(bySort) };
+    return { email: user.email, is_admin: admin, store, branches, categories: categories.sort(bySort), products: products.sort(bySort), live: storeTopics(store.id) };
   }
 
   // ─── الإحصائيات ───
@@ -327,7 +328,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const base = `pager_tickets?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&order=number.asc&select=id,number,status,created_at,ready_at,closed_at,push_sub`;
     // أعمدة التكرار من 21-pager-repeat.sql — لو ما انضافت نكمل بدونها
     const tickets = await rest(`${base},ring_count,acked_at,invoice_no`).catch(() => rest(`${base},ring_count,acked_at`)).catch(() => rest(base));
-    return { tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub })), slug: store.client_slug, name: store.name, max_rings: PAGER_MAX_RINGS };
+    return { tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub })), slug: store.client_slug, name: store.name, max_rings: PAGER_MAX_RINGS, live: topic('pager', store.id) };
   }
 
   // ─── ردود التقييمات: آخر الردود المكتوبة ───
@@ -365,6 +366,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
   if (req.method !== 'POST') throw new ApiError(404, 'Unknown action');
   const { store, admin } = await context(req);
   const sid = store.id;
+  req._sid = sid;
 
   // ─── ربط قوقل ماب ───
   const reviewsGate = () => { if (!store.reviews_enabled && !admin) throw new ApiError(403, 'ردود التقييمات غير مفعّلة لمتجرك', 'ADDON_OFF'); };
@@ -473,6 +475,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       t = { ...t, ring_count: 0, acked_at: null };
       push = await ringTicket(store, t);
     }
+    await poke([topic('pager', sid), topic('ticket', t.token)]);
     return { ticket: { id: t.id, number: t.number, status: t.status, created_at: t.created_at, ready_at: t.ready_at, closed_at: t.closed_at, has_push: !!t.push_sub, ring_count: t.ring_count || 0, acked_at: t.acked_at || null }, push };
   }
 
@@ -489,6 +492,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     }
     const rows = await rest(`pager_tickets?id=eq.${id}&client_id=eq.${sid}`, { method: 'PATCH', body: { invoice_no: invoice || null }, prefer: 'return=representation' });
     if (!rows.length) throw new ApiError(404, 'الرقم غير موجود');
+    await poke([topic('pager', sid), topic('ticket', rows[0].token)]);
     return { ticket: { id: rows[0].id, number: rows[0].number, invoice_no: rows[0].invoice_no } };
   }
 
@@ -510,6 +514,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const current = normalizeSettings(store.waitlist_settings);
     const next = normalizeSettings({ ...current, ...b, fields: { ...current.fields, ...(b.fields || {}) } });
     const saved = await patchStore(sid, { waitlist_settings: next });
+    await poke(topic('wl', sid));
     return { settings: normalizeSettings(saved.waitlist_settings) };
   }
 
@@ -536,6 +541,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
         ...emailTemplate('ready', { store, entry: updated, statusUrl: statusUrlFor(req, store.client_slug, updated.token), hold: settings.hold_minutes })
       });
     }
+    await poke(topic('wl', sid));
     return { entry: updated, email_sent };
   }
 
@@ -950,4 +956,17 @@ module.exports = handler(['GET', 'POST'], async (req) => {
   }
 
   throw new ApiError(404, 'Unknown action');
+}
+
+// أي تعديل يغيّر اللي يشوفه الزبون في المنيو ← تنبيه لحظي للمنيوهات المفتوحة
+const MENU_ACTIONS = new Set([
+  'update-store', 'occasions-save', 'branch-rename', 'coupon-save', 'coupon-toggle', 'coupon-delete', 'update-slug',
+  'category-add', 'category-group', 'category-rename', 'category-delete', 'reorder',
+  'product-save', 'product-toggle', 'product-delete', 'waitlist-settings'
+]);
+
+module.exports = handler(['GET', 'POST'], async (req) => {
+  const out = await main(req);
+  if (req.method === 'POST' && req._sid && MENU_ACTIONS.has(req.query.action)) await poke(topic('menu', req._sid));
+  return out;
 });

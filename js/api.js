@@ -267,6 +267,61 @@
     },
     get: (path, needAuth = false) => call(path, { auth: needAuth }),
     post: (path, body, needAuth = false) => call(path, { method: 'POST', body: body || {}, auth: needAuth }),
-    putFile
+    putFile,
+    live
   };
+
+  // ─── التحديث اللحظي (WebSocket على Supabase Realtime) ───
+  // الخادم يرسل تنبيه بدون بيانات على القناة، والصفحة تجيب الجديد من /api بنفسها.
+  // DM.live(القناة, دالة) ← الدالة تنادى عند أي تغيير، وبعد رجوع الاتصال (عشان ما يفوتنا شي)
+  // التحديث الدوري في الصفحات يبقى احتياط لو انقطع الاتصال.
+  function live(topic, fn) {
+    if (!topic || typeof WebSocket === 'undefined') return () => {};
+    let last = 0, pending = null;
+    const run = (event) => {   // مرة كل ثانية ونص على الأكثر
+      const wait = 1500 - (Date.now() - last);
+      if (wait > 0) { clearTimeout(pending); pending = setTimeout(() => run(event), wait); return; }
+      last = Date.now();
+      try { fn(event); } catch (e) { console.error(e); }
+    };
+    if (!LIVE.subs.has(topic)) LIVE.subs.set(topic, new Set());
+    LIVE.subs.get(topic).add(run);
+    if (LIVE.ws && LIVE.ws.readyState === 1) liveJoin(topic); else liveConnect();
+    return () => {
+      const set = LIVE.subs.get(topic);
+      if (!set) return;
+      set.delete(run);
+      if (!set.size) { LIVE.subs.delete(topic); liveSend({ topic: `realtime:${topic}`, event: 'phx_leave', payload: {} }); }
+    };
+  }
+  const LIVE = { ws: null, subs: new Map(), ref: 0, retry: 0, hb: null, opened: false, timer: null };
+  const liveSend = (m) => { if (LIVE.ws && LIVE.ws.readyState === 1) LIVE.ws.send(JSON.stringify({ ...m, ref: String(++LIVE.ref) })); };
+  const liveJoin = (topic) => liveSend({ topic: `realtime:${topic}`, event: 'phx_join', payload: { config: { broadcast: { self: false }, presence: { key: '' }, private: false } } });
+  function liveConnect() {
+    clearTimeout(LIVE.timer);
+    if (!LIVE.subs.size || (LIVE.ws && LIVE.ws.readyState < 2)) return;
+    const ws = LIVE.ws = new WebSocket(`${AUTH_URL.replace(/^https/, 'wss').replace(/\/auth\/v1$/, '')}/realtime/v1/websocket?apikey=${AUTH_KEY}&vsn=1.0.0`);
+    ws.onopen = () => {
+      LIVE.retry = 0;
+      LIVE.subs.forEach((_, t) => liveJoin(t));
+      clearInterval(LIVE.hb);
+      LIVE.hb = setInterval(() => liveSend({ topic: 'phoenix', event: 'heartbeat', payload: {} }), 25000);
+      if (LIVE.opened) LIVE.subs.forEach(set => set.forEach(f => f('reconnect')));
+      LIVE.opened = true;
+    };
+    ws.onmessage = (e) => {
+      let d; try { d = JSON.parse(e.data); } catch { return; }
+      if (d.event !== 'broadcast') return;
+      const set = LIVE.subs.get(String(d.topic).replace(/^realtime:/, ''));
+      if (set) set.forEach(f => f((d.payload && d.payload.event) || 'changed'));
+    };
+    ws.onclose = () => {
+      clearInterval(LIVE.hb);
+      if (LIVE.ws !== ws) return;
+      LIVE.timer = setTimeout(liveConnect, Math.min(30000, 1000 * 2 ** LIVE.retry++));
+    };
+    ws.onerror = () => { try { ws.close(); } catch {} };
+  }
+  // الجوال يقفل الاتصال لما تطلع من الصفحة ← نرجع نتصل أول ما ترجع
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { LIVE.retry = 0; liveConnect(); } });
 })();

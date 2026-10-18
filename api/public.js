@@ -10,6 +10,7 @@
 // =====================================================================
 const crypto = require('crypto');
 const { handler, rest, rpc, q, ApiError, readBody, int, findPublicStore, CURRENCIES } = require('./_lib/core');
+const { topic } = require('./_lib/live');
 
 const STORE_FIELDS = 'id,name,client_slug,logo_url,bg_image_url,bg_video_url,promo_message,website_url,tiktok_url,instagram_url,whatsapp_number,snapchat_url,opening_hours,location_url,whatsapp_orders,business_type,show_calories,delivery_apps,theme,accent_color,order_numbers,custom_links';
 const PRODUCT_FIELDS = 'id,name,name_en,description,description_en,extra_info,note,price,category,image_url,is_available,is_bestseller,calories,allergens,coffee,sort_order,sizes';
@@ -169,7 +170,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
 
   if (action === 'menu' && req.method === 'GET') {
     const data = await menuPayload(req.query.slug);
-    return { ...data, version: versionOf(data) };
+    return { ...data, version: versionOf(data), live: data.store.id ? topic('menu', data.store.id) : null };
   }
 
   // المنيو المفتوح عند الزبون يسأل هنا كل كم ثانية: لو تغيّرت البصمة يجيب المنيو من جديد.

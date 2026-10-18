@@ -299,6 +299,13 @@
   function unavailable(title, sub) { $('u-title').textContent = title; $('u-sub').textContent = sub; show('unavailable'); }
 
   let pollTimer = null, lastStatus = '';
+  // تحديث لحظي: أول ما الكاشير يضغط "جاهز" توصل الحالة هنا (والتحديث الدوري يبقى احتياط)
+  let liveTopic = '', liveOff = () => {};
+  function watchTicket(t) {
+    if (t === liveTopic) return;
+    liveOff(); liveTopic = t || '';
+    liveOff = t ? DM.live(t, () => poll()) : () => {};
+  }
   async function poll() {
     clearTimeout(pollTimer);
     const token = loadToken();
@@ -311,6 +318,7 @@
       pollTimer = setTimeout(poll, 5000); return;   // انقطاع مؤقت: نعيد المحاولة
     }
     setStore(r.store);
+    watchTicket(r.live);
     const st = r.ticket.status;
     curNumber = r.ticket.number;
     $('mm-num').textContent = r.ticket.number;
@@ -324,7 +332,7 @@
       stopRinging(); saveToken('');
       $('d-title').textContent = st === 'cancelled' ? 'تم إلغاء الرقم' : st === 'expired' ? 'انتهت صلاحية الرقم' : 'بالعافية!';
       $('d-sub').textContent = st === 'done' ? 'نتشرف بزيارتك مرة ثانية.' : 'تقدر تاخذ رقم جديد.';
-      show('done'); lastStatus = st; return;
+      watchTicket(''); show('done'); lastStatus = st; return;
     }
     lastStatus = st;
     pollTimer = setTimeout(poll, document.hidden ? 5000 : 3000);

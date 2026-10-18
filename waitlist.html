@@ -260,6 +260,7 @@
     expired: () => `<p class="text-lg font-black">انتهى هذا التسجيل</p><p class="text-xs text-ink/60">التسجيل كان ليوم سابق. تقدر تسجّل من جديد.</p>`
   };
 
+  let liveOff = null;
   async function loadStatus(firstTime = false) {
     let s;
     try { s = await DM.get(`/api/waitlist?action=status&slug=${encodeURIComponent(slug)}&t=${encodeURIComponent(token)}`); }
@@ -269,6 +270,8 @@
       return; // انقطاع مؤقت: نحاول في التحديث الجاي
     }
     setStore(s.store);
+    // تحديث لحظي: يتحرك الدور أو تجهز الطاولة ← يظهر على طول
+    if (s.live && !liveOff) liveOff = DM.live(s.live, () => loadStatus());
     const st = s.entry.status;
     document.getElementById('st-ticket').textContent = `#${s.entry.ticket}`;
     document.getElementById('st-name').textContent = [s.entry.name, s.entry.party_size ? `${s.entry.party_size} أشخاص` : ''].filter(Boolean).join(' · ');
@@ -288,7 +291,7 @@
 
     clearTimeout(pollTimer);
     if (active) pollTimer = setTimeout(() => loadStatus(), document.hidden ? 60000 : 15000);
-    else saveToken('');
+    else { saveToken(''); if (liveOff) { liveOff(); liveOff = null; } }
   }
 
   async function cancelEntry() {

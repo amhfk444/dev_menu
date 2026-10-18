@@ -7,6 +7,7 @@ const { accessToken, listReviews } = require('./google');
 const { draftReviewReply } = require('./ai');
 const { sendPush } = require('./push');
 const { sendMail, mailConfigured } = require('./mail');
+const { topic, poke } = require('./live');
 
 const MAX_PER_RUN = 5;          // حد الردود الجديدة لكل متجر في كل مزامنة (يحمي التكلفة)
 const FIRST_SYNC_DAYS = 30;     // أول ربط: التعليقات بدون رد من آخر 30 يوم بس، مو كل التاريخ
@@ -49,7 +50,7 @@ async function syncStore(store, conn) {
       if (row) added.push(row);
     }
     await patchConn({ last_sync_at: new Date().toISOString(), sync_error: null });
-    if (added.length) await notifyOwner(store, added);
+    if (added.length) await Promise.all([notifyOwner(store, added), poke(topic('owner', store.id), 'reviews')]);
     return { added: added.length };
   } catch (e) {
     await patchConn({ sync_error: e.message || 'تعذرت المزامنة' });

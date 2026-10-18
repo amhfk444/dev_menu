@@ -1450,6 +1450,7 @@
     loadedCategories = (data.categories || []).sort(bySort);
     loadedProducts = (data.products || []).sort(bySort);
     branches = data.branches || [];
+    watchLive(data.live);
     if (!isSuperAdmin && requestedSlug) history.replaceState(null, '', 'admin.html' + (requestedBranch ? `?branch=${requestedBranch}` : '') + location.hash);
     fillClientUI();
     document.getElementById('auth-loading').remove();
@@ -2264,6 +2265,19 @@
     if (active) loadGuestHistory();
     wl.timer = setInterval(() => { if (!document.hidden) loadWaitlist(); }, active ? 15000 : 45000);
     if (active) wl.tick = setInterval(renderWaitlistList, 30000);
+  }
+
+  // ─── تحديث لحظي: تسجيل جديد في الانتظار أو تقييم جديد يظهر على طول بدون تحديث الصفحة ───
+  let liveWired = false;
+  function watchLive(L) {
+    if (!L || liveWired) return;
+    liveWired = true;
+    DM.live(L.waitlist, () => { if (client && client.waitlist_enabled) loadWaitlist(); });
+    DM.live(L.owner, (ev) => {
+      if (!client || !(client.reviews_enabled || isSuperAdmin)) return;
+      if (ev === 'reviews') showToast('وصلك تقييم جديد في قوقل ماب، الرد جاهز');
+      loadRvHistory();
+    });
   }
 
   async function loadWaitlist(manual = false) {

@@ -10,6 +10,7 @@
 const crypto = require('crypto');
 const { handler, rest, rpc, q, ApiError, readBody, findPublicStore } = require('./_lib/core');
 const { pushPublicKey, cleanSubscription } = require('./_lib/push');
+const { topic, poke } = require('./_lib/live');
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{10,64}$/;
 
@@ -34,6 +35,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const token = crypto.randomBytes(18).toString('base64url');
     try {
       const res = await rpc('server_pager_take', { p_client_id: store.id, p_token: token });
+      await poke(topic('pager', store.id));
       return { token: res.token, number: res.number, store: { name: store.name, logo_url: store.logo_url } };
     } catch (e) {
       if (String(e.dbMessage || e.message).includes('PAGER_FULL')) throw new ApiError(409, 'وصلنا الحد اليومي للأرقام', 'FULL');
@@ -50,7 +52,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     if (!t) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
     // رقم من يوم سابق ما زال ينتظر = منتهي
     const stale = t.status === 'waiting' && Date.now() - Date.parse(t.created_at) > 18 * 3600e3;
-    return { store: { name: store.name, logo_url: store.logo_url }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null } };
+    return { store: { name: store.name, logo_url: store.logo_url }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token) };
   }
 
   if (action === 'subscribe' && req.method === 'POST') {
@@ -63,6 +65,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       { method: 'PATCH', body: { push_sub: sub }, prefer: 'return=representation' });
     if (!rows.length) throw new ApiError(404, 'الرقم غير موجود أو انتهى', 'NOT_FOUND');
     console.log('PAGER_SUBSCRIBED', store.id, new URL(sub.endpoint).host);
+    await poke(topic('pager', store.id));
     return { ok: true };
   }
 
@@ -72,6 +75,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
     await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=eq.ready&acked_at=is.null`,
       { method: 'PATCH', body: { acked_at: new Date().toISOString() } }).catch(() => {});
+    await poke(topic('pager', store.id));
     return { ok: true };
   }
 

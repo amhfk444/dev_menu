@@ -657,7 +657,7 @@
     }
     applyMenu(menuData, true);
     trackOnce(`v:${project.id}`, 'view', null, visitSource);
-    startLiveUpdates();
+    startLiveUpdates(menuData.live);
   }
 
   // يعرض بيانات المنيو. first = أول تحميل، وغيره = تحديث تلقائي (نحافظ على السلة والبحث والتمرير)
@@ -729,11 +729,12 @@
   // نسأل عن "بصمة" المنيو كل 12 ثانية (والصفحة ظاهرة فقط)، ولو تغيّرت نجيب المنيو من جديد
   const LIVE_EVERY = 12000;
   let liveTimer = null, liveChecking = false, lastPolledVersion = null;
-  async function checkForUpdates() {
+  async function checkForUpdates(fresh = false) {
     if (liveChecking || document.hidden || !menuVersion) return;
     liveChecking = true;
     try {
-      const { v } = await DM.get(`/api/public?action=menu-version&slug=${encodeURIComponent(clientSlug)}`);
+      // fresh = جاء تنبيه لحظي من الخادم ← نتجاوز نسخة الـ CDN المخزنة
+      const { v } = await DM.get(`/api/public?action=menu-version&slug=${encodeURIComponent(clientSlug)}${fresh ? `&r=${Date.now()}` : ''}`);
       if (v === 'off') { clearInterval(liveTimer); return showUnavailable('المنيو غير متاح حالياً', 'هذا المنيو غير موجود أو متوقف مؤقتاً.'); }
       if (v && v !== menuVersion && v !== lastPolledVersion) {
         lastPolledVersion = v;
@@ -743,8 +744,10 @@
       if (e.status === 404) { clearInterval(liveTimer); showUnavailable('المنيو غير متاح حالياً', 'هذا المنيو غير موجود أو متوقف مؤقتاً.'); }
     } finally { liveChecking = false; }
   }
-  function startLiveUpdates() {
+  function startLiveUpdates(topic) {
     liveTimer = setInterval(checkForUpdates, LIVE_EVERY);
+    // تحديث لحظي: صاحب المطعم يعدّل ← يتحدث المنيو عند الزبون على طول
+    DM.live(topic, () => checkForUpdates(true));
     document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdates(); });
   }
 

@@ -229,12 +229,14 @@
     if (u) setStatus(+u.dataset.undo, 'waiting', 'رقم # رجع للتجهيز');
   });
 
-  let timer = null;
+  let timer = null, liveOn = false;
   async function load() {
     clearTimeout(timer);
     try {
       const r = await call('pager');
       slug = r.slug; $('store-name').textContent = r.name || ''; maxRings = r.max_rings || 5;
+      // تحديث لحظي: رقم جديد أو عميل شاف التنبيه يظهر هنا على طول
+      if (r.live && !liveOn) { liveOn = true; DM.live(r.live, () => load()); }
       // ما نلمس الأرقام اللي جاري تحديثها
       tickets = r.tickets.map(t => busy.has(t.id) ? (tickets.find(x => x.id === t.id) || t) : t);
       if (invId) return void (timer = setTimeout(load, 4000));   // النافذة مفتوحة: لا نعيد الرسم
