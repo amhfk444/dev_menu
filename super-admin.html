@@ -231,7 +231,7 @@
   function statusOf(c) {
     const end = c.subscription_status === 'active' ? c.subscription_end_date : c.trial_ends_at;
     const left = end ? Math.ceil((new Date(end) - Date.now()) / 86400000) : null;
-    const endText = end ? new Date(end).toLocaleDateString('ar-SA-u-ca-gregory') : '—';
+    const endText = end ? new Date(end).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn') : '—';
     if (c.is_active === false) return { key: 'suspended', live: false, label: 'موقوف', cls: 'bg-red-500/10 text-red-700 border-red-500/20', endText, left };
     if (c.subscription_status === 'trial' && (left === null || left > 0)) return { key: 'trial', live: true, label: 'تجريبي', cls: 'bg-blue-500/10 text-blue-700 border-blue-500/20', endText, left };
     if (c.subscription_status === 'active' && (left === null || left > 0)) return { key: 'paid', live: true, label: 'مشترك', cls: 'bg-green-500/10 text-green-700 border-green-500/20', endText, left };
@@ -321,7 +321,7 @@
     if (!hasDates) { chart.innerHTML = '<p class="text-[11px] text-ink/50 m-auto">تاريخ التسجيل غير متوفر في الجدول</p>'; return; }
     const days = Array.from({ length: 30 }, (_, i) => {
       const d = new Date(Date.now() - (29 - i) * 86400000);
-      return { key: d.toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' }), label: d.toLocaleDateString('ar-SA-u-ca-gregory', { day: 'numeric', month: 'numeric' }), v: 0 };
+      return { key: d.toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' }), label: d.toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'numeric' }), v: 0 };
     });
     const map = Object.fromEntries(days.map(d => [d.key, d]));
     clients.forEach(c => { if (!c.created_at) return; const k = new Date(c.created_at).toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' }); if (map[k]) map[k].v++; });

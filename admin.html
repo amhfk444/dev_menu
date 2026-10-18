@@ -1542,7 +1542,7 @@
     else if (status === 'trial') { label = 'فترة تجريبية'; color = 'text-blue-600'; }
     else                         { label = 'مشترك مدفوع نشط'; color = 'text-green-600'; }
 
-    const endText = end ? new Date(end).toLocaleDateString('ar-SA-u-ca-gregory') : '';
+    const endText = end ? new Date(end).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn') : '';
     const showPlans = !suspended && (!live || status === 'trial' || (left !== null && left <= 7));
     const verb = status === 'active' ? 'جدّد' : 'اشترك';
     box.innerHTML = `
@@ -2053,7 +2053,7 @@
       const dt = new Date(Date.now() - i * 86400000);
       series.push({
         v: dayMap[dt.toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' })] || 0,
-        label: dt.toLocaleDateString('ar-SA-u-ca-gregory', { weekday: 'short', day: 'numeric', month: 'numeric', timeZone: 'Asia/Riyadh' })
+        label: dt.toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { weekday: 'short', day: 'numeric', month: 'numeric', timeZone: 'Asia/Riyadh' })
       });
     }
     const maxDay = Math.max(1, ...series.map(d => d.v));
@@ -2358,7 +2358,7 @@
 
   // كم مرة جاء الضيف قبل (من تسجيلاته السابقة بنفس الجوال أو البريد)
   const timesText = (n) => n === 1 ? 'مرة' : n === 2 ? 'مرتين' : n <= 10 ? `${n} مرات` : `${n} مرة`;
-  const shortDate = (iso) => iso ? new Date(iso).toLocaleDateString('ar-SA-u-ca-gregory', { timeZone: 'Asia/Riyadh', day: 'numeric', month: 'short' }) : '';
+  const shortDate = (iso) => iso ? new Date(iso).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', day: 'numeric', month: 'short' }) : '';
   function historyBadge(h) {
     if (!h) return '';
     const chip = (cls, html) => `<span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}">${html}</span>`;
@@ -3331,7 +3331,7 @@
       return;
     }
     const pushOn = typeof Notification !== 'undefined' && Notification.permission === 'granted' && localStorage.getItem('dm_owner_push') === '1';
-    const last = gg.last_sync_at ? new Date(gg.last_sync_at).toLocaleString('ar-SA-u-ca-gregory', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : 'ما صار للحين';
+    const last = gg.last_sync_at ? new Date(gg.last_sync_at).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : 'ما صار للحين';
     card.innerHTML = `
       <div class="flex flex-col sm:flex-row sm:items-start gap-4">
         <div class="flex-1 min-w-0">
@@ -3428,7 +3428,7 @@
         <div class="flex items-center gap-2">
           <span class="w-9 h-9 rounded-full bg-brand/10 grid place-items-center font-bold text-sm">${esc((d.reviewer || '؟').trim().charAt(0))}</span>
           <div class="min-w-0"><p class="text-sm font-semibold truncate">${esc(d.reviewer || 'عميل')}</p><p class="text-saffron text-xs tracking-wider">${starsText(d.rating)}</p></div>
-          <span class="mr-auto text-xs text-ink/50">${d.reviewed_at ? new Date(d.reviewed_at).toLocaleDateString('ar-SA-u-ca-gregory', { day: 'numeric', month: 'short' }) : ''}</span>
+          <span class="mr-auto text-xs text-ink/50">${d.reviewed_at ? new Date(d.reviewed_at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short' }) : ''}</span>
         </div>
         <p dir="auto" class="text-sm text-ink/80 leading-relaxed whitespace-pre-line">${esc(d.review)}</p>
         <div class="border-s-2 border-saffron ps-4">
@@ -3478,7 +3478,7 @@
       <button type="button" data-draft="${Number(d.id)}" class="w-full text-right py-3 border-b border-brand/10 last:border-0 hover:bg-brand/[0.03] transition">
         <span class="flex items-center justify-between gap-2">
           <span class="text-sm font-semibold truncate">${esc(d.reviewer || 'بدون اسم')} <span class="text-saffron text-xs">${starsText(d.rating)}</span></span>
-          <span class="text-xs shrink-0 ${(STATUS[d.status] || ['', 'text-ink/50'])[1]}">${d.source === 'google' && STATUS[d.status] ? STATUS[d.status][0] + ' · ' : ''}${new Date(d.created_at).toLocaleDateString('ar-SA-u-ca-gregory', { day: 'numeric', month: 'short' })}</span>
+          <span class="text-xs shrink-0 ${(STATUS[d.status] || ['', 'text-ink/50'])[1]}">${d.source === 'google' && STATUS[d.status] ? STATUS[d.status][0] + ' · ' : ''}${new Date(d.created_at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short' })}</span>
         </span>
         <span class="block text-xs text-ink/60 truncate mt-0.5">${esc(d.review)}</span>
       </button>`).join('') : '<p class="text-sm text-ink/55 py-4 text-center">ما كتبت ردود للحين.</p>';

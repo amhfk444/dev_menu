@@ -6,7 +6,7 @@ const PLAN_PRICE = { year: 349, branch: 199 };
 const SUPPORT_WA = '966561161448';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const riyadhDate = (d) => new Date(d).toLocaleDateString('ar-SA-u-ca-gregory', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'long', day: 'numeric' });
+const riyadhDate = (d) => new Date(d).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'long', day: 'numeric' });
 const sar = (n) => `${Number(n).toLocaleString('en-US')} ر.س`;
 
 // رقم فاتورة مقروء: DM-<رقم المتجر>-<التاريخ>-<4 أحرف>
