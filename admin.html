@@ -9,55 +9,18 @@
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
 <title>لوحة التحكم الاحترافية | Dev Menu</title>
 
-<!-- Tailwind CSS & FontAwesome -->
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/css/fonts.css">
+<link rel="stylesheet" href="/css/icons.css">
 <script src="js/api.js"></script>
 <script src="js/dialog.js"></script>
 <script src="js/theme.js"></script>
 <script src="js/occasions.js"></script>
 <!-- مكتبة توليد الـ QR Code -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="/js/vendor/qrcode.min.js"></script>
 <!-- سحب وإفلات لترتيب الأقسام (يشتغل باللمس) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Bagel+Fat+One&display=swap" rel="stylesheet">
-
-<script>
-tailwind.config = {
-  theme: { extend: {
-    // ألوان هوية DEV MENU (مأخوذة من الشعار)
-    colors: {
-      sand:    '#ece3d7',
-      cream:   '#fbf8f3',
-      ink:     '#22362a',
-      brand:   { DEFAULT: '#384f3d', dark: '#2a3e2f', light: '#4a6650' },
-      saffron: '#c9a227',
-      // الأزرار الصفراء في اللوحة تاخذ زعفراني الهوية بدل أصفر Tailwind الفاقع
-      amber: { 300: '#e3c66b', 400: '#d6b13f', 500: '#c9a227' },
-      brick:   '#a8432e'
-    },
-    fontFamily: {
-      sans: ['SaudiRiyal', '"IBM Plex Sans Arabic"', 'system-ui', 'sans-serif'],
-      logo: ['"Bagel Fat One"', '"IBM Plex Sans Arabic"', 'sans-serif']
-    }
-  }}
-}
-</script>
+<script src="/js/vendor/sortable.min.js"></script>
 
 <style>
-  /* رمز الريال السعودي الجديد ⃁ (U+20C1): خط مخصص يُستخدم لهذا الرمز فقط */
-  @font-face {
-    font-family: 'SaudiRiyal';
-    src: url('https://cdn.jsdelivr.net/npm/@emran-alhaddad/saudi-riyal-font@1.1.0/fonts/regular/saudi_riyal.woff2') format('woff2');
-    font-weight: 100 600; font-display: swap; unicode-range: U+20C1;
-  }
-  @font-face {
-    font-family: 'SaudiRiyal';
-    src: url('https://cdn.jsdelivr.net/npm/@emran-alhaddad/saudi-riyal-font@1.1.0/fonts/bold/saudi_riyal.woff2') format('woff2');
-    font-weight: 700 900; font-display: swap; unicode-range: U+20C1;
-  }
   /* ─── نظام التصميم: ألوان الشعار (أخضر + رملي)، والزعفراني للي يحتاج انتباه، والطوبي لـ"نفدت" ─── */
   :root {
     --page: #ece3d7; --paper: #fbf8f3; --ink: #22362a; --ink-2: #4d5e52; --ink-3: #6f7d72;
@@ -177,17 +140,17 @@ tailwind.config = {
   @media (max-width: 640px) { .cat-act span { display: none; } .cat-act { width: 36px; padding: 0; } }
   .editing-glow { border-color: rgba(180, 130, 20, 0.7) !important; background: rgba(251, 191, 36, 0.08) !important; box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15); }
 </style>
+<link rel="stylesheet" href="/css/tw/admin.css">
 </head>
 
 <body>
-
 
 <!-- رسائل التنبيه Toast -->
 <!-- نافذة تأكيد الحذف -->
 <div id="delete-modal" class="fixed inset-0 z-[60] bg-ink/40 backdrop-blur-sm items-center justify-center p-4 hidden">
   <div role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" class="pro-card max-w-md w-full p-6 space-y-4 text-center">
     <div class="w-12 h-12 rounded-full bg-red-500/10 text-red-600 border border-red-500/20 flex items-center justify-center mx-auto text-xl">
-      <i class="fa-solid fa-triangle-exclamation"></i>
+      <i class="ph-bold ph-warning"></i>
     </div>
     <div class="space-y-1.5">
       <h3 id="delete-modal-title" class="text-sm font-bold text-ink"></h3>
@@ -201,14 +164,14 @@ tailwind.config = {
 </div>
 
 <div id="toast" class="fixed bottom-20 lg:bottom-5 left-5 z-[70] transform translate-y-10 opacity-0 pointer-events-none bg-brand text-cream px-5 py-3 rounded-2xl shadow-2xl border border-brand/30 text-xs font-bold flex items-center gap-2">
-  <i id="toast-icon" class="fa-solid fa-circle-check text-green-600"></i>
+  <i id="toast-icon" class="ph-bold ph-check-circle text-green-600"></i>
   <span id="toast-msg">تمت العملية بنجاح</span>
 </div>
 
 <!-- شاشة التحقق من الدخول -->
 <div id="auth-loading" class="fixed inset-0 z-40 flex flex-col items-center justify-center gap-3 text-xs text-ink/60 text-center px-6">
   <p class="font-logo text-3xl text-brand leading-none" dir="ltr">DEV MENU</p>
-  <span class="flex items-center gap-2"><i class="fa-solid fa-spinner fa-spin"></i> جاري التحقق من تسجيل الدخول...</span>
+  <span class="flex items-center gap-2"><i class="ph-bold ph-spinner-gap ph-spin"></i> جاري التحقق من تسجيل الدخول...</span>
 </div>
 
 <div id="app" style="visibility:hidden">
@@ -230,23 +193,23 @@ tailwind.config = {
     </div>
 
     <nav class="p-3 pt-4 space-y-1 flex-1 overflow-y-auto">
-      <button data-nav="dashboard" class="nav-item"><i class="fa-solid fa-gauge-high"></i> الرئيسية</button>
-      <button data-nav="menu" class="nav-item"><i class="fa-solid fa-utensils"></i> المنيو <span id="nav-count" class="mr-auto text-[10px] px-2 py-0.5 rounded-full">0</span></button>
-      <button data-nav="waitlist" class="nav-item"><i class="fa-solid fa-hourglass-half"></i> قائمة الانتظار <span id="nav-waitlist" class="mr-auto hidden text-[10px] bg-amber-400 text-black px-2 py-0.5 rounded-full font-black">0</span></button>
-      <button data-nav="reviews" class="nav-item"><i class="fa-solid fa-star-half-stroke"></i> ردود التقييمات</button>
-      <a href="pager-desk.html" onclick="this.href='pager-desk.html'+location.search" class="nav-item"><i class="fa-solid fa-bell"></i> شاشة البيجر <span class="mr-auto text-[9px] bg-[#c9a227] text-[#15271b] font-black px-1.5 py-0.5 rounded-md">جديد</span></a>
-      <button data-nav="settings" class="nav-item"><i class="fa-solid fa-palette"></i> هوية المطعم</button>
+      <button data-nav="dashboard" class="nav-item"><i class="ph-bold ph-gauge"></i> الرئيسية</button>
+      <button data-nav="menu" class="nav-item"><i class="ph-bold ph-fork-knife"></i> المنيو <span id="nav-count" class="mr-auto text-[10px] px-2 py-0.5 rounded-full">0</span></button>
+      <button data-nav="waitlist" class="nav-item"><i class="ph-bold ph-hourglass-medium"></i> قائمة الانتظار <span id="nav-waitlist" class="mr-auto hidden text-[10px] bg-amber-400 text-black px-2 py-0.5 rounded-full font-black">0</span></button>
+      <button data-nav="reviews" class="nav-item"><i class="ph-bold ph-star-half"></i> ردود التقييمات</button>
+      <a href="pager-desk.html" onclick="this.href='pager-desk.html'+location.search" class="nav-item"><i class="ph-bold ph-bell"></i> شاشة البيجر <span class="mr-auto text-[9px] bg-[#c9a227] text-[#15271b] font-black px-1.5 py-0.5 rounded-md">جديد</span></a>
+      <button data-nav="settings" class="nav-item"><i class="ph-bold ph-palette"></i> هوية المطعم</button>
       <p class="px-3 pt-5 pb-1 text-[10px] text-cream/45 font-bold">اختصارات</p>
-      <a id="sidebar-preview" href="#" target="_blank" rel="noopener" class="nav-item"><i class="fa-solid fa-arrow-up-right-from-square"></i> معاينة المنيو</a>
-      <button onclick="copyMenuLink()" class="nav-item"><i class="fa-solid fa-link"></i> نسخ رابط المنيو</button>
-      <button onclick="downloadQrCard()" class="nav-item"><i class="fa-solid fa-print"></i> بطاقة الطاولة</button>
-      <a id="sa-link" href="super-admin.html" class="nav-item hidden"><i class="fa-solid fa-crown text-amber-300"></i> لوحة المشتركين</a>
+      <a id="sidebar-preview" href="#" target="_blank" rel="noopener" class="nav-item"><i class="ph-bold ph-arrow-square-out"></i> معاينة المنيو</a>
+      <button onclick="copyMenuLink()" class="nav-item"><i class="ph-bold ph-link-simple"></i> نسخ رابط المنيو</button>
+      <button onclick="downloadQrCard()" class="nav-item"><i class="ph-bold ph-printer"></i> بطاقة الطاولة</button>
+      <a id="sa-link" href="super-admin.html" class="nav-item hidden"><i class="ph-bold ph-crown text-amber-300"></i> لوحة المشتركين</a>
     </nav>
 
     <div class="p-4 border-t border-cream/10 space-y-2">
       <p id="user-email" class="text-[10px] text-cream/50 truncate" dir="ltr"></p>
       <button onclick="logout()" class="w-full bg-cream/10 hover:bg-cream/15 text-cream font-bold py-2 rounded-xl text-xs transition flex items-center justify-center gap-1.5">
-        <i class="fa-solid fa-right-from-bracket text-[10px]"></i> تسجيل الخروج
+        <i class="ph-bold ph-sign-out text-[10px]"></i> تسجيل الخروج
       </button>
     </div>
   </aside>
@@ -265,12 +228,12 @@ tailwind.config = {
         </div>
         <div class="flex items-center gap-2 shrink-0">
           <select id="branch-switch" onchange="switchBranch(this.value)" aria-label="الفرع" class="hidden max-w-[150px] sm:max-w-[220px] text-xs font-bold bg-cream border border-brand/25 rounded-xl px-2.5 py-2 text-ink"></select>
-          <span id="admin-mode-badge" class="hidden text-[10px] font-bold bg-amber-400/15 text-amber-700 border border-amber-400/30 px-2.5 py-1 rounded-full"><i class="fa-solid fa-crown"></i> وضع المدير العام</span>
+          <span id="admin-mode-badge" class="hidden text-[10px] font-bold bg-amber-400/15 text-amber-700 border border-amber-400/30 px-2.5 py-1 rounded-full"><i class="ph-bold ph-crown"></i> وضع المدير العام</span>
           <a id="preview-menu-btn" href="#" target="_blank" rel="noopener" class="text-xs bg-brand text-cream font-bold px-3.5 py-2 rounded-xl transition hover:bg-brand-dark flex items-center gap-1.5">
-            <i class="fa-solid fa-eye text-[10px]"></i> <span class="hidden sm:inline">معاينة المنيو</span>
+            <i class="ph-bold ph-eye text-[10px]"></i> <span class="hidden sm:inline">معاينة المنيو</span>
           </a>
           <button onclick="logout()" aria-label="خروج" class="lg:hidden bg-brand/10 hover:bg-brand/15 text-ink w-9 h-9 rounded-xl border border-brand/25 flex items-center justify-center">
-            <i class="fa-solid fa-right-from-bracket text-xs"></i>
+            <i class="ph-bold ph-sign-out text-xs"></i>
           </button>
         </div>
       </div>
@@ -286,8 +249,8 @@ tailwind.config = {
             <p class="text-xs text-ink/60 mt-1">هذا ملخص متجرك وأداء المنيو.</p>
           </div>
           <div class="flex gap-2">
-            <button onclick="goAddDish()" class="bg-brand text-cream hover:bg-brand-dark px-4 py-2.5 rounded-xl text-xs font-black transition"><i class="fa-solid fa-plus"></i> أضف طبق</button>
-            <button onclick="downloadQrCard()" class="bg-brand/10 hover:bg-brand/15 text-ink px-4 py-2.5 rounded-xl text-xs font-bold border border-brand/25 transition"><i class="fa-solid fa-print"></i> بطاقة الطاولة</button>
+            <button onclick="goAddDish()" class="bg-brand text-cream hover:bg-brand-dark px-4 py-2.5 rounded-xl text-xs font-black transition"><i class="ph-bold ph-plus"></i> أضف طبق</button>
+            <button onclick="downloadQrCard()" class="bg-brand/10 hover:bg-brand/15 text-ink px-4 py-2.5 rounded-xl text-xs font-bold border border-brand/25 transition"><i class="ph-bold ph-printer"></i> بطاقة الطاولة</button>
           </div>
         </div>
 
@@ -295,9 +258,9 @@ tailwind.config = {
 
         <div id="quick-counts" class="pro-card grid grid-cols-2 lg:grid-cols-4 overflow-hidden"></div>
         <button type="button" onclick="location.hash='reviews'" class="lg:hidden pro-card w-full flex items-center gap-3 p-4 text-right hover:bg-brand/[0.03] transition">
-          <span class="w-10 h-10 rounded-xl bg-saffron/15 text-amber-800 grid place-items-center shrink-0"><i class="fa-solid fa-star-half-stroke"></i></span>
+          <span class="w-10 h-10 rounded-xl bg-saffron/15 text-amber-800 grid place-items-center shrink-0"><i class="ph-bold ph-star-half"></i></span>
           <span class="flex-1 min-w-0"><span class="block text-sm font-semibold">ردود التقييمات</span><span class="block text-xs text-ink/60">رد على تعليقات قوقل ماب برد بشري جاهز</span></span>
-          <i class="fa-solid fa-chevron-left text-xs text-ink/40"></i>
+          <i class="ph-bold ph-caret-left text-xs text-ink/40"></i>
         </button>
 
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
@@ -305,7 +268,7 @@ tailwind.config = {
   <!-- إحصائيات المنيو -->
             <div class="pro-card p-5 space-y-5">
               <div class="flex flex-wrap items-center justify-between gap-3 border-b border-brand/20 pb-3">
-                <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="fa-solid fa-chart-simple text-emerald-600"></i> إحصائيات المنيو</h3>
+                <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-chart-bar text-emerald-600"></i> إحصائيات المنيو</h3>
                 <div class="flex items-center gap-2">
                   <div id="stats-periods" class="flex bg-brand/5 border border-brand/15 rounded-xl p-0.5 text-[11px] font-bold">
                     <button data-days="7" class="stats-period px-3 py-1.5 rounded-lg text-ink/75">7 أيام</button>
@@ -313,7 +276,7 @@ tailwind.config = {
                     <button data-days="90" class="stats-period px-3 py-1.5 rounded-lg text-ink/75">90 يوم</button>
                   </div>
                   <button id="stats-export" onclick="exportStatsCsv()" title="تصدير Excel" class="bg-brand/5 hover:bg-brand/10 border border-brand/15 text-ink/90 px-3 py-1.5 rounded-xl text-[11px] font-bold transition disabled:opacity-40">
-                    <i class="fa-solid fa-file-arrow-down"></i> تصدير
+                    <i class="ph-bold ph-file-arrow-down"></i> تصدير
                   </button>
                 </div>
               </div>
@@ -323,7 +286,7 @@ tailwind.config = {
           <div class="space-y-6 order-first xl:order-none">
     <!-- حالة الاشتراك -->
             <div class="pro-card p-5 space-y-2 border-r-4 border-r-amber-400">
-              <h3 class="text-xs font-bold text-ink/75 flex items-center gap-1.5"><i class="fa-solid fa-id-card"></i> حالة الاشتراك</h3>
+              <h3 class="text-xs font-bold text-ink/75 flex items-center gap-1.5"><i class="ph-bold ph-identification-card"></i> حالة الاشتراك</h3>
               <div id="subscription-info" class="text-xs space-y-1 text-ink/90">
                 <p>جاري التحقق من الاشتراك...</p>
               </div>
@@ -332,9 +295,9 @@ tailwind.config = {
     <!-- تنبيهات الإدارة -->
             <div id="admin-notice-box" class="pro-card p-4 space-y-2 border-r-4 border-r-blue-400 hidden">
               <div class="flex items-center justify-between gap-2">
-                <h3 class="text-xs font-bold text-blue-700 flex items-center gap-1.5"><i class="fa-solid fa-bell"></i> تنبيه من الإدارة</h3>
+                <h3 class="text-xs font-bold text-blue-700 flex items-center gap-1.5"><i class="ph-bold ph-bell"></i> تنبيه من الإدارة</h3>
                 <button type="button" id="admin-notice-close" onclick="dismissNotice()" aria-label="إخفاء التنبيه" title="إخفاء التنبيه"
-                  class="w-7 h-7 -my-1 rounded-lg text-ink/45 hover:text-ink hover:bg-brand/10 flex items-center justify-center transition disabled:opacity-40"><i class="fa-solid fa-xmark text-xs"></i></button>
+                  class="w-7 h-7 -my-1 rounded-lg text-ink/45 hover:text-ink hover:bg-brand/10 flex items-center justify-center transition disabled:opacity-40"><i class="ph-bold ph-x text-xs"></i></button>
               </div>
               <p id="admin-notice-text" class="text-xs text-ink/90"></p>
             </div>
@@ -342,14 +305,14 @@ tailwind.config = {
     <!-- رابط المنيو والـ QR Code -->
             <div class="pro-card p-5 flex items-center justify-between gap-4">
               <div class="space-y-2">
-                <h3 class="text-xs font-bold text-ink"><i class="fa-solid fa-qrcode text-amber-600"></i> باركود المنيو الخاص بك</h3>
+                <h3 class="text-xs font-bold text-ink"><i class="ph-bold ph-qr-code text-amber-600"></i> باركود المنيو الخاص بك</h3>
                 <p class="text-[10px] text-ink/60">امسح الكود لفتح المنيو أو شاركه مع زملائك</p>
                 <div class="flex flex-wrap gap-1.5">
                   <button onclick="copyMenuLink()" class="bg-brand/10 hover:bg-brand/15 text-ink px-3 py-1.5 rounded-lg text-[10px] font-bold border border-brand/25 transition">
-                    <i class="fa-solid fa-copy"></i> نسخ الرابط
+                    <i class="ph-bold ph-copy"></i> نسخ الرابط
                   </button>
                   <button id="qr-download-btn" onclick="downloadQrCard()" class="bg-amber-400 hover:bg-amber-300 text-black px-3 py-1.5 rounded-lg text-[10px] font-bold transition">
-                    <i class="fa-solid fa-print"></i> تحميل للطباعة
+                    <i class="ph-bold ph-printer"></i> تحميل للطباعة
                   </button>
                 </div>
               </div>
@@ -358,7 +321,7 @@ tailwind.config = {
     <!-- الفروع -->
             <div id="branches-card" class="hidden pro-card p-5 space-y-3">
               <div class="flex items-center justify-between">
-                <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="fa-solid fa-code-branch text-emerald-600"></i> فروعك</h3>
+                <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-git-branch text-emerald-600"></i> فروعك</h3>
                 <span class="text-[10px] text-ink/50">كل فرع له منيو مستقل</span>
               </div>
               <div id="branches-list" class="space-y-2"></div>
@@ -366,20 +329,20 @@ tailwind.config = {
     <!-- صفحة الروابط السريعة -->
             <div class="pro-card p-5 space-y-3">
               <div class="space-y-1">
-                <h3 class="text-xs font-bold text-ink"><i class="fa-solid fa-link text-emerald-600"></i> صفحة الروابط السريعة</h3>
+                <h3 class="text-xs font-bold text-ink"><i class="ph-bold ph-link-simple text-emerald-600"></i> صفحة الروابط السريعة</h3>
                 <p class="text-[10px] text-ink/60">صفحة وحدة فيها المنيو والطلبات والتوصيل والتواصل. حطها في بايو انستجرام وتيك توك.</p>
               </div>
               <input type="text" id="links-url" readonly dir="ltr" onclick="this.select()" class="input-pro text-xs bg-brand/5">
               <div class="flex flex-wrap gap-1.5">
-                <button onclick="copyLinksPage()" class="bg-brand/10 hover:bg-brand/15 text-ink px-3 py-1.5 rounded-lg text-[10px] font-bold border border-brand/25 transition"><i class="fa-solid fa-copy"></i> نسخ الرابط</button>
-                <a id="links-preview" href="#" target="_blank" rel="noopener" class="bg-brand/10 hover:bg-brand/15 text-ink px-3 py-1.5 rounded-lg text-[10px] font-bold border border-brand/25 transition"><i class="fa-solid fa-eye"></i> معاينة</a>
-                <button id="links-qr-btn" onclick="downloadLinksQr()" class="bg-amber-400 hover:bg-amber-300 text-black px-3 py-1.5 rounded-lg text-[10px] font-bold transition disabled:opacity-50"><i class="fa-solid fa-qrcode"></i> تحميل QR</button>
+                <button onclick="copyLinksPage()" class="bg-brand/10 hover:bg-brand/15 text-ink px-3 py-1.5 rounded-lg text-[10px] font-bold border border-brand/25 transition"><i class="ph-bold ph-copy"></i> نسخ الرابط</button>
+                <a id="links-preview" href="#" target="_blank" rel="noopener" class="bg-brand/10 hover:bg-brand/15 text-ink px-3 py-1.5 rounded-lg text-[10px] font-bold border border-brand/25 transition"><i class="ph-bold ph-eye"></i> معاينة</a>
+                <button id="links-qr-btn" onclick="downloadLinksQr()" class="bg-amber-400 hover:bg-amber-300 text-black px-3 py-1.5 rounded-lg text-[10px] font-bold transition disabled:opacity-50"><i class="ph-bold ph-qr-code"></i> تحميل QR</button>
               </div>
             </div>
             <!-- جاهزية المنيو -->
             <div class="pro-card p-5 space-y-3">
               <div class="flex items-center justify-between">
-                <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="fa-solid fa-list-check text-emerald-600"></i> جاهزية المنيو</h3>
+                <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-list-checks text-emerald-600"></i> جاهزية المنيو</h3>
                 <span id="checklist-pct" class="text-[11px] font-black text-emerald-700">0%</span>
               </div>
               <div class="h-2 bg-brand/5 rounded-full overflow-hidden"><div id="checklist-bar" class="h-full bg-brand rounded-full transition-all" style="width:0%"></div></div>
@@ -393,17 +356,17 @@ tailwind.config = {
       <section data-page="menu" class="hidden space-y-5">
         <!-- زر إضافة عائم (جوال) -->
         <button onclick="goAddDish()" aria-label="أضف طبق" class="lg:hidden fixed bottom-24 left-4 z-30 bg-brand text-cream w-14 h-14 rounded-2xl shadow-xl flex items-center justify-center text-lg active:scale-95 transition"
-                style="margin-bottom: env(safe-area-inset-bottom)"><i class="fa-solid fa-plus"></i></button>
+                style="margin-bottom: env(safe-area-inset-bottom)"><i class="ph-bold ph-plus"></i></button>
   <!-- التبويبات -->
   <div class="inline-flex gap-1 p-1 rounded-xl bg-brand/[0.07] max-w-full" role="tablist">
     <button onclick="switchTab('products')" id="tab-products" class="tab-btn active px-4 py-2 rounded-lg border text-[13px] font-medium transition flex items-center gap-2">
-      <i class="fa-solid fa-utensils text-[11px]"></i> الأطباق
+      <i class="ph-bold ph-fork-knife text-[11px]"></i> الأطباق
     </button>
     <button onclick="switchTab('categories')" id="tab-categories" class="tab-btn px-4 py-2 rounded-lg border text-[13px] font-medium transition flex items-center gap-2">
-      <i class="fa-solid fa-layer-group text-[11px]"></i> الأقسام
+      <i class="ph-bold ph-stack text-[11px]"></i> الأقسام
     </button>
     <button onclick="switchTab('coupons')" id="tab-coupons" class="tab-btn px-4 py-2 rounded-lg border text-[13px] font-medium transition flex items-center gap-2">
-      <i class="fa-solid fa-ticket text-[11px]"></i> الخصومات
+      <i class="ph-bold ph-ticket text-[11px]"></i> الخصومات
     </button>
   </div>
 
@@ -413,7 +376,7 @@ tailwind.config = {
       <div id="product-form-col" class="order-2 lg:order-none lg:col-span-5 xl:col-span-4">
         <form id="add-product-form" class="pro-card p-5 space-y-3.5 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
           <h3 class="text-xs font-bold text-ink border-b border-brand/20 pb-2 flex items-center gap-2">
-            <i id="form-icon" class="fa-solid fa-plus text-ink"></i> <span id="form-title">إضافة طبق أو منتج جديد</span>
+            <i id="form-icon" class="ph-bold ph-plus text-ink"></i> <span id="form-title">إضافة طبق أو منتج جديد</span>
           </h3>
           <div>
             <label class="text-[11px] text-ink/75 block mb-1">اسم الطبق / المنتج *</label>
@@ -432,8 +395,8 @@ tailwind.config = {
           <!-- أحجام وأسعار متعددة -->
           <div class="bg-brand/5 rounded-xl border border-brand/15 p-2.5 space-y-2">
             <div class="flex items-center justify-between gap-2">
-              <span class="text-[11px] font-bold text-ink"><i class="fa-solid fa-up-right-and-down-left-from-center text-emerald-600"></i> أحجام وأسعار <span class="text-ink/50 font-normal">(اختياري)</span></span>
-              <button type="button" id="size-add-btn" onclick="addSize()" class="text-[10px] font-bold bg-white border border-brand/20 hover:bg-brand/10 text-ink px-2.5 py-1 rounded-lg transition disabled:opacity-40"><i class="fa-solid fa-plus text-[9px]"></i> إضافة حجم</button>
+              <span class="text-[11px] font-bold text-ink"><i class="ph-bold ph-arrows-out text-emerald-600"></i> أحجام وأسعار <span class="text-ink/50 font-normal">(اختياري)</span></span>
+              <button type="button" id="size-add-btn" onclick="addSize()" class="text-[10px] font-bold bg-white border border-brand/20 hover:bg-brand/10 text-ink px-2.5 py-1 rounded-lg transition disabled:opacity-40"><i class="ph-bold ph-plus text-[9px]"></i> إضافة حجم</button>
             </div>
             <div id="sizes-list" class="space-y-1.5"></div>
             <p id="sizes-hint" class="hidden text-[10px] text-ink/60">مع الأحجام يتحدد السعر من كل حجم، ويظهر في المنيو "من" أقل سعر.</p>
@@ -463,8 +426,8 @@ tailwind.config = {
           </div>
           <details id="coffee-details" class="bg-amber-100/60 rounded-xl border border-amber-700/25 group">
             <summary class="cursor-pointer select-none p-2.5 text-[11px] font-bold text-amber-900 flex items-center justify-between">
-              <span><i class="fa-solid fa-mug-hot text-amber-600"></i> تفاصيل القهوة المختصة <span class="text-amber-800/60 font-normal">(للمقاهي، اختياري)</span></span>
-              <i class="fa-solid fa-chevron-down text-[9px] text-amber-800/60 group-open:rotate-180 transition"></i>
+              <span><i class="ph-bold ph-coffee text-amber-600"></i> تفاصيل القهوة المختصة <span class="text-amber-800/60 font-normal">(للمقاهي، اختياري)</span></span>
+              <i class="ph-bold ph-caret-down text-[9px] text-amber-800/60 group-open:rotate-180 transition"></i>
             </summary>
             <div class="p-2.5 pt-0 space-y-3">
               <div class="grid grid-cols-2 gap-2">
@@ -518,8 +481,8 @@ tailwind.config = {
           </details>
           <details class="bg-brand/5 rounded-xl border border-brand/15 group">
             <summary class="cursor-pointer select-none p-2.5 text-[11px] font-bold text-ink/90 flex items-center justify-between">
-              <span><i class="fa-solid fa-language text-blue-700"></i> الاسم والوصف بالإنجليزي <span class="text-ink/50 font-normal">(اختياري)</span></span>
-              <i class="fa-solid fa-chevron-down text-[9px] text-ink/50 group-open:rotate-180 transition"></i>
+              <span><i class="ph-bold ph-translate text-blue-700"></i> الاسم والوصف بالإنجليزي <span class="text-ink/50 font-normal">(اختياري)</span></span>
+              <i class="ph-bold ph-caret-down text-[9px] text-ink/50 group-open:rotate-180 transition"></i>
             </summary>
             <div class="p-2.5 pt-0 space-y-2">
               <input type="text" id="prod-name-en" placeholder="Dish name" class="input-pro text-xs" dir="ltr">
@@ -529,23 +492,23 @@ tailwind.config = {
           </details>
           <details class="bg-brand/5 rounded-xl border border-brand/15 group">
             <summary class="cursor-pointer select-none p-2.5 text-[11px] font-bold text-ink/90 flex items-center justify-between">
-              <span><i class="fa-solid fa-triangle-exclamation text-amber-700"></i> مسببات الحساسية <span class="text-ink/50 font-normal">(اختياري)</span></span>
-              <i class="fa-solid fa-chevron-down text-[9px] text-ink/50 group-open:rotate-180 transition"></i>
+              <span><i class="ph-bold ph-warning text-amber-700"></i> مسببات الحساسية <span class="text-ink/50 font-normal">(اختياري)</span></span>
+              <i class="ph-bold ph-caret-down text-[9px] text-ink/50 group-open:rotate-180 transition"></i>
             </summary>
             <div id="allergen-options" class="p-2.5 pt-0 grid grid-cols-3 gap-1.5 text-[10px]"></div>
           </details>
           <div class="flex items-center gap-2 bg-brand/5 p-2.5 rounded-xl border border-brand/15">
             <input type="checkbox" id="prod-bestseller" class="w-4 h-4 accent-[#384f3d] cursor-pointer">
             <label for="prod-bestseller" class="text-xs font-bold text-ink cursor-pointer flex items-center gap-1.5">
-              <i class="fa-solid fa-fire text-amber-600"></i> تمييز كـ "طبق مميز / الأكثر مبيعاً"
+              <i class="ph-bold ph-fire text-amber-600"></i> تمييز كـ "طبق مميز / الأكثر مبيعاً"
             </label>
           </div>
           <div id="also-branches" class="hidden bg-emerald-500/5 border border-emerald-600/20 rounded-xl p-2.5 space-y-1.5">
-            <p class="text-[11px] font-bold text-ink"><i class="fa-solid fa-code-branch text-emerald-700"></i> يظهر الطبق أيضاً في:</p>
+            <p class="text-[11px] font-bold text-ink"><i class="ph-bold ph-git-branch text-emerald-700"></i> يظهر الطبق أيضاً في:</p>
             <div id="also-branches-list" class="flex flex-wrap gap-1.5"></div>
           </div>
           <p id="linked-note" class="hidden text-[10px] leading-relaxed text-emerald-800 bg-emerald-500/5 border border-emerald-600/20 rounded-xl px-2.5 py-2">
-            <i class="fa-solid fa-link"></i> الطبق مربوط بكل الفروع: الاسم والوصف والصورة والقسم والسعرات تتعدل في الكل.
+            <i class="ph-bold ph-link-simple"></i> الطبق مربوط بكل الفروع: الاسم والوصف والصورة والقسم والسعرات تتعدل في الكل.
             <b>السعر والإخفاء والحذف والتوفر لكل فرع لحاله.</b>
           </p>
           <button type="submit" id="submit-btn" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition shadow-lg">حفظ وإضافة الطبق</button>
@@ -556,7 +519,7 @@ tailwind.config = {
       <div class="order-1 lg:order-none lg:col-span-7 xl:col-span-8 space-y-3.5">
         <div class="pro-card p-3.5 flex flex-wrap items-center justify-between gap-3">
           <div class="relative flex-1 min-w-[180px]">
-            <i class="fa-solid fa-magnifying-glass absolute right-3.5 top-3 text-ink/60 text-xs"></i>
+            <i class="ph-bold ph-magnifying-glass absolute right-3.5 top-3 text-ink/60 text-xs"></i>
             <input type="text" id="search-input" oninput="filterProducts()" placeholder="بحث في الأطباق..." class="input-pro pr-9 text-xs">
           </div>
           <select id="filter-category" onchange="filterProducts()" class="input-pro bg-cream w-auto text-xs">
@@ -580,13 +543,13 @@ tailwind.config = {
   <!-- قسم الكوبونات -->
   <div id="section-coupons" class="space-y-4 hidden">
     <div id="coupons-wa-warning" class="hidden rounded-2xl p-3.5 border bg-amber-500/10 border-amber-500/30 text-[11px] font-bold text-amber-800 flex flex-wrap items-center justify-between gap-2">
-      <span><i class="fa-solid fa-circle-info"></i> الكوبونات بكود تشتغل مع سلة الطلب عبر واتساب، ففعّل "استقبال الطلبات عبر واتساب". الخصم التلقائي يظهر في المنيو حتى بدونها.</span>
+      <span><i class="ph-bold ph-info"></i> الكوبونات بكود تشتغل مع سلة الطلب عبر واتساب، ففعّل "استقبال الطلبات عبر واتساب". الخصم التلقائي يظهر في المنيو حتى بدونها.</span>
       <button type="button" onclick="location.hash='settings'" class="bg-brand text-cream px-3 py-1.5 rounded-lg text-[10px] font-black">فتح الإعدادات</button>
     </div>
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
       <form id="coupon-form" class="pro-card p-5 space-y-3.5 lg:col-span-5">
         <h3 class="text-xs font-bold text-ink border-b border-brand/20 pb-2 flex items-center gap-2">
-          <i class="fa-solid fa-ticket text-emerald-600"></i> <span id="coupon-form-title">كوبون جديد</span>
+          <i class="ph-bold ph-ticket text-emerald-600"></i> <span id="coupon-form-title">كوبون جديد</span>
         </h3>
         <div>
           <label class="text-[11px] text-ink/75 block mb-1">نوع العرض</label>
@@ -698,7 +661,7 @@ tailwind.config = {
       <div class="md:col-span-7">
         <div class="pro-card px-4 sm:px-5 pt-4 pb-2">
           <h3 class="text-[15px] font-bold text-ink">ترتيب الأقسام في المنيو</h3>
-          <p class="text-xs text-ink/55 mt-1">اسحب القسم من <i class="fa-solid fa-grip-vertical"></i> أو استخدم الأسهم. نفس الترتيب يظهر لعملائك في المنيو.</p>
+          <p class="text-xs text-ink/55 mt-1">اسحب القسم من <i class="ph-bold ph-dots-six-vertical"></i> أو استخدم الأسهم. نفس الترتيب يظهر لعملائك في المنيو.</p>
           <div id="categories-list" class="mt-3">
             <p class="text-xs text-ink/60 text-center py-4">لا توجد أقسام بعد.</p>
           </div>
@@ -714,23 +677,23 @@ tailwind.config = {
         <!-- غير مفعّلة: تعريف بالإضافة -->
         <div id="wl-upsell" class="hidden pro-card overflow-hidden">
           <div class="bg-brand text-cream p-6 md:p-8 space-y-3">
-            <span class="inline-flex items-center gap-1.5 text-[10px] font-black bg-amber-400 text-black px-2.5 py-1 rounded-full"><i class="fa-solid fa-star"></i> ضمن باقتك</span>
+            <span class="inline-flex items-center gap-1.5 text-[10px] font-black bg-amber-400 text-black px-2.5 py-1 rounded-full"><i class="ph-bold ph-star"></i> ضمن باقتك</span>
             <h2 class="text-xl md:text-2xl font-black">قائمة انتظار ذكية لمطعمك</h2>
             <p class="text-xs text-cream/75 leading-relaxed max-w-xl">بدل الزحمة عند الباب والأوراق: ضيفك يسجّل من جواله برمز QR، يشوف ترتيبه ووقت الانتظار مباشرة، ويوصله بريد أول ما تجهز طاولته.</p>
           </div>
           <div class="p-6 md:p-8 grid md:grid-cols-2 gap-6 items-center">
             <ul class="space-y-2.5 text-xs font-bold text-ink/80">
-              <li class="flex gap-2"><i class="fa-solid fa-check text-green-600 mt-0.5"></i> رابط ورمز QR خاص للتسجيل في الانتظار</li>
-              <li class="flex gap-2"><i class="fa-solid fa-check text-green-600 mt-0.5"></i> تختار البيانات المطلوبة: الاسم، الجوال، عدد الأشخاص...</li>
-              <li class="flex gap-2"><i class="fa-solid fa-check text-green-600 mt-0.5"></i> رقم دور ووقت انتظار تقريبي يتحدث تلقائياً</li>
-              <li class="flex gap-2"><i class="fa-solid fa-check text-green-600 mt-0.5"></i> بريد تأكيد، وبريد "طاولتك جاهزة" بضغطة زر</li>
-              <li class="flex gap-2"><i class="fa-solid fa-check text-green-600 mt-0.5"></i> إحصائيات: متوسط الانتظار، اللي جلسوا، اللي ما حضروا</li>
+              <li class="flex gap-2"><i class="ph-bold ph-check text-green-600 mt-0.5"></i> رابط ورمز QR خاص للتسجيل في الانتظار</li>
+              <li class="flex gap-2"><i class="ph-bold ph-check text-green-600 mt-0.5"></i> تختار البيانات المطلوبة: الاسم، الجوال، عدد الأشخاص...</li>
+              <li class="flex gap-2"><i class="ph-bold ph-check text-green-600 mt-0.5"></i> رقم دور ووقت انتظار تقريبي يتحدث تلقائياً</li>
+              <li class="flex gap-2"><i class="ph-bold ph-check text-green-600 mt-0.5"></i> بريد تأكيد، وبريد "طاولتك جاهزة" بضغطة زر</li>
+              <li class="flex gap-2"><i class="ph-bold ph-check text-green-600 mt-0.5"></i> إحصائيات: متوسط الانتظار، اللي جلسوا، اللي ما حضروا</li>
             </ul>
             <div class="text-center space-y-3 bg-brand/5 border border-brand/15 rounded-2xl p-5">
               <p class="text-xs font-bold text-ink/60">غير مفعّلة لمتجرك حالياً</p>
               <p class="text-3xl font-black"><span id="wl-price-month"></span></p>
               <p class="text-[11px] text-ink/60"><span id="wl-price-year"></span></p>
-              <a id="wl-request" href="#" target="_blank" rel="noopener" class="block bg-brand hover:bg-brand-dark text-cream font-black text-sm py-3 rounded-xl transition"><i class="fa-brands fa-whatsapp"></i> اطلب التفعيل</a>
+              <a id="wl-request" href="#" target="_blank" rel="noopener" class="block bg-brand hover:bg-brand-dark text-cream font-black text-sm py-3 rounded-xl transition"><i class="ph-bold ph-whatsapp-logo"></i> اطلب التفعيل</a>
             </div>
           </div>
         </div>
@@ -760,13 +723,13 @@ tailwind.config = {
             </div>
             <!-- الرابط -->
             <div class="pro-card p-5 lg:col-span-3 space-y-2.5">
-              <p class="text-xs font-black flex items-center gap-2"><i class="fa-solid fa-link text-ink/50"></i> رابط التسجيل للضيوف</p>
+              <p class="text-xs font-black flex items-center gap-2"><i class="ph-bold ph-link-simple text-ink/50"></i> رابط التسجيل للضيوف</p>
               <div class="flex flex-col sm:flex-row gap-2">
                 <input id="wl-link" readonly class="input-pro text-xs flex-1" dir="ltr" onclick="this.select()">
                 <div class="grid grid-cols-3 sm:flex gap-2">
-                  <button onclick="copyWaitlistLink()" class="bg-brand/10 hover:bg-brand/15 border border-brand/20 text-ink px-3 py-2 rounded-xl text-[11px] font-bold"><i class="fa-solid fa-copy"></i> نسخ</button>
-                  <a id="wl-open-link" href="#" target="_blank" rel="noopener" class="bg-brand/10 hover:bg-brand/15 border border-brand/20 text-ink px-3 py-2 rounded-xl text-[11px] font-bold text-center"><i class="fa-solid fa-eye"></i> معاينة</a>
-                  <button id="wl-qr-btn" onclick="downloadWaitlistQr()" class="bg-amber-400 hover:bg-amber-300 text-black px-3 py-2 rounded-xl text-[11px] font-bold disabled:opacity-50"><i class="fa-solid fa-print"></i> QR</button>
+                  <button onclick="copyWaitlistLink()" class="bg-brand/10 hover:bg-brand/15 border border-brand/20 text-ink px-3 py-2 rounded-xl text-[11px] font-bold"><i class="ph-bold ph-copy"></i> نسخ</button>
+                  <a id="wl-open-link" href="#" target="_blank" rel="noopener" class="bg-brand/10 hover:bg-brand/15 border border-brand/20 text-ink px-3 py-2 rounded-xl text-[11px] font-bold text-center"><i class="ph-bold ph-eye"></i> معاينة</a>
+                  <button id="wl-qr-btn" onclick="downloadWaitlistQr()" class="bg-amber-400 hover:bg-amber-300 text-black px-3 py-2 rounded-xl text-[11px] font-bold disabled:opacity-50"><i class="ph-bold ph-printer"></i> QR</button>
                 </div>
               </div>
               <p class="text-[10px] text-ink/50">الرابط ورمز QR يشتغلون دائماً طالما القائمة مفتوحة، حتى لو أخفيت الزر من المنيو.</p>
@@ -774,7 +737,7 @@ tailwind.config = {
           </div>
 
           <div id="wl-mail-warning" class="hidden rounded-2xl p-4 border bg-amber-500/10 border-amber-500/40 text-xs font-bold text-amber-900">
-            <i class="fa-solid fa-envelope-circle-check"></i> رسائل البريد غير مفعّلة على الخادم بعد، فالضيوف ما راح توصلهم رسائل. (للمدير: أضف SMTP_USER و SMTP_PASS في Vercel)
+            <i class="ph-bold ph-envelope-simple-open"></i> رسائل البريد غير مفعّلة على الخادم بعد، فالضيوف ما راح توصلهم رسائل. (للمدير: أضف SMTP_USER و SMTP_PASS في Vercel)
           </div>
 
           <!-- أرقام اليوم -->
@@ -788,14 +751,14 @@ tailwind.config = {
                   <button data-wltab="active" class="px-3 py-1.5 rounded-lg bg-brand text-cream">بالانتظار <span id="wl-count-active"></span></button>
                   <button data-wltab="done" class="px-3 py-1.5 rounded-lg text-ink/75">المنتهية اليوم <span id="wl-count-done"></span></button>
                 </div>
-                <button onclick="loadWaitlist(true)" class="text-[11px] font-bold text-ink/60 hover:text-ink"><i class="fa-solid fa-rotate"></i> تحديث</button>
+                <button onclick="loadWaitlist(true)" class="text-[11px] font-bold text-ink/60 hover:text-ink"><i class="ph-bold ph-arrows-clockwise"></i> تحديث</button>
               </div>
               <div id="wl-list" class="space-y-2.5"></div>
             </div>
 
             <!-- الإعدادات -->
             <div class="pro-card p-5 space-y-4">
-              <h3 class="text-xs font-black flex items-center gap-2"><i class="fa-solid fa-sliders text-ink/50"></i> إعدادات قائمة الانتظار</h3>
+              <h3 class="text-xs font-black flex items-center gap-2"><i class="ph-bold ph-sliders-horizontal text-ink/50"></i> إعدادات قائمة الانتظار</h3>
               <div>
                 <p class="text-[11px] font-bold text-ink/75 mb-2">البيانات المطلوبة من الضيف</p>
                 <div class="rounded-xl border border-brand/15 overflow-hidden">
@@ -832,7 +795,7 @@ tailwind.config = {
           <div class="pro-card p-4 md:p-5 space-y-4">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h3 class="text-xs font-black flex items-center gap-2"><i class="fa-solid fa-address-book text-brand"></i> سجل الضيوف</h3>
+                <h3 class="text-xs font-black flex items-center gap-2"><i class="ph-bold ph-address-book text-brand"></i> سجل الضيوف</h3>
                 <p class="text-[10px] text-ink/55 mt-0.5">كل تسجيلات قائمة الانتظار محفوظة، وتقدر تنزّلها ملف Excel.</p>
               </div>
               <div class="flex flex-wrap gap-2">
@@ -843,17 +806,17 @@ tailwind.config = {
                   <option value="90">آخر 90 يوم</option>
                   <option value="all">كل السجل</option>
                 </select>
-                <button onclick="exportGuests('visits')" class="bg-brand hover:bg-brand-dark text-cream px-3 py-2 rounded-xl text-[11px] font-bold transition disabled:opacity-40"><i class="fa-solid fa-file-arrow-down"></i> كل التسجيلات</button>
-                <button onclick="exportGuests('guests')" class="bg-brand/10 hover:bg-brand/15 border border-brand/20 text-ink px-3 py-2 rounded-xl text-[11px] font-bold transition"><i class="fa-solid fa-users"></i> قائمة الضيوف</button>
+                <button onclick="exportGuests('visits')" class="bg-brand hover:bg-brand-dark text-cream px-3 py-2 rounded-xl text-[11px] font-bold transition disabled:opacity-40"><i class="ph-bold ph-file-arrow-down"></i> كل التسجيلات</button>
+                <button onclick="exportGuests('guests')" class="bg-brand/10 hover:bg-brand/15 border border-brand/20 text-ink px-3 py-2 rounded-xl text-[11px] font-bold transition"><i class="ph-bold ph-users"></i> قائمة الضيوف</button>
               </div>
             </div>
             <div id="wlh-stats" class="grid grid-cols-2 md:grid-cols-4 gap-2"></div>
             <div id="wlh-view" class="flex bg-brand/5 border border-brand/15 rounded-xl p-0.5 text-[11px] font-bold w-fit">
-              <button data-wlhview="guests" class="px-3 py-1.5 rounded-lg bg-brand text-cream"><i class="fa-solid fa-users"></i> الضيوف وعدد زياراتهم</button>
-              <button data-wlhview="visits" class="px-3 py-1.5 rounded-lg text-ink/75"><i class="fa-solid fa-list"></i> كل التسجيلات</button>
+              <button data-wlhview="guests" class="px-3 py-1.5 rounded-lg bg-brand text-cream"><i class="ph-bold ph-users"></i> الضيوف وعدد زياراتهم</button>
+              <button data-wlhview="visits" class="px-3 py-1.5 rounded-lg text-ink/75"><i class="ph-bold ph-list"></i> كل التسجيلات</button>
             </div>
             <div class="relative">
-              <i class="fa-solid fa-magnifying-glass absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/40 text-xs"></i>
+              <i class="ph-bold ph-magnifying-glass absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/40 text-xs"></i>
               <input id="wlh-search" type="search" placeholder="ابحث بالاسم أو الجوال أو البريد..." class="input-pro text-xs pr-9">
             </div>
             <div id="wlh-guests-wrap" class="overflow-x-auto rounded-xl border border-brand/15">
@@ -896,14 +859,14 @@ tailwind.config = {
           </div>
           <div class="p-6 md:p-8 grid md:grid-cols-2 gap-6 items-center">
             <ul class="space-y-2.5 text-sm text-ink/80">
-              <li class="flex gap-2"><i class="fa-solid fa-check text-green-700 mt-1"></i> رد بشري يذكر تفاصيل التعليق، مو رد محفوظ يتكرر</li>
-              <li class="flex gap-2"><i class="fa-solid fa-check text-green-700 mt-1"></i> بنفس لغة العميل: لهجة سعودية، عربي، أو إنجليزي</li>
-              <li class="flex gap-2"><i class="fa-solid fa-check text-green-700 mt-1"></i> التعليقات السلبية: اعتذار صادق ودعوة للتواصل، بدون وعود ما تقدر عليها</li>
-              <li class="flex gap-2"><i class="fa-solid fa-check text-green-700 mt-1"></i> الردود السريعة ترفع ثقة الناس وترتيبك في قوقل ماب</li>
+              <li class="flex gap-2"><i class="ph-bold ph-check text-green-700 mt-1"></i> رد بشري يذكر تفاصيل التعليق، مو رد محفوظ يتكرر</li>
+              <li class="flex gap-2"><i class="ph-bold ph-check text-green-700 mt-1"></i> بنفس لغة العميل: لهجة سعودية، عربي، أو إنجليزي</li>
+              <li class="flex gap-2"><i class="ph-bold ph-check text-green-700 mt-1"></i> التعليقات السلبية: اعتذار صادق ودعوة للتواصل، بدون وعود ما تقدر عليها</li>
+              <li class="flex gap-2"><i class="ph-bold ph-check text-green-700 mt-1"></i> الردود السريعة ترفع ثقة الناس وترتيبك في قوقل ماب</li>
             </ul>
             <div class="text-center space-y-3 bg-brand/5 border border-brand/15 rounded-2xl p-5">
               <p class="text-sm font-semibold text-ink/70">إضافة مدفوعة، غير مفعّلة لمتجرك</p>
-              <a id="rv-request" href="#" target="_blank" rel="noopener" class="block bg-brand hover:bg-brand-dark text-cream font-bold text-sm py-3 rounded-xl transition"><i class="fa-brands fa-whatsapp"></i> اطلب التفعيل</a>
+              <a id="rv-request" href="#" target="_blank" rel="noopener" class="block bg-brand hover:bg-brand-dark text-cream font-bold text-sm py-3 rounded-xl transition"><i class="ph-bold ph-whatsapp-logo"></i> اطلب التفعيل</a>
             </div>
           </div>
         </div>
@@ -936,7 +899,7 @@ tailwind.config = {
               <textarea id="rv-review" rows="5" maxlength="4000" dir="auto" class="input-pro leading-relaxed" placeholder="انسخ التعليق من قوقل ماب والصقه هنا"></textarea>
             </div>
             <details class="group">
-              <summary class="text-xs font-semibold text-ink/70 cursor-pointer select-none list-none flex items-center gap-1.5"><i class="fa-solid fa-plus text-[10px] group-open:rotate-45 transition"></i> معلومة تبيها في الرد <span class="font-normal text-ink/50">(اختياري)</span></summary>
+              <summary class="text-xs font-semibold text-ink/70 cursor-pointer select-none list-none flex items-center gap-1.5"><i class="ph-bold ph-plus text-[10px] group-open:rotate-45 transition"></i> معلومة تبيها في الرد <span class="font-normal text-ink/50">(اختياري)</span></summary>
               <textarea id="rv-note" rows="2" maxlength="500" class="input-pro mt-2" placeholder="مثال: التأخير كان بسبب طلب كبير، وغيّرنا الطباخ"></textarea>
             </details>
             <div>
@@ -947,14 +910,14 @@ tailwind.config = {
               </div>
             </div>
             <p id="rv-error" class="hidden text-sm font-semibold text-brick"></p>
-            <button id="rv-submit" type="submit" class="w-full bg-brand hover:bg-brand-dark text-cream font-bold py-3 rounded-xl text-sm transition disabled:opacity-60"><i class="fa-solid fa-pen-nib"></i> اكتب الرد</button>
+            <button id="rv-submit" type="submit" class="w-full bg-brand hover:bg-brand-dark text-cream font-bold py-3 rounded-xl text-sm transition disabled:opacity-60"><i class="ph-bold ph-pen-nib"></i> اكتب الرد</button>
           </form>
 
           <div class="lg:col-span-7 space-y-5">
             <!-- الرد: بنفس شكل سلسلة التقييم في قوقل -->
             <div id="rv-result" class="pro-card p-5">
               <div id="rv-empty" class="text-center py-10 text-sm text-ink/55">
-                <i class="fa-solid fa-star-half-stroke text-2xl text-saffron mb-3 block"></i>
+                <i class="ph-bold ph-star-half text-2xl text-saffron mb-3 block"></i>
                 الصق التعليق واختر النجوم، ويطلع ردك هنا.
               </div>
               <div id="rv-thread" class="hidden space-y-4">
@@ -973,9 +936,9 @@ tailwind.config = {
                   <textarea id="rv-reply" rows="5" dir="auto" class="input-pro leading-relaxed text-[15px]"></textarea>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                  <button type="button" id="rv-copy" class="bg-brand hover:bg-brand-dark text-cream font-bold px-4 py-2.5 rounded-xl text-sm transition"><i class="fa-regular fa-copy"></i> نسخ الرد</button>
-                  <button type="button" id="rv-again" class="bg-brand/10 hover:bg-brand/15 text-ink font-semibold px-4 py-2.5 rounded-xl text-sm transition"><i class="fa-solid fa-rotate"></i> اكتب رد ثاني</button>
-                  <a href="https://business.google.com/reviews" target="_blank" rel="noopener" class="text-ink/70 hover:text-ink font-semibold px-3 py-2.5 rounded-xl text-sm transition"><i class="fa-solid fa-arrow-up-right-from-square text-xs"></i> افتح تقييماتك في قوقل</a>
+                  <button type="button" id="rv-copy" class="bg-brand hover:bg-brand-dark text-cream font-bold px-4 py-2.5 rounded-xl text-sm transition"><i class="ph-bold ph-copy"></i> نسخ الرد</button>
+                  <button type="button" id="rv-again" class="bg-brand/10 hover:bg-brand/15 text-ink font-semibold px-4 py-2.5 rounded-xl text-sm transition"><i class="ph-bold ph-arrows-clockwise"></i> اكتب رد ثاني</button>
+                  <a href="https://business.google.com/reviews" target="_blank" rel="noopener" class="text-ink/70 hover:text-ink font-semibold px-3 py-2.5 rounded-xl text-sm transition"><i class="ph-bold ph-arrow-square-out text-xs"></i> افتح تقييماتك في قوقل</a>
                 </div>
               </div>
             </div>
@@ -993,7 +956,7 @@ tailwind.config = {
         <!-- رابط المتجر المختصر -->
         <div class="pro-card p-5 space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="fa-solid fa-link text-emerald-600"></i> رابط متجرك</h3>
+            <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-link-simple text-emerald-600"></i> رابط متجرك</h3>
             <span class="text-[10px] text-ink/50">شاركه في البايو والرسائل، ويفتح المنيو مباشرة</span>
           </div>
           <div class="flex items-stretch rounded-xl border border-brand/20 bg-white overflow-hidden focus-within:border-brand" dir="ltr">
@@ -1006,20 +969,20 @@ tailwind.config = {
           <p class="text-[10px] text-ink/60 leading-relaxed">من 3 إلى 30 حرف: حروف إنجليزية صغيرة وأرقام وشرطة (-). عند التغيير، الرابط القديم ورموز QR المطبوعة تبقى شغالة.</p>
           <div class="flex flex-col sm:flex-row gap-2">
             <button type="button" id="slug-save-btn" onclick="saveSlug()" class="flex-1 bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition disabled:opacity-50">حفظ الرابط</button>
-            <button type="button" onclick="copyShortLink()" class="sm:w-32 bg-brand/10 hover:bg-brand/15 text-ink font-bold py-2.5 rounded-xl text-xs border border-brand/25 transition"><i class="fa-solid fa-copy text-[10px]"></i> نسخ</button>
-            <a id="short-link-open" href="#" target="_blank" rel="noopener" class="sm:w-32 text-center bg-brand/10 hover:bg-brand/15 text-ink font-bold py-2.5 rounded-xl text-xs border border-brand/25 transition"><i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> فتح</a>
+            <button type="button" onclick="copyShortLink()" class="sm:w-32 bg-brand/10 hover:bg-brand/15 text-ink font-bold py-2.5 rounded-xl text-xs border border-brand/25 transition"><i class="ph-bold ph-copy text-[10px]"></i> نسخ</button>
+            <a id="short-link-open" href="#" target="_blank" rel="noopener" class="sm:w-32 text-center bg-brand/10 hover:bg-brand/15 text-ink font-bold py-2.5 rounded-xl text-xs border border-brand/25 transition"><i class="ph-bold ph-arrow-square-out text-[10px]"></i> فتح</a>
           </div>
         </div>
         <div class="pro-card p-5 space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="fa-solid fa-shop text-ink/75"></i> نوع النشاط</h3>
+            <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-storefront text-ink/75"></i> نوع النشاط</h3>
             <span class="text-[10px] text-ink/50">يحدد الحقول اللي تظهر لك عند إضافة الأطباق</span>
           </div>
           <div id="biz-type" class="grid grid-cols-2 md:grid-cols-4 gap-2"></div>
         </div>
         <div class="pro-card p-5 space-y-4">
           <h3 class="text-xs font-bold text-ink border-b border-brand/20 pb-2 flex items-center gap-2">
-            <i class="fa-solid fa-palette text-ink/75"></i> الاسم والشعار والخلفية
+            <i class="ph-bold ph-palette text-ink/75"></i> الاسم والشعار والخلفية
           </h3>
     <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4">
       <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
@@ -1053,7 +1016,7 @@ tailwind.config = {
         <!-- مظهر المنيو: الثيم ولون الهوية -->
         <div class="pro-card p-5 space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-2 border-b border-brand/20 pb-2">
-            <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="fa-solid fa-swatchbook text-ink/75"></i> مظهر المنيو</h3>
+            <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-swatches text-ink/75"></i> مظهر المنيو</h3>
             <span class="text-[10px] text-ink/50">يتطبق على المنيو وصفحة الروابط</span>
           </div>
           <div id="theme-picker" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
@@ -1070,13 +1033,13 @@ tailwind.config = {
           </div>
           <div class="flex flex-col sm:flex-row gap-2">
             <button onclick="saveAppearance()" class="flex-1 bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition">حفظ المظهر</button>
-            <a id="appearance-preview" href="#" target="_blank" rel="noopener" class="sm:w-40 text-center bg-brand/10 hover:bg-brand/15 text-ink font-bold py-2.5 rounded-xl text-xs border border-brand/25 transition"><i class="fa-solid fa-eye text-[10px]"></i> معاينة المنيو</a>
+            <a id="appearance-preview" href="#" target="_blank" rel="noopener" class="sm:w-40 text-center bg-brand/10 hover:bg-brand/15 text-ink font-bold py-2.5 rounded-xl text-xs border border-brand/25 transition"><i class="ph-bold ph-eye text-[10px]"></i> معاينة المنيو</a>
           </div>
         </div>
         <!-- المناسبات والزينة -->
         <div class="pro-card p-5 space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-2 border-b border-brand/20 pb-2">
-            <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles text-amber-600"></i> المناسبات والزينة</h3>
+            <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-magic-wand text-amber-600"></i> المناسبات والزينة</h3>
             <span class="text-[10px] text-ink/50">زينة وتهنئة تظهر في المنيو تلقائياً خلال تواريخ المناسبة</span>
           </div>
           <div>
@@ -1088,7 +1051,7 @@ tailwind.config = {
             <div class="space-y-3">
               <div class="flex items-center justify-between">
                 <p id="occ-editor-title" class="text-xs font-black text-ink"></p>
-                <button type="button" onclick="closeOccasionEditor()" class="text-[10px] font-bold text-ink/60 hover:text-ink">إغلاق <i class="fa-solid fa-xmark"></i></button>
+                <button type="button" onclick="closeOccasionEditor()" class="text-[10px] font-bold text-ink/60 hover:text-ink">إغلاق <i class="ph-bold ph-x"></i></button>
               </div>
               <div>
                 <label class="text-[11px] text-ink/75 block mb-1">اسم المناسبة *</label>
@@ -1108,18 +1071,18 @@ tailwind.config = {
                   <input type="date" id="occ-end" onchange="occDraft().ends_on=this.value; renderOccasionList()" class="input-pro text-xs" dir="ltr">
                 </div>
               </div>
-              <button type="button" onclick="startOccasionToday()" class="text-[10px] font-bold bg-white border border-brand/20 hover:bg-brand/10 text-ink px-2.5 py-1.5 rounded-lg"><i class="fa-solid fa-bolt text-amber-600"></i> ابدأ من اليوم</button>
+              <button type="button" onclick="startOccasionToday()" class="text-[10px] font-bold bg-white border border-brand/20 hover:bg-brand/10 text-ink px-2.5 py-1.5 rounded-lg"><i class="ph-bold ph-lightning text-amber-600"></i> ابدأ من اليوم</button>
               <div id="occ-branches-wrap" class="hidden bg-emerald-500/5 border border-emerald-600/20 rounded-xl p-2.5">
-                <p class="text-[11px] font-bold text-ink mb-1"><i class="fa-solid fa-copy text-emerald-700"></i> انسخها لفروع ثانية عند الحفظ</p>
+                <p class="text-[11px] font-bold text-ink mb-1"><i class="ph-bold ph-copy text-emerald-700"></i> انسخها لفروع ثانية عند الحفظ</p>
                 <div id="occ-branches" class="flex flex-wrap gap-1.5"></div>
                 <p class="text-[10px] text-ink/55 mt-1">تنسخ بنفس الإعدادات والملصقات، وبعدها تعدّلها في كل فرع لحاله. النسخ مرة ثانية يستبدل النسخة السابقة.</p>
               </div>
-              <p id="occ-date-hint" class="hidden text-[10px] text-amber-800 bg-amber-500/10 border border-amber-500/25 rounded-lg px-2.5 py-1.5"><i class="fa-solid fa-circle-info"></i> التاريخ مقترح حسب تقويم أم القرى، وممكن يختلف يوم حسب رؤية الهلال. عدّله إذا لزم.</p>
+              <p id="occ-date-hint" class="hidden text-[10px] text-amber-800 bg-amber-500/10 border border-amber-500/25 rounded-lg px-2.5 py-1.5"><i class="ph-bold ph-info"></i> التاريخ مقترح حسب تقويم أم القرى، وممكن يختلف يوم حسب رؤية الهلال. عدّله إذا لزم.</p>
               <div class="space-y-2">
                 <div class="flex items-center justify-between gap-2">
                   <p class="text-[11px] font-bold text-ink/75">ملصقاتك وشخصياتك <span class="text-ink/50 font-normal">(حتى 3 — نشيل الخلفية تلقائياً)</span></p>
                   <label id="occ-upload-btn" class="shrink-0 cursor-pointer text-[10px] font-bold bg-white border border-brand/20 hover:bg-brand/10 text-ink px-2.5 py-1.5 rounded-lg transition">
-                    <i class="fa-solid fa-upload text-[9px]"></i> رفع ملصق
+                    <i class="ph-bold ph-upload-simple text-[9px]"></i> رفع ملصق
                     <input type="file" id="occ-sticker-file" accept="image/png,image/webp,image/gif,image/jpeg" class="hidden" onchange="uploadSticker(this)">
                   </label>
                 </div>
@@ -1153,7 +1116,7 @@ tailwind.config = {
                   <div class="h-9 rounded-xl" style="background:var(--surface);border:1px solid var(--surface-line)"></div>
                 </div>
               </div>
-              <button type="button" onclick="renderOccasionPreview()" class="w-full text-[10px] font-bold text-ink/70 hover:text-ink"><i class="fa-solid fa-rotate-right"></i> إعادة تشغيل الحركة</button>
+              <button type="button" onclick="renderOccasionPreview()" class="w-full text-[10px] font-bold text-ink/70 hover:text-ink"><i class="ph-bold ph-arrow-clockwise"></i> إعادة تشغيل الحركة</button>
             </div>
           </div>
           <button onclick="saveOccasions()" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition">حفظ المناسبات</button>
@@ -1162,7 +1125,7 @@ tailwind.config = {
     <!-- معلومات المطعم -->
     <div class="pro-card p-5 space-y-3">
       <h4 class="text-xs font-bold text-ink flex items-center gap-1.5">
-        <i class="fa-solid fa-store text-emerald-600"></i> معلومات المطعم (تظهر أعلى المنيو)
+        <i class="ph-bold ph-storefront text-emerald-600"></i> معلومات المطعم (تظهر أعلى المنيو)
       </h4>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
@@ -1177,12 +1140,12 @@ tailwind.config = {
       <label class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
         <input type="checkbox" id="info-show-calories" onchange="toggleCalories(this.checked)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
         <span class="text-xs">
-          <b class="text-ink"><i class="fa-solid fa-fire-flame-simple text-amber-600"></i> عرض السعرات الحرارية في المنيو</b>
+          <b class="text-ink"><i class="ph-bold ph-flame text-amber-600"></i> عرض السعرات الحرارية في المنيو</b>
           <span class="block text-[10px] text-ink/60 mt-0.5">عند الإيقاف: يختفي حقل السعرات من نموذج الأطباق، ولا تظهر السعرات للزبائن. السعرات المحفوظة تبقى ولا تنحذف.</span>
         </span>
       </label>
       <div class="bg-brand/5 p-3 rounded-xl border border-brand/15">
-        <label for="info-currency" class="text-xs font-bold text-ink block mb-1.5"><i class="fa-solid fa-coins text-amber-600"></i> عملة المنيو</label>
+        <label for="info-currency" class="text-xs font-bold text-ink block mb-1.5"><i class="ph-bold ph-coins text-amber-600"></i> عملة المنيو</label>
         <select id="info-currency" onchange="changeCurrency(this.value)" class="input-pro text-xs cursor-pointer"></select>
         <span class="block text-[10px] text-ink/60 mt-1">تظهر بجانب كل الأسعار في المنيو وفي رسائل طلبات واتساب. تغيير العملة ما يغيّر أرقام الأسعار نفسها.</span>
       </div>
@@ -1190,7 +1153,7 @@ tailwind.config = {
         <label id="wa-orders-label" class="flex items-start gap-2.5 cursor-pointer">
           <input type="checkbox" id="info-wa-orders" class="w-4 h-4 mt-0.5 accent-green-500 cursor-pointer disabled:cursor-not-allowed">
           <span class="text-xs">
-            <b class="text-ink"><i class="fa-brands fa-whatsapp text-green-600"></i> استقبال الطلبات عبر واتساب</b>
+            <b class="text-ink"><i class="ph-bold ph-whatsapp-logo text-green-600"></i> استقبال الطلبات عبر واتساب</b>
             <span class="block text-[10px] text-ink/60 mt-0.5">يظهر زر "اطلب عبر واتساب" في تفاصيل كل طبق، ويصل الطلب مباشرة إلى واتساب المطعم.</span>
           </span>
         </label>
@@ -1201,7 +1164,7 @@ tailwind.config = {
     <!-- العروض والرسائل الترويجية -->
     <div class="pro-card p-5 space-y-3">
       <h4 class="text-xs font-bold text-ink flex items-center gap-1.5">
-        <i class="fa-solid fa-bullhorn text-amber-700"></i> الرسائل الترويجية والعروض (تظهر أعلى المنيو للعملاء)
+        <i class="ph-bold ph-megaphone text-amber-700"></i> الرسائل الترويجية والعروض (تظهر أعلى المنيو للعملاء)
       </h4>
       <div id="promo-status" class="flex items-center gap-2 text-[11px]"></div>
       <div class="flex flex-col sm:flex-row gap-2">
@@ -1211,10 +1174,10 @@ tailwind.config = {
         </div>
         <div class="flex gap-2 shrink-0">
           <button type="button" id="promo-save-btn" onclick="updatePromoMessage()" class="flex-1 sm:flex-none bg-brand text-cream hover:bg-brand-dark px-5 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
-            <i class="fa-solid fa-floppy-disk text-[11px]"></i> حفظ ونشر
+            <i class="ph-bold ph-floppy-disk text-[11px]"></i> حفظ ونشر
           </button>
           <button type="button" id="promo-delete-btn" onclick="deletePromoMessage()" class="flex-1 sm:flex-none bg-red-500/10 hover:bg-red-500/20 text-red-600 border border-red-500/20 px-4 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
-            <i class="fa-solid fa-trash text-[11px]"></i> حذف الإعلان
+            <i class="ph-bold ph-trash text-[11px]"></i> حذف الإعلان
           </button>
         </div>
       </div>
@@ -1223,7 +1186,7 @@ tailwind.config = {
     <!-- روابط التواصل الاجتماعي -->
     <div class="pro-card p-5 space-y-3">
       <h4 class="text-xs font-bold text-ink flex items-center gap-1.5">
-        <i class="fa-solid fa-share-nodes text-blue-600"></i> روابط منصات التواصل الاجتماعي وموقع المطعم
+        <i class="ph-bold ph-share-network text-blue-600"></i> روابط منصات التواصل الاجتماعي وموقع المطعم
       </h4>
       <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <div>
@@ -1252,7 +1215,7 @@ tailwind.config = {
         <!-- تطبيقات التوصيل -->
         <div class="pro-card p-5 space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="fa-solid fa-motorcycle text-amber-600"></i> تطبيقات التوصيل</h3>
+            <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-moped text-amber-600"></i> تطبيقات التوصيل</h3>
             <span class="text-[10px] text-ink/50">اختر التطبيقات اللي مطعمك موجود فيها، وتظهر للزبائن في المنيو</span>
           </div>
           <div id="delivery-picker" class="grid grid-cols-3 sm:grid-cols-5 gap-2"></div>
@@ -1263,23 +1226,23 @@ tailwind.config = {
           <!-- أرقام الطلبات -->
           <div class="pro-card p-5 space-y-4">
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="fa-solid fa-phone text-emerald-600"></i> أرقام الطلبات</h3>
+              <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-phone text-emerald-600"></i> أرقام الطلبات</h3>
               <span id="order-numbers-count" class="text-[10px] text-ink/50"></span>
             </div>
             <p class="text-[10px] text-ink/60 -mt-2">تظهر كأزرار اتصال أعلى المنيو وفي صفحة الروابط. مثال: "الطلبات الخارجية".</p>
             <div id="order-numbers-list" class="space-y-2"></div>
-            <button type="button" id="order-numbers-add" onclick="addOrderNumber()" class="w-full bg-brand/5 hover:bg-brand/10 text-ink border border-dashed border-brand/30 font-bold py-2 rounded-xl text-xs transition disabled:opacity-40 disabled:cursor-not-allowed"><i class="fa-solid fa-plus text-[10px]"></i> إضافة رقم</button>
+            <button type="button" id="order-numbers-add" onclick="addOrderNumber()" class="w-full bg-brand/5 hover:bg-brand/10 text-ink border border-dashed border-brand/30 font-bold py-2 rounded-xl text-xs transition disabled:opacity-40 disabled:cursor-not-allowed"><i class="ph-bold ph-plus text-[10px]"></i> إضافة رقم</button>
             <button onclick="saveOrderNumbers()" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition">حفظ أرقام الطلبات</button>
           </div>
           <!-- الروابط المخصصة -->
           <div class="pro-card p-5 space-y-4">
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="fa-solid fa-link text-blue-600"></i> روابط إضافية</h3>
+              <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-link-simple text-blue-600"></i> روابط إضافية</h3>
               <span id="custom-links-count" class="text-[10px] text-ink/50"></span>
             </div>
             <p class="text-[10px] text-ink/60 -mt-2">أي رابط تبيه: حجز، استبيان، فرع ثاني، برنامج ولاء... تظهر أسفل المنيو وفي صفحة الروابط.</p>
             <div id="custom-links-list" class="space-y-2"></div>
-            <button type="button" id="custom-links-add" onclick="addCustomLink()" class="w-full bg-brand/5 hover:bg-brand/10 text-ink border border-dashed border-brand/30 font-bold py-2 rounded-xl text-xs transition disabled:opacity-40 disabled:cursor-not-allowed"><i class="fa-solid fa-plus text-[10px]"></i> إضافة رابط</button>
+            <button type="button" id="custom-links-add" onclick="addCustomLink()" class="w-full bg-brand/5 hover:bg-brand/10 text-ink border border-dashed border-brand/30 font-bold py-2 rounded-xl text-xs transition disabled:opacity-40 disabled:cursor-not-allowed"><i class="ph-bold ph-plus text-[10px]"></i> إضافة رابط</button>
             <button onclick="saveCustomLinks()" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition">حفظ الروابط</button>
           </div>
         </div>
@@ -1289,11 +1252,11 @@ tailwind.config = {
 
   <!-- ═════════ شريط التنقل السفلي (جوال) ═════════ -->
   <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-cream/95 backdrop-blur-xl border-t border-brand/15 grid grid-cols-5" style="padding-bottom: env(safe-area-inset-bottom)">
-    <button data-nav="dashboard" class="bnav"><i class="fa-solid fa-gauge-high"></i><span>الرئيسية</span></button>
-    <button data-nav="menu" class="bnav"><i class="fa-solid fa-utensils"></i><span>المنيو</span></button>
-    <button data-nav="waitlist" class="bnav relative"><i class="fa-solid fa-hourglass-half"></i><span>الانتظار</span><span id="bnav-waitlist" class="hidden absolute top-1.5 left-1/2 ml-2 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-400 text-black text-[10px] font-black leading-[18px]">0</span></button>
-    <a href="pager-desk.html" onclick="this.href='pager-desk.html'+location.search" class="bnav"><i class="fa-solid fa-bell"></i><span>البيجر</span></a>
-    <button data-nav="settings" class="bnav"><i class="fa-solid fa-palette"></i><span>الهوية</span></button>
+    <button data-nav="dashboard" class="bnav"><i class="ph-bold ph-gauge"></i><span>الرئيسية</span></button>
+    <button data-nav="menu" class="bnav"><i class="ph-bold ph-fork-knife"></i><span>المنيو</span></button>
+    <button data-nav="waitlist" class="bnav relative"><i class="ph-bold ph-hourglass-medium"></i><span>الانتظار</span><span id="bnav-waitlist" class="hidden absolute top-1.5 left-1/2 ml-2 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-400 text-black text-[10px] font-black leading-[18px]">0</span></button>
+    <a href="pager-desk.html" onclick="this.href='pager-desk.html'+location.search" class="bnav"><i class="ph-bold ph-bell"></i><span>البيجر</span></a>
+    <button data-nav="settings" class="bnav"><i class="ph-bold ph-palette"></i><span>الهوية</span></button>
   </nav>
 </div>
 
@@ -1305,7 +1268,6 @@ tailwind.config = {
   const curSign = () => DM.currencySign(client && client.currency);
   // اشتراك DEV MENU دايماً بالريال السعودي، مهما كانت عملة المتجر
   const sar = (n) => DM.money(n, 'SAR', 'ar');
-
 
   // حماية من حقن الكود: أي نص قادم من قاعدة البيانات يمر من هنا قبل عرضه
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1342,7 +1304,7 @@ tailwind.config = {
     if (isError && lastApiError) { msg = lastApiError; lastApiError = ''; }
     const toast = document.getElementById('toast');
     document.getElementById('toast-msg').textContent = msg;
-    document.getElementById('toast-icon').className = isError ? 'fa-solid fa-circle-xmark text-red-500' : 'fa-solid fa-circle-check text-green-600';
+    document.getElementById('toast-icon').className = isError ? 'ph-bold ph-x-circle text-red-500' : 'ph-bold ph-check-circle text-green-600';
     toast.className = `fixed bottom-20 lg:bottom-5 left-5 z-[70] px-5 py-3 rounded-2xl shadow-2xl border text-xs font-bold flex items-center gap-2 transition-all ${isError ? 'bg-cream border-red-500 text-ink' : 'bg-brand border-brand text-cream'} show`;
     clearTimeout(showToast.t);
     showToast.t = setTimeout(() => { toast.classList.remove('show'); }, 3200);
@@ -1438,7 +1400,7 @@ tailwind.config = {
     document.getElementById('checklist-body').innerHTML = items.map(([label, ok, page]) => `
       <li class="flex items-center justify-between gap-2 text-[11px]">
         <span class="flex items-center gap-2 ${ok ? 'text-ink/60 line-through decoration-brand/30' : 'text-ink/90'}">
-          <i class="fa-solid ${ok ? 'fa-circle-check text-emerald-600' : 'fa-circle text-ink/15'}"></i> ${label}
+          <i class="ph-bold ${ok ? 'ph-check-circle text-emerald-600' : 'ph-circle text-ink/15'}"></i> ${label}
         </span>
         ${ok ? '' : `<button onclick="location.hash='${page}'" class="text-[10px] font-bold text-amber-700 hover:text-amber-800">أكمل</button>`}
       </li>`).join('');
@@ -1465,7 +1427,7 @@ tailwind.config = {
     try { data = await api('load'); }
     catch (e) {
       if (e.status === 401) return false;
-      document.getElementById('auth-loading').innerHTML = `<i class="fa-solid fa-triangle-exclamation text-lg"></i><span>${esc(e.message)}</span>`;
+      document.getElementById('auth-loading').innerHTML = `<i class="ph-bold ph-warning text-lg"></i><span>${esc(e.message)}</span>`;
       return false;
     }
     isSuperAdmin = data.is_admin === true;
@@ -1474,7 +1436,7 @@ tailwind.config = {
     if (!data.store) {
       if (isSuperAdmin) { window.location.replace('super-admin.html'); return false; }
       document.getElementById('auth-loading').innerHTML = `
-        <i class="fa-solid fa-store-slash text-lg"></i>
+        <i class="ph-bold ph-prohibit text-lg"></i>
         <span>لا يوجد متجر مرتبط بحسابك.</span>
         <div class="flex gap-2 mt-2">
           <a href="index.html#register" class="bg-brand text-cream font-bold px-4 py-2 rounded-xl">أنشئ متجرك</a>
@@ -1585,11 +1547,11 @@ tailwind.config = {
     const verb = status === 'active' ? 'جدّد' : 'اشترك';
     box.innerHTML = `
       <p>الحالة: <span class="${color} font-bold">${label}</span></p>
-      ${branchCount() ? `<p class="text-[11px] text-emerald-800 font-bold"><i class="fa-solid fa-sitemap"></i> ${client.parent_id ? 'اشتراك الفرع تابع لحساب المتجر الرئيسي' : `اشتراك واحد للمتجر و ${branchCount()} ${branchCount() === 1 ? 'فرع' : 'فروع'}`} · ${sar(planTotal())} سنوياً</p>` : ''}
+      ${branchCount() ? `<p class="text-[11px] text-emerald-800 font-bold"><i class="ph-bold ph-tree-structure"></i> ${client.parent_id ? 'اشتراك الفرع تابع لحساب المتجر الرئيسي' : `اشتراك واحد للمتجر و ${branchCount()} ${branchCount() === 1 ? 'فرع' : 'فروع'}`} · ${sar(planTotal())} سنوياً</p>` : ''}
       ${live && left !== null ? `<p class="text-[11px] text-ink/75">متبقي <b>${daysText(left)}</b> — ينتهي ${esc(endText)}</p>` : ''}
       ${showPlans ? `
         <div class="flex flex-wrap gap-1.5 pt-1">
-          <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/40 text-amber-800 px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="fa-brands fa-whatsapp"></i> ${verb} سنوياً · ${sar(planTotal('year'))}</a>
+          <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/40 text-amber-800 px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="ph-bold ph-whatsapp-logo"></i> ${verb} سنوياً · ${sar(planTotal('year'))}</a>
         </div>` : ''}
       <p class="text-[10px] text-ink/60">معرف المتجر: ${esc(client.client_slug)}</p>`;
 
@@ -1603,10 +1565,10 @@ tailwind.config = {
       banner.className = `rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 border ${danger ? 'bg-red-500/10 border-red-500/40' : 'bg-amber-500/10 border-amber-500/40'}`;
       banner.innerHTML = `
         <p class="text-xs font-bold ${danger ? 'text-red-800' : 'text-amber-800'} flex items-center gap-2">
-          <i class="fa-solid ${danger ? 'fa-circle-exclamation' : 'fa-clock'}"></i> ${esc(text)}
+          <i class="ph-bold ${danger ? 'ph-warning-circle' : 'ph-clock'}"></i> ${esc(text)}
         </p>
         ${suspended
-          ? `<a href="https://wa.me/${SUPPORT_WA}" target="_blank" rel="noopener" class="bg-brand text-cream px-3 py-1.5 rounded-lg text-[11px] font-black"><i class="fa-brands fa-whatsapp"></i> تواصل معنا</a>`
+          ? `<a href="https://wa.me/${SUPPORT_WA}" target="_blank" rel="noopener" class="bg-brand text-cream px-3 py-1.5 rounded-lg text-[11px] font-black"><i class="ph-bold ph-whatsapp-logo"></i> تواصل معنا</a>`
           : `<div class="flex gap-2">
                <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400 text-black px-3 py-1.5 rounded-lg text-[11px] font-black">سنوي · ${sar(planTotal('year'))}</a>
              </div>`}`;
@@ -1879,8 +1841,8 @@ tailwind.config = {
     btn.disabled = true;
     try {
       const W = 1200, H = 1700, cx = W / 2;
-      const FONT = 'Cairo, Tahoma, Arial, sans-serif';
-      try { await Promise.all([document.fonts.load(`800 64px Cairo`), document.fonts.load(`600 36px Cairo`)]); } catch {}
+      const FONT = '"IBM Plex Sans Arabic", Tahoma, Arial, sans-serif';
+      try { await Promise.all([document.fonts.load(`700 64px "IBM Plex Sans Arabic"`), document.fonts.load(`600 36px "IBM Plex Sans Arabic"`)]); } catch {}
 
       const canvas = document.createElement('canvas');
       canvas.width = W; canvas.height = H;
@@ -1976,12 +1938,12 @@ tailwind.config = {
            <span class="text-green-800">الطلبات تصل إلى: <b dir="ltr">${esc(prettyWa(wa))}</b></span>
            <a href="https://wa.me/${esc(wa)}?text=${encodeURIComponent('رسالة تجريبية من DEV MENU ✅')}" target="_blank" rel="noopener"
               class="bg-green-600 hover:bg-green-500 text-ink font-bold px-2.5 py-1 rounded-md text-[10px] transition">
-             <i class="fa-brands fa-whatsapp"></i> اختبر الرقم
+             <i class="ph-bold ph-whatsapp-logo"></i> اختبر الرقم
            </a>
          </div>
          <p class="text-[10px] text-ink/50 mt-1.5">اضغط "اختبر الرقم": إذا فتحت محادثة في واتساب فالرقم شغال. وإذا ظهرت رسالة إن الرقم غير صالح، صحّحه في روابط التواصل.</p>`
       : `<div class="flex flex-wrap items-center justify-between gap-2 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
-           <span class="text-amber-800"><i class="fa-solid fa-circle-info"></i> لتفعيل الطلبات، أضف رقم واتساب المطعم واحفظه أولاً.</span>
+           <span class="text-amber-800"><i class="ph-bold ph-info"></i> لتفعيل الطلبات، أضف رقم واتساب المطعم واحفظه أولاً.</span>
            <button type="button" onclick="document.getElementById('social-whatsapp').focus(); document.getElementById('social-whatsapp').scrollIntoView({behavior:'smooth', block:'center'})"
                    class="bg-brand/10 hover:bg-brand/15 text-ink font-bold px-2.5 py-1 rounded-md text-[10px] border border-brand/25 transition">إضافة الرقم</button>
          </div>`;
@@ -2052,7 +2014,7 @@ tailwind.config = {
 
   async function loadStats() {
     const body = document.getElementById('stats-body');
-    body.innerHTML = '<p class="text-xs text-ink/50 py-6 text-center"><i class="fa-solid fa-spinner fa-spin"></i> جاري تحميل الإحصائيات...</p>';
+    body.innerHTML = '<p class="text-xs text-ink/50 py-6 text-center"><i class="ph-bold ph-spinner-gap ph-spin"></i> جاري تحميل الإحصائيات...</p>';
     let data = null, error = null;
     try { data = await api(`stats&days=${statsDays}`); } catch (e) { error = e; lastApiError = ''; }
     if (error || !data) {
@@ -2075,10 +2037,10 @@ tailwind.config = {
     if (views === 0) {
       body.innerHTML = `
         <div class="text-center py-8 space-y-3">
-          <div class="w-12 h-12 mx-auto rounded-2xl bg-brand/5 border border-brand/15 flex items-center justify-center text-ink/60"><i class="fa-solid fa-chart-line"></i></div>
+          <div class="w-12 h-12 mx-auto rounded-2xl bg-brand/5 border border-brand/15 flex items-center justify-center text-ink/60"><i class="ph-bold ph-chart-line-up"></i></div>
           <p class="text-sm font-bold text-ink">ما فيه زيارات خلال آخر ${data.days} يوم</p>
           <p class="text-[11px] text-ink/60 max-w-sm mx-auto">اطبع بطاقة الـ QR وحطها على الطاولات، أو شارك رابط المنيو في حساباتك. الإحصائيات تبدأ تظهر هنا مع أول زيارة.</p>
-          <button onclick="downloadQrCard()" class="bg-amber-400 hover:bg-amber-300 text-black px-4 py-2 rounded-xl text-[11px] font-black"><i class="fa-solid fa-print"></i> تحميل بطاقة الطاولة</button>
+          <button onclick="downloadQrCard()" class="bg-amber-400 hover:bg-amber-300 text-black px-4 py-2 rounded-xl text-[11px] font-black"><i class="ph-bold ph-printer"></i> تحميل بطاقة الطاولة</button>
         </div>`;
       return;
     }
@@ -2134,15 +2096,15 @@ tailwind.config = {
     const waEnabled = client.whatsapp_orders === true;
     body.innerHTML = `
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        ${kpiTile('زيارات المنيو', fmtNum(views), `${deltaBadge(views, pv.views)} <span class="text-[10px] text-ink/50">مقارنة بالفترة السابقة</span>`, 'fa-solid fa-eye', 'text-emerald-600')}
-        ${kpiTile('مشاهدات الأطباق', fmtNum(dishOpens), deltaBadge(dishOpens, pv.dishes), 'fa-solid fa-utensils', 'text-blue-700')}
-        ${kpiTile('طلبات واتساب', waEnabled || orders ? fmtNum(orders) : '—', waEnabled || orders ? deltaBadge(orders, pv.orders) : '<span class="text-[10px] text-amber-700">فعّلها من معلومات المطعم</span>', 'fa-brands fa-whatsapp', 'text-green-600')}
-        ${kpiTile('أطباق لكل زيارة', (dishOpens / views).toFixed(1), '<span class="text-[10px] text-ink/50">متوسط الأطباق اللي يفتحها الزبون</span>', 'fa-solid fa-hand-pointer', 'text-amber-700')}
+        ${kpiTile('زيارات المنيو', fmtNum(views), `${deltaBadge(views, pv.views)} <span class="text-[10px] text-ink/50">مقارنة بالفترة السابقة</span>`, 'ph-bold ph-eye', 'text-emerald-600')}
+        ${kpiTile('مشاهدات الأطباق', fmtNum(dishOpens), deltaBadge(dishOpens, pv.dishes), 'ph-bold ph-fork-knife', 'text-blue-700')}
+        ${kpiTile('طلبات واتساب', waEnabled || orders ? fmtNum(orders) : '—', waEnabled || orders ? deltaBadge(orders, pv.orders) : '<span class="text-[10px] text-amber-700">فعّلها من معلومات المطعم</span>', 'ph-bold ph-whatsapp-logo', 'text-green-600')}
+        ${kpiTile('أطباق لكل زيارة', (dishOpens / views).toFixed(1), '<span class="text-[10px] text-ink/50">متوسط الأطباق اللي يفتحها الزبون</span>', 'ph-bold ph-hand-pointing', 'text-amber-700')}
       </div>
 
       ${insights.length ? `
         <div class="bg-amber-400/5 border border-amber-400/20 rounded-xl p-3.5 space-y-1.5">
-          ${insights.map(x => `<p class="text-[11px] text-ink/90 leading-relaxed"><i class="fa-solid fa-lightbulb text-amber-700 ml-1"></i> ${x}</p>`).join('')}
+          ${insights.map(x => `<p class="text-[11px] text-ink/90 leading-relaxed"><i class="ph-bold ph-lightbulb text-amber-700 ml-1"></i> ${x}</p>`).join('')}
         </div>` : ''}
 
       <div>
@@ -2189,7 +2151,7 @@ tailwind.config = {
                       <td class="py-2">
                         <div class="flex items-center gap-2 min-w-0">
                           <span class="w-4 text-ink/50">${i + 1}</span>
-                          ${img ? `<img src="${esc(img)}" alt="" loading="lazy" class="w-8 h-8 rounded-lg object-cover shrink-0">` : '<div class="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center shrink-0"><i class="fa-solid fa-utensils text-[10px] text-ink/50"></i></div>'}
+                          ${img ? `<img src="${esc(img)}" alt="" loading="lazy" class="w-8 h-8 rounded-lg object-cover shrink-0">` : '<div class="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center shrink-0"><i class="ph-bold ph-fork-knife text-[10px] text-ink/50"></i></div>'}
                           <span class="text-ink font-bold truncate">${esc(d.name)}</span>
                         </div>
                       </td>
@@ -2222,8 +2184,8 @@ tailwind.config = {
                 <div class="bg-brand/50" style="width:${100 - qrPct}%"></div>
               </div>
               <div class="flex justify-between text-[10px] mt-1.5">
-                <span class="text-amber-700"><i class="fa-solid fa-qrcode"></i> مسح QR · ${qrPct}%</span>
-                <span class="text-brand"><i class="fa-solid fa-link"></i> رابط مشارك · ${100 - qrPct}%</span>
+                <span class="text-amber-700"><i class="ph-bold ph-qr-code"></i> مسح QR · ${qrPct}%</span>
+                <span class="text-brand"><i class="ph-bold ph-link-simple"></i> رابط مشارك · ${100 - qrPct}%</span>
               </div>` : '<p class="text-[10px] text-ink/50">يظهر بعد أول زيارات من رمز QR الجديد.</p>'}
           </div>
           <div>
@@ -2237,7 +2199,7 @@ tailwind.config = {
         <div>
           <p class="text-[11px] font-bold text-ink/75 mb-2">أطباق ما فتحها أحد <span class="text-ink/50 font-normal">(${cold.length})</span></p>
           <div class="flex flex-wrap gap-1.5">
-            ${cold.slice(0, 12).map(d => `<button onclick="startEdit(${Number(d.id)})" class="bg-brand/5 hover:bg-brand/10 border border-brand/15 text-ink/75 px-2.5 py-1 rounded-lg text-[10px] transition">${esc(d.name)}${d.image_url ? '' : ' <i class="fa-solid fa-image text-amber-600" title="بدون صورة"></i>'}</button>`).join('')}
+            ${cold.slice(0, 12).map(d => `<button onclick="startEdit(${Number(d.id)})" class="bg-brand/5 hover:bg-brand/10 border border-brand/15 text-ink/75 px-2.5 py-1 rounded-lg text-[10px] transition">${esc(d.name)}${d.image_url ? '' : ' <i class="ph-bold ph-image text-amber-600" title="بدون صورة"></i>'}</button>`).join('')}
             ${cold.length > 12 ? `<span class="text-[10px] text-ink/50 self-center">و${cold.length - 12} غيرها</span>` : ''}
           </div>
         </div>` : ''}
@@ -2376,14 +2338,14 @@ tailwind.config = {
     const avg = waits.length ? Math.round(waits.reduce((a, b) => a + b, 0) / waits.length) : null;
     const tile = (label, value, icon, color) => `
       <div class="pro-card p-3 sm:p-4">
-        <p class="text-[10px] text-ink/60 flex items-center gap-1.5"><i class="fa-solid ${icon} ${color}"></i> ${label}</p>
+        <p class="text-[10px] text-ink/60 flex items-center gap-1.5"><i class="ph-bold ${icon} ${color}"></i> ${label}</p>
         <p class="text-xl sm:text-2xl font-black mt-1">${value}</p>
       </div>`;
     document.getElementById('wl-stats').innerHTML =
-      tile('بالانتظار الآن', waiting, 'fa-hourglass-half', 'text-amber-600') +
-      tile('تم تنبيههم', notified, 'fa-bell', 'text-blue-600') +
-      tile('جلسوا اليوم', seated.length, 'fa-chair', 'text-green-600') +
-      tile('متوسط الانتظار', avg === null ? '—' : `${avg} د`, 'fa-stopwatch', 'text-ink/60');
+      tile('بالانتظار الآن', waiting, 'ph-hourglass-medium', 'text-amber-600') +
+      tile('تم تنبيههم', notified, 'ph-bell', 'text-blue-600') +
+      tile('جلسوا اليوم', seated.length, 'ph-chair', 'text-green-600') +
+      tile('متوسط الانتظار', avg === null ? '—' : `${avg} د`, 'ph-timer', 'text-ink/60');
     ['nav-waitlist', 'bnav-waitlist'].forEach(id => {
       const b = document.getElementById(id);
       b.textContent = waiting; b.classList.toggle('hidden', waiting === 0);
@@ -2400,12 +2362,12 @@ tailwind.config = {
   function historyBadge(h) {
     if (!h) return '';
     const chip = (cls, html) => `<span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}">${html}</span>`;
-    if (!h.visits) return `<div class="flex flex-wrap gap-1.5 mt-1.5">${chip('bg-blue-500/10 text-blue-700', '<i class="fa-solid fa-seedling"></i> أول زيارة')}</div>`;
+    if (!h.visits) return `<div class="flex flex-wrap gap-1.5 mt-1.5">${chip('bg-blue-500/10 text-blue-700', '<i class="ph-bold ph-plant"></i> أول زيارة')}</div>`;
     const out = [];
     if (h.seated) out.push(chip(h.seated >= 3 ? 'bg-amber-400/20 text-amber-800' : 'bg-green-500/15 text-green-700',
-      `<i class="fa-solid ${h.seated >= 3 ? 'fa-star' : 'fa-rotate-left'}"></i> زارك ${timesText(h.seated)} قبل${h.seated >= 3 ? ' · عميل دائم' : ''}`));
-    else out.push(chip('bg-brand/10 text-ink/70', `<i class="fa-solid fa-clock-rotate-left"></i> سجّل ${timesText(h.visits)} قبل`));
-    if (h.no_show) out.push(chip('bg-red-500/10 text-red-700', `<i class="fa-solid fa-triangle-exclamation"></i> لم يحضر ${timesText(h.no_show)}`));
+      `<i class="ph-bold ${h.seated >= 3 ? 'ph-star' : 'ph-arrow-counter-clockwise'}"></i> زارك ${timesText(h.seated)} قبل${h.seated >= 3 ? ' · عميل دائم' : ''}`));
+    else out.push(chip('bg-brand/10 text-ink/70', `<i class="ph-bold ph-clock-counter-clockwise"></i> سجّل ${timesText(h.visits)} قبل`));
+    if (h.no_show) out.push(chip('bg-red-500/10 text-red-700', `<i class="ph-bold ph-warning"></i> لم يحضر ${timesText(h.no_show)}`));
     if (h.last) out.push(`<span class="text-[10px] text-ink/50">آخر زيارة ${esc(shortDate(h.last))}</span>`);
     return `<div class="flex flex-wrap items-center gap-1.5 mt-1.5">${out.join('')}</div>`;
   }
@@ -2418,7 +2380,7 @@ tailwind.config = {
     if (!active) list.reverse();
     const box = document.getElementById('wl-list');
     if (!list.length) {
-      box.innerHTML = `<div class="text-center py-10 text-ink/50 text-xs"><i class="fa-solid fa-mug-hot text-2xl mb-2 block"></i>${active ? 'ما فيه أحد بالانتظار الحين' : 'ما فيه تسجيلات منتهية اليوم'}</div>`;
+      box.innerHTML = `<div class="text-center py-10 text-ink/50 text-xs"><i class="ph-bold ph-coffee text-2xl mb-2 block"></i>${active ? 'ما فيه أحد بالانتظار الحين' : 'ما فيه تسجيلات منتهية اليوم'}</div>`;
       return;
     }
     const STATUS = {
@@ -2431,20 +2393,20 @@ tailwind.config = {
       const since = notified ? minsSince(e.notified_at) : 0;
       const late = notified && since > (wl.settings ? wl.settings.hold_minutes : 10);
       const info = [
-        e.party_size ? `<span><i class="fa-solid fa-user-group"></i> ${esc(e.party_size)}</span>` : '',
-        e.seating ? `<span><i class="fa-solid fa-chair"></i> ${esc(WL_SEATING[e.seating] || e.seating)}</span>` : '',
-        e.phone ? `<a href="tel:${esc(e.phone)}" class="text-blue-700" dir="ltr"><i class="fa-solid fa-phone"></i> ${esc(e.phone)}</a>` : '',
-        e.email ? `<span class="truncate max-w-[180px]" dir="ltr"><i class="fa-solid fa-envelope"></i> ${esc(e.email)}</span>` : ''
+        e.party_size ? `<span><i class="ph-bold ph-users-three"></i> ${esc(e.party_size)}</span>` : '',
+        e.seating ? `<span><i class="ph-bold ph-chair"></i> ${esc(WL_SEATING[e.seating] || e.seating)}</span>` : '',
+        e.phone ? `<a href="tel:${esc(e.phone)}" class="text-blue-700" dir="ltr"><i class="ph-bold ph-phone"></i> ${esc(e.phone)}</a>` : '',
+        e.email ? `<span class="truncate max-w-[180px]" dir="ltr"><i class="ph-bold ph-envelope-simple"></i> ${esc(e.email)}</span>` : ''
       ].filter(Boolean).join('');
       const id = Number(e.id);
       const actions = active ? (notified
         ? `<button onclick="wlSet(${id},'seated')" class="bg-green-600 text-white">جلس ✓</button>
            <button onclick="wlSet(${id},'notified',true)" class="bg-brand/10 text-ink border border-brand/20">إعادة التنبيه</button>
            <button onclick="wlSet(${id},'no_show')" class="bg-red-500/10 text-red-700 border border-red-500/20">لم يحضر</button>`
-        : `<button onclick="wlSet(${id},'notified')" class="bg-brand text-cream col-span-2 sm:col-span-1"><i class="fa-solid fa-bell"></i> الطاولة جاهزة</button>
+        : `<button onclick="wlSet(${id},'notified')" class="bg-brand text-cream col-span-2 sm:col-span-1"><i class="ph-bold ph-bell"></i> الطاولة جاهزة</button>
            <button onclick="wlSet(${id},'seated')" class="bg-brand/10 text-ink border border-brand/20">جلس مباشرة</button>
            <button onclick="wlSet(${id},'cancelled')" class="bg-red-500/10 text-red-700 border border-red-500/20">إلغاء</button>`)
-        : `<button onclick="wlSet(${id},'waiting')" class="bg-brand/10 text-ink border border-brand/20"><i class="fa-solid fa-rotate-left"></i> إرجاع للقائمة</button>`;
+        : `<button onclick="wlSet(${id},'waiting')" class="bg-brand/10 text-ink border border-brand/20"><i class="ph-bold ph-arrow-counter-clockwise"></i> إرجاع للقائمة</button>`;
       return `
         <div class="rounded-2xl border p-3 sm:p-3.5 space-y-2.5 ${notified ? (late ? 'border-red-400/60 bg-red-500/5' : 'border-green-500/50 bg-green-500/5') : 'border-brand/15 bg-brand/[0.03]'}">
           <div class="flex items-start gap-3">
@@ -2460,7 +2422,7 @@ tailwind.config = {
               </div>
               <div class="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ink/70 mt-1">${info}</div>
               ${historyBadge(e.history)}
-              ${e.notes ? `<p class="text-[11px] text-ink/70 bg-amber-100/60 rounded-lg px-2 py-1 mt-1.5"><i class="fa-solid fa-note-sticky text-amber-600"></i> ${esc(e.notes)}</p>` : ''}
+              ${e.notes ? `<p class="text-[11px] text-ink/70 bg-amber-100/60 rounded-lg px-2 py-1 mt-1.5"><i class="ph-bold ph-note text-amber-600"></i> ${esc(e.notes)}</p>` : ''}
             </div>
           </div>
           <div class="grid ${active && !notified ? 'grid-cols-2' : active ? 'grid-cols-3' : 'grid-cols-1'} sm:flex sm:justify-end gap-1.5 [&>button]:px-3 [&>button]:py-2 [&>button]:rounded-lg [&>button]:text-[11px] [&>button]:font-bold">${actions}</div>
@@ -2571,7 +2533,7 @@ tailwind.config = {
   async function loadGuestHistory(force = false) {
     const days = document.getElementById('wlh-range').value;
     if (!force && wlh.loaded === days) return renderGuestHistory();
-    document.getElementById('wlh-rows').innerHTML = '<tr><td colspan="8" class="text-center py-6 text-ink/50"><i class="fa-solid fa-spinner fa-spin"></i> جاري التحميل...</td></tr>';
+    document.getElementById('wlh-rows').innerHTML = '<tr><td colspan="8" class="text-center py-6 text-ink/50"><i class="ph-bold ph-spinner-gap ph-spin"></i> جاري التحميل...</td></tr>';
     try {
       const data = await api(`waitlist-history&days=${days}`);
       wlh = { entries: data.entries || [], loaded: days };
@@ -2602,7 +2564,7 @@ tailwind.config = {
     const gShown = groups.slice(0, 300);
     document.getElementById('wlh-guest-rows').innerHTML = gShown.length ? gShown.map(g => `
       <tr>
-        <td class="px-3 py-2 font-bold">${esc(g.name || 'ضيف')}${g.seated >= 3 ? ' <i class="fa-solid fa-star text-amber-500" title="عميل دائم"></i>' : ''}</td>
+        <td class="px-3 py-2 font-bold">${esc(g.name || 'ضيف')}${g.seated >= 3 ? ' <i class="ph-bold ph-star text-amber-500" title="عميل دائم"></i>' : ''}</td>
         <td class="px-3 py-2" dir="ltr">${g.phone ? `<a href="tel:${esc(g.phone)}" class="text-blue-700">${esc(g.phone)}</a>` : '—'}</td>
         <td class="px-3 py-2" dir="ltr">${esc(g.email || '—')}</td>
         <td class="px-3 py-2"><span class="inline-block min-w-[26px] text-center font-black px-2 py-0.5 rounded-full ${g.seated >= 3 ? 'bg-amber-400/20 text-amber-800' : g.seated ? 'bg-green-500/15 text-green-700' : 'bg-brand/10 text-ink/60'}">${g.seated}</span></td>
@@ -2722,7 +2684,7 @@ tailwind.config = {
           class="flex flex-col items-center gap-1.5 p-2.5 rounded-xl border text-[11px] font-bold transition ${on ? 'bg-brand text-cream border-brand' : 'bg-brand/5 border-brand/15 text-ink/80 hover:bg-brand/10'}">
           ${appLogo({ app: key, url: '' })}
           <span class="truncate max-w-full">${meta.name}</span>
-          ${key === 'other' ? '<span class="text-[9px] opacity-60">+ إضافة</span>' : on ? '<i class="fa-solid fa-check text-[9px]"></i>' : ''}
+          ${key === 'other' ? '<span class="text-[9px] opacity-60">+ إضافة</span>' : on ? '<i class="ph-bold ph-check text-[9px]"></i>' : ''}
         </button>`;
     }).join('');
 
@@ -2736,7 +2698,7 @@ tailwind.config = {
         </div>
         <div class="flex items-center gap-2 flex-1">
           <input type="url" dir="ltr" value="${esc(d.url || '')}" oninput="deliveryApps[${i}].url=this.value.trim()" placeholder="رابط صفحة مطعمك في التطبيق https://..." class="input-pro !py-1.5 text-xs flex-1">
-          <button type="button" onclick="removeDeliveryApp(${i})" aria-label="إزالة" class="shrink-0 w-9 h-9 rounded-lg bg-red-500/10 text-red-600 border border-red-500/20 hover:bg-red-500/20"><i class="fa-solid fa-xmark"></i></button>
+          <button type="button" onclick="removeDeliveryApp(${i})" aria-label="إزالة" class="shrink-0 w-9 h-9 rounded-lg bg-red-500/10 text-red-600 border border-red-500/20 hover:bg-red-500/20"><i class="ph-bold ph-x"></i></button>
         </div>
       </div>`).join('')
       : '<p class="text-[11px] text-ink/50 text-center py-2">ما اخترت أي تطبيق توصيل بعد.</p>';
@@ -2782,17 +2744,17 @@ tailwind.config = {
     document.getElementById('branches-list').innerHTML = branches.map(b => `
       <div class="flex items-center gap-2 bg-brand/5 border ${b.id === client.id ? 'border-brand' : 'border-brand/15'} rounded-xl p-2.5">
         <div class="min-w-0 flex-1">
-          <p class="text-xs font-black text-ink truncate">${b.parent_id ? '' : '<i class="fa-solid fa-star text-amber-500 text-[9px]"></i> '}${esc(b.name || b.client_slug)}${b.id === client.id ? ' <span class="text-[9px] font-bold text-emerald-700">(مفتوح الحين)</span>' : ''}</p>
+          <p class="text-xs font-black text-ink truncate">${b.parent_id ? '' : '<i class="ph-bold ph-star text-amber-500 text-[9px]"></i> '}${esc(b.name || b.client_slug)}${b.id === client.id ? ' <span class="text-[9px] font-bold text-emerald-700">(مفتوح الحين)</span>' : ''}</p>
           <a href="${esc(DM.storeUrl(b.client_slug))}" target="_blank" rel="noopener" class="text-[10px] text-ink/55 hover:text-ink" dir="ltr">${esc(b.client_slug)}.devmenu.digital</a>
         </div>
-        <button type="button" onclick="renameBranch(${Number(b.id)})" title="تعديل الاسم" class="w-8 h-8 rounded-lg bg-white border border-brand/20 text-ink/70 hover:bg-brand/10"><i class="fa-solid fa-pen text-[10px]"></i></button>
+        <button type="button" onclick="renameBranch(${Number(b.id)})" title="تعديل الاسم" class="w-8 h-8 rounded-lg bg-white border border-brand/20 text-ink/70 hover:bg-brand/10"><i class="ph-bold ph-pencil-simple text-[10px]"></i></button>
         ${b.id === client.id ? '' : `<button type="button" onclick="switchBranch(${Number(b.id)})" class="px-2.5 h-8 rounded-lg bg-brand text-cream text-[10px] font-bold">إدارة</button>`}
       </div>`).join('');
   }
   async function renameBranch(id) {
     const b = branches.find(x => x.id === id); if (!b) return;
     const r = await DMDialog.form({
-      title: 'تعديل اسم الفرع', subtitle: 'يظهر هذا الاسم أعلى المنيو ولوحة التحكم.', icon: 'fa-code-branch',
+      title: 'تعديل اسم الفرع', subtitle: 'يظهر هذا الاسم أعلى المنيو ولوحة التحكم.', icon: 'ph-git-branch',
       fields: [{ name: 'name', label: 'اسم الفرع', value: b.name || '', maxlength: 80, required: true, placeholder: 'مثال: دجئ - فرع النخيل' }]
     });
     if (!r || r.name === b.name) return;
@@ -2840,7 +2802,7 @@ tailwind.config = {
   function renderOccasions() {
     document.getElementById('occ-presets').innerHTML = Object.entries(DMOccasions.PRESETS).map(([key, p]) => `
       <button type="button" onclick="addOccasion('${key}')" class="flex items-center gap-2 p-2.5 rounded-xl border bg-white border-brand/15 hover:border-brand/40 hover:bg-brand/5 text-[11px] font-bold text-ink transition text-right">
-        <span class="text-base">${p.icon}</span><span class="truncate">${esc(p.name)}</span><i class="fa-solid fa-plus text-[9px] text-ink/40 mr-auto"></i>
+        <span class="text-base">${p.icon}</span><span class="truncate">${esc(p.name)}</span><i class="ph-bold ph-plus text-[9px] text-ink/40 mr-auto"></i>
       </button>`).join('');
     renderOccasionList();
   }
@@ -2854,13 +2816,13 @@ tailwind.config = {
           <div class="min-w-0 flex-1">
             <p class="text-xs font-black text-ink truncate">${esc(o.title || p.name)}</p>
             <p class="text-[10px] text-ink/55" dir="ltr" style="text-align:right">${esc(o.starts_on || '—')} → ${esc(o.ends_on || '—')}${o.stickers && o.stickers.length ? ` · ${o.stickers.length} 🖼️` : ''}</p>
-            ${o.copy_to && o.copy_to.length ? `<p class="text-[10px] font-bold text-emerald-700 truncate"><i class="fa-solid fa-copy"></i> تنسخ عند الحفظ إلى: ${o.copy_to.map(branchName).map(esc).join('، ')}</p>` : ''}
+            ${o.copy_to && o.copy_to.length ? `<p class="text-[10px] font-bold text-emerald-700 truncate"><i class="ph-bold ph-copy"></i> تنسخ عند الحفظ إلى: ${o.copy_to.map(branchName).map(esc).join('، ')}</p>` : ''}
           </div>
           <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}">${state}</span>
           <div class="flex gap-1">
-            <button type="button" onclick="editOccasion(${i})" class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold border bg-brand/5 text-ink/90 border-brand/20 hover:bg-brand/10"><i class="fa-solid fa-pen text-[9px]"></i> تعديل</button>
+            <button type="button" onclick="editOccasion(${i})" class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold border bg-brand/5 text-ink/90 border-brand/20 hover:bg-brand/10"><i class="ph-bold ph-pencil-simple text-[9px]"></i> تعديل</button>
             <button type="button" onclick="occasions[${i}].enabled=!occasions[${i}].enabled; renderOccasionList()" class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold border ${o.enabled ? 'bg-white text-ink/80 border-brand/20' : 'bg-green-500/15 text-green-700 border-green-500/30'}">${o.enabled ? 'إيقاف' : 'تفعيل'}</button>
-            <button type="button" onclick="removeOccasion(${i})" aria-label="حذف" class="px-2.5 py-1.5 rounded-lg text-[10px] border bg-red-500/10 text-red-600 border-red-500/20"><i class="fa-solid fa-trash"></i></button>
+            <button type="button" onclick="removeOccasion(${i})" aria-label="حذف" class="px-2.5 py-1.5 rounded-lg text-[10px] border bg-red-500/10 text-red-600 border-red-500/20"><i class="ph-bold ph-trash"></i></button>
           </div>
         </div>`;
     }).join('') : '<p class="text-[11px] text-ink/50 text-center py-2">ما أضفت أي مناسبة. اختر من الأعلى، ونقترح لك التواريخ.</p>';
@@ -2932,11 +2894,11 @@ tailwind.config = {
     document.getElementById('occ-stickers').innerHTML = o.stickers.length ? o.stickers.map((k, i) => `
       <div class="flex flex-wrap items-center gap-1.5 bg-white border border-brand/15 rounded-xl p-2">
         <img src="${esc(safeUrl(k.url))}" alt="" class="w-10 h-10 object-contain rounded-lg bg-checker">
-        <button type="button" onclick="cutExistingSticker(${i})" title="إزالة الخلفية" class="text-[10px] font-bold bg-white border border-brand/20 hover:bg-brand/10 text-ink px-2 h-9 rounded-lg"><i class="fa-solid fa-scissors"></i> إزالة الخلفية</button>
+        <button type="button" onclick="cutExistingSticker(${i})" title="إزالة الخلفية" class="text-[10px] font-bold bg-white border border-brand/20 hover:bg-brand/10 text-ink px-2 h-9 rounded-lg"><i class="ph-bold ph-scissors"></i> إزالة الخلفية</button>
         <select onchange="occDraft().stickers[${i}].position=this.value; renderOccasionPreview()" class="input-pro !py-1.5 text-[11px] !w-auto flex-1 min-w-[110px] bg-cream">${opts(DMOccasions.POSITIONS, k.position)}</select>
         <select onchange="occDraft().stickers[${i}].size=this.value; renderOccasionPreview()" class="input-pro !py-1.5 text-[11px] !w-auto bg-cream">${opts(DMOccasions.SIZES, k.size)}</select>
         <select onchange="occDraft().stickers[${i}].animation=this.value; renderOccasionPreview()" class="input-pro !py-1.5 text-[11px] !w-auto bg-cream">${opts(DMOccasions.ANIMS, k.animation)}</select>
-        <button type="button" onclick="occDraft().stickers.splice(${i}, 1); renderStickerRows(); renderOccasionPreview(); renderOccasionList()" aria-label="حذف الملصق" class="w-9 h-9 rounded-lg bg-red-500/10 text-red-600 border border-red-500/20"><i class="fa-solid fa-xmark"></i></button>
+        <button type="button" onclick="occDraft().stickers.splice(${i}, 1); renderStickerRows(); renderOccasionPreview(); renderOccasionList()" aria-label="حذف الملصق" class="w-9 h-9 rounded-lg bg-red-500/10 text-red-600 border border-red-500/20"><i class="ph-bold ph-x"></i></button>
       </div>`).join('') : '<p class="text-[10px] text-ink/50">اختياري: ارفع شخصية مطعمك أو أي ملصق، والمنصة تحرّكه.</p>';
     document.getElementById('occ-upload-btn').classList.toggle('hidden', o.stickers.length >= MAX_STICKERS);
   }
@@ -3069,8 +3031,8 @@ tailwind.config = {
     const before = URL.createObjectURL(file);
     let after = null, cut = null, done = false;
     panel.classList.remove('hidden'); show('bg-compare', false); show('bg-actions', false); show('bg-progress', false);
-    status.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري إزالة الخلفية...';
-    bgProgress = (p) => { show('bg-progress', true); bar.style.width = `${Math.round(p)}%`; status.innerHTML = `<i class="fa-solid fa-download"></i> تجهيز أداة إزالة الخلفية لأول مرة... ${Math.round(p)}%`; };
+    status.innerHTML = '<i class="ph-bold ph-spinner-gap ph-spin"></i> جاري إزالة الخلفية...';
+    bgProgress = (p) => { show('bg-progress', true); bar.style.width = `${Math.round(p)}%`; status.innerHTML = `<i class="ph-bold ph-download-simple"></i> تجهيز أداة إزالة الخلفية لأول مرة... ${Math.round(p)}%`; };
     return new Promise((resolve) => {
       const finish = (v) => {
         if (done) return; done = true;
@@ -3089,12 +3051,12 @@ tailwind.config = {
         document.getElementById('bg-before').src = before;
         document.getElementById('bg-after').src = after;
         show('bg-progress', false); show('bg-compare', true); show('bg-actions', true);
-        status.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles text-emerald-600"></i> تمت إزالة الخلفية، اختر النسخة اللي تبيها';
+        status.innerHTML = '<i class="ph-bold ph-magic-wand text-emerald-600"></i> تمت إزالة الخلفية، اختر النسخة اللي تبيها';
       }).catch((e) => {
         console.warn('background removal failed', e);
         if (done) return;
         show('bg-progress', false);
-        status.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-amber-600"></i> تعذر إزالة الخلفية على هذا الجهاز. تقدر ترفع الصورة الأصلية.';
+        status.innerHTML = '<i class="ph-bold ph-warning text-amber-600"></i> تعذر إزالة الخلفية على هذا الجهاز. تقدر ترفع الصورة الأصلية.';
         document.getElementById('bg-before').src = before;
         show('bg-compare', false); show('bg-actions', true);
         panel.querySelector('[data-bg="cut"]').classList.add('hidden');
@@ -3193,7 +3155,7 @@ tailwind.config = {
             ${dish('لاتيه', '18')}
             ${dish('كابتشينو', '16')}
           </div>
-          <p class="text-[11px] font-bold text-ink mt-1.5 px-1 flex items-center gap-1.5">${on ? '<i class="fa-solid fa-circle-check text-brand"></i>' : ''} ${esc(t.name)}</p>
+          <p class="text-[11px] font-bold text-ink mt-1.5 px-1 flex items-center gap-1.5">${on ? '<i class="ph-bold ph-check-circle text-brand"></i>' : ''} ${esc(t.name)}</p>
         </button>`;
     }).join('');
 
@@ -3225,9 +3187,9 @@ tailwind.config = {
   function rowTools(listName, i, total) {
     const btn = 'shrink-0 w-9 h-9 rounded-lg border transition disabled:opacity-30 disabled:cursor-not-allowed';
     return `
-      <button type="button" onclick="moveItem('${listName}', ${i}, -1)" ${i === 0 ? 'disabled' : ''} aria-label="لأعلى" class="${btn} bg-white border-brand/20 text-ink/70 hover:bg-brand/10"><i class="fa-solid fa-arrow-up text-[10px]"></i></button>
-      <button type="button" onclick="moveItem('${listName}', ${i}, 1)" ${i === total - 1 ? 'disabled' : ''} aria-label="لأسفل" class="${btn} bg-white border-brand/20 text-ink/70 hover:bg-brand/10"><i class="fa-solid fa-arrow-down text-[10px]"></i></button>
-      <button type="button" onclick="removeItem('${listName}', ${i})" aria-label="إزالة" class="${btn} bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20"><i class="fa-solid fa-xmark"></i></button>`;
+      <button type="button" onclick="moveItem('${listName}', ${i}, -1)" ${i === 0 ? 'disabled' : ''} aria-label="لأعلى" class="${btn} bg-white border-brand/20 text-ink/70 hover:bg-brand/10"><i class="ph-bold ph-arrow-up text-[10px]"></i></button>
+      <button type="button" onclick="moveItem('${listName}', ${i}, 1)" ${i === total - 1 ? 'disabled' : ''} aria-label="لأسفل" class="${btn} bg-white border-brand/20 text-ink/70 hover:bg-brand/10"><i class="ph-bold ph-arrow-down text-[10px]"></i></button>
+      <button type="button" onclick="removeItem('${listName}', ${i})" aria-label="إزالة" class="${btn} bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20"><i class="ph-bold ph-x"></i></button>`;
   }
   const LISTS = { orderNumbers: () => orderNumbers, customLinks: () => customLinks };
   const RENDER = { orderNumbers: () => renderOrderNumbers(), customLinks: () => renderCustomLinks() };
@@ -3341,7 +3303,7 @@ tailwind.config = {
   function renderRvStars() {
     document.getElementById('rv-stars').innerHTML = [1, 2, 3, 4, 5].map(n => `
       <button type="button" role="radio" aria-checked="${rv.rating === n}" aria-label="${n} ${n === 1 ? 'نجمة' : 'نجوم'}" data-star="${n}"
-        class="w-11 h-11 rounded-xl text-xl transition ${n <= rv.rating ? 'text-saffron' : 'text-ink/20 hover:text-ink/40'}"><i class="fa-solid fa-star"></i></button>`).join('');
+        class="w-11 h-11 rounded-xl text-xl transition ${n <= rv.rating ? 'text-saffron' : 'text-ink/20 hover:text-ink/40'}"><i class="ph-bold ph-star"></i></button>`).join('');
   }
   // ─── ربط قوقل ماب: الرد التلقائي ───
   let gg = null;
@@ -3379,9 +3341,9 @@ tailwind.config = {
           ${!gg.has_location ? '<div id="gg-locations" class="mt-3 text-sm text-ink/60">جاري جلب فروعك من قوقل…</div>' : ''}
         </div>
         <div class="flex flex-wrap gap-2 shrink-0">
-          ${gg.has_location ? `<button type="button" onclick="syncGoogle(this)" class="bg-brand hover:bg-brand-dark text-cream font-semibold px-4 py-2.5 rounded-xl text-sm transition"><i class="fa-solid fa-rotate"></i> جيب التعليقات الحين</button>` : ''}
-          ${pushOn ? '<span class="text-xs font-semibold text-green-800 bg-green-50 border border-green-200 px-3 py-2.5 rounded-xl"><i class="fa-solid fa-bell"></i> الإشعارات مفعّلة هنا</span>'
-                   : `<button type="button" onclick="enableOwnerPush(this)" class="bg-saffron/15 hover:bg-saffron/25 text-amber-900 font-semibold px-4 py-2.5 rounded-xl text-sm transition"><i class="fa-solid fa-bell"></i> فعّل الإشعارات على هذا الجهاز</button>`}
+          ${gg.has_location ? `<button type="button" onclick="syncGoogle(this)" class="bg-brand hover:bg-brand-dark text-cream font-semibold px-4 py-2.5 rounded-xl text-sm transition"><i class="ph-bold ph-arrows-clockwise"></i> جيب التعليقات الحين</button>` : ''}
+          ${pushOn ? '<span class="text-xs font-semibold text-green-800 bg-green-50 border border-green-200 px-3 py-2.5 rounded-xl"><i class="ph-bold ph-bell"></i> الإشعارات مفعّلة هنا</span>'
+                   : `<button type="button" onclick="enableOwnerPush(this)" class="bg-saffron/15 hover:bg-saffron/25 text-amber-900 font-semibold px-4 py-2.5 rounded-xl text-sm transition"><i class="ph-bold ph-bell"></i> فعّل الإشعارات على هذا الجهاز</button>`}
           <button type="button" onclick="disconnectGoogle()" class="text-ink/60 hover:text-brick font-semibold px-3 py-2.5 rounded-xl text-sm transition">فصل الربط</button>
         </div>
       </div>`;
@@ -3408,7 +3370,7 @@ tailwind.config = {
     catch (e) { showToast(e.message || 'تعذر بدء الربط', true); }
   }
   async function syncGoogle(btn) {
-    btn.disabled = true; const old = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الجلب…';
+    btn.disabled = true; const old = btn.innerHTML; btn.innerHTML = '<i class="ph-bold ph-spinner-gap ph-spin"></i> جاري الجلب…';
     try {
       const r = await api('google-sync', {});
       showToast(r.recent ? 'تحدّث قبل شوي' : r.added ? `وصلت ${r.added} ${r.added === 1 ? 'تعليق جديد' : 'تعليقات جديدة'}` : 'ما فيه تعليقات جديدة بدون رد');
@@ -3475,7 +3437,7 @@ tailwind.config = {
         </div>
         ${d.status === 'failed' && d.error ? `<p class="text-sm text-brick font-semibold">ما انتشر: ${esc(d.error)}</p>` : ''}
         <div class="flex flex-wrap gap-2">
-          <button type="button" data-approve class="bg-brand hover:bg-brand-dark text-cream font-bold px-4 py-2.5 rounded-xl text-sm transition"><i class="fa-solid fa-check"></i> وافق وانشر في قوقل</button>
+          <button type="button" data-approve class="bg-brand hover:bg-brand-dark text-cream font-bold px-4 py-2.5 rounded-xl text-sm transition"><i class="ph-bold ph-check"></i> وافق وانشر في قوقل</button>
           <button type="button" data-dismiss class="text-ink/60 hover:text-ink font-semibold px-3 py-2.5 rounded-xl text-sm transition">تجاهل</button>
         </div>
       </div>`).join('');
@@ -3486,7 +3448,7 @@ tailwind.config = {
     if (e.target.closest('[data-approve]')) {
       const btn = e.target.closest('[data-approve]'), reply = card.querySelector('[data-reply]').value.trim();
       if (!reply) return showToast('الرد فاضي', true);
-      btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري النشر…';
+      btn.disabled = true; btn.innerHTML = '<i class="ph-bold ph-spinner-gap ph-spin"></i> جاري النشر…';
       try { await api('review-approve', { id, reply }); showToast('انتشر ردك في قوقل ماب'); }
       catch (err) { showToast(err.message || 'تعذر النشر', true); }
       loadRvHistory();
@@ -3539,7 +3501,7 @@ tailwind.config = {
     rvError('');
     const btn = document.getElementById('rv-submit'), again = document.getElementById('rv-again');
     btn.disabled = again.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري كتابة الرد…';
+    btn.innerHTML = '<i class="ph-bold ph-spinner-gap ph-spin"></i> جاري كتابة الرد…';
     const body = { review, rating: rv.rating, reviewer: document.getElementById('rv-reviewer').value.trim(), note: document.getElementById('rv-note').value.trim(), tone: rv.tone };
     try {
       const r = await api('review-draft', body);
@@ -3548,7 +3510,7 @@ tailwind.config = {
       if (window.innerWidth < 1024) document.getElementById('rv-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (e) { rvError(e.message || 'تعذر كتابة الرد، جرّب مرة ثانية'); }
     btn.disabled = again.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-pen-nib"></i> اكتب الرد';
+    btn.innerHTML = '<i class="ph-bold ph-pen-nib"></i> اكتب الرد';
   }
   document.getElementById('rv-stars').addEventListener('click', (e) => {
     const b = e.target.closest('[data-star]'); if (!b) return;
@@ -3594,10 +3556,10 @@ tailwind.config = {
 
   // ─── نوع النشاط ───
   const BUSINESS_TYPES = {
-    restaurant: ['مطعم', 'fa-utensils', 'أطباق ووجبات'],
-    cafe:       ['مقهى', 'fa-mug-hot', 'قهوة مختصة ومشروبات'],
-    mixed:      ['مطعم ومقهى', 'fa-burger', 'أطباق وقهوة مختصة'],
-    bakery:     ['مخبز وحلويات', 'fa-bread-slice', 'مخبوزات وحلا']
+    restaurant: ['مطعم', 'ph-fork-knife', 'أطباق ووجبات'],
+    cafe:       ['مقهى', 'ph-coffee', 'قهوة مختصة ومشروبات'],
+    mixed:      ['مطعم ومقهى', 'ph-hamburger', 'أطباق وقهوة مختصة'],
+    bakery:     ['مخبز وحلويات', 'ph-bread', 'مخبوزات وحلا']
   };
   const allowsCoffee = () => ['cafe', 'mixed'].includes(client && client.business_type);
 
@@ -3606,7 +3568,7 @@ tailwind.config = {
     document.getElementById('biz-type').innerHTML = Object.entries(BUSINESS_TYPES).map(([k, [name, icon, hint]]) => `
       <button type="button" onclick="setBusinessType('${k}')"
         class="text-right p-3 rounded-xl border transition ${k === current ? 'bg-brand text-cream border-brand' : 'bg-brand/5 border-brand/15 text-ink/90 hover:bg-brand/10'}">
-        <i class="fa-solid ${icon} ${k === current ? '' : 'text-ink/60'}"></i>
+        <i class="ph-bold ${icon} ${k === current ? '' : 'text-ink/60'}"></i>
         <p class="text-xs font-black mt-1.5">${name}</p>
         <p class="text-[10px] ${k === current ? 'text-cream/70' : 'text-ink/50'}">${hint}</p>
       </button>`).join('');
@@ -3803,7 +3765,7 @@ tailwind.config = {
   async function renameCategory(id) {
     const c = loadedCategories.find(x => x.id === id); if (!c) return;
     const r = await DMDialog.form({
-      title: 'تعديل اسم القسم', subtitle: branches.length > 1 ? 'الاسم الجديد يتطبق على نفس القسم في كل الفروع.' : '', icon: 'fa-layer-group',
+      title: 'تعديل اسم القسم', subtitle: branches.length > 1 ? 'الاسم الجديد يتطبق على نفس القسم في كل الفروع.' : '', icon: 'ph-stack',
       fields: [
         { name: 'name', label: 'اسم القسم', value: c.name || '', maxlength: 60, required: true, placeholder: 'مثال: المشروبات الساخنة' },
         { name: 'en', label: 'الاسم بالإنجليزي', value: c.name_en || '', maxlength: 60, dir: 'ltr', placeholder: 'Hot drinks' }
@@ -3821,7 +3783,7 @@ tailwind.config = {
     const c = loadedCategories.find(x => x.id === id); if (!c) return;
     const groups = categoryGroups();
     const r = await DMDialog.form({
-      title: 'الفئة الرئيسية', subtitle: `لقسم "${c.name}". الأقسام اللي لها نفس الفئة تظهر تحت تبويب واحد أعلى المنيو.`, icon: 'fa-layer-group',
+      title: 'الفئة الرئيسية', subtitle: `لقسم "${c.name}". الأقسام اللي لها نفس الفئة تظهر تحت تبويب واحد أعلى المنيو.`, icon: 'ph-stack',
       fields: [{ name: 'group', label: 'الفئة', value: c.group_name || '', maxlength: 40, placeholder: 'مثال: فطور، غداء، عشاء', suggestions: groups, hint: 'اتركها فاضية لإزالة الفئة.' }]
     });
     if (!r) return;
@@ -3855,17 +3817,17 @@ tailwind.config = {
     const last = loadedCategories.length - 1;
     list.innerHTML = loadedCategories.map((c, i) => `
       <div class="cat-row" data-id="${Number(c.id)}">
-        <span class="cat-grip" aria-hidden="true" title="اسحب لتغيير الترتيب"><i class="fa-solid fa-grip-vertical"></i></span>
+        <span class="cat-grip" aria-hidden="true" title="اسحب لتغيير الترتيب"><i class="ph-bold ph-dots-six-vertical"></i></span>
         <span class="cat-pos">${i + 1}</span>
         <div class="min-w-0 flex-1">
           <p class="text-sm font-semibold text-ink truncate">${esc(c.name)}${c.name_en ? ` <span class="text-ink/50 font-normal text-xs" dir="ltr">${esc(c.name_en)}</span>` : ''}</p>
           <p class="text-xs text-ink/55 mt-0.5"><span class="tnum">${productsInCategory(c).length}</span> طبق${c.group_name ? ` · <span class="text-amber-800 font-semibold">${esc(c.group_name)}</span>` : ''}</p>
         </div>
-        <button onclick="moveCategory(${Number(c.id)}, -1)" ${i === 0 ? 'disabled' : ''} aria-label="تحريك ${esc(c.name)} لأعلى" class="cat-arrow"><i class="fa-solid fa-arrow-up text-xs"></i></button>
-        <button onclick="moveCategory(${Number(c.id)}, 1)" ${i === last ? 'disabled' : ''} aria-label="تحريك ${esc(c.name)} لأسفل" class="cat-arrow"><i class="fa-solid fa-arrow-down text-xs"></i></button>
-        <button onclick="renameCategory(${Number(c.id)})" aria-label="تعديل اسم ${esc(c.name)}" class="cat-act"><i class="fa-solid fa-pen text-[11px]"></i> <span>الاسم</span></button>
-        <button onclick="editCategoryGroup(${Number(c.id)})" aria-label="فئة ${esc(c.name)}" class="cat-act"><i class="fa-solid fa-layer-group text-[11px]"></i> <span>الفئة</span></button>
-        <button onclick="deleteCategory(${Number(c.id)})" aria-label="حذف ${esc(c.name)}" class="cat-act danger"><i class="fa-solid fa-trash text-[11px]"></i> <span>حذف</span></button>
+        <button onclick="moveCategory(${Number(c.id)}, -1)" ${i === 0 ? 'disabled' : ''} aria-label="تحريك ${esc(c.name)} لأعلى" class="cat-arrow"><i class="ph-bold ph-arrow-up text-xs"></i></button>
+        <button onclick="moveCategory(${Number(c.id)}, 1)" ${i === last ? 'disabled' : ''} aria-label="تحريك ${esc(c.name)} لأسفل" class="cat-arrow"><i class="ph-bold ph-arrow-down text-xs"></i></button>
+        <button onclick="renameCategory(${Number(c.id)})" aria-label="تعديل اسم ${esc(c.name)}" class="cat-act"><i class="ph-bold ph-pencil-simple text-[11px]"></i> <span>الاسم</span></button>
+        <button onclick="editCategoryGroup(${Number(c.id)})" aria-label="فئة ${esc(c.name)}" class="cat-act"><i class="ph-bold ph-stack text-[11px]"></i> <span>الفئة</span></button>
+        <button onclick="deleteCategory(${Number(c.id)})" aria-label="حذف ${esc(c.name)}" class="cat-act danger"><i class="ph-bold ph-trash text-[11px]"></i> <span>حذف</span></button>
       </div>`).join('');
     enableCategoryDrag(list);
   }
@@ -3957,7 +3919,7 @@ tailwind.config = {
       return `${header}
         <div class="dish-row ${!isAvailable ? 'sold-out' : ''} ${isHidden ? 'is-hidden' : ''} ${editingProductId === id ? 'is-editing' : ''}">
           <button type="button" class="dish-main" onclick="startEdit(${id})" aria-label="تعديل ${esc(p.name)}">
-            ${img ? `<img src="${esc(img)}" alt="" loading="lazy" class="dish-thumb">` : `<span class="dish-thumb"><i class="fa-solid fa-utensils"></i></span>`}
+            ${img ? `<img src="${esc(img)}" alt="" loading="lazy" class="dish-thumb">` : `<span class="dish-thumb"><i class="ph-bold ph-fork-knife"></i></span>`}
             <span class="dish-text">
               <span class="dish-name block">${esc(p.name)}${isBestseller ? '<span class="dish-tag bg-saffron/15 text-amber-800">مميز</span>' : ''}${isHidden ? '<span class="dish-tag bg-ink/10 text-ink/70">مخفي</span>' : ''}</span>
               ${meta ? `<span class="dish-meta block">${meta}</span>` : ''}
@@ -3968,7 +3930,7 @@ tailwind.config = {
           <button type="button" role="switch" aria-checked="${isAvailable}" aria-label="متوفر: ${esc(p.name)}" class="avail" onclick="toggleField(${id}, 'is_available', ${isAvailable})">
             <span class="avail-track"></span><span class="avail-label">${isAvailable ? 'متوفر' : 'نفدت'}</span>
           </button>
-          <button type="button" class="more-btn" aria-haspopup="menu" aria-expanded="false" aria-label="خيارات ${esc(p.name)}" onclick="openDishMenu(event, ${id})"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+          <button type="button" class="more-btn" aria-haspopup="menu" aria-expanded="false" aria-label="خيارات ${esc(p.name)}" onclick="openDishMenu(event, ${id})"><i class="ph-bold ph-dots-three-vertical"></i></button>
         </div>`;
     }).join('');
   }
@@ -3990,16 +3952,16 @@ tailwind.config = {
     const btn = e.currentTarget, r = btn.getBoundingClientRect();
     const m = document.createElement('div');
     m.id = 'dish-menu'; m.setAttribute('role', 'menu');
-    const item = (icon, label, fn, extra = '') => `<button type="button" role="menuitem" ${extra} onclick="closeDishMenu(); ${fn}"><i class="fa-solid ${icon}"></i> ${label}</button>`;
+    const item = (icon, label, fn, extra = '') => `<button type="button" role="menuitem" ${extra} onclick="closeDishMenu(); ${fn}"><i class="ph-bold ${icon}"></i> ${label}</button>`;
     m.innerHTML = [
-      item('fa-pen', 'تعديل الطبق', `startEdit(${id})`),
-      item('fa-fire', p.is_bestseller ? 'إلغاء التمييز' : 'تمييز الطبق', `toggleField(${id}, 'is_bestseller', ${p.is_bestseller === true})`),
-      item(p.is_hidden ? 'fa-eye' : 'fa-eye-slash', p.is_hidden ? 'إظهار في المنيو' : 'إخفاء من المنيو', `toggleField(${id}, 'is_hidden', ${p.is_hidden === true})`),
+      item('ph-pencil-simple', 'تعديل الطبق', `startEdit(${id})`),
+      item('ph-fire', p.is_bestseller ? 'إلغاء التمييز' : 'تمييز الطبق', `toggleField(${id}, 'is_bestseller', ${p.is_bestseller === true})`),
+      item(p.is_hidden ? 'ph-eye' : 'ph-eye-slash', p.is_hidden ? 'إظهار في المنيو' : 'إخفاء من المنيو', `toggleField(${id}, 'is_hidden', ${p.is_hidden === true})`),
       '<hr>',
-      item('fa-arrow-up', 'تحريك لأعلى', `moveProduct(${id}, -1)`, pos <= 0 ? 'disabled' : ''),
-      item('fa-arrow-down', 'تحريك لأسفل', `moveProduct(${id}, 1)`, pos < 0 || pos >= siblings.length - 1 ? 'disabled' : ''),
+      item('ph-arrow-up', 'تحريك لأعلى', `moveProduct(${id}, -1)`, pos <= 0 ? 'disabled' : ''),
+      item('ph-arrow-down', 'تحريك لأسفل', `moveProduct(${id}, 1)`, pos < 0 || pos >= siblings.length - 1 ? 'disabled' : ''),
       '<hr>',
-      item('fa-trash', 'حذف الطبق', `deleteProduct(${id})`, 'class="danger"')
+      item('ph-trash', 'حذف الطبق', `deleteProduct(${id})`, 'class="danger"')
     ].join('');
     document.body.appendChild(m);
     const w = m.offsetWidth, h = m.offsetHeight;
@@ -4043,7 +4005,7 @@ tailwind.config = {
         <input type="text" maxlength="30" value="${esc(z.name || '')}" oninput="formSizes[${i}].name=this.value" placeholder="${['صغير', 'وسط', 'كبير'][i] || 'الحجم'}" class="input-pro !py-1.5 text-xs flex-1 min-w-0">
         <input type="text" maxlength="30" value="${esc(z.name_en || '')}" oninput="formSizes[${i}].name_en=this.value" placeholder="${['Small', 'Medium', 'Large'][i] || 'Size'}" dir="ltr" class="input-pro !py-1.5 text-xs w-20 sm:w-24">
         <input type="number" min="0" step="any" value="${esc(z.price ?? '')}" oninput="formSizes[${i}].price=this.value" placeholder="${esc(curSign())}" dir="ltr" class="input-pro !py-1.5 text-xs w-20">
-        <button type="button" onclick="formSizes.splice(${i}, 1); renderSizes()" aria-label="حذف الحجم" class="shrink-0 w-9 h-9 rounded-lg bg-red-500/10 text-red-600 border border-red-500/20 hover:bg-red-500/20"><i class="fa-solid fa-xmark"></i></button>
+        <button type="button" onclick="formSizes.splice(${i}, 1); renderSizes()" aria-label="حذف الحجم" class="shrink-0 w-9 h-9 rounded-lg bg-red-500/10 text-red-600 border border-red-500/20 hover:bg-red-500/20"><i class="ph-bold ph-x"></i></button>
       </div>`).join('');
     const on = formSizes.length > 0;
     document.getElementById('price-field').classList.toggle('hidden', on);
@@ -4098,19 +4060,19 @@ tailwind.config = {
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div class="flex items-center gap-2 min-w-0">
               ${c.auto_apply
-                ? '<span class="font-black text-xs text-cream bg-brand px-2.5 py-1 rounded-lg"><i class="fa-solid fa-tag"></i> خصم تلقائي</span>'
+                ? '<span class="font-black text-xs text-cream bg-brand px-2.5 py-1 rounded-lg"><i class="ph-bold ph-tag"></i> خصم تلقائي</span>'
                 : `<span class="font-black text-sm text-ink tracking-wider bg-white border border-dashed border-brand/40 px-2.5 py-1 rounded-lg" dir="ltr">${esc(c.code)}</span>`}
               <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}">${state}</span>
-              ${!c.auto_apply && c.show_in_menu ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-800"><i class="fa-solid fa-eye"></i> ظاهر في المنيو</span>' : ''}
+              ${!c.auto_apply && c.show_in_menu ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-800"><i class="ph-bold ph-eye"></i> ظاهر في المنيو</span>' : ''}
             </div>
             <span class="text-sm font-black text-emerald-700">خصم ${esc(value)}</span>
           </div>
           <p class="text-[11px] text-ink/70">${esc(couponScopeText(c))}${c.min_order != null ? ` · أقل طلب ${esc(money(Number(c.min_order)))}` : ''}</p>
           <p class="text-[10px] text-ink/55">${c.auto_apply ? 'يظهر على الأصناف في المنيو مباشرة' : `استُخدم ${Number(c.uses)}${c.max_uses != null ? ` من ${Number(c.max_uses)}` : ''} مرة`}${dates ? ` · ${esc(dates)}` : ''}</p>
           <div class="flex gap-1.5">
-            <button onclick="editCoupon(${Number(c.id)})" class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold border bg-white text-ink/90 border-brand/20 hover:bg-brand/10"><i class="fa-solid fa-pen text-[9px]"></i> تعديل</button>
+            <button onclick="editCoupon(${Number(c.id)})" class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold border bg-white text-ink/90 border-brand/20 hover:bg-brand/10"><i class="ph-bold ph-pencil-simple text-[9px]"></i> تعديل</button>
             <button onclick="toggleCoupon(${Number(c.id)})" class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold border ${c.is_active ? 'bg-white text-ink/80 border-brand/20' : 'bg-green-500/15 text-green-700 border-green-500/30'}">${c.is_active ? 'إيقاف' : 'تفعيل'}</button>
-            <button onclick="deleteCoupon(${Number(c.id)})" aria-label="حذف" class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold border bg-red-500/10 text-red-600 border-red-500/20"><i class="fa-solid fa-trash"></i></button>
+            <button onclick="deleteCoupon(${Number(c.id)})" aria-label="حذف" class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold border bg-red-500/10 text-red-600 border-red-500/20"><i class="ph-bold ph-trash"></i></button>
           </div>
         </div>`;
     }).join('') : '<p class="text-xs text-ink/60 text-center py-6">ما عندك كوبونات للحين. أنشئ أول كوبون من النموذج.</p>';
@@ -4246,7 +4208,7 @@ tailwind.config = {
     document.getElementById('prod-image-file').value = '';
     document.getElementById('image-hint').textContent = p.image_url ? '(اتركها فارغة للإبقاء على الصورة الحالية)' : '';
     document.getElementById('form-title').textContent = `تعديل: ${p.name}`;
-    document.getElementById('form-icon').className = 'fa-solid fa-pen text-amber-600';
+    document.getElementById('form-icon').className = 'ph-bold ph-pencil-simple text-amber-600';
     document.getElementById('submit-btn').textContent = 'حفظ التعديلات';
     document.getElementById('cancel-edit-btn').classList.remove('hidden');
     renderAlsoBranches();
@@ -4274,7 +4236,7 @@ tailwind.config = {
     renderSizes();
     document.getElementById('image-hint').textContent = '';
     document.getElementById('form-title').textContent = 'إضافة طبق أو منتج جديد';
-    document.getElementById('form-icon').className = 'fa-solid fa-plus text-ink';
+    document.getElementById('form-icon').className = 'ph-bold ph-plus text-ink';
     document.getElementById('submit-btn').textContent = 'حفظ وإضافة الطبق';
     document.getElementById('cancel-edit-btn').classList.add('hidden');
     renderAlsoBranches();

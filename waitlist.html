@@ -9,20 +9,13 @@
 <meta name="theme-color" content="#384f3d">
 <title>قائمة الانتظار | DEV MENU</title>
 
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/css/fonts.css">
+<link rel="stylesheet" href="/css/icons.css">
 <script src="js/api.js"></script>
 <script src="js/dialog.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-
-<script>
-tailwind.config = { theme: { extend: {
-  colors: { sand: '#efe5dc', cream: '#faf6f1', ink: '#22362a', brand: { DEFAULT: '#384f3d', dark: '#2a3e2f' } }
-}}};
-</script>
 
 <style>
-  body { font-family: 'Cairo', sans-serif; background: #efe5dc; color: #22362a; min-height: 100vh; -webkit-text-size-adjust: 100%; }
+  body { font-family: 'IBM Plex Sans Arabic', sans-serif; background: #efe5dc; color: #22362a; min-height: 100vh; -webkit-text-size-adjust: 100%; }
   .card { background: #faf6f1; border: 1px solid rgba(56,79,61,.14); border-radius: 22px; box-shadow: 0 18px 40px -24px rgba(34,54,42,.35); }
   .field { width: 100%; background: #fff; border: 1.5px solid rgba(56,79,61,.2); border-radius: 14px; padding: .8rem 1rem; font-size: 16px; color: #22362a; transition: all .2s; }
   .field:focus { outline: none; border-color: #384f3d; box-shadow: 0 0 0 3px rgba(56,79,61,.12); }
@@ -34,6 +27,7 @@ tailwind.config = { theme: { extend: {
   .pulse-ring { animation: ring 2s ease-out infinite; }
   @keyframes ring { 0% { box-shadow: 0 0 0 0 rgba(21,128,61,.45); } 100% { box-shadow: 0 0 0 22px rgba(21,128,61,0); } }
 </style>
+<link rel="stylesheet" href="/css/tw/waitlist.css">
 </head>
 <body class="px-4 py-6" style="padding-bottom: calc(24px + env(safe-area-inset-bottom))">
 
@@ -45,17 +39,17 @@ tailwind.config = { theme: { extend: {
       <img id="store-logo" src="images/logo.jpeg" alt="" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='images/logo.jpeg'">
     </div>
     <h1 id="store-name" class="text-xl font-black">...</h1>
-    <p class="text-xs font-bold text-ink/55"><i class="fa-solid fa-hourglass-half"></i> قائمة الانتظار</p>
+    <p class="text-xs font-bold text-ink/55"><i class="ph-bold ph-hourglass-medium"></i> قائمة الانتظار</p>
   </header>
 
   <!-- جاري التحميل -->
   <div id="view-loading" class="card p-8 text-center text-sm text-ink/60">
-    <i class="fa-solid fa-spinner fa-spin"></i> جاري التحميل...
+    <i class="ph-bold ph-spinner-gap ph-spin"></i> جاري التحميل...
   </div>
 
   <!-- غير متاحة -->
   <div id="view-unavailable" class="hidden card p-8 text-center space-y-2">
-    <div class="w-14 h-14 mx-auto rounded-2xl bg-brand/10 flex items-center justify-center text-xl"><i class="fa-solid fa-store-slash"></i></div>
+    <div class="w-14 h-14 mx-auto rounded-2xl bg-brand/10 flex items-center justify-center text-xl"><i class="ph-bold ph-prohibit"></i></div>
     <p id="unavailable-title" class="font-black">قائمة الانتظار غير متاحة حالياً</p>
     <p id="unavailable-sub" class="text-xs text-ink/60">جرّب لاحقاً أو اسأل الاستقبال.</p>
   </div>
@@ -100,9 +94,9 @@ tailwind.config = { theme: { extend: {
       <div data-field="seating">
         <span class="lbl">تفضيل الجلسة <span class="req hidden">*</span></span>
         <div class="grid grid-cols-3 gap-2">
-          <label><input type="radio" name="seating" value="indoor" class="peer hidden"><span class="chip"><i class="fa-solid fa-house"></i> داخلي</span></label>
-          <label><input type="radio" name="seating" value="outdoor" class="peer hidden"><span class="chip"><i class="fa-solid fa-tree"></i> خارجي</span></label>
-          <label><input type="radio" name="seating" value="any" class="peer hidden"><span class="chip"><i class="fa-solid fa-shuffle"></i> أي مكان</span></label>
+          <label><input type="radio" name="seating" value="indoor" class="peer hidden"><span class="chip"><i class="ph-bold ph-house"></i> داخلي</span></label>
+          <label><input type="radio" name="seating" value="outdoor" class="peer hidden"><span class="chip"><i class="ph-bold ph-tree"></i> خارجي</span></label>
+          <label><input type="radio" name="seating" value="any" class="peer hidden"><span class="chip"><i class="ph-bold ph-shuffle"></i> أي مكان</span></label>
         </div>
       </div>
       <div data-field="notes">
@@ -115,14 +109,14 @@ tailwind.config = { theme: { extend: {
       <p id="form-error" class="hidden text-xs font-bold text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2"></p>
 
       <button type="submit" id="join-btn" class="w-full bg-brand hover:bg-brand-dark text-cream font-black text-sm py-4 rounded-2xl transition flex items-center justify-center gap-2 disabled:opacity-60">
-        <i class="fa-solid fa-user-plus"></i> <span>سجّلني في قائمة الانتظار</span>
+        <i class="ph-bold ph-user-plus"></i> <span>سجّلني في قائمة الانتظار</span>
       </button>
     </form>
   </section>
 
   <!-- مغلقة -->
   <div id="view-closed" class="hidden card p-8 text-center space-y-2">
-    <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl"><i class="fa-solid fa-door-closed"></i></div>
+    <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl"><i class="ph-bold ph-door"></i></div>
     <p class="font-black">قائمة الانتظار مغلقة حالياً</p>
     <p class="text-xs text-ink/60">المطعم ما يستقبل تسجيلات جديدة الحين. جرّب بعد شوي.</p>
   </div>
@@ -138,11 +132,11 @@ tailwind.config = { theme: { extend: {
       <div id="st-body" class="space-y-3"></div>
     </div>
     <div id="st-actions" class="space-y-2"></div>
-    <p class="text-center text-[10px] text-ink/45"><i class="fa-solid fa-rotate"></i> الصفحة تتحدث تلقائياً</p>
+    <p class="text-center text-[10px] text-ink/45"><i class="ph-bold ph-arrows-clockwise"></i> الصفحة تتحدث تلقائياً</p>
   </section>
 
   <footer class="text-center pt-4">
-    <a id="menu-link" href="#" class="text-[11px] font-bold text-ink/55 hover:text-ink"><i class="fa-solid fa-utensils"></i> تصفّح المنيو وأنت تنتظر</a>
+    <a id="menu-link" href="#" class="text-[11px] font-bold text-ink/55 hover:text-ink"><i class="ph-bold ph-fork-knife"></i> تصفّح المنيو وأنت تنتظر</a>
     <p class="text-[10px] text-ink/35 mt-2">DEV MENU</p>
   </footer>
 </main>
@@ -257,7 +251,7 @@ tailwind.config = { theme: { extend: {
       </div>
       <p class="text-xs font-bold text-ink/65 leading-relaxed">${s.position === 1 ? 'أنت التالي! جهّز نفسك 👌' : 'أنت في القائمة ✅ راح يوصلك بريد أول ما تجهز طاولتك.'}</p>`,
     notified: (s) => `
-      <div class="pulse-ring mx-auto w-20 h-20 rounded-full bg-green-600 text-white flex items-center justify-center text-3xl"><i class="fa-solid fa-bell-concierge"></i></div>
+      <div class="pulse-ring mx-auto w-20 h-20 rounded-full bg-green-600 text-white flex items-center justify-center text-3xl"><i class="ph-bold ph-bell-simple-ringing"></i></div>
       <p class="text-2xl font-black text-green-700">طاولتك جاهزة! 🎉</p>
       <p class="text-sm font-bold text-ink/75 leading-relaxed">توجّه للاستقبال خلال <b>${s.hold_minutes} دقائق</b> وأخبرهم برقم دورك.</p>`,
     seated: () => `<p class="text-lg font-black">أهلاً وسهلاً 🌿</p><p class="text-xs text-ink/60">نتمنى لك وقت ممتع.</p>`,
@@ -284,8 +278,8 @@ tailwind.config = { theme: { extend: {
 
     const active = st === 'waiting' || st === 'notified';
     document.getElementById('st-actions').innerHTML = active
-      ? `<button onclick="cancelEntry()" class="w-full bg-cream border border-red-300 text-red-700 font-bold text-xs py-3 rounded-2xl"><i class="fa-solid fa-xmark"></i> إلغاء تسجيلي</button>`
-      : `<button onclick="newEntry()" class="w-full bg-brand text-cream font-black text-sm py-3.5 rounded-2xl"><i class="fa-solid fa-user-plus"></i> تسجيل جديد</button>`;
+      ? `<button onclick="cancelEntry()" class="w-full bg-cream border border-red-300 text-red-700 font-bold text-xs py-3 rounded-2xl"><i class="ph-bold ph-x"></i> إلغاء تسجيلي</button>`
+      : `<button onclick="newEntry()" class="w-full bg-brand text-cream font-black text-sm py-3.5 rounded-2xl"><i class="ph-bold ph-user-plus"></i> تسجيل جديد</button>`;
 
     // تنبيه لحظة جهوز الطاولة
     if (st === 'notified' && lastStatus && lastStatus !== 'notified' && navigator.vibrate) navigator.vibrate([300, 150, 300]);

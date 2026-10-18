@@ -8,15 +8,9 @@
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
 <title>تسجيل الدخول | DEV MENU</title>
 
-<!-- Tailwind CSS & FontAwesome -->
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/css/fonts.css">
+<link rel="stylesheet" href="/css/icons.css">
 <script src="js/api.js"></script>
-
-<!-- Google Fonts -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 
 <style>
   :root {
@@ -28,7 +22,7 @@
     --gold-deep: #8a6d0f;
   }
   * { -webkit-tap-highlight-color: transparent; }
-  body { font-family: 'Cairo', sans-serif; background-color: var(--sand); color: #1b3022; min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 20px; overflow-x: hidden; }
+  body { font-family: 'IBM Plex Sans Arabic', sans-serif; background-color: var(--sand); color: #1b3022; min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 20px; overflow-x: hidden; }
 
   .page-bg {
     position: fixed; inset: 0; z-index: -1; pointer-events: none;
@@ -70,7 +64,7 @@
 
   .otp-box {
     width: 44px; height: 54px; text-align: center; font-size: 1.4rem; font-weight: 900;
-    font-family: 'Cairo', sans-serif; background: var(--cream); border: 1.5px solid #d8d2c2;
+    font-family: 'IBM Plex Sans Arabic', sans-serif; background: var(--cream); border: 1.5px solid #d8d2c2;
     border-radius: 14px; color: var(--brand); transition: all .2s;
   }
   .otp-box:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 4px rgba(35,61,44,.08); transform: translateY(-2px); }
@@ -91,6 +85,7 @@
   .toast-success i { color: #4ade80; }
   .toast-error i { color: #fbbf24; }
 </style>
+<link rel="stylesheet" href="/css/tw/login.css">
 </head>
 <body>
 
@@ -103,14 +98,14 @@
     <span class="font-black text-sm tracking-widest text-brand">DEV MENU</span>
   </div>
   <a href="index.html" class="text-xs font-bold bg-white border border-[#233d2c]/20 px-4 py-2 rounded-xl text-brand hover:bg-[#f5f2eb] transition shadow-sm">
-    <i class="fa-solid fa-house ml-1"></i> الرئيسية
+    <i class="ph-bold ph-house ml-1"></i> الرئيسية
   </a>
 </header>
 
 <div class="pro-card p-6 md:p-8 w-full max-w-md space-y-6 my-auto">
   <div class="text-center space-y-2">
     <div class="w-12 h-12 rounded-2xl bg-[#233d2c]/10 text-brand border border-[#233d2c]/20 flex items-center justify-center mx-auto text-xl">
-      <i class="fa-solid fa-user-lock"></i>
+      <i class="ph-bold ph-lock-key"></i>
     </div>
     <h1 id="main-title" class="text-lg font-black text-brand">تسجيل الدخول</h1>
     <p id="main-desc" class="text-xs text-gray-600">ادخل بحساب Google، أو ببريدك الإلكتروني ورمز تحقق.</p>
@@ -130,13 +125,13 @@
     <div>
       <label class="lbl">البريد الإلكتروني</label>
       <div class="relative">
-        <i class="fa-solid fa-envelope absolute start-3.5 top-1/2 -translate-y-1/2 text-brand/40 text-xs"></i>
+        <i class="ph-bold ph-envelope-simple absolute start-3.5 top-1/2 -translate-y-1/2 text-brand/40 text-xs"></i>
         <input type="email" id="identifier-input" placeholder="example@mail.com" required class="input-pro" dir="ltr">
       </div>
     </div>
     <button type="submit" id="send-otp-btn" class="w-full btn-primary font-bold py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
       <span id="btn-text">إرسال رمز التحقق للبريد</span>
-      <i id="btn-spinner" class="fa-solid fa-spinner fa-spin hidden"></i>
+      <i id="btn-spinner" class="ph-bold ph-spinner-gap ph-spin hidden"></i>
     </button>
   </form>
 
@@ -162,7 +157,7 @@
 
     <button type="submit" id="verify-otp-btn" class="w-full btn-primary font-bold py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
       <span id="v-btn-text">تأكيد الرمز ودخول لوحة التحكم</span>
-      <i id="v-btn-spinner" class="fa-solid fa-spinner fa-spin hidden"></i>
+      <i id="v-btn-spinner" class="ph-bold ph-spinner-gap ph-spin hidden"></i>
     </button>
 
     <div class="text-center">
@@ -193,7 +188,7 @@
     const el = document.createElement('div');
     el.className = `toast toast-${type}`;
     const icon = document.createElement('i');
-    icon.className = `fa-solid ${type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check'}`;
+    icon.className = `ph-bold ${type === 'error' ? 'ph-warning-circle' : 'ph-check-circle'}`;
     const text = document.createElement('span');
     text.textContent = msg;
     el.append(icon, text);

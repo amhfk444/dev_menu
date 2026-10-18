@@ -9,15 +9,14 @@
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
 <meta name="theme-color" content="#233d2c">
 <title>شاشة البيجر | DEV MENU</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/css/fonts.css">
+<link rel="stylesheet" href="/css/icons.css">
 <!-- رمز QR بنقاط دائرية وعيون مزخرفة -->
-<script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.6.0/lib/qr-code-styling.js"></script>
+<script src="/js/vendor/qr-code-styling.js"></script>
 <script src="js/api.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   :root { --brand: #233d2c; --sand: #f5f2eb; --gold: #c9a227; }
-  body { font-family: 'Cairo', sans-serif; background: var(--sand); color: #1b3022; }
+  body { font-family: 'IBM Plex Sans Arabic', sans-serif; background: var(--sand); color: #1b3022; }
   .panel { background: #fff; border: 1.5px solid rgba(35,61,44,.12); border-radius: 26px; }
   .tile { border-radius: 22px; padding: 18px 10px 14px; text-align: center; font-weight: 900; transition: transform .12s, box-shadow .2s; user-select: none; }
   .tile:active { transform: scale(.96); }
@@ -45,6 +44,7 @@
     #print-card { position: fixed; inset: 0; margin: auto; box-shadow: none; }
   }
 </style>
+<link rel="stylesheet" href="/css/tw/pager-desk.css">
 </head>
 <body class="min-h-screen">
 <div id="toast" class="fixed top-4 inset-x-0 mx-auto w-fit z-50 hidden bg-[#15271b] text-[#f5f2eb] text-sm font-black px-5 py-3 rounded-2xl shadow-xl"></div>
@@ -52,13 +52,13 @@
 <header class="sticky top-0 z-40 bg-[#f5f2eb]/90 backdrop-blur border-b border-[#233d2c]/10">
   <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
     <div class="flex items-center gap-3 min-w-0">
-      <a href="admin.html" class="w-10 h-10 rounded-xl bg-white border border-[#233d2c]/15 grid place-items-center text-[#233d2c]" title="لوحة التحكم"><i class="fa-solid fa-arrow-right"></i></a>
+      <a href="admin.html" class="w-10 h-10 rounded-xl bg-white border border-[#233d2c]/15 grid place-items-center text-[#233d2c]" title="لوحة التحكم"><i class="ph-bold ph-arrow-right"></i></a>
       <div class="min-w-0">
-        <h1 class="text-base font-black truncate"><i class="fa-solid fa-bell text-[#c9a227]"></i> شاشة البيجر — <span id="store-name">…</span></h1>
+        <h1 class="text-base font-black truncate"><i class="ph-bold ph-bell text-[#c9a227]"></i> شاشة البيجر — <span id="store-name">…</span></h1>
         <p class="text-[11px] font-bold opacity-55">اضغط على الرقم لما يجهز الطلب، ويرن جوال العميل</p>
       </div>
     </div>
-    <button id="qr-btn" class="mini bg-white border border-[#233d2c]/15 shrink-0"><i class="fa-solid fa-qrcode"></i> QR للطباعة</button>
+    <button id="qr-btn" class="mini bg-white border border-[#233d2c]/15 shrink-0"><i class="ph-bold ph-qr-code"></i> QR للطباعة</button>
   </div>
 </header>
 
@@ -66,10 +66,10 @@
   <section class="panel p-5">
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-lg font-black">قيد التجهيز <span id="wait-count" class="text-sm opacity-50"></span></h2>
-      <span class="text-[11px] font-bold opacity-50"><i class="fa-solid fa-rotate"></i> يتحدث تلقائياً</span>
+      <span class="text-[11px] font-bold opacity-50"><i class="ph-bold ph-arrows-clockwise"></i> يتحدث تلقائياً</span>
     </div>
     <div class="relative mb-4">
-      <i class="fa-solid fa-magnifying-glass absolute start-4 top-1/2 -translate-y-1/2 opacity-40"></i>
+      <i class="ph-bold ph-magnifying-glass absolute start-4 top-1/2 -translate-y-1/2 opacity-40"></i>
       <input id="search" type="text" inputmode="numeric" autocomplete="off" placeholder="ابحث برقم الفاتورة أو رقم البيجر…" class="w-full bg-[#f5f2eb] border border-[#233d2c]/15 rounded-2xl py-3 ps-11 pe-4 text-base font-black outline-none focus:border-[#233d2c]">
     </div>
     <div id="wait-grid" class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-7 gap-3"></div>
@@ -113,9 +113,9 @@
       <div class="qr-card-foot"><span id="qr-url" dir="ltr" class="truncate"></span><span class="shrink-0">DEV MENU</span></div>
     </div>
     <div class="flex gap-2 print:hidden">
-      <button onclick="window.print()" class="flex-1 bg-[#c9a227] text-[#15271b] font-black rounded-2xl py-3"><i class="fa-solid fa-print"></i> طباعة</button>
-      <button id="qr-download" class="flex-1 bg-white font-black rounded-2xl py-3"><i class="fa-solid fa-download"></i> تحميل الرمز</button>
-      <button id="qr-close" class="bg-white/15 text-white font-black rounded-2xl px-4 py-3" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
+      <button onclick="window.print()" class="flex-1 bg-[#c9a227] text-[#15271b] font-black rounded-2xl py-3"><i class="ph-bold ph-printer"></i> طباعة</button>
+      <button id="qr-download" class="flex-1 bg-white font-black rounded-2xl py-3"><i class="ph-bold ph-download-simple"></i> تحميل الرمز</button>
+      <button id="qr-close" class="bg-white/15 text-white font-black rounded-2xl px-4 py-3" aria-label="إغلاق"><i class="ph-bold ph-x"></i></button>
     </div>
   </div>
 </div>
@@ -163,10 +163,10 @@
   $('search').addEventListener('input', () => render());
 
   function ringLabel(t) {
-    if (t.acked_at) return '<span class="text-emerald-700"><i class="fa-solid fa-circle-check"></i> شاف التنبيه</span>';
-    if (!t.has_push) return `<i class="fa-solid fa-bell fa-shake"></i> جاهز من ${ago(t.ready_at)}`;
+    if (t.acked_at) return '<span class="text-emerald-700"><i class="ph-bold ph-check-circle"></i> شاف التنبيه</span>';
+    if (!t.has_push) return `<i class="ph-bold ph-bell ph-shake"></i> جاهز من ${ago(t.ready_at)}`;
     const n = t.ring_count || 0;
-    return n >= maxRings ? `<i class="fa-solid fa-bell-slash"></i> رنّ ${n} مرات — نادِه` : `<i class="fa-solid fa-bell fa-shake"></i> رنّة ${n}/${maxRings}`;
+    return n >= maxRings ? `<i class="ph-bold ph-bell-slash"></i> رنّ ${n} مرات — نادِه` : `<i class="ph-bold ph-bell ph-shake"></i> رنّة ${n}/${maxRings}`;
   }
 
   // تكرار الإشعار: كل 30 ثانية نطلب من الخادم يعيد الرنين لمن ما شاف التنبيه
@@ -195,9 +195,9 @@
           ${t.invoice_no ? `🧾 ${esc(t.invoice_no)}` : '🧾 أضف الفاتورة'}
         </button>
         <button class="mini w-full mt-1.5 bg-white text-[#233d2c]" data-ready="${t.id}" ${busy.has(t.id) ? 'disabled' : ''}>
-          ${busy.has(t.id) ? '<i class="fa-solid fa-spinner fa-spin"></i>' : '<i class="fa-solid fa-bell"></i> جاهز'}
+          ${busy.has(t.id) ? '<i class="ph-bold ph-spinner-gap ph-spin"></i>' : '<i class="ph-bold ph-bell"></i> جاهز'}
         </button>
-        <div class="text-[10px] mt-1.5 opacity-50">${ago(t.created_at)}${t.has_push ? ' · <i class="fa-solid fa-mobile-screen" title="الإشعارات مفعّلة"></i>' : ''}</div>
+        <div class="text-[10px] mt-1.5 opacity-50">${ago(t.created_at)}${t.has_push ? ' · <i class="ph-bold ph-device-mobile" title="الإشعارات مفعّلة"></i>' : ''}</div>
       </div>`).join('');
     $('ready-grid').innerHTML = ready.map(t => `
       <div class="tile tile-ready">
@@ -205,8 +205,8 @@
         ${t.invoice_no ? `<div class="text-[12px] font-black mt-1">🧾 ${esc(t.invoice_no)}</div>` : ''}
         <div class="text-[11px] mt-1 opacity-70">${ringLabel(t)}</div>
         <div class="flex gap-1.5 mt-3">
-          <button class="mini flex-1 bg-[#233d2c] text-white" data-done="${t.id}"><i class="fa-solid fa-check"></i> استلم</button>
-          <button class="mini bg-white border border-[#c9a227]/40" data-undo="${t.id}" title="إرجاع للتجهيز"><i class="fa-solid fa-rotate-left"></i></button>
+          <button class="mini flex-1 bg-[#233d2c] text-white" data-done="${t.id}"><i class="ph-bold ph-check"></i> استلم</button>
+          <button class="mini bg-white border border-[#c9a227]/40" data-undo="${t.id}" title="إرجاع للتجهيز"><i class="ph-bold ph-arrow-counter-clockwise"></i></button>
         </div>
       </div>`).join('');
   }

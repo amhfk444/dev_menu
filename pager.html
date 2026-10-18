@@ -12,13 +12,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="البيجر">
 <title>البيجر | DEV MENU</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/css/fonts.css">
+<link rel="stylesheet" href="/css/icons.css">
 <script src="js/api.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   :root { --brand: #233d2c; --sand: #f5f2eb; --gold: #c9a227; }
-  body { font-family: 'Cairo', sans-serif; background: var(--sand); color: #1b3022; min-height: 100vh; min-height: 100dvh; -webkit-text-size-adjust: 100%; }
+  body { font-family: 'IBM Plex Sans Arabic', sans-serif; background: var(--sand); color: #1b3022; min-height: 100vh; min-height: 100dvh; -webkit-text-size-adjust: 100%; }
   .card { background: #fff; border: 1.5px solid rgba(35,61,44,.12); border-radius: 28px; box-shadow: 0 30px 60px -36px rgba(35,61,44,.45); }
   .btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; border-radius: 18px; padding: 18px; font-weight: 900; font-size: 17px; transition: transform .15s; }
   .btn:active { transform: scale(.98); }
@@ -45,34 +44,35 @@
   .mm-card.pop { animation: mmPop .35s ease; }
   .hidden { display: none !important; }
 </style>
+<link rel="stylesheet" href="/css/tw/pager.css">
 </head>
 <body class="flex flex-col items-center px-5 py-8">
 
 <header class="text-center mb-6">
   <img id="logo" alt="" class="w-16 h-16 rounded-2xl object-cover mx-auto mb-3 bg-white border border-[#233d2c]/10 hidden">
   <h1 id="store-name" class="text-xl font-black">…</h1>
-  <p class="text-xs font-bold opacity-60"><i class="fa-solid fa-bell"></i> البيجر الرقمي</p>
+  <p class="text-xs font-bold opacity-60"><i class="ph-bold ph-bell"></i> البيجر الرقمي</p>
 </header>
 
 <main class="w-full max-w-sm space-y-4">
   <!-- جاري التحميل -->
-  <section id="v-loading" class="card p-10 text-center"><i class="fa-solid fa-spinner fa-spin text-2xl opacity-50"></i></section>
+  <section id="v-loading" class="card p-10 text-center"><i class="ph-bold ph-spinner-gap ph-spin text-2xl opacity-50"></i></section>
 
   <!-- غير متاح -->
   <section id="v-unavailable" class="card p-8 text-center space-y-2 hidden">
-    <i class="fa-solid fa-circle-exclamation text-3xl text-amber-600"></i>
+    <i class="ph-bold ph-warning-circle text-3xl text-amber-600"></i>
     <h2 id="u-title" class="text-lg font-black">البيجر غير متاح حالياً</h2>
     <p id="u-sub" class="text-sm font-bold opacity-60">اسأل الكاشير.</p>
   </section>
 
   <!-- أخذ رقم -->
   <section id="v-start" class="card p-7 text-center space-y-5 hidden">
-    <div class="w-20 h-20 rounded-3xl bg-[#233d2c] text-[#c9a227] grid place-items-center mx-auto text-3xl"><i class="fa-solid fa-bell"></i></div>
+    <div class="w-20 h-20 rounded-3xl bg-[#233d2c] text-[#c9a227] grid place-items-center mx-auto text-3xl"><i class="ph-bold ph-bell"></i></div>
     <div>
       <h2 class="text-2xl font-black">خذ رقمك</h2>
       <p class="text-sm font-bold opacity-65 mt-2 leading-relaxed">بعدها قل الرقم للكاشير مع طلبك. ولما يجهز طلبك، بيرن جوالك تلقائياً.</p>
     </div>
-    <button id="take-btn" class="btn btn-brand"><i class="fa-solid fa-ticket"></i> خذ رقمي وفعّل التنبيه</button>
+    <button id="take-btn" class="btn btn-brand"><i class="ph-bold ph-ticket"></i> خذ رقمي وفعّل التنبيه</button>
   </section>
 
   <!-- ينتظر -->
@@ -85,14 +85,14 @@
       <span class="pulse-dot"></span> جاري التجهيز… بنرن جوالك أول ما يجهز
     </div>
     <div id="push-on" class="hidden text-[13px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl py-3 px-3">✅ الإشعارات مفعّلة — بيوصلك التنبيه حتى لو قفلت الجوال</div>
-    <button id="push-btn" class="btn btn-brand hidden"><i class="fa-solid fa-bell"></i> فعّل الإشعارات (يوصلك والجوال مقفول)</button>
+    <button id="push-btn" class="btn btn-brand hidden"><i class="ph-bold ph-bell"></i> فعّل الإشعارات (يوصلك والجوال مقفول)</button>
     <div id="keep-on" class="hidden text-[13px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl py-3 px-3">✅ التنبيه شغّال — بيرن جوالك حتى لو طلعت من الصفحة أو قفلت الشاشة</div>
-    <button id="keep-btn" class="btn btn-brand hidden"><i class="fa-solid fa-bell"></i> فعّل التنبيه وانت برا الصفحة</button>
-    <button id="unlock-btn" class="btn btn-brand hidden"><i class="fa-solid fa-volume-high"></i> فعّل صوت التنبيه</button>
+    <button id="keep-btn" class="btn btn-brand hidden"><i class="ph-bold ph-bell"></i> فعّل التنبيه وانت برا الصفحة</button>
+    <button id="unlock-btn" class="btn btn-brand hidden"><i class="ph-bold ph-speaker-high"></i> فعّل صوت التنبيه</button>
     <ul class="text-[12.5px] font-bold opacity-70 space-y-1.5 text-right bg-[#f5f2eb] rounded-2xl p-4">
-      <li><i class="fa-solid fa-mobile-screen ml-1"></i> تقدر تطلع من الصفحة وتقفل الجوال، بس لا تسكّر المتصفح</li>
-      <li><i class="fa-solid fa-volume-high ml-1"></i> ارفع صوت الجوال (صوت الوسائط)</li>
-      <li><i class="fa-solid fa-music ml-1"></i> لا تشغّل مقطع أو موسيقى ثانية وانت تنتظر</li>
+      <li><i class="ph-bold ph-device-mobile ml-1"></i> تقدر تطلع من الصفحة وتقفل الجوال، بس لا تسكّر المتصفح</li>
+      <li><i class="ph-bold ph-speaker-high ml-1"></i> ارفع صوت الجوال (صوت الوسائط)</li>
+      <li><i class="ph-bold ph-music-notes ml-1"></i> لا تشغّل مقطع أو موسيقى ثانية وانت تنتظر</li>
     </ul>
     <button id="test-btn" class="text-xs font-black opacity-60 underline">جرّب صوت التنبيه</button>
   </section>
@@ -122,15 +122,15 @@
     <div id="r-number" class="num">—</div>
     <p id="r-invoice" class="hidden text-base font-black">🧾 فاتورة <span dir="ltr"></span></p>
     <p class="text-sm font-bold opacity-70">تفضّل استلمه من الكاشير</p>
-    <button id="got-btn" class="btn btn-brand"><i class="fa-solid fa-check"></i> استلمت طلبي</button>
+    <button id="got-btn" class="btn btn-brand"><i class="ph-bold ph-check"></i> استلمت طلبي</button>
   </section>
 
   <!-- انتهى -->
   <section id="v-done" class="card p-8 text-center space-y-4 hidden">
-    <i class="fa-solid fa-circle-check text-4xl text-emerald-600"></i>
+    <i class="ph-bold ph-check-circle text-4xl text-emerald-600"></i>
     <h2 id="d-title" class="text-xl font-black">بالعافية!</h2>
     <p id="d-sub" class="text-sm font-bold opacity-60">نتشرف بزيارتك مرة ثانية.</p>
-    <button id="new-btn" class="btn btn-ghost"><i class="fa-solid fa-ticket"></i> خذ رقم جديد</button>
+    <button id="new-btn" class="btn btn-ghost"><i class="ph-bold ph-ticket"></i> خذ رقم جديد</button>
   </section>
 </main>
 
@@ -342,7 +342,7 @@
     unlockAudio(); startKeeper();
     // طلب الإذن لازم يبدأ من ضغطة العميل نفسها
     const perm = pushSupported() && Notification.permission === 'default' ? Notification.requestPermission().catch(() => {}) : null;
-    const btn = $('take-btn'); btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    const btn = $('take-btn'); btn.disabled = true; btn.innerHTML = '<i class="ph-bold ph-spinner-gap ph-spin"></i>';
     try {
       const r = await DM.post('/api/pager?action=take', { slug });
       saveToken(r.token); setStore(r.store); dismissed = false;
@@ -352,10 +352,10 @@
     } catch (e) {
       stopKeeper();
       unavailable(e.code === 'FULL' ? 'وصلنا الحد اليومي للأرقام' : 'تعذر أخذ رقم', 'اسأل الكاشير.');
-    } finally { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-ticket"></i> خذ رقمي وفعّل التنبيه'; }
+    } finally { btn.disabled = false; btn.innerHTML = '<i class="ph-bold ph-ticket"></i> خذ رقمي وفعّل التنبيه'; }
   };
   // ─── لعبة الانتظار: طابق البطاقات (8 أزواج) ───
-  const MM_ICONS = ['fa-mug-hot', 'fa-burger', 'fa-pizza-slice', 'fa-ice-cream', 'fa-cookie', 'fa-lemon', 'fa-carrot', 'fa-fish'];
+  const MM_ICONS = ['ph-coffee', 'ph-hamburger', 'ph-pizza', 'ph-ice-cream', 'ph-cookie', 'ph-orange-slice', 'ph-carrot', 'ph-fish'];
   const mm = { cards: [], open: [], moves: 0, matched: 0, lock: false };
   const mmBestKey = 'dm_pager_memory_best';
   function mmShowBest() {
@@ -369,7 +369,7 @@
     $('mm-grid').innerHTML = mm.cards.map((c, i) => `
       <button type="button" class="mm-card" data-i="${i}" aria-label="بطاقة ${i + 1}">
         <span class="mm-face mm-back" aria-hidden="true"></span>
-        <span class="mm-face mm-front" aria-hidden="true"><i class="fa-solid ${c.icon}"></i></span>
+        <span class="mm-face mm-front" aria-hidden="true"><i class="ph-bold ${c.icon}"></i></span>
       </button>`).join('');
     mmShowBest();
   }

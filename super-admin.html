@@ -10,23 +10,13 @@
 <meta name="robots" content="noindex, nofollow">
 <title>لوحة المشتركين | DEV MENU</title>
 
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/css/fonts.css">
+<link rel="stylesheet" href="/css/icons.css">
 <script src="js/api.js"></script>
 <script src="js/dialog.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Bagel+Fat+One&family=Crimson+Pro:wght@500&display=swap" rel="stylesheet">
-
-<script>
-tailwind.config = { theme: { extend: {
-  colors: { sand: '#efe5dc', cream: '#faf6f1', ink: '#22362a', brand: { DEFAULT: '#384f3d', dark: '#2a3e2f', light: '#4a6650' } },
-  fontFamily: { logo: ['"Bagel Fat One"', 'Cairo', 'sans-serif'], serif: ['"Crimson Pro"', 'Georgia', 'serif'] }
-}}};
-</script>
 
 <style>
-  @font-face { font-family: 'SaudiRiyal'; src: url('https://cdn.jsdelivr.net/npm/@emran-alhaddad/saudi-riyal-font@1.1.0/fonts/regular/saudi_riyal.woff2') format('woff2'); font-weight: 100 600; font-display: swap; unicode-range: U+20C1; }
-  @font-face { font-family: 'SaudiRiyal'; src: url('https://cdn.jsdelivr.net/npm/@emran-alhaddad/saudi-riyal-font@1.1.0/fonts/bold/saudi_riyal.woff2') format('woff2'); font-weight: 700 900; font-display: swap; unicode-range: U+20C1; }
-  body { font-family: 'SaudiRiyal', 'Cairo', sans-serif; background: #efe5dc; color: #22362a; min-height: 100vh; -webkit-text-size-adjust: 100%; }
+  body { font-family: 'SaudiRiyal', 'IBM Plex Sans Arabic', sans-serif; background: #efe5dc; color: #22362a; min-height: 100vh; -webkit-text-size-adjust: 100%; }
   .card { background: #faf6f1; border: 1px solid rgba(56,79,61,.14); border-radius: 18px; box-shadow: 0 1px 2px rgba(34,54,42,.04), 0 12px 32px -20px rgba(34,54,42,.25); }
   .field { width: 100%; background: #fff; border: 1px solid rgba(56,79,61,.2); border-radius: 12px; padding: .6rem .85rem; font-size: 14px; color: #22362a; }
   .field:focus { outline: none; border-color: #384f3d; box-shadow: 0 0 0 3px rgba(56,79,61,.12); }
@@ -39,12 +29,13 @@ tailwind.config = { theme: { extend: {
   .menu-pop i { width: 16px; text-align: center; color: rgba(34,54,42,.55); }
   .no-scrollbar::-webkit-scrollbar { display: none; }
 </style>
+<link rel="stylesheet" href="/css/tw/super-admin.css">
 </head>
 <body style="padding-bottom: env(safe-area-inset-bottom)">
 
 <div id="auth-loading" class="fixed inset-0 z-40 flex flex-col items-center justify-center gap-3 text-xs text-ink/60 text-center px-6">
   <p class="font-logo text-3xl text-brand leading-none" dir="ltr">DEV MENU</p>
-  <span class="flex items-center gap-2"><i class="fa-solid fa-spinner fa-spin"></i> جاري التحقق من الصلاحية...</span>
+  <span class="flex items-center gap-2"><i class="ph-bold ph-spinner-gap ph-spin"></i> جاري التحقق من الصلاحية...</span>
 </div>
 
 <div id="toast" class="fixed bottom-5 left-5 z-[70] hidden px-5 py-3 rounded-2xl shadow-2xl border text-xs font-bold"></div>
@@ -77,7 +68,7 @@ tailwind.config = { theme: { extend: {
 <div id="notify-dlg" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-ink/40 backdrop-blur-sm">
   <div class="w-full max-w-md card p-6 space-y-4">
     <div>
-      <h2 class="text-sm font-black"><i class="fa-solid fa-bell text-blue-600"></i> إشعار لصاحب المتجر</h2>
+      <h2 class="text-sm font-black"><i class="ph-bold ph-bell text-blue-600"></i> إشعار لصاحب المتجر</h2>
       <p id="notify-store" class="text-xs text-ink/60 mt-1"></p>
     </div>
     <textarea id="notify-text" rows="4" maxlength="300" placeholder="مثال: تم تجديد اشتراكك، شكراً لك 🌿" class="field resize-none"></textarea>
@@ -101,12 +92,12 @@ tailwind.config = { theme: { extend: {
           <p class="font-serif text-[10px] text-cream/65">Digital Menu Platform</p>
           <p class="font-logo text-2xl mt-0.5">DEV MENU</p>
         </div>
-        <span class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-black bg-amber-400 text-black px-2.5 py-1 rounded-full"><i class="fa-solid fa-crown"></i> لوحة المشتركين</span>
+        <span class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-black bg-amber-400 text-black px-2.5 py-1 rounded-full"><i class="ph-bold ph-crown"></i> لوحة المشتركين</span>
       </div>
       <div class="flex items-center gap-2">
         <span id="admin-email" class="hidden md:inline text-[11px] text-cream/60" dir="ltr"></span>
-        <button onclick="loadClients(true)" aria-label="تحديث" class="w-9 h-9 rounded-xl bg-cream/10 hover:bg-cream/20 flex items-center justify-center"><i class="fa-solid fa-rotate text-xs"></i></button>
-        <button onclick="logout()" class="h-9 px-3 rounded-xl bg-cream/10 hover:bg-cream/20 text-xs font-bold flex items-center gap-1.5"><i class="fa-solid fa-right-from-bracket text-[10px]"></i> <span class="hidden sm:inline">خروج</span></button>
+        <button onclick="loadClients(true)" aria-label="تحديث" class="w-9 h-9 rounded-xl bg-cream/10 hover:bg-cream/20 flex items-center justify-center"><i class="ph-bold ph-arrows-clockwise text-xs"></i></button>
+        <button onclick="logout()" class="h-9 px-3 rounded-xl bg-cream/10 hover:bg-cream/20 text-xs font-bold flex items-center gap-1.5"><i class="ph-bold ph-sign-out text-[10px]"></i> <span class="hidden sm:inline">خروج</span></button>
       </div>
     </div>
   </header>
@@ -117,14 +108,14 @@ tailwind.config = { theme: { extend: {
 
     <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <div class="card p-5 space-y-3">
-        <p class="text-xs font-black flex items-center gap-2"><i class="fa-solid fa-sack-dollar text-green-700"></i> الدخل السنوي من المشتركين</p>
+        <p class="text-xs font-black flex items-center gap-2"><i class="ph-bold ph-money text-green-700"></i> الدخل السنوي من المشتركين</p>
         <p id="mrr" class="text-3xl font-black"></p>
         <div id="mrr-break" class="space-y-1.5 text-[11px] text-ink/70"></div>
         <p class="text-[10px] text-ink/45 leading-relaxed">عدد المشتركين الساريين × سعر الباقة السنوية.</p>
       </div>
       <div class="card p-5 lg:col-span-2 space-y-3">
         <div class="flex items-center justify-between">
-          <p class="text-xs font-black flex items-center gap-2"><i class="fa-solid fa-user-plus text-blue-700"></i> تسجيلات جديدة آخر 30 يوم</p>
+          <p class="text-xs font-black flex items-center gap-2"><i class="ph-bold ph-user-plus text-blue-700"></i> تسجيلات جديدة آخر 30 يوم</p>
           <p id="signups-total" class="text-[11px] font-bold text-ink/60"></p>
         </div>
         <div id="signups-chart" class="flex items-end gap-[3px] h-28" dir="ltr"></div>
@@ -136,7 +127,7 @@ tailwind.config = { theme: { extend: {
     <section class="card p-3 md:p-4 space-y-3 sticky top-2 z-20">
       <div class="flex flex-col md:flex-row gap-2">
         <div class="relative flex-1">
-          <i class="fa-solid fa-magnifying-glass absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/40 text-xs"></i>
+          <i class="ph-bold ph-magnifying-glass absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/40 text-xs"></i>
           <input id="search" type="search" placeholder="ابحث بالاسم أو الرابط أو البريد أو الجوال..." class="field pr-9">
         </div>
         <div class="flex gap-2">
@@ -145,8 +136,8 @@ tailwind.config = { theme: { extend: {
             <option value="expiry">الأقرب انتهاءً</option>
             <option value="name">الاسم</option>
           </select>
-          <button onclick="createProspect()" class="shrink-0 px-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold whitespace-nowrap"><i class="fa-solid fa-wand-magic-sparkles"></i> منيو لعميل محتمل</button>
-          <button onclick="exportCsv()" class="shrink-0 px-3 rounded-xl bg-brand/10 hover:bg-brand/15 border border-brand/20 text-xs font-bold whitespace-nowrap"><i class="fa-solid fa-file-arrow-down"></i> تصدير</button>
+          <button onclick="createProspect()" class="shrink-0 px-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold whitespace-nowrap"><i class="ph-bold ph-magic-wand"></i> منيو لعميل محتمل</button>
+          <button onclick="exportCsv()" class="shrink-0 px-3 rounded-xl bg-brand/10 hover:bg-brand/15 border border-brand/20 text-xs font-bold whitespace-nowrap"><i class="ph-bold ph-file-arrow-down"></i> تصدير</button>
         </div>
       </div>
       <div id="filters" class="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5"></div>
@@ -154,7 +145,7 @@ tailwind.config = { theme: { extend: {
 
     <!-- المتاجر -->
     <section id="stores" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></section>
-    <p id="empty" class="hidden text-center text-sm text-ink/50 py-16"><i class="fa-solid fa-store-slash text-2xl block mb-2"></i> لا توجد نتائج</p>
+    <p id="empty" class="hidden text-center text-sm text-ink/50 py-16"><i class="ph-bold ph-prohibit text-2xl block mb-2"></i> لا توجد نتائج</p>
   </main>
 </div>
 
@@ -180,7 +171,7 @@ tailwind.config = { theme: { extend: {
     const amount = Math.round(PLAN_PRICE.branch * s.left / 365);
     return { amount, days: s.left, text: `المستحق الآن ${money(amount)} عن ${s.left} يوم الباقية لين تجديد الحساب في ${s.endText}، وبعدها يتجدد مع الحساب بـ ${money(PLAN_PRICE.branch)} سنوياً.` };
   }
-  const TYPES = { restaurant: ['مطعم', 'fa-utensils'], cafe: ['مقهى', 'fa-mug-hot'], mixed: ['مطعم ومقهى', 'fa-burger'], bakery: ['مخبز', 'fa-bread-slice'] };
+  const TYPES = { restaurant: ['مطعم', 'ph-fork-knife'], cafe: ['مقهى', 'ph-coffee'], mixed: ['مطعم ومقهى', 'ph-hamburger'], bakery: ['مخبز', 'ph-bread'] };
 
   let clients = [], filter = 'all', openMenu = null, notifyId = null;
 
@@ -198,16 +189,16 @@ tailwind.config = { theme: { extend: {
       const $ = (id) => document.getElementById(id);
       const dlg = $('dlg'), ok = $('dlg-ok'), cancel = $('dlg-cancel'), input = $('dlg-input');
       const tones = {
-        danger:  { icon: 'fa-trash-can',    box: 'bg-red-500/10 text-red-700',     btn: 'bg-red-600 hover:bg-red-500',         item: 'fa-xmark text-red-600' },
-        success: { icon: 'fa-circle-check', box: 'bg-green-500/10 text-green-700', btn: 'bg-green-700 hover:bg-green-600',     item: 'fa-check text-green-700' },
-        warning: { icon: 'fa-pause',        box: 'bg-amber-500/15 text-amber-700', btn: 'bg-amber-600 hover:bg-amber-500',     item: 'fa-minus text-amber-700' }
+        danger:  { icon: 'ph-trash',    box: 'bg-red-500/10 text-red-700',     btn: 'bg-red-600 hover:bg-red-500',         item: 'ph-x text-red-600' },
+        success: { icon: 'ph-check-circle', box: 'bg-green-500/10 text-green-700', btn: 'bg-green-700 hover:bg-green-600',     item: 'ph-check text-green-700' },
+        warning: { icon: 'ph-pause',        box: 'bg-amber-500/15 text-amber-700', btn: 'bg-amber-600 hover:bg-amber-500',     item: 'ph-minus text-amber-700' }
       };
       const t = tones[tone] || tones.danger;
       $('dlg-icon').className = `w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${t.box}`;
-      $('dlg-icon').innerHTML = `<i class="fa-solid ${t.icon}"></i>`;
+      $('dlg-icon').innerHTML = `<i class="ph-bold ${t.icon}"></i>`;
       $('dlg-title').textContent = title;
       $('dlg-message').textContent = message;
-      $('dlg-list').innerHTML = items.map(x => `<li class="flex items-center gap-2.5"><i class="fa-solid ${t.item} text-[10px] w-3"></i><span>${esc(x)}</span></li>`).join('');
+      $('dlg-list').innerHTML = items.map(x => `<li class="flex items-center gap-2.5"><i class="ph-bold ${t.item} text-[10px] w-3"></i><span>${esc(x)}</span></li>`).join('');
       $('dlg-list').classList.toggle('hidden', !items.length);
       $('dlg-confirm-wrap').classList.toggle('hidden', !expected);
       $('dlg-expected').textContent = expected;
@@ -260,7 +251,7 @@ tailwind.config = { theme: { extend: {
     } catch (e) {
       if (e.status === 401) return location.replace('login.html');
       document.getElementById('auth-loading').innerHTML = `
-        <i class="fa-solid fa-lock text-lg"></i><span>هذه الصفحة للمدير العام فقط.</span>
+        <i class="ph-bold ph-lock-simple text-lg"></i><span>هذه الصفحة للمدير العام فقط.</span>
         <a href="admin.html" class="bg-brand text-cream font-bold px-4 py-2 rounded-xl mt-2">لوحة متجري</a>`;
       return;
     }
@@ -299,16 +290,16 @@ tailwind.config = { theme: { extend: {
     const n = counts();
     const tile = (label, value, icon, color, f) => `
       <button onclick="setFilter('${f}')" class="card p-4 text-right hover:border-brand/40 transition ${filter === f ? 'ring-2 ring-brand/40' : ''}">
-        <p class="text-[11px] text-ink/60 flex items-center gap-1.5"><i class="fa-solid ${icon} ${color}"></i> ${label}</p>
+        <p class="text-[11px] text-ink/60 flex items-center gap-1.5"><i class="ph-bold ${icon} ${color}"></i> ${label}</p>
         <p class="text-2xl font-black mt-1">${value}</p>
       </button>`;
     document.getElementById('kpis').innerHTML =
-      tile('كل المتاجر', n.all, 'fa-store', 'text-ink/60', 'all') +
-      tile('مشتركون', n.paid, 'fa-circle-check', 'text-green-700', 'paid') +
-      tile('تجريبي', n.trial, 'fa-flask', 'text-blue-700', 'trial') +
-      tile('ينتهي خلال 3 أيام', n.soon, 'fa-clock', 'text-amber-600', 'soon') +
-      tile('منتهي', n.expired, 'fa-circle-exclamation', 'text-amber-800', 'expired') +
-      tile('موقوف', n.suspended, 'fa-ban', 'text-red-700', 'suspended');
+      tile('كل المتاجر', n.all, 'ph-storefront', 'text-ink/60', 'all') +
+      tile('مشتركون', n.paid, 'ph-check-circle', 'text-green-700', 'paid') +
+      tile('تجريبي', n.trial, 'ph-flask', 'text-blue-700', 'trial') +
+      tile('ينتهي خلال 3 أيام', n.soon, 'ph-clock', 'text-amber-600', 'soon') +
+      tile('منتهي', n.expired, 'ph-warning-circle', 'text-amber-800', 'expired') +
+      tile('موقوف', n.suspended, 'ph-prohibit', 'text-red-700', 'suspended');
   }
 
   function renderRevenue() {
@@ -393,16 +384,16 @@ tailwind.config = { theme: { extend: {
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2">
               <p class="font-black text-sm truncate">${esc(c.name || 'بدون اسم')}</p>
-              ${c.is_featured ? '<i class="fa-solid fa-star text-amber-500 text-[11px]" title="معروض في الرئيسية"></i>' : ''}
+              ${c.is_featured ? '<i class="ph-bold ph-star text-amber-500 text-[11px]" title="معروض في الرئيسية"></i>' : ''}
             </div>
-            ${branchesOf(c).length ? `<p class="text-[10px] font-bold text-emerald-700 mt-0.5"><i class="fa-solid fa-sitemap"></i> حساب واحد: المتجر + ${branchesOf(c).length} ${branchesOf(c).length === 1 ? 'فرع' : 'فروع'}</p>` : ''}
-            <p class="text-[11px] text-ink/55 flex items-center gap-1.5 mt-0.5"><i class="fa-solid ${type[1]} text-[10px]"></i> ${type[0]} · <span class="font-mono" dir="ltr">${esc(c.client_slug)}</span></p>
+            ${branchesOf(c).length ? `<p class="text-[10px] font-bold text-emerald-700 mt-0.5"><i class="ph-bold ph-tree-structure"></i> حساب واحد: المتجر + ${branchesOf(c).length} ${branchesOf(c).length === 1 ? 'فرع' : 'فروع'}</p>` : ''}
+            <p class="text-[11px] text-ink/55 flex items-center gap-1.5 mt-0.5"><i class="ph-bold ${type[1]} text-[10px]"></i> ${type[0]} · <span class="font-mono" dir="ltr">${esc(c.client_slug)}</span></p>
             <div class="flex flex-wrap gap-1.5 mt-2">
               <span class="text-[10px] font-black px-2 py-0.5 rounded-full border ${s.cls}">${s.label}</span>
-              ${isProspect(c) ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-purple-500/10 text-purple-700 border-purple-500/20"><i class="fa-solid fa-wand-magic-sparkles"></i> عميل محتمل</span>' : ''}
-              ${c.reviews_enabled ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-violet-500/10 text-violet-700 border-violet-500/20"><i class="fa-solid fa-star-half-stroke"></i> ردود AI</span>' : ''}
-              ${c.waitlist_enabled ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-sky-500/10 text-sky-700 border-sky-500/20"><i class="fa-solid fa-hourglass-half"></i> الانتظار</span>' : ''}
-              ${c.admin_notification ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-blue-500/10 text-blue-700 border-blue-500/20"><i class="fa-solid fa-bell"></i> إشعار</span>' : ''}
+              ${isProspect(c) ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-purple-500/10 text-purple-700 border-purple-500/20"><i class="ph-bold ph-magic-wand"></i> عميل محتمل</span>' : ''}
+              ${c.reviews_enabled ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-violet-500/10 text-violet-700 border-violet-500/20"><i class="ph-bold ph-star-half"></i> ردود AI</span>' : ''}
+              ${c.waitlist_enabled ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-sky-500/10 text-sky-700 border-sky-500/20"><i class="ph-bold ph-hourglass-medium"></i> الانتظار</span>' : ''}
+              ${c.admin_notification ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-blue-500/10 text-blue-700 border-blue-500/20"><i class="ph-bold ph-bell"></i> إشعار</span>' : ''}
             </div>
           </div>
         </div>
@@ -410,7 +401,7 @@ tailwind.config = { theme: { extend: {
         <div class="text-[11px] space-y-1 bg-brand/[0.04] border border-brand/10 rounded-xl p-3">
           <p class="flex justify-between gap-2"><span class="text-ink/55">الاشتراك</span><b class="${isSoon(c) ? 'text-amber-700' : ''}">${esc(s.endText)}${days}</b></p>
           <p class="flex justify-between gap-2"><span class="text-ink/55">البريد</span><span class="truncate" dir="ltr">${isProspect(c) ? '<span class="text-purple-700 font-bold">ما تسلّمه صاحبه بعد</span>' : c.email ? esc(c.email) : c.parent_id ? '<span class="text-ink/50">يديره صاحب المتجر الرئيسي</span>' : '<span class="text-red-600 font-bold">— بدون بريد —</span>'}</span></p>
-          <p class="flex justify-between gap-2"><span class="text-ink/55">الجوال</span>${c.phone ? (phone ? `<a href="https://wa.me/${phone}" target="_blank" rel="noopener" class="text-green-700 font-bold" dir="ltr"><i class="fa-brands fa-whatsapp"></i> ${esc(c.phone)}</a>` : `<span dir="ltr">${esc(c.phone)}</span>`) : '<span class="text-ink/40">—</span>'}</p>
+          <p class="flex justify-between gap-2"><span class="text-ink/55">الجوال</span>${c.phone ? (phone ? `<a href="https://wa.me/${phone}" target="_blank" rel="noopener" class="text-green-700 font-bold" dir="ltr"><i class="ph-bold ph-whatsapp-logo"></i> ${esc(c.phone)}</a>` : `<span dir="ltr">${esc(c.phone)}</span>`) : '<span class="text-ink/40">—</span>'}</p>
         </div>
 
         ${branchesOf(c).length ? branchesBox(c) : ''}
@@ -418,7 +409,7 @@ tailwind.config = { theme: { extend: {
         <div class="grid grid-cols-[1fr_auto] gap-1.5 mt-auto">
           <button onclick="activate(${id}, 'year')" class="bg-brand hover:bg-brand-dark text-cream rounded-xl py-2.5 text-[12px] font-black">${branchesOf(c).length ? 'تجديد الحساب' : 'تفعيل سنة'} · ${money(totalFor(c))}</button>
           <div class="relative">
-            <button onclick="toggleMenu(event, ${id})" aria-label="المزيد" class="w-10 h-full rounded-xl bg-brand/10 hover:bg-brand/15 border border-brand/15"><i class="fa-solid fa-ellipsis"></i></button>
+            <button onclick="toggleMenu(event, ${id})" aria-label="المزيد" class="w-10 h-full rounded-xl bg-brand/10 hover:bg-brand/15 border border-brand/15"><i class="ph-bold ph-dots-three"></i></button>
             ${openMenu === id ? moreMenu(c, slug) : ''}
           </div>
         </div>
@@ -430,7 +421,7 @@ tailwind.config = { theme: { extend: {
     return `
       <div class="rounded-xl border border-emerald-600/20 bg-emerald-500/[0.05] p-2.5 space-y-1.5">
         <p class="text-[10px] font-black text-emerald-800 flex items-center justify-between gap-2">
-          <span><i class="fa-solid fa-code-branch"></i> الفروع · ضمن نفس الاشتراك</span>
+          <span><i class="ph-bold ph-git-branch"></i> الفروع · ضمن نفس الاشتراك</span>
           <span>${branchesOf(c).length} × ${money(PLAN_PRICE.branch)}</span>
         </p>
         ${branchesOf(c).map(b => {
@@ -443,7 +434,7 @@ tailwind.config = { theme: { extend: {
             </div>
             ${off ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-red-500/10 text-red-700 border-red-500/20">موقوف</span>' : ''}
             <div class="relative">
-              <button onclick="toggleMenu(event, ${bid})" aria-label="خيارات الفرع" class="w-8 h-8 rounded-lg bg-brand/10 hover:bg-brand/15 border border-brand/15"><i class="fa-solid fa-ellipsis text-xs"></i></button>
+              <button onclick="toggleMenu(event, ${bid})" aria-label="خيارات الفرع" class="w-8 h-8 rounded-lg bg-brand/10 hover:bg-brand/15 border border-brand/15"><i class="ph-bold ph-dots-three text-xs"></i></button>
               ${openMenu === bid ? moreMenu(b, encodeURIComponent(b.client_slug || '')) : ''}
             </div>
           </div>`;
@@ -456,21 +447,21 @@ tailwind.config = { theme: { extend: {
     const remind = reminderLink(c);
     return `
       <div class="menu-pop" onclick="event.stopPropagation()">
-        <a href="${esc(DM.storeUrl(c.client_slug))}" target="_blank" rel="noopener"><i class="fa-solid fa-eye"></i> فتح المنيو</a>
-        <a href="admin.html?client=${slug}" target="_blank" rel="noopener"><i class="fa-solid fa-gauge-high"></i> إدارة لوحته</a>
-        ${isProspect(c) ? `<a href="${esc(pitchLink(c))}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" style="color:#16a34a"></i> أرسل له المنيو واتساب</a>
-        <button onclick="transferStore(${id})"><i class="fa-solid fa-key" style="color:#7c3aed"></i> تسليم المتجر لصاحبه</button>` : ''}
-        ${remind && !c.parent_id ? `<a href="${esc(remind)}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" style="color:#16a34a"></i> رسالة تذكير بالتجديد</a>` : ''}
-        ${!c.parent_id ? `<button onclick="addBranch(${id})"><i class="fa-solid fa-code-branch" style="color:#047857"></i> إضافة فرع · ${money(PLAN_PRICE.branch)}/سنة</button>` : ''}
-        <button onclick="renameStore(${id})"><i class="fa-solid fa-pen"></i> تعديل الاسم</button>
-        <button onclick="openNotify(${id})"><i class="fa-solid fa-bell"></i> ${c.admin_notification ? 'تعديل الإشعار' : 'إرسال إشعار'}</button>
+        <a href="${esc(DM.storeUrl(c.client_slug))}" target="_blank" rel="noopener"><i class="ph-bold ph-eye"></i> فتح المنيو</a>
+        <a href="admin.html?client=${slug}" target="_blank" rel="noopener"><i class="ph-bold ph-gauge"></i> إدارة لوحته</a>
+        ${isProspect(c) ? `<a href="${esc(pitchLink(c))}" target="_blank" rel="noopener"><i class="ph-bold ph-whatsapp-logo" style="color:#16a34a"></i> أرسل له المنيو واتساب</a>
+        <button onclick="transferStore(${id})"><i class="ph-bold ph-key" style="color:#7c3aed"></i> تسليم المتجر لصاحبه</button>` : ''}
+        ${remind && !c.parent_id ? `<a href="${esc(remind)}" target="_blank" rel="noopener"><i class="ph-bold ph-whatsapp-logo" style="color:#16a34a"></i> رسالة تذكير بالتجديد</a>` : ''}
+        ${!c.parent_id ? `<button onclick="addBranch(${id})"><i class="ph-bold ph-git-branch" style="color:#047857"></i> إضافة فرع · ${money(PLAN_PRICE.branch)}/سنة</button>` : ''}
+        <button onclick="renameStore(${id})"><i class="ph-bold ph-pencil-simple"></i> تعديل الاسم</button>
+        <button onclick="openNotify(${id})"><i class="ph-bold ph-bell"></i> ${c.admin_notification ? 'تعديل الإشعار' : 'إرسال إشعار'}</button>
         <div class="h-px bg-brand/10 my-1"></div>
-        ${c.parent_id ? '' : `<button onclick="setFeatured(${id}, ${!c.is_featured})"><i class="fa-solid fa-star" ${c.is_featured ? 'style="color:#d97706"' : ''}></i> ${c.is_featured ? 'إزالة من أمثلة الرئيسية' : 'عرضه في أمثلة الرئيسية'}</button>`}
-        <button onclick="setReviewsAddon(${id}, ${!c.reviews_enabled})"><i class="fa-solid fa-star-half-stroke" ${c.reviews_enabled ? 'style="color:#7c3aed"' : ''}></i> ${c.reviews_enabled ? 'إيقاف ردود التقييمات' : 'تفعيل ردود التقييمات (AI)'}</button>
-        <button onclick="setWaitlistAddon(${id}, ${!c.waitlist_enabled})"><i class="fa-solid fa-hourglass-half" ${c.waitlist_enabled ? 'style="color:#0284c7"' : ''}></i> ${c.waitlist_enabled ? 'إيقاف قائمة الانتظار' : 'تفعيل قائمة الانتظار'}</button>
-        <button onclick="setActive(${id}, ${c.is_active === false})"><i class="fa-solid ${c.is_active === false ? 'fa-play' : 'fa-pause'}"></i> ${c.is_active === false ? (c.parent_id ? 'إعادة تشغيل الفرع' : 'إعادة تشغيل المتجر') : (c.parent_id ? 'إيقاف الفرع' : 'إيقاف المتجر')}</button>
+        ${c.parent_id ? '' : `<button onclick="setFeatured(${id}, ${!c.is_featured})"><i class="ph-bold ph-star" ${c.is_featured ? 'style="color:#d97706"' : ''}></i> ${c.is_featured ? 'إزالة من أمثلة الرئيسية' : 'عرضه في أمثلة الرئيسية'}</button>`}
+        <button onclick="setReviewsAddon(${id}, ${!c.reviews_enabled})"><i class="ph-bold ph-star-half" ${c.reviews_enabled ? 'style="color:#7c3aed"' : ''}></i> ${c.reviews_enabled ? 'إيقاف ردود التقييمات' : 'تفعيل ردود التقييمات (AI)'}</button>
+        <button onclick="setWaitlistAddon(${id}, ${!c.waitlist_enabled})"><i class="ph-bold ph-hourglass-medium" ${c.waitlist_enabled ? 'style="color:#0284c7"' : ''}></i> ${c.waitlist_enabled ? 'إيقاف قائمة الانتظار' : 'تفعيل قائمة الانتظار'}</button>
+        <button onclick="setActive(${id}, ${c.is_active === false})"><i class="ph-bold ${c.is_active === false ? 'ph-play' : 'ph-pause'}"></i> ${c.is_active === false ? (c.parent_id ? 'إعادة تشغيل الفرع' : 'إعادة تشغيل المتجر') : (c.parent_id ? 'إيقاف الفرع' : 'إيقاف المتجر')}</button>
         <div class="h-px bg-brand/10 my-1"></div>
-        <button onclick="deleteClient(${id})" style="color:#b91c1c"><i class="fa-solid fa-trash" style="color:#b91c1c"></i> ${c.parent_id ? 'حذف الفرع نهائياً' : 'حذف المتجر نهائياً'}</button>
+        <button onclick="deleteClient(${id})" style="color:#b91c1c"><i class="ph-bold ph-trash" style="color:#b91c1c"></i> ${c.parent_id ? 'حذف الفرع نهائياً' : 'حذف المتجر نهائياً'}</button>
       </div>`;
   }
 
@@ -499,7 +490,7 @@ tailwind.config = { theme: { extend: {
     openMenu = null; renderStores();
     const c = find(id); if (!c) return;
     const r = await DMDialog.form({
-      title: c.parent_id ? 'تعديل اسم الفرع' : 'تعديل اسم المتجر', subtitle: c.client_slug, icon: 'fa-pen',
+      title: c.parent_id ? 'تعديل اسم الفرع' : 'تعديل اسم المتجر', subtitle: c.client_slug, icon: 'ph-pencil-simple',
       fields: [{ name: 'name', label: c.parent_id ? 'اسم الفرع' : 'اسم المتجر', value: c.name || '', maxlength: 80, required: true }]
     });
     if (!r || r.name === c.name) return;
@@ -514,12 +505,12 @@ tailwind.config = { theme: { extend: {
     openMenu = null; renderStores();
     const c = find(id); if (!c) return;
     const r = await DMDialog.form({
-      title: 'إضافة فرع', subtitle: `فرع جديد لـ "${c.name}"`, icon: 'fa-code-branch', confirmText: 'إنشاء الفرع',
+      title: 'إضافة فرع', subtitle: `فرع جديد لـ "${c.name}"`, icon: 'ph-git-branch', confirmText: 'إنشاء الفرع',
       fields: [
         { name: 'name', label: 'اسم الفرع', value: `${c.name} - `, maxlength: 80, required: true, placeholder: `${c.name} - فرع النخيل` },
         { name: 'menu', label: 'منيو الفرع', type: 'choice', value: 'copy', options: [
-          { value: 'copy', label: 'نسخة من منيو المتجر', desc: 'الأقسام والأطباق مربوطة: الاسم والصورة والوصف تتعدل في الكل، والسعر والإخفاء لكل فرع', icon: 'fa-copy' },
-          { value: 'empty', label: 'منيو فارغ', desc: 'يبدأ من الصفر، وياخذ الشعار والثيم بس', icon: 'fa-file' }
+          { value: 'copy', label: 'نسخة من منيو المتجر', desc: 'الأقسام والأطباق مربوطة: الاسم والصورة والوصف تتعدل في الكل، والسعر والإخفاء لكل فرع', icon: 'ph-copy' },
+          { value: 'empty', label: 'منيو فارغ', desc: 'يبدأ من الصفر، وياخذ الشعار والثيم بس', icon: 'ph-file' }
         ] },
         { name: 'slug', label: 'رابط الفرع', value: '', dir: 'ltr', maxlength: 30, placeholder: `${c.client_slug}-2`,
           hint: 'حروف إنجليزية صغيرة وأرقام وشرطة. اتركه فاضي ونختاره تلقائياً.',
@@ -538,7 +529,7 @@ tailwind.config = { theme: { extend: {
         ? `مرحباً، معك فريق DEV MENU 👋\nتم إضافة فرع "${name}" لحساب "${c.name}".\nالمستحق الآن: ${pr.amount} ر.س عن ${pr.days} يوم الباقية لين تجديد اشتراكك في ${statusOf(c).endText}.\nبعدها يتجدد الفرع مع الحساب بـ ${PLAN_PRICE.branch} ر.س سنوياً.\nرابط الفرع: ${DM.storeUrl(res.client.client_slug)}`
         : '';
       const send = await DMDialog.confirm({
-        title: 'تم إنشاء الفرع', icon: 'fa-circle-check', tone: 'success',
+        title: 'تم إنشاء الفرع', icon: 'ph-check-circle', tone: 'success',
         message: `${res.client.name} · ${res.client.client_slug}\n\n${pr.text}${res.invoice ? (res.invoice.sent ? `\n\nانرسلت الفاتورة المستحقة إلى ${res.invoice.to}.` : `\n\nالفاتورة ما انرسلت بالبريد${invoiceNote(res.invoice).replace(/^،? ?/, ': ')}`) : ''}`,
         confirmText: msg && phone ? 'أرسل الفاتورة واتساب' : 'تم', cancelText: 'إغلاق'
       });
@@ -556,7 +547,7 @@ tailwind.config = { theme: { extend: {
   }
   async function createProspect() {
     const r = await DMDialog.form({
-      title: 'منيو جاهز لعميل محتمل', subtitle: 'متجر بدون صاحب، تجهّزه أنت وترسل رابطه', icon: 'fa-wand-magic-sparkles', confirmText: 'إنشاء',
+      title: 'منيو جاهز لعميل محتمل', subtitle: 'متجر بدون صاحب، تجهّزه أنت وترسل رابطه', icon: 'ph-magic-wand', confirmText: 'إنشاء',
       fields: [
         { name: 'name', label: 'اسم المطعم', maxlength: 80, required: true, placeholder: 'مثال: مطعم أوسلو برجر' },
         { name: 'slug', label: 'الرابط', dir: 'ltr', maxlength: 30, placeholder: 'oslo-burger',
@@ -572,7 +563,7 @@ tailwind.config = { theme: { extend: {
       await loadClients();
       const c = res.client;
       const go = await DMDialog.confirm({
-        title: 'تم إنشاء المتجر', icon: 'fa-circle-check', tone: 'success',
+        title: 'تم إنشاء المتجر', icon: 'ph-check-circle', tone: 'success',
         message: `${c.name} · ${DM.storeUrl(c.client_slug)}\n\nالخطوة الجاية: افتح لوحته وأضف الأقسام والأطباق والصور، وبعدها أرسل الرابط للمطعم.`,
         confirmText: 'افتح لوحته وجهّز المنيو', cancelText: 'لاحقاً'
       });
@@ -583,7 +574,7 @@ tailwind.config = { theme: { extend: {
     openMenu = null; renderStores();
     const c = find(id); if (!c) return;
     const r = await DMDialog.form({
-      title: 'تسليم المتجر لصاحبه', subtitle: c.name, icon: 'fa-key', confirmText: 'تسليم',
+      title: 'تسليم المتجر لصاحبه', subtitle: c.name, icon: 'ph-key', confirmText: 'تسليم',
       fields: [{ name: 'email', label: 'بريد صاحب المطعم', dir: 'ltr', maxlength: 120, required: true, placeholder: 'owner@example.com',
         validate: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? '' : 'اكتب بريد صحيح' }],
       note: 'يدخل بهذا البريد من صفحة الدخول (رمز تحقق أو Google) ويلقى المنيو جاهز بكل أطباقه. تبدأ تجربته المجانية 7 أيام من الآن.'
@@ -595,7 +586,7 @@ tailwind.config = { theme: { extend: {
       const phone = waPhone(c.phone);
       const msg = `مبروك 🎉 صار منيو "${c.name}" باسمكم.\nالمنيو: ${DM.storeUrl(c.client_slug)}\nللتعديل على الأسعار والأطباق ادخلوا هنا بالبريد ${res.client.email}:\nhttps://www.devmenu.digital/login.html\nتجربتكم المجانية 7 أيام.`;
       const send = await DMDialog.confirm({
-        title: 'تم التسليم', icon: 'fa-circle-check', tone: 'success',
+        title: 'تم التسليم', icon: 'ph-check-circle', tone: 'success',
         message: `${c.name} صار باسم ${res.client.email}.${res.mailed ? '\n\nانرسل له بريد فيه رابط الدخول.' : '\n\nما انرسل بريد، أرسل له طريقة الدخول بنفسك.'}`,
         confirmText: phone ? 'أرسل له التفاصيل واتساب' : 'تم', cancelText: 'إغلاق'
       });

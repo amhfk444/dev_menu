@@ -15,12 +15,11 @@
 <meta property="og:description" content="كل روابط المطعم في مكان واحد: المنيو، الطلبات، تطبيقات التوصيل، التواصل والموقع.">
 <meta name="twitter:card" content="summary">
 
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/css/fonts.css">
+<link rel="stylesheet" href="/css/icons.css">
 <script src="js/api.js"></script>
 <script src="js/theme.js"></script>
 <script src="js/occasions.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 
 <style>
   /* القيم الافتراضية = الثيم الداكن، و js/theme.js يغيّرها حسب ثيم المطعم */
@@ -32,7 +31,7 @@
     --accent: #ffffff; --accent-fg: #000000; --accent-glow: rgba(255, 255, 255, 0.25);
   }
   html { -webkit-text-size-adjust: 100%; }
-  body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--fg); min-height: 100vh; overflow-x: hidden; }
+  body { font-family: 'IBM Plex Sans Arabic', sans-serif; background: var(--bg); color: var(--fg); min-height: 100vh; overflow-x: hidden; }
   #bg { position: fixed; inset: 0; z-index: -2; }
   #bg img { width: 100%; height: 100%; object-fit: cover; filter: var(--media-filter); }
   .overlay { position: fixed; inset: 0; z-index: -1; background: radial-gradient(circle at center, var(--ov-in) 0%, var(--ov-out) 100%); }
@@ -53,6 +52,7 @@
   .lnk.primary .arrow { color: inherit; opacity: .7; }
   .group-title { font-size: 11px; font-weight: 800; color: var(--fg3); padding: 8px 4px 0; }
 </style>
+<link rel="stylesheet" href="/css/tw/links.css">
 </head>
 <body>
 
@@ -61,7 +61,7 @@
 
 <main class="w-full max-w-md mx-auto px-4 pt-10 pb-12">
   <div id="loading" class="min-h-[70vh] flex items-center justify-center t-fg3 text-sm gap-2">
-    <i class="fa-solid fa-spinner fa-spin"></i> جاري التحميل...
+    <i class="ph-bold ph-spinner-gap ph-spin"></i> جاري التحميل...
   </div>
 
   <div id="page" class="hidden space-y-6">
@@ -72,7 +72,7 @@
       <div>
         <h1 id="name" class="text-2xl font-black"></h1>
         <p id="type" class="text-xs font-semibold t-fg2 tracking-wider mt-1"></p>
-        <p id="hours" class="hidden text-[11px] t-fg3 mt-2"><i class="fa-regular fa-clock"></i> <span></span></p>
+        <p id="hours" class="hidden text-[11px] t-fg3 mt-2"><i class="ph-bold ph-clock"></i> <span></span></p>
       </div>
       <div id="occasion-greeting" class="hidden relative z-[1]"></div>
     </header>
@@ -110,14 +110,14 @@
       ? `<span class="ico" style="background:#fff"><img src="${esc(img)}" alt="" data-l="${esc(label.charAt(0))}" class="w-6 h-6 object-contain" onerror="this.parentNode.textContent=this.dataset.l;this.parentNode.style.color='#000'"></span>`
       : `<span class="ico"><i class="${icon}"></i></span>`;
     return `<a href="${esc(href)}" ${external ? 'target="_blank" rel="noopener"' : ''} class="lnk${primary ? ' primary' : ''}">
-      ${ico}<span class="truncate">${esc(label)}</span><i class="fa-solid fa-chevron-left arrow"></i></a>`;
+      ${ico}<span class="truncate">${esc(label)}</span><i class="ph-bold ph-caret-left arrow"></i></a>`;
   }
   const group = (title, items) => items.length ? `<p class="group-title">${esc(title)}</p>${items.join('')}` : '';
 
   function showUnavailable(title, sub) {
     document.getElementById('loading').innerHTML = `
       <div class="text-center space-y-3 px-6">
-        <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-2xl" style="background:var(--chip);border:1px solid var(--line)"><i class="fa-solid fa-store-slash"></i></div>
+        <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-2xl" style="background:var(--chip);border:1px solid var(--line)"><i class="ph-bold ph-prohibit"></i></div>
         <h1 class="text-lg font-black" style="color:var(--fg)">${esc(title)}</h1>
         <p class="text-xs t-fg3 max-w-xs leading-relaxed">${esc(sub)}</p>
         <a href="index.html" class="inline-block mt-3 text-[11px] font-bold t-fg3">DEV MENU</a>
@@ -142,16 +142,16 @@
     const out = [];
 
     // 1) المنيو و 2) قائمة الانتظار
-    out.push(linkBtn({ href: DM.storePage('menu', p.client_slug), label: 'عرض المنيو', icon: 'fa-solid fa-utensils', primary: true, external: false }));
-    if (p.waitlist_open === true) out.push(linkBtn({ href: DM.storePage('waitlist', p.client_slug), label: 'انضم لقائمة الانتظار', icon: 'fa-solid fa-hourglass-half', external: false }));
+    out.push(linkBtn({ href: DM.storePage('menu', p.client_slug), label: 'عرض المنيو', icon: 'ph-bold ph-fork-knife', primary: true, external: false }));
+    if (p.waitlist_open === true) out.push(linkBtn({ href: DM.storePage('waitlist', p.client_slug), label: 'انضم لقائمة الانتظار', icon: 'ph-bold ph-hourglass-medium', external: false }));
 
     // 3) أرقام الطلبات و 4) واتساب
     const contact = (Array.isArray(p.order_numbers) ? p.order_numbers : [])
       .map(n => ({ label: String((n && n.label) || '').trim(), phone: String((n && n.phone) || '').replace(/[^\d+]/g, '') }))
       .filter(n => /^\+?\d{9,15}$/.test(n.phone))
-      .map(n => linkBtn({ href: `tel:${n.phone}`, label: n.label || `اتصل بنا ${n.phone}`, icon: 'fa-solid fa-phone', external: false }));
+      .map(n => linkBtn({ href: `tel:${n.phone}`, label: n.label || `اتصل بنا ${n.phone}`, icon: 'ph-bold ph-phone', external: false }));
     const wa = String(p.whatsapp_number || '').replace(/\D/g, '');
-    if (wa) contact.push(linkBtn({ href: `https://wa.me/${wa}`, label: 'تواصل عبر واتساب', icon: 'fa-brands fa-whatsapp' }));
+    if (wa) contact.push(linkBtn({ href: `https://wa.me/${wa}`, label: 'تواصل عبر واتساب', icon: 'ph-bold ph-whatsapp-logo' }));
     out.push(group('الطلبات والتواصل', contact));
 
     // 5) تطبيقات التوصيل بشعاراتها
@@ -169,10 +169,10 @@
 
     // 6) روابط التواصل
     const social = [
-      [safeUrl(p.instagram_url), 'انستجرام', 'fa-brands fa-instagram'],
-      [safeUrl(p.tiktok_url), 'تيك توك', 'fa-brands fa-tiktok'],
-      [safeUrl(p.snapchat_url), 'سناب شات', 'fa-brands fa-snapchat'],
-      [safeUrl(p.website_url), 'موقعنا الإلكتروني', 'fa-solid fa-globe']
+      [safeUrl(p.instagram_url), 'انستجرام', 'ph-bold ph-instagram-logo'],
+      [safeUrl(p.tiktok_url), 'تيك توك', 'ph-bold ph-tiktok-logo'],
+      [safeUrl(p.snapchat_url), 'سناب شات', 'ph-bold ph-snapchat-logo'],
+      [safeUrl(p.website_url), 'موقعنا الإلكتروني', 'ph-bold ph-globe']
     ].filter(([u]) => u).map(([href, label, icon]) => linkBtn({ href, label, icon }));
     out.push(group('تابعنا', social));
 
@@ -180,12 +180,12 @@
     const custom = (Array.isArray(p.custom_links) ? p.custom_links : [])
       .map(l => ({ title: String((l && l.title) || '').trim(), url: safeUrl(l && l.url) }))
       .filter(l => l.title && l.url)
-      .map(l => linkBtn({ href: l.url, label: l.title, icon: 'fa-solid fa-link' }));
+      .map(l => linkBtn({ href: l.url, label: l.title, icon: 'ph-bold ph-link-simple' }));
     out.push(group('روابط أخرى', custom));
 
     // 8) الموقع على الخريطة
     const loc = safeUrl(p.location_url);
-    if (loc) out.push(group('زورونا', [linkBtn({ href: loc, label: 'موقعنا على الخريطة', icon: 'fa-solid fa-location-dot' })]));
+    if (loc) out.push(group('زورونا', [linkBtn({ href: loc, label: 'موقعنا على الخريطة', icon: 'ph-bold ph-map-pin' })]));
 
     document.getElementById('links').innerHTML = out.join('');
     document.getElementById('loading').remove();

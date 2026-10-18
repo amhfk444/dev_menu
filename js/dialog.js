@@ -50,7 +50,7 @@
     const st = document.createElement('style'); st.id = 'dmd-css'; st.textContent = CSS; document.head.appendChild(st);
   }
 
-  function open({ title, subtitle = '', icon = 'fa-pen', tone = '', fields = [], confirmText = 'حفظ', cancelText = 'إلغاء', note = '' }) {
+  function open({ title, subtitle = '', icon = 'ph-pencil-simple', tone = '', fields = [], confirmText = 'حفظ', cancelText = 'إلغاء', note = '' }) {
     injectCss();
     return new Promise((resolve) => {
       const back = document.createElement('div');
@@ -64,7 +64,7 @@
           return `<div class="dmd-field">${f.label ? `<span class="dmd-label">${esc(f.label)}</span>` : ''}
             <div class="dmd-choices" data-choice="${esc(f.name)}">${f.options.map(o => `
               <button type="button" class="dmd-choice ${o.value === values[f.name] ? 'on' : ''}" data-value="${esc(o.value)}">
-                <i class="dmd-dot"></i><div>${o.icon ? `<i class="fa-solid ${esc(o.icon)}"></i> ` : ''}<b style="display:inline">${esc(o.label)}</b>${o.desc ? `<span>${esc(o.desc)}</span>` : ''}</div>
+                <i class="dmd-dot"></i><div>${o.icon ? `<i class="ph-bold ${esc(o.icon)}"></i> ` : ''}<b style="display:inline">${esc(o.label)}</b>${o.desc ? `<span>${esc(o.desc)}</span>` : ''}</div>
               </button>`).join('')}</div></div>`;
         }
         return `<div class="dmd-field">
@@ -79,7 +79,7 @@
       back.innerHTML = `
         <div class="dmd-box">
           <div class="dmd-head">
-            <span class="dmd-icon ${tone === 'danger' ? 'danger' : ''}"><i class="fa-solid ${esc(icon)}"></i></span>
+            <span class="dmd-icon ${tone === 'danger' ? 'danger' : ''}"><i class="ph-bold ${esc(icon)}"></i></span>
             <div><p class="dmd-title">${esc(title)}</p>${subtitle ? `<p class="dmd-sub">${esc(subtitle)}</p>` : ''}</div>
           </div>
           ${fieldHtml}
@@ -138,7 +138,7 @@
   window.DMDialog = {
     form: open,
     async confirm({ title, message = '', confirmText = 'تأكيد', cancelText = 'تراجع', tone = 'danger', icon }) {
-      const r = await open({ title, subtitle: message, confirmText, cancelText, tone, icon: icon || (tone === 'danger' ? 'fa-triangle-exclamation' : 'fa-circle-question') });
+      const r = await open({ title, subtitle: message, confirmText, cancelText, tone, icon: icon || (tone === 'danger' ? 'ph-warning' : 'ph-question') });
       return r !== null;
     }
   };
