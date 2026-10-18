@@ -2,6 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<link rel="stylesheet" href="/css/base.css">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/icon-192.png">
@@ -31,6 +32,17 @@
   body.ringing .card { animation: shake .5s infinite; }
   body.ringing > header, body.ringing > p { color: #fff; }
   @keyframes shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-2deg); } 75% { transform: rotate(2deg); } }
+  /* ─── لعبة الانتظار: طابق البطاقات ─── */
+  .mm-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; perspective: 800px; }
+  .mm-card { position: relative; aspect-ratio: 1; border-radius: 14px; transform-style: preserve-3d; transition: transform .35s ease; cursor: pointer; }
+  .mm-card.up, .mm-card.done { transform: rotateY(180deg); }
+  .mm-face { position: absolute; inset: 0; border-radius: 14px; display: grid; place-items: center; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+  .mm-back { background: #233d2c radial-gradient(circle at 50% 50%, rgba(201,162,39,.55) 0 3px, transparent 4px) 0 0 / 14px 14px; border: 2px solid #2f5139; }
+  .mm-front { background: #fff; border: 1.5px solid rgba(35,61,44,.15); transform: rotateY(180deg); color: #233d2c; font-size: 24px; }
+  .mm-card.done .mm-front { background: #f3ecd6; border-color: #c9a227; color: #9a7a14; }
+  .mm-card:focus-visible { outline: 3px solid #c9a227; outline-offset: 2px; }
+  @keyframes mmPop { 50% { transform: rotateY(180deg) scale(1.08); } }
+  .mm-card.pop { animation: mmPop .35s ease; }
   .hidden { display: none !important; }
 </style>
 </head>
@@ -85,6 +97,24 @@
     <button id="test-btn" class="text-xs font-black opacity-60 underline">جرّب صوت التنبيه</button>
   </section>
 
+  <!-- يتسلّى وهو ينتظر -->
+  <section id="v-game" class="card p-5 space-y-4 hidden" aria-labelledby="mm-title">
+    <div class="flex items-center justify-between gap-3">
+      <div>
+        <h2 id="mm-title" class="text-base font-black">تسلّى لين يجهز طلبك</h2>
+        <p class="text-xs font-bold opacity-60">طابق كل بطاقتين متشابهتين</p>
+      </div>
+      <span class="shrink-0 text-xs font-black bg-[#f5f2eb] rounded-full px-3 py-1.5">رقمك <span id="mm-num">—</span></span>
+    </div>
+    <div id="mm-grid" class="mm-grid" role="grid" aria-label="بطاقات اللعبة"></div>
+    <div class="flex items-center justify-between text-xs font-bold">
+      <span class="opacity-70">الحركات: <b id="mm-moves" class="tnum">0</b></span>
+      <span id="mm-best" class="opacity-70"></span>
+      <button id="mm-restart" class="font-black underline opacity-70">من جديد</button>
+    </div>
+    <p id="mm-win" class="hidden text-center text-sm font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl py-3"></p>
+  </section>
+
   <!-- جاهز -->
   <section id="v-ready" class="card p-7 text-center space-y-5 hidden">
     <div class="text-6xl">🔔</div>
@@ -104,7 +134,7 @@
   </section>
 </main>
 
-<p class="text-[11px] font-bold opacity-40 mt-8">DEV MENU</p>
+<p class="text-xs font-bold opacity-40 mt-8">DEV MENU</p>
 
 <script>
   const params = new URLSearchParams(location.search);
@@ -112,7 +142,7 @@
   const KEY = `dm_pager_${slug}`;
   const VIEWS = ['loading', 'unavailable', 'start', 'waiting', 'ready', 'done'];
   const $ = (id) => document.getElementById(id);
-  const show = (v) => VIEWS.forEach(x => $(`v-${x}`).classList.toggle('hidden', x !== v));
+  const show = (v) => { VIEWS.forEach(x => $(`v-${x}`).classList.toggle('hidden', x !== v)); $('v-game').classList.toggle('hidden', v !== 'waiting'); };
   const saveToken = (t) => { try { t ? localStorage.setItem(KEY, t) : localStorage.removeItem(KEY); } catch {} };
   const loadToken = () => { try { return localStorage.getItem(KEY) || ''; } catch { return ''; } };
 
@@ -283,6 +313,7 @@
     setStore(r.store);
     const st = r.ticket.status;
     curNumber = r.ticket.number;
+    $('mm-num').textContent = r.ticket.number;
     $('w-number').textContent = r.ticket.number; $('r-number').textContent = r.ticket.number;
     const inv = r.ticket.invoice_no || '';
     ['w-invoice', 'r-invoice'].forEach(id => { $(id).classList.toggle('hidden', !inv); $(id).querySelector('span').textContent = inv; });
@@ -323,6 +354,52 @@
       unavailable(e.code === 'FULL' ? 'وصلنا الحد اليومي للأرقام' : 'تعذر أخذ رقم', 'اسأل الكاشير.');
     } finally { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-ticket"></i> خذ رقمي وفعّل التنبيه'; }
   };
+  // ─── لعبة الانتظار: طابق البطاقات (8 أزواج) ───
+  const MM_ICONS = ['fa-mug-hot', 'fa-burger', 'fa-pizza-slice', 'fa-ice-cream', 'fa-cookie', 'fa-lemon', 'fa-carrot', 'fa-fish'];
+  const mm = { cards: [], open: [], moves: 0, matched: 0, lock: false };
+  const mmBestKey = 'dm_pager_memory_best';
+  function mmShowBest() {
+    let best = 0; try { best = Number(localStorage.getItem(mmBestKey)) || 0; } catch {}
+    $('mm-best').textContent = best ? `أفضل نتيجة: ${best} حركة` : '';
+  }
+  function mmNew() {
+    mm.cards = [...MM_ICONS, ...MM_ICONS].map(icon => ({ icon })).sort(() => Math.random() - 0.5);
+    mm.open = []; mm.moves = 0; mm.matched = 0; mm.lock = false;
+    $('mm-moves').textContent = '0'; $('mm-win').classList.add('hidden');
+    $('mm-grid').innerHTML = mm.cards.map((c, i) => `
+      <button type="button" class="mm-card" data-i="${i}" aria-label="بطاقة ${i + 1}">
+        <span class="mm-face mm-back" aria-hidden="true"></span>
+        <span class="mm-face mm-front" aria-hidden="true"><i class="fa-solid ${c.icon}"></i></span>
+      </button>`).join('');
+    mmShowBest();
+  }
+  $('mm-grid').addEventListener('click', (e) => {
+    const el = e.target.closest('.mm-card'); if (!el || mm.lock) return;
+    const i = Number(el.dataset.i), c = mm.cards[i];
+    if (c.done || mm.open.includes(i)) return;
+    el.classList.add('up'); mm.open.push(i);
+    if (mm.open.length < 2) return;
+    mm.moves++; $('mm-moves').textContent = mm.moves;
+    const [a, b] = mm.open, ea = $('mm-grid').children[a], eb = $('mm-grid').children[b];
+    if (mm.cards[a].icon === mm.cards[b].icon) {
+      mm.cards[a].done = mm.cards[b].done = true; mm.matched++; mm.open = [];
+      [ea, eb].forEach(x => { x.classList.add('done', 'pop'); x.setAttribute('aria-label', 'مطابقة'); });
+      if (navigator.vibrate) navigator.vibrate(30);
+      if (mm.matched === MM_ICONS.length) {
+        let best = 0; try { best = Number(localStorage.getItem(mmBestKey)) || 0; } catch {}
+        const record = !best || mm.moves < best;
+        if (record) try { localStorage.setItem(mmBestKey, String(mm.moves)); } catch {}
+        $('mm-win').textContent = record ? `ممتاز! خلصتها في ${mm.moves} حركة، وهذي أفضل نتيجة لك` : `خلصتها في ${mm.moves} حركة. تقدر تكسر رقمك ${best}؟`;
+        $('mm-win').classList.remove('hidden'); mmShowBest();
+      }
+    } else {
+      mm.lock = true;
+      setTimeout(() => { ea.classList.remove('up'); eb.classList.remove('up'); mm.open = []; mm.lock = false; }, 750);
+    }
+  });
+  $('mm-restart').onclick = mmNew;
+  mmNew();
+
   $('unlock-btn').onclick = unlockAudio;
   $('keep-btn').onclick = () => { unlockAudio(); startKeeper(); };
   $('push-btn').onclick = askPush;

@@ -2,6 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<link rel="stylesheet" href="/css/base.css">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/icon-192.png">
@@ -10,7 +11,8 @@
 <title>شاشة البيجر | DEV MENU</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- رمز QR بنقاط دائرية وعيون مزخرفة -->
+<script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.6.0/lib/qr-code-styling.js"></script>
 <script src="js/api.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -24,7 +26,24 @@
   .tile-ready { background: #fff7dc; color: #8a6d0f; border: 2px solid rgba(201,162,39,.5); }
   .tile .n { font-size: 46px; line-height: 1; }
   .mini { font-size: 12px; font-weight: 800; border-radius: 12px; padding: 7px 10px; }
-  @media print { body * { visibility: hidden; } #print-card, #print-card * { visibility: visible; } #print-card { position: fixed; inset: 0; margin: auto; } }
+  /* ─── بطاقة الطاولة: تنطبع لحالها على ورقة A6 ─── */
+  .qr-card { width: 340px; background: #fbf8f3; color: #1b3022; border-radius: 26px; overflow: hidden; box-shadow: 0 30px 70px -30px rgba(0,0,0,.55); }
+  .qr-card-top { background: #233d2c; color: #fbf8f3; padding: 26px 24px 70px; text-align: center; position: relative; }
+  .qr-card-top::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 44px; background: #fbf8f3; border-radius: 26px 26px 0 0; }
+  .qr-card-store { font-size: 13px; font-weight: 600; letter-spacing: .02em; color: #c9a227; }
+  .qr-card-title { font-size: 30px; line-height: 1.25; font-weight: 800; margin-top: 6px; }
+  .qr-frame { position: relative; z-index: 1; margin: -62px auto 0; width: 236px; height: 236px; padding: 14px; background: #fff; border-radius: 24px; box-shadow: 0 14px 30px -18px rgba(35,61,44,.55); border: 1px solid rgba(35,61,44,.1); }
+  .qr-frame canvas, .qr-frame svg { width: 208px !important; height: 208px !important; display: block; }
+  .qr-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 20px 20px 6px; text-align: center; }
+  .qr-steps b { display: grid; place-items: center; width: 26px; height: 26px; margin: 0 auto 6px; border-radius: 50%; background: #233d2c; color: #c9a227; font-size: 13px; font-weight: 800; }
+  .qr-steps span { font-size: 12px; font-weight: 700; line-height: 1.45; color: #34483a; }
+  .qr-card-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 20px 18px; font-size: 10px; color: #6f7d72; border-top: 1px dashed rgba(35,61,44,.18); margin: 12px 20px 0; padding-inline: 0; }
+  @media print {
+    @page { size: A6 portrait; margin: 8mm; }
+    body * { visibility: hidden; }
+    #print-card, #print-card * { visibility: visible; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    #print-card { position: fixed; inset: 0; margin: auto; box-shadow: none; }
+  }
 </style>
 </head>
 <body class="min-h-screen">
@@ -78,16 +97,25 @@
 </div>
 
 <!-- QR -->
-<div id="qr-modal" class="fixed inset-0 z-50 bg-black/50 hidden items-center justify-center p-5">
-  <div id="print-card" class="bg-white rounded-[28px] p-8 w-full max-w-sm text-center space-y-4">
-    <h3 id="qr-store" class="text-xl font-black"></h3>
-    <p class="text-base font-black text-[#233d2c]"><i class="fa-solid fa-bell text-[#c9a227]"></i> امسح وخذ رقمك</p>
-    <div id="qr-box" class="mx-auto w-fit p-3 bg-white rounded-2xl border border-[#233d2c]/10"></div>
-    <p class="text-sm font-bold opacity-70 leading-relaxed">قل رقمك للكاشير مع طلبك،<br>وبنرن جوالك لما يجهز طلبك</p>
-    <p id="qr-url" class="text-[11px] font-bold opacity-50 break-all" dir="ltr"></p>
-    <div class="flex gap-2 pt-2 print:hidden">
-      <button onclick="window.print()" class="flex-1 bg-[#233d2c] text-[#f5f2eb] font-black rounded-2xl py-3"><i class="fa-solid fa-print"></i> طباعة</button>
-      <button id="qr-close" class="flex-1 bg-white border border-[#233d2c]/20 font-black rounded-2xl py-3">إغلاق</button>
+<div id="qr-modal" class="fixed inset-0 z-50 bg-black/75 hidden items-center justify-center p-5">
+  <div class="space-y-3">
+    <div id="print-card" class="qr-card">
+      <div class="qr-card-top">
+        <p id="qr-store" class="qr-card-store"></p>
+        <h3 class="qr-card-title">امسح وخذ رقمك</h3>
+      </div>
+      <div class="qr-frame"><div id="qr-box"></div></div>
+      <div class="qr-steps">
+        <div><b>1</b><span>امسح الرمز بكاميرا جوالك</span></div>
+        <div><b>2</b><span>قل رقمك للكاشير مع طلبك</span></div>
+        <div><b>3</b><span>يرن جوالك لما يجهز طلبك</span></div>
+      </div>
+      <div class="qr-card-foot"><span id="qr-url" dir="ltr" class="truncate"></span><span class="shrink-0">DEV MENU</span></div>
+    </div>
+    <div class="flex gap-2 print:hidden">
+      <button onclick="window.print()" class="flex-1 bg-[#c9a227] text-[#15271b] font-black rounded-2xl py-3"><i class="fa-solid fa-print"></i> طباعة</button>
+      <button id="qr-download" class="flex-1 bg-white font-black rounded-2xl py-3"><i class="fa-solid fa-download"></i> تحميل الرمز</button>
+      <button id="qr-close" class="bg-white/15 text-white font-black rounded-2xl px-4 py-3" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
     </div>
   </div>
 </div>
@@ -219,11 +247,24 @@
     if (!slug) return;
     const url = DM.storeUrl(slug, 'pager');
     $('qr-store').textContent = $('store-name').textContent;
-    $('qr-url').textContent = url;
+    $('qr-url').textContent = url.replace(/^https?:\/\//, '');
     $('qr-box').innerHTML = '';
-    new QRCode($('qr-box'), { text: url, width: 220, height: 220, colorDark: '#15271b', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    // جرس ذهبي في نص الرمز (تصحيح أخطاء H يتحمّل الشعار)
+    const bell = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="#233d2c"/><path fill="#c9a227" d="M32 14a3 3 0 0 0-3 3v1.4C22.7 19.8 19 25.3 19 31.5V39l-4 4v2h34v-2l-4-4v-7.5c0-6.2-3.7-11.7-10-13.1V17a3 3 0 0 0-3-3Zm-5 33a5 5 0 0 0 10 0Z"/></svg>');
+    qrCode = new QRCodeStyling({
+      width: 416, height: 416, type: 'canvas', data: url, image: bell, margin: 0,
+      qrOptions: { errorCorrectionLevel: 'H' },
+      dotsOptions: { type: 'rounded', color: '#1b3022' },
+      cornersSquareOptions: { type: 'extra-rounded', color: '#233d2c' },
+      cornersDotOptions: { type: 'dot', color: '#c9a227' },
+      backgroundOptions: { color: '#ffffff' },
+      imageOptions: { margin: 6, imageSize: 0.22, hideBackgroundDots: true }
+    });
+    qrCode.append($('qr-box'));
     $('qr-modal').classList.replace('hidden', 'flex');
   };
+  let qrCode = null;
+  $('qr-download').onclick = () => qrCode && qrCode.download({ name: `pager-qr-${slug}`, extension: 'png' });
   $('qr-close').onclick = () => $('qr-modal').classList.replace('flex', 'hidden');
   document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
 
