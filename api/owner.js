@@ -10,7 +10,9 @@ const {
 const { FIELDS, normalizeSettings, riyadhDayStart, positionOf, emailTemplate, statusUrlFor } = require('./_lib/waitlist');
 const { sendMail, mailConfigured } = require('./_lib/mail');
 const { draftReviewReply } = require('./_lib/ai');
-const { sendPush } = require('./_lib/push');
+const { sendPush, pushPublicKey, cleanSubscription } = require('./_lib/push');
+const google = require('./_lib/google');
+const { syncStore } = require('./_lib/reviews');
 
 const bySort = (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id;
 const COFFEE_TYPES = ['cafe', 'mixed'];
@@ -332,13 +334,100 @@ module.exports = handler(['GET', 'POST'], async (req) => {
   if (action === 'review-drafts' && req.method === 'GET') {
     const { store, admin } = await context(req);
     if (!store.reviews_enabled && !admin) throw new ApiError(403, 'ردود التقييمات غير مفعّلة لمتجرك', 'ADDON_OFF');
-    const drafts = await rest(`review_drafts?client_id=eq.${store.id}&select=id,reviewer,rating,review,reply,created_at&order=id.desc&limit=15`).catch(() => []);
+    const base = `review_drafts?client_id=eq.${store.id}&order=id.desc&limit=30&select=id,reviewer,rating,review,reply,created_at`;
+    // أعمدة الحالة من 26-google-reviews.sql — لو ما انضافت نكمل بالسجل اليدوي
+    const drafts = await rest(`${base},source,status,reviewed_at,posted_at,error`).catch(() => rest(base).catch(() => []));
     return { drafts };
+  }
+
+  // ─── ربط قوقل ماب: الحالة ───
+  if (action === 'google-status' && req.method === 'GET') {
+    const { store, admin } = await context(req);
+    if (!store.reviews_enabled && !admin) throw new ApiError(403, 'ردود التقييمات غير مفعّلة لمتجرك', 'ADDON_OFF');
+    let conn = null;
+    try { conn = (await rest(`google_connections?client_id=eq.${store.id}&select=google_email,location_title,location_name,last_sync_at,sync_error,connected_at`))[0] || null; }
+    catch { return { configured: google.configured(), ready: false }; }   // 26-google-reviews.sql ما انشغّل
+    return {
+      configured: google.configured(), ready: true, push_key: pushPublicKey(),
+      connected: !!conn, google_email: conn && conn.google_email, location_title: conn && conn.location_title,
+      has_location: !!(conn && conn.location_name), last_sync_at: conn && conn.last_sync_at, sync_error: conn && conn.sync_error
+    };
+  }
+
+  // فروع حساب قوقل (لو عنده أكثر من فرع يختار واحد)
+  if (action === 'google-locations' && req.method === 'GET') {
+    const { store } = await context(req);
+    const conn = (await rest(`google_connections?client_id=eq.${store.id}&select=refresh_token_enc`))[0];
+    if (!conn) throw new ApiError(400, 'اربط حساب قوقل أولاً');
+    return { locations: await google.listLocations(await google.accessToken(conn.refresh_token_enc)) };
   }
 
   if (req.method !== 'POST') throw new ApiError(404, 'Unknown action');
   const { store, admin } = await context(req);
   const sid = store.id;
+
+  // ─── ربط قوقل ماب ───
+  const reviewsGate = () => { if (!store.reviews_enabled && !admin) throw new ApiError(403, 'ردود التقييمات غير مفعّلة لمتجرك', 'ADDON_OFF'); };
+  const googleConn = async () => {
+    const c = (await rest(`google_connections?client_id=eq.${sid}&select=*`))[0];
+    if (!c) throw new ApiError(400, 'اربط حساب قوقل أولاً', 'GOOGLE_NOT_CONNECTED');
+    return c;
+  };
+  if (action === 'google-connect') {
+    reviewsGate();
+    return { url: google.authUrl(sid, String(b.back || '')) };
+  }
+  if (action === 'google-select') {
+    reviewsGate();
+    const conn = await googleConn();
+    // نتأكد إن الفرع فعلاً تابع لحسابه في قوقل
+    const all = await google.listLocations(await google.accessToken(conn.refresh_token_enc));
+    const l = all.find(x => x.location === b.location && x.account === b.account);
+    if (!l) throw new ApiError(400, 'الفرع غير موجود في حسابك');
+    await rest(`google_connections?client_id=eq.${sid}`, { method: 'PATCH', body: { account_name: l.account, location_name: l.location, location_title: l.title, last_sync_at: null } });
+    return { ok: true, location_title: l.title };
+  }
+  if (action === 'google-disconnect') {
+    await rest(`google_connections?client_id=eq.${sid}`, { method: 'DELETE' });
+    return { ok: true };
+  }
+  if (action === 'google-sync') {
+    reviewsGate();
+    const conn = await googleConn();
+    if (conn.last_sync_at && Date.now() - Date.parse(conn.last_sync_at) < 60e3) return { added: 0, recent: true };
+    return await syncStore(store, conn);
+  }
+  // الموافقة: ينشر الرد في قوقل ماب باسم المطعم (بعد تعديل صاحب المطعم لو عدّل)
+  if (action === 'review-approve') {
+    reviewsGate();
+    const id = int(b.id);
+    const reply = str(b.reply, 4000, 'الرد');
+    if (!reply) throw new ApiError(400, 'الرد فاضي');
+    const d = (await rest(`review_drafts?id=eq.${id}&client_id=eq.${sid}&select=*`))[0];
+    if (!d || d.source !== 'google' || !d.google_name) throw new ApiError(404, 'التعليق غير موجود');
+    if (d.status === 'posted') return { ok: true, already: true };
+    const conn = await googleConn();
+    try {
+      await google.postReply(await google.accessToken(conn.refresh_token_enc), d.google_name, reply);
+    } catch (e) {
+      await rest(`review_drafts?id=eq.${id}`, { method: 'PATCH', body: { status: 'failed', reply, error: e.message } }).catch(() => {});
+      throw e;
+    }
+    await rest(`review_drafts?id=eq.${id}`, { method: 'PATCH', body: { status: 'posted', reply, posted_at: new Date().toISOString(), error: null } });
+    return { ok: true };
+  }
+  if (action === 'review-dismiss') {
+    const id = int(b.id);
+    await rest(`review_drafts?id=eq.${id}&client_id=eq.${sid}&status=in.(pending,failed)`, { method: 'PATCH', body: { status: 'dismissed' } });
+    return { ok: true };
+  }
+  // إشعارات "تعليق جديد" على جهاز صاحب المطعم
+  if (action === 'owner-push') {
+    const sub = cleanSubscription(b.sub);
+    if (!sub) throw new ApiError(400, 'اشتراك الإشعارات غير صالح');
+    await rest('owner_push?on_conflict=endpoint', { method: 'POST', body: { client_id: sid, endpoint: sub.endpoint, sub }, prefer: 'resolution=merge-duplicates' });
+    return { ok: true };
+  }
 
   // ─── ردود التقييمات: الذكاء الاصطناعي يكتب رد على تعليق قوقل ماب (إضافة مدفوعة) ───
   if (action === 'review-draft') {

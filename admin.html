@@ -909,7 +909,18 @@ tailwind.config = {
         </div>
 
         <!-- مفعّلة -->
-        <div id="rv-app" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        <div id="rv-app" class="hidden space-y-5">
+          <!-- ربط قوقل ماب -->
+          <div id="gg-card" class="hidden pro-card p-5"></div>
+
+          <!-- بانتظار موافقتك -->
+          <div id="rv-pending-wrap" class="hidden space-y-3">
+            <h3 class="text-[15px] font-bold">بانتظار موافقتك <span id="rv-pending-count" class="text-ink/50 font-normal tnum"></span></h3>
+            <div id="rv-pending" class="space-y-3"></div>
+          </div>
+
+          <h3 id="rv-manual-title" class="hidden text-[15px] font-bold pt-2">رد يدوي على أي تعليق</h3>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           <form id="rv-form" class="pro-card p-5 lg:col-span-5 space-y-4" novalidate>
             <h3 class="text-[15px] font-bold">التعليق</h3>
             <div>
@@ -922,7 +933,7 @@ tailwind.config = {
             </div>
             <div>
               <label for="rv-review" class="text-xs font-semibold text-ink/70 block mb-1.5">نص التعليق</label>
-              <textarea id="rv-review" rows="5" maxlength="4000" class="input-pro leading-relaxed" placeholder="انسخ التعليق من قوقل ماب والصقه هنا"></textarea>
+              <textarea id="rv-review" rows="5" maxlength="4000" dir="auto" class="input-pro leading-relaxed" placeholder="انسخ التعليق من قوقل ماب والصقه هنا"></textarea>
             </div>
             <details class="group">
               <summary class="text-xs font-semibold text-ink/70 cursor-pointer select-none list-none flex items-center gap-1.5"><i class="fa-solid fa-plus text-[10px] group-open:rotate-45 transition"></i> معلومة تبيها في الرد <span class="font-normal text-ink/50">(اختياري)</span></summary>
@@ -955,11 +966,11 @@ tailwind.config = {
                       <p id="rv-t-stars" class="text-saffron text-xs tracking-wider" aria-hidden="true"></p>
                     </div>
                   </div>
-                  <p id="rv-t-review" class="text-sm text-ink/80 leading-relaxed mt-2 whitespace-pre-line"></p>
+                  <p id="rv-t-review" dir="auto" class="text-sm text-ink/80 leading-relaxed mt-2 whitespace-pre-line"></p>
                 </div>
                 <div class="border-s-2 border-saffron ps-4">
                   <p class="text-xs font-semibold text-ink/60 mb-1.5">ردّك <span class="font-normal">(تقدر تعدّل عليه)</span></p>
-                  <textarea id="rv-reply" rows="5" class="input-pro leading-relaxed text-[15px]"></textarea>
+                  <textarea id="rv-reply" rows="5" dir="auto" class="input-pro leading-relaxed text-[15px]"></textarea>
                 </div>
                 <div class="flex flex-wrap gap-2">
                   <button type="button" id="rv-copy" class="bg-brand hover:bg-brand-dark text-cream font-bold px-4 py-2.5 rounded-xl text-sm transition"><i class="fa-regular fa-copy"></i> نسخ الرد</button>
@@ -974,6 +985,7 @@ tailwind.config = {
               <div id="rv-history" class="mt-2"><p class="text-sm text-ink/55 py-4 text-center">ما كتبت ردود للحين.</p></div>
             </div>
           </div>
+        </div>
         </div>
       </section>
 
@@ -3331,6 +3343,159 @@ tailwind.config = {
       <button type="button" role="radio" aria-checked="${rv.rating === n}" aria-label="${n} ${n === 1 ? 'نجمة' : 'نجوم'}" data-star="${n}"
         class="w-11 h-11 rounded-xl text-xl transition ${n <= rv.rating ? 'text-saffron' : 'text-ink/20 hover:text-ink/40'}"><i class="fa-solid fa-star"></i></button>`).join('');
   }
+  // ─── ربط قوقل ماب: الرد التلقائي ───
+  let gg = null;
+  const ggBack = () => { const p = new URLSearchParams(location.search); return p.get('client') ? `?client=${p.get('client')}` : p.get('branch') ? `?branch=${p.get('branch')}` : ''; };
+  async function loadGoogle() {
+    try { gg = await api('google-status'); } catch { gg = null; }
+    renderGoogle();
+  }
+  function renderGoogle() {
+    const card = document.getElementById('gg-card');
+    const show = !!(gg && gg.configured && gg.ready);
+    card.classList.toggle('hidden', !show);
+    document.getElementById('rv-manual-title').classList.toggle('hidden', !show);
+    if (!show) return;
+    const gIcon = '<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>';
+    if (!gg.connected) {
+      card.innerHTML = `
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div class="flex-1">
+            <h3 class="text-[15px] font-bold">الرد التلقائي على تقييمات قوقل ماب</h3>
+            <p class="text-sm text-ink/65 mt-1 leading-relaxed">اربط حساب قوقل اللي تدير منه مطعمك. أول ما يكتب أحد تعليق، نكتب لك الرد ونرسل لك إشعار، وما ينزل الرد في قوقل إلا بعد موافقتك.</p>
+          </div>
+          <button type="button" onclick="connectGoogle()" class="shrink-0 flex items-center justify-center gap-2 bg-white border border-brand/25 hover:border-brand/50 text-ink font-semibold px-4 py-3 rounded-xl text-sm transition">${gIcon} ربط حساب قوقل</button>
+        </div>`;
+      return;
+    }
+    const pushOn = typeof Notification !== 'undefined' && Notification.permission === 'granted' && localStorage.getItem('dm_owner_push') === '1';
+    const last = gg.last_sync_at ? new Date(gg.last_sync_at).toLocaleString('ar-SA-u-ca-gregory', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : 'ما صار للحين';
+    card.innerHTML = `
+      <div class="flex flex-col sm:flex-row sm:items-start gap-4">
+        <div class="flex-1 min-w-0">
+          <p class="flex items-center gap-2 text-[15px] font-bold">${gIcon} ${gg.has_location ? esc(gg.location_title || 'فرعك في قوقل ماب') : 'حساب قوقل مربوط'}</p>
+          <p class="text-xs text-ink/60 mt-1" dir="auto">${esc(gg.google_email || '')}${gg.has_location ? ` · آخر تحديث: ${esc(last)}` : ''}</p>
+          ${gg.sync_error ? `<p class="text-sm text-brick font-semibold mt-2">${esc(gg.sync_error)}</p>` : ''}
+          ${!gg.has_location ? '<div id="gg-locations" class="mt-3 text-sm text-ink/60">جاري جلب فروعك من قوقل…</div>' : ''}
+        </div>
+        <div class="flex flex-wrap gap-2 shrink-0">
+          ${gg.has_location ? `<button type="button" onclick="syncGoogle(this)" class="bg-brand hover:bg-brand-dark text-cream font-semibold px-4 py-2.5 rounded-xl text-sm transition"><i class="fa-solid fa-rotate"></i> جيب التعليقات الحين</button>` : ''}
+          ${pushOn ? '<span class="text-xs font-semibold text-green-800 bg-green-50 border border-green-200 px-3 py-2.5 rounded-xl"><i class="fa-solid fa-bell"></i> الإشعارات مفعّلة هنا</span>'
+                   : `<button type="button" onclick="enableOwnerPush(this)" class="bg-saffron/15 hover:bg-saffron/25 text-amber-900 font-semibold px-4 py-2.5 rounded-xl text-sm transition"><i class="fa-solid fa-bell"></i> فعّل الإشعارات على هذا الجهاز</button>`}
+          <button type="button" onclick="disconnectGoogle()" class="text-ink/60 hover:text-brick font-semibold px-3 py-2.5 rounded-xl text-sm transition">فصل الربط</button>
+        </div>
+      </div>`;
+    if (!gg.has_location) loadGoogleLocations();
+  }
+  async function loadGoogleLocations() {
+    const box = document.getElementById('gg-locations'); if (!box) return;
+    try {
+      const { locations } = await api('google-locations');
+      box.innerHTML = locations.length
+        ? `<p class="font-semibold text-ink mb-2">اختر فرعك:</p><div class="space-y-2">${locations.map((l, i) => `
+            <button type="button" data-loc="${i}" class="w-full text-right border border-brand/20 hover:border-brand/50 rounded-xl px-4 py-3 transition">
+              <span class="block font-semibold text-ink">${esc(l.title)}</span>${l.address ? `<span class="block text-xs text-ink/55">${esc(l.address)}</span>` : ''}</button>`).join('')}</div>`
+        : '<p class="text-brick font-semibold">ما لقينا أي نشاط في قوقل ماب على هذا الحساب. اربط الحساب اللي تدير منه مطعمك.</p>';
+      box.querySelectorAll('[data-loc]').forEach(b => b.onclick = async () => {
+        const l = locations[Number(b.dataset.loc)];
+        try { await api('google-select', { account: l.account, location: l.location }); showToast(`انربط فرع "${l.title}"`); loadGoogle(); }
+        catch (e) { showToast(e.message || 'تعذر الحفظ', true); }
+      });
+    } catch (e) { box.innerHTML = `<p class="text-brick font-semibold">${esc(e.message || 'تعذر جلب الفروع من قوقل')}</p>`; }
+  }
+  async function connectGoogle() {
+    try { const { url } = await api('google-connect', { back: ggBack() }); location.href = url; }
+    catch (e) { showToast(e.message || 'تعذر بدء الربط', true); }
+  }
+  async function syncGoogle(btn) {
+    btn.disabled = true; const old = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الجلب…';
+    try {
+      const r = await api('google-sync', {});
+      showToast(r.recent ? 'تحدّث قبل شوي' : r.added ? `وصلت ${r.added} ${r.added === 1 ? 'تعليق جديد' : 'تعليقات جديدة'}` : 'ما فيه تعليقات جديدة بدون رد');
+    } catch (e) { showToast(e.message || 'تعذر الجلب', true); }
+    btn.disabled = false; btn.innerHTML = old;
+    loadGoogle(); loadRvHistory();
+  }
+  async function disconnectGoogle() {
+    if (!(await DMDialog.confirm({ title: 'فصل حساب قوقل؟', message: 'يوقف جلب التعليقات والرد التلقائي. الردود المنشورة تبقى في قوقل.', confirmText: 'فصل', tone: 'danger' }))) return;
+    try { await api('google-disconnect', {}); showToast('انفصل حساب قوقل'); loadGoogle(); } catch { showToast('تعذر الفصل', true); }
+  }
+  const b64key = (s) => { const p = '='.repeat((4 - s.length % 4) % 4); const r = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from([...r].map(c => c.charCodeAt(0))); };
+  async function enableOwnerPush(btn) {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !gg || !gg.push_key) {
+      return showToast(/iphone|ipad/i.test(navigator.userAgent) ? 'على الآيفون: أضف لوحة التحكم للشاشة الرئيسية أول (زر المشاركة ← إضافة إلى الشاشة الرئيسية)' : 'متصفحك ما يدعم الإشعارات، بيوصلك إيميل بدالها', true);
+    }
+    btn.disabled = true;
+    try {
+      if (await Notification.requestPermission() !== 'granted') throw new Error('رفضت الإشعارات في المتصفح، فعّلها من إعدادات الموقع');
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.ready;
+      const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64key(gg.push_key) });
+      await api('owner-push', { sub: sub.toJSON() });
+      try { localStorage.setItem('dm_owner_push', '1'); } catch {}
+      showToast('تمام! بيجيك إشعار أول ما يوصل تعليق جديد');
+      renderGoogle();
+    } catch (e) { showToast(e.message || 'تعذر تفعيل الإشعارات', true); btn.disabled = false; }
+  }
+  // رسالة الرجوع من صفحة قوقل
+  (function googleReturn() {
+    const p = new URLSearchParams(location.search), st = p.get('google'); if (!st) return;
+    const msgs = {
+      connected: ['انربط حساب قوقل. أول ما يوصل تعليق جديد بنكتب لك الرد ونبلغك.', false],
+      choose: ['انربط حساب قوقل. اختر فرعك من القائمة.', false],
+      pending: ['انربط حسابك، والجلب التلقائي يبدأ أول ما يوافق قوقل على صلاحية DEV MENU.', false],
+      nolocation: ['ما لقينا نشاط في قوقل ماب على هذا الحساب. اربط الحساب اللي تدير منه مطعمك.', true],
+      denied: ['ألغيت الربط من صفحة قوقل.', true],
+      scope: ['لازم تسمح بصلاحية "إدارة نشاطك التجاري" في صفحة قوقل، جرّب الربط مرة ثانية.', true],
+      expired: ['انتهت صلاحية رابط الربط، جرّب مرة ثانية.', true],
+      error: ['تعذر الربط مع قوقل، جرّب مرة ثانية.', true]
+    };
+    const m = msgs[st] || msgs.error;
+    setTimeout(() => showToast(m[0], m[1]), 800);
+    p.delete('google');
+    history.replaceState(null, '', location.pathname + (p.toString() ? `?${p}` : '') + location.hash);
+  })();
+
+  // التعليقات اللي جت من قوقل وتنتظر موافقة صاحب المطعم
+  function renderPending() {
+    const list = rv.drafts.filter(d => d.source === 'google' && (d.status === 'pending' || d.status === 'failed'));
+    document.getElementById('rv-pending-wrap').classList.toggle('hidden', !list.length);
+    document.getElementById('rv-pending-count').textContent = list.length ? `(${list.length})` : '';
+    document.getElementById('rv-pending').innerHTML = list.map(d => `
+      <div class="pro-card p-5 space-y-3" data-pending="${Number(d.id)}">
+        <div class="flex items-center gap-2">
+          <span class="w-9 h-9 rounded-full bg-brand/10 grid place-items-center font-bold text-sm">${esc((d.reviewer || '؟').trim().charAt(0))}</span>
+          <div class="min-w-0"><p class="text-sm font-semibold truncate">${esc(d.reviewer || 'عميل')}</p><p class="text-saffron text-xs tracking-wider">${starsText(d.rating)}</p></div>
+          <span class="mr-auto text-xs text-ink/50">${d.reviewed_at ? new Date(d.reviewed_at).toLocaleDateString('ar-SA-u-ca-gregory', { day: 'numeric', month: 'short' }) : ''}</span>
+        </div>
+        <p dir="auto" class="text-sm text-ink/80 leading-relaxed whitespace-pre-line">${esc(d.review)}</p>
+        <div class="border-s-2 border-saffron ps-4">
+          <p class="text-xs font-semibold text-ink/60 mb-1.5">الرد المقترح <span class="font-normal">(تقدر تعدّل عليه قبل النشر)</span></p>
+          <textarea rows="4" dir="auto" class="input-pro leading-relaxed text-[15px]" data-reply>${esc(d.reply)}</textarea>
+        </div>
+        ${d.status === 'failed' && d.error ? `<p class="text-sm text-brick font-semibold">ما انتشر: ${esc(d.error)}</p>` : ''}
+        <div class="flex flex-wrap gap-2">
+          <button type="button" data-approve class="bg-brand hover:bg-brand-dark text-cream font-bold px-4 py-2.5 rounded-xl text-sm transition"><i class="fa-solid fa-check"></i> وافق وانشر في قوقل</button>
+          <button type="button" data-dismiss class="text-ink/60 hover:text-ink font-semibold px-3 py-2.5 rounded-xl text-sm transition">تجاهل</button>
+        </div>
+      </div>`).join('');
+  }
+  document.getElementById('rv-pending').addEventListener('click', async (e) => {
+    const card = e.target.closest('[data-pending]'); if (!card) return;
+    const id = Number(card.dataset.pending);
+    if (e.target.closest('[data-approve]')) {
+      const btn = e.target.closest('[data-approve]'), reply = card.querySelector('[data-reply]').value.trim();
+      if (!reply) return showToast('الرد فاضي', true);
+      btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري النشر…';
+      try { await api('review-approve', { id, reply }); showToast('انتشر ردك في قوقل ماب'); }
+      catch (err) { showToast(err.message || 'تعذر النشر', true); }
+      loadRvHistory();
+    } else if (e.target.closest('[data-dismiss]')) {
+      try { await api('review-dismiss', { id }); showToast('تم التجاهل، ما انتشر شي'); } catch { showToast('تعذر', true); }
+      loadRvHistory();
+    }
+  });
+
   function onReviewsPage() {
     if (!client) return;
     const on = client.reviews_enabled === true || isSuperAdmin;
@@ -3340,15 +3505,18 @@ tailwind.config = {
     if (!on) return;
     renderRvStars();
     loadRvHistory();
+    loadGoogle();
   }
   async function loadRvHistory() {
     try { rv.drafts = (await api('review-drafts')).drafts || []; } catch { rv.drafts = []; }
+    renderPending();
+    const STATUS = { posted: ['انتشر في قوقل', 'text-green-800'], pending: ['بانتظار موافقتك', 'text-amber-800'], dismissed: ['تجاهلته', 'text-ink/50'], failed: ['ما انتشر', 'text-brick'] };
     const box = document.getElementById('rv-history');
     box.innerHTML = rv.drafts.length ? rv.drafts.map(d => `
       <button type="button" data-draft="${Number(d.id)}" class="w-full text-right py-3 border-b border-brand/10 last:border-0 hover:bg-brand/[0.03] transition">
         <span class="flex items-center justify-between gap-2">
           <span class="text-sm font-semibold truncate">${esc(d.reviewer || 'بدون اسم')} <span class="text-saffron text-xs">${starsText(d.rating)}</span></span>
-          <span class="text-xs text-ink/50 shrink-0">${new Date(d.created_at).toLocaleDateString('ar-SA-u-ca-gregory', { day: 'numeric', month: 'short' })}</span>
+          <span class="text-xs shrink-0 ${(STATUS[d.status] || ['', 'text-ink/50'])[1]}">${d.source === 'google' && STATUS[d.status] ? STATUS[d.status][0] + ' · ' : ''}${new Date(d.created_at).toLocaleDateString('ar-SA-u-ca-gregory', { day: 'numeric', month: 'short' })}</span>
         </span>
         <span class="block text-xs text-ink/60 truncate mt-0.5">${esc(d.review)}</span>
       </button>`).join('') : '<p class="text-sm text-ink/55 py-4 text-center">ما كتبت ردود للحين.</p>';

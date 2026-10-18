@@ -1,4 +1,4 @@
-// DEV MENU — Service Worker للبيجر: يستقبل إشعار "طلبك جاهز" حتى لو الصفحة مسكّرة أو الجوال مقفول
+// DEV MENU — Service Worker: إشعار "طلبك جاهز" للبيجر، و"تعليق جديد في قوقل ماب" لصاحب المطعم، حتى لو الصفحة مسكّرة
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
 
@@ -23,7 +23,10 @@ self.addEventListener('notificationclick', (event) => {
   const url = (event.notification.data && event.notification.data.url) || '/';
   event.waitUntil((async () => {
     const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    const open = all.find(c => c.url.includes('/pager'));
+    // نفس الصفحة مفتوحة (البيجر أو لوحة التحكم) ← نرجع لها، وإلا نفتح الرابط
+    const path = new URL(url, self.location.origin).pathname;
+    const open = all.find(c => new URL(c.url).pathname === path);
+    if (open && 'navigate' in open && url.includes('#')) { await open.navigate(url).catch(() => {}); return open.focus(); }
     if (open) return open.focus();
     return self.clients.openWindow(url);
   })());
