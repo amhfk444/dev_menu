@@ -285,7 +285,8 @@
       suspended: st.filter(s => s.key === 'suspended').length,
       waitlist: accounts.filter(c => c.waitlist_enabled).length,
       featured: accounts.filter(c => c.is_featured).length,
-      noEmail: accounts.filter(c => !c.email).length
+      noEmail: accounts.filter(c => !c.email).length,
+      requests: accounts.filter(c => c.requested_plan).length
     };
   }
 
@@ -336,7 +337,7 @@
 
   // ─── الفلاتر والبحث ───
   const FILTERS = [
-    ['all', 'الكل'], ['paid', 'مشتركون'], ['trial', 'تجريبي'], ['soon', 'ينتهي قريباً'], ['expired', 'منتهي'],
+    ['all', 'الكل'], ['requests', 'طلبات اشتراك'], ['paid', 'مشتركون'], ['trial', 'تجريبي'], ['soon', 'ينتهي قريباً'], ['expired', 'منتهي'],
     ['suspended', 'موقوف'], ['waitlist', 'قائمة الانتظار'], ['featured', 'أمثلة الرئيسية'], ['noEmail', 'بدون بريد']
   ];
   function setFilter(f) { filter = f; renderKpis(); renderFilters(); renderStores(); }
@@ -351,7 +352,7 @@
   function visibleClients() {
     const q = document.getElementById('search').value.trim().toLowerCase();
     const match = {
-      all: () => true, soon: isSoon, waitlist: c => c.waitlist_enabled, featured: c => c.is_featured, noEmail: c => !c.email,
+      all: () => true, requests: c => !!c.requested_plan, soon: isSoon, waitlist: c => c.waitlist_enabled, featured: c => c.is_featured, noEmail: c => !c.email,
       paid: c => statusOf(c).key === 'paid', trial: c => statusOf(c).key === 'trial',
       expired: c => statusOf(c).key === 'expired', suspended: c => statusOf(c).key === 'suspended'
     }[filter];
@@ -361,6 +362,8 @@
     if (sort === 'name') list.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ar'));
     else if (sort === 'expiry') list.sort((a, b) => (statusOf(a).left ?? 1e9) - (statusOf(b).left ?? 1e9));
     else list.sort((a, b) => b.id - a.id);
+    // طلبات الاشتراك المعلّقة دايماً فوق
+    list.sort((a, b) => (b.requested_plan ? 1 : 0) - (a.requested_plan ? 1 : 0));
     return list;
   }
 
@@ -392,7 +395,8 @@
             ${branchesOf(c).length ? `<p class="text-[10px] font-bold text-emerald-700 mt-0.5"><i class="ph-bold ph-tree-structure"></i> حساب واحد: المتجر + ${branchesOf(c).length} ${branchesOf(c).length === 1 ? 'فرع' : 'فروع'}</p>` : ''}
             <p class="text-[11px] text-ink/55 flex items-center gap-1.5 mt-0.5"><i class="ph-bold ${type[1]} text-[10px]"></i> ${type[0]} · <span class="font-mono" dir="ltr">${esc(c.client_slug)}</span></p>
             <div class="flex flex-wrap gap-1.5 mt-2">
-              <span class="text-[10px] font-black px-2 py-0.5 rounded-full border ${s.cls}">${s.label}</span>
+              <span class="text-[10px] font-black px-2 py-0.5 rounded-full border ${s.cls}">${s.label}${s.key === 'paid' && c.subscription_plan ? ` ${c.subscription_plan === 'month' ? 'شهري' : 'سنوي'}` : ''}</span>
+              ${c.requested_plan ? `<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-amber-400/20 text-amber-900 border-amber-500/40"><i class="ph-bold ph-bell-simple-ringing"></i> يبي ${c.requested_plan === 'month' ? 'الشهري' : 'السنوي'} · ${money(totalFor(c, c.requested_plan))}${c.plan_requested_at ? ` · ${new Date(c.plan_requested_at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short' })}` : ''}</span>` : ''}
               ${isProspect(c) ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-purple-500/10 text-purple-700 border-purple-500/20"><i class="ph-bold ph-magic-wand"></i> عميل محتمل</span>' : ''}
               ${c.reviews_enabled ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-violet-500/10 text-violet-700 border-violet-500/20"><i class="ph-bold ph-star-half"></i> ردود AI</span>' : ''}
               ${c.waitlist_enabled ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-sky-500/10 text-sky-700 border-sky-500/20"><i class="ph-bold ph-hourglass-medium"></i> الانتظار</span>' : ''}
@@ -410,8 +414,8 @@
         ${branchesOf(c).length ? branchesBox(c) : ''}
 
         <div class="grid grid-cols-[1fr_auto_auto] gap-1.5 mt-auto">
-          <button onclick="activate(${id}, 'year')" class="bg-brand hover:bg-brand-dark text-cream rounded-xl py-2.5 text-[12px] font-black">${branchesOf(c).length ? 'تجديد سنة' : 'تفعيل سنة'} · ${money(totalFor(c, 'year'))}</button>
-          <button onclick="activate(${id}, 'month')" class="bg-brand/10 hover:bg-brand/15 border border-brand/15 text-ink rounded-xl px-3 py-2.5 text-[12px] font-black">شهر · ${money(totalFor(c, 'month'))}</button>
+          <button onclick="activate(${id}, 'year')" class="bg-brand hover:bg-brand-dark text-cream rounded-xl py-2.5 text-[12px] font-black ${c.requested_plan === 'year' ? 'ring-4 ring-amber-400' : ''}">${branchesOf(c).length ? 'تجديد سنة' : 'تفعيل سنة'} · ${money(totalFor(c, 'year'))}</button>
+          <button onclick="activate(${id}, 'month')" class="bg-brand/10 hover:bg-brand/15 border border-brand/15 text-ink rounded-xl px-3 py-2.5 text-[12px] font-black ${c.requested_plan === 'month' ? 'ring-4 ring-amber-400' : ''}">شهر · ${money(totalFor(c, 'month'))}</button>
           <div class="relative">
             <button onclick="toggleMenu(event, ${id})" aria-label="المزيد" class="w-10 h-full rounded-xl bg-brand/10 hover:bg-brand/15 border border-brand/15"><i class="ph-bold ph-dots-three"></i></button>
             ${openMenu === id ? moreMenu(c, slug) : ''}

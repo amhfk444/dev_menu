@@ -424,6 +424,29 @@ async function main(req) {
     return { ok: true };
   }
   // إشعارات "تعليق جديد" على جهاز صاحب المطعم
+  // ─── اختيار الباقة: صاحب المتجر يختار شهري أو سنوي، ويظهر الطلب في لوحة المشتركين ───
+  if (action === 'plan-request') {
+    const plan = ['month', 'year'].includes(b.plan) ? b.plan : null;
+    if (!plan) throw new ApiError(400, 'اختر الباقة: شهري أو سنوي');
+    const mainId = store.parent_id || sid;   // اشتراك الفروع تابع للمتجر الرئيسي
+    const main = (await rest(`clients?id=eq.${mainId}`, {
+      method: 'PATCH', body: { requested_plan: plan, plan_requested_at: new Date().toISOString() }, prefer: 'return=representation'
+    }))[0];
+    if (!main) throw new ApiError(404, 'المتجر غير موجود');
+    console.log('PLAN_REQUEST', mainId, plan);
+    // تنبيه للإدارة بالبريد
+    const to = process.env.ADMIN_EMAIL || 'dmenu950@gmail.com';
+    if (mailConfigured()) {
+      const label = plan === 'month' ? 'الشهرية' : 'السنوية';
+      await sendMail({
+        to, fromName: 'DEV MENU',
+        subject: `طلب اشتراك: ${main.name} (الباقة ${label})`,
+        text: `${main.name} (${main.client_slug}) اختار الباقة ${label}.\nجوال: ${main.phone || '-'}\nبريد: ${main.email || '-'}\nفعّلها من لوحة المشتركين: https://www.devmenu.digital/super-admin.html`
+      }).catch(e => console.error('PLAN_MAIL', e.message));
+    }
+    return { requested_plan: plan, plan_requested_at: main.plan_requested_at };
+  }
+
   if (action === 'owner-push') {
     const sub = cleanSubscription(b.sub);
     if (!sub) throw new ApiError(400, 'اشتراك الإشعارات غير صالح');

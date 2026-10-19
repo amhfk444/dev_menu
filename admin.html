@@ -1533,6 +1533,31 @@
     return `https://wa.me/${SUPPORT_WA}?text=${encodeURIComponent(msg)}`;
   }
 
+  // ─── اختيار الباقة: يوصل الطلب للإدارة (لوحة المشتركين + بريد)، وبعد الدفع تتفعّل ───
+  let planChoice = null;
+  const planName = (p) => p === 'month' ? 'الشهرية' : 'السنوية';
+  function requestedPlan() { return planChoice || (!client.parent_id && client.requested_plan) || null; }
+  function planButtons(big = false) {
+    const req = requestedPlan();
+    const btn = (p) => {
+      const on = req === p;
+      const cls = big
+        ? (on ? 'bg-brand text-cream border-brand' : p === 'year' ? 'bg-amber-400 text-black border-amber-400' : 'bg-white/70 text-ink border-brand/20')
+        : (on ? 'bg-brand text-cream border-brand' : p === 'year' ? 'bg-amber-400/15 hover:bg-amber-400/25 border-amber-400/40 text-amber-800' : 'bg-brand/5 hover:bg-brand/10 border-brand/20 text-ink');
+      return `<button type="button" onclick="choosePlan('${p}')" class="${cls} border px-2.5 py-1 rounded-lg ${big ? 'text-[11px] font-black px-3 py-1.5' : 'text-[10px] font-bold'} transition">${on ? '<i class="ph-bold ph-check"></i> ' : ''}${p === 'year' ? 'سنوي' : 'شهري'} · ${sar(planTotal(p))}</button>`;
+    };
+    return btn('year') + btn('month');
+  }
+  async function choosePlan(plan) {
+    try {
+      const r = await api('plan-request', { plan });
+      planChoice = r.requested_plan;
+      if (!client.parent_id) client.requested_plan = r.requested_plan;
+      renderSubscriptionStatus();
+      showToast(`اخترت الباقة ${planName(plan)}، بنتواصل معك للدفع والتفعيل`);
+    } catch (e) { showToast(e.message || 'تعذر إرسال الطلب، جرّب مرة ثانية', true); }
+  }
+
   function renderSubscriptionStatus() {
     const box = document.getElementById('subscription-info');
     const status = client.subscription_status;
@@ -1546,7 +1571,7 @@
     if (suspended)               { label = 'المتجر موقوف من الإدارة — المنيو لا يظهر للزبائن'; color = 'text-red-600'; }
     else if (expired)            { label = 'الاشتراك منتهي — المنيو لا يظهر للزبائن'; color = 'text-red-600'; }
     else if (status === 'trial') { label = 'فترة تجريبية'; color = 'text-blue-600'; }
-    else                         { label = 'مشترك مدفوع نشط'; color = 'text-green-600'; }
+    else                         { label = `مشترك مدفوع نشط${client.subscription_plan ? ` (الباقة ${planName(client.subscription_plan)})` : ''}`; color = 'text-green-600'; }
 
     const endText = end ? new Date(end).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn') : '';
     const showPlans = !suspended && (!live || status === 'trial' || (left !== null && left <= 7));
@@ -1556,9 +1581,12 @@
       ${branchCount() ? `<p class="text-[11px] text-emerald-800 font-bold"><i class="ph-bold ph-tree-structure"></i> ${client.parent_id ? 'اشتراك الفرع تابع لحساب المتجر الرئيسي' : `اشتراك واحد للمتجر و ${branchCount()} ${branchCount() === 1 ? 'فرع' : 'فروع'}`} · ${sar(planTotal())} سنوياً أو ${sar(planTotal('month'))} شهرياً</p>` : ''}
       ${live && left !== null ? `<p class="text-[11px] text-ink/75">متبقي <b>${daysText(left)}</b> — ينتهي ${esc(endText)}</p>` : ''}
       ${showPlans ? `
-        <div class="flex flex-wrap gap-1.5 pt-1">
-          <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/40 text-amber-800 px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="ph-bold ph-whatsapp-logo"></i> ${verb} سنوياً · ${sar(planTotal('year'))}</a>
-          <a href="${esc(renewLink('month'))}" target="_blank" rel="noopener" class="bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="ph-bold ph-whatsapp-logo"></i> ${verb} شهرياً · ${sar(planTotal('month'))}</a>
+        <div class="pt-1 space-y-1.5">
+          <p class="text-[11px] font-bold text-ink/80">${verb} واختر باقتك:</p>
+          <div class="flex flex-wrap gap-1.5">${planButtons()}</div>
+          <p class="text-[10px] text-ink/55">السنوي يوفّر عليك ${sar(planTotal('month') * 12 - planTotal('year'))} بالسنة</p>
+          ${requestedPlan() ? `<p class="text-[11px] text-emerald-800 font-bold"><i class="ph-bold ph-check-circle"></i> طلبك للباقة ${planName(requestedPlan())} وصلنا، وبنتواصل معك للدفع والتفعيل.
+            <a href="${esc(renewLink(requestedPlan()))}" target="_blank" rel="noopener" class="underline whitespace-nowrap"><i class="ph-bold ph-whatsapp-logo"></i> كلمنا الحين</a></p>` : ''}
         </div>` : ''}
       <p class="text-[10px] text-ink/60">معرف المتجر: ${esc(client.client_slug)}</p>`;
 
@@ -1576,10 +1604,7 @@
         </p>
         ${suspended
           ? `<a href="https://wa.me/${SUPPORT_WA}" target="_blank" rel="noopener" class="bg-brand text-cream px-3 py-1.5 rounded-lg text-[11px] font-black"><i class="ph-bold ph-whatsapp-logo"></i> تواصل معنا</a>`
-          : `<div class="flex gap-2">
-               <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400 text-black px-3 py-1.5 rounded-lg text-[11px] font-black">سنوي · ${sar(planTotal('year'))}</a>
-               <a href="${esc(renewLink('month'))}" target="_blank" rel="noopener" class="bg-white/70 border border-brand/20 text-ink px-3 py-1.5 rounded-lg text-[11px] font-black">شهري · ${sar(planTotal('month'))}</a>
-             </div>`}`;
+          : `<div class="flex gap-2">${planButtons(true)}</div>`}`;
       banner.classList.remove('hidden');
     } else {
       banner.classList.add('hidden');

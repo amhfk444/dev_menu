@@ -89,6 +89,9 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     if (!target) throw new ApiError(404, 'المتجر غير موجود');
     if (target.parent_id) throw new ApiError(400, 'اشتراك الفرع تابع للمتجر الرئيسي، جدّد من بطاقة المتجر الرئيسي', 'BRANCH_FOLLOWS_PARENT');
     await rpc('server_activate', { p_client_id: id, p_period: b.period });
+    // الباقة المفعّلة، ونشيل طلب الاشتراك المعلّق (28-plans.sql)
+    await rest(`clients?id=eq.${id}`, { method: 'PATCH', body: { subscription_plan: b.period, requested_plan: null, plan_requested_at: null } })
+      .catch(e => console.error('PLAN_SAVE', e.message));
     await syncBranchSubscriptions(id);
     // فاتورة مدفوعة: المتجر + كل فرع
     const main = (await rest(`clients?id=eq.${id}&select=id,name,email,subscription_end_date`))[0];
