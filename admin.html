@@ -1516,13 +1516,18 @@
   const daysText = (n) => n === 1 ? 'يوم واحد' : n === 2 ? 'يومين' : n <= 10 ? `${n} أيام` : `${n} يوم`;
   // الأسعار (عدّلها من هنا) — الإضافات تنضاف على فاتورة الباقة
   // باقة واحدة سنوية تشمل كل المزايا (ومنها قائمة الانتظار)
-  // الحساب = المتجر الرئيسي وفروعه باشتراك واحد: 349 للمتجر + 199 لكل فرع
-  const PLAN_PRICE = { year: 349, branch: 199 };
+  // الحساب = المتجر الرئيسي وفروعه باشتراك واحد، شهري أو سنوي
+  // سنوي: 499 للمتجر + 199 لكل فرع | شهري: 59 للمتجر + 19 لكل فرع
+  const PLAN_PRICE = { year: 499, month: 59, branch: 199, branchMonth: 19 };
   const branchCount = () => branches.filter(b => b.parent_id).length;
-  const planTotal = () => PLAN_PRICE.year + branchCount() * PLAN_PRICE.branch;
+  const planTotal = (plan = 'year') => plan === 'month'
+    ? PLAN_PRICE.month + branchCount() * PLAN_PRICE.branchMonth
+    : PLAN_PRICE.year + branchCount() * PLAN_PRICE.branch;
   function renewLink(plan, extra = '') {
     const main = branches.find(b => !b.parent_id) || client;
-    const label = branchCount() ? `السنوية للحساب: المتجر ${PLAN_PRICE.year} + ${branchCount()} فرع × ${PLAN_PRICE.branch} ر.س` : `السنوية (${PLAN_PRICE.year} ر.س)`;
+    const yearly = plan !== 'month';
+    const [main$, branch$] = yearly ? [PLAN_PRICE.year, PLAN_PRICE.branch] : [PLAN_PRICE.month, PLAN_PRICE.branchMonth];
+    const label = branchCount() ? `${yearly ? 'السنوية' : 'الشهرية'} للحساب: المتجر ${main$} + ${branchCount()} فرع × ${branch$} ر.س` : `${yearly ? 'السنوية' : 'الشهرية'} (${main$} ر.س)`;
     const addon = '';
     const msg = extra || `مرحباً، أبغى أشترك/أجدد متجر "${main.name || ''}" (${main.client_slug})${branchCount() ? ` وفروعه` : ''} بالباقة ${label}${addon}. المجموع ${planTotal(plan)} ر.س.`;
     return `https://wa.me/${SUPPORT_WA}?text=${encodeURIComponent(msg)}`;
@@ -1548,11 +1553,12 @@
     const verb = status === 'active' ? 'جدّد' : 'اشترك';
     box.innerHTML = `
       <p>الحالة: <span class="${color} font-bold">${label}</span></p>
-      ${branchCount() ? `<p class="text-[11px] text-emerald-800 font-bold"><i class="ph-bold ph-tree-structure"></i> ${client.parent_id ? 'اشتراك الفرع تابع لحساب المتجر الرئيسي' : `اشتراك واحد للمتجر و ${branchCount()} ${branchCount() === 1 ? 'فرع' : 'فروع'}`} · ${sar(planTotal())} سنوياً</p>` : ''}
+      ${branchCount() ? `<p class="text-[11px] text-emerald-800 font-bold"><i class="ph-bold ph-tree-structure"></i> ${client.parent_id ? 'اشتراك الفرع تابع لحساب المتجر الرئيسي' : `اشتراك واحد للمتجر و ${branchCount()} ${branchCount() === 1 ? 'فرع' : 'فروع'}`} · ${sar(planTotal())} سنوياً أو ${sar(planTotal('month'))} شهرياً</p>` : ''}
       ${live && left !== null ? `<p class="text-[11px] text-ink/75">متبقي <b>${daysText(left)}</b> — ينتهي ${esc(endText)}</p>` : ''}
       ${showPlans ? `
         <div class="flex flex-wrap gap-1.5 pt-1">
           <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/40 text-amber-800 px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="ph-bold ph-whatsapp-logo"></i> ${verb} سنوياً · ${sar(planTotal('year'))}</a>
+          <a href="${esc(renewLink('month'))}" target="_blank" rel="noopener" class="bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-2.5 py-1 rounded-lg text-[10px] font-bold transition"><i class="ph-bold ph-whatsapp-logo"></i> ${verb} شهرياً · ${sar(planTotal('month'))}</a>
         </div>` : ''}
       <p class="text-[10px] text-ink/60">معرف المتجر: ${esc(client.client_slug)}</p>`;
 
@@ -1572,6 +1578,7 @@
           ? `<a href="https://wa.me/${SUPPORT_WA}" target="_blank" rel="noopener" class="bg-brand text-cream px-3 py-1.5 rounded-lg text-[11px] font-black"><i class="ph-bold ph-whatsapp-logo"></i> تواصل معنا</a>`
           : `<div class="flex gap-2">
                <a href="${esc(renewLink('year'))}" target="_blank" rel="noopener" class="bg-amber-400 text-black px-3 py-1.5 rounded-lg text-[11px] font-black">سنوي · ${sar(planTotal('year'))}</a>
+               <a href="${esc(renewLink('month'))}" target="_blank" rel="noopener" class="bg-white/70 border border-brand/20 text-ink px-3 py-1.5 rounded-lg text-[11px] font-black">شهري · ${sar(planTotal('month'))}</a>
              </div>`}`;
       banner.classList.remove('hidden');
     } else {

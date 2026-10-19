@@ -94,11 +94,13 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const main = (await rest(`clients?id=eq.${id}&select=id,name,email,subscription_end_date`))[0];
     let branches = [];
     try { branches = await rest(`clients?parent_id=eq.${id}&select=name,client_slug&order=id.asc`); } catch {}
+    const yearly = b.period === 'year';
+    const span = yearly ? 'سنة' : 'شهر';
     const invoice = await sendInvoice(main, {
       status: 'paid', validUntil: main.subscription_end_date,
       lines: [
-        { label: `الباقة السنوية — ${main.name}`, detail: 'كل المزايا لمدة سنة', amount: PLAN_PRICE.year },
-        ...branches.map(br => ({ label: `فرع — ${br.name || br.client_slug}`, detail: 'ضمن نفس الاشتراك لمدة سنة', amount: PLAN_PRICE.branch }))
+        { label: `الباقة ${yearly ? 'السنوية' : 'الشهرية'} — ${main.name}`, detail: `كل المزايا لمدة ${span}`, amount: yearly ? PLAN_PRICE.year : PLAN_PRICE.month },
+        ...branches.map(br => ({ label: `فرع — ${br.name || br.client_slug}`, detail: `ضمن نفس الاشتراك لمدة ${span}`, amount: yearly ? PLAN_PRICE.branch : PLAN_PRICE.branchMonth }))
       ]
     });
     return { ok: true, invoice };
