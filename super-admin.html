@@ -111,7 +111,7 @@
         <p class="text-xs font-black flex items-center gap-2"><i class="ph-bold ph-money text-green-700"></i> الدخل السنوي من المشتركين</p>
         <p id="mrr" class="text-3xl font-black"></p>
         <div id="mrr-break" class="space-y-1.5 text-[11px] text-ink/70"></div>
-        <p class="text-[10px] text-ink/45 leading-relaxed">عدد المشتركين الساريين × سعر الباقة السنوية.</p>
+        <p class="text-[10px] text-ink/45 leading-relaxed">المشتركين الساريين بسعر باقاتهم، والشهري محسوب × 12.</p>
       </div>
       <div class="card p-5 lg:col-span-2 space-y-3">
         <div class="flex items-center justify-between">
@@ -307,16 +307,26 @@
   }
 
   function renderRevenue() {
+    // الدخل بالسنة: السنوي بسعره، والشهري × 12
     const paidList = clients.filter(c => statusOf(c).key === 'paid');
-    const paidMain = paidList.filter(c => !c.parent_id).length, paidBranches = paidList.length - paidMain;
+    const planOf = (c) => (c.parent_id ? (find(c.parent_id) || {}).subscription_plan : c.subscription_plan) || 'year';
+    const mainY = paidList.filter(c => !c.parent_id && planOf(c) === 'year').length;
+    const mainM = paidList.filter(c => !c.parent_id && planOf(c) === 'month').length;
+    const brY = paidList.filter(c => c.parent_id && planOf(c) === 'year').length;
+    const brM = paidList.filter(c => c.parent_id && planOf(c) === 'month').length;
     const trial = clients.filter(c => statusOf(c).key === 'trial' && !c.parent_id).length;
-    const total = paidMain * PLAN_PRICE.year + paidBranches * PLAN_PRICE.branch;
+    const rows = [
+      [mainY, 'سنوي', PLAN_PRICE.year, PLAN_PRICE.year],
+      [mainM, 'شهري', PLAN_PRICE.month, PLAN_PRICE.month * 12],
+      [brY, 'فرع سنوي', PLAN_PRICE.branch, PLAN_PRICE.branch],
+      [brM, 'فرع شهري', PLAN_PRICE.branchMonth, PLAN_PRICE.branchMonth * 12]
+    ].filter(r => r[0]);
+    const total = rows.reduce((n, r) => n + r[0] * r[3], 0);
     document.getElementById('mrr').textContent = money(total);
     document.getElementById('mrr-break').innerHTML = `
-      <div class="flex justify-between"><span>${paidMain} مشترك × ${money(PLAN_PRICE.year)}</span><b>${money(paidMain * PLAN_PRICE.year)}</b></div>
-      ${paidBranches ? `<div class="flex justify-between"><span>${paidBranches} فرع × ${money(PLAN_PRICE.branch)}</span><b>${money(paidBranches * PLAN_PRICE.branch)}</b></div>` : ''}
+      ${rows.map(([n, label, price, yearly]) => `<div class="flex justify-between"><span>${n} ${label} × ${money(price)}${yearly !== price ? ' × 12' : ''}</span><b>${money(n * yearly)}</b></div>`).join('')}
       <div class="flex justify-between"><span>متوسط شهري</span><b>${money(Math.round(total / 12))}</b></div>
-      <div class="flex justify-between border-t border-brand/10 pt-1.5"><span>لو اشترك كل التجريبيين (${trial})</span><b>+ ${money(trial * PLAN_PRICE.year)}</b></div>`;
+      <div class="flex justify-between border-t border-brand/10 pt-1.5"><span>لو اشترك كل التجريبيين سنوي (${trial})</span><b>+ ${money(trial * PLAN_PRICE.year)}</b></div>`;
   }
 
   function renderSignups() {

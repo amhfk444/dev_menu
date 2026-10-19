@@ -31,7 +31,7 @@ async function slugFree(slug) {
 }
 
 // الحساب = المتجر الرئيسي وفروعه باشتراك واحد: الفروع تاخذ حالة اشتراك المتجر الرئيسي
-const SUBSCRIPTION_FIELDS = 'subscription_status,subscription_end_date,trial_ends_at';
+const SUBSCRIPTION_FIELDS = 'subscription_status,subscription_end_date,trial_ends_at,subscription_plan';
 async function syncBranchSubscriptions(parentId) {
   const parent = (await rest(`clients?id=eq.${parentId}&select=${SUBSCRIPTION_FIELDS}`))[0];
   if (!parent) return;
