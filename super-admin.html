@@ -238,6 +238,8 @@
     if (c.is_active === false) return { key: 'suspended', live: false, label: 'موقوف', cls: 'bg-red-500/10 text-red-700 border-red-500/20', endText, left };
     if (c.subscription_status === 'trial' && (left === null || left > 0)) return { key: 'trial', live: true, label: 'تجريبي', cls: 'bg-blue-500/10 text-blue-700 border-blue-500/20', endText, left };
     if (c.subscription_status === 'active' && (left === null || left > 0)) return { key: 'paid', live: true, label: 'مشترك', cls: 'bg-green-500/10 text-green-700 border-green-500/20', endText, left };
+    // مهلة 3 أيام بعد انتهاء المدفوع: المنيو شغال للزبائن
+    if (c.subscription_status === 'active' && end && Date.now() < new Date(end).getTime() + 3 * 86400000) return { key: 'grace', live: true, label: 'مهلة', cls: 'bg-amber-400/20 text-amber-900 border-amber-500/40', endText, left };
     return { key: 'expired', live: false, label: 'منتهي', cls: 'bg-amber-500/15 text-amber-800 border-amber-500/30', endText, left };
   }
   const isSoon = (c) => { const s = statusOf(c); return s.live && s.left !== null && s.left <= 3; };

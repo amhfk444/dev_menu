@@ -3,18 +3,14 @@
 //   GET /api/reviews-sync?key=<cron_key>
 // يشغّلها pg_cron داخل Supabase كل ربع ساعة (27-reviews-cron.sql)، والمفتاح محفوظ في app_settings.
 // =====================================================================
-const { rest, ApiError, handler } = require('./_lib/core');
+const { rest, handler } = require('./_lib/core');
+const { assertCronKey } = require('./_lib/cron');
 const { syncStore } = require('./_lib/reviews');
 
 const DEADLINE_MS = 50e3;   // نوقف قبل حد وقت الخادم، والباقي ياخذ دوره في المرة الجاية
 
 module.exports = handler(['GET', 'POST'], async (req) => {
-  // المفتاح: من Supabase (27-reviews-cron.sql يولّده ويستخدمه في pg_cron)، أو CRON_SECRET لو انضبط في Vercel
-  const given = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '') || String(req.query.key || '');
-  let dbKey = '';
-  try { dbKey = ((await rest('app_settings?key=eq.cron_key&select=value'))[0] || {}).value || ''; } catch {}
-  const keys = [process.env.CRON_SECRET, dbKey].filter(k => k && k.length >= 24);
-  if (!given || !keys.includes(given)) throw new ApiError(401, 'Unauthorized');
+  await assertCronKey(req);
   const started = Date.now();
   // الأقدم مزامنة أول، عشان كل المتاجر تاخذ دورها
   const conns = await rest('google_connections?location_name=not.is.null&select=*&order=last_sync_at.asc.nullsfirst&limit=100');

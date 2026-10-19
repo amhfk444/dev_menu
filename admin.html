@@ -1610,13 +1610,18 @@
     const status = client.subscription_status;
     const end = status === 'active' ? client.subscription_end_date : client.trial_ends_at;
     const left = end ? Math.ceil((new Date(end) - Date.now()) / 86400000) : null;
-    const expired = (status !== 'active' && status !== 'trial') || (left !== null && left <= 0);
+    // مهلة 3 أيام بعد انتهاء الاشتراك المدفوع: المنيو يبقى شغال للزبائن (29-grace-reminders.sql)
+    const graceEnd = status === 'active' && end ? new Date(end).getTime() + 3 * 86400000 : 0;
+    const inGrace = left !== null && left <= 0 && Date.now() < graceEnd;
+    const expired = !inGrace && ((status !== 'active' && status !== 'trial') || (left !== null && left <= 0));
     const suspended = client.is_active === false;
     const live = !suspended && !expired;
+    const graceText = graceEnd ? new Date(graceEnd).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long' }) : '';
 
     let pill, pillCls, note = '';
     if (suspended)               { pill = 'موقوف'; pillCls = 'bg-brick/10 text-brick'; note = 'المتجر موقوف من الإدارة، والمنيو ما يظهر للزبائن.'; }
     else if (expired)            { pill = 'منتهي'; pillCls = 'bg-brick/10 text-brick'; note = 'انتهى اشتراكك، والمنيو ما يظهر للزبائن. اختر باقتك ويرجع على طول.'; }
+    else if (inGrace)            { pill = 'مهلة'; pillCls = 'bg-amber-400/20 text-amber-900'; note = `انتهى اشتراكك، وأعطيناك مهلة: المنيو شغال لزبائنك لين ${graceText}. جدّد قبلها عشان ما يوقف.`; }
     else if (status === 'trial') { pill = 'تجربة مجانية'; pillCls = 'bg-sky-500/10 text-sky-800'; }
     else                         { pill = client.subscription_plan ? `الباقة ${planName(client.subscription_plan)}` : 'مشترك'; pillCls = 'bg-emerald-600/10 text-emerald-800'; }
 
@@ -1632,8 +1637,8 @@
         <span class="text-[11px] font-bold px-2.5 py-1 rounded-full ${pillCls}">${pill}</span>
         <span class="text-[11px] text-ink/50" dir="ltr">${esc(client.client_slug)}</span>
       </div>
-      ${note ? `<p class="text-[12px] font-bold text-brick">${note}</p>` : ''}
-      ${live && left !== null ? `
+      ${note ? `<p class="text-[12px] font-bold ${inGrace ? 'text-amber-900' : 'text-brick'}">${note}</p>` : ''}
+      ${live && left !== null && !inGrace ? `
         <div>
           <div class="flex items-baseline justify-between gap-2">
             <p class="text-[13px] text-ink"><b class="text-[18px]">${left}</b> ${left === 1 ? 'يوم باقي' : left <= 10 ? 'أيام باقية' : 'يوم باقي'}</p>
@@ -1647,9 +1652,10 @@
     // شريط تنبيه بارز أعلى اللوحة
     const banner = document.getElementById('renew-banner');
     if (!live || (left !== null && left <= 3)) {
-      const danger = !live;
+      const danger = !live || inGrace;
       const text = suspended ? 'متجرك موقوف من الإدارة، والمنيو لا يظهر للزبائن حالياً.'
         : !live ? 'انتهى اشتراكك، والمنيو لا يظهر للزبائن حالياً. جدّد الآن ليعود فوراً.'
+        : inGrace ? `انتهى اشتراكك. المنيو شغال لزبائنك لين ${graceText} بس، جدّد الحين عشان ما يوقف.`
         : `${status === 'trial' ? 'تنتهي تجربتك المجانية' : 'ينتهي اشتراكك'} خلال ${daysText(left)}. جدّد الآن حتى لا يتوقف المنيو.`;
       banner.className = `rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 border ${danger ? 'bg-red-500/10 border-red-500/40' : 'bg-amber-500/10 border-amber-500/40'}`;
       banner.innerHTML = `
@@ -1665,8 +1671,8 @@
     }
 
     const chip = document.getElementById('store-status');
-    const chipColor = live ? (status === 'trial' ? 'bg-blue-400' : 'bg-green-400') : 'bg-red-400';
-    chip.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${chipColor}"></span> ${suspended ? 'موقوف' : !live ? 'منتهي' : status === 'trial' ? 'تجريبي' : 'مشترك'}${live && left !== null ? ` · ${daysText(left)}` : ''}`;
+    const chipColor = inGrace ? 'bg-amber-400' : live ? (status === 'trial' ? 'bg-blue-400' : 'bg-green-400') : 'bg-red-400';
+    chip.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${chipColor}"></span> ${suspended ? 'موقوف' : !live ? 'منتهي' : inGrace ? 'مهلة' : status === 'trial' ? 'تجريبي' : 'مشترك'}${live && left !== null && !inGrace ? ` · ${daysText(left)}` : ''}`;
 
     const notice = (client.admin_notification || '').trim();
     document.getElementById('admin-notice-text').textContent = notice;
