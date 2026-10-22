@@ -266,7 +266,7 @@
         <div id="renew-banner" class="hidden rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 border"></div>
 
         <div id="quick-counts" class="pro-card grid grid-cols-2 lg:grid-cols-4 overflow-hidden"></div>
-        <button type="button" onclick="location.hash='reviews'" class="lg:hidden pro-card w-full flex items-center gap-3 p-4 text-right hover:bg-brand/[0.03] transition">
+        <button type="button" data-reviews-entry onclick="location.hash='reviews'" class="lg:hidden pro-card w-full flex items-center gap-3 p-4 text-right hover:bg-brand/[0.03] transition">
           <span class="w-10 h-10 rounded-xl bg-saffron/15 text-amber-800 grid place-items-center shrink-0"><i class="ph-bold ph-star-half"></i></span>
           <span class="flex-1 min-w-0"><span class="block text-sm font-semibold">ردود التقييمات</span><span class="block text-xs text-ink/60">رد على تعليقات قوقل ماب برد بشري جاهز</span></span>
           <i class="ph-bold ph-caret-left text-xs text-ink/40"></i>
@@ -1327,6 +1327,10 @@
     if (tab === 'coupons') openCouponsTab();
   }
 
+  // ─── ردود التقييمات: مخفية لين توافق قوقل على صلاحية Business Profile API ───
+  // لما توصل الموافقة غيّرها إلى true (والكود كله جاهز)
+  const REVIEWS_LIVE = false;
+
   // ─── التنقل بين الصفحات ───
   const PAGES = {
     dashboard: ['الرئيسية', 'نظرة عامة على متجرك وأداء المنيو'],
@@ -1335,6 +1339,10 @@
     reviews:   ['ردود التقييمات', 'رد على تعليقات قوقل ماب برد بشري جاهز'],
     settings:  ['هوية المطعم', 'الاسم والشعار والخلفية ومعلومات التواصل']
   };
+  if (!REVIEWS_LIVE) {
+    delete PAGES.reviews;
+    document.querySelectorAll('[data-nav="reviews"], [data-reviews-entry]').forEach(el => el.remove());   // الصفحة نفسها تبقى مخفية (كودها يعتمد على عناصرها)
+  }
   function showPage(page) {
     if (!PAGES[page]) page = 'dashboard';
     document.querySelectorAll('[data-page]').forEach(sec => sec.classList.toggle('hidden', sec.dataset.page !== page));
@@ -2366,7 +2374,7 @@
     liveWired = true;
     DM.live(L.waitlist, () => { if (client && client.waitlist_enabled) loadWaitlist(); });
     DM.live(L.owner, (ev) => {
-      if (!client || !(client.reviews_enabled || isSuperAdmin)) return;
+      if (!REVIEWS_LIVE || !client || !(client.reviews_enabled || isSuperAdmin)) return;
       if (ev === 'reviews') showToast('وصلك تقييم جديد في قوقل ماب، الرد جاهز');
       loadRvHistory();
     });

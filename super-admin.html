@@ -160,6 +160,8 @@
   // باقة واحدة سنوية تشمل كل المزايا (ومنها قائمة الانتظار)
   // الفرع الإضافي له سعر سنوي مستقل
   const PLAN_PRICE = { year: 499, month: 59, branch: 199, branchMonth: 19 };
+  // ردود التقييمات مخفية لين توافق قوقل (نفس المفتاح في admin.html)
+  const REVIEWS_LIVE = false;
   const branchesOf = (c) => clients.filter(x => x.parent_id === c.id);
   // فاتورة الحساب: المتجر الرئيسي + كل فرع
   const totalFor = (c, period = 'year') => {
@@ -410,7 +412,7 @@
               <span class="text-[10px] font-black px-2 py-0.5 rounded-full border ${s.cls}">${s.label}${s.key === 'paid' && c.subscription_plan ? ` ${c.subscription_plan === 'month' ? 'شهري' : 'سنوي'}` : ''}</span>
               ${c.requested_plan ? `<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-amber-400/20 text-amber-900 border-amber-500/40"><i class="ph-bold ph-bell-simple-ringing"></i> يبي ${c.requested_plan === 'month' ? 'الشهري' : 'السنوي'} · ${money(totalFor(c, c.requested_plan))}${c.plan_requested_at ? ` · ${new Date(c.plan_requested_at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short' })}` : ''}</span>` : ''}
               ${isProspect(c) ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-purple-500/10 text-purple-700 border-purple-500/20"><i class="ph-bold ph-magic-wand"></i> عميل محتمل</span>' : ''}
-              ${c.reviews_enabled ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-violet-500/10 text-violet-700 border-violet-500/20"><i class="ph-bold ph-star-half"></i> ردود AI</span>' : ''}
+              ${REVIEWS_LIVE && c.reviews_enabled ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-violet-500/10 text-violet-700 border-violet-500/20"><i class="ph-bold ph-star-half"></i> ردود AI</span>' : ''}
               ${c.waitlist_enabled ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-sky-500/10 text-sky-700 border-sky-500/20"><i class="ph-bold ph-hourglass-medium"></i> الانتظار</span>' : ''}
               ${c.admin_notification ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-blue-500/10 text-blue-700 border-blue-500/20"><i class="ph-bold ph-bell"></i> إشعار</span>' : ''}
             </div>
@@ -477,7 +479,7 @@
         <button onclick="openNotify(${id})"><i class="ph-bold ph-bell"></i> ${c.admin_notification ? 'تعديل الإشعار' : 'إرسال إشعار'}</button>
         <div class="h-px bg-brand/10 my-1"></div>
         ${c.parent_id ? '' : `<button onclick="setFeatured(${id}, ${!c.is_featured})"><i class="ph-bold ph-star" ${c.is_featured ? 'style="color:#d97706"' : ''}></i> ${c.is_featured ? 'إزالة من أمثلة الرئيسية' : 'عرضه في أمثلة الرئيسية'}</button>`}
-        <button onclick="setReviewsAddon(${id}, ${!c.reviews_enabled})"><i class="ph-bold ph-star-half" ${c.reviews_enabled ? 'style="color:#7c3aed"' : ''}></i> ${c.reviews_enabled ? 'إيقاف ردود التقييمات' : 'تفعيل ردود التقييمات (AI)'}</button>
+        ${REVIEWS_LIVE ? `<button onclick="setReviewsAddon(${id}, ${!c.reviews_enabled})"><i class="ph-bold ph-star-half" ${c.reviews_enabled ? 'style="color:#7c3aed"' : ''}></i> ${c.reviews_enabled ? 'إيقاف ردود التقييمات' : 'تفعيل ردود التقييمات (AI)'}</button>` : ''}
         <button onclick="setWaitlistAddon(${id}, ${!c.waitlist_enabled})"><i class="ph-bold ph-hourglass-medium" ${c.waitlist_enabled ? 'style="color:#0284c7"' : ''}></i> ${c.waitlist_enabled ? 'إيقاف قائمة الانتظار' : 'تفعيل قائمة الانتظار'}</button>
         <button onclick="setActive(${id}, ${c.is_active === false})"><i class="ph-bold ${c.is_active === false ? 'ph-play' : 'ph-pause'}"></i> ${c.is_active === false ? (c.parent_id ? 'إعادة تشغيل الفرع' : 'إعادة تشغيل المتجر') : (c.parent_id ? 'إيقاف الفرع' : 'إيقاف المتجر')}</button>
         <div class="h-px bg-brand/10 my-1"></div>
