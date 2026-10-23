@@ -77,7 +77,7 @@ async function updatePass(serial, ctx) {
   try {
     const r = await call('PUT', `/${encodeURIComponent(serial)}`, passBody(ctx, true));
     // نسجل رد الخدمة: كم جهاز وصله التحديث، وهل المحتوى تغيّر
-    return `ok devices=${r.notifiedDevices ?? '?'} unchanged=${r.unchanged ?? '?'} at=${new Date().toISOString().slice(0, 19)}`;
+    return `ok devices=${r.notifiedDevices ?? '?'} unchanged=${r.unchanged ?? '?'} strip=${ctx.strip ? Math.round(ctx.strip.length / 1024) + 'KB' : 'none ' + (stampStrip.lastError || '')} at=${new Date().toISOString().slice(0, 19)}`;
   }
   catch (e) {
     const first = `${e.status || ''} ${e.message || ''}`.trim();

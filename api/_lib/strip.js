@@ -86,6 +86,7 @@ async function stampStrip(settings, card) {
     return `data:image/png;base64,${png.toString('base64')}`;
   } catch (e) {
     console.error('STAMP_STRIP', e.message);
+    stampStrip.lastError = String(e.message || e).slice(0, 120);
     return null;
   }
 }
