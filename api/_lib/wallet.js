@@ -5,6 +5,7 @@
 // نرسل أقل بيانات ممكنة: اسم المحل وعدد الأختام (بدون أي بيانات عن الزبون)
 // =====================================================================
 const { ApiError } = require('./core');
+const { stampStrip } = require('./strip');
 
 const BASE = 'https://api.walletwallet.dev/api/passes';
 const KEY = process.env.WALLET_API_KEY || '';
@@ -25,7 +26,7 @@ async function call(method, path, body) {
 }
 
 // محتوى البطاقة. full = مزايا الباقة المدفوعة (الشعار، الموقع على شاشة القفل)
-function passBody({ store, settings, card, url, restoreUrl, lat, lng, notice }, full = true) {
+function passBody({ store, settings, card, url, restoreUrl, lat, lng, notice, strip }, full = true) {
   const n = settings.needed, s = Math.min(card.stamps, n);
   const body = {
     logoText: String(store.name || 'DEV MENU').slice(0, 40),
@@ -47,6 +48,8 @@ function passBody({ store, settings, card, url, restoreUrl, lat, lng, notice }, 
     // لون المحل بدل اللون الجاهز (ما نرسل الاثنين، عشان الجاهز ما يغطي عليه)
     if (settings.design && settings.design.color) { body.color = settings.design.color; delete body.colorPreset; }
     if (store.logo_url && /^https:\/\//.test(store.logo_url)) body.logoURL = store.logo_url;
+    // صورة الأختام بنفس شكل بطاقة DEV MENU
+    if (strip) body.stripURL = strip;
     if (Number.isFinite(lat) && Number.isFinite(lng)) body.locations = [{ latitude: lat, longitude: lng, relevantText: `أنت قريب من ${store.name}، خذ ختمك` }];
   }
   return body;
@@ -55,6 +58,7 @@ function passBody({ store, settings, card, url, restoreUrl, lat, lng, notice }, 
 // بطاقة جديدة. لو الباقة المجانية رفضت المزايا المدفوعة نعيد بدونها
 async function createPass(ctx) {
   if (!configured()) throw new ApiError(503, 'إضافة البطاقة للمحفظة مو متاحة حالياً', 'WALLET_OFF');
+  ctx = { ...ctx, strip: await stampStrip(ctx.settings, ctx.card) };
   try { return await call('POST', '', passBody(ctx, true)); }
   catch (e) {
     if (e.status >= 400 && e.status < 500 && e.status !== 401 && e.status !== 429) {
@@ -69,6 +73,7 @@ async function createPass(ctx) {
 // يرجّع null لو نجح، أو سبب الفشل (ينحفظ مع البطاقة عشان نعرف وش صار، والنجاح يبدأ بـ ok)
 async function updatePass(serial, ctx) {
   if (!configured() || !serial) return 'not configured';
+  ctx = { ...ctx, strip: await stampStrip(ctx.settings, ctx.card) };
   try {
     const r = await call('PUT', `/${encodeURIComponent(serial)}`, passBody(ctx, true));
     // نسجل رد الخدمة: كم جهاز وصله التحديث، وهل المحتوى تغيّر

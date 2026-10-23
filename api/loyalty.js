@@ -171,3 +171,4 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
   }
   throw new ApiError(404, 'Unknown action');
 });
+module.exports.config = { maxDuration: 30 };
