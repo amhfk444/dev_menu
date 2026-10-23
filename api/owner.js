@@ -16,6 +16,8 @@ const { syncStore } = require('./_lib/reviews');
 const { topic, storeTopics, poke } = require('./_lib/live');
 const { normalizeLoyalty, validPoint } = require('./_lib/loyalty');
 const wallet = require('./_lib/wallet');
+const { pushWalletCards, runAssistant } = require('./_lib/loyalty-assistant');
+const { loyaltyMessages } = require('./_lib/ai');
 
 const bySort = (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id;
 const COFFEE_TYPES = ['cafe', 'mixed'];
@@ -227,38 +229,6 @@ async function ringTicket(store, t) {
   return result;
 }
 
-// ─── بطاقة الولاء: تحديث بطاقات المحفظة كلها (أو وحدة) بعد تغيير الشكل أو رسالة جديدة ───
-// كل بطاقة تاخذ آخر رسالة تخصها (للكل أو لها)، عشان التحديث ما يطلع إشعار قديم من جديد
-async function pushWalletCards(store, { cardId = null, notice = null } = {}) {
-  if (!wallet.configured()) return 0;
-  const sid = store.id;
-  const extra = (await rest(`clients?id=eq.${sid}&select=loyalty_settings,loyalty_lat,loyalty_lng`))[0] || {};
-  const settings = normalizeLoyalty(extra.loyalty_settings);
-  const cards = await rest(`loyalty_cards?client_id=eq.${sid}${cardId ? `&id=eq.${cardId}` : ''}&wallet_serial=not.is.null&select=*&limit=500`);
-  if (!cards.length) return 0;
-  let latest = { all: null, by: {} };
-  if (notice == null) {
-    const msgs = await rest(`loyalty_messages?client_id=eq.${sid}&select=id,card_id,body&order=id.desc&limit=200`).catch(() => []);
-    for (const m of msgs) { if (m.card_id == null) { if (!latest.all) latest.all = m; } else if (!latest.by[m.card_id]) latest.by[m.card_id] = m; }
-  }
-  const noticeFor = (c) => {
-    if (notice != null) return notice;
-    const a = latest.all, o = latest.by[c.id];
-    return ((a && o ? (a.id > o.id ? a : o) : a || o) || {}).body;
-  };
-  let sent = 0;
-  const started = Date.now();
-  for (let i = 0; i < cards.length && Date.now() - started < 45e3; i += 6) {
-    await Promise.all(cards.slice(i, i + 6).map(async (c) => {
-      const ctx = wallet.buildCtx({ store: { name: store.name, client_slug: store.client_slug, logo_url: store.logo_url }, settings, card: c, lat: extra.loyalty_lat, lng: extra.loyalty_lng, notice: noticeFor(c) });
-      const err = await wallet.updatePass(c.wallet_serial, ctx);
-      if (!err || err.startsWith('ok')) sent++;
-      await rest(`loyalty_cards?id=eq.${c.id}`, { method: 'PATCH', body: { wallet_error: err } }).catch(() => {});
-    }));
-  }
-  return sent;
-}
-
 async function main(req) {
   const action = req.query.action;
   const b = req.method === 'POST' ? readBody(req) : {};
@@ -368,21 +338,43 @@ async function main(req) {
   // ─── بطاقة الولاء: الإعدادات والإحصائيات وآخر البطاقات ───
   if (action === 'loyalty' && req.method === 'GET') {
     const { store } = await context(req);
-    const extra = (await rest(`clients?id=eq.${store.id}&select=loyalty_enabled,loyalty_settings,loyalty_lat,loyalty_lng`))[0] || {};
+    const extra = (await rest(`clients?id=eq.${store.id}&select=loyalty_enabled,loyalty_settings,loyalty_lat,loyalty_lng,loyalty_ai,loyalty_near_lines`))[0] || {};
     const day = 864e5, iso = (n) => q(new Date(Date.now() - n * day).toISOString());
     const [cards, stamps7, redeemed, messages] = await Promise.all([
       rest(`loyalty_cards?client_id=eq.${store.id}&select=id,name,phone,stamps,visits,rewards,last_stamp_at,created_at&order=last_stamp_at.desc.nullslast&limit=500`),
       rest(`loyalty_events?client_id=eq.${store.id}&kind=eq.stamp&created_at=gte.${iso(7)}&select=id`),
       rest(`loyalty_events?client_id=eq.${store.id}&kind=eq.redeem&select=id`),
-      rest(`loyalty_messages?client_id=eq.${store.id}&select=id,card_id,body,wallet_sent,created_at&order=id.desc&limit=10`).catch(() => [])
+      rest(`loyalty_messages?client_id=eq.${store.id}&select=id,card_id,body,wallet_sent,created_at,source,kind&order=id.desc&limit=15`).catch(() => [])
     ]);
     const active = cards.filter(c => c.last_stamp_at && Date.parse(c.last_stamp_at) > Date.now() - 30 * day).length;
     return {
       enabled: extra.loyalty_enabled === true, settings: normalizeLoyalty(extra.loyalty_settings),
       location_set: validPoint(extra.loyalty_lat, extra.loyalty_lng), slug: store.client_slug,
       stats: { members: cards.length, active30: active, stamps7: stamps7.length, redeemed: redeemed.length },
-      cards: cards.slice(0, 50), messages, wallet: wallet.configured()
+      cards: cards.slice(0, 50), messages, wallet: wallet.configured(),
+      ai: extra.loyalty_ai === true, near_lines: Array.isArray(extra.loyalty_near_lines) ? extra.loyalty_near_lines : []
     };
+  }
+
+  // ─── بطاقة الولاء: كل الأعضاء (للقائمة والداشبورد وملف CSV) ───
+  if (action === 'loyalty-members' && req.method === 'GET') {
+    const { store } = await context(req);
+    const cards = await rest(`loyalty_cards?client_id=eq.${store.id}&select=id,name,phone,stamps,visits,rewards,last_stamp_at,created_at,wallet_serial,ai_last_at&order=last_stamp_at.desc.nullslast&limit=5000`);
+    return { members: cards.map(({ wallet_serial, ...c }) => ({ ...c, in_wallet: !!wallet_serial })) };
+  }
+
+  // ─── بطاقة الولاء: تفاصيل عضو (زياراته ورسائله) ───
+  if (action === 'loyalty-member' && req.method === 'GET') {
+    const { store } = await context(req);
+    const id = int(req.query.id);
+    const card = (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${store.id}&select=id,name,phone,stamps,visits,rewards,last_stamp_at,created_at,wallet_serial,ai_last_at`))[0];
+    if (!card) throw new ApiError(404, 'العضو غير موجود');
+    const [events, messages] = await Promise.all([
+      rest(`loyalty_events?card_id=eq.${id}&select=kind,created_at,distance_m&order=id.desc&limit=200`),
+      rest(`loyalty_messages?client_id=eq.${store.id}&card_id=eq.${id}&select=id,body,source,kind,created_at&order=id.desc&limit=30`).catch(() => [])
+    ]);
+    const { wallet_serial, ...rest_ } = card;
+    return { member: { ...rest_, in_wallet: !!wallet_serial }, events, messages };
   }
 
   // ─── ردود التقييمات: آخر الردود المكتوبة ───
@@ -489,7 +481,7 @@ async function main(req) {
     if (typeof b.enabled === 'boolean') body.loyalty_enabled = b.enabled;
     const row = (await rest(`clients?id=eq.${sid}`, { method: 'PATCH', body, prefer: 'return=representation' }))[0];
     // الشكل أو المكافأة تغيّرت ← نحدّث البطاقات اللي في المحفظة
-    const wallet_updated = await pushWalletCards(store);
+    const wallet_updated = await pushWalletCards(sid);
     return { enabled: row.loyalty_enabled === true, settings: normalizeLoyalty(row.loyalty_settings), wallet_updated };
   }
 
@@ -509,9 +501,52 @@ async function main(req) {
     }
     const msg = (await rest('loyalty_messages', { method: 'POST', prefer: 'return=representation', body: { client_id: sid, card_id: cardId, body } }))[0];
     // المحفظة
-    const sent = await pushWalletCards(store, { cardId, notice: body });
+    const sent = await pushWalletCards(sid, { cardIds: cardId ? [cardId] : null, notice: body });
     await rest(`loyalty_messages?id=eq.${msg.id}`, { method: 'PATCH', body: { wallet_sent: sent } }).catch(() => {});
     return { message: { ...msg, wallet_sent: sent } };
+  }
+
+  // ─── بطاقة الولاء: صاحب المحل يعطي ختم لعضو بنفسه ───
+  if (action === 'loyalty-give-stamp') {
+    const id = int(b.card_id);
+    const card = (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${sid}&select=id`))[0];
+    if (!card) throw new ApiError(404, 'العضو غير موجود');
+    const extra = (await rest(`clients?id=eq.${sid}&select=loyalty_settings`))[0] || {};
+    const settings = normalizeLoyalty(extra.loyalty_settings);
+    const r = await rpc('server_loyalty_stamp', { p_card: id, p_cooldown_hours: 0, p_needed: settings.needed, p_distance: null });
+    if (!r.ok && r.reason === 'FULL') throw new ApiError(409, 'بطاقته مكتملة، لازم يستخدم المكافأة أول');
+    await pushWalletCards(sid, { cardIds: [id] });
+    const fresh = (await rest(`loyalty_cards?id=eq.${id}&select=id,stamps,visits,rewards,last_stamp_at`))[0];
+    return { ok: !!r.ok, member: fresh };
+  }
+
+  // ─── المساعد الذكي: تشغيل وإيقاف ───
+  if (action === 'loyalty-ai') {
+    const row = (await rest(`clients?id=eq.${sid}`, { method: 'PATCH', body: { loyalty_ai: b.enabled === true }, prefer: 'return=representation' }))[0];
+    return { ai: row.loyalty_ai === true };
+  }
+
+  // ─── المساعد الذكي: شغّله الحين (بدل ما ننتظر موعده اليومي) ───
+  if (action === 'loyalty-ai-run') {
+    const recent = await rest(`loyalty_messages?client_id=eq.${sid}&source=eq.ai&created_at=gte.${q(new Date(Date.now() - 10 * 60e3).toISOString())}&select=id&limit=1`).catch(() => []);
+    if (recent.length) throw new ApiError(429, 'المساعد اشتغل قبل شوي، جرّب بعد 10 دقايق');
+    return await runAssistant(sid);
+  }
+
+  // ─── المساعد الذكي: أمثلة على أسلوبه (ما تنرسل لأحد) ───
+  if (action === 'loyalty-ai-preview') {
+    const extra = (await rest(`clients?id=eq.${sid}&select=loyalty_settings`))[0] || {};
+    const settings = normalizeLoyalty(extra.loyalty_settings);
+    const n = settings.needed;
+    const guests = [
+      { ref: 'miss', kind: 'miss', visits: 6, stamps: Math.min(3, n - 2), days_since: 19, usual_gap: 5 },
+      { ref: 'second', kind: 'second', visits: 1, stamps: 1, days_since: 8 },
+      { ref: 'almost', kind: 'almost', visits: n - 1, stamps: n - 1, days_since: 6, usual_gap: 4 },
+      { ref: 'ready', kind: 'ready', visits: n, stamps: n, days_since: 4, usual_gap: 6 },
+      { ref: 'near', kind: 'near', visits: 3, stamps: 3, days_since: 2 }
+    ];
+    const types = { restaurant: 'مطعم', cafe: 'مقهى', mixed: 'مطعم ومقهى', bakery: 'مخبز وحلويات' };
+    return { examples: await loyaltyMessages({ storeName: store.name, businessType: types[store.business_type] || '', reward: settings.reward, needed: n, guests }) };
   }
 
   // ─── بطاقة الولاء: موقع المحل (صاحب المحل يحدده وهو داخل المحل) ───

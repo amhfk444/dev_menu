@@ -1040,6 +1040,31 @@
               <button type="button" id="ly-design-save" onclick="saveLyDesign()" class="bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition">حفظ الشكل</button>
             </div>
 
+            <!-- المساعد الذكي -->
+            <div class="pro-card p-5 md:p-6 space-y-4">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="space-y-1 max-w-md">
+                  <h3 class="text-sm font-bold flex items-center gap-2"><i class="ph-bold ph-sparkle"></i> المساعد الذكي: صاحب زبونك</h3>
+                  <p class="text-[12px] text-ink/65 leading-relaxed">يعرف كل زبون: متى آخر مرة جا، وكم مرة، وكم باقي له. ويكتب له بنفسه رسالة عفوية بالعامية، كل مرة غير، توصله إشعار على جواله.</p>
+                </div>
+                <button type="button" id="ly-ai" role="switch" aria-checked="false" class="avail" onclick="toggleLyAi()">
+                  <span class="avail-track"></span><span class="avail-label !w-auto">متوقف</span>
+                </button>
+              </div>
+              <ul class="text-[12px] text-ink/75 space-y-1.5">
+                <li class="flex gap-2"><i class="ph-bold ph-map-pin text-ink/45 mt-0.5"></i> <span><b>لما يقرب من المحل:</b> جملة حلوة تطلع على شاشة قفل الآيفون تغريه يدخل (تتجدد كل أسبوع)</span></li>
+                <li class="flex gap-2"><i class="ph-bold ph-heart text-ink/45 mt-0.5"></i> <span><b>لما يغيب:</b> رسالة اشتياق، حسب عادته هو (اللي يجي كل يومين يختلف عن اللي يجي كل أسبوعين)</span></li>
+                <li class="flex gap-2"><i class="ph-bold ph-seal-check text-ink/45 mt-0.5"></i> <span><b>باقي له ختم، أو مكافأته جاهزة:</b> تشجيع وتذكير</span></li>
+                <li class="flex gap-2"><i class="ph-bold ph-user-plus text-ink/45 mt-0.5"></i> <span><b>جا مرة وحدة وما رجع:</b> رسالة تخلي الزيارة الثانية طبيعية</span></li>
+              </ul>
+              <p class="text-[11px] text-ink/50">يشتغل كل يوم الساعة 4 العصر. ما يرسل لنفس الزبون أكثر من مرة كل أسبوع أو أسبوعين.</p>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" id="ly-ai-preview" onclick="previewLyAi()" class="bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-eye"></i> شوف أمثلة على أسلوبه</button>
+                <button type="button" id="ly-ai-run" onclick="runLyAi()" class="bg-brand hover:bg-brand-dark text-cream px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-paper-plane-tilt"></i> شغّله الحين</button>
+              </div>
+              <div id="ly-ai-out" class="space-y-2"></div>
+            </div>
+
             <!-- رسالة للأعضاء -->
             <div class="pro-card p-5 md:p-6 space-y-3">
               <h3 class="text-sm font-bold flex items-center gap-2"><i class="ph-bold ph-megaphone"></i> أرسل رسالة لأعضاء البطاقة</h3>
@@ -1063,11 +1088,6 @@
               <button type="button" id="ly-loc-btn" onclick="setLoyaltyLocation()" class="bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-4 py-2.5 rounded-xl text-sm font-bold transition"><i class="ph-bold ph-crosshair"></i> حدد موقع المحل من هنا</button>
             </div>
 
-            <!-- الإحصائيات وآخر الزبائن -->
-            <div class="pro-card p-5 md:p-6 space-y-4">
-              <div id="ly-stats" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
-              <div id="ly-cards" class="text-sm"></div>
-            </div>
           </div>
 
           <!-- الكود -->
@@ -1080,6 +1100,63 @@
               <button type="button" onclick="downloadLoyaltyCard()" class="bg-brand hover:bg-brand-dark text-cream px-4 py-2.5 rounded-xl text-sm font-bold transition"><i class="ph-bold ph-download-simple"></i> تحميل للطباعة</button>
               <a id="ly-open" target="_blank" rel="noopener" class="bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-4 py-2.5 rounded-xl text-sm font-bold transition">معاينة</a>
             </div>
+          </div>
+        </div>
+
+        <!-- الأعضاء -->
+        <div class="pro-card p-5 md:p-6 space-y-5">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h3 class="text-base font-bold flex items-center gap-2"><i class="ph-bold ph-users-three"></i> الأعضاء</h3>
+            <div class="flex flex-wrap gap-2">
+              <input id="ly-q" type="search" placeholder="بحث بالاسم أو الرقم" class="input-pro !w-56 !min-h-0 !py-2" oninput="renderLyMembers()">
+              <button type="button" onclick="exportLyCsv()" class="bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-3.5 py-2 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-file-arrow-down"></i> تنزيل CSV</button>
+            </div>
+          </div>
+          <div id="ly-kpis" class="grid grid-cols-2 md:grid-cols-5 gap-3"></div>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="rounded-2xl border border-brand/10 p-4">
+              <p class="text-xs font-bold text-ink/70 mb-2"><i class="ph-bold ph-crown"></i> أكثر زبائنك زيارة</p>
+              <div id="ly-top" class="text-sm"></div>
+            </div>
+            <div class="rounded-2xl border border-brand/10 p-4">
+              <p class="text-xs font-bold text-ink/70 mb-2"><i class="ph-bold ph-clock-counter-clockwise"></i> جوا مرة وحدة وما رجعوا</p>
+              <div id="ly-once" class="text-sm"></div>
+            </div>
+          </div>
+          <div id="ly-filters" class="flex flex-wrap gap-2"></div>
+          <div class="overflow-x-auto -mx-1">
+            <table class="w-full text-sm min-w-[560px]">
+              <thead><tr class="text-right text-[11px] text-ink/55 border-b border-brand/10">
+                <th class="py-2 px-1 font-semibold">الزبون</th><th class="py-2 px-1 font-semibold">الأختام</th><th class="py-2 px-1 font-semibold">الزيارات</th><th class="py-2 px-1 font-semibold">آخر زيارة</th><th class="py-2 px-1 font-semibold">من أول</th><th class="py-2 px-1 font-semibold"></th>
+              </tr></thead>
+              <tbody id="ly-rows"></tbody>
+            </table>
+          </div>
+          <p id="ly-more" class="text-xs text-ink/55 text-center"></p>
+        </div>
+
+        <!-- ملف عضو -->
+        <div id="ly-member" class="fixed inset-0 z-[60] bg-ink/40 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-4" onclick="if (event.target === this) closeLyMember()">
+          <div class="pro-card w-full sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-b-none sm:rounded-2xl p-5 md:p-6 space-y-4" role="dialog" aria-modal="true">
+            <div class="flex items-start justify-between gap-3">
+              <div><h3 id="lm-title" class="text-base font-bold"></h3><p id="lm-sub" class="text-xs text-ink/60 mt-0.5"></p></div>
+              <button type="button" onclick="closeLyMember()" aria-label="إغلاق" class="w-9 h-9 rounded-xl hover:bg-brand/10"><i class="ph-bold ph-x"></i></button>
+            </div>
+            <div id="lm-stats" class="grid grid-cols-4 gap-2 text-center"></div>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" id="lm-stamp" onclick="giveLyStamp()" class="bg-brand hover:bg-brand-dark text-cream px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-seal-check"></i> أعطه ختم</button>
+              <a id="lm-wa" target="_blank" rel="noopener" class="hidden bg-[#25d366]/10 hover:bg-[#25d366]/20 text-[#128c7e] px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-whatsapp-logo"></i> واتساب</a>
+            </div>
+            <div class="space-y-2">
+              <p class="text-xs font-bold text-ink/70">رسالة له لحاله</p>
+              <textarea id="lm-msg" rows="2" maxlength="200" class="input-pro" placeholder="تطلع له إشعار في المحفظة وفي صفحة بطاقته"></textarea>
+              <button type="button" id="lm-send" onclick="sendLyMemberMsg()" class="bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-4 py-2 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-paper-plane-tilt"></i> أرسل له</button>
+            </div>
+            <div>
+              <p class="text-xs font-bold text-ink/70 mb-1">زياراته</p>
+              <div id="lm-events" class="text-sm divide-y divide-brand/10"></div>
+            </div>
+            <div id="lm-msgs"></div>
           </div>
         </div>
       </section>
@@ -3537,12 +3614,13 @@
   }
 
   // ─── بطاقة الولاء ───
-  const ly = { data: null, qrUrl: '', design: null, dirty: false };
+  const ly = { data: null, members: [], qrUrl: '', design: null, dirty: false, filter: 'all', member: null };
   const loyaltyUrl = () => DM.storeUrl(client.client_slug, 'loyalty', { s: 1 });
   async function onLoyaltyPage() {
-    try { ly.data = await api('loyalty'); }
-    catch (e) { document.getElementById('ly-stats').innerHTML = `<p class="col-span-full text-sm text-brick">${esc(e.message || 'تعذر التحميل')}</p>`; return; }
+    try { [ly.data, ly.members] = await Promise.all([api('loyalty'), api('loyalty-members').then(r => r.members)]); }
+    catch (e) { showToast(e.message || 'تعذر تحميل بطاقة الولاء', true); return; }
     renderLoyalty();
+    renderLyMembers();
   }
   function renderLoyalty() {
     const d = ly.data, st = d.settings;
@@ -3568,18 +3646,11 @@
       const box = document.getElementById('ly-qr'); box.innerHTML = '';
       new QRCode(box, { text: url, width: 176, height: 176, colorDark: '#22362a', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
     }
-    // الإحصائيات
-    const tile = (label, v) => `<div class="rounded-xl bg-brand/[0.04] border border-brand/10 p-3"><p class="text-[11px] text-ink/60">${label}</p><p class="text-xl font-bold mt-0.5">${v}</p></div>`;
-    document.getElementById('ly-stats').innerHTML = tile('الأعضاء', d.stats.members) + tile('رجعوا آخر 30 يوم', d.stats.active30) + tile('أختام هالأسبوع', d.stats.stamps7) + tile('مكافآت مستخدمة', d.stats.redeemed);
-    const ago = (iso) => iso ? new Date(iso).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short' }) : '';
-    document.getElementById('ly-cards').innerHTML = d.cards.length ? `
-      <p class="text-xs font-bold text-ink/70 mb-2">آخر الزبائن</p>
-      <div class="divide-y divide-brand/10">${d.cards.map(c => `
-        <div class="flex items-center justify-between gap-3 py-2.5">
-          <div class="min-w-0"><p class="font-semibold truncate">${esc(c.name || `زبون #${c.id}`)}</p>${c.phone ? `<a href="https://wa.me/${esc(c.phone)}" target="_blank" rel="noopener" class="text-xs text-ink/55" dir="ltr">${esc(c.phone)}</a>` : '<p class="text-xs text-ink/45">بدون رقم</p>'}</div>
-          <div class="text-left shrink-0"><p class="font-bold" dir="ltr">${Math.min(c.stamps, st.needed)}/${st.needed}</p><p class="text-[11px] text-ink/55">${c.visits} زيارة${c.rewards ? ` · ${c.rewards} مكافأة` : ''} · ${ago(c.last_stamp_at)}</p></div>
-        </div>`).join('')}</div>`
-      : '<p class="text-sm text-ink/55 text-center py-4">ما فيه أعضاء للحين. اطبع الكود وحطه في المحل.</p>';
+    // المساعد الذكي
+    const aiSw = document.getElementById('ly-ai');
+    aiSw.setAttribute('aria-checked', String(!!d.ai));
+    aiSw.querySelector('.avail-label').textContent = d.ai ? 'شغّال' : 'متوقف';
+    document.getElementById('ly-ai-run').classList.toggle('hidden', !d.ai);
   }
   // ─── شكل البطاقة: معاينة حيّة ───
   const LY_STYLES = [['gradient', 'متدرج'], ['solid', 'لون سادة'], ['paper', 'ورقي'], ['dark', 'داكن']];
@@ -3637,7 +3708,7 @@
       <p class="text-xs font-bold text-ink/70 mt-2 mb-1">آخر الرسائل</p>
       <div class="divide-y divide-brand/10">${d.messages.map(m => `
         <div class="py-2.5">
-          <p class="leading-relaxed">${esc(m.body)}</p>
+          <p class="leading-relaxed">${m.source === 'ai' ? '<span class="text-[10px] font-bold bg-violet-500/10 text-violet-700 rounded-full px-2 py-0.5 ml-1"><i class="ph-bold ph-sparkle"></i> المساعد</span>' : ''}${esc(m.body)}</p>
           <p class="text-[11px] text-ink/55 mt-0.5">${m.card_id ? esc(byId[m.card_id] ? lyCardLabel(byId[m.card_id]) : `زبون #${m.card_id}`) : 'لكل الأعضاء'} · ${when(m.created_at)}${m.wallet_sent ? ` · وصلت إشعار لـ ${m.wallet_sent} جوال` : ''}</p>
         </div>`).join('')}</div>` : '';
   }
@@ -3656,6 +3727,139 @@
       await onLoyaltyPage();
     } catch (e) { showToast(e.message || 'تعذر الإرسال', true); }
     btn.disabled = false;
+  }
+
+  // ─── الأعضاء: داشبورد + قائمة + CSV ───
+  const DAYMS = 864e5;
+  const daysAgo = (iso) => iso ? Math.floor((Date.now() - Date.parse(iso)) / DAYMS) : null;
+  const agoText = (iso) => { const d = daysAgo(iso); return d == null ? '' : d === 0 ? 'اليوم' : d === 1 ? 'أمس' : d <= 10 ? `قبل ${d} أيام` : `قبل ${d} يوم`; };
+  const memberName = (c) => c.name || `زبون #${c.id}`;
+  const LY_FILTERS = [
+    ['all', 'الكل', () => true],
+    ['loyal', 'دايم يجون (3 زيارات وأكثر)', c => c.visits >= 3],
+    ['once', 'مرة وحدة وما رجعوا', c => c.visits === 1 && daysAgo(c.last_stamp_at) >= 7],
+    ['away', 'غايبين أكثر من 30 يوم', c => daysAgo(c.last_stamp_at) > 30],
+    ['ready', 'مكافأتهم جاهزة', c => ly.data && c.stamps >= ly.data.settings.needed],
+    ['wallet', 'حافظينها في المحفظة', c => c.in_wallet]
+  ];
+  function renderLyMembers() {
+    const M = ly.members || [], n = ly.data ? ly.data.settings.needed : 8;
+    const week = M.filter(c => daysAgo(c.created_at) <= 7).length;
+    const once = M.filter(c => c.visits === 1 && daysAgo(c.last_stamp_at) >= 7);
+    const kpi = (label, v, hint = '') => `<div class="rounded-xl bg-brand/[0.04] border border-brand/10 p-3"><p class="text-[11px] text-ink/60">${label}</p><p class="text-xl font-bold mt-0.5">${v}</p>${hint ? `<p class="text-[10px] text-ink/45">${hint}</p>` : ''}</div>`;
+    const back = M.filter(c => c.visits > 1).length;
+    document.getElementById('ly-kpis').innerHTML =
+      kpi('الأعضاء', M.length) +
+      kpi('رجعوا مرة ثانية', back, M.length ? `${Math.round(back / M.length * 100)}% من الأعضاء` : '') +
+      kpi('مرة وحدة وما رجعوا', once.length) +
+      kpi('غايبين +30 يوم', M.filter(c => daysAgo(c.last_stamp_at) > 30).length) +
+      kpi('جدد هالأسبوع', week);
+    const top = [...M].sort((a, b) => b.visits - a.visits).slice(0, 5).filter(c => c.visits > 0);
+    const line = (c, right) => `<button type="button" onclick="openLyMember(${c.id})" class="w-full flex items-center justify-between gap-2 py-1.5 hover:bg-brand/[0.03] rounded-lg px-1 text-right"><span class="truncate font-semibold">${esc(memberName(c))}</span><span class="text-xs text-ink/60 shrink-0">${right}</span></button>`;
+    document.getElementById('ly-top').innerHTML = top.length ? top.map((c, i) => line(c, `${['🥇', '🥈', '🥉', '', ''][i]} ${c.visits} زيارة`)).join('') : '<p class="text-xs text-ink/50 py-2">للحين ما فيه زيارات.</p>';
+    document.getElementById('ly-once').innerHTML = once.length ? once.slice(0, 5).map(c => line(c, `آخر مرة ${agoText(c.last_stamp_at)}`)).join('') + (once.length > 5 ? `<p class="text-[11px] text-ink/50 pt-1">و${once.length - 5} غيرهم</p>` : '') : '<p class="text-xs text-ink/50 py-2">ممتاز، كل اللي جوا رجعوا.</p>';
+    document.getElementById('ly-filters').innerHTML = LY_FILTERS.map(([k, label, fn]) => `<button type="button" onclick="ly.filter='${k}'; renderLyMembers()" class="text-[12px] font-bold px-3 py-1.5 rounded-full border transition ${ly.filter === k ? 'bg-brand text-cream border-brand' : 'border-brand/20 hover:border-brand/40'}">${label} <span class="opacity-60">${M.filter(fn).length}</span></button>`).join('');
+    const q = (document.getElementById('ly-q').value || '').trim().toLowerCase();
+    const fn = (LY_FILTERS.find(f => f[0] === ly.filter) || LY_FILTERS[0])[2];
+    const list = M.filter(fn).filter(c => !q || memberName(c).toLowerCase().includes(q) || String(c.phone || '').includes(q) || String(c.id) === q);
+    document.getElementById('ly-rows').innerHTML = list.slice(0, 200).map(c => `
+      <tr class="border-b border-brand/5 hover:bg-brand/[0.03] cursor-pointer" onclick="openLyMember(${c.id})">
+        <td class="py-2.5 px-1"><p class="font-semibold">${esc(memberName(c))}</p>${c.phone ? `<p class="text-[11px] text-ink/50" dir="ltr">${esc(c.phone)}</p>` : ''}</td>
+        <td class="py-2.5 px-1 font-bold" dir="ltr">${Math.min(c.stamps, n)}/${n}</td>
+        <td class="py-2.5 px-1">${c.visits}</td>
+        <td class="py-2.5 px-1 text-ink/70">${agoText(c.last_stamp_at)}</td>
+        <td class="py-2.5 px-1 text-ink/55">${agoText(c.created_at)}</td>
+        <td class="py-2.5 px-1 text-ink/45">${c.in_wallet ? '<i class="ph-bold ph-wallet" title="حافظها في المحفظة"></i>' : ''}</td>
+      </tr>`).join('') || '<tr><td colspan="6" class="py-6 text-center text-ink/50">ما فيه أعضاء هنا.</td></tr>';
+    document.getElementById('ly-more').textContent = list.length > 200 ? `يطلع أول 200 من ${list.length}. نزّل CSV عشان تشوف الكل.` : '';
+  }
+  function exportLyCsv() {
+    const M = ly.members || [], n = ly.data ? ly.data.settings.needed : 8;
+    const d = (iso) => iso ? new Date(iso).toISOString().slice(0, 16).replace('T', ' ') : '';
+    const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const rows = [['رقم العضو', 'الاسم', 'الجوال', 'الأختام', 'المطلوب', 'الزيارات', 'المكافآت المستخدمة', 'آخر زيارة', 'أول زيارة', 'في المحفظة']]
+      .concat(M.map(c => [c.id, c.name || '', c.phone || '', Math.min(c.stamps, n), n, c.visits, c.rewards, d(c.last_stamp_at), d(c.created_at), c.in_wallet ? 'نعم' : 'لا']));
+    const blob = new Blob(['﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `loyalty-members-${client.client_slug}-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+
+  // ─── ملف العضو ───
+  async function openLyMember(id) {
+    const box = document.getElementById('ly-member');
+    box.classList.remove('hidden'); box.classList.add('flex');
+    document.getElementById('lm-title').textContent = 'جاري التحميل...';
+    document.getElementById('lm-events').innerHTML = ''; document.getElementById('lm-msgs').innerHTML = ''; document.getElementById('lm-stats').innerHTML = '';
+    try {
+      const r = await api(`loyalty-member&id=${id}`);
+      ly.member = r.member; renderLyMember(r);
+    } catch (e) { closeLyMember(); showToast(e.message || 'تعذر فتح ملف العضو', true); }
+  }
+  function renderLyMember(r) {
+    const m = r.member, n = ly.data.settings.needed;
+    document.getElementById('lm-title').textContent = memberName(m);
+    document.getElementById('lm-sub').textContent = `عضو من ${new Date(m.created_at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' })}${m.in_wallet ? ' · البطاقة في محفظته' : ''}`;
+    const st = (label, v, ltr = false) => `<div class="rounded-xl bg-brand/[0.04] border border-brand/10 py-2"><p class="text-lg font-bold" ${ltr ? 'dir="ltr"' : ''}>${v}</p><p class="text-[10px] text-ink/60">${label}</p></div>`;
+    const dates = r.events.filter(e => e.kind === 'stamp').map(e => Date.parse(e.created_at)).sort((a, b) => a - b);
+    const gap = dates.length > 1 ? Math.round((dates[dates.length - 1] - dates[0]) / DAYMS / (dates.length - 1)) : null;
+    document.getElementById('lm-stats').innerHTML = st('الأختام', `${Math.min(m.stamps, n)}/${n}`, true) + st('الزيارات', m.visits) + st('المكافآت', m.rewards) + st('يجي كل', gap ? `${gap} يوم` : '—');
+    const wa = document.getElementById('lm-wa');
+    wa.classList.toggle('hidden', !m.phone); if (m.phone) wa.href = `https://wa.me/${m.phone}`;
+    document.getElementById('lm-stamp').disabled = m.stamps >= n;
+    document.getElementById('lm-events').innerHTML = r.events.length ? r.events.map(e => `
+      <div class="flex items-center justify-between gap-2 py-2">
+        <span>${e.kind === 'redeem' ? '<i class="ph-bold ph-gift text-[#c9a227]"></i> استخدم المكافأة' : e.distance_m == null ? '<i class="ph-bold ph-seal-check text-ink/50"></i> ختم من صاحب المحل' : '<i class="ph-bold ph-seal-check text-emerald-700"></i> ختم زيارة'}</span>
+        <span class="text-xs text-ink/55">${new Date(e.created_at).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}</span>
+      </div>`).join('') : '<p class="text-xs text-ink/50 py-2">ما فيه زيارات.</p>';
+    document.getElementById('lm-msgs').innerHTML = r.messages.length ? `<p class="text-xs font-bold text-ink/70 mb-1">رسائله</p><div class="text-sm divide-y divide-brand/10">${r.messages.map(x => `
+      <div class="py-2"><p>${x.source === 'ai' ? '<span class="text-[10px] font-bold bg-violet-500/10 text-violet-700 rounded-full px-2 py-0.5 ml-1">المساعد</span>' : ''}${esc(x.body)}</p><p class="text-[11px] text-ink/50">${agoText(x.created_at)}</p></div>`).join('')}</div>` : '';
+  }
+  function closeLyMember() { const box = document.getElementById('ly-member'); box.classList.add('hidden'); box.classList.remove('flex'); ly.member = null; }
+  async function giveLyStamp() {
+    if (!ly.member) return;
+    if (!(await DMDialog.confirm({ title: 'إعطاء ختم', message: `تعطي ${memberName(ly.member)} ختم الحين؟`, confirmText: 'أعطه ختم', cancelText: 'تراجع' }))) return;
+    const btn = document.getElementById('lm-stamp'); btn.disabled = true;
+    try { await api('loyalty-give-stamp', { card_id: ly.member.id }); showToast('انضاف الختم'); const id = ly.member.id; await onLoyaltyPage(); openLyMember(id); }
+    catch (e) { showToast(e.message || 'تعذر إضافة الختم', true); btn.disabled = false; }
+  }
+  async function sendLyMemberMsg() {
+    const body = document.getElementById('lm-msg').value.trim();
+    if (body.length < 2 || !ly.member) return showToast('اكتب الرسالة', true);
+    const btn = document.getElementById('lm-send'); btn.disabled = true;
+    try {
+      const r = await api('loyalty-message', { body, card_id: ly.member.id });
+      document.getElementById('lm-msg').value = '';
+      showToast(r.message.wallet_sent ? 'انرسلت ووصلته إشعار' : 'انرسلت، وتطلع له في صفحة بطاقته');
+      openLyMember(ly.member.id);
+    } catch (e) { showToast(e.message || 'تعذر الإرسال', true); }
+    btn.disabled = false;
+  }
+
+  // ─── المساعد الذكي ───
+  const AI_KINDS = { miss: 'لما يغيب', second: 'بعد أول زيارة', almost: 'باقي له ختم', ready: 'مكافأته جاهزة', near: 'لما يقرب من المحل' };
+  async function toggleLyAi() {
+    try { const r = await api('loyalty-ai', { enabled: !ly.data.ai }); ly.data.ai = r.ai; renderLoyalty(); showToast(r.ai ? 'المساعد الذكي شغّال، يبدأ يكتب لزبائنك كل يوم' : 'المساعد الذكي متوقف'); }
+    catch (e) { showToast(e.message || 'تعذر الحفظ', true); }
+  }
+  async function previewLyAi() {
+    const btn = document.getElementById('ly-ai-preview'), html = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = '<i class="ph-bold ph-spinner-gap ph-spin"></i> يكتب...';
+    try {
+      const r = await api('loyalty-ai-preview', {});
+      document.getElementById('ly-ai-out').innerHTML = `<p class="text-[11px] text-ink/55">أمثلة (ما انرسلت لأحد). كل مرة تضغط يطلع لك كلام غير:</p>` + Object.entries(r.examples).map(([k, t]) => `
+        <div class="rounded-xl bg-brand/[0.04] border border-brand/10 p-3"><p class="text-[11px] font-bold text-ink/55 mb-0.5">${AI_KINDS[k] || k}</p><p class="leading-relaxed">${esc(t)}</p></div>`).join('');
+    } catch (e) { showToast(e.message || 'تعذر كتابة الأمثلة', true); }
+    btn.disabled = false; btn.innerHTML = html;
+  }
+  async function runLyAi() {
+    const btn = document.getElementById('ly-ai-run'), html = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = '<i class="ph-bold ph-spinner-gap ph-spin"></i> يشتغل...';
+    try {
+      const r = await api('loyalty-ai-run', {});
+      showToast(r.messages ? `كتب ${r.messages} رسالة${r.wallet ? ` ووصلت إشعار لـ ${r.wallet} جوال` : ''}` : 'ما فيه زبائن يحتاجون رسالة اليوم');
+      await onLoyaltyPage();
+    } catch (e) { showToast(e.message || 'تعذر تشغيل المساعد', true); }
+    btn.disabled = false; btn.innerHTML = html;
   }
 
   async function toggleLoyalty() {

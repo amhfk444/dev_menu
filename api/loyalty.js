@@ -13,6 +13,7 @@ const crypto = require('crypto');
 const { handler, rest, rpc, q, ApiError, readBody, findPublicStore, waNumber } = require('./_lib/core');
 const { normalizeLoyalty, distanceM, validPoint } = require('./_lib/loyalty');
 const wallet = require('./_lib/wallet');
+const { nearLineFor } = require('./_lib/loyalty-assistant');
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{10,64}$/;
 const MAX_ACCURACY_M = 100;   // دقة أسوأ من كذا = نطلب منه يحاول مرة ثانية
@@ -21,9 +22,9 @@ async function loadStore(slug) {
   const { store, bad } = await findPublicStore(slug, 'id,name,client_slug,logo_url');
   if (bad) throw new ApiError(400, 'الرابط غير صحيح');
   if (!store) throw new ApiError(404, 'بطاقة الولاء غير متاحة حالياً', 'NOT_AVAILABLE');
-  const extra = (await rest(`clients?id=eq.${store.id}&select=loyalty_enabled,loyalty_settings,loyalty_lat,loyalty_lng`))[0] || {};
+  const extra = (await rest(`clients?id=eq.${store.id}&select=loyalty_enabled,loyalty_settings,loyalty_lat,loyalty_lng,loyalty_near_lines`))[0] || {};
   if (!extra.loyalty_enabled) throw new ApiError(404, 'بطاقة الولاء غير متاحة حالياً', 'NOT_AVAILABLE');
-  return { store, settings: normalizeLoyalty(extra.loyalty_settings), lat: extra.loyalty_lat, lng: extra.loyalty_lng };
+  return { store, settings: normalizeLoyalty(extra.loyalty_settings), lat: extra.loyalty_lat, lng: extra.loyalty_lng, nearLines: extra.loyalty_near_lines };
 }
 
 // الزبون داخل المحل؟ يرجّع المسافة أو يرمي سبب الرفض
@@ -46,7 +47,7 @@ const optionalPhone = (v) => { if (!String(v || '').trim()) return ''; try { ret
 
 // آخر رسالة من المحل لهالبطاقة (للكل أو له هو)
 const latestMessage = async (storeId, cardId) => ((await rest(`loyalty_messages?client_id=eq.${storeId}&or=${q(`(card_id.is.null,card_id.eq.${cardId})`)}&select=id,body,created_at&order=id.desc&limit=1`).catch(() => []))[0]) || null;
-const walletCtx = async (ctx, card) => wallet.buildCtx({ store: ctx.store, settings: ctx.settings, card, lat: ctx.lat, lng: ctx.lng, notice: ((await latestMessage(ctx.store.id, card.id)) || {}).body });
+const walletCtx = async (ctx, card) => wallet.buildCtx({ store: ctx.store, settings: ctx.settings, card, lat: ctx.lat, lng: ctx.lng, notice: ((await latestMessage(ctx.store.id, card.id)) || {}).body, nearText: nearLineFor({ loyalty_near_lines: ctx.nearLines }, card) });
 // البطاقة في المحفظة تتحدث مع كل ختم (لو الزبون ضافها)
 const syncWallet = async (ctx, card) => {
   if (!card.wallet_serial) return;
