@@ -33,10 +33,11 @@ function passBody({ store, settings, card, url, restoreUrl, lat, lng, notice, st
     organizationName: String(store.name || 'DEV MENU').slice(0, 64),
     description: `بطاقة الولاء: ${store.name || ''}`.slice(0, 120),
     colorPreset: 'green',
-    headerFields: [{ label: 'الزيارات', value: String(card.visits || 0), changeMessage: 'زيارتك رقم %@' }],
-    primaryFields: [{ label: 'الأختام', value: `${s} / ${n}`, changeMessage: 'صار عندك %@ ختم' }],
+    // العدد فوق (يبان حتى والبطاقة بين البطاقات)، والأختام نفسها في الصورة العريضة
+    headerFields: [{ label: 'الأختام', value: `${s} / ${n}`, changeMessage: 'صار عندك %@ ختم' }],
     secondaryFields: [{ label: 'المكافأة', value: settings.reward }, { label: s >= n ? 'جاهزة' : 'باقي', value: s >= n ? 'استخدمها الحين' : `${n - s} أختام` }],
     backFields: [
+      { label: 'زياراتك', value: String(card.visits || 0) },
       { label: 'طريقة الختم', value: 'امسح كود المحل وأنت داخله، وينضاف ختمك على طول.' },
       { label: 'افتح بطاقتك', value: restoreUrl || url }
     ],
