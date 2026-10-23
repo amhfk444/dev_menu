@@ -11,7 +11,9 @@
 <title>بطاقة الولاء | DEV MENU</title>
 <link rel="stylesheet" href="/css/fonts.css">
 <link rel="stylesheet" href="/css/icons.css">
+<link rel="stylesheet" href="/css/loyalty-card.css">
 <script src="js/api.js"></script>
+<script src="/js/loyalty-card.js"></script>
 <style>
   :root { --brand: #233d2c; --brand-2: #2f5139; --sand: #f5f2eb; --gold: #c9a227; --ink: #1b3022; }
   body { font-family: 'IBM Plex Sans Arabic', sans-serif; background: var(--sand); color: var(--ink); min-height: 100vh; min-height: 100dvh; -webkit-text-size-adjust: 100%; }
@@ -19,25 +21,11 @@
   .btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; border-radius: 16px; padding: 17px; font-weight: 700; font-size: 17px; transition: transform .1s, opacity .2s; }
   .btn:active { transform: scale(.98); }
   .btn:disabled { opacity: .55; }
-  .btn-brand { background: var(--brand); color: var(--sand); }
+  .btn-brand { background: var(--brand); color: var(--brand-ink, var(--sand)); }
   .btn-gold { background: var(--gold); color: #15271b; }
   .btn-ghost { background: #fff; color: var(--brand); border: 1.5px solid rgba(35,61,44,.2); }
   .field { width: 100%; background: #f8f6f1; border: 1.5px solid rgba(35,61,44,.18); border-radius: 14px; padding: 14px 15px; font-size: 16px; color: var(--ink); }
   .field:focus { outline: none; border-color: var(--brand); background: #fff; }
-
-  /* البطاقة نفسها */
-  .lcard { position: relative; overflow: hidden; border-radius: 26px; padding: 24px 22px 22px; color: #f5f2eb;
-    background: radial-gradient(120% 90% at 100% 0%, #3b6448 0%, var(--brand) 55%, #15271b 100%);
-    box-shadow: 0 34px 60px -30px rgba(21,39,27,.75); }
-  .lcard::after { content: ''; position: absolute; inset: 0; pointer-events: none;
-    background: radial-gradient(circle at 18% 120%, rgba(201,162,39,.22), transparent 55%); }
-  .stamps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 20px; position: relative; z-index: 1; }
-  .stamps.c5 { grid-template-columns: repeat(5, 1fr); }
-  .stamp { aspect-ratio: 1; border-radius: 50%; border: 2px dashed rgba(245,242,235,.32); display: grid; place-items: center; font-size: 22px; color: rgba(245,242,235,.35); }
-  .stamp.on { border: 0; background: var(--gold); color: #15271b; box-shadow: inset 0 -3px 0 rgba(0,0,0,.15); }
-  .stamp.gift { border-color: rgba(201,162,39,.7); color: var(--gold); }
-  .stamp.new { animation: pop .6s cubic-bezier(.3,1.6,.5,1); }
-  @keyframes pop { 0% { transform: scale(0) rotate(-40deg); } 100% { transform: scale(1) rotate(0); } }
 
   .msg { border-radius: 16px; padding: 14px 16px; font-size: 15px; font-weight: 600; display: flex; gap: 10px; align-items: flex-start; }
   .msg i { margin-top: 3px; }
@@ -76,7 +64,7 @@
 
   <!-- التسجيل: أول مرة -->
   <section id="v-join" class="space-y-4 hidden">
-    <div class="lcard">
+    <div class="lcard" id="j-card">
       <p class="text-sm opacity-75">اجمع <b id="j-needed"></b> أختام وخذ</p>
       <p id="j-reward" class="text-2xl font-bold mt-0.5"></p>
       <div id="j-stamps" class="stamps"></div>
@@ -97,13 +85,23 @@
 
   <!-- البطاقة -->
   <section id="v-card" class="space-y-4 hidden">
-    <div class="lcard">
-      <div class="flex items-start justify-between gap-3 relative z-[1]">
+    <div id="c-message" class="card p-4 hidden">
+      <div class="flex items-start gap-3">
+        <span class="w-10 h-10 rounded-xl bg-[#233d2c]/10 text-[#233d2c] grid place-items-center shrink-0"><i class="ph-bold ph-megaphone"></i></span>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs opacity-60">رسالة من <span id="m-store"></span></p>
+          <p id="m-body" class="font-semibold mt-0.5 leading-relaxed"></p>
+        </div>
+        <button id="m-close" type="button" aria-label="إغلاق" class="w-8 h-8 rounded-lg opacity-50 hover:opacity-100"><i class="ph-bold ph-x"></i></button>
+      </div>
+    </div>
+    <div class="lcard" id="c-card">
+      <div class="flex items-start justify-between gap-3">
         <div>
           <p class="text-sm opacity-75">بطاقتك</p>
           <p id="c-left" class="text-xl font-bold mt-0.5"></p>
         </div>
-        <p class="text-sm opacity-75 text-left shrink-0" dir="ltr"><b id="c-count" class="text-2xl text-[#f5f2eb] opacity-100"></b></p>
+        <p class="text-sm opacity-75 text-left shrink-0" dir="ltr"><b id="c-count" class="text-2xl"></b></p>
       </div>
       <div id="c-stamps" class="stamps"></div>
     </div>
@@ -179,14 +177,13 @@
     if (s.logo_url) { $('logo').src = s.logo_url; $('logo').classList.remove('hidden'); }
   }
 
-  function stampsHTML(count, needed, fresh = -1) {
-    let h = '';
-    for (let i = 0; i < needed; i++) {
-      const on = i < count, last = i === needed - 1;
-      h += `<span class="stamp ${on ? 'on' : last ? 'gift' : ''} ${i === fresh ? 'new' : ''}"><i class="ph-bold ${on ? 'ph-check' : last ? 'ph-gift' : 'ph-coffee'}"></i></span>`;
-    }
-    return h;
-  }
+  const stampsHTML = (count, needed, fresh = -1) => DMLoyaltyCard.stamps(count, needed, settings.design, fresh);
+  const paint = () => {
+    ['j-card', 'c-card'].forEach(id => DMLoyaltyCard.apply($(id), settings.design));
+    // أزرار الصفحة بلون البطاقة
+    const c = settings.design && settings.design.color;
+    if (c) { document.documentElement.style.setProperty('--brand', c); document.documentElement.style.setProperty('--brand-ink', DMLoyaltyCard.inkFor(c)); }
+  };
   const gridClass = (n) => `stamps ${n === 5 || n === 10 ? 'c5' : ''}`;
 
   function msg(kind, icon, text) {
@@ -208,6 +205,7 @@
     const n = settings.needed, s = Math.min(card.stamps, n);
     $('c-count').textContent = `${s}/${n}`;
     $('c-left').textContent = s >= n ? 'كمّلت الأختام!' : `باقي ${n - s} على ${settings.reward}`;
+    paint();
     $('c-stamps').className = gridClass(n);
     $('c-stamps').innerHTML = stampsHTML(s, n, fresh);
     const full = s >= n;
@@ -362,6 +360,17 @@
 
   $('stamp-btn').onclick = stamp;
 
+  // ─── رسالة من المحل (تطلع لين يقفلها) ───
+  const MSG_KEY = `${KEY}_msg`;
+  function showMessage(m, store) {
+    let seen = ''; try { seen = localStorage.getItem(MSG_KEY) || ''; } catch {}
+    if (!m || String(m.id) === seen) return;
+    $('m-store').textContent = store || '';
+    $('m-body').textContent = m.body;
+    $('c-message').classList.remove('hidden');
+    $('m-close').onclick = () => { $('c-message').classList.add('hidden'); try { localStorage.setItem(MSG_KEY, String(m.id)); } catch {} };
+  }
+
   // ─── المحفظة: آبل أو قوقل حسب الجوال (صفحة الإضافة تختار تلقائياً) ───
   $('wallet-btn').onclick = async () => {
     if (busy) return;
@@ -392,6 +401,7 @@
         const r = await DM.get(`/api/loyalty?action=card&slug=${encodeURIComponent(slug)}&t=${encodeURIComponent(token)}`);
         setStore(r.store); settings = r.settings; card = r.card; walletOn = !!r.wallet;
         renderCard();
+        showMessage(r.message, r.store.name);
         // جاي من مسح الكود: نختم على طول
         if (params.get('s') === '1') {
           history.replaceState(null, '', location.pathname + location.search.replace(/([?&])s=1(&|$)/, '$1').replace(/[?&]$/, ''));
@@ -403,6 +413,7 @@
       setStore(r.store); settings = r.settings;
       $('j-needed').textContent = settings.needed;
       $('j-reward').textContent = settings.reward;
+      paint();
       $('j-stamps').className = gridClass(settings.needed);
       $('j-stamps').innerHTML = stampsHTML(0, settings.needed);
       show('join');

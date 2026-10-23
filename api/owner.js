@@ -15,6 +15,7 @@ const google = require('./_lib/google');
 const { syncStore } = require('./_lib/reviews');
 const { topic, storeTopics, poke } = require('./_lib/live');
 const { normalizeLoyalty, validPoint } = require('./_lib/loyalty');
+const wallet = require('./_lib/wallet');
 
 const bySort = (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id;
 const COFFEE_TYPES = ['cafe', 'mixed'];
@@ -337,17 +338,18 @@ async function main(req) {
     const { store } = await context(req);
     const extra = (await rest(`clients?id=eq.${store.id}&select=loyalty_enabled,loyalty_settings,loyalty_lat,loyalty_lng`))[0] || {};
     const day = 864e5, iso = (n) => q(new Date(Date.now() - n * day).toISOString());
-    const [cards, stamps7, redeemed] = await Promise.all([
+    const [cards, stamps7, redeemed, messages] = await Promise.all([
       rest(`loyalty_cards?client_id=eq.${store.id}&select=id,name,phone,stamps,visits,rewards,last_stamp_at,created_at&order=last_stamp_at.desc.nullslast&limit=500`),
       rest(`loyalty_events?client_id=eq.${store.id}&kind=eq.stamp&created_at=gte.${iso(7)}&select=id`),
-      rest(`loyalty_events?client_id=eq.${store.id}&kind=eq.redeem&select=id`)
+      rest(`loyalty_events?client_id=eq.${store.id}&kind=eq.redeem&select=id`),
+      rest(`loyalty_messages?client_id=eq.${store.id}&select=id,card_id,body,wallet_sent,created_at&order=id.desc&limit=10`).catch(() => [])
     ]);
     const active = cards.filter(c => c.last_stamp_at && Date.parse(c.last_stamp_at) > Date.now() - 30 * day).length;
     return {
       enabled: extra.loyalty_enabled === true, settings: normalizeLoyalty(extra.loyalty_settings),
       location_set: validPoint(extra.loyalty_lat, extra.loyalty_lng), slug: store.client_slug,
       stats: { members: cards.length, active30: active, stamps7: stamps7.length, redeemed: redeemed.length },
-      cards: cards.slice(0, 50)
+      cards: cards.slice(0, 50), messages, wallet: wallet.configured()
     };
   }
 
@@ -447,11 +449,47 @@ async function main(req) {
   // ─── بطاقة الولاء: تشغيل وإعدادات ───
   if (action === 'loyalty-settings') {
     const extra = (await rest(`clients?id=eq.${sid}&select=loyalty_settings`))[0] || {};
-    const settings = normalizeLoyalty({ ...normalizeLoyalty(extra.loyalty_settings), ...(b.settings || {}) });
+    const current = normalizeLoyalty(extra.loyalty_settings);
+    const design = { ...current.design, ...((b.settings && b.settings.design) || {}) };
+    if (design.stamp_image && !ownsMediaUrl(design.stamp_image, sid)) throw new ApiError(400, 'صورة الختم غير تابعة لمتجرك');
+    const settings = normalizeLoyalty({ ...current, ...(b.settings || {}), design });
     const body = { loyalty_settings: settings };
     if (typeof b.enabled === 'boolean') body.loyalty_enabled = b.enabled;
     const row = (await rest(`clients?id=eq.${sid}`, { method: 'PATCH', body, prefer: 'return=representation' }))[0];
     return { enabled: row.loyalty_enabled === true, settings: normalizeLoyalty(row.loyalty_settings) };
+  }
+
+  // ─── بطاقة الولاء: رسالة للكل أو لعضو واحد ───
+  // توصل إشعار لمحفظة الجوال للي حافظين البطاقة، وتطلع في صفحة البطاقة لما يفتحها
+  if (action === 'loyalty-message') {
+    const body = str(b.body, 200, 'الرسالة');
+    if (body.length < 2) throw new ApiError(400, 'اكتب الرسالة');
+    const since = new Date(Date.now() - 864e5).toISOString();
+    const today = await rest(`loyalty_messages?client_id=eq.${sid}&created_at=gte.${q(since)}&select=id`).catch(() => []);
+    if (today.length >= 5) throw new ApiError(429, 'وصلت حد 5 رسائل في اليوم، عشان ما تزعج زبائنك');
+    let cardId = null;
+    if (b.card_id != null && b.card_id !== '') {
+      cardId = int(b.card_id);
+      const own = (await rest(`loyalty_cards?id=eq.${cardId}&client_id=eq.${sid}&select=id`))[0];
+      if (!own) throw new ApiError(404, 'العضو غير موجود');
+    }
+    const msg = (await rest('loyalty_messages', { method: 'POST', prefer: 'return=representation', body: { client_id: sid, card_id: cardId, body } }))[0];
+    // المحفظة
+    let sent = 0;
+    if (wallet.configured()) {
+      const extra = (await rest(`clients?id=eq.${sid}&select=loyalty_settings,loyalty_lat,loyalty_lng`))[0] || {};
+      const settings = normalizeLoyalty(extra.loyalty_settings);
+      const cards = await rest(`loyalty_cards?client_id=eq.${sid}${cardId ? `&id=eq.${cardId}` : ''}&wallet_serial=not.is.null&select=*&limit=500`);
+      const started = Date.now();
+      for (let i = 0; i < cards.length && Date.now() - started < 45e3; i += 6) {
+        await Promise.all(cards.slice(i, i + 6).map(async (c) => {
+          const ctx = wallet.buildCtx({ store: { name: store.name, client_slug: store.client_slug, logo_url: store.logo_url }, settings, card: c, lat: extra.loyalty_lat, lng: extra.loyalty_lng, notice: body });
+          await wallet.updatePass(c.wallet_serial, ctx); sent++;
+        }));
+      }
+      await rest(`loyalty_messages?id=eq.${msg.id}`, { method: 'PATCH', body: { wallet_sent: sent } }).catch(() => {});
+    }
+    return { message: { ...msg, wallet_sent: sent } };
   }
 
   // ─── بطاقة الولاء: موقع المحل (صاحب المحل يحدده وهو داخل المحل) ───
@@ -823,12 +861,12 @@ async function main(req) {
   // ─── رابط رفع ملف (الرفع يتم مباشرة للتخزين برابط موقّع صالح لملف واحد) ───
   if (action === 'upload-url') {
     const kind = b.kind;
-    if (!['logo', 'bg_image', 'bg_video', 'prod', 'sticker'].includes(kind)) throw new ApiError(400, 'نوع ملف غير صحيح');
+    if (!['logo', 'bg_image', 'bg_video', 'prod', 'sticker', 'stamp'].includes(kind)) throw new ApiError(400, 'نوع ملف غير صحيح');
     const isVideo = kind === 'bg_video';
     const ext = (isVideo ? VIDEO_TYPES : IMAGE_TYPES)[b.type];
     if (!ext) throw new ApiError(400, isVideo ? 'الملف لازم يكون فيديو MP4' : 'صيغة الصورة غير مدعومة، استخدم JPG أو PNG أو WebP');
     const size = int(b.size);
-    const maxMb = isVideo ? 30 : kind === 'sticker' ? 2 : 5;
+    const maxMb = isVideo ? 30 : kind === 'sticker' || kind === 'stamp' ? 2 : 5;
     if (!Number.isInteger(size) || size <= 0 || size > maxMb * 1024 * 1024) throw new ApiError(400, `حجم الملف أكبر من المسموح (${maxMb} ميجا)`);
     const path = `${sid}/${kind}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const signed = await storage(`object/upload/sign/${BUCKET}/${path.split('/').map(encodeURIComponent).join('/')}`, { body: {} });
@@ -1032,3 +1070,5 @@ module.exports = handler(['GET', 'POST'], async (req) => {
   if (req.method === 'POST' && req._sid && MENU_ACTIONS.has(req.query.action)) await poke(topic('menu', req._sid));
   return out;
 });
+
+module.exports.config = { maxDuration: 60 };

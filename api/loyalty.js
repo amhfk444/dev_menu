@@ -44,15 +44,14 @@ function checkPresence(ctx, b) {
 const cardView = (c) => ({ stamps: c.stamps, visits: c.visits, rewards: c.rewards, last_stamp_at: c.last_stamp_at, in_wallet: !!c.wallet_url, has_phone: !!c.phone });
 const optionalPhone = (v) => { if (!String(v || '').trim()) return ''; try { return waNumber(v); } catch { throw new ApiError(400, 'رقم الجوال غير صحيح'); } };
 
-// رابط صفحة البطاقة (يطلع في المحفظة)
-const cardUrl = (slug) => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(slug) && !['app', 'www'].includes(slug)
-  ? `https://${slug}.devmenu.digital/loyalty` : `https://www.devmenu.digital/loyalty.html?client=${encodeURIComponent(slug)}`;
-const walletCtx = (ctx, card) => ({ store: ctx.store, settings: ctx.settings, card, url: cardUrl(ctx.store.client_slug), restoreUrl: `${cardUrl(ctx.store.client_slug)}${cardUrl(ctx.store.client_slug).includes('?') ? '&' : '?'}t=${encodeURIComponent(card.token)}`, lat: ctx.lat, lng: ctx.lng });
+// آخر رسالة من المحل لهالبطاقة (للكل أو له هو)
+const latestMessage = async (storeId, cardId) => ((await rest(`loyalty_messages?client_id=eq.${storeId}&or=${q(`(card_id.is.null,card_id.eq.${cardId})`)}&select=id,body,created_at&order=id.desc&limit=1`).catch(() => []))[0]) || null;
+const walletCtx = async (ctx, card) => wallet.buildCtx({ store: ctx.store, settings: ctx.settings, card, lat: ctx.lat, lng: ctx.lng, notice: ((await latestMessage(ctx.store.id, card.id)) || {}).body });
 // البطاقة في المحفظة تتحدث مع كل ختم (لو الزبون ضافها)
-const syncWallet = (ctx, card) => card.wallet_serial ? wallet.updatePass(card.wallet_serial, walletCtx(ctx, card)) : null;
+const syncWallet = async (ctx, card) => card.wallet_serial ? wallet.updatePass(card.wallet_serial, await walletCtx(ctx, card)) : null;
 const publicInfo = (ctx) => ({
   store: { name: ctx.store.name, logo_url: ctx.store.logo_url },
-  settings: { needed: ctx.settings.needed, reward: ctx.settings.reward, cooldown_hours: ctx.settings.cooldown_hours },
+  settings: { needed: ctx.settings.needed, reward: ctx.settings.reward, cooldown_hours: ctx.settings.cooldown_hours, design: ctx.settings.design },
   wallet: wallet.configured()
 });
 
@@ -81,7 +80,10 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (action === 'card' && req.method === 'GET') {
       const ctx = await loadStore(req.query.slug);
       const card = await cardByToken(ctx, req.query.t);
-      return { ...publicInfo(ctx), card: cardView(card) };
+      // رسالة المحل تطلع إذا عمرها أقل من 14 يوم
+      const m = await latestMessage(ctx.store.id, card.id);
+      const message = m && Date.parse(m.created_at) > Date.now() - 14 * 864e5 ? { id: m.id, body: m.body, at: m.created_at } : null;
+      return { ...publicInfo(ctx), card: cardView(card), message };
     }
 
     // بطاقة جديدة (أو رجوع لبطاقته من جوال ثاني بنفس الرقم، وهو داخل المحل) + ختم أول زيارة
@@ -154,7 +156,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       const ctx = await loadStore(b.slug);
       const card = await cardByToken(ctx, b.t);
       if (card.wallet_url) return { url: card.wallet_url };
-      const pass = await wallet.createPass(walletCtx(ctx, card));
+      const pass = await wallet.createPass(await walletCtx(ctx, card));
       await rest(`loyalty_cards?id=eq.${card.id}`, { method: 'PATCH', body: { wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl } });
       return { url: pass.shareUrl };
     }

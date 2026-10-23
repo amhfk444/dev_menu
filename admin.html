@@ -11,8 +11,10 @@
 
 <link rel="stylesheet" href="/css/fonts.css">
 <link rel="stylesheet" href="/css/icons.css">
+<link rel="stylesheet" href="/css/loyalty-card.css">
 <script src="js/api.js"></script>
 <script src="js/dialog.js"></script>
+<script src="/js/loyalty-card.js"></script>
 <script src="js/theme.js"></script>
 <script src="js/occasions.js"></script>
 <!-- مكتبة توليد الـ QR Code -->
@@ -1000,6 +1002,58 @@
               </div>
               <button type="submit" id="ly-save" class="bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition">حفظ</button>
             </form>
+
+            <!-- شكل البطاقة -->
+            <div class="pro-card p-5 md:p-6 space-y-5">
+              <h3 class="text-sm font-bold flex items-center gap-2"><i class="ph-bold ph-palette"></i> شكل البطاقة</h3>
+              <div class="max-w-sm mx-auto w-full">
+                <div class="lcard" id="ly-preview">
+                  <p class="text-sm opacity-75">اجمع <b id="ly-pv-needed"></b> أختام وخذ</p>
+                  <p id="ly-pv-reward" class="text-xl font-bold mt-0.5"></p>
+                  <div id="ly-pv-stamps" class="stamps"></div>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <p class="text-xs font-semibold text-ink/70">الشكل</p>
+                <div id="ly-styles" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+              </div>
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <p class="text-xs font-semibold text-ink/70">لون البطاقة</p>
+                  <div id="ly-colors" class="flex flex-wrap items-center gap-2"></div>
+                </div>
+                <div class="space-y-2">
+                  <p class="text-xs font-semibold text-ink/70">لون الختم</p>
+                  <div id="ly-stamp-colors" class="flex flex-wrap items-center gap-2"></div>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <p class="text-xs font-semibold text-ink/70">صورة الختم</p>
+                <div id="ly-icons" class="flex flex-wrap gap-2"></div>
+                <div class="flex flex-wrap items-center gap-2 pt-1">
+                  <label class="cursor-pointer bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-3.5 py-2 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-image"></i> ارفع صورة للختم
+                    <input type="file" id="ly-stamp-file" accept="image/png,image/jpeg,image/webp" class="hidden" onchange="uploadStampImage(this)"></label>
+                  <button type="button" id="ly-stamp-clear" onclick="setLyDesign({ stamp_image: null })" class="hidden text-[13px] font-bold text-brick px-2 py-2"><i class="ph-bold ph-trash"></i> شيل الصورة</button>
+                  <span class="text-[11px] text-ink/55">مثل شعارك أو صورة منتجك. الأفضل صورة مربعة.</span>
+                </div>
+              </div>
+              <button type="button" id="ly-design-save" onclick="saveLyDesign()" class="bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition">حفظ الشكل</button>
+            </div>
+
+            <!-- رسالة للأعضاء -->
+            <div class="pro-card p-5 md:p-6 space-y-3">
+              <h3 class="text-sm font-bold flex items-center gap-2"><i class="ph-bold ph-megaphone"></i> أرسل رسالة لأعضاء البطاقة</h3>
+              <p class="text-[12px] text-ink/60 leading-relaxed">توصل إشعار على جوال اللي حافظين البطاقة في المحفظة، وتطلع للكل في صفحة البطاقة لما يفتحونها.</p>
+              <label class="block"><span class="text-xs font-semibold text-ink/70 block mb-1.5">لمين؟</span>
+                <select id="ly-msg-to" class="input-pro"></select></label>
+              <label class="block"><span class="text-xs font-semibold text-ink/70 block mb-1.5">الرسالة</span>
+                <textarea id="ly-msg-body" rows="3" maxlength="200" class="input-pro" placeholder="مثلاً: اليوم الختم دبل! زورونا قبل الساعة 6"></textarea></label>
+              <div class="flex items-center justify-between gap-3">
+                <span id="ly-msg-count" class="text-[11px] text-ink/50">0/200</span>
+                <button type="button" id="ly-msg-send" onclick="sendLyMessage()" class="bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition"><i class="ph-bold ph-paper-plane-tilt"></i> أرسل</button>
+              </div>
+              <div id="ly-msg-list" class="text-sm"></div>
+            </div>
 
             <!-- موقع المحل -->
             <div class="pro-card p-5 md:p-6 space-y-3">
@@ -3483,7 +3537,7 @@
   }
 
   // ─── بطاقة الولاء ───
-  const ly = { data: null, qrUrl: '' };
+  const ly = { data: null, qrUrl: '', design: null, dirty: false };
   const loyaltyUrl = () => DM.storeUrl(client.client_slug, 'loyalty', { s: 1 });
   async function onLoyaltyPage() {
     try { ly.data = await api('loyalty'); }
@@ -3492,6 +3546,9 @@
   }
   function renderLoyalty() {
     const d = ly.data, st = d.settings;
+    if (!ly.dirty) ly.design = { ...st.design };
+    renderDesign();
+    renderLyMessages();
     const sw = document.getElementById('ly-enabled');
     sw.setAttribute('aria-checked', String(d.enabled));
     sw.querySelector('.avail-label').textContent = d.enabled ? 'شغّالة' : 'متوقفة';
@@ -3524,6 +3581,83 @@
         </div>`).join('')}</div>`
       : '<p class="text-sm text-ink/55 text-center py-4">ما فيه أعضاء للحين. اطبع الكود وحطه في المحل.</p>';
   }
+  // ─── شكل البطاقة: معاينة حيّة ───
+  const LY_STYLES = [['gradient', 'متدرج'], ['solid', 'لون سادة'], ['paper', 'ورقي'], ['dark', 'داكن']];
+  const LY_CARD_COLORS = ['#233d2c', '#1f2937', '#7c2d12', '#1e3a8a', '#831843', '#0f766e', '#b45309'];
+  const LY_STAMP_COLORS = ['#c9a227', '#ffffff', '#f97316', '#ef4444', '#22c55e', '#38bdf8', '#1b1b1b'];
+  function setLyDesign(patch) { ly.design = { ...ly.design, ...patch }; ly.dirty = true; renderDesign(); }
+  function renderDesign() {
+    const d = ly.design, st = ly.data.settings;
+    DMLoyaltyCard.apply(document.getElementById('ly-preview'), d);
+    document.getElementById('ly-pv-needed').textContent = st.needed;
+    document.getElementById('ly-pv-reward').textContent = st.reward;
+    const pv = document.getElementById('ly-pv-stamps');
+    pv.className = `stamps ${st.needed === 5 || st.needed === 10 ? 'c5' : ''}`;
+    pv.innerHTML = DMLoyaltyCard.stamps(Math.min(3, st.needed - 1), st.needed, d);
+    document.getElementById('ly-styles').innerHTML = LY_STYLES.map(([k, label]) => `
+      <button type="button" onclick="setLyDesign({ style: '${k}' })" class="rounded-xl border px-3 py-2.5 text-[13px] font-bold transition ${d.style === k ? 'border-brand bg-brand text-cream' : 'border-brand/20 bg-white hover:border-brand/40'}">${label}</button>`).join('');
+    const swatches = (list, key, cur) => list.map(c => `
+      <button type="button" aria-label="${c}" onclick="setLyDesign({ ${key}: '${c}' })" class="w-8 h-8 rounded-full border ${cur === c ? 'ring-2 ring-offset-2 ring-brand' : 'border-black/10'}" style="background:${c}"></button>`).join('') + `
+      <label class="relative w-8 h-8 rounded-full border border-dashed border-ink/30 grid place-items-center cursor-pointer text-ink/60" title="لون آخر"><i class="ph-bold ph-paint-brush"></i>
+        <input type="color" value="${cur}" class="absolute inset-0 opacity-0 cursor-pointer" oninput="setLyDesign({ ${key}: this.value })"></label>`;
+    document.getElementById('ly-colors').innerHTML = swatches(LY_CARD_COLORS, 'color', d.color);
+    document.getElementById('ly-stamp-colors').innerHTML = swatches(LY_STAMP_COLORS, 'stamp_color', d.stamp_color);
+    document.getElementById('ly-icons').innerHTML = Object.entries(DMLoyaltyCard.ICONS).map(([k, cls]) => `
+      <button type="button" aria-label="${k}" onclick="setLyDesign({ icon: '${k}', stamp_image: null })" class="w-11 h-11 rounded-xl border grid place-items-center text-lg transition ${!d.stamp_image && d.icon === k ? 'border-brand bg-brand text-cream' : 'border-brand/20 bg-white hover:border-brand/40'}"><i class="ph-bold ${cls}"></i></button>`).join('');
+    document.getElementById('ly-stamp-clear').classList.toggle('hidden', !d.stamp_image);
+    document.getElementById('ly-design-save').textContent = ly.dirty ? 'حفظ الشكل' : 'محفوظ';
+  }
+  async function uploadStampImage(input) {
+    const file = input.files && input.files[0]; input.value = '';
+    if (!file) return;
+    const url = await uploadFile(file, 'stamp', 500);
+    if (!url) return showToast(lastUploadError || 'تعذر رفع الصورة', true);
+    setLyDesign({ stamp_image: url });
+    showToast('انرفعت الصورة، اضغط "حفظ الشكل"');
+  }
+  async function saveLyDesign() {
+    const btn = document.getElementById('ly-design-save'); btn.disabled = true;
+    try {
+      const r = await api('loyalty-settings', { settings: { design: ly.design } });
+      ly.data.settings = r.settings; ly.design = { ...r.settings.design }; ly.dirty = false;
+      renderDesign(); showToast('تم حفظ شكل البطاقة، ويطلع للزبائن على طول');
+    } catch (e) { showToast(e.message || 'تعذر الحفظ', true); }
+    btn.disabled = false;
+  }
+
+  // ─── رسائل الأعضاء ───
+  const lyCardLabel = (c) => `${c.name || `زبون #${c.id}`}${c.phone ? ` (${c.phone})` : ''}`;
+  function renderLyMessages() {
+    const d = ly.data, sel = document.getElementById('ly-msg-to'), keep = sel.value;
+    sel.innerHTML = `<option value="">كل الأعضاء (${d.stats.members})</option>` + d.cards.map(c => `<option value="${c.id}">${esc(lyCardLabel(c))}</option>`).join('');
+    if ([...sel.options].some(o => o.value === keep)) sel.value = keep;
+    const byId = Object.fromEntries(d.cards.map(c => [c.id, c]));
+    const when = (iso) => new Date(iso).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+    document.getElementById('ly-msg-list').innerHTML = (d.messages || []).length ? `
+      <p class="text-xs font-bold text-ink/70 mt-2 mb-1">آخر الرسائل</p>
+      <div class="divide-y divide-brand/10">${d.messages.map(m => `
+        <div class="py-2.5">
+          <p class="leading-relaxed">${esc(m.body)}</p>
+          <p class="text-[11px] text-ink/55 mt-0.5">${m.card_id ? esc(byId[m.card_id] ? lyCardLabel(byId[m.card_id]) : `زبون #${m.card_id}`) : 'لكل الأعضاء'} · ${when(m.created_at)}${m.wallet_sent ? ` · وصلت إشعار لـ ${m.wallet_sent} جوال` : ''}</p>
+        </div>`).join('')}</div>` : '';
+  }
+  document.addEventListener('input', (e) => { if (e.target && e.target.id === 'ly-msg-body') document.getElementById('ly-msg-count').textContent = `${e.target.value.length}/200`; });
+  async function sendLyMessage() {
+    const body = document.getElementById('ly-msg-body').value.trim();
+    const to = document.getElementById('ly-msg-to').value;
+    if (body.length < 2) return showToast('اكتب الرسالة', true);
+    const target = to ? lyCardLabel(ly.data.cards.find(c => String(c.id) === to)) : `كل الأعضاء (${ly.data.stats.members})`;
+    if (!(await DMDialog.confirm({ title: 'إرسال الرسالة', message: `لـ ${target}:\n${body}`, confirmText: 'أرسل', cancelText: 'تراجع' }))) return;
+    const btn = document.getElementById('ly-msg-send'); btn.disabled = true;
+    try {
+      const r = await api('loyalty-message', { body, card_id: to || null });
+      document.getElementById('ly-msg-body').value = ''; document.getElementById('ly-msg-count').textContent = '0/200';
+      showToast(r.message.wallet_sent ? `انرسلت، ووصلت إشعار لـ ${r.message.wallet_sent} جوال` : 'انرسلت، وتطلع لهم في صفحة البطاقة');
+      await onLoyaltyPage();
+    } catch (e) { showToast(e.message || 'تعذر الإرسال', true); }
+    btn.disabled = false;
+  }
+
   async function toggleLoyalty() {
     const next = !(ly.data && ly.data.enabled);
     if (next && ly.data && !ly.data.location_set) showToast('لا تنسى تحدد موقع المحل وأنت داخله');

@@ -25,7 +25,7 @@ async function call(method, path, body) {
 }
 
 // محتوى البطاقة. full = مزايا الباقة المدفوعة (الشعار، الموقع على شاشة القفل)
-function passBody({ store, settings, card, url, restoreUrl, lat, lng }, full = true) {
+function passBody({ store, settings, card, url, restoreUrl, lat, lng, notice }, full = true) {
   const n = settings.needed, s = Math.min(card.stamps, n);
   const body = {
     logoText: String(store.name || 'DEV MENU').slice(0, 40),
@@ -39,9 +39,12 @@ function passBody({ store, settings, card, url, restoreUrl, lat, lng }, full = t
       { label: 'طريقة الختم', value: 'امسح كود المحل وأنت داخله، وينضاف ختمك على طول.' },
       { label: 'افتح بطاقتك', value: restoreUrl || url }
     ],
-    sharingProhibited: true
+    sharingProhibited: true,
+    // رسالة المحل: لما تتغير تطلع إشعار على الجوال (لازم تكون موجودة من أول مرة، عشان كذا مسافة لو ما فيه رسالة)
+    notification: String(notice || ' ').slice(0, 250)
   };
   if (full) {
+    if (settings.design && settings.design.color) body.color = settings.design.color;
     if (store.logo_url && /^https:\/\//.test(store.logo_url)) body.logoURL = store.logo_url;
     if (Number.isFinite(lat) && Number.isFinite(lng)) body.locations = [{ latitude: lat, longitude: lng, relevantText: `أنت قريب من ${store.name}، خذ ختمك` }];
   }
@@ -72,4 +75,12 @@ async function updatePass(serial, ctx) {
   }
 }
 
-module.exports = { configured, createPass, updatePass };
+// رابط صفحة البطاقة، ورابط الاسترجاع (فيه رقم البطاقة السري، يطلع على ظهر بطاقة المحفظة بس)
+const cardUrl = (slug) => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(slug) && !['app', 'www'].includes(slug)
+  ? `https://${slug}.devmenu.digital/loyalty` : `https://www.devmenu.digital/loyalty.html?client=${encodeURIComponent(slug)}`;
+function buildCtx({ store, settings, card, lat, lng, notice }) {
+  const url = cardUrl(store.client_slug);
+  return { store, settings, card, url, restoreUrl: `${url}${url.includes('?') ? '&' : '?'}t=${encodeURIComponent(card.token)}`, lat, lng, notice };
+}
+
+module.exports = { configured, createPass, updatePass, buildCtx };

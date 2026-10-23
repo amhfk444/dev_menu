@@ -15,7 +15,9 @@
 .ph-bell:before { content: "\e0ce"; }
 .ph-bell-simple-ringing:before { content: "\e5ea"; }
 .ph-bell-slash:before { content: "\e0d4"; }
+.ph-bowl-food:before { content: "\eaa4"; }
 .ph-bread:before { content: "\e81c"; }
+.ph-cake:before { content: "\e780"; }
 .ph-caret-down:before { content: "\e136"; }
 .ph-caret-left:before { content: "\e138"; }
 .ph-carrot:before { content: "\ed38"; }
@@ -57,6 +59,7 @@
 .ph-globe:before { content: "\e288"; }
 .ph-hamburger:before { content: "\e790"; }
 .ph-hand-pointing:before { content: "\e29a"; }
+.ph-heart:before { content: "\e2a8"; }
 .ph-hourglass-medium:before { content: "\e2b8"; }
 .ph-house:before { content: "\e2c2"; }
 .ph-ice-cream:before { content: "\e804"; }
@@ -82,7 +85,9 @@
 .ph-music-notes:before { content: "\e340"; }
 .ph-note:before { content: "\e348"; }
 .ph-orange-slice:before { content: "\ed36"; }
+.ph-paint-brush:before { content: "\e6f0"; }
 .ph-palette:before { content: "\e6c8"; }
+.ph-paper-plane-tilt:before { content: "\e398"; }
 .ph-pause:before { content: "\e39e"; }
 .ph-pen-nib:before { content: "\e3ac"; }
 .ph-pencil-simple:before { content: "\e3b4"; }
@@ -91,6 +96,7 @@
 .ph-plant:before { content: "\ebae"; }
 .ph-play:before { content: "\e3d0"; }
 .ph-plus:before { content: "\e3d4"; }
+.ph-popcorn:before { content: "\eb4e"; }
 .ph-printer:before { content: "\e3dc"; }
 .ph-prohibit:before { content: "\e3de"; }
 .ph-qr-code:before { content: "\e3e6"; }
