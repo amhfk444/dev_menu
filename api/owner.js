@@ -252,7 +252,7 @@ async function pushWalletCards(store, { cardId = null, notice = null } = {}) {
     await Promise.all(cards.slice(i, i + 6).map(async (c) => {
       const ctx = wallet.buildCtx({ store: { name: store.name, client_slug: store.client_slug, logo_url: store.logo_url }, settings, card: c, lat: extra.loyalty_lat, lng: extra.loyalty_lng, notice: noticeFor(c) });
       const err = await wallet.updatePass(c.wallet_serial, ctx);
-      if (!err) sent++;
+      if (!err || err.startsWith('ok')) sent++;
       await rest(`loyalty_cards?id=eq.${c.id}`, { method: 'PATCH', body: { wallet_error: err } }).catch(() => {});
     }));
   }
@@ -489,8 +489,7 @@ async function main(req) {
     if (typeof b.enabled === 'boolean') body.loyalty_enabled = b.enabled;
     const row = (await rest(`clients?id=eq.${sid}`, { method: 'PATCH', body, prefer: 'return=representation' }))[0];
     // الشكل أو المكافأة تغيّرت ← نحدّث البطاقات اللي في المحفظة
-    const changed = JSON.stringify(current) !== JSON.stringify(settings);
-    const wallet_updated = changed ? await pushWalletCards(store) : 0;
+    const wallet_updated = await pushWalletCards(store);
     return { enabled: row.loyalty_enabled === true, settings: normalizeLoyalty(row.loyalty_settings), wallet_updated };
   }
 

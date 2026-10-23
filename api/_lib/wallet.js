@@ -66,10 +66,14 @@ async function createPass(ctx) {
 }
 
 // تحديث البطاقة في المحفظة (التحديث من مزايا الباقة المدفوعة، ولو فشل ما يوقف الختم)
-// يرجّع null لو نجح، أو سبب الفشل (ينحفظ مع البطاقة عشان نعرف وش صار)
+// يرجّع null لو نجح، أو سبب الفشل (ينحفظ مع البطاقة عشان نعرف وش صار، والنجاح يبدأ بـ ok)
 async function updatePass(serial, ctx) {
   if (!configured() || !serial) return 'not configured';
-  try { await call('PUT', `/${encodeURIComponent(serial)}`, passBody(ctx, true)); return null; }
+  try {
+    const r = await call('PUT', `/${encodeURIComponent(serial)}`, passBody(ctx, true));
+    // نسجل رد الخدمة: كم جهاز وصله التحديث، وهل المحتوى تغيّر
+    return `ok devices=${r.notifiedDevices ?? '?'} unchanged=${r.unchanged ?? '?'} at=${new Date().toISOString().slice(0, 19)}`;
+  }
   catch (e) {
     const first = `${e.status || ''} ${e.message || ''}`.trim();
     if (e.status >= 400 && e.status < 500 && e.status !== 401 && e.status !== 404 && e.status !== 429) {
