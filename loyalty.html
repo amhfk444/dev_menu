@@ -81,23 +81,18 @@
       <p id="j-reward" class="text-2xl font-bold mt-0.5"></p>
       <div id="j-stamps" class="stamps"></div>
     </div>
-    <form id="join-form" class="card p-5 space-y-4" novalidate>
-      <p class="font-bold">سجّل وخذ أول ختم</p>
-      <label class="block">
-        <span class="text-sm font-semibold block mb-1.5">اسمك</span>
-        <input id="f-name" class="field" autocomplete="given-name" maxlength="40" placeholder="مثلاً: سارة">
-      </label>
-      <label class="block">
-        <span class="text-sm font-semibold block mb-1.5">رقم جوالك</span>
-        <span class="flex gap-2" dir="ltr">
+    <div class="card p-5 space-y-3">
+      <button id="join-btn" type="button" class="btn btn-brand"><i class="ph-bold ph-seal-check"></i> خذ ختمك الأول</button>
+      <p class="text-xs opacity-60 text-center leading-relaxed">بدون تسجيل. بنطلب موقعك عشان نتأكد إنك داخل المحل، وما نحفظه.</p>
+      <details class="text-sm">
+        <summary class="cursor-pointer text-center opacity-70 font-semibold">عندك بطاقة قديمة؟ رجّعها برقم جوالك</summary>
+        <span class="flex gap-2 mt-3" dir="ltr">
           <select id="f-cc" class="field !w-auto !px-2.5" aria-label="رمز الدولة"></select>
           <input id="f-phone" class="field flex-1 min-w-0" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="05xxxxxxxx" maxlength="18">
         </span>
-        <span class="text-xs opacity-60 block mt-1.5">لو غيّرت جوالك، ترجع لبطاقتك بنفس الرقم.</span>
-      </label>
-      <button id="join-btn" type="submit" class="btn btn-brand"><i class="ph-bold ph-map-pin"></i> سجّل وخذ ختمك</button>
-      <p class="text-xs opacity-60 text-center leading-relaxed">بنطلب موقعك عشان نتأكد إنك داخل المحل. ما نحفظ موقعك.</p>
-    </form>
+        <span class="text-xs opacity-60 block mt-1.5">اكتب الرقم اللي ربطته ببطاقتك، واضغط "خذ ختمك".</span>
+      </details>
+    </div>
   </section>
 
   <!-- البطاقة -->
@@ -105,7 +100,7 @@
     <div class="lcard">
       <div class="flex items-start justify-between gap-3 relative z-[1]">
         <div>
-          <p class="text-sm opacity-75">أهلاً <span id="c-name"></span></p>
+          <p class="text-sm opacity-75">بطاقتك</p>
           <p id="c-left" class="text-xl font-bold mt-0.5"></p>
         </div>
         <p class="text-sm opacity-75 text-left shrink-0" dir="ltr"><b id="c-count" class="text-2xl text-[#f5f2eb] opacity-100"></b></p>
@@ -123,7 +118,21 @@
     </div>
 
     <button id="stamp-btn" type="button" class="btn btn-brand"><i class="ph-bold ph-seal-check"></i> سجّل زيارتي</button>
-    <button id="wallet-btn" type="button" class="btn btn-ghost hidden"><i class="ph-bold ph-wallet"></i> <span>أضف البطاقة لمحفظة جوالك</span></button>
+    <div id="wallet-prompt" class="card p-5 space-y-3 text-center hidden">
+      <i class="ph-bold ph-wallet text-3xl text-[#233d2c]"></i>
+      <p class="font-bold">احفظ بطاقتك في المحفظة</p>
+      <p class="text-sm opacity-70">عشان ما تضيع أختامك لو مسحت بيانات المتصفح، وتشوفها بسرعة من جوالك.</p>
+    </div>
+    <button id="wallet-btn" type="button" class="btn btn-ghost hidden"><i class="ph-bold ph-wallet"></i> <span>احفظ بطاقتك في المحفظة</span></button>
+    <details id="phone-box" class="card p-4 text-sm hidden">
+      <summary class="cursor-pointer font-semibold opacity-80">اربط رقم جوالك (اختياري)</summary>
+      <p class="text-xs opacity-60 mt-2">لو غيّرت جوالك، ترجع لبطاقتك بنفس الرقم.</p>
+      <span class="flex gap-2 mt-3" dir="ltr">
+        <select id="p-cc" class="field !w-auto !px-2.5" aria-label="رمز الدولة"></select>
+        <input id="p-phone" class="field flex-1 min-w-0" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="05xxxxxxxx" maxlength="18">
+      </span>
+      <button id="phone-btn" type="button" class="btn btn-ghost mt-3 !py-3 !text-base">اربط الرقم</button>
+    </details>
     <p id="c-hint" class="text-xs opacity-60 text-center"></p>
   </section>
 </main>
@@ -159,9 +168,10 @@
   const show = (v) => VIEWS.forEach(x => $(`v-${x}`).classList.toggle('hidden', x !== v));
   const loadToken = () => { try { return localStorage.getItem(KEY) || ''; } catch { return ''; } };
   const saveToken = (t) => { try { t ? localStorage.setItem(KEY, t) : localStorage.removeItem(KEY); } catch {} };
-  let settings = null, card = null, busy = false, walletOn = false;
+  let settings = null, card = null, busy = false, walletOn = false, justJoined = false;
 
   $('f-cc').innerHTML = DM.countryOptions();
+  $('p-cc').innerHTML = DM.countryOptions();
 
   function setStore(s) {
     $('store-name').textContent = s.name || '';
@@ -196,7 +206,6 @@
 
   function renderCard(fresh = -1) {
     const n = settings.needed, s = Math.min(card.stamps, n);
-    $('c-name').textContent = card.name;
     $('c-count').textContent = `${s}/${n}`;
     $('c-left').textContent = s >= n ? 'كمّلت الأختام!' : `باقي ${n - s} على ${settings.reward}`;
     $('c-stamps').className = gridClass(n);
@@ -204,9 +213,14 @@
     const full = s >= n;
     $('c-reward').classList.toggle('hidden', !full);
     $('c-reward-name').textContent = settings.reward;
-    $('stamp-btn').classList.toggle('hidden', full);
+    // بعد أول ختم مباشرة: نركّز على حفظ البطاقة في المحفظة بدل زر الختم
+    $('stamp-btn').classList.toggle('hidden', full || (justJoined && walletOn && !card.in_wallet));
     $('wallet-btn').classList.toggle('hidden', !walletOn);
-    $('wallet-btn').querySelector('span').textContent = card.in_wallet ? 'افتح البطاقة في المحفظة' : 'أضف البطاقة لمحفظة جوالك';
+    $('wallet-btn').querySelector('span').textContent = card.in_wallet ? 'افتح البطاقة في المحفظة' : 'احفظ بطاقتك في المحفظة';
+    $('wallet-prompt').classList.toggle('hidden', !walletOn || card.in_wallet || !justJoined);
+    $('wallet-btn').classList.toggle('btn-brand', walletOn && !card.in_wallet && justJoined);
+    $('wallet-btn').classList.toggle('btn-ghost', !(walletOn && !card.in_wallet && justJoined));
+    $('phone-box').classList.toggle('hidden', !!card.has_phone);
     $('c-hint').textContent = card.visits ? `زرتنا ${card.visits} ${card.visits === 1 ? 'مرة' : card.visits <= 10 ? 'مرات' : 'مرة'}${card.rewards ? `، واستخدمت ${card.rewards} ${card.rewards === 1 ? 'مكافأة' : 'مكافآت'}` : ''}.` : '';
     show('card');
   }
@@ -269,28 +283,50 @@
     } finally { setBusy(btn, false); }
   }
 
-  // ─── التسجيل أول مرة ───
-  $('join-form').addEventListener('submit', async (ev) => {
-    ev.preventDefault();
+  // ─── أول ختم بدون تسجيل (ولو كتب رقم جواله نرجّع بطاقته القديمة) ───
+  async function join() {
     if (busy) return;
-    const name = $('f-name').value.trim();
-    const phone = DM.intlPhone($('f-phone').value, $('f-cc').value);
-    if (name.length < 2) return $('f-name').focus();
-    if (!phone) { $('f-phone').focus(); return alert('رقم الجوال غير صحيح، تأكد من رمز الدولة والرقم'); }
+    const raw = $('f-phone').value.trim();
+    const phone = raw ? DM.intlPhone(raw, $('f-cc').value) : '';
+    if (raw && !phone) { $('f-phone').focus(); return alert('رقم الجوال غير صحيح، تأكد من رمز الدولة والرقم'); }
     const btn = $('join-btn');
     setBusy(btn, true, 'نتأكد من موقعك');
     try {
       const loc = await getLocation().catch(e => { throw { message: locationError(e) }; });
-      const r = await DM.post('/api/loyalty?action=join', { slug, name, phone, ...loc });
+      const r = await DM.post('/api/loyalty?action=join', { slug, phone, ...loc });
       saveToken(r.token);
-      settings = r.settings; walletOn = !!r.wallet;
+      if (params.get('s')) { params.delete('s'); history.replaceState(null, '', location.pathname + (params.toString() ? `?${params}` : '')); }
+      settings = r.settings; walletOn = !!r.wallet; justJoined = !!r.is_new;
       afterStamp(r);
-      if (!r.is_new && r.stamped) msg('ok', 'ph-check-circle', 'رجعت لبطاقتك، وانضاف ختم اليوم');
-      else if (!r.is_new) msg('ok', 'ph-check-circle', 'رجعت لبطاقتك');
+      if (!r.is_new) msg('ok', 'ph-check-circle', r.stamped ? 'رجعت لبطاقتك، وانضاف ختم اليوم' : 'رجعت لبطاقتك');
     } catch (e) {
-      alert(e.message || 'تعذر التسجيل، حاول مرة ثانية');
+      alert(e.message || 'تعذر إضافة الختم، حاول مرة ثانية');
     } finally { setBusy(btn, false); }
-  });
+  }
+  $('join-btn').onclick = join;
+
+  // ─── ربط رقم الجوال (اختياري) ───
+  $('phone-btn').onclick = async () => {
+    if (busy) return;
+    const phone = DM.intlPhone($('p-phone').value, $('p-cc').value);
+    if (!phone) { $('p-phone').focus(); return alert('رقم الجوال غير صحيح، تأكد من رمز الدولة والرقم'); }
+    const btn = $('phone-btn');
+    setBusy(btn, true, 'لحظة');
+    try {
+      let r;
+      try { r = await DM.post('/api/loyalty?action=phone', { slug, t: loadToken(), phone }); }
+      catch (e) {
+        // الرقم مربوط ببطاقة قديمة: نحتاج نتأكد إنه داخل المحل قبل ما ندمجها
+        if (e.code !== 'NO_LOCATION') throw e;
+        const loc = await getLocation().catch(x => { throw { message: locationError(x) }; });
+        r = await DM.post('/api/loyalty?action=phone', { slug, t: loadToken(), phone, ...loc });
+      }
+      saveToken(r.token); card = r.card; renderCard();
+      msg('ok', 'ph-check-circle', r.merged ? 'رجعت لبطاقتك القديمة وانضافت لها أختامك' : 'تم ربط رقمك ببطاقتك');
+    } catch (e) {
+      msg('err', 'ph-warning-circle', e.message || 'تعذر ربط الرقم، حاول مرة ثانية');
+    } finally { setBusy(btn, false); }
+  };
 
   // ─── المكافأة ───
   $('redeem-btn').onclick = () => $('confirm').classList.remove('hidden');
@@ -314,7 +350,7 @@
   let clockTimer = null;
   function showProof(iso) {
     $('proof-reward').textContent = settings.reward;
-    $('proof-name').textContent = card.name;
+    $('proof-name').textContent = `المكافأة رقم ${card.rewards} لهالبطاقة`;
     const used = new Date(iso);
     $('proof-date').textContent = `استُخدمت ${used.toLocaleTimeString('ar-SA-u-nu-latn', { hour: 'numeric', minute: '2-digit' })}، ${used.toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long' })}`;
     const tick = () => { $('proof-clock').textContent = new Date().toLocaleTimeString('en-GB', { hour12: false }); };
@@ -341,6 +377,13 @@
   };
 
   // ─── البداية ───
+  // الرابط اللي على ظهر بطاقة المحفظة فيه رقم البطاقة: نحفظه ونشيله من الرابط
+  if (params.get('t')) {
+    saveToken(params.get('t'));
+    params.delete('t');
+    history.replaceState(null, '', location.pathname + (params.toString() ? `?${params}` : ''));
+  }
+
   async function start() {
     show('loading');
     const token = loadToken();
@@ -363,6 +406,7 @@
       $('j-stamps').className = gridClass(settings.needed);
       $('j-stamps').innerHTML = stampsHTML(0, settings.needed);
       show('join');
+      if (params.get('s') === '1') join();
     } catch (e) {
       if (e.status === 404 && e.code === 'NOT_FOUND') { saveToken(''); return start(); }
       show('unavailable');

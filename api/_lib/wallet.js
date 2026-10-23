@@ -2,7 +2,7 @@
 // DEV MENU — بطاقة الولاء في المحفظة (Apple Wallet + Google Wallet) عبر WalletWallet
 //   https://www.walletwallet.dev — توقّع البطاقة بشهادتها، فما نحتاج حساب مطوّر آبل
 //   المتغير في Vercel: WALLET_API_KEY
-// نرسل أقل بيانات ممكنة: الاسم الأول وعدد الأختام (بدون رقم الجوال)
+// نرسل أقل بيانات ممكنة: اسم المحل وعدد الأختام (بدون أي بيانات عن الزبون)
 // =====================================================================
 const { ApiError } = require('./core');
 
@@ -25,22 +25,20 @@ async function call(method, path, body) {
 }
 
 // محتوى البطاقة. full = مزايا الباقة المدفوعة (الشعار، الموقع على شاشة القفل)
-function passBody({ store, settings, card, url, lat, lng }, full = true) {
+function passBody({ store, settings, card, url, restoreUrl, lat, lng }, full = true) {
   const n = settings.needed, s = Math.min(card.stamps, n);
-  const first = String(card.name || '').trim().split(/\s+/)[0].slice(0, 30);
   const body = {
     logoText: String(store.name || 'DEV MENU').slice(0, 40),
     organizationName: String(store.name || 'DEV MENU').slice(0, 64),
     description: `بطاقة الولاء: ${store.name || ''}`.slice(0, 120),
     colorPreset: 'green',
-    headerFields: [{ label: 'العضو', value: first || 'عضو' }],
+    headerFields: [{ label: 'الزيارات', value: String(card.visits || 0), changeMessage: 'زيارتك رقم %@' }],
     primaryFields: [{ label: 'الأختام', value: `${s} / ${n}`, changeMessage: 'صار عندك %@ ختم' }],
     secondaryFields: [{ label: 'المكافأة', value: settings.reward }, { label: s >= n ? 'جاهزة' : 'باقي', value: s >= n ? 'استخدمها الحين' : `${n - s} أختام` }],
     backFields: [
       { label: 'طريقة الختم', value: 'امسح كود المحل وأنت داخله، وينضاف ختمك على طول.' },
-      { label: 'بطاقتك', value: url }
+      { label: 'افتح بطاقتك', value: restoreUrl || url }
     ],
-    barcodeValue: url, barcodeFormat: 'QR', barcodeAltText: 'بطاقة الولاء',
     sharingProhibited: true
   };
   if (full) {

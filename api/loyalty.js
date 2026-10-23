@@ -2,14 +2,15 @@
 // DEV MENU — بطاقة الولاء (صفحة الزبون، بدون تطبيق وبدون الكاشير)
 //   GET  /api/loyalty?action=info&slug=        اسم المتجر وإعدادات البطاقة
 //   GET  /api/loyalty?action=card&slug=&t=     بطاقة الزبون
-//   POST /api/loyalty?action=join              بطاقة جديدة + أول ختم { slug, name, phone, lat, lng, acc }
+//   POST /api/loyalty?action=join              بطاقة جديدة + أول ختم، بدون تسجيل { slug, lat, lng, acc, phone? }
+//   POST /api/loyalty?action=phone             ربط رقم الجوال أو استرجاع بطاقة قديمة { slug, t, phone, lat?, lng?, acc? }
 //   POST /api/loyalty?action=stamp             ختم زيارة { slug, t, lat, lng, acc }
 //   POST /api/loyalty?action=redeem            استخدام المكافأة قدام الموظف { slug, t, lat, lng, acc }
 //   POST /api/loyalty?action=wallet            رابط إضافة البطاقة لمحفظة آبل أو قوقل { slug, t }
 // كل ختم يحتاج الزبون يكون داخل نطاق المحل (50 متر افتراضياً). ما نخزن موقعه، بس المسافة.
 // =====================================================================
 const crypto = require('crypto');
-const { handler, rest, rpc, q, ApiError, readBody, findPublicStore, str, waNumber } = require('./_lib/core');
+const { handler, rest, rpc, q, ApiError, readBody, findPublicStore, waNumber } = require('./_lib/core');
 const { normalizeLoyalty, distanceM, validPoint } = require('./_lib/loyalty');
 const wallet = require('./_lib/wallet');
 
@@ -40,12 +41,13 @@ function checkPresence(ctx, b) {
   return d;
 }
 
-const cardView = (c) => ({ name: c.name, stamps: c.stamps, visits: c.visits, rewards: c.rewards, last_stamp_at: c.last_stamp_at, in_wallet: !!c.wallet_url });
+const cardView = (c) => ({ stamps: c.stamps, visits: c.visits, rewards: c.rewards, last_stamp_at: c.last_stamp_at, in_wallet: !!c.wallet_url, has_phone: !!c.phone });
+const optionalPhone = (v) => { if (!String(v || '').trim()) return ''; try { return waNumber(v); } catch { throw new ApiError(400, 'رقم الجوال غير صحيح'); } };
 
 // رابط صفحة البطاقة (يطلع في المحفظة)
 const cardUrl = (slug) => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(slug) && !['app', 'www'].includes(slug)
   ? `https://${slug}.devmenu.digital/loyalty` : `https://www.devmenu.digital/loyalty.html?client=${encodeURIComponent(slug)}`;
-const walletCtx = (ctx, card) => ({ store: ctx.store, settings: ctx.settings, card, url: cardUrl(ctx.store.client_slug), lat: ctx.lat, lng: ctx.lng });
+const walletCtx = (ctx, card) => ({ store: ctx.store, settings: ctx.settings, card, url: cardUrl(ctx.store.client_slug), restoreUrl: `${cardUrl(ctx.store.client_slug)}${cardUrl(ctx.store.client_slug).includes('?') ? '&' : '?'}t=${encodeURIComponent(card.token)}`, lat: ctx.lat, lng: ctx.lng });
 // البطاقة في المحفظة تتحدث مع كل ختم (لو الزبون ضافها)
 const syncWallet = (ctx, card) => card.wallet_serial ? wallet.updatePass(card.wallet_serial, walletCtx(ctx, card)) : null;
 const publicInfo = (ctx) => ({
@@ -83,29 +85,48 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     }
 
     // بطاقة جديدة (أو رجوع لبطاقته من جوال ثاني بنفس الرقم، وهو داخل المحل) + ختم أول زيارة
+    // أول ختم بدون أي تسجيل: بطاقة جديدة مربوطة بجوال الزبون (رقم سري يتحفظ في متصفحه)
+    // ولو كتب رقم جواله (اختياري) وهو داخل المحل نرجّع له بطاقته القديمة
     if (action === 'join' && req.method === 'POST') {
       const ctx = await loadStore(b.slug);
-      const name = str(b.name, 40, 'الاسم');
-      if (name.length < 2) throw new ApiError(400, 'اكتب اسمك');
-      let phone;
-      try { phone = waNumber(b.phone); } catch { throw new ApiError(400, 'رقم الجوال غير صحيح'); }
-      if (!phone) throw new ApiError(400, 'اكتب رقم جوالك');
+      const phone = optionalPhone(b.phone);
       const distance = checkPresence(ctx, b);
-      let card = (await rest(`loyalty_cards?client_id=eq.${ctx.store.id}&phone=eq.${q(phone)}&select=*`))[0];
+      let card = phone ? (await rest(`loyalty_cards?client_id=eq.${ctx.store.id}&phone=eq.${q(phone)}&select=*`))[0] : null;
       const isNew = !card;
       if (!card) {
         card = (await rest('loyalty_cards', {
           method: 'POST', prefer: 'return=representation',
-          body: { client_id: ctx.store.id, token: crypto.randomBytes(18).toString('base64url'), name, phone }
-        }).catch(async (e) => {
-          // تسجيل بنفس الرقم في نفس اللحظة
-          const again = (await rest(`loyalty_cards?client_id=eq.${ctx.store.id}&phone=eq.${q(phone)}&select=*`))[0];
-          if (again) return [again];
-          throw e;
+          body: { client_id: ctx.store.id, token: crypto.randomBytes(18).toString('base64url'), phone: phone || null }
         }))[0];
       }
       const out = await stampCard(ctx, card, distance);
       return { ...publicInfo(ctx), token: card.token, is_new: isNew, ...out };
+    }
+
+    // ربط رقم الجوال بالبطاقة (اختياري، عشان يرجّعها لو غيّر جواله)
+    // لو الرقم مربوط ببطاقة قديمة: ندمج الأختام فيها ويكمل عليها (لازم يكون داخل المحل)
+    if (action === 'phone' && req.method === 'POST') {
+      const ctx = await loadStore(b.slug);
+      const card = await cardByToken(ctx, b.t);
+      const phone = optionalPhone(b.phone);
+      if (!phone) throw new ApiError(400, 'اكتب رقم جوالك');
+      const owner = (await rest(`loyalty_cards?client_id=eq.${ctx.store.id}&phone=eq.${q(phone)}&select=*`))[0];
+      if (!owner || owner.id === card.id) {
+        await rest(`loyalty_cards?id=eq.${card.id}`, { method: 'PATCH', body: { phone } });
+        const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
+        return { ...publicInfo(ctx), token: card.token, merged: false, card: cardView(fresh) };
+      }
+      checkPresence(ctx, b);
+      const body = {
+        stamps: Math.min(ctx.settings.needed, owner.stamps + card.stamps), visits: owner.visits + card.visits,
+        rewards: owner.rewards + card.rewards, last_stamp_at: [owner.last_stamp_at, card.last_stamp_at].filter(Boolean).sort().pop() || null
+      };
+      await rest(`loyalty_cards?id=eq.${owner.id}`, { method: 'PATCH', body });
+      await rest(`loyalty_events?card_id=eq.${card.id}`, { method: 'PATCH', body: { card_id: owner.id } }).catch(() => {});
+      await rest(`loyalty_cards?id=eq.${card.id}`, { method: 'DELETE' });
+      const fresh = (await rest(`loyalty_cards?id=eq.${owner.id}&select=*`))[0];
+      await syncWallet(ctx, fresh);
+      return { ...publicInfo(ctx), token: owner.token, merged: true, card: cardView(fresh) };
     }
 
     if (action === 'stamp' && req.method === 'POST') {

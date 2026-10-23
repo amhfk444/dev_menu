@@ -3519,7 +3519,7 @@
       <p class="text-xs font-bold text-ink/70 mb-2">آخر الزبائن</p>
       <div class="divide-y divide-brand/10">${d.cards.map(c => `
         <div class="flex items-center justify-between gap-3 py-2.5">
-          <div class="min-w-0"><p class="font-semibold truncate">${esc(c.name)}</p><a href="https://wa.me/${esc(c.phone)}" target="_blank" rel="noopener" class="text-xs text-ink/55" dir="ltr">${esc(c.phone)}</a></div>
+          <div class="min-w-0"><p class="font-semibold truncate">${esc(c.name || `زبون #${c.id}`)}</p>${c.phone ? `<a href="https://wa.me/${esc(c.phone)}" target="_blank" rel="noopener" class="text-xs text-ink/55" dir="ltr">${esc(c.phone)}</a>` : '<p class="text-xs text-ink/45">بدون رقم</p>'}</div>
           <div class="text-left shrink-0"><p class="font-bold" dir="ltr">${Math.min(c.stamps, st.needed)}/${st.needed}</p><p class="text-[11px] text-ink/55">${c.visits} زيارة${c.rewards ? ` · ${c.rewards} مكافأة` : ''} · ${ago(c.last_stamp_at)}</p></div>
         </div>`).join('')}</div>`
       : '<p class="text-sm text-ink/55 text-center py-4">ما فيه أعضاء للحين. اطبع الكود وحطه في المحل.</p>';
