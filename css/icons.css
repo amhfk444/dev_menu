@@ -31,6 +31,7 @@
 .ph-coins:before { content: "\e78e"; }
 .ph-cookie:before { content: "\e6ca"; }
 .ph-copy:before { content: "\e1ca"; }
+.ph-crosshair:before { content: "\e1d6"; }
 .ph-crown:before { content: "\e614"; }
 .ph-device-mobile:before { content: "\e1e0"; }
 .ph-door:before { content: "\e61c"; }
@@ -51,6 +52,7 @@
 .ph-floppy-disk:before { content: "\e248"; }
 .ph-fork-knife:before { content: "\e262"; }
 .ph-gauge:before { content: "\e628"; }
+.ph-gift:before { content: "\e276"; }
 .ph-git-branch:before { content: "\e278"; }
 .ph-globe:before { content: "\e288"; }
 .ph-hamburger:before { content: "\e790"; }
@@ -94,6 +96,7 @@
 .ph-qr-code:before { content: "\e3e6"; }
 .ph-question:before { content: "\e3e8"; }
 .ph-scissors:before { content: "\eae0"; }
+.ph-seal-check:before { content: "\e606"; }
 .ph-share-network:before { content: "\e408"; }
 .ph-shuffle:before { content: "\e422"; }
 .ph-sign-out:before { content: "\e42a"; }

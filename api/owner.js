@@ -14,6 +14,7 @@ const { sendPush, pushPublicKey, cleanSubscription } = require('./_lib/push');
 const google = require('./_lib/google');
 const { syncStore } = require('./_lib/reviews');
 const { topic, storeTopics, poke } = require('./_lib/live');
+const { normalizeLoyalty, validPoint } = require('./_lib/loyalty');
 
 const bySort = (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id;
 const COFFEE_TYPES = ['cafe', 'mixed'];
@@ -331,6 +332,25 @@ async function main(req) {
     return { tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub })), slug: store.client_slug, name: store.name, max_rings: PAGER_MAX_RINGS, live: topic('pager', store.id) };
   }
 
+  // ─── بطاقة الولاء: الإعدادات والإحصائيات وآخر البطاقات ───
+  if (action === 'loyalty' && req.method === 'GET') {
+    const { store } = await context(req);
+    const extra = (await rest(`clients?id=eq.${store.id}&select=loyalty_enabled,loyalty_settings,loyalty_lat,loyalty_lng`))[0] || {};
+    const day = 864e5, iso = (n) => q(new Date(Date.now() - n * day).toISOString());
+    const [cards, stamps7, redeemed] = await Promise.all([
+      rest(`loyalty_cards?client_id=eq.${store.id}&select=id,name,phone,stamps,visits,rewards,last_stamp_at,created_at&order=last_stamp_at.desc.nullslast&limit=500`),
+      rest(`loyalty_events?client_id=eq.${store.id}&kind=eq.stamp&created_at=gte.${iso(7)}&select=id`),
+      rest(`loyalty_events?client_id=eq.${store.id}&kind=eq.redeem&select=id`)
+    ]);
+    const active = cards.filter(c => c.last_stamp_at && Date.parse(c.last_stamp_at) > Date.now() - 30 * day).length;
+    return {
+      enabled: extra.loyalty_enabled === true, settings: normalizeLoyalty(extra.loyalty_settings),
+      location_set: validPoint(extra.loyalty_lat, extra.loyalty_lng), slug: store.client_slug,
+      stats: { members: cards.length, active30: active, stamps7: stamps7.length, redeemed: redeemed.length },
+      cards: cards.slice(0, 50)
+    };
+  }
+
   // ─── ردود التقييمات: آخر الردود المكتوبة ───
   if (action === 'review-drafts' && req.method === 'GET') {
     const { store, admin } = await context(req);
@@ -424,6 +444,25 @@ async function main(req) {
     return { ok: true };
   }
   // إشعارات "تعليق جديد" على جهاز صاحب المطعم
+  // ─── بطاقة الولاء: تشغيل وإعدادات ───
+  if (action === 'loyalty-settings') {
+    const extra = (await rest(`clients?id=eq.${sid}&select=loyalty_settings`))[0] || {};
+    const settings = normalizeLoyalty({ ...normalizeLoyalty(extra.loyalty_settings), ...(b.settings || {}) });
+    const body = { loyalty_settings: settings };
+    if (typeof b.enabled === 'boolean') body.loyalty_enabled = b.enabled;
+    const row = (await rest(`clients?id=eq.${sid}`, { method: 'PATCH', body, prefer: 'return=representation' }))[0];
+    return { enabled: row.loyalty_enabled === true, settings: normalizeLoyalty(row.loyalty_settings) };
+  }
+
+  // ─── بطاقة الولاء: موقع المحل (صاحب المحل يحدده وهو داخل المحل) ───
+  if (action === 'loyalty-location') {
+    const lat = Number(b.lat), lng = Number(b.lng), acc = Number(b.acc);
+    if (!validPoint(lat, lng)) throw new ApiError(400, 'ما وصلنا موقعك، فعّل الموقع وحاول مرة ثانية');
+    if (!Number.isFinite(acc) || acc > 100) throw new ApiError(409, `الموقع مو دقيق كفاية (${Math.round(acc) || '؟'} متر). قرّب من الشباك أو الباب وحاول مرة ثانية`, 'WEAK_GPS');
+    await rest(`clients?id=eq.${sid}`, { method: 'PATCH', body: { loyalty_lat: lat, loyalty_lng: lng } });
+    return { ok: true, accuracy: Math.round(acc) };
+  }
+
   // ─── اختيار الباقة: صاحب المتجر يختار شهري أو سنوي، ويظهر الطلب في لوحة المشتركين ───
   if (action === 'plan-request') {
     const plan = ['month', 'year'].includes(b.plan) ? b.plan : null;

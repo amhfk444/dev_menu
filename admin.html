@@ -205,6 +205,7 @@
       <button data-nav="dashboard" class="nav-item"><i class="ph-bold ph-gauge"></i> الرئيسية</button>
       <button data-nav="menu" class="nav-item"><i class="ph-bold ph-fork-knife"></i> المنيو <span id="nav-count" class="mr-auto text-[10px] px-2 py-0.5 rounded-full">0</span></button>
       <button data-nav="waitlist" class="nav-item"><i class="ph-bold ph-hourglass-medium"></i> قائمة الانتظار <span id="nav-waitlist" class="mr-auto hidden text-[10px] bg-amber-400 text-black px-2 py-0.5 rounded-full font-black">0</span></button>
+      <button data-nav="loyalty" class="nav-item"><i class="ph-bold ph-seal-check"></i> بطاقة الولاء</button>
       <button data-nav="reviews" class="nav-item"><i class="ph-bold ph-star-half"></i> ردود التقييمات</button>
       <a href="pager-desk.html" onclick="this.href='pager-desk.html'+location.search" class="nav-item"><i class="ph-bold ph-bell"></i> شاشة البيجر <span class="mr-auto text-[9px] bg-[#c9a227] text-[#15271b] font-black px-1.5 py-0.5 rounded-md">جديد</span></a>
       <button data-nav="settings" class="nav-item"><i class="ph-bold ph-palette"></i> هوية المطعم</button>
@@ -266,6 +267,11 @@
         <div id="renew-banner" class="hidden rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 border"></div>
 
         <div id="quick-counts" class="pro-card grid grid-cols-2 lg:grid-cols-4 overflow-hidden"></div>
+        <button type="button" onclick="location.hash='loyalty'" class="lg:hidden pro-card w-full flex items-center gap-3 p-4 text-right hover:bg-brand/[0.03] transition">
+          <span class="w-10 h-10 rounded-xl bg-brand/10 text-brand grid place-items-center shrink-0"><i class="ph-bold ph-seal-check"></i></span>
+          <span class="flex-1 min-w-0"><span class="block text-sm font-semibold">بطاقة الولاء</span><span class="block text-xs text-ink/60">زبونك يجمع أختامه بنفسه ويرجع لك</span></span>
+          <i class="ph-bold ph-caret-left text-xs text-ink/40"></i>
+        </button>
         <button type="button" data-reviews-entry onclick="location.hash='reviews'" class="lg:hidden pro-card w-full flex items-center gap-3 p-4 text-right hover:bg-brand/[0.03] transition">
           <span class="w-10 h-10 rounded-xl bg-saffron/15 text-amber-800 grid place-items-center shrink-0"><i class="ph-bold ph-star-half"></i></span>
           <span class="flex-1 min-w-0"><span class="block text-sm font-semibold">ردود التقييمات</span><span class="block text-xs text-ink/60">رد على تعليقات قوقل ماب برد بشري جاهز</span></span>
@@ -961,6 +967,69 @@
         </div>
       </section>
 
+      <section data-page="loyalty" class="hidden space-y-5">
+        <!-- تشغيل -->
+        <div class="pro-card p-5 md:p-6 flex flex-wrap items-center justify-between gap-4">
+          <div class="space-y-1 max-w-xl">
+            <h2 class="text-base font-bold">بطاقة الولاء بالأختام</h2>
+            <p class="text-[13px] text-ink/65 leading-relaxed">زبونك يمسح الكود اللي في المحل ويختم زيارته بنفسه من جواله، بدون تطبيق وبدون الكاشير. الختم ما ينحسب إلا إذا كان داخل المحل فعلاً، ومرة وحدة كل فترة.</p>
+          </div>
+          <button type="button" id="ly-enabled" role="switch" aria-checked="false" class="avail" onclick="toggleLoyalty()">
+            <span class="avail-track"></span><span class="avail-label !w-auto">متوقفة</span>
+          </button>
+        </div>
+
+        <div class="grid lg:grid-cols-[1.1fr_.9fr] gap-5 items-start">
+          <div class="space-y-5">
+            <!-- الإعدادات -->
+            <form id="ly-form" class="pro-card p-5 md:p-6 space-y-4" onsubmit="saveLoyalty(event)">
+              <h3 class="text-sm font-bold">إعدادات البطاقة</h3>
+              <div class="grid sm:grid-cols-2 gap-4">
+                <label class="block"><span class="text-xs font-semibold text-ink/70 block mb-1.5">عدد الأختام للمكافأة</span>
+                  <select id="ly-needed" class="input-pro"></select></label>
+                <label class="block"><span class="text-xs font-semibold text-ink/70 block mb-1.5">المكافأة</span>
+                  <input id="ly-reward" class="input-pro" maxlength="60" placeholder="مثلاً: مشروب مجاني"></label>
+                <label class="block"><span class="text-xs font-semibold text-ink/70 block mb-1.5">ختم وحد كل</span>
+                  <select id="ly-cooldown" class="input-pro">
+                    <option value="4">4 ساعات</option><option value="6">6 ساعات</option><option value="12">12 ساعة</option><option value="24">يوم كامل</option>
+                  </select></label>
+                <label class="block"><span class="text-xs font-semibold text-ink/70 block mb-1.5">المسافة المسموحة من المحل</span>
+                  <select id="ly-radius" class="input-pro">
+                    <option value="25">25 متر</option><option value="50">50 متر</option><option value="100">100 متر (مول أو مبنى كبير)</option><option value="200">200 متر</option>
+                  </select></label>
+              </div>
+              <button type="submit" id="ly-save" class="bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition">حفظ</button>
+            </form>
+
+            <!-- موقع المحل -->
+            <div class="pro-card p-5 md:p-6 space-y-3">
+              <h3 class="text-sm font-bold flex items-center gap-2"><i class="ph-bold ph-map-pin"></i> موقع المحل</h3>
+              <p id="ly-loc-status" class="text-[13px]"></p>
+              <p class="text-[12px] text-ink/60 leading-relaxed">اضغط الزر وأنت <b>واقف داخل المحل</b> بجوالك. كذا الموقع يطابق اللي يشوفه جوال الزبون داخل المحل، ويقل الخطأ.</p>
+              <button type="button" id="ly-loc-btn" onclick="setLoyaltyLocation()" class="bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-4 py-2.5 rounded-xl text-sm font-bold transition"><i class="ph-bold ph-crosshair"></i> حدد موقع المحل من هنا</button>
+            </div>
+
+            <!-- الإحصائيات وآخر الزبائن -->
+            <div class="pro-card p-5 md:p-6 space-y-4">
+              <div id="ly-stats" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+              <div id="ly-cards" class="text-sm"></div>
+            </div>
+          </div>
+
+          <!-- الكود -->
+          <div class="pro-card p-5 md:p-6 space-y-4 text-center lg:sticky lg:top-24">
+            <h3 class="text-sm font-bold">كود الأختام</h3>
+            <p class="text-[12px] text-ink/60">اطبعه وحطه عند الكاشير أو على الطاولات.</p>
+            <div id="ly-qr" class="w-48 h-48 mx-auto bg-white p-2 rounded-xl border border-brand/10"></div>
+            <input id="ly-link" readonly dir="ltr" class="input-pro text-center !text-xs">
+            <div class="flex gap-2 justify-center">
+              <button type="button" onclick="downloadLoyaltyCard()" class="bg-brand hover:bg-brand-dark text-cream px-4 py-2.5 rounded-xl text-sm font-bold transition"><i class="ph-bold ph-download-simple"></i> تحميل للطباعة</button>
+              <a id="ly-open" target="_blank" rel="noopener" class="bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-4 py-2.5 rounded-xl text-sm font-bold transition">معاينة</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section data-page="settings" class="hidden space-y-6">
         <!-- رابط المتجر المختصر -->
         <div class="pro-card p-5 space-y-3">
@@ -1336,6 +1405,7 @@
     dashboard: ['الرئيسية', 'نظرة عامة على متجرك وأداء المنيو'],
     menu:      ['المنيو', 'أضف أطباقك وأقسامك ورتّبها'],
     waitlist:  ['قائمة الانتظار', 'سجّل ضيوفك وبلّغهم لما تجهز طاولتهم'],
+    loyalty:   ['بطاقة الولاء', 'زبونك يجمع أختامه بنفسه ويرجع لك'],
     reviews:   ['ردود التقييمات', 'رد على تعليقات قوقل ماب برد بشري جاهز'],
     settings:  ['هوية المطعم', 'الاسم والشعار والخلفية ومعلومات التواصل']
   };
@@ -1353,6 +1423,7 @@
     window.scrollTo({ top: 0 });
     if (typeof onWaitlistPage === 'function') onWaitlistPage(page === 'waitlist');
     if (page === 'reviews' && typeof onReviewsPage === 'function') onReviewsPage();
+    if (page === 'loyalty' && typeof onLoyaltyPage === 'function') onLoyaltyPage();
   }
   document.querySelectorAll('[data-nav]').forEach(b => b.addEventListener('click', () => {
     if (location.hash === '#' + b.dataset.nav) return showPage(b.dataset.nav);
@@ -3409,6 +3480,113 @@
       document.getElementById('info-show-calories').checked = !on;
       showToast('تعذر حفظ الإعداد', true);
     }
+  }
+
+  // ─── بطاقة الولاء ───
+  const ly = { data: null, qrUrl: '' };
+  const loyaltyUrl = () => DM.storeUrl(client.client_slug, 'loyalty', { s: 1 });
+  async function onLoyaltyPage() {
+    try { ly.data = await api('loyalty'); }
+    catch (e) { document.getElementById('ly-stats').innerHTML = `<p class="col-span-full text-sm text-brick">${esc(e.message || 'تعذر التحميل')}</p>`; return; }
+    renderLoyalty();
+  }
+  function renderLoyalty() {
+    const d = ly.data, st = d.settings;
+    const sw = document.getElementById('ly-enabled');
+    sw.setAttribute('aria-checked', String(d.enabled));
+    sw.querySelector('.avail-label').textContent = d.enabled ? 'شغّالة' : 'متوقفة';
+    document.getElementById('ly-needed').innerHTML = Array.from({ length: 9 }, (_, i) => i + 4).map(n => `<option value="${n}" ${n === st.needed ? 'selected' : ''}>${n} أختام</option>`).join('');
+    document.getElementById('ly-reward').value = st.reward;
+    document.getElementById('ly-cooldown').value = String(st.cooldown_hours);
+    document.getElementById('ly-radius').value = String(st.radius_m);
+    document.getElementById('ly-loc-status').innerHTML = d.location_set
+      ? '<span class="text-emerald-700 font-semibold"><i class="ph-bold ph-check-circle"></i> موقع المحل محدد</span>'
+      : '<span class="text-brick font-semibold"><i class="ph-bold ph-warning-circle"></i> ما حددت موقع المحل للحين، والزبائن ما يقدرون يختمون بدونه</span>';
+    // الكود
+    const url = loyaltyUrl();
+    document.getElementById('ly-link').value = url.replace(/^https?:\/\//, '');
+    document.getElementById('ly-open').href = url;
+    if (ly.qrUrl !== url) {
+      ly.qrUrl = url;
+      const box = document.getElementById('ly-qr'); box.innerHTML = '';
+      new QRCode(box, { text: url, width: 176, height: 176, colorDark: '#22362a', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    }
+    // الإحصائيات
+    const tile = (label, v) => `<div class="rounded-xl bg-brand/[0.04] border border-brand/10 p-3"><p class="text-[11px] text-ink/60">${label}</p><p class="text-xl font-bold mt-0.5">${v}</p></div>`;
+    document.getElementById('ly-stats').innerHTML = tile('الأعضاء', d.stats.members) + tile('رجعوا آخر 30 يوم', d.stats.active30) + tile('أختام هالأسبوع', d.stats.stamps7) + tile('مكافآت مستخدمة', d.stats.redeemed);
+    const ago = (iso) => iso ? new Date(iso).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short' }) : '';
+    document.getElementById('ly-cards').innerHTML = d.cards.length ? `
+      <p class="text-xs font-bold text-ink/70 mb-2">آخر الزبائن</p>
+      <div class="divide-y divide-brand/10">${d.cards.map(c => `
+        <div class="flex items-center justify-between gap-3 py-2.5">
+          <div class="min-w-0"><p class="font-semibold truncate">${esc(c.name)}</p><a href="https://wa.me/${esc(c.phone)}" target="_blank" rel="noopener" class="text-xs text-ink/55" dir="ltr">${esc(c.phone)}</a></div>
+          <div class="text-left shrink-0"><p class="font-bold" dir="ltr">${Math.min(c.stamps, st.needed)}/${st.needed}</p><p class="text-[11px] text-ink/55">${c.visits} زيارة${c.rewards ? ` · ${c.rewards} مكافأة` : ''} · ${ago(c.last_stamp_at)}</p></div>
+        </div>`).join('')}</div>`
+      : '<p class="text-sm text-ink/55 text-center py-4">ما فيه أعضاء للحين. اطبع الكود وحطه في المحل.</p>';
+  }
+  async function toggleLoyalty() {
+    const next = !(ly.data && ly.data.enabled);
+    if (next && ly.data && !ly.data.location_set) showToast('لا تنسى تحدد موقع المحل وأنت داخله');
+    try { const r = await api('loyalty-settings', { enabled: next }); ly.data.enabled = r.enabled; renderLoyalty(); showToast(r.enabled ? 'بطاقة الولاء شغّالة' : 'بطاقة الولاء متوقفة'); }
+    catch (e) { showToast(e.message || 'تعذر الحفظ', true); }
+  }
+  async function saveLoyalty(ev) {
+    ev.preventDefault();
+    const btn = document.getElementById('ly-save'); btn.disabled = true;
+    try {
+      const r = await api('loyalty-settings', { settings: {
+        needed: +document.getElementById('ly-needed').value, reward: document.getElementById('ly-reward').value.trim(),
+        cooldown_hours: +document.getElementById('ly-cooldown').value, radius_m: +document.getElementById('ly-radius').value
+      } });
+      ly.data.settings = r.settings; renderLoyalty(); showToast('تم حفظ إعدادات البطاقة');
+    } catch (e) { showToast(e.message || 'تعذر الحفظ', true); }
+    btn.disabled = false;
+  }
+  // موقع المحل: نجمع قراءات لثواني ونختار الأدق
+  function bestPosition(ms = 8000) {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) return reject(new Error('المتصفح ما يدعم تحديد الموقع'));
+      let best = null, done = false;
+      const end = () => { if (done) return; done = true; navigator.geolocation.clearWatch(id); best ? resolve(best) : reject(new Error('ما قدرنا نحدد الموقع، حاول مرة ثانية')); };
+      const id = navigator.geolocation.watchPosition(p => {
+        const c = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy };
+        if (!best || c.acc < best.acc) best = c;
+        if (c.acc <= 15) end();
+      }, e => { if (done) return; done = true; navigator.geolocation.clearWatch(id); reject(new Error(e.code === 1 ? 'ما سمحت بالموقع، فعّله من إعدادات المتصفح' : 'ما قدرنا نحدد الموقع، حاول مرة ثانية')); },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
+      setTimeout(end, ms);
+    });
+  }
+  async function setLoyaltyLocation() {
+    const btn = document.getElementById('ly-loc-btn'), html = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = '<i class="ph-bold ph-spinner-gap ph-spin"></i> نحدد الموقع...';
+    try {
+      const pos = await bestPosition();
+      const r = await api('loyalty-location', pos);
+      ly.data.location_set = true; renderLoyalty();
+      showToast(`تم حفظ موقع المحل (الدقة ${r.accuracy} متر)`);
+    } catch (e) { showToast(e.message || 'تعذر تحديد الموقع', true); }
+    btn.disabled = false; btn.innerHTML = html;
+  }
+  // كرت للطباعة: اسم المحل + الكود + المكافأة
+  async function downloadLoyaltyCard() {
+    const st = ly.data.settings, W = 1200, H = 1600, cx = W / 2;
+    const FONT = '"IBM Plex Sans Arabic", Tahoma, Arial, sans-serif';
+    try { await document.fonts.load(`700 64px "IBM Plex Sans Arabic"`); } catch {}
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const g = cv.getContext('2d'); g.textAlign = 'center'; g.direction = 'rtl';
+    g.fillStyle = '#fbf8f3'; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#233d2c'; g.fillRect(0, 0, W, 420);
+    g.fillStyle = '#c9a227'; g.font = `700 44px ${FONT}`; g.fillText(client.name || '', cx, 150);
+    g.fillStyle = '#fbf8f3'; g.font = `700 88px ${FONT}`; g.fillText('امسح واجمع أختامك', cx, 290);
+    const qr = document.querySelector('#ly-qr canvas') || document.querySelector('#ly-qr img');
+    g.fillStyle = '#fff'; g.fillRect(cx - 330, 520, 660, 660);
+    g.imageSmoothingEnabled = false; g.drawImage(qr, cx - 300, 550, 600, 600);
+    g.fillStyle = '#22362a'; g.font = `700 60px ${FONT}`;
+    g.fillText(`كل ${st.needed} زيارات: ${st.reward}`, cx, 1300);
+    g.fillStyle = '#6f7d72'; g.font = `500 40px ${FONT}`; g.fillText('بدون تطبيق، الختم من جوالك وأنت في المحل', cx, 1390);
+    g.font = `500 32px ${FONT}`; g.fillText('DEV MENU', cx, 1530);
+    const a = document.createElement('a'); a.download = `loyalty-${client.client_slug}.png`; a.href = cv.toDataURL('image/png'); a.click();
   }
 
   // ─── ردود التقييمات بالذكاء الاصطناعي (إضافة مدفوعة) ───

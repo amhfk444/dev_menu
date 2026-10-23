@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="/css/base.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" sizes="192x192" href="/images/icon-192.png">
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+<meta name="theme-color" content="#233d2c">
+<title>بطاقة الولاء | DEV MENU</title>
+<link rel="stylesheet" href="/css/fonts.css">
+<link rel="stylesheet" href="/css/icons.css">
+<script src="js/api.js"></script>
+<style>
+  :root { --brand: #233d2c; --brand-2: #2f5139; --sand: #f5f2eb; --gold: #c9a227; --ink: #1b3022; }
+  body { font-family: 'IBM Plex Sans Arabic', sans-serif; background: var(--sand); color: var(--ink); min-height: 100vh; min-height: 100dvh; -webkit-text-size-adjust: 100%; }
+  .card { background: #fff; border: 1.5px solid rgba(35,61,44,.12); border-radius: 24px; box-shadow: 0 30px 60px -36px rgba(35,61,44,.45); }
+  .btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; border-radius: 16px; padding: 17px; font-weight: 700; font-size: 17px; transition: transform .1s, opacity .2s; }
+  .btn:active { transform: scale(.98); }
+  .btn:disabled { opacity: .55; }
+  .btn-brand { background: var(--brand); color: var(--sand); }
+  .btn-gold { background: var(--gold); color: #15271b; }
+  .btn-ghost { background: #fff; color: var(--brand); border: 1.5px solid rgba(35,61,44,.2); }
+  .field { width: 100%; background: #f8f6f1; border: 1.5px solid rgba(35,61,44,.18); border-radius: 14px; padding: 14px 15px; font-size: 16px; color: var(--ink); }
+  .field:focus { outline: none; border-color: var(--brand); background: #fff; }
+
+  /* البطاقة نفسها */
+  .lcard { position: relative; overflow: hidden; border-radius: 26px; padding: 24px 22px 22px; color: #f5f2eb;
+    background: radial-gradient(120% 90% at 100% 0%, #3b6448 0%, var(--brand) 55%, #15271b 100%);
+    box-shadow: 0 34px 60px -30px rgba(21,39,27,.75); }
+  .lcard::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(circle at 18% 120%, rgba(201,162,39,.22), transparent 55%); }
+  .stamps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 20px; position: relative; z-index: 1; }
+  .stamps.c5 { grid-template-columns: repeat(5, 1fr); }
+  .stamp { aspect-ratio: 1; border-radius: 50%; border: 2px dashed rgba(245,242,235,.32); display: grid; place-items: center; font-size: 22px; color: rgba(245,242,235,.35); }
+  .stamp.on { border: 0; background: var(--gold); color: #15271b; box-shadow: inset 0 -3px 0 rgba(0,0,0,.15); }
+  .stamp.gift { border-color: rgba(201,162,39,.7); color: var(--gold); }
+  .stamp.new { animation: pop .6s cubic-bezier(.3,1.6,.5,1); }
+  @keyframes pop { 0% { transform: scale(0) rotate(-40deg); } 100% { transform: scale(1) rotate(0); } }
+
+  .msg { border-radius: 16px; padding: 14px 16px; font-size: 15px; font-weight: 600; display: flex; gap: 10px; align-items: flex-start; }
+  .msg i { margin-top: 3px; }
+  .msg-ok { background: rgba(16,185,129,.1); color: #065f46; }
+  .msg-warn { background: rgba(201,162,39,.14); color: #6b520a; }
+  .msg-err { background: rgba(168,67,46,.1); color: #8a3322; }
+
+  /* شاشة إثبات المكافأة: متحركة عشان ما تنفع لقطة شاشة */
+  #v-proof { position: fixed; inset: 0; z-index: 50; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 28px;
+    background: linear-gradient(135deg, #1f7a4a, #2f5139, #c9a227, #1f7a4a); background-size: 400% 400%; animation: flow 6s linear infinite; }
+  @keyframes flow { 0% { background-position: 0% 50%; } 100% { background-position: 400% 50%; } }
+  #v-proof .ring { width: 130px; height: 130px; border-radius: 50%; background: rgba(255,255,255,.18); display: grid; place-items: center; font-size: 64px; animation: breathe 1.4s ease-in-out infinite; }
+  @keyframes breathe { 50% { transform: scale(1.08); } }
+  #proof-clock { font-size: 56px; font-weight: 700; direction: ltr; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+  .hidden { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { #v-proof { animation-duration: 20s; } }
+</style>
+<link rel="stylesheet" href="/css/tw/loyalty.css">
+</head>
+<body class="flex flex-col items-center px-5 py-8">
+
+<header class="text-center mb-6">
+  <img id="logo" alt="" class="w-16 h-16 rounded-2xl object-cover mx-auto mb-3 bg-white border border-[#233d2c]/10 hidden">
+  <h1 id="store-name" class="text-xl font-bold">…</h1>
+  <p class="text-sm opacity-60 mt-0.5"><i class="ph-bold ph-seal-check"></i> بطاقة الولاء</p>
+</header>
+
+<main class="w-full max-w-sm space-y-4">
+  <section id="v-loading" class="card p-10 text-center"><i class="ph-bold ph-spinner-gap ph-spin text-2xl opacity-50"></i></section>
+
+  <section id="v-unavailable" class="card p-8 text-center hidden">
+    <i class="ph-bold ph-warning-circle text-3xl opacity-50"></i>
+    <p class="font-bold mt-3">بطاقة الولاء غير متاحة حالياً</p>
+    <p class="text-sm opacity-60 mt-1">اسأل الموظف عن طريقة جمع الأختام.</p>
+  </section>
+
+  <!-- التسجيل: أول مرة -->
+  <section id="v-join" class="space-y-4 hidden">
+    <div class="lcard">
+      <p class="text-sm opacity-75">اجمع <b id="j-needed"></b> أختام وخذ</p>
+      <p id="j-reward" class="text-2xl font-bold mt-0.5"></p>
+      <div id="j-stamps" class="stamps"></div>
+    </div>
+    <form id="join-form" class="card p-5 space-y-4" novalidate>
+      <p class="font-bold">سجّل وخذ أول ختم</p>
+      <label class="block">
+        <span class="text-sm font-semibold block mb-1.5">اسمك</span>
+        <input id="f-name" class="field" autocomplete="given-name" maxlength="40" placeholder="مثلاً: سارة">
+      </label>
+      <label class="block">
+        <span class="text-sm font-semibold block mb-1.5">رقم جوالك</span>
+        <span class="flex gap-2" dir="ltr">
+          <select id="f-cc" class="field !w-auto !px-2.5" aria-label="رمز الدولة"></select>
+          <input id="f-phone" class="field flex-1 min-w-0" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="05xxxxxxxx" maxlength="18">
+        </span>
+        <span class="text-xs opacity-60 block mt-1.5">لو غيّرت جوالك، ترجع لبطاقتك بنفس الرقم.</span>
+      </label>
+      <button id="join-btn" type="submit" class="btn btn-brand"><i class="ph-bold ph-map-pin"></i> سجّل وخذ ختمك</button>
+      <p class="text-xs opacity-60 text-center leading-relaxed">بنطلب موقعك عشان نتأكد إنك داخل المحل. ما نحفظ موقعك.</p>
+    </form>
+  </section>
+
+  <!-- البطاقة -->
+  <section id="v-card" class="space-y-4 hidden">
+    <div class="lcard">
+      <div class="flex items-start justify-between gap-3 relative z-[1]">
+        <div>
+          <p class="text-sm opacity-75">أهلاً <span id="c-name"></span></p>
+          <p id="c-left" class="text-xl font-bold mt-0.5"></p>
+        </div>
+        <p class="text-sm opacity-75 text-left shrink-0" dir="ltr"><b id="c-count" class="text-2xl text-[#f5f2eb] opacity-100"></b></p>
+      </div>
+      <div id="c-stamps" class="stamps"></div>
+    </div>
+
+    <div id="c-msg" class="msg hidden"></div>
+
+    <div id="c-reward" class="card p-5 text-center space-y-3 hidden">
+      <i class="ph-bold ph-gift text-4xl text-[#c9a227]"></i>
+      <p class="font-bold text-lg">مكافأتك جاهزة: <span id="c-reward-name"></span></p>
+      <p class="text-sm opacity-70">اطلب من الموظف، واضغط الزر قدامه.</p>
+      <button id="redeem-btn" type="button" class="btn btn-gold"><i class="ph-bold ph-gift"></i> استخدم المكافأة الحين</button>
+    </div>
+
+    <button id="stamp-btn" type="button" class="btn btn-brand"><i class="ph-bold ph-seal-check"></i> سجّل زيارتي</button>
+    <p id="c-hint" class="text-xs opacity-60 text-center"></p>
+  </section>
+</main>
+
+<!-- تأكيد استخدام المكافأة -->
+<div id="confirm" class="fixed inset-0 z-40 bg-black/50 flex items-end sm:items-center justify-center p-4 hidden">
+  <div class="card w-full max-w-sm p-6 space-y-4 text-center">
+    <p class="text-lg font-bold">تستخدم المكافأة الحين؟</p>
+    <p class="text-sm opacity-70">اعرض جوالك للموظف واضغط "استخدم". بعدها تنشال الأختام وتبدأ بطاقة جديدة.</p>
+    <button id="confirm-yes" class="btn btn-gold">استخدم</button>
+    <button id="confirm-no" class="btn btn-ghost">مو الحين</button>
+  </div>
+</div>
+
+<!-- إثبات المكافأة للموظف -->
+<section id="v-proof" class="hidden">
+  <div class="ring"><i class="ph-bold ph-check"></i></div>
+  <p class="text-lg opacity-90 mt-6">مكافأة مستخدمة</p>
+  <p id="proof-reward" class="text-3xl font-bold mt-1"></p>
+  <p id="proof-name" class="text-lg opacity-90 mt-1"></p>
+  <p id="proof-clock" class="mt-6"></p>
+  <p id="proof-date" class="opacity-85"></p>
+  <p class="text-sm opacity-80 mt-6 max-w-[18rem]">الشاشة متحركة والساعة تمشي، عشان الموظف يتأكد إنها مو صورة.</p>
+  <button id="proof-close" class="btn btn-ghost mt-8 max-w-[16rem]">رجوع للبطاقة</button>
+</section>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  const slug = (params.get('client') || DM.hostSlug()).trim().toLowerCase();
+  const KEY = `dm_loyalty_${slug}`;
+  const VIEWS = ['loading', 'unavailable', 'join', 'card'];
+  const show = (v) => VIEWS.forEach(x => $(`v-${x}`).classList.toggle('hidden', x !== v));
+  const loadToken = () => { try { return localStorage.getItem(KEY) || ''; } catch { return ''; } };
+  const saveToken = (t) => { try { t ? localStorage.setItem(KEY, t) : localStorage.removeItem(KEY); } catch {} };
+  let settings = null, card = null, busy = false;
+
+  $('f-cc').innerHTML = DM.countryOptions();
+
+  function setStore(s) {
+    $('store-name').textContent = s.name || '';
+    document.title = `بطاقة الولاء | ${s.name || 'DEV MENU'}`;
+    if (s.logo_url) { $('logo').src = s.logo_url; $('logo').classList.remove('hidden'); }
+  }
+
+  function stampsHTML(count, needed, fresh = -1) {
+    let h = '';
+    for (let i = 0; i < needed; i++) {
+      const on = i < count, last = i === needed - 1;
+      h += `<span class="stamp ${on ? 'on' : last ? 'gift' : ''} ${i === fresh ? 'new' : ''}"><i class="ph-bold ${on ? 'ph-check' : last ? 'ph-gift' : 'ph-coffee'}"></i></span>`;
+    }
+    return h;
+  }
+  const gridClass = (n) => `stamps ${n === 5 || n === 10 ? 'c5' : ''}`;
+
+  function msg(kind, icon, text) {
+    const el = $('c-msg');
+    el.className = `msg msg-${kind}`;
+    el.innerHTML = `<i class="ph-bold ${icon}"></i><span></span>`;
+    el.querySelector('span').textContent = text;
+  }
+  const clearMsg = () => $('c-msg').className = 'msg hidden';
+
+  const timeLeft = (iso) => {
+    const ms = Date.parse(iso) - Date.now();
+    if (!(ms > 0)) return '';
+    const h = Math.floor(ms / 3600e3), m = Math.ceil((ms % 3600e3) / 60e3);
+    return h ? `${h} ساعة${m && h < 3 ? ` و ${m} دقيقة` : ''}` : `${m} دقيقة`;
+  };
+
+  function renderCard(fresh = -1) {
+    const n = settings.needed, s = Math.min(card.stamps, n);
+    $('c-name').textContent = card.name;
+    $('c-count').textContent = `${s}/${n}`;
+    $('c-left').textContent = s >= n ? 'كمّلت الأختام!' : `باقي ${n - s} على ${settings.reward}`;
+    $('c-stamps').className = gridClass(n);
+    $('c-stamps').innerHTML = stampsHTML(s, n, fresh);
+    const full = s >= n;
+    $('c-reward').classList.toggle('hidden', !full);
+    $('c-reward-name').textContent = settings.reward;
+    $('stamp-btn').classList.toggle('hidden', full);
+    $('c-hint').textContent = card.visits ? `زرتنا ${card.visits} ${card.visits === 1 ? 'مرة' : card.visits <= 10 ? 'مرات' : 'مرة'}${card.rewards ? `، واستخدمت ${card.rewards} ${card.rewards === 1 ? 'مكافأة' : 'مكافآت'}` : ''}.` : '';
+    show('card');
+  }
+
+  // ─── الموقع: نجمع قراءات لثواني ونختار الأدق ───
+  function getLocation() {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) return reject({ code: 'UNSUPPORTED' });
+      let best = null, done = false;
+      const finish = () => { if (done) return; done = true; navigator.geolocation.clearWatch(id); clearTimeout(timer); best ? resolve(best) : reject({ code: 'TIMEOUT' }); };
+      const id = navigator.geolocation.watchPosition(
+        (p) => {
+          const c = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy };
+          if (!best || c.acc < best.acc) best = c;
+          if (c.acc <= 20) finish();
+        },
+        (e) => { if (done) return; done = true; navigator.geolocation.clearWatch(id); clearTimeout(timer); reject({ code: e.code === 1 ? 'DENIED' : 'FAILED' }); },
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
+      );
+      const timer = setTimeout(finish, 7000);
+    });
+  }
+  function locationError(e) {
+    if (e.code === 'DENIED') return 'ما سمحت بالموقع. فعّله من إعدادات المتصفح لهذا الموقع وحاول مرة ثانية.';
+    if (e.code === 'UNSUPPORTED') return 'متصفحك ما يدعم الموقع، جرّب متصفح ثاني.';
+    return 'ما قدرنا نحدد موقعك، قرّب من الباب أو انتظر ثواني وحاول مرة ثانية.';
+  }
+
+  function setBusy(btn, on, label) {
+    busy = on; btn.disabled = on;
+    if (on) { btn.dataset.html = btn.innerHTML; btn.innerHTML = `<i class="ph-bold ph-spinner-gap ph-spin"></i> ${label}`; }
+    else if (btn.dataset.html) btn.innerHTML = btn.dataset.html;
+  }
+
+  function afterStamp(r) {
+    card = r.card;
+    if (r.stamped) {
+      renderCard(Math.min(card.stamps, settings.needed) - 1);
+      if (navigator.vibrate) navigator.vibrate(60);
+      msg('ok', 'ph-check-circle', card.stamps >= settings.needed ? 'انضاف ختمك وكمّلت البطاقة!' : 'انضاف ختمك، شكراً لزيارتك');
+    } else {
+      renderCard();
+      if (r.reason === 'COOLDOWN') msg('warn', 'ph-clock', `ختمت زيارة قريبة. الختم الجاي بعد ${timeLeft(r.next_at) || 'شوي'}.`);
+      else if (r.reason === 'FULL') clearMsg();
+    }
+  }
+
+  // ─── ختم زيارة ───
+  async function stamp() {
+    if (busy) return;
+    const btn = $('stamp-btn');
+    setBusy(btn, true, 'نتأكد من موقعك');
+    clearMsg();
+    try {
+      const loc = await getLocation().catch(e => { throw { message: locationError(e) }; });
+      afterStamp(await DM.post('/api/loyalty?action=stamp', { slug, t: loadToken(), ...loc }));
+    } catch (e) {
+      if (e.status === 404 && e.code === 'NOT_FOUND') { saveToken(''); return start(); }
+      msg(e.code === 'TOO_FAR' || e.code === 'WEAK_GPS' ? 'warn' : 'err', 'ph-map-pin', e.message || 'تعذر تسجيل الزيارة، حاول مرة ثانية');
+    } finally { setBusy(btn, false); }
+  }
+
+  // ─── التسجيل أول مرة ───
+  $('join-form').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    if (busy) return;
+    const name = $('f-name').value.trim();
+    const phone = DM.intlPhone($('f-phone').value, $('f-cc').value);
+    if (name.length < 2) return $('f-name').focus();
+    if (!phone) { $('f-phone').focus(); return alert('رقم الجوال غير صحيح، تأكد من رمز الدولة والرقم'); }
+    const btn = $('join-btn');
+    setBusy(btn, true, 'نتأكد من موقعك');
+    try {
+      const loc = await getLocation().catch(e => { throw { message: locationError(e) }; });
+      const r = await DM.post('/api/loyalty?action=join', { slug, name, phone, ...loc });
+      saveToken(r.token);
+      settings = r.settings;
+      afterStamp(r);
+      if (!r.is_new && r.stamped) msg('ok', 'ph-check-circle', 'رجعت لبطاقتك، وانضاف ختم اليوم');
+      else if (!r.is_new) msg('ok', 'ph-check-circle', 'رجعت لبطاقتك');
+    } catch (e) {
+      alert(e.message || 'تعذر التسجيل، حاول مرة ثانية');
+    } finally { setBusy(btn, false); }
+  });
+
+  // ─── المكافأة ───
+  $('redeem-btn').onclick = () => $('confirm').classList.remove('hidden');
+  $('confirm-no').onclick = () => $('confirm').classList.add('hidden');
+  $('confirm-yes').onclick = async () => {
+    if (busy) return;
+    const btn = $('confirm-yes');
+    setBusy(btn, true, 'لحظة');
+    try {
+      const loc = await getLocation().catch(e => { throw { message: locationError(e) }; });
+      const r = await DM.post('/api/loyalty?action=redeem', { slug, t: loadToken(), ...loc });
+      card = r.card;
+      $('confirm').classList.add('hidden');
+      showProof(r.redeemed_at);
+    } catch (e) {
+      $('confirm').classList.add('hidden');
+      msg('err', 'ph-warning-circle', e.message || 'تعذر استخدام المكافأة، حاول مرة ثانية');
+    } finally { setBusy(btn, false); }
+  };
+
+  let clockTimer = null;
+  function showProof(iso) {
+    $('proof-reward').textContent = settings.reward;
+    $('proof-name').textContent = card.name;
+    const used = new Date(iso);
+    $('proof-date').textContent = `استُخدمت ${used.toLocaleTimeString('ar-SA-u-nu-latn', { hour: 'numeric', minute: '2-digit' })}، ${used.toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long' })}`;
+    const tick = () => { $('proof-clock').textContent = new Date().toLocaleTimeString('en-GB', { hour12: false }); };
+    tick(); clearInterval(clockTimer); clockTimer = setInterval(tick, 1000);
+    $('v-proof').classList.remove('hidden');
+    if (navigator.vibrate) navigator.vibrate([80, 60, 80]);
+  }
+  $('proof-close').onclick = () => { clearInterval(clockTimer); $('v-proof').classList.add('hidden'); renderCard(); clearMsg(); };
+
+  $('stamp-btn').onclick = stamp;
+
+  // ─── البداية ───
+  async function start() {
+    show('loading');
+    const token = loadToken();
+    try {
+      if (token) {
+        const r = await DM.get(`/api/loyalty?action=card&slug=${encodeURIComponent(slug)}&t=${encodeURIComponent(token)}`);
+        setStore(r.store); settings = r.settings; card = r.card;
+        renderCard();
+        // جاي من مسح الكود: نختم على طول
+        if (params.get('s') === '1') {
+          history.replaceState(null, '', location.pathname + location.search.replace(/([?&])s=1(&|$)/, '$1').replace(/[?&]$/, ''));
+          stamp();
+        }
+        return;
+      }
+      const r = await DM.get(`/api/loyalty?action=info&slug=${encodeURIComponent(slug)}`);
+      setStore(r.store); settings = r.settings;
+      $('j-needed').textContent = settings.needed;
+      $('j-reward').textContent = settings.reward;
+      $('j-stamps').className = gridClass(settings.needed);
+      $('j-stamps').innerHTML = stampsHTML(0, settings.needed);
+      show('join');
+    } catch (e) {
+      if (e.status === 404 && e.code === 'NOT_FOUND') { saveToken(''); return start(); }
+      show('unavailable');
+    }
+  }
+  if (!slug) show('unavailable'); else start();
+</script>
+</body>
+</html>

@@ -5,6 +5,7 @@ module.exports = {
   links: {},
   pager: {},
   'pager-desk': {},
+  loyalty: {},
   waitlist: {
     colors: { sand: '#efe5dc', cream: '#faf6f1', ink: '#22362a', brand: { DEFAULT: '#384f3d', dark: '#2a3e2f' } }
   },
