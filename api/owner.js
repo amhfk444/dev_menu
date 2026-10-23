@@ -251,7 +251,9 @@ async function pushWalletCards(store, { cardId = null, notice = null } = {}) {
   for (let i = 0; i < cards.length && Date.now() - started < 45e3; i += 6) {
     await Promise.all(cards.slice(i, i + 6).map(async (c) => {
       const ctx = wallet.buildCtx({ store: { name: store.name, client_slug: store.client_slug, logo_url: store.logo_url }, settings, card: c, lat: extra.loyalty_lat, lng: extra.loyalty_lng, notice: noticeFor(c) });
-      await wallet.updatePass(c.wallet_serial, ctx); sent++;
+      const err = await wallet.updatePass(c.wallet_serial, ctx);
+      if (!err) sent++;
+      await rest(`loyalty_cards?id=eq.${c.id}`, { method: 'PATCH', body: { wallet_error: err } }).catch(() => {});
     }));
   }
   return sent;

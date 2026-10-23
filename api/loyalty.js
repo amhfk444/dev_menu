@@ -48,7 +48,11 @@ const optionalPhone = (v) => { if (!String(v || '').trim()) return ''; try { ret
 const latestMessage = async (storeId, cardId) => ((await rest(`loyalty_messages?client_id=eq.${storeId}&or=${q(`(card_id.is.null,card_id.eq.${cardId})`)}&select=id,body,created_at&order=id.desc&limit=1`).catch(() => []))[0]) || null;
 const walletCtx = async (ctx, card) => wallet.buildCtx({ store: ctx.store, settings: ctx.settings, card, lat: ctx.lat, lng: ctx.lng, notice: ((await latestMessage(ctx.store.id, card.id)) || {}).body });
 // البطاقة في المحفظة تتحدث مع كل ختم (لو الزبون ضافها)
-const syncWallet = async (ctx, card) => card.wallet_serial ? wallet.updatePass(card.wallet_serial, await walletCtx(ctx, card)) : null;
+const syncWallet = async (ctx, card) => {
+  if (!card.wallet_serial) return;
+  const err = await wallet.updatePass(card.wallet_serial, await walletCtx(ctx, card));
+  await rest(`loyalty_cards?id=eq.${card.id}`, { method: 'PATCH', body: { wallet_error: err } }).catch(() => {});
+};
 const publicInfo = (ctx) => ({
   store: { name: ctx.store.name, logo_url: ctx.store.logo_url },
   settings: { needed: ctx.settings.needed, reward: ctx.settings.reward, cooldown_hours: ctx.settings.cooldown_hours, design: ctx.settings.design },

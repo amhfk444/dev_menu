@@ -44,7 +44,8 @@ function passBody({ store, settings, card, url, restoreUrl, lat, lng, notice }, 
     notification: String(notice || ' ').slice(0, 250)
   };
   if (full) {
-    if (settings.design && settings.design.color) body.color = settings.design.color;
+    // لون المحل بدل اللون الجاهز (ما نرسل الاثنين، عشان الجاهز ما يغطي عليه)
+    if (settings.design && settings.design.color) { body.color = settings.design.color; delete body.colorPreset; }
     if (store.logo_url && /^https:\/\//.test(store.logo_url)) body.logoURL = store.logo_url;
     if (Number.isFinite(lat) && Number.isFinite(lng)) body.locations = [{ latitude: lat, longitude: lng, relevantText: `أنت قريب من ${store.name}، خذ ختمك` }];
   }
@@ -64,14 +65,18 @@ async function createPass(ctx) {
   }
 }
 
-// تحديث الأختام في المحفظة (التحديث من مزايا الباقة المدفوعة، ولو فشل ما يوقف الختم)
+// تحديث البطاقة في المحفظة (التحديث من مزايا الباقة المدفوعة، ولو فشل ما يوقف الختم)
+// يرجّع null لو نجح، أو سبب الفشل (ينحفظ مع البطاقة عشان نعرف وش صار)
 async function updatePass(serial, ctx) {
-  if (!configured() || !serial) return;
-  try { await call('PUT', `/${encodeURIComponent(serial)}`, passBody(ctx, true)); }
+  if (!configured() || !serial) return 'not configured';
+  try { await call('PUT', `/${encodeURIComponent(serial)}`, passBody(ctx, true)); return null; }
   catch (e) {
+    const first = `${e.status || ''} ${e.message || ''}`.trim();
     if (e.status >= 400 && e.status < 500 && e.status !== 401 && e.status !== 404 && e.status !== 429) {
-      await call('PUT', `/${encodeURIComponent(serial)}`, passBody(ctx, false)).catch(() => {});
+      try { await call('PUT', `/${encodeURIComponent(serial)}`, passBody(ctx, false)); return `partial: ${first}`.slice(0, 300); }
+      catch (e2) { return `${e2.status || ''} ${e2.message || ''}`.trim().slice(0, 300); }
     }
+    return first.slice(0, 300);
   }
 }
 
