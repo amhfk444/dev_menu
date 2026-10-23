@@ -121,6 +121,7 @@
 .ph-user-plus:before { content: "\e4d0"; }
 .ph-users:before { content: "\e4d6"; }
 .ph-users-three:before { content: "\e68e"; }
+.ph-wallet:before { content: "\e68a"; }
 .ph-warning:before { content: "\e4e0"; }
 .ph-warning-circle:before { content: "\e4e2"; }
 .ph-whatsapp-logo:before { content: "\e5d0"; }

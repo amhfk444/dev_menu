@@ -123,6 +123,7 @@
     </div>
 
     <button id="stamp-btn" type="button" class="btn btn-brand"><i class="ph-bold ph-seal-check"></i> سجّل زيارتي</button>
+    <button id="wallet-btn" type="button" class="btn btn-ghost hidden"><i class="ph-bold ph-wallet"></i> <span>أضف البطاقة لمحفظة جوالك</span></button>
     <p id="c-hint" class="text-xs opacity-60 text-center"></p>
   </section>
 </main>
@@ -158,7 +159,7 @@
   const show = (v) => VIEWS.forEach(x => $(`v-${x}`).classList.toggle('hidden', x !== v));
   const loadToken = () => { try { return localStorage.getItem(KEY) || ''; } catch { return ''; } };
   const saveToken = (t) => { try { t ? localStorage.setItem(KEY, t) : localStorage.removeItem(KEY); } catch {} };
-  let settings = null, card = null, busy = false;
+  let settings = null, card = null, busy = false, walletOn = false;
 
   $('f-cc').innerHTML = DM.countryOptions();
 
@@ -204,6 +205,8 @@
     $('c-reward').classList.toggle('hidden', !full);
     $('c-reward-name').textContent = settings.reward;
     $('stamp-btn').classList.toggle('hidden', full);
+    $('wallet-btn').classList.toggle('hidden', !walletOn);
+    $('wallet-btn').querySelector('span').textContent = card.in_wallet ? 'افتح البطاقة في المحفظة' : 'أضف البطاقة لمحفظة جوالك';
     $('c-hint').textContent = card.visits ? `زرتنا ${card.visits} ${card.visits === 1 ? 'مرة' : card.visits <= 10 ? 'مرات' : 'مرة'}${card.rewards ? `، واستخدمت ${card.rewards} ${card.rewards === 1 ? 'مكافأة' : 'مكافآت'}` : ''}.` : '';
     show('card');
   }
@@ -280,7 +283,7 @@
       const loc = await getLocation().catch(e => { throw { message: locationError(e) }; });
       const r = await DM.post('/api/loyalty?action=join', { slug, name, phone, ...loc });
       saveToken(r.token);
-      settings = r.settings;
+      settings = r.settings; walletOn = !!r.wallet;
       afterStamp(r);
       if (!r.is_new && r.stamped) msg('ok', 'ph-check-circle', 'رجعت لبطاقتك، وانضاف ختم اليوم');
       else if (!r.is_new) msg('ok', 'ph-check-circle', 'رجعت لبطاقتك');
@@ -323,6 +326,20 @@
 
   $('stamp-btn').onclick = stamp;
 
+  // ─── المحفظة: آبل أو قوقل حسب الجوال (صفحة الإضافة تختار تلقائياً) ───
+  $('wallet-btn').onclick = async () => {
+    if (busy) return;
+    const btn = $('wallet-btn');
+    setBusy(btn, true, 'نجهز بطاقتك');
+    try {
+      const r = await DM.post('/api/loyalty?action=wallet', { slug, t: loadToken() });
+      card.in_wallet = true;
+      location.href = r.url;
+    } catch (e) {
+      msg('err', 'ph-warning-circle', e.message || 'تعذر تجهيز البطاقة للمحفظة، جرّب بعد شوي');
+    } finally { setBusy(btn, false); }
+  };
+
   // ─── البداية ───
   async function start() {
     show('loading');
@@ -330,7 +347,7 @@
     try {
       if (token) {
         const r = await DM.get(`/api/loyalty?action=card&slug=${encodeURIComponent(slug)}&t=${encodeURIComponent(token)}`);
-        setStore(r.store); settings = r.settings; card = r.card;
+        setStore(r.store); settings = r.settings; card = r.card; walletOn = !!r.wallet;
         renderCard();
         // جاي من مسح الكود: نختم على طول
         if (params.get('s') === '1') {

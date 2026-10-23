@@ -5,11 +5,13 @@
 //   POST /api/loyalty?action=join              بطاقة جديدة + أول ختم { slug, name, phone, lat, lng, acc }
 //   POST /api/loyalty?action=stamp             ختم زيارة { slug, t, lat, lng, acc }
 //   POST /api/loyalty?action=redeem            استخدام المكافأة قدام الموظف { slug, t, lat, lng, acc }
+//   POST /api/loyalty?action=wallet            رابط إضافة البطاقة لمحفظة آبل أو قوقل { slug, t }
 // كل ختم يحتاج الزبون يكون داخل نطاق المحل (50 متر افتراضياً). ما نخزن موقعه، بس المسافة.
 // =====================================================================
 const crypto = require('crypto');
 const { handler, rest, rpc, q, ApiError, readBody, findPublicStore, str, waNumber } = require('./_lib/core');
 const { normalizeLoyalty, distanceM, validPoint } = require('./_lib/loyalty');
+const wallet = require('./_lib/wallet');
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{10,64}$/;
 const MAX_ACCURACY_M = 100;   // دقة أسوأ من كذا = نطلب منه يحاول مرة ثانية
@@ -38,15 +40,24 @@ function checkPresence(ctx, b) {
   return d;
 }
 
-const cardView = (c) => ({ name: c.name, stamps: c.stamps, visits: c.visits, rewards: c.rewards, last_stamp_at: c.last_stamp_at });
+const cardView = (c) => ({ name: c.name, stamps: c.stamps, visits: c.visits, rewards: c.rewards, last_stamp_at: c.last_stamp_at, in_wallet: !!c.wallet_url });
+
+// رابط صفحة البطاقة (يطلع في المحفظة)
+const cardUrl = (slug) => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(slug) && !['app', 'www'].includes(slug)
+  ? `https://${slug}.devmenu.digital/loyalty` : `https://www.devmenu.digital/loyalty.html?client=${encodeURIComponent(slug)}`;
+const walletCtx = (ctx, card) => ({ store: ctx.store, settings: ctx.settings, card, url: cardUrl(ctx.store.client_slug), lat: ctx.lat, lng: ctx.lng });
+// البطاقة في المحفظة تتحدث مع كل ختم (لو الزبون ضافها)
+const syncWallet = (ctx, card) => card.wallet_serial ? wallet.updatePass(card.wallet_serial, walletCtx(ctx, card)) : null;
 const publicInfo = (ctx) => ({
   store: { name: ctx.store.name, logo_url: ctx.store.logo_url },
-  settings: { needed: ctx.settings.needed, reward: ctx.settings.reward, cooldown_hours: ctx.settings.cooldown_hours }
+  settings: { needed: ctx.settings.needed, reward: ctx.settings.reward, cooldown_hours: ctx.settings.cooldown_hours },
+  wallet: wallet.configured()
 });
 
 async function stampCard(ctx, card, distance) {
   const r = await rpc('server_loyalty_stamp', { p_card: card.id, p_cooldown_hours: ctx.settings.cooldown_hours, p_needed: ctx.settings.needed, p_distance: distance });
   const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
+  if (r.ok) await syncWallet(ctx, fresh);
   return { stamped: !!r.ok, reason: r.ok ? null : r.reason, next_at: r.next_at || null, card: cardView(fresh) };
 }
 
@@ -113,7 +124,18 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       const r = await rpc('server_loyalty_redeem', { p_card: card.id, p_needed: ctx.settings.needed, p_distance: distance });
       if (!r.ok) throw new ApiError(409, 'ما كملت الأختام للحين', 'NOT_ENOUGH');
       const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
+      await syncWallet(ctx, fresh);
       return { ...publicInfo(ctx), redeemed: true, redeemed_at: new Date().toISOString(), card: cardView(fresh) };
+    }
+
+    // إضافة البطاقة للمحفظة: نجهزها أول مرة يطلبها الزبون بس (عشان ما نستهلك رصيد الخدمة على الكل)
+    if (action === 'wallet' && req.method === 'POST') {
+      const ctx = await loadStore(b.slug);
+      const card = await cardByToken(ctx, b.t);
+      if (card.wallet_url) return { url: card.wallet_url };
+      const pass = await wallet.createPass(walletCtx(ctx, card));
+      await rest(`loyalty_cards?id=eq.${card.id}`, { method: 'PATCH', body: { wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl } });
+      return { url: pass.shareUrl };
     }
   } catch (e) {
     // نرجّع المسافة مع رفض "بعيد" عشان الصفحة توضحها للزبون
