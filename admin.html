@@ -3620,7 +3620,7 @@
     try {
       const r = await api('loyalty-settings', { settings: { design: ly.design } });
       ly.data.settings = r.settings; ly.design = { ...r.settings.design }; ly.dirty = false;
-      renderDesign(); showToast('تم حفظ شكل البطاقة، ويطلع للزبائن على طول');
+      renderDesign(); showToast(r.wallet_updated ? `تم حفظ الشكل، وتحدّثت ${r.wallet_updated} بطاقة في المحفظة` : 'تم حفظ شكل البطاقة، ويطلع للزبائن على طول');
     } catch (e) { showToast(e.message || 'تعذر الحفظ', true); }
     btn.disabled = false;
   }

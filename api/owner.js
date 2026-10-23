@@ -227,6 +227,36 @@ async function ringTicket(store, t) {
   return result;
 }
 
+// ─── بطاقة الولاء: تحديث بطاقات المحفظة كلها (أو وحدة) بعد تغيير الشكل أو رسالة جديدة ───
+// كل بطاقة تاخذ آخر رسالة تخصها (للكل أو لها)، عشان التحديث ما يطلع إشعار قديم من جديد
+async function pushWalletCards(store, { cardId = null, notice = null } = {}) {
+  if (!wallet.configured()) return 0;
+  const sid = store.id;
+  const extra = (await rest(`clients?id=eq.${sid}&select=loyalty_settings,loyalty_lat,loyalty_lng`))[0] || {};
+  const settings = normalizeLoyalty(extra.loyalty_settings);
+  const cards = await rest(`loyalty_cards?client_id=eq.${sid}${cardId ? `&id=eq.${cardId}` : ''}&wallet_serial=not.is.null&select=*&limit=500`);
+  if (!cards.length) return 0;
+  let latest = { all: null, by: {} };
+  if (notice == null) {
+    const msgs = await rest(`loyalty_messages?client_id=eq.${sid}&select=id,card_id,body&order=id.desc&limit=200`).catch(() => []);
+    for (const m of msgs) { if (m.card_id == null) { if (!latest.all) latest.all = m; } else if (!latest.by[m.card_id]) latest.by[m.card_id] = m; }
+  }
+  const noticeFor = (c) => {
+    if (notice != null) return notice;
+    const a = latest.all, o = latest.by[c.id];
+    return ((a && o ? (a.id > o.id ? a : o) : a || o) || {}).body;
+  };
+  let sent = 0;
+  const started = Date.now();
+  for (let i = 0; i < cards.length && Date.now() - started < 45e3; i += 6) {
+    await Promise.all(cards.slice(i, i + 6).map(async (c) => {
+      const ctx = wallet.buildCtx({ store: { name: store.name, client_slug: store.client_slug, logo_url: store.logo_url }, settings, card: c, lat: extra.loyalty_lat, lng: extra.loyalty_lng, notice: noticeFor(c) });
+      await wallet.updatePass(c.wallet_serial, ctx); sent++;
+    }));
+  }
+  return sent;
+}
+
 async function main(req) {
   const action = req.query.action;
   const b = req.method === 'POST' ? readBody(req) : {};
@@ -456,7 +486,10 @@ async function main(req) {
     const body = { loyalty_settings: settings };
     if (typeof b.enabled === 'boolean') body.loyalty_enabled = b.enabled;
     const row = (await rest(`clients?id=eq.${sid}`, { method: 'PATCH', body, prefer: 'return=representation' }))[0];
-    return { enabled: row.loyalty_enabled === true, settings: normalizeLoyalty(row.loyalty_settings) };
+    // الشكل أو المكافأة تغيّرت ← نحدّث البطاقات اللي في المحفظة
+    const changed = JSON.stringify(current) !== JSON.stringify(settings);
+    const wallet_updated = changed ? await pushWalletCards(store) : 0;
+    return { enabled: row.loyalty_enabled === true, settings: normalizeLoyalty(row.loyalty_settings), wallet_updated };
   }
 
   // ─── بطاقة الولاء: رسالة للكل أو لعضو واحد ───
@@ -475,20 +508,8 @@ async function main(req) {
     }
     const msg = (await rest('loyalty_messages', { method: 'POST', prefer: 'return=representation', body: { client_id: sid, card_id: cardId, body } }))[0];
     // المحفظة
-    let sent = 0;
-    if (wallet.configured()) {
-      const extra = (await rest(`clients?id=eq.${sid}&select=loyalty_settings,loyalty_lat,loyalty_lng`))[0] || {};
-      const settings = normalizeLoyalty(extra.loyalty_settings);
-      const cards = await rest(`loyalty_cards?client_id=eq.${sid}${cardId ? `&id=eq.${cardId}` : ''}&wallet_serial=not.is.null&select=*&limit=500`);
-      const started = Date.now();
-      for (let i = 0; i < cards.length && Date.now() - started < 45e3; i += 6) {
-        await Promise.all(cards.slice(i, i + 6).map(async (c) => {
-          const ctx = wallet.buildCtx({ store: { name: store.name, client_slug: store.client_slug, logo_url: store.logo_url }, settings, card: c, lat: extra.loyalty_lat, lng: extra.loyalty_lng, notice: body });
-          await wallet.updatePass(c.wallet_serial, ctx); sent++;
-        }));
-      }
-      await rest(`loyalty_messages?id=eq.${msg.id}`, { method: 'PATCH', body: { wallet_sent: sent } }).catch(() => {});
-    }
+    const sent = await pushWalletCards(store, { cardId, notice: body });
+    await rest(`loyalty_messages?id=eq.${msg.id}`, { method: 'PATCH', body: { wallet_sent: sent } }).catch(() => {});
     return { message: { ...msg, wallet_sent: sent } };
   }
 
