@@ -15,6 +15,7 @@ const { normalizeLoyalty, distanceM, validPoint, isHappyNow } = require('./_lib/
 const wallet = require('./_lib/wallet');
 const { nearLineFor } = require('./_lib/loyalty-assistant');
 const { loyaltyMessages } = require('./_lib/ai');
+const { purchaseStamp, consumeStampCode, pagerTicket } = require('./_lib/loyalty-stamp');
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{10,64}$/;
 const MAX_ACCURACY_M = 100;   // دقة أسوأ من كذا = نطلب منه يحاول مرة ثانية
@@ -89,7 +90,7 @@ const syncWallet = async (ctx, card) => {
 const publicInfo = (ctx) => ({
   store: { name: ctx.store.name, logo_url: ctx.store.logo_url },
   settings: { needed: ctx.settings.needed, reward: ctx.settings.reward, cooldown_hours: ctx.settings.cooldown_hours, design: ctx.settings.design,
-              happy: ctx.settings.happy, gifts: ctx.settings.gifts.enabled },
+              happy: ctx.settings.happy, gifts: ctx.settings.gifts.enabled, stamp_mode: ctx.settings.stamp_mode, pager_stamp: ctx.settings.pager_stamp },
   happy_now: isHappyNow(ctx.settings),
   wallet: wallet.configured()
 });
@@ -166,7 +167,11 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (action === 'join' && req.method === 'POST') {
       const ctx = await loadStore(b.slug);
       const profile = readProfile(b);
-      const distance = checkPresence(ctx, b);
+      // الإثبات: كود الكاشير، أو رقم بيجر، أو الموقع (لو المحل يسمح بالختم بالموقع)
+      const ticket = !b.code && b.pt ? await pagerTicket(ctx.store.id, b.pt) : null;
+      if (b.pt && !b.code && (!ticket || Date.now() - Date.parse(ticket.created_at) > 18 * 3600e3)) throw new ApiError(409, 'رقم البيجر منتهي، اطلب كود الختم من الكاشير', 'BAD_TICKET');
+      if (!b.code && !ticket && ctx.settings.stamp_mode === 'purchase') throw new ApiError(409, 'الختم في هذا المحل بعد الشراء: امسح كود الختم من الكاشير', 'PURCHASE_ONLY');
+      const distance = b.code || ticket ? null : checkPresence(ctx, b);
       let card = (await rest(`loyalty_cards?client_id=eq.${ctx.store.id}&phone=eq.${q(profile.phone)}&select=*`))[0];
       const isNew = !card;
       if (!card) {
@@ -177,7 +182,21 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       } else if (!card.name || !card.gender) {
         await rest(`loyalty_cards?id=eq.${card.id}`, { method: 'PATCH', body: { name: card.name || profile.name, gender: card.gender || profile.gender } });
       }
-      const out = await stampCard(ctx, card, distance);
+      let out;
+      if (b.code) {
+        await consumeStampCode(ctx.store.id, b.code, card.id);
+        const r = await purchaseStamp(ctx.store.id, card.id, ctx.settings);
+        out = { ...r, card: cardView((await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0]) };
+      } else if (ticket) {
+        // نربط البطاقة برقم البيجر: ينختم لما يجهز الطلب (أو الحين لو جاهز)
+        await rest(`pager_tickets?id=eq.${ticket.id}`, { method: 'PATCH', body: { loyalty_card_id: card.id } });
+        let r = { stamped: false, count: 0, reason: 'PAGER_PENDING' };
+        if (['ready', 'done'].includes(ticket.status) && !ticket.loyalty_stamped) {
+          r = await purchaseStamp(ctx.store.id, card.id, ctx.settings);
+          await rest(`pager_tickets?id=eq.${ticket.id}`, { method: 'PATCH', body: { loyalty_stamped: true } });
+        }
+        out = { ...r, card: cardView((await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0]) };
+      } else out = await stampCard(ctx, card, distance);
       // جاي من رابط هدية: نستلمها مع التسجيل
       let gift_error = null;
       if (b.gift) { try { await claimGift(ctx, card, b.gift, isNew); } catch (e) { gift_error = e.message; } }
@@ -213,6 +232,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
 
     if (action === 'stamp' && req.method === 'POST') {
       const ctx = await loadStore(b.slug);
+      if (ctx.settings.stamp_mode === 'purchase') throw new ApiError(409, 'الختم في هذا المحل بعد الشراء: امسح كود الختم من الكاشير', 'PURCHASE_ONLY');
       const card = await cardByToken(ctx, b.t);
       const distance = checkPresence(ctx, b);
       return { ...publicInfo(ctx), ...(await stampCard(ctx, card, distance)) };
@@ -229,6 +249,33 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
       await syncWallet(ctx, fresh);
       return { ...publicInfo(ctx), redeemed: true, redeemed_at: new Date().toISOString(), card: cardView(fresh) };
+    }
+
+    // ─── ختم بكود الكاشير (بعد الدفع) ───
+    if (action === 'stamp-code' && req.method === 'POST') {
+      const ctx = await loadStore(b.slug);
+      const card = await cardByToken(ctx, b.t);
+      await consumeStampCode(ctx.store.id, b.code, card.id);
+      const r = await purchaseStamp(ctx.store.id, card.id, ctx.settings);
+      const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
+      return { ...publicInfo(ctx), ...r, card: cardView(fresh) };
+    }
+
+    // ─── ربط بطاقة موجودة برقم بيجر (من صفحة البيجر) ───
+    if (action === 'pager-link' && req.method === 'POST') {
+      const ctx = await loadStore(b.slug);
+      const card = await cardByToken(ctx, b.t);
+      const ticket = await pagerTicket(ctx.store.id, b.pt);
+      if (!ticket || Date.now() - Date.parse(ticket.created_at) > 18 * 3600e3) throw new ApiError(409, 'رقم البيجر منتهي', 'BAD_TICKET');
+      if (ticket.loyalty_card_id && ticket.loyalty_card_id !== card.id) throw new ApiError(409, 'هذا الطلب مربوط ببطاقة ثانية', 'TICKET_TAKEN');
+      await rest(`pager_tickets?id=eq.${ticket.id}`, { method: 'PATCH', body: { loyalty_card_id: card.id } });
+      let r = { stamped: false, count: 0, reason: 'PAGER_PENDING' };
+      if (['ready', 'done'].includes(ticket.status) && !ticket.loyalty_stamped) {
+        await rest(`pager_tickets?id=eq.${ticket.id}`, { method: 'PATCH', body: { loyalty_stamped: true } });
+        r = await purchaseStamp(ctx.store.id, card.id, ctx.settings);
+      }
+      const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
+      return { ...publicInfo(ctx), ...r, card: cardView(fresh) };
     }
 
     // ─── ليش ما رجعت؟ ───

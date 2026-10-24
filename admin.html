@@ -1001,6 +1001,16 @@
                   </select></label>
               </div>
               <div class="space-y-2 pt-1">
+                <p class="text-xs font-semibold text-ink/70">متى ينحسب الختم؟</p>
+                <div class="grid sm:grid-cols-2 gap-2">
+                  <label class="cursor-pointer"><input type="radio" name="ly-mode" value="location" class="peer sr-only"><span class="block rounded-xl border border-brand/20 p-3 text-[13px] peer-checked:border-brand peer-checked:bg-brand/5"><b class="block"><i class="ph-bold ph-map-pin"></i> لما يكون داخل المحل</b><span class="text-[11px] text-ink/60">الزبون يمسح كود المحل ويختم بنفسه. أسهل، بس ما يضمن إنه اشترى</span></span></label>
+                  <label class="cursor-pointer"><input type="radio" name="ly-mode" value="purchase" class="peer sr-only"><span class="block rounded-xl border border-brand/20 p-3 text-[13px] peer-checked:border-brand peer-checked:bg-brand/5"><b class="block"><i class="ph-bold ph-receipt"></i> بعد الشراء بس</b><span class="text-[11px] text-ink/60">الكاشير يضغط "كود ختم" في شاشة البيجر والزبون يمسحه. الأدق</span></span></label>
+                </div>
+                <label class="flex items-center justify-between gap-3 pt-1"><span class="text-[12px] text-ink/75"><i class="ph-bold ph-bell"></i> اللي ياخذ رقم بيجر ينختم له تلقائياً لما يجهز طلبه</span>
+                  <input type="checkbox" id="ly-pager-stamp" class="w-4 h-4 accent-[#384f3d]"></label>
+                <a href="pager-desk.html" onclick="this.href='pager-desk.html'+location.search" class="inline-block text-[12px] font-bold text-brand underline underline-offset-4">افتح شاشة الكاشير (فيها زر "كود ختم")</a>
+              </div>
+              <div class="space-y-2 pt-1">
                 <p class="text-xs font-semibold text-ink/70">رسالة الترحيب (توصل للزبون أول ما يسجل)</p>
                 <div class="grid sm:grid-cols-3 gap-2" id="ly-welcome-modes">
                   <label class="cursor-pointer"><input type="radio" name="ly-welcome" value="ai" class="peer sr-only"><span class="block rounded-xl border border-brand/20 p-3 text-[13px] peer-checked:border-brand peer-checked:bg-brand/5"><b class="block"><i class="ph-bold ph-sparkle"></i> المساعد يكتبها</b><span class="text-[11px] text-ink/60">كل زبون تجيه رسالة مختلفة باسمه</span></span></label>
@@ -3671,6 +3681,8 @@
     document.getElementById('ly-reward').value = st.reward;
     document.getElementById('ly-cooldown').value = String(st.cooldown_hours);
     document.getElementById('ly-radius').value = String(st.radius_m);
+    document.querySelectorAll('[name="ly-mode"]').forEach(r => { r.checked = r.value === (st.stamp_mode || 'location'); });
+    document.getElementById('ly-pager-stamp').checked = st.pager_stamp !== false;
     const wm = (st.welcome && st.welcome.mode) || 'ai';
     document.querySelectorAll('[name="ly-welcome"]').forEach(r => { r.checked = r.value === wm; });
     document.getElementById('ly-welcome-text').value = (st.welcome && st.welcome.text) || '';
@@ -3958,7 +3970,9 @@
         welcome: { mode: (document.querySelector('[name="ly-welcome"]:checked') || {}).value || 'ai', text: document.getElementById('ly-welcome-text').value.trim() },
         happy: { enabled: document.getElementById('ly-happy').checked, from: +document.getElementById('ly-happy-from').value, to: +document.getElementById('ly-happy-to').value, days: [...(ly.happyDays || [])] },
         feedback: { enabled: document.getElementById('ly-fb').checked, gift: document.getElementById('ly-fb-gift').checked },
-        gifts: { enabled: document.getElementById('ly-gifts').checked }
+        gifts: { enabled: document.getElementById('ly-gifts').checked },
+        stamp_mode: (document.querySelector('[name="ly-mode"]:checked') || {}).value || 'location',
+        pager_stamp: document.getElementById('ly-pager-stamp').checked
       } });
       ly.data.settings = r.settings; renderLoyalty(); showToast('تم حفظ إعدادات البطاقة');
     } catch (e) { showToast(e.message || 'تعذر الحفظ', true); }

@@ -1,0 +1,43 @@
+// =====================================================================
+// DEV MENU — الختم مع الشراء (كود الكاشير أو البيجر)
+// ما يحتاج موقع ولا فترة انتظار بين الأختام: الشراء نفسه هو الإثبات
+// =====================================================================
+const crypto = require('crypto');
+const { rest, rpc, q, ApiError } = require('./core');
+const { normalizeLoyalty, isHappyNow } = require('./loyalty');
+const { pushWalletCards } = require('./loyalty-assistant');
+
+async function purchaseStamp(storeId, cardId, settings = null) {
+  if (!settings) {
+    const extra = (await rest(`clients?id=eq.${storeId}&select=loyalty_settings`))[0] || {};
+    settings = normalizeLoyalty(extra.loyalty_settings);
+  }
+  const count = isHappyNow(settings) ? 2 : 1;
+  const r = await rpc('server_loyalty_stamp', { p_card: cardId, p_cooldown_hours: 0, p_needed: settings.needed, p_distance: null, p_count: count });
+  if (r.ok) await pushWalletCards(storeId, { cardIds: [cardId] }).catch(e => console.error('WALLET_SYNC', e.message));
+  return { stamped: !!r.ok, count: r.ok ? count : 0, reason: r.ok ? null : r.reason };
+}
+
+// كود ختم جديد لشاشة الكاشير (يصلح لزبون واحد ولمدة 90 ثانية)
+async function newStampCode(storeId) {
+  const code = crypto.randomBytes(12).toString('base64url');
+  const row = (await rest('loyalty_stamp_codes', { method: 'POST', prefer: 'return=representation', body: { client_id: storeId, code } }))[0];
+  return row;
+}
+
+// استخدام الكود (مرة وحدة بس)
+async function consumeStampCode(storeId, code, cardId) {
+  if (!/^[A-Za-z0-9_-]{10,40}$/.test(String(code || ''))) throw new ApiError(400, 'كود الختم غير صحيح', 'BAD_CODE');
+  const rows = await rest(`loyalty_stamp_codes?code=eq.${q(code)}&client_id=eq.${storeId}&used_at=is.null&expires_at=gt.${q(new Date().toISOString())}`,
+    { method: 'PATCH', prefer: 'return=representation', body: { used_at: new Date().toISOString(), card_id: cardId } });
+  if (!rows.length) throw new ApiError(409, 'الكود انتهى أو انستخدم، اطلب كود جديد من الكاشير', 'CODE_USED');
+  return rows[0];
+}
+
+// رقم البيجر كإثبات شراء (للتسجيل من صفحة البيجر)
+async function pagerTicket(storeId, token) {
+  if (!/^[A-Za-z0-9_-]{10,64}$/.test(String(token || ''))) return null;
+  return (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${storeId}&select=id,status,created_at,loyalty_card_id,loyalty_stamped`).catch(() => []))[0] || null;
+}
+
+module.exports = { purchaseStamp, newStampCode, consumeStampCode, pagerTicket };

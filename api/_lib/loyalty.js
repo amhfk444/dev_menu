@@ -58,7 +58,10 @@ function normalizeLoyalty(raw) {
     welcome: normalizeWelcome(s.welcome),
     happy: normalizeHappy(s.happy),
     feedback: { enabled: !(s.feedback && s.feedback.enabled === false), gift: !(s.feedback && s.feedback.gift === false) },
-    gifts: { enabled: !(s.gifts && s.gifts.enabled === false) }
+    gifts: { enabled: !(s.gifts && s.gifts.enabled === false) },
+    // طريقة الختم: location = الزبون يختم بنفسه داخل المحل، purchase = بعد الشراء بس (كود الكاشير أو البيجر)
+    stamp_mode: s.stamp_mode === 'purchase' ? 'purchase' : 'location',
+    pager_stamp: s.pager_stamp !== false
   };
 }
 

@@ -18,6 +18,7 @@ const { normalizeLoyalty, validPoint } = require('./_lib/loyalty');
 const wallet = require('./_lib/wallet');
 const { pushWalletCards, runAssistant } = require('./_lib/loyalty-assistant');
 const { loyaltyMessages } = require('./_lib/ai');
+const { purchaseStamp, newStampCode } = require('./_lib/loyalty-stamp');
 
 const bySort = (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id;
 const COFFEE_TYPES = ['cafe', 'mixed'];
@@ -332,7 +333,8 @@ async function main(req) {
     const base = `pager_tickets?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&order=number.asc&select=id,number,status,created_at,ready_at,closed_at,push_sub`;
     // أعمدة التكرار من 21-pager-repeat.sql — لو ما انضافت نكمل بدونها
     const tickets = await rest(`${base},ring_count,acked_at,invoice_no`).catch(() => rest(`${base},ring_count,acked_at`)).catch(() => rest(base));
-    return { tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub })), slug: store.client_slug, name: store.name, max_rings: PAGER_MAX_RINGS, live: topic('pager', store.id) };
+    const lx = (await rest(`clients?id=eq.${store.id}&select=loyalty_enabled`).catch(() => []))[0] || {};
+    return { tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub })), slug: store.client_slug, name: store.name, max_rings: PAGER_MAX_RINGS, live: topic('pager', store.id), loyalty: lx.loyalty_enabled === true };
   }
 
   // ─── بطاقة الولاء: الإعدادات والإحصائيات وآخر البطاقات ───
@@ -365,6 +367,16 @@ async function main(req) {
         redeemed: gifts.filter(g => g.status === 'redeemed').length, new_members: gifts.filter(g => g.new_member).length
       }
     };
+  }
+
+  // ─── كود الختم: انستخدم؟ ولمين؟ (شاشة الكاشير تسأل كل ثانيتين) ───
+  if (action === 'loyalty-stamp-code' && req.method === 'GET') {
+    const { store } = await context(req);
+    const row = (await rest(`loyalty_stamp_codes?code=eq.${q(String(req.query.code || ''))}&client_id=eq.${store.id}&select=used_at,expires_at,card_id`))[0];
+    if (!row) throw new ApiError(404, 'الكود غير موجود');
+    let who = null;
+    if (row.card_id) { const c = (await rest(`loyalty_cards?id=eq.${row.card_id}&select=id,name,stamps`))[0] || {}; who = { name: c.name || `زبون #${c.id}`, stamps: c.stamps }; }
+    return { used: !!row.used_at, expired: !row.used_at && Date.parse(row.expires_at) < Date.now(), who };
   }
 
   // ─── بطاقة الولاء: كل الأعضاء (للقائمة والداشبورد وملف CSV) ───
@@ -517,6 +529,15 @@ async function main(req) {
     return { message: { ...msg, wallet_sent: sent } };
   }
 
+  // ─── كود ختم جديد من شاشة الكاشير (بعد الدفع) ───
+  if (action === 'loyalty-stamp-code') {
+    const x = (await rest(`clients?id=eq.${sid}&select=loyalty_enabled`))[0] || {};
+    if (!x.loyalty_enabled) throw new ApiError(409, 'شغّل بطاقة الولاء أول من لوحة التحكم');
+    const row = await newStampCode(sid);
+    const url = `${wallet.cardUrl(store.client_slug)}${wallet.cardUrl(store.client_slug).includes('?') ? '&' : '?'}c=${row.code}`;
+    return { code: row.code, url, expires_at: row.expires_at };
+  }
+
   // ─── بطاقة الولاء: صاحب المحل يعطي ختم لعضو بنفسه ───
   if (action === 'loyalty-give-stamp') {
     const id = int(b.card_id);
@@ -643,6 +664,17 @@ async function main(req) {
       await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { ring_count: 0, last_ring_at: null, acked_at: null } }).catch(() => {});
       t = { ...t, ring_count: 0, acked_at: null };
       push = await ringTicket(store, t);
+    }
+    // بطاقة ولاء مربوطة بالرقم: ختم أول ما يجهز الطلب (مرة وحدة)
+    if (status === 'ready' && t.loyalty_card_id && !t.loyalty_stamped) {
+      try {
+        const x = (await rest(`clients?id=eq.${sid}&select=loyalty_enabled,loyalty_settings`))[0] || {};
+        const ls = normalizeLoyalty(x.loyalty_settings);
+        if (x.loyalty_enabled && ls.pager_stamp) {
+          await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { loyalty_stamped: true } });
+          await purchaseStamp(sid, t.loyalty_card_id, ls);
+        }
+      } catch (e) { console.error('PAGER_STAMP', e.message); }
     }
     await poke([topic('pager', sid), topic('ticket', t.token)]);
     return { ticket: { id: t.id, number: t.number, status: t.status, created_at: t.created_at, ready_at: t.ready_at, closed_at: t.closed_at, has_push: !!t.push_sub, ring_count: t.ring_count || 0, acked_at: t.acked_at || null }, push };

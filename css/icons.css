@@ -101,6 +101,7 @@
 .ph-prohibit:before { content: "\e3de"; }
 .ph-qr-code:before { content: "\e3e6"; }
 .ph-question:before { content: "\e3e8"; }
+.ph-receipt:before { content: "\e3ec"; }
 .ph-scissors:before { content: "\eae0"; }
 .ph-seal-check:before { content: "\e606"; }
 .ph-share-network:before { content: "\e408"; }

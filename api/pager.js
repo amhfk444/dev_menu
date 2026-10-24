@@ -11,6 +11,13 @@ const crypto = require('crypto');
 const { handler, rest, rpc, q, ApiError, readBody, findPublicStore } = require('./_lib/core');
 const { pushPublicKey, cleanSubscription } = require('./_lib/push');
 const { topic, poke } = require('./_lib/live');
+const { normalizeLoyalty } = require('./_lib/loyalty');
+
+// بطاقة الولاء في المحل: شغالة؟ وتختم مع البيجر؟
+async function loyaltyOf(storeId) {
+  const x = (await rest(`clients?id=eq.${storeId}&select=loyalty_enabled,loyalty_settings`).catch(() => []))[0] || {};
+  return { enabled: x.loyalty_enabled === true && normalizeLoyalty(x.loyalty_settings).pager_stamp };
+}
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{10,64}$/;
 
@@ -35,6 +42,11 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const token = crypto.randomBytes(18).toString('base64url');
     try {
       const res = await rpc('server_pager_take', { p_client_id: store.id, p_token: token });
+      // عنده بطاقة ولاء في نفس الجوال: نربطها برقم البيجر، وينختم لما يجهز الطلب
+      if (/^[A-Za-z0-9_-]{10,64}$/.test(String(b.lt || ''))) {
+        const card = (await rest(`loyalty_cards?token=eq.${q(b.lt)}&client_id=eq.${store.id}&select=id`).catch(() => []))[0];
+        if (card) await rest(`pager_tickets?token=eq.${q(res.token)}&client_id=eq.${store.id}`, { method: 'PATCH', body: { loyalty_card_id: card.id } }).catch(() => {});
+      }
       await poke(topic('pager', store.id));
       return { token: res.token, number: res.number, store: { name: store.name, logo_url: store.logo_url } };
     } catch (e) {
@@ -48,11 +60,12 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const token = String(req.query.t || '');
     if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
     const sel = `pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&select=number,status,created_at,ready_at`;
-    const t = (await rest(`${sel},invoice_no`).catch(() => rest(sel)))[0];
+    const t = (await rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped`).catch(() => rest(`${sel},invoice_no`)).catch(() => rest(sel)))[0];
     if (!t) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
     // رقم من يوم سابق ما زال ينتظر = منتهي
     const stale = t.status === 'waiting' && Date.now() - Date.parse(t.created_at) > 18 * 3600e3;
-    return { store: { name: store.name, logo_url: store.logo_url }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token) };
+    return { store: { name: store.name, logo_url: store.logo_url }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
+      loyalty: { ...(await loyaltyOf(store.id)), linked: !!t.loyalty_card_id, stamped: !!t.loyalty_stamped } };
   }
 
   if (action === 'subscribe' && req.method === 'POST') {

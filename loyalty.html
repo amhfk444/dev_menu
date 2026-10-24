@@ -80,6 +80,7 @@
       <p id="j-reward" class="text-2xl font-bold mt-0.5"></p>
       <div id="j-stamps" class="stamps"></div>
     </div>
+    <p id="j-purchase" class="card p-5 text-center font-semibold hidden"><i class="ph-bold ph-receipt text-2xl block mb-2"></i> الختم هنا بعد الشراء: ادفع واطلب من الكاشير <b>كود الختم</b>، وامسحه عشان تسجّل وتاخذ أول ختم.</p>
     <form id="join-form" class="card p-5 space-y-4" novalidate>
       <p class="font-bold">سجّل وخذ أول ختم</p>
       <label class="block">
@@ -101,7 +102,7 @@
         </div>
       </div>
       <button id="join-btn" type="submit" class="btn btn-brand"><i class="ph-bold ph-seal-check"></i> سجّل وخذ ختمك</button>
-      <p class="text-xs opacity-60 text-center leading-relaxed">بنطلب موقعك عشان نتأكد إنك داخل المحل، وما نحفظه. ولو غيّرت جوالك، ترجع لبطاقتك بنفس الرقم.</p>
+      <p id="j-note" class="text-xs opacity-60 text-center leading-relaxed">بنطلب موقعك عشان نتأكد إنك داخل المحل، وما نحفظه. ولو غيّرت جوالك، ترجع لبطاقتك بنفس الرقم.</p>
     </form>
   </section>
 
@@ -157,6 +158,7 @@
     </div>
 
     <button id="stamp-btn" type="button" class="btn btn-brand"><i class="ph-bold ph-seal-check"></i> سجّل زيارتي</button>
+    <p id="c-purchase" class="card p-4 text-sm text-center font-semibold hidden"><i class="ph-bold ph-receipt"></i> بعد ما تدفع، اطلب من الكاشير <b>كود الختم</b> وامسحه بكاميرا جوالك<span id="c-pager-hint">، أو خذ رقم بيجر وينختم لك تلقائياً</span>.</p>
     <div id="wallet-prompt" class="card p-5 space-y-3 text-center hidden">
       <i class="ph-bold ph-wallet text-3xl text-[#233d2c]"></i>
       <p class="font-bold">احفظ بطاقتك في المحفظة</p>
@@ -235,6 +237,8 @@
   const saveToken = (t) => { try { t ? localStorage.setItem(KEY, t) : localStorage.removeItem(KEY); } catch {} };
   let settings = null, card = null, busy = false, walletOn = false, justJoined = false, happyNow = false, gifts = [], survey = false;
   const giftCode = (params.get('gift') || '').trim();
+  const stampCodeParam = (params.get('c') || '').trim(), ptParam = (params.get('pt') || '').trim();
+  const dropParams = (...keys) => { keys.forEach(k => params.delete(k)); history.replaceState(null, '', location.pathname + (params.toString() ? `?${params}` : '')); };
 
   $('f-cc').innerHTML = DM.countryOptions();
   $('p-cc').innerHTML = DM.countryOptions();
@@ -280,7 +284,10 @@
     $('c-reward').classList.toggle('hidden', !full);
     $('c-reward-name').textContent = settings.reward;
     // بعد أول ختم مباشرة: نركّز على حفظ البطاقة في المحفظة بدل زر الختم
-    $('stamp-btn').classList.toggle('hidden', full || (justJoined && walletOn && !card.in_wallet));
+    const purchaseOnly = settings.stamp_mode === 'purchase';
+    $('stamp-btn').classList.toggle('hidden', full || purchaseOnly || (justJoined && walletOn && !card.in_wallet));
+    $('c-purchase').classList.toggle('hidden', !purchaseOnly || full);
+    $('c-pager-hint').classList.toggle('hidden', !settings.pager_stamp);
     $('wallet-btn').classList.toggle('hidden', !walletOn);
     $('wallet-btn').querySelector('span').textContent = card.in_wallet ? 'افتح البطاقة في المحفظة' : 'احفظ بطاقتك في المحفظة';
     $('wallet-prompt').classList.toggle('hidden', !walletOn || card.in_wallet || !justJoined);
@@ -377,12 +384,14 @@
     const btn = $('join-btn');
     setBusy(btn, true, 'نتأكد من موقعك');
     try {
-      const loc = await getLocation().catch(e => { throw { message: locationError(e) }; });
-      const r = await DM.post('/api/loyalty?action=join', { slug, ...profile, ...loc, gift: giftCode || undefined });
+      const proof = stampCodeParam ? { code: stampCodeParam } : ptParam ? { pt: ptParam } : await getLocation().catch(e => { throw { message: locationError(e) }; });
+      const r = await DM.post('/api/loyalty?action=join', { slug, ...profile, ...proof, gift: giftCode || undefined });
+      if (stampCodeParam || ptParam) dropParams('c', 'pt');
       saveToken(r.token);
       if (params.get('s')) { params.delete('s'); history.replaceState(null, '', location.pathname + (params.toString() ? `?${params}` : '')); }
       settings = r.settings; walletOn = !!r.wallet; justJoined = !!r.is_new; happyNow = !!r.happy_now; gifts = r.gifts || [];
       afterStamp(r);
+      if (r.reason === 'PAGER_PENDING') msg('ok', 'ph-bell', 'سجّلت! ينضاف لك ختم أول ما يجهز طلبك');
       if (r.gift_error) msg('warn', 'ph-gift', r.gift_error);
       if (giftCode) { params.delete('gift'); history.replaceState(null, '', location.pathname + (params.toString() ? `?${params}` : '')); }
       if (!r.is_new) msg('ok', 'ph-check-circle', r.stamped ? 'رجعت لبطاقتك، وانضاف ختم اليوم' : 'رجعت لبطاقتك');
@@ -568,6 +577,19 @@
         const r = await DM.get(`/api/loyalty?action=card&slug=${encodeURIComponent(slug)}&t=${encodeURIComponent(token)}`);
         setStore(r.store); settings = r.settings; card = r.card; walletOn = !!r.wallet;
         happyNow = !!r.happy_now; gifts = r.gifts || []; survey = !!r.survey;
+        // جاي بكود الكاشير أو من صفحة البيجر: نختم على طول
+        if (stampCodeParam || ptParam) {
+          renderCard();
+          try {
+            const sr = stampCodeParam
+              ? await DM.post('/api/loyalty?action=stamp-code', { slug, t: token, code: stampCodeParam })
+              : await DM.post('/api/loyalty?action=pager-link', { slug, t: token, pt: ptParam });
+            afterStamp(sr);
+            if (sr.reason === 'PAGER_PENDING') msg('ok', 'ph-bell', 'ربطنا طلبك ببطاقتك: ينضاف لك ختم أول ما يجهز');
+          } catch (e) { msg('warn', 'ph-receipt', e.message || 'تعذر إضافة الختم'); }
+          dropParams('c', 'pt');
+          return;
+        }
         // جاي من رابط هدية وعنده بطاقة: نستلمها على طول
         if (giftCode) {
           try { const g = await DM.post('/api/loyalty?action=gift-claim', { slug, t: token, code: giftCode }); gifts = g.gifts || gifts; msg('ok', 'ph-gift', 'وصلتك الهدية! استخدمها من المحل'); }
@@ -592,6 +614,10 @@
           if (g.available) { $('jg-from').textContent = g.from; $('jg-reward').textContent = g.reward; $('j-gift').classList.remove('hidden'); }
         } catch {}
       }
+      const needProof = settings.stamp_mode === 'purchase' && !stampCodeParam && !ptParam;
+      $('j-purchase').classList.toggle('hidden', !needProof);
+      $('join-form').classList.toggle('hidden', needProof);
+      if (stampCodeParam || ptParam) $('j-note').textContent = stampCodeParam ? 'ختمك من كود الكاشير، ما نحتاج موقعك. ولو غيّرت جوالك، ترجع لبطاقتك بنفس الرقم.' : 'ختمك ينضاف أول ما يجهز طلبك. ولو غيّرت جوالك، ترجع لبطاقتك بنفس الرقم.';
       $('j-needed').textContent = settings.needed;
       $('j-reward').textContent = settings.reward;
       paint();

@@ -58,7 +58,10 @@
         <p class="text-[11px] font-bold opacity-55">اضغط على الرقم لما يجهز الطلب، ويرن جوال العميل</p>
       </div>
     </div>
-    <button id="qr-btn" class="mini bg-white border border-[#233d2c]/15 shrink-0"><i class="ph-bold ph-qr-code"></i> QR للطباعة</button>
+    <div class="flex gap-2 shrink-0">
+      <button id="stamp-btn" class="mini bg-[#c9a227] text-[#15271b] hidden"><i class="ph-bold ph-seal-check"></i> كود ختم</button>
+      <button id="qr-btn" class="mini bg-white border border-[#233d2c]/15"><i class="ph-bold ph-qr-code"></i> QR للطباعة</button>
+    </div>
   </div>
 </header>
 
@@ -97,6 +100,20 @@
 </div>
 
 <!-- QR -->
+<!-- كود ختم بطاقة الولاء: يطلع بعد الدفع، والزبون يمسحه -->
+<div id="stamp-modal" class="fixed inset-0 z-50 bg-black/75 hidden items-center justify-center p-5">
+  <div class="bg-white rounded-[28px] w-full max-w-sm p-6 text-center space-y-4">
+    <p class="text-lg font-black"><i class="ph-bold ph-seal-check text-[#c9a227]"></i> خلّ الزبون يمسح الكود</p>
+    <div id="stamp-qr" class="w-64 h-64 mx-auto grid place-items-center"></div>
+    <p id="stamp-state" class="text-sm font-bold opacity-70"></p>
+    <div class="flex gap-2">
+      <button id="stamp-new" class="flex-1 bg-[#233d2c] text-white font-black rounded-2xl py-3"><i class="ph-bold ph-arrow-clockwise"></i> كود جديد</button>
+      <button id="stamp-close" class="flex-1 bg-[#f5f2eb] font-black rounded-2xl py-3">إغلاق</button>
+    </div>
+    <p class="text-[11px] opacity-50">الكود يصلح لزبون واحد ولمدة 90 ثانية</p>
+  </div>
+</div>
+
 <div id="qr-modal" class="fixed inset-0 z-50 bg-black/75 hidden items-center justify-center p-5">
   <div class="space-y-3">
     <div id="print-card" class="qr-card">
@@ -235,6 +252,7 @@
     try {
       const r = await call('pager');
       slug = r.slug; $('store-name').textContent = r.name || ''; maxRings = r.max_rings || 5;
+      $('stamp-btn').classList.toggle('hidden', !r.loyalty);
       // تحديث لحظي: رقم جديد أو عميل شاف التنبيه يظهر هنا على طول
       if (r.live && !liveOn) { liveOn = true; DM.live(r.live, () => load()); }
       // ما نلمس الأرقام اللي جاري تحديثها
@@ -244,6 +262,40 @@
     } catch (e) { if (e.status !== 401) toast(e.message || 'تعذر التحديث'); }
     timer = setTimeout(load, document.hidden ? 15000 : 4000);
   }
+
+  // ─── كود ختم بطاقة الولاء ───
+  let stampTimer = null, stampCode = '', stampExpires = 0;
+  async function newStampCode() {
+    clearInterval(stampTimer);
+    $('stamp-qr').innerHTML = '<i class="ph-bold ph-spinner-gap ph-spin text-3xl opacity-50"></i>';
+    $('stamp-state').textContent = '';
+    try {
+      const r = await call('loyalty-stamp-code', {});
+      stampCode = r.code; stampExpires = Date.parse(r.expires_at);
+      $('stamp-qr').innerHTML = '';
+      new QRCodeStyling({ width: 256, height: 256, data: r.url, margin: 4, qrOptions: { errorCorrectionLevel: 'M' },
+        dotsOptions: { type: 'rounded', color: '#1b3022' }, cornersSquareOptions: { type: 'extra-rounded', color: '#1b3022' }, cornersDotOptions: { color: '#c9a227' }, backgroundOptions: { color: '#ffffff' } }).append($('stamp-qr'));
+      let tick = 0;
+      stampTimer = setInterval(async () => {
+        const left = Math.max(0, Math.round((stampExpires - Date.now()) / 1000));
+        $('stamp-state').textContent = left ? `ينتهي بعد ${left} ثانية` : 'انتهى الكود، اضغط كود جديد';
+        if (!left) { clearInterval(stampTimer); $('stamp-qr').style.opacity = .2; return; }
+        $('stamp-qr').style.opacity = 1;
+        if (++tick % 2) return;   // نسأل كل ثانيتين
+        try {
+          const st = await call(`loyalty-stamp-code&code=${encodeURIComponent(stampCode)}`);
+          if (st.used) {
+            clearInterval(stampTimer);
+            $('stamp-qr').innerHTML = '<i class="ph-bold ph-check-circle text-7xl text-emerald-600"></i>';
+            $('stamp-state').innerHTML = `<b class="text-emerald-700 text-base">انضاف الختم لـ ${esc(st.who ? st.who.name : 'الزبون')}</b>`;
+          }
+        } catch {}
+      }, 1000);
+    } catch (e) { $('stamp-qr').innerHTML = ''; $('stamp-state').textContent = e.message || 'تعذر إنشاء الكود'; }
+  }
+  $('stamp-btn').onclick = () => { $('stamp-modal').classList.remove('hidden'); $('stamp-modal').classList.add('flex'); newStampCode(); };
+  $('stamp-new').onclick = newStampCode;
+  $('stamp-close').onclick = () => { clearInterval(stampTimer); $('stamp-modal').classList.add('hidden'); $('stamp-modal').classList.remove('flex'); };
 
   $('qr-btn').onclick = () => {
     if (!slug) return;

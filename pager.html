@@ -89,6 +89,7 @@
     <div id="keep-on" class="hidden text-[13px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl py-3 px-3">✅ التنبيه شغّال — بيرن جوالك حتى لو طلعت من الصفحة أو قفلت الشاشة</div>
     <button id="keep-btn" class="btn btn-brand hidden"><i class="ph-bold ph-bell"></i> فعّل التنبيه وانت برا الصفحة</button>
     <button id="unlock-btn" class="btn btn-brand hidden"><i class="ph-bold ph-speaker-high"></i> فعّل صوت التنبيه</button>
+    <a id="w-loyalty" class="hidden block text-[13px] font-black rounded-2xl py-3 px-3"></a>
     <ul class="text-[12.5px] font-bold opacity-70 space-y-1.5 text-right bg-[#f5f2eb] rounded-2xl p-4">
       <li><i class="ph-bold ph-device-mobile ml-1"></i> تقدر تطلع من الصفحة وتقفل الجوال، بس لا تسكّر المتصفح</li>
       <li><i class="ph-bold ph-speaker-high ml-1"></i> ارفع صوت الجوال (صوت الوسائط)</li>
@@ -122,6 +123,7 @@
     <div id="r-number" class="num">—</div>
     <p id="r-invoice" class="hidden text-base font-black">🧾 فاتورة <span dir="ltr"></span></p>
     <p class="text-sm font-bold opacity-70">تفضّل استلمه من الكاشير</p>
+    <a id="r-loyalty" class="hidden block text-[13px] font-black rounded-2xl py-3 px-3"></a>
     <button id="got-btn" class="btn btn-brand"><i class="ph-bold ph-check"></i> استلمت طلبي</button>
   </section>
 
@@ -306,6 +308,21 @@
     liveOff(); liveTopic = t || '';
     liveOff = t ? DM.live(t, () => poll()) : () => {};
   }
+  // ─── بطاقة الولاء: ختم مع الطلب ───
+  function renderLoyalty(l, st, token) {
+    const show = (id, html, cls, href) => { const el = $(id); el.classList.toggle('hidden', !html); if (!html) return; el.innerHTML = html; el.className = `block text-[13px] font-black rounded-2xl py-3 px-3 ${cls}`; if (href) el.href = href; else el.removeAttribute('href'); };
+    if (!l || !l.enabled) { show('w-loyalty', ''); show('r-loyalty', ''); return; }
+    const join = `${DM.storePage('loyalty', slug)}${DM.hostSlug() ? '?' : '&'}pt=${encodeURIComponent(token)}`;
+    if (l.linked) {
+      show('w-loyalty', '<i class="ph-bold ph-seal-check"></i> بطاقة الولاء مربوطة: ينضاف لك ختم أول ما يجهز طلبك', 'text-[#233d2c] bg-[#c9a227]/15 border border-[#c9a227]/30');
+      show('r-loyalty', l.stamped ? '<i class="ph-bold ph-seal-check"></i> انضاف لك ختم في بطاقة الولاء' : '', 'text-[#233d2c] bg-[#c9a227]/15 border border-[#c9a227]/30', `${DM.storePage('loyalty', slug)}`);
+    } else {
+      const html = '<i class="ph-bold ph-gift"></i> سجّل في بطاقة الولاء وخذ ختم على طلبك هذا';
+      show('w-loyalty', html, 'text-white bg-[#233d2c] underline-offset-4', join);
+      show('r-loyalty', html, 'text-white bg-[#233d2c]', join);
+    }
+  }
+
   async function poll() {
     clearTimeout(pollTimer);
     const token = loadToken();
@@ -320,6 +337,7 @@
     setStore(r.store);
     watchTicket(r.live);
     const st = r.ticket.status;
+    renderLoyalty(r.loyalty, st, token);
     curNumber = r.ticket.number;
     $('mm-num').textContent = r.ticket.number;
     $('w-number').textContent = r.ticket.number; $('r-number').textContent = r.ticket.number;
@@ -352,7 +370,8 @@
     const perm = pushSupported() && Notification.permission === 'default' ? Notification.requestPermission().catch(() => {}) : null;
     const btn = $('take-btn'); btn.disabled = true; btn.innerHTML = '<i class="ph-bold ph-spinner-gap ph-spin"></i>';
     try {
-      const r = await DM.post('/api/pager?action=take', { slug });
+      let lt = ''; try { lt = localStorage.getItem(`dm_loyalty_${slug}`) || ''; } catch {}
+      const r = await DM.post('/api/pager?action=take', { slug, lt: lt || undefined });
       saveToken(r.token); setStore(r.store); dismissed = false;
       if (perm) await perm;
       await subscribePush();
