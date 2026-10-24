@@ -8,7 +8,7 @@
 // الكاشير يغيّر الحالة من /api/owner?action=pager-update
 // =====================================================================
 const crypto = require('crypto');
-const { handler, rest, rpc, q, ApiError, readBody, findPublicStore } = require('./_lib/core');
+const { handler, rest, rpc, q, ApiError, readBody, findPublicStore, storeHasFeature } = require('./_lib/core');
 const { pushPublicKey, cleanSubscription } = require('./_lib/push');
 const { topic, poke } = require('./_lib/live');
 const { normalizeLoyalty } = require('./_lib/loyalty');
@@ -25,6 +25,7 @@ async function loadStore(slug) {
   const { store, bad } = await findPublicStore(slug, 'id,name,client_slug,logo_url');
   if (bad) throw new ApiError(400, 'الرابط غير صحيح');
   if (!store) throw new ApiError(404, 'البيجر غير متاح حالياً', 'NOT_AVAILABLE');
+  if (!(await storeHasFeature(store.id, 'pager'))) throw new ApiError(404, 'البيجر غير متاح حالياً', 'NOT_AVAILABLE');
   return store;
 }
 

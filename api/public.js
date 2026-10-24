@@ -9,7 +9,7 @@
 //   POST /api/public?action=track           تسجيل زيارة/مشاهدة (مجهولة)
 // =====================================================================
 const crypto = require('crypto');
-const { handler, rest, rpc, q, ApiError, readBody, int, findPublicStore, CURRENCIES } = require('./_lib/core');
+const { handler, rest, rpc, q, ApiError, readBody, int, findPublicStore, CURRENCIES, storeHasFeature } = require('./_lib/core');
 const { topic } = require('./_lib/live');
 
 const STORE_FIELDS = 'id,name,client_slug,logo_url,bg_image_url,bg_video_url,promo_message,website_url,tiktok_url,instagram_url,whatsapp_number,snapchat_url,opening_hours,location_url,whatsapp_orders,business_type,show_calories,delivery_apps,theme,accent_color,order_numbers,custom_links';
@@ -152,6 +152,8 @@ async function waitlistOpen(storeId) {
 // كل بيانات المنيو العام لمتجر
 async function menuPayload(slug) {
   const store = await findStore(slug);
+  // المنيو ضمن باقة المحل؟ (اللي مشترك في الولاء بس، ما يطلع له منيو)
+  if (!(await storeHasFeature(store.id, 'menu'))) throw new ApiError(404, 'المنيو غير متاح حالياً', 'NOT_AVAILABLE');
   const [categories, products, waitlist_open, has_coupons, occasion, promos] = await Promise.all([
     rest(`categories?client_id=eq.${store.id}&select=id,key,name,name_en,sort_order,group_name`),
     // المنتجات المخفية ما توصل للزبون أصلاً
@@ -186,6 +188,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
   // صفحة الروابط السريعة: نفس بيانات المتجر بدون الأقسام والأطباق
   if (action === 'links' && req.method === 'GET') {
     const store = await findStore(req.query.slug);
+    if (!(await storeHasFeature(store.id, 'menu'))) throw new ApiError(404, 'الصفحة غير متاحة حالياً', 'NOT_AVAILABLE');
     const [waitlist_open, occasion] = await Promise.all([waitlistOpen(store.id), activeOccasion(store.id)]);
     return { store: { ...store, waitlist_open, occasion } };
   }

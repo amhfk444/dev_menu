@@ -99,6 +99,7 @@
 .ph-play:before { content: "\e3d0"; }
 .ph-plus:before { content: "\e3d4"; }
 .ph-popcorn:before { content: "\eb4e"; }
+.ph-power:before { content: "\e3da"; }
 .ph-printer:before { content: "\e3dc"; }
 .ph-prohibit:before { content: "\e3de"; }
 .ph-qr-code:before { content: "\e3e6"; }

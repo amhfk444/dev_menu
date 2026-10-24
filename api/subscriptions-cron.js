@@ -10,7 +10,7 @@ const { rest, handler } = require('./_lib/core');
 const { assertCronKey } = require('./_lib/cron');
 const { sendMail, mailConfigured } = require('./_lib/mail');
 const { sendPush } = require('./_lib/push');
-const { PLAN_PRICE } = require('./_lib/invoice');
+const PLANS = require('./_lib/plans');
 
 const DAY = 864e5;
 const GRACE_DAYS = 3;
@@ -20,8 +20,10 @@ const dateText = (d) => new Date(d).toLocaleDateString('ar-SA-u-ca-gregory-nu-la
 
 function message(store, stage, end, branches) {
   const trial = store.subscription_status === 'trial';
-  const year = PLAN_PRICE.year + branches * PLAN_PRICE.branch;
-  const month = PLAN_PRICE.month + branches * PLAN_PRICE.branchMonth;
+  // السعر حسب مميزات المحل (التجربة: الباقة الكاملة)
+  const features = store.subscription_status === 'active' ? PLANS.featuresOf(store) : PLANS.LEGACY;
+  const year = PLANS.price(features, 'year', branches).total;
+  const month = PLANS.price(features, 'month', branches).total;
   const what = trial ? 'التجربة المجانية' : 'اشتراك';
   const graceEnd = new Date(Date.parse(end) + GRACE_DAYS * DAY);
   let title, body;
@@ -53,7 +55,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
   await assertCronKey(req);
   const now = Date.now();
   // المتاجر الرئيسية فقط (الفروع تتبعها)، والموقوفة من الإدارة ما نذكّرها
-  const stores = await rest('clients?parent_id=is.null&is_active=is.true&subscription_status=in.(active,trial)&select=id,name,email,subscription_status,subscription_end_date,trial_ends_at,reminder_key');
+  const stores = await rest('clients?parent_id=is.null&is_active=is.true&subscription_status=in.(active,trial)&select=id,name,email,subscription_status,subscription_end_date,trial_ends_at,reminder_key,plan_features');
   const results = [];
   for (const s of stores) {
     const end = s.subscription_status === 'active' ? s.subscription_end_date : s.trial_ends_at;

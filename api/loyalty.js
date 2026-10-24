@@ -10,7 +10,7 @@
 // كل ختم يحتاج الزبون يكون داخل نطاق المحل (50 متر افتراضياً). ما نخزن موقعه، بس المسافة.
 // =====================================================================
 const crypto = require('crypto');
-const { handler, rest, rpc, q, ApiError, readBody, findPublicStore, waNumber } = require('./_lib/core');
+const { handler, rest, rpc, q, ApiError, readBody, findPublicStore, waNumber, storeHasFeature } = require('./_lib/core');
 const { normalizeLoyalty, distanceM, validPoint, isHappyNow } = require('./_lib/loyalty');
 const wallet = require('./_lib/wallet');
 const { nearLineFor } = require('./_lib/loyalty-assistant');
@@ -25,7 +25,7 @@ async function loadStore(slug) {
   if (bad) throw new ApiError(400, 'الرابط غير صحيح');
   if (!store) throw new ApiError(404, 'بطاقة الولاء غير متاحة حالياً', 'NOT_AVAILABLE');
   const extra = (await rest(`clients?id=eq.${store.id}&select=loyalty_enabled,loyalty_settings,loyalty_lat,loyalty_lng,loyalty_near_lines`))[0] || {};
-  if (!extra.loyalty_enabled) throw new ApiError(404, 'بطاقة الولاء غير متاحة حالياً', 'NOT_AVAILABLE');
+  if (!extra.loyalty_enabled || !(await storeHasFeature(store.id, 'loyalty'))) throw new ApiError(404, 'بطاقة الولاء غير متاحة حالياً', 'NOT_AVAILABLE');
   return { store, settings: normalizeLoyalty(extra.loyalty_settings), lat: extra.loyalty_lat, lng: extra.loyalty_lng, nearLines: extra.loyalty_near_lines };
 }
 
@@ -182,8 +182,6 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       // الإثبات: كود الكاشير، أو رقم بيجر، أو الموقع (لو المحل يسمح بالختم بالموقع)
       const ticket = !b.code && b.pt ? await pagerTicket(ctx.store.id, b.pt) : null;
       if (b.pt && !b.code && (!ticket || Date.now() - Date.parse(ticket.created_at) > 18 * 3600e3)) throw new ApiError(409, 'رقم البيجر منتهي، اطلب كود الختم من الكاشير', 'BAD_TICKET');
-      if (!b.code && !ticket && ctx.settings.stamp_mode === 'purchase') throw new ApiError(409, 'الختم في هذا المحل بعد الشراء: امسح كود الختم من الكاشير', 'PURCHASE_ONLY');
-      const distance = b.code || ticket ? null : checkPresence(ctx, b);
       let card = (await rest(`loyalty_cards?client_id=eq.${ctx.store.id}&phone=eq.${q(profile.phone)}&select=*`))[0];
       const isNew = !card;
       if (!card) {
@@ -209,7 +207,10 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
           await rest(`pager_tickets?id=eq.${ticket.id}`, { method: 'PATCH', body: { loyalty_stamped: true } });
         }
         out = { ...r, card: cardView((await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0]) };
-      } else out = await stampCard(ctx, card, distance);
+      } else {
+        // تسجيل من كرت QR الثابت: بطاقة بدون ختم، والختم من الكاشير بعد الشراء
+        out = { stamped: false, count: 0, reason: 'REGISTERED', card: cardView((await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0]) };
+      }
       // جاي من رابط هدية: نستلمها مع التسجيل
       let gift_error = null;
       if (b.gift) { try { await claimGift(ctx, card, b.gift, isNew); } catch (e) { gift_error = e.message; } }

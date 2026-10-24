@@ -132,6 +132,14 @@ async function findPublicStore(rawSlug, fields) {
   return { slug, store: old };
 }
 
+// الميزة ضمن باقة المحل؟ (التجربة فيها كل شي). الفرع ياخذ مميزات المتجر الرئيسي
+async function storeHasFeature(storeId, key) {
+  const PLANS = require('./plans');
+  const s = (await rest(`clients?id=eq.${storeId}&select=subscription_status,plan_features,parent_id`))[0];
+  if (!s) return false;
+  return PLANS.has(s, key);
+}
+
 // عملات المنيو المسموحة (نفس قائمة js/api.js)
 const CURRENCIES = {
   SAR: 'ر.س', AED: 'د.إ', KWD: 'د.ك', QAR: 'ر.ق', BHD: 'د.ب', OMR: 'ر.ع', EGP: 'ج.م', JOD: 'د.أ', IQD: 'د.ع',
@@ -168,5 +176,5 @@ function handler(methods, fn) {
 module.exports = {
   SUPABASE_URL, BUCKET, ApiError, rest, rpc, q, storage, publicUrl, ownsMediaUrl, storagePathFromUrl,
   getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody, handler,
-  SLUG_RE, RESERVED_SLUGS, findPublicStore, CURRENCIES
+  SLUG_RE, RESERVED_SLUGS, findPublicStore, CURRENCIES, storeHasFeature
 };

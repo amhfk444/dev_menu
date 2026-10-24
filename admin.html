@@ -15,6 +15,7 @@
 <script src="js/api.js"></script>
 <script src="js/dialog.js"></script>
 <script src="/js/loyalty-card.js"></script>
+<script src="/js/plans.js"></script>
 <script src="js/theme.js"></script>
 <script src="js/occasions.js"></script>
 <!-- مكتبة توليد الـ QR Code -->
@@ -147,6 +148,10 @@
   .plan-dot { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--line-2); display: grid; place-items: center; font-size: 11px; color: #fff; flex-shrink: 0; }
   .plan-tile.on .plan-dot { background: var(--brand); border-color: var(--brand); }
   .plan-save { position: absolute; top: -9px; inset-inline-start: 12px; font-size: 10.5px; font-weight: 700; color: #4a3a05; background: #f1dc93; border-radius: 999px; padding: 2px 9px; }
+  .feat-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--line-2); background: #fff; transition: border-color .15s; }
+  .feat-row.on { border-color: var(--brand); background: rgba(56, 79, 61, .04); }
+  .feat-box { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid var(--line-2); display: grid; place-items: center; font-size: 12px; color: #fff; flex-shrink: 0; }
+  .feat-row.on .feat-box { background: var(--brand); border-color: var(--brand); }
   .plan-done { display: flex; gap: 12px; padding: 14px; border-radius: 14px; background: rgba(47, 122, 75, .07); border: 1px solid rgba(47, 122, 75, .2); }
   .plan-done-ic { width: 30px; height: 30px; border-radius: 50%; background: var(--ok); color: #fff; display: grid; place-items: center; flex-shrink: 0; font-size: 14px; }
   .editing-glow { border-color: rgba(180, 130, 20, 0.7) !important; background: rgba(251, 191, 36, 0.08) !important; box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15); }
@@ -209,7 +214,7 @@
       <button data-nav="waitlist" class="nav-item"><i class="ph-bold ph-hourglass-medium"></i> قائمة الانتظار <span id="nav-waitlist" class="mr-auto hidden text-[10px] bg-amber-400 text-black px-2 py-0.5 rounded-full font-black">0</span></button>
       <button data-nav="loyalty" class="nav-item"><i class="ph-bold ph-seal-check"></i> بطاقة الولاء</button>
       <button data-nav="reviews" class="nav-item"><i class="ph-bold ph-star-half"></i> ردود التقييمات</button>
-      <a href="pager-desk.html" onclick="this.href='pager-desk.html'+location.search" class="nav-item"><i class="ph-bold ph-bell"></i> شاشة البيجر <span class="mr-auto text-[9px] bg-[#c9a227] text-[#15271b] font-black px-1.5 py-0.5 rounded-md">جديد</span></a>
+      <a href="pager-desk.html" data-feature="pager" onclick="return openPagerDesk(this)" class="nav-item"><i class="ph-bold ph-bell"></i> شاشة البيجر <span class="mr-auto text-[9px] bg-[#c9a227] text-[#15271b] font-black px-1.5 py-0.5 rounded-md">جديد</span></a>
       <button data-nav="settings" class="nav-item"><i class="ph-bold ph-palette"></i> هوية المطعم</button>
       <p class="px-3 pt-5 pb-1 text-[10px] text-cream/45 font-bold">اختصارات</p>
       <a id="sidebar-preview" href="#" target="_blank" rel="noopener" class="nav-item"><i class="ph-bold ph-arrow-square-out"></i> معاينة المنيو</a>
@@ -254,6 +259,16 @@
     <main class="flex-1 w-full max-w-[1600px] mx-auto px-4 md:px-8 py-6 pb-28 lg:pb-10">
 
       <!-- ═════════════════ صفحة الرئيسية ═════════════════ -->
+      <section data-page="locked" class="hidden">
+        <div class="pro-card p-6 md:p-8 max-w-xl mx-auto text-center space-y-3">
+          <span class="w-14 h-14 mx-auto rounded-2xl bg-saffron/15 text-amber-900 grid place-items-center text-2xl"><i id="lock-icon" class="ph-bold ph-lock-simple"></i></span>
+          <h2 id="lock-title" class="text-lg font-bold"></h2>
+          <p id="lock-desc" class="text-[13px] text-ink/65 leading-relaxed"></p>
+          <p id="lock-price" class="text-[13px] font-bold text-ink/80"></p>
+          <button type="button" onclick="addFeature()" class="bg-brand hover:bg-brand-dark text-cream px-5 py-3 rounded-xl text-sm font-bold transition"><i class="ph-bold ph-plus"></i> أضفها لباقتك</button>
+        </div>
+      </section>
+
       <section data-page="dashboard" class="space-y-6">
         <div class="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -974,7 +989,7 @@
         <div class="pro-card p-5 md:p-6 flex flex-wrap items-center justify-between gap-4">
           <div class="space-y-1 max-w-xl">
             <h2 class="text-base font-bold">بطاقة الولاء بالأختام</h2>
-            <p class="text-[13px] text-ink/65 leading-relaxed">زبونك يمسح الكود اللي في المحل ويختم زيارته بنفسه من جواله، بدون تطبيق وبدون الكاشير. الختم ما ينحسب إلا إذا كان داخل المحل فعلاً، ومرة وحدة كل فترة.</p>
+            <p class="text-[13px] text-ink/65 leading-relaxed">الزبون يمسح كرت التسجيل ويسجل مرة وحدة. بعد كل شراء يعرض كود بطاقته للكاشير، والكاشير يمسحه من شاشة البيجر ويختم له.</p>
           </div>
           <button type="button" id="ly-enabled" role="switch" aria-checked="false" class="avail" onclick="toggleLoyalty()">
             <span class="avail-track"></span><span class="avail-label !w-auto">متوقفة</span>
@@ -1122,8 +1137,8 @@
 
           <!-- الكود -->
           <div class="pro-card p-5 md:p-6 space-y-4 text-center lg:sticky lg:top-24">
-            <h3 class="text-sm font-bold">كود الأختام</h3>
-            <p class="text-[12px] text-ink/60">اطبعه وحطه عند الكاشير أو على الطاولات.</p>
+            <h3 class="text-sm font-bold">كرت التسجيل</h3>
+            <p class="text-[12px] text-ink/60">كود ثابت ما ينتهي. اطبعه وحطه عند الكاشير أو على الطاولات، والزبون يمسحه ويسجل في البطاقة.</p>
             <div id="ly-qr" class="w-48 h-48 mx-auto bg-white p-2 rounded-xl border border-brand/10"></div>
             <input id="ly-link" readonly dir="ltr" class="input-pro text-center !text-xs">
             <div class="flex gap-2 justify-center">
@@ -1508,7 +1523,7 @@
     <button data-nav="dashboard" class="bnav"><i class="ph-bold ph-gauge"></i><span>الرئيسية</span></button>
     <button data-nav="menu" class="bnav"><i class="ph-bold ph-fork-knife"></i><span>المنيو</span></button>
     <button data-nav="waitlist" class="bnav relative"><i class="ph-bold ph-hourglass-medium"></i><span>الانتظار</span><span id="bnav-waitlist" class="hidden absolute top-1.5 left-1/2 ml-2 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-400 text-black text-[10px] font-black leading-[18px]">0</span></button>
-    <a href="pager-desk.html" onclick="this.href='pager-desk.html'+location.search" class="bnav"><i class="ph-bold ph-bell"></i><span>البيجر</span></a>
+    <a href="pager-desk.html" data-feature="pager" onclick="return openPagerDesk(this)" class="bnav"><i class="ph-bold ph-bell"></i><span>البيجر</span></a>
     <button data-nav="settings" class="bnav"><i class="ph-bold ph-palette"></i><span>الهوية</span></button>
   </nav>
 </div>
@@ -1588,9 +1603,51 @@
     delete PAGES.reviews;
     document.querySelectorAll('[data-nav="reviews"], [data-reviews-entry]').forEach(el => el.remove());   // الصفحة نفسها تبقى مخفية (كودها يعتمد على عناصرها)
   }
+  // المميزات اللي مو ضمن باقة المشترك: الصفحة تعرض "أضفها لباقتك" بدل محتواها
+  const PAGE_FEATURE = { menu: 'menu', waitlist: 'waitlist', loyalty: 'loyalty' };
+  const featureLocked = (key) => !!client && client.subscription_status === 'active' && !DMPlans.has(client, key);
+  let lockedKey = null;
+  function showLocked(key) {
+    lockedKey = key;
+    const f = DMPlans.FEATURES[key];
+    document.getElementById('lock-icon').className = `ph-bold ${f.icon}`;
+    document.getElementById('lock-title').textContent = `${f.name} مو ضمن باقتك`;
+    document.getElementById('lock-desc').textContent = f.desc;
+    document.getElementById('lock-price').textContent = `تضيفها بـ ${f.month} ر.س بالشهر أو ${f.year} ر.س بالسنة`;
+  }
+  function addFeature() {
+    if (client.parent_id) return showToast('الاشتراك يتعدل من المتجر الرئيسي', true);
+    chosenFeatures(); if (lockedKey) pickFeatures.add(lockedKey);
+    planPick = client.subscription_plan === 'month' ? 'month' : 'year';
+    openPlan();
+  }
+  // شاشة الكاشير تشتغل للبيجر وللولاء (مسح بطاقات الزبائن)
+  const deskLocked = () => featureLocked('pager') && featureLocked('loyalty');
+  function openPagerDesk(a) {
+    if (deskLocked()) { location.hash = 'pager'; showPage('pager'); return false; }
+    a.href = 'pager-desk.html' + location.search; return true;
+  }
+  function applyFeatureLocks() {
+    document.querySelectorAll('[data-nav], [data-feature]').forEach(el => {
+      const key = el.dataset.feature || PAGE_FEATURE[el.dataset.nav];
+      const old = el.querySelector('.lock-tag'); if (old) old.remove();
+      if (key && (key === 'pager' && el.dataset.feature ? deskLocked() : featureLocked(key))) el.insertAdjacentHTML('beforeend', '<i class="lock-tag ph-bold ph-lock-simple text-[11px] opacity-60 mr-auto" aria-label="مو ضمن باقتك"></i>');
+    });
+  }
   function showPage(page) {
-    if (!PAGES[page]) page = 'dashboard';
-    document.querySelectorAll('[data-page]').forEach(sec => sec.classList.toggle('hidden', sec.dataset.page !== page));
+    if (!PAGES[page] && page !== 'pager') page = 'dashboard';
+    const key = page === 'pager' ? 'pager' : PAGE_FEATURE[page];
+    const locked = key && featureLocked(key);
+    if (page === 'pager' && !locked) page = 'dashboard';
+    if (locked) showLocked(key);
+    document.querySelectorAll('[data-page]').forEach(sec => sec.classList.toggle('hidden', locked ? sec.dataset.page !== 'locked' : sec.dataset.page !== page));
+    if (locked) {
+      document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('nav-active', b.dataset.nav === page));
+      document.getElementById('page-title').textContent = DMPlans.FEATURES[key].name;
+      document.getElementById('page-subtitle').textContent = 'أضفها لباقتك وتشتغل على طول';
+      if (location.hash !== '#' + page) history.replaceState(null, '', location.pathname + location.search + '#' + page);
+      return window.scrollTo({ top: 0 });
+    }
     document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('nav-active', b.dataset.nav === page));
     document.getElementById('page-title').textContent = PAGES[page][0];
     document.getElementById('page-subtitle').textContent = PAGES[page][1];
@@ -1772,44 +1829,52 @@
 
     renderSubscriptionStatus();
     renderPromoState();
+    applyFeatureLocks();
   }
 
   // ─── الاشتراك والتجديد ───
   const SUPPORT_WA = '966561161448';
   const daysText = (n) => n === 1 ? 'يوم واحد' : n === 2 ? 'يومين' : n <= 10 ? `${n} أيام` : `${n} يوم`;
-  // الأسعار (عدّلها من هنا) — الإضافات تنضاف على فاتورة الباقة
-  // باقة واحدة سنوية تشمل كل المزايا (ومنها قائمة الانتظار)
+  // ─── الباقة بالمميزات (الأسعار في js/plans.js) ───
   // الحساب = المتجر الرئيسي وفروعه باشتراك واحد، شهري أو سنوي
-  // سنوي: 499 للمتجر + 199 لكل فرع | شهري: 59 للمتجر + 19 لكل فرع
-  const PLAN_PRICE = { year: 499, month: 59, branch: 199, branchMonth: 19 };
   const branchCount = () => branches.filter(b => b.parent_id).length;
-  const planTotal = (plan = 'year') => plan === 'month'
-    ? PLAN_PRICE.month + branchCount() * PLAN_PRICE.branchMonth
-    : PLAN_PRICE.year + branchCount() * PLAN_PRICE.branch;
+  const myFeatures = () => DMPlans.featuresOf(client);
+  let pickFeatures = null;   // المميزات اللي يختارها الحين في البطاقة
+  function chosenFeatures() {
+    if (!pickFeatures) {
+      const base = (client.requested_features && client.requested_features.length) ? client.requested_features
+        : client.subscription_status === 'active' ? myFeatures() : DMPlans.LEGACY;
+      pickFeatures = new Set(base);
+    }
+    return DMPlans.clean([...pickFeatures]);
+  }
+  const planTotal = (plan = 'year', feats = chosenFeatures()) => DMPlans.price(feats, plan, branchCount()).total;
   function renewLink(plan, extra = '') {
     const main = branches.find(b => !b.parent_id) || client;
-    const yearly = plan !== 'month';
-    const [main$, branch$] = yearly ? [PLAN_PRICE.year, PLAN_PRICE.branch] : [PLAN_PRICE.month, PLAN_PRICE.branchMonth];
-    const label = branchCount() ? `${yearly ? 'السنوية' : 'الشهرية'} للحساب: المتجر ${main$} + ${branchCount()} فرع × ${branch$} ر.س` : `${yearly ? 'السنوية' : 'الشهرية'} (${main$} ر.س)`;
-    const addon = '';
-    const msg = extra || `مرحباً، أبغى أشترك/أجدد متجر "${main.name || ''}" (${main.client_slug})${branchCount() ? ` وفروعه` : ''} بالباقة ${label}${addon}. المجموع ${planTotal(plan)} ر.س.`;
+    const feats = chosenFeatures();
+    const names = feats.map(k => DMPlans.FEATURES[k].name).join(' + ');
+    const msg = extra || `مرحباً، أبغى أشترك/أجدد متجر "${main.name || ''}" (${main.client_slug}) بالباقة ${plan === 'month' ? 'الشهرية' : 'السنوية'}: ${names}${branchCount() ? ` + ${branchCount()} فرع` : ''}. المجموع ${planTotal(plan)} ر.س.`;
     return `https://wa.me/${SUPPORT_WA}?text=${encodeURIComponent(msg)}`;
   }
 
-  // ─── اختيار الباقة: العميل يختار، والطلب يوصل للإدارة (لوحة المشتركين + بريد)، وبعد الدفع تتفعّل ───
-  let planChoice = null, planPick = null, planSending = false;
+  // ─── اختيار الباقة: العميل يختار المميزات والمدة، والطلب يوصل للإدارة (لوحة المشتركين + بريد) ───
+  let planChoice = null, planPick = null, planSending = false, planOpen = false;
   const planName = (p) => p === 'month' ? 'الشهرية' : 'السنوية';
   function requestedPlan() { return planChoice || (!client.parent_id && client.requested_plan) || null; }
   function pickPlan(p) { planPick = p; renderSubscriptionStatus(); }
-  function changePlan() { planChoice = null; if (!client.parent_id) client.requested_plan = null; renderSubscriptionStatus(); }
+  function toggleFeature(k) { chosenFeatures(); pickFeatures.has(k) ? pickFeatures.delete(k) : pickFeatures.add(k); renderSubscriptionStatus(); }
+  function changePlan() { planChoice = null; planOpen = true; if (!client.parent_id) client.requested_plan = null; renderSubscriptionStatus(); }
+  function openPlan() { planOpen = true; renderSubscriptionStatus(); goToPlans(); }
   async function choosePlan(plan) {
     if (planSending) return;
+    const features = chosenFeatures();
+    if (!features.length) return showToast('اختر ميزة وحدة على الأقل', true);
     planSending = true; renderSubscriptionStatus();
     try {
-      const r = await api('plan-request', { plan });
+      const r = await api('plan-request', { plan, features });
       planChoice = r.requested_plan;
-      if (!client.parent_id) client.requested_plan = r.requested_plan;
-      showToast(`وصلنا طلبك للباقة ${planName(plan)}`);
+      if (!client.parent_id) { client.requested_plan = r.requested_plan; client.requested_features = r.requested_features; }
+      showToast(`وصلنا طلبك، بنتواصل معك للدفع والتفعيل`);
     } catch (e) { showToast(e.message || 'تعذر إرسال الطلب، جرّب مرة ثانية', true); }
     planSending = false; renderSubscriptionStatus();
   }
@@ -1820,14 +1885,14 @@
 
   function planPicker(verb) {
     const req = requestedPlan();
-    const save = planTotal('month') * 12 - planTotal('year');
     if (req) {
+      const feats = DMPlans.clean(client.requested_features || chosenFeatures());
       return `
         <div class="plan-done">
           <span class="plan-done-ic"><i class="ph-bold ph-check"></i></span>
           <div class="min-w-0">
             <p class="font-bold text-[13px] text-ink">وصلنا طلبك للباقة ${planName(req)}</p>
-            <p class="text-[12px] text-ink/70 mt-0.5">${sar(planTotal(req))} ${req === 'month' ? 'بالشهر' : 'بالسنة'}. بنتواصل معك على جوالك للدفع، وبعدها يتفعّل اشتراكك على طول.</p>
+            <p class="text-[12px] text-ink/70 mt-0.5">${feats.map(k => DMPlans.FEATURES[k].name).join('، ')}: ${sar(planTotal(req, feats))} ${req === 'month' ? 'بالشهر' : 'بالسنة'}. بنتواصل معك على جوالك للدفع، وبعدها يتفعّل اشتراكك على طول.</p>
             <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2.5 text-[12px] font-bold">
               <a href="${esc(renewLink(req))}" target="_blank" rel="noopener" class="text-brand hover:underline"><i class="ph-bold ph-whatsapp-logo"></i> كلمنا على الواتساب</a>
               <button type="button" onclick="changePlan()" class="text-ink/55 hover:text-ink">غيّر الباقة</button>
@@ -1835,15 +1900,24 @@
           </div>
         </div>`;
     }
+    const feats = chosenFeatures();
     const pick = planPick || 'year';
+    const pr = DMPlans.price(feats, pick, branchCount());
+    const save = planTotal('month') * 12 - planTotal('year');
+    const row = (k) => {
+      const f = DMPlans.FEATURES[k], on = feats.includes(k);
+      return `
+        <button type="button" role="checkbox" aria-checked="${on}" onclick="toggleFeature('${k}')" class="feat-row ${on ? 'on' : ''}">
+          <span class="feat-box">${on ? '<i class="ph-bold ph-check"></i>' : ''}</span>
+          <span class="flex-1 min-w-0 text-right"><b class="block text-[13px]"><i class="ph-bold ${f.icon}"></i> ${f.name}${k === 'loyalty' ? ' <span class="text-[10px] font-bold bg-saffron/20 text-amber-900 rounded-full px-2 py-0.5">باقة مستقلة</span>' : ''}</b><span class="block text-[11px] text-ink/60 leading-relaxed">${f.desc}</span></span>
+          <span class="text-[12px] font-bold text-ink/80 shrink-0">${sar(f[pick])}</span>
+        </button>`;
+    };
     const tile = (p) => {
       const on = pick === p, yearly = p === 'year';
       return `
         <button type="button" role="radio" aria-checked="${on}" onclick="pickPlan('${p}')" class="plan-tile ${on ? 'on' : ''}">
-          <span class="flex items-center justify-between gap-2">
-            <span class="text-[12px] font-bold text-ink/75">${yearly ? 'سنوي' : 'شهري'}</span>
-            <span class="plan-dot">${on ? '<i class="ph-bold ph-check"></i>' : ''}</span>
-          </span>
+          <span class="flex items-center justify-between gap-2"><span class="text-[12px] font-bold text-ink/75">${yearly ? 'سنوي' : 'شهري'}</span><span class="plan-dot">${on ? '<i class="ph-bold ph-check"></i>' : ''}</span></span>
           <span class="block mt-2 text-[20px] font-bold text-ink leading-none">${sar(planTotal(p))}</span>
           <span class="block mt-1.5 text-[11px] text-ink/60">${yearly ? `بالسنة، يعني ${sar(Math.round(planTotal('year') / 12))} بالشهر` : 'بالشهر'}</span>
           ${yearly && save > 0 ? `<span class="plan-save">توفّر ${sar(save)}</span>` : ''}
@@ -1851,10 +1925,13 @@
     };
     return `
       <div class="space-y-3 pt-1">
-        <div role="radiogroup" aria-label="اختر الباقة" class="grid grid-cols-2 gap-2.5">${tile('year')}${tile('month')}</div>
-        <p class="text-[11px] text-ink/60">نفس المزايا في الباقتين${branchCount() ? `، والسعر يشمل ${branchCount()} ${branchCount() === 1 ? 'فرع' : 'فروع'}` : ''}.</p>
-        <button type="button" onclick="choosePlan('${pick}')" ${planSending ? 'disabled' : ''} class="w-full bg-brand hover:bg-brand-dark text-cream rounded-xl py-3 text-[13px] font-bold transition disabled:opacity-60 flex items-center justify-center gap-2">
-          ${planSending ? '<i class="ph-bold ph-spinner-gap ph-spin"></i> جاري الإرسال' : `${verb} بالباقة ${planName(pick)}`}
+        <p class="text-[12px] font-bold text-ink/75">اختر اللي تحتاجه:</p>
+        <div class="space-y-2">${DMPlans.ORDER.map(row).join('')}</div>
+        ${pr.discounts.map(d => `<p class="text-[12px] font-bold text-emerald-800 flex justify-between"><span><i class="ph-bold ph-tag"></i> ${d.label}</span><span>- ${sar(d.amount)}</span></p>`).join('')}
+        ${branchCount() ? `<p class="text-[11px] text-ink/60">يشمل ${branchCount()} ${branchCount() === 1 ? 'فرع' : 'فروع'}: ${sar(DMPlans.BRANCH[pick])} لكل فرع</p>` : ''}
+        <div role="radiogroup" aria-label="المدة" class="grid grid-cols-2 gap-2.5 pt-1">${tile('year')}${tile('month')}</div>
+        <button type="button" onclick="choosePlan('${pick}')" ${planSending || !feats.length ? 'disabled' : ''} class="w-full bg-brand hover:bg-brand-dark text-cream rounded-xl py-3 text-[13px] font-bold transition disabled:opacity-50 flex items-center justify-center gap-2">
+          ${planSending ? '<i class="ph-bold ph-spinner-gap ph-spin"></i> جاري الإرسال' : feats.length ? `${verb} بـ ${sar(pr.total)} ${pick === 'month' ? 'بالشهر' : 'بالسنة'}` : 'اختر ميزة وحدة على الأقل'}
         </button>
       </div>`;
   }
@@ -1883,7 +1960,7 @@
     const span = status === 'trial' ? 7 : client.subscription_plan === 'month' ? 30 : 365;
     const pct = live && left !== null ? Math.max(4, Math.min(100, Math.round(left / span * 100))) : 0;
     const endText = end ? new Date(end).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
-    const showPlans = !suspended && (!live || status === 'trial' || (left !== null && left <= 7));
+    const showPlans = !suspended && (planOpen || !live || status === 'trial' || (left !== null && left <= 7));
     const verb = status === 'active' ? 'جدّد' : 'اشترك';
 
     box.innerHTML = `
@@ -1900,6 +1977,7 @@
           </div>
           <div class="h-1.5 rounded-full bg-brand/10 mt-2 overflow-hidden"><div class="h-full rounded-full ${left <= 3 ? 'bg-brick' : 'bg-brand'}" style="width:${pct}%"></div></div>
         </div>` : ''}
+      ${status === 'active' ? `<div class="flex flex-wrap items-center gap-1.5">${myFeatures().map(k => `<span class="text-[11px] font-bold bg-brand/5 border border-brand/15 rounded-full px-2.5 py-1"><i class="ph-bold ${DMPlans.FEATURES[k].icon}"></i> ${DMPlans.FEATURES[k].name}</span>`).join('')}${!showPlans && !client.parent_id ? '<button type="button" onclick="openPlan()" class="text-[11px] font-bold text-brand underline underline-offset-4">عدّل باقتك</button>' : ''}</div>` : ''}
       ${client.parent_id ? '<p class="text-[11px] text-ink/60"><i class="ph-bold ph-tree-structure"></i> اشتراك الفرع تابع للمتجر الرئيسي</p>' : ''}
       ${showPlans && !client.parent_id ? planPicker(verb) : ''}`;
 
@@ -3659,7 +3737,7 @@
 
   // ─── بطاقة الولاء ───
   const ly = { data: null, members: [], qrUrl: '', design: null, dirty: false, filter: 'all', member: null };
-  const loyaltyUrl = () => DM.storeUrl(client.client_slug, 'loyalty', { s: 1 });
+  const loyaltyUrl = () => DM.storeUrl(client.client_slug, 'loyalty');   // كود التسجيل ثابت، ما ينتهي
   async function onLoyaltyPage() {
     try { [ly.data, ly.members] = await Promise.all([api('loyalty'), api('loyalty-members').then(r => r.members)]); }
     catch (e) { showToast(e.message || 'تعذر تحميل بطاقة الولاء', true); return; }
@@ -4009,13 +4087,13 @@
     g.fillStyle = '#fbf8f3'; g.fillRect(0, 0, W, H);
     g.fillStyle = '#233d2c'; g.fillRect(0, 0, W, 420);
     g.fillStyle = '#c9a227'; g.font = `700 44px ${FONT}`; g.fillText(client.name || '', cx, 150);
-    g.fillStyle = '#fbf8f3'; g.font = `700 88px ${FONT}`; g.fillText('امسح واجمع أختامك', cx, 290);
+    g.fillStyle = '#fbf8f3'; g.font = `700 76px ${FONT}`; g.fillText('امسح وسجّل في بطاقة الولاء', cx, 290);
     const qr = document.querySelector('#ly-qr canvas') || document.querySelector('#ly-qr img');
     g.fillStyle = '#fff'; g.fillRect(cx - 330, 520, 660, 660);
     g.imageSmoothingEnabled = false; g.drawImage(qr, cx - 300, 550, 600, 600);
     g.fillStyle = '#22362a'; g.font = `700 60px ${FONT}`;
     g.fillText(`كل ${st.needed} زيارات: ${st.reward}`, cx, 1300);
-    g.fillStyle = '#6f7d72'; g.font = `500 40px ${FONT}`; g.fillText('بدون تطبيق، الختم من جوالك وأنت في المحل', cx, 1390);
+    g.fillStyle = '#6f7d72'; g.font = `500 40px ${FONT}`; g.fillText('بعد كل شراء اعرض كود بطاقتك للكاشير', cx, 1390);
     g.font = `500 32px ${FONT}`; g.fillText('DEV MENU', cx, 1530);
     const a = document.createElement('a'); a.download = `loyalty-${client.client_slug}.png`; a.href = cv.toDataURL('image/png'); a.click();
   }

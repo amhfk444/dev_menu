@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="/css/icons.css">
 <script src="js/api.js"></script>
 <script src="js/dialog.js"></script>
+<script src="js/plans.js"></script>
 
 <style>
   body { font-family: 'SaudiRiyal', 'IBM Plex Sans Arabic', sans-serif; background: #efe5dc; color: #22362a; min-height: 100vh; -webkit-text-size-adjust: 100%; }
@@ -83,6 +84,23 @@
   </div>
 </div>
 
+<div id="feat-dlg" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-ink/40 backdrop-blur-sm">
+  <div class="w-full max-w-md card p-6 space-y-4 max-h-[92vh] overflow-y-auto">
+    <div>
+      <h2 id="feat-title" class="text-sm font-black"></h2>
+      <p id="feat-store" class="text-xs text-ink/60 mt-1"></p>
+    </div>
+    <div id="feat-list" class="space-y-2"></div>
+    <div id="feat-period" class="grid grid-cols-2 gap-2"></div>
+    <div id="feat-sum" class="text-[12px] space-y-1 bg-brand/[0.04] border border-brand/10 rounded-xl p-3"></div>
+    <p id="feat-note" class="text-[10px] text-ink/55 leading-relaxed"></p>
+    <div class="flex gap-2 justify-end">
+      <button onclick="closeFeat()" class="px-4 py-2 rounded-xl text-xs font-bold bg-brand/10">إلغاء</button>
+      <button id="feat-save" onclick="saveFeat()" class="px-4 py-2 rounded-xl text-xs font-bold bg-brand text-cream"></button>
+    </div>
+  </div>
+</div>
+
 <div id="app" style="visibility:hidden">
   <!-- الشريط العلوي -->
   <header class="bg-brand text-cream">
@@ -104,7 +122,7 @@
 
   <main class="max-w-[1500px] mx-auto px-3 md:px-8 py-6 space-y-6">
     <!-- الأرقام -->
-    <section id="kpis" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3"></section>
+    <section id="kpis" class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3"></section>
 
     <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <div class="card p-5 space-y-3">
@@ -159,14 +177,19 @@
   // الأسعار (نفسها في لوحة صاحب المتجر)
   // باقة واحدة سنوية تشمل كل المزايا (ومنها قائمة الانتظار)
   // الفرع الإضافي له سعر سنوي مستقل
-  const PLAN_PRICE = { year: 499, month: 59, branch: 199, branchMonth: 19 };
+  // الأسعار من js/plans.js: كل محل يدفع حسب المميزات اللي في باقته
+  const PLAN_PRICE = { branch: DMPlans.BRANCH.year, branchMonth: DMPlans.BRANCH.month };
   // ردود التقييمات مخفية لين توافق قوقل (نفس المفتاح في admin.html)
   const REVIEWS_LIVE = false;
   const branchesOf = (c) => clients.filter(x => x.parent_id === c.id);
   // فاتورة الحساب: المتجر الرئيسي + كل فرع
-  const totalFor = (c, period = 'year') => {
-    const [main, branch] = period === 'month' ? [PLAN_PRICE.month, PLAN_PRICE.branchMonth] : [PLAN_PRICE.year, PLAN_PRICE.branch];
-    return c && c.parent_id ? branch : main + (c ? branchesOf(c).length : 0) * branch;
+  // مميزات باقة الحساب (المشترك القديم بدون مميزات محددة = المنيو + البيجر + الانتظار)
+  const planFeats = (c) => DMPlans.clean(c && c.plan_features && c.plan_features.length ? c.plan_features : DMPlans.LEGACY);
+  const reqFeats = (c) => DMPlans.clean(c && c.requested_features && c.requested_features.length ? c.requested_features : planFeats(c));
+  const featNames = (list) => list.map(k => DMPlans.FEATURES[k].name).join(' + ');
+  const totalFor = (c, period = 'year', feats) => {
+    if (c && c.parent_id) return DMPlans.BRANCH[period === 'month' ? 'month' : 'year'];
+    return DMPlans.price(feats || (c && c.requested_plan ? reqFeats(c) : planFeats(c)), period, c ? branchesOf(c).length : 0).total;
   };
   // فرع ينضاف في نص الاشتراك: يدفع الأيام الباقية لين تاريخ تجديد الحساب، وبعدها يتجدد مع الحساب كامل
   function branchProration(parent) {
@@ -290,10 +313,13 @@
       waitlist: accounts.filter(c => c.waitlist_enabled).length,
       featured: accounts.filter(c => c.is_featured).length,
       noEmail: accounts.filter(c => !c.email).length,
-      requests: accounts.filter(c => c.requested_plan).length
+      requests: accounts.filter(c => c.requested_plan).length,
+      ...Object.fromEntries(DMPlans.ORDER.map(k => ['f_' + k, accounts.filter(c => statusOf(c).key === 'paid' && planFeats(c).includes(k)).length]))
     };
   }
 
+  const FEAT_COLOR = { menu: 'text-emerald-700', pager: 'text-amber-600', waitlist: 'text-sky-700', loyalty: 'text-violet-700' };
+  const FEAT_BADGE = { menu: 'bg-emerald-500/10 text-emerald-800 border-emerald-500/20', pager: 'bg-amber-400/15 text-amber-900 border-amber-500/25', waitlist: 'bg-sky-500/10 text-sky-700 border-sky-500/20', loyalty: 'bg-violet-500/10 text-violet-700 border-violet-500/20' };
   function renderKpis() {
     const n = counts();
     const tile = (label, value, icon, color, f) => `
@@ -307,30 +333,23 @@
       tile('تجريبي', n.trial, 'ph-flask', 'text-blue-700', 'trial') +
       tile('ينتهي خلال 3 أيام', n.soon, 'ph-clock', 'text-amber-600', 'soon') +
       tile('منتهي', n.expired, 'ph-warning-circle', 'text-amber-800', 'expired') +
-      tile('موقوف', n.suspended, 'ph-prohibit', 'text-red-700', 'suspended');
+      tile('موقوف', n.suspended, 'ph-prohibit', 'text-red-700', 'suspended') +
+      DMPlans.ORDER.map(k => tile(`مشتركين ${DMPlans.FEATURES[k].name}`, n['f_' + k], DMPlans.FEATURES[k].icon, FEAT_COLOR[k], 'f_' + k)).join('');
   }
 
   function renderRevenue() {
-    // الدخل بالسنة: السنوي بسعره، والشهري × 12
-    const paidList = clients.filter(c => statusOf(c).key === 'paid');
-    const planOf = (c) => (c.parent_id ? (find(c.parent_id) || {}).subscription_plan : c.subscription_plan) || 'year';
-    const mainY = paidList.filter(c => !c.parent_id && planOf(c) === 'year').length;
-    const mainM = paidList.filter(c => !c.parent_id && planOf(c) === 'month').length;
-    const brY = paidList.filter(c => c.parent_id && planOf(c) === 'year').length;
-    const brM = paidList.filter(c => c.parent_id && planOf(c) === 'month').length;
+    // الدخل بالسنة: كل حساب بسعر مميزاته وفروعه، والشهري × 12
+    const paid = clients.filter(c => !c.parent_id && statusOf(c).key === 'paid');
+    const yearly = (c) => c.subscription_plan === 'month' ? totalFor(c, 'month', planFeats(c)) * 12 : totalFor(c, 'year', planFeats(c));
+    const total = paid.reduce((n, c) => n + yearly(c), 0);
+    const byFeat = DMPlans.ORDER.map(k => [k, paid.filter(c => planFeats(c).includes(k))]).filter(([, l]) => l.length);
     const trial = clients.filter(c => statusOf(c).key === 'trial' && !c.parent_id).length;
-    const rows = [
-      [mainY, 'سنوي', PLAN_PRICE.year, PLAN_PRICE.year],
-      [mainM, 'شهري', PLAN_PRICE.month, PLAN_PRICE.month * 12],
-      [brY, 'فرع سنوي', PLAN_PRICE.branch, PLAN_PRICE.branch],
-      [brM, 'فرع شهري', PLAN_PRICE.branchMonth, PLAN_PRICE.branchMonth * 12]
-    ].filter(r => r[0]);
-    const total = rows.reduce((n, r) => n + r[0] * r[3], 0);
     document.getElementById('mrr').textContent = money(total);
     document.getElementById('mrr-break').innerHTML = `
-      ${rows.map(([n, label, price, yearly]) => `<div class="flex justify-between"><span>${n} ${label} × ${money(price)}${yearly !== price ? ' × 12' : ''}</span><b>${money(n * yearly)}</b></div>`).join('')}
+      <div class="flex justify-between"><span>${paid.filter(c => c.subscription_plan !== 'month').length} سنوي · ${paid.filter(c => c.subscription_plan === 'month').length} شهري</span><b>${paid.length} حساب</b></div>
+      ${byFeat.map(([k, l]) => `<div class="flex justify-between"><span><i class="ph-bold ${DMPlans.FEATURES[k].icon} ${FEAT_COLOR[k]}"></i> ${DMPlans.FEATURES[k].name}</span><b>${l.length} مشترك</b></div>`).join('')}
       <div class="flex justify-between"><span>متوسط شهري</span><b>${money(Math.round(total / 12))}</b></div>
-      <div class="flex justify-between border-t border-brand/10 pt-1.5"><span>لو اشترك كل التجريبيين سنوي (${trial})</span><b>+ ${money(trial * PLAN_PRICE.year)}</b></div>`;
+      <div class="flex justify-between border-t border-brand/10 pt-1.5"><span>لو اشترك كل التجريبيين بالباقة الكاملة سنوي (${trial})</span><b>+ ${money(trial * DMPlans.price(DMPlans.LEGACY, 'year').total)}</b></div>`;
   }
 
   function renderSignups() {
@@ -352,7 +371,7 @@
   // ─── الفلاتر والبحث ───
   const FILTERS = [
     ['all', 'الكل'], ['requests', 'طلبات اشتراك'], ['paid', 'مشتركون'], ['trial', 'تجريبي'], ['soon', 'ينتهي قريباً'], ['expired', 'منتهي'],
-    ['suspended', 'موقوف'], ['waitlist', 'قائمة الانتظار'], ['featured', 'أمثلة الرئيسية'], ['noEmail', 'بدون بريد']
+    ['suspended', 'موقوف'], ...DMPlans.ORDER.map(k => ['f_' + k, DMPlans.FEATURES[k].name]), ['featured', 'أمثلة الرئيسية'], ['noEmail', 'بدون بريد']
   ];
   function setFilter(f) { filter = f; renderKpis(); renderFilters(); renderStores(); }
   function renderFilters() {
@@ -368,8 +387,9 @@
     const match = {
       all: () => true, requests: c => !!c.requested_plan, soon: isSoon, waitlist: c => c.waitlist_enabled, featured: c => c.is_featured, noEmail: c => !c.email,
       paid: c => statusOf(c).key === 'paid', trial: c => statusOf(c).key === 'trial',
-      expired: c => statusOf(c).key === 'expired', suspended: c => statusOf(c).key === 'suspended'
-    }[filter];
+      expired: c => statusOf(c).key === 'expired', suspended: c => statusOf(c).key === 'suspended',
+      ...Object.fromEntries(DMPlans.ORDER.map(k => ['f_' + k, c => statusOf(c).key === 'paid' && planFeats(c).includes(k)]))
+    }[filter] || (() => true);
     const hit = (c) => [c.name, c.client_slug, c.email, c.phone].some(v => v && String(v).toLowerCase().includes(q));
     const list = clients.filter(c => !c.parent_id).filter(match).filter(c => !q || hit(c) || branchesOf(c).some(hit));
     const sort = document.getElementById('sort').value;
@@ -410,10 +430,13 @@
             <p class="text-[11px] text-ink/55 flex items-center gap-1.5 mt-0.5"><i class="ph-bold ${type[1]} text-[10px]"></i> ${type[0]} · <span class="font-mono" dir="ltr">${esc(c.client_slug)}</span></p>
             <div class="flex flex-wrap gap-1.5 mt-2">
               <span class="text-[10px] font-black px-2 py-0.5 rounded-full border ${s.cls}">${s.label}${s.key === 'paid' && c.subscription_plan ? ` ${c.subscription_plan === 'month' ? 'شهري' : 'سنوي'}` : ''}</span>
-              ${c.requested_plan ? `<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-amber-400/20 text-amber-900 border-amber-500/40"><i class="ph-bold ph-bell-simple-ringing"></i> يبي ${c.requested_plan === 'month' ? 'الشهري' : 'السنوي'} · ${money(totalFor(c, c.requested_plan))}${c.plan_requested_at ? ` · ${new Date(c.plan_requested_at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short' })}` : ''}</span>` : ''}
+              ${s.key === 'trial' ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full border border-brand/15 text-ink/60">التجربة فيها كل المميزات</span>' : planFeats(c).map(k => `<span class="text-[10px] font-black px-2 py-0.5 rounded-full border ${FEAT_BADGE[k]} ${s.key === 'paid' ? '' : 'opacity-50'}"><i class="ph-bold ${DMPlans.FEATURES[k].icon}"></i> ${DMPlans.FEATURES[k].name}</span>`).join('')}
+              ${c.loyalty_enabled && (s.key === 'trial' || planFeats(c).includes('loyalty')) ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full border border-violet-500/20 text-violet-700"><i class="ph-bold ph-power"></i> الولاء شغّال</span>' : ''}
+            </div>
+            <div class="flex flex-wrap gap-1.5 mt-1.5">
+              ${c.requested_plan ? `<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-amber-400/20 text-amber-900 border-amber-500/40"><i class="ph-bold ph-bell-simple-ringing"></i> يبي ${c.requested_plan === 'month' ? 'الشهري' : 'السنوي'}: ${featNames(reqFeats(c))} · ${money(totalFor(c, c.requested_plan))}${c.plan_requested_at ? ` · ${new Date(c.plan_requested_at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short' })}` : ''}</span>` : ''}
               ${isProspect(c) ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-purple-500/10 text-purple-700 border-purple-500/20"><i class="ph-bold ph-magic-wand"></i> عميل محتمل</span>' : ''}
               ${REVIEWS_LIVE && c.reviews_enabled ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-violet-500/10 text-violet-700 border-violet-500/20"><i class="ph-bold ph-star-half"></i> ردود AI</span>' : ''}
-              ${c.waitlist_enabled ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-sky-500/10 text-sky-700 border-sky-500/20"><i class="ph-bold ph-hourglass-medium"></i> الانتظار</span>' : ''}
               ${c.admin_notification ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-full border bg-blue-500/10 text-blue-700 border-blue-500/20"><i class="ph-bold ph-bell"></i> إشعار</span>' : ''}
             </div>
           </div>
@@ -428,8 +451,8 @@
         ${branchesOf(c).length ? branchesBox(c) : ''}
 
         <div class="grid grid-cols-[1fr_auto_auto] gap-1.5 mt-auto">
-          <button onclick="activate(${id}, 'year')" class="bg-brand hover:bg-brand-dark text-cream rounded-xl py-2.5 text-[12px] font-black ${c.requested_plan === 'year' ? 'ring-4 ring-amber-400' : ''}">${branchesOf(c).length ? 'تجديد سنة' : 'تفعيل سنة'} · ${money(totalFor(c, 'year'))}</button>
-          <button onclick="activate(${id}, 'month')" class="bg-brand/10 hover:bg-brand/15 border border-brand/15 text-ink rounded-xl px-3 py-2.5 text-[12px] font-black ${c.requested_plan === 'month' ? 'ring-4 ring-amber-400' : ''}">شهر · ${money(totalFor(c, 'month'))}</button>
+          <button onclick="activate(${id}, '${c.requested_plan || c.subscription_plan || 'year'}')" class="bg-brand hover:bg-brand-dark text-cream rounded-xl py-2.5 text-[12px] font-black ${c.requested_plan ? 'ring-4 ring-amber-400' : ''}">${s.key === 'paid' ? 'تجديد' : 'تفعيل'} · ${money(totalFor(c, c.requested_plan || c.subscription_plan || 'year'))}</button>
+          <button onclick="openFeatures(${id})" class="bg-brand/10 hover:bg-brand/15 border border-brand/15 text-ink rounded-xl px-3 py-2.5 text-[12px] font-black"><i class="ph-bold ph-sliders-horizontal"></i> المميزات</button>
           <div class="relative">
             <button onclick="toggleMenu(event, ${id})" aria-label="المزيد" class="w-10 h-full rounded-xl bg-brand/10 hover:bg-brand/15 border border-brand/15"><i class="ph-bold ph-dots-three"></i></button>
             ${openMenu === id ? moreMenu(c, slug) : ''}
@@ -480,7 +503,6 @@
         <div class="h-px bg-brand/10 my-1"></div>
         ${c.parent_id ? '' : `<button onclick="setFeatured(${id}, ${!c.is_featured})"><i class="ph-bold ph-star" ${c.is_featured ? 'style="color:#d97706"' : ''}></i> ${c.is_featured ? 'إزالة من أمثلة الرئيسية' : 'عرضه في أمثلة الرئيسية'}</button>`}
         ${REVIEWS_LIVE ? `<button onclick="setReviewsAddon(${id}, ${!c.reviews_enabled})"><i class="ph-bold ph-star-half" ${c.reviews_enabled ? 'style="color:#7c3aed"' : ''}></i> ${c.reviews_enabled ? 'إيقاف ردود التقييمات' : 'تفعيل ردود التقييمات (AI)'}</button>` : ''}
-        <button onclick="setWaitlistAddon(${id}, ${!c.waitlist_enabled})"><i class="ph-bold ph-hourglass-medium" ${c.waitlist_enabled ? 'style="color:#0284c7"' : ''}></i> ${c.waitlist_enabled ? 'إيقاف قائمة الانتظار' : 'تفعيل قائمة الانتظار'}</button>
         <button onclick="setActive(${id}, ${c.is_active === false})"><i class="ph-bold ${c.is_active === false ? 'ph-play' : 'ph-pause'}"></i> ${c.is_active === false ? (c.parent_id ? 'إعادة تشغيل الفرع' : 'إعادة تشغيل المتجر') : (c.parent_id ? 'إيقاف الفرع' : 'إيقاف المتجر')}</button>
         <div class="h-px bg-brand/10 my-1"></div>
         <button onclick="deleteClient(${id})" style="color:#b91c1c"><i class="ph-bold ph-trash" style="color:#b91c1c"></i> ${c.parent_id ? 'حذف الفرع نهائياً' : 'حذف المتجر نهائياً'}</button>
@@ -497,8 +519,8 @@
     const s = statusOf(c);
     const menu = DM.storeUrl(c.client_slug);
     const msg = s.live
-      ? `مرحباً، معك فريق DEV MENU 👋\nنذكّرك إن ${c.subscription_status === 'trial' ? 'التجربة المجانية' : 'اشتراك'} منيو "${c.name}" ينتهي خلال ${s.left ?? ''} ${s.left === 1 ? 'يوم' : 'أيام'}.\nالاشتراك السنوي ${totalFor(c)} ر.س${branchesOf(c).length ? ` (المتجر ${PLAN_PRICE.year} + ${branchesOf(c).length} فرع × ${PLAN_PRICE.branch})` : ''}، أو الشهري ${totalFor(c, 'month')} ر.س، وكلهم يشملون كل المزايا.\nرابط منيوك: ${menu}`
-      : `مرحباً، معك فريق DEV MENU 👋\nمنيو "${c.name}" متوقف حالياً عن الزبائن. تقدر تجدده الآن ويرجع فوراً: الاشتراك السنوي ${totalFor(c)} ر.س، أو الشهري ${totalFor(c, 'month')} ر.س.`;
+      ? `مرحباً، معك فريق DEV MENU 👋\nنذكّرك إن ${c.subscription_status === 'trial' ? 'التجربة المجانية' : 'اشتراك'} منيو "${c.name}" ينتهي خلال ${s.left ?? ''} ${s.left === 1 ? 'يوم' : 'أيام'}.\nباقتك (${featNames(planFeats(c))}${branchesOf(c).length ? ` + ${branchesOf(c).length} فرع` : ''}): السنوي ${totalFor(c, 'year', planFeats(c))} ر.س، أو الشهري ${totalFor(c, 'month', planFeats(c))} ر.س.\nرابط منيوك: ${menu}`
+      : `مرحباً، معك فريق DEV MENU 👋\nمنيو "${c.name}" متوقف حالياً عن الزبائن. تقدر تجدده الآن ويرجع فوراً: السنوي ${totalFor(c, 'year', planFeats(c))} ر.س، أو الشهري ${totalFor(c, 'month', planFeats(c))} ر.س.`;
     return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
   }
 
@@ -627,26 +649,61 @@
     }[inv.reason] || '';
   }
 
-  async function activate(id, period) {
+  // نافذة المميزات: mode = activate (تفعيل/تجديد مع فاتورة) أو features (تعديل الباقة بدون تمديد)
+  const fd = { id: null, mode: 'activate', period: 'year', feats: new Set() };
+  function activate(id, period) { openFeat(id, 'activate', period); }
+  function openFeatures(id) { const c = find(id); openFeat(id, 'features', (c && c.subscription_plan) || 'year'); }
+  function openFeat(id, mode, period) {
+    openMenu = null; renderStores();
     const c = find(id);
-    const label = period === 'year' ? 'سنة' : 'شهر';
-    const ok = await confirmDialog({
-      title: `تفعيل اشتراك ${label}`, message: `لمتجر "${c ? (c.name || c.client_slug) : id}".`,
-      items: [
-        ...(c && branchesOf(c).length
-          ? [`المتجر الرئيسي: ${money(period === 'year' ? PLAN_PRICE.year : PLAN_PRICE.month)}`, `${branchesOf(c).length} ${branchesOf(c).length === 1 ? 'فرع' : 'فروع'} × ${money(period === 'year' ? PLAN_PRICE.branch : PLAN_PRICE.branchMonth)}`, `المجموع: ${money(totalFor(c, period))}`]
-          : [`المبلغ: ${money(totalFor(c, period))}`]),
-        'إذا كان الاشتراك سارياً، تُضاف المدة على تاريخ انتهائه', 'يتجدد المتجر وكل فروعه بنفس التاريخ',
-        c && c.email ? `تنرسل فاتورة مدفوعة لبريد ${c.email}` : 'ما عنده بريد، فما بتنرسل فاتورة'
-      ],
-      confirmText: `تفعيل ${label}`, tone: 'success'
-    });
-    if (!ok) return;
-    let res;
-    try { res = await DM.post(A('activate'), { id, period }, true); }
-    catch (e) { forbidden(e); return showToast(`تعذر التفعيل: ${e.message}`, true); }
-    showToast(`تم تفعيل ${label}${invoiceNote(res.invoice)}`, res.invoice && !res.invoice.sent && res.invoice.reason !== 'NO_EMAIL');
-    loadClients();
+    Object.assign(fd, { id, mode, period: period === 'month' ? 'month' : 'year', feats: new Set(mode === 'activate' ? reqFeats(c) : planFeats(c)) });
+    document.getElementById('feat-title').innerHTML = mode === 'activate' ? '<i class="ph-bold ph-check-circle text-green-700"></i> تفعيل الاشتراك' : '<i class="ph-bold ph-sliders-horizontal"></i> مميزات الباقة';
+    document.getElementById('feat-store').textContent = `${c.name || c.client_slug}${c.requested_plan ? ` · طلب: ${featNames(reqFeats(c))} (${c.requested_plan === 'month' ? 'شهري' : 'سنوي'})` : ''}`;
+    renderFeat();
+    const d = document.getElementById('feat-dlg'); d.classList.remove('hidden'); d.classList.add('flex');
+  }
+  function closeFeat() { const d = document.getElementById('feat-dlg'); d.classList.add('hidden'); d.classList.remove('flex'); }
+  function toggleFeat(k) { fd.feats.has(k) ? fd.feats.delete(k) : fd.feats.add(k); renderFeat(); }
+  function setFeatPeriod(p) { fd.period = p; renderFeat(); }
+  function renderFeat() {
+    const c = find(fd.id), feats = DMPlans.clean([...fd.feats]);
+    const pr = DMPlans.price(feats, fd.period, branchesOf(c).length);
+    document.getElementById('feat-list').innerHTML = DMPlans.ORDER.map(k => {
+      const f = DMPlans.FEATURES[k], on = feats.includes(k);
+      return `<label class="flex items-center gap-3 rounded-xl border ${on ? 'border-brand bg-brand/[0.04]' : 'border-brand/15'} px-3 py-2.5 cursor-pointer">
+        <input type="checkbox" ${on ? 'checked' : ''} onchange="toggleFeat('${k}')" class="w-4 h-4 accent-[#384f3d]">
+        <span class="flex-1 text-[13px] font-bold"><i class="ph-bold ${f.icon} ${FEAT_COLOR[k]}"></i> ${f.name}</span>
+        <span class="text-[11px] text-ink/60">${money(f[fd.period])}</span></label>`;
+    }).join('');
+    const per = document.getElementById('feat-period');
+    per.classList.toggle('hidden', fd.mode !== 'activate');
+    per.innerHTML = [['year', 'سنة'], ['month', 'شهر']].map(([p, l]) => `<button type="button" onclick="setFeatPeriod('${p}')" class="rounded-xl py-2 text-[12px] font-black border ${fd.period === p ? 'bg-brand text-cream border-brand' : 'bg-white border-brand/15'}">${l} · ${money(DMPlans.price(feats, p, branchesOf(c).length).total)}</button>`).join('');
+    document.getElementById('feat-sum').innerHTML = !feats.length ? '<p class="text-red-700 font-bold">اختر ميزة وحدة على الأقل</p>' : `
+      ${pr.lines.map(l => `<p class="flex justify-between"><span>${l.label}</span><span>${money(l.amount)}</span></p>`).join('')}
+      ${pr.discounts.map(d => `<p class="flex justify-between text-emerald-800"><span>${d.label}</span><span>- ${money(d.amount)}</span></p>`).join('')}
+      <p class="flex justify-between border-t border-brand/10 pt-1.5 font-black"><span>المجموع ${fd.period === 'month' ? 'بالشهر' : 'بالسنة'}</span><span>${money(pr.total)}</span></p>`;
+    document.getElementById('feat-note').textContent = fd.mode === 'activate'
+      ? `إذا كان الاشتراك سارياً تنضاف المدة على تاريخ انتهائه، ويتجدد المتجر وفروعه بنفس التاريخ. ${c.email ? `تنرسل فاتورة مدفوعة لبريد ${c.email}.` : 'ما عنده بريد، فما بتنرسل فاتورة.'}`
+      : 'يتغيّر اللي يشوفه صاحب المحل على طول، بدون ما يتغير تاريخ الاشتراك وبدون فاتورة.';
+    const btn = document.getElementById('feat-save');
+    btn.disabled = !feats.length;
+    btn.textContent = fd.mode === 'activate' ? `تفعيل ${fd.period === 'month' ? 'شهر' : 'سنة'} · ${money(pr.total)}` : 'حفظ المميزات';
+  }
+  async function saveFeat() {
+    const features = DMPlans.clean([...fd.feats]);
+    if (!features.length) return;
+    const btn = document.getElementById('feat-save'); btn.disabled = true;
+    try {
+      if (fd.mode === 'activate') {
+        const res = await DM.post(A('activate'), { id: fd.id, period: fd.period, features }, true);
+        showToast(`تم تفعيل ${fd.period === 'month' ? 'شهر' : 'سنة'}${invoiceNote(res.invoice)}`, res.invoice && !res.invoice.sent && res.invoice.reason !== 'NO_EMAIL');
+      } else {
+        const error = await post('features', { id: fd.id, features });
+        if (error) throw error;
+        showToast('تم تحديث مميزات الباقة');
+      }
+      closeFeat(); loadClients();
+    } catch (e) { forbidden(e); btn.disabled = false; showToast(`تعذر الحفظ: ${e.message}`, true); }
   }
 
   async function setActive(id, active) {

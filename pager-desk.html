@@ -55,20 +55,32 @@
     <div class="flex items-center gap-3 min-w-0">
       <a href="admin.html" class="w-10 h-10 rounded-xl bg-white border border-[#233d2c]/15 grid place-items-center text-[#233d2c]" title="لوحة التحكم"><i class="ph-bold ph-arrow-right"></i></a>
       <div class="min-w-0">
-        <h1 class="text-base font-black truncate"><i class="ph-bold ph-bell text-[#c9a227]"></i> شاشة البيجر — <span id="store-name">…</span></h1>
-        <p class="text-[11px] font-bold opacity-55">اضغط على الرقم لما يجهز الطلب، ويرن جوال العميل</p>
+        <h1 class="text-base font-black truncate"><i class="ph-bold ph-bell text-[#c9a227]"></i> <span id="desk-title">شاشة البيجر</span> — <span id="store-name">…</span></h1>
+        <p id="desk-sub" class="text-[11px] font-bold opacity-55">اضغط على الرقم لما يجهز الطلب، ويرن جوال العميل</p>
       </div>
     </div>
     <div class="flex gap-2 shrink-0">
       <button id="scan-btn" class="mini bg-[#233d2c] text-white hidden"><i class="ph-bold ph-camera"></i> امسح بطاقة زبون</button>
       <button id="stamp-btn" class="mini bg-[#c9a227] text-[#15271b] hidden"><i class="ph-bold ph-seal-check"></i> كود ختم</button>
-      <button id="qr-btn" class="mini bg-white border border-[#233d2c]/15"><i class="ph-bold ph-qr-code"></i> QR للطباعة</button>
+      <button id="join-btn" class="mini bg-white border border-[#233d2c]/15 hidden"><i class="ph-bold ph-user-plus"></i> QR تسجيل الولاء</button>
+      <button id="qr-btn" class="mini bg-white border border-[#233d2c]/15 hidden"><i class="ph-bold ph-qr-code"></i> QR البيجر</button>
     </div>
   </div>
 </header>
 
 <main class="max-w-6xl mx-auto px-4 py-6 space-y-6">
-  <section class="panel p-5">
+  <!-- مشترك الولاء بدون البيجر: الشاشة للأختام بس -->
+  <section id="loyalty-desk" class="panel p-6 hidden">
+    <h2 class="text-lg font-black mb-1">بطاقة الولاء</h2>
+    <p class="text-sm font-bold opacity-60 mb-5">بعد ما يدفع الزبون: اطلب منه يفتح بطاقته وامسح الكود اللي فيها.</p>
+    <div class="grid sm:grid-cols-3 gap-3">
+      <button data-open="scan-btn" class="bg-[#233d2c] text-white rounded-2xl p-5 text-right"><i class="ph-bold ph-camera text-3xl text-[#c9a227]"></i><b class="block text-lg mt-2">امسح بطاقة زبون</b><span class="text-xs opacity-70">بالكاميرا أو برقم العضوية</span></button>
+      <button data-open="stamp-btn" class="bg-[#c9a227] text-[#15271b] rounded-2xl p-5 text-right"><i class="ph-bold ph-seal-check text-3xl"></i><b class="block text-lg mt-2">كود ختم</b><span class="text-xs opacity-70">الزبون يمسحه من جواله</span></button>
+      <button data-open="join-btn" class="bg-white border border-[#233d2c]/15 rounded-2xl p-5 text-right"><i class="ph-bold ph-user-plus text-3xl"></i><b class="block text-lg mt-2">QR تسجيل الولاء</b><span class="text-xs opacity-70">للزبون الجديد يسجل في البطاقة</span></button>
+    </div>
+  </section>
+
+  <section class="panel p-5" data-pager>
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-lg font-black">قيد التجهيز <span id="wait-count" class="text-sm opacity-50"></span></h2>
       <span class="text-[11px] font-bold opacity-50"><i class="ph-bold ph-arrows-clockwise"></i> يتحدث تلقائياً</span>
@@ -81,7 +93,7 @@
     <p id="wait-empty" class="text-center text-sm font-bold opacity-50 py-8 hidden">ما فيه أرقام تنتظر. أول ما يمسح العميل الـ QR يطلع رقمه هنا.</p>
   </section>
 
-  <section class="panel p-5">
+  <section class="panel p-5" data-pager>
     <h2 class="text-lg font-black mb-4">جاهز — بانتظار الاستلام <span id="ready-count" class="text-sm opacity-50"></span></h2>
     <div id="ready-grid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3"></div>
     <p id="ready-empty" class="text-center text-sm font-bold opacity-50 py-6 hidden">ما فيه طلبات جاهزة.</p>
@@ -138,10 +150,10 @@
     <div id="print-card" class="qr-card">
       <div class="qr-card-top">
         <p id="qr-store" class="qr-card-store"></p>
-        <h3 class="qr-card-title">امسح وخذ رقمك</h3>
+        <h3 id="qr-title" class="qr-card-title">امسح وخذ رقمك</h3>
       </div>
       <div class="qr-frame"><div id="qr-box"></div></div>
-      <div class="qr-steps">
+      <div id="qr-steps" class="qr-steps">
         <div><b>1</b><span>امسح الرمز بكاميرا جوالك</span></div>
         <div><b>2</b><span>قل رقمك للكاشير مع طلبك</span></div>
         <div><b>3</b><span>يرن جوالك لما يجهز طلبك</span></div>
@@ -273,6 +285,13 @@
       slug = r.slug; $('store-name').textContent = r.name || ''; maxRings = r.max_rings || 5;
       $('stamp-btn').classList.toggle('hidden', !r.loyalty);
       $('scan-btn').classList.toggle('hidden', !r.loyalty);
+      $('join-btn').classList.toggle('hidden', !r.loyalty);
+      const pager = r.pager !== false;
+      $('qr-btn').classList.toggle('hidden', !pager);
+      document.querySelectorAll('[data-pager]').forEach(el => el.classList.toggle('hidden', !pager));
+      $('loyalty-desk').classList.toggle('hidden', pager || !r.loyalty);
+      if (!pager) $('desk-title').textContent = 'شاشة الكاشير';
+      if (!pager) $('desk-sub').textContent = r.loyalty ? 'بعد ما يدفع الزبون امسح بطاقته وانختم له' : 'شغّل بطاقة الولاء من لوحة التحكم';
       // تحديث لحظي: رقم جديد أو عميل شاف التنبيه يظهر هنا على طول
       if (r.live && !liveOn) { liveOn = true; DM.live(r.live, () => load()); }
       // ما نلمس الأرقام اللي جاري تحديثها
@@ -288,20 +307,22 @@
   const scanCanvas = document.createElement('canvas'), scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true });
   function scanShow(ok, html) {
     const el = $('scan-result');
-    el.className = `absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-white text-center ${ok ? 'bg-emerald-700/90' : 'bg-amber-700/90'}`;
+    el.className = `absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-white text-center ${ok ? 'bg-emerald-700' : 'bg-amber-700'}`;
     el.innerHTML = html;
-    clearTimeout(el._h); el._h = setTimeout(() => { el.className = 'absolute inset-0 hidden'; }, 2800);
+    clearTimeout(el._h); el._h = setTimeout(() => { el.className = 'absolute inset-0 hidden'; }, 4500);
   }
   async function stampMember(payload) {
     if (scanBusy) return;
     scanBusy = true;
     try {
       const r = await call('loyalty-scan', payload);
-      const who = esc(r.who.name);
+      const who = esc(r.who.name), n = Math.min(r.stamps, r.needed);
+      const dots = `<span class="flex flex-wrap justify-center gap-1.5 mt-1">${Array.from({ length: r.needed }, (_, i) => `<span class="w-4 h-4 rounded-full ${i < n ? 'bg-[#c9a227]' : 'bg-white/25'}"></span>`).join('')}</span>`;
+      const no = `<span class="text-xs font-bold opacity-75" dir="ltr">#${esc(r.who.no)}</span>`;
       if (r.stamped) {
-        scanShow(true, `<i class="ph-bold ph-check-circle text-6xl"></i><b class="text-xl">${r.count > 1 ? 'ختمين' : 'ختم'} لـ ${who}</b><span class="font-bold" dir="ltr">${Math.min(r.stamps, r.needed)} / ${r.needed}</span>`);
+        scanShow(true, `<i class="ph-bold ph-check-circle text-7xl"></i><b class="text-2xl">تم ${r.count > 1 ? 'الختم دبل' : 'الختم'}</b><b class="text-lg">${who}</b>${no}${dots}<span class="font-bold">${n} من ${r.needed}${n >= r.needed ? ' · المكافأة جاهزة' : ''}</span>`);
         if (navigator.vibrate) navigator.vibrate(80);
-      } else scanShow(false, `<i class="ph-bold ph-clock text-6xl"></i><b class="text-lg">${who}</b><span class="font-bold">${esc(r.note || 'ما انضاف ختم')}</span>`);
+      } else scanShow(false, `<i class="ph-bold ${r.reason === 'FULL' ? 'ph-gift' : 'ph-clock'} text-7xl"></i><b class="text-2xl">ما انضاف ختم</b><b class="text-lg">${who}</b>${no}<span class="font-bold">${esc(r.note || '')}</span>`);
     } catch (e) { scanShow(false, `<i class="ph-bold ph-warning-circle text-6xl"></i><b>${esc(e.message || 'تعذر الختم')}</b>`); }
     setTimeout(() => { scanBusy = false; }, 1500);
   }
@@ -378,16 +399,28 @@
   $('stamp-new').onclick = newStampCode;
   $('stamp-close').onclick = () => { clearInterval(stampTimer); $('stamp-modal').classList.add('hidden'); $('stamp-modal').classList.remove('flex'); };
 
-  $('qr-btn').onclick = () => {
+  document.querySelectorAll('[data-open]').forEach(b => { b.onclick = () => $(b.dataset.open).click(); });
+  const QR_KINDS = {
+    pager: { title: 'امسح وخذ رقمك', steps: ['امسح الرمز بكاميرا جوالك', 'قل رقمك للكاشير مع طلبك', 'يرن جوالك لما يجهز طلبك'] },
+    loyalty: { title: 'امسح وسجّل بطاقتك', steps: ['امسح الرمز وسجّل اسمك مرة وحدة', 'بعد كل شراء اعرض كود بطاقتك للكاشير', 'اجمع الأختام وخذ مكافأتك'] }
+  };
+  let qrKind = 'pager';
+  $('join-btn').onclick = () => { qrKind = 'loyalty'; openPrintQr(); };
+  $('qr-btn').onclick = () => { qrKind = 'pager'; openPrintQr(); };
+  function openPrintQr() {
     if (!slug) return;
-    const url = DM.storeUrl(slug, 'pager');
+    const url = DM.storeUrl(slug, qrKind);   // كود ثابت ما ينتهي
+    const k = QR_KINDS[qrKind];
+    $('qr-title').textContent = k.title;
+    $('qr-steps').innerHTML = k.steps.map((t, i) => `<div><b>${i + 1}</b><span>${t}</span></div>`).join('');
     $('qr-store').textContent = $('store-name').textContent;
     $('qr-url').textContent = url.replace(/^https?:\/\//, '');
     $('qr-box').innerHTML = '';
     // جرس ذهبي في نص الرمز (تصحيح أخطاء H يتحمّل الشعار)
     const bell = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="#233d2c"/><path fill="#c9a227" d="M32 14a3 3 0 0 0-3 3v1.4C22.7 19.8 19 25.3 19 31.5V39l-4 4v2h34v-2l-4-4v-7.5c0-6.2-3.7-11.7-10-13.1V17a3 3 0 0 0-3-3Zm-5 33a5 5 0 0 0 10 0Z"/></svg>');
+    const seal = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="#233d2c"/><path fill="#c9a227" d="M32 13l5 6 7.5-1.5 1.5 7.5 6 5-6 5-1.5 7.5L37 41l-5 6-5-6-7.5 1.5L18 35l-6-5 6-5 1.5-7.5L27 19z"/><path fill="none" stroke="#233d2c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="M25 30l5 5 9-9"/></svg>');
     qrCode = new QRCodeStyling({
-      width: 416, height: 416, type: 'canvas', data: url, image: bell, margin: 0,
+      width: 416, height: 416, type: 'canvas', data: url, image: qrKind === 'pager' ? bell : seal, margin: 0,
       qrOptions: { errorCorrectionLevel: 'H' },
       dotsOptions: { type: 'rounded', color: '#1b3022' },
       cornersSquareOptions: { type: 'extra-rounded', color: '#233d2c' },
@@ -399,7 +432,7 @@
     $('qr-modal').classList.replace('hidden', 'flex');
   };
   let qrCode = null;
-  $('qr-download').onclick = () => qrCode && qrCode.download({ name: `pager-qr-${slug}`, extension: 'png' });
+  $('qr-download').onclick = () => qrCode && qrCode.download({ name: `${qrKind}-qr-${slug}`, extension: 'png' });
   $('qr-close').onclick = () => $('qr-modal').classList.replace('flex', 'hidden');
   document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
 

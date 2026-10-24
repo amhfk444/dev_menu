@@ -15,6 +15,7 @@ const google = require('./_lib/google');
 const { syncStore } = require('./_lib/reviews');
 const { topic, storeTopics, poke } = require('./_lib/live');
 const { normalizeLoyalty, validPoint } = require('./_lib/loyalty');
+const PLANS = require('./_lib/plans');
 const wallet = require('./_lib/wallet');
 const { pushWalletCards, runAssistant } = require('./_lib/loyalty-assistant');
 const { loyaltyMessages } = require('./_lib/ai');
@@ -330,11 +331,15 @@ async function main(req) {
   // ─── البيجر: أرقام اليوم ───
   if (action === 'pager' && req.method === 'GET') {
     const { store } = await context(req);
+    // شاشة الكاشير تخدم البيجر والولاء: مشترك الولاء لحاله يستخدمها لمسح بطاقات الزبائن
+    const hasPager = PLANS.has(store, 'pager');
+    if (!hasPager && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'البيجر مو ضمن باقتك، أضفه من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
     const base = `pager_tickets?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&order=number.asc&select=id,number,status,created_at,ready_at,closed_at,push_sub`;
     // أعمدة التكرار من 21-pager-repeat.sql — لو ما انضافت نكمل بدونها
-    const tickets = await rest(`${base},ring_count,acked_at,invoice_no`).catch(() => rest(`${base},ring_count,acked_at`)).catch(() => rest(base));
+    const tickets = !hasPager ? [] : await rest(`${base},ring_count,acked_at,invoice_no`).catch(() => rest(`${base},ring_count,acked_at`)).catch(() => rest(base));
     const lx = (await rest(`clients?id=eq.${store.id}&select=loyalty_enabled`).catch(() => []))[0] || {};
-    return { tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub })), slug: store.client_slug, name: store.name, max_rings: PAGER_MAX_RINGS, live: topic('pager', store.id), loyalty: lx.loyalty_enabled === true };
+    lx.loyalty_enabled = lx.loyalty_enabled && PLANS.has(store, 'loyalty');
+    return { tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub })), slug: store.client_slug, name: store.name, max_rings: PAGER_MAX_RINGS, live: topic('pager', store.id), loyalty: lx.loyalty_enabled === true, pager: hasPager, loyalty_entitled: PLANS.has(store, 'loyalty') };
   }
 
   // ─── بطاقة الولاء: الإعدادات والإحصائيات وآخر البطاقات ───
@@ -356,6 +361,7 @@ async function main(req) {
       location_set: validPoint(extra.loyalty_lat, extra.loyalty_lng), slug: store.client_slug,
       stats: { members: cards.length, active30: active, stamps7: stamps7.length, redeemed: redeemed.length },
       cards: cards.slice(0, 50), messages, wallet: wallet.configured(),
+      entitled: PLANS.has(store, 'loyalty'),
       ai: extra.loyalty_ai === true, near_lines: Array.isArray(extra.loyalty_near_lines) ? extra.loyalty_near_lines : [],
       feedback: {
         total: feedback.length,
@@ -436,6 +442,10 @@ async function main(req) {
   const { store, admin } = await context(req);
   const sid = store.id;
   req._sid = sid;
+  // المميزات حسب باقة المحل
+  if (['pager-update', 'pager-invoice', 'pager-ring'].includes(action) && !PLANS.has(store, 'pager')) throw new ApiError(403, 'البيجر مو ضمن باقتك', 'ADDON_OFF');
+  if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-give-stamp', 'loyalty-message', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء مو ضمن باقتك، أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
+
 
   // ─── ربط قوقل ماب ───
   const reviewsGate = () => { if (!store.reviews_enabled && !admin) throw new ApiError(403, 'ردود التقييمات غير مفعّلة لمتجرك', 'ADDON_OFF'); };
@@ -615,9 +625,11 @@ async function main(req) {
   if (action === 'plan-request') {
     const plan = ['month', 'year'].includes(b.plan) ? b.plan : null;
     if (!plan) throw new ApiError(400, 'اختر الباقة: شهري أو سنوي');
+    const features = PLANS.clean(b.features && b.features.length ? b.features : PLANS.LEGACY);
+    if (!features.length) throw new ApiError(400, 'اختر ميزة وحدة على الأقل');
     const mainId = store.parent_id || sid;   // اشتراك الفروع تابع للمتجر الرئيسي
     const main = (await rest(`clients?id=eq.${mainId}`, {
-      method: 'PATCH', body: { requested_plan: plan, plan_requested_at: new Date().toISOString() }, prefer: 'return=representation'
+      method: 'PATCH', body: { requested_plan: plan, requested_features: features, plan_requested_at: new Date().toISOString() }, prefer: 'return=representation'
     }))[0];
     if (!main) throw new ApiError(404, 'المتجر غير موجود');
     console.log('PLAN_REQUEST', mainId, plan);
@@ -628,10 +640,10 @@ async function main(req) {
       await sendMail({
         to, fromName: 'DEV MENU',
         subject: `طلب اشتراك: ${main.name} (الباقة ${label})`,
-        text: `${main.name} (${main.client_slug}) اختار الباقة ${label}.\nجوال: ${main.phone || '-'}\nبريد: ${main.email || '-'}\nفعّلها من لوحة المشتركين: https://www.devmenu.digital/super-admin.html`
+        text: `${main.name} (${main.client_slug}) اختار الباقة ${label}: ${features.map(k => PLANS.FEATURES[k].name).join('، ')} = ${PLANS.price(features, plan).total} ر.س.\nجوال: ${main.phone || '-'}\nبريد: ${main.email || '-'}\nفعّلها من لوحة المشتركين: https://www.devmenu.digital/super-admin.html`
       }).catch(e => console.error('PLAN_MAIL', e.message));
     }
-    return { requested_plan: plan, plan_requested_at: main.plan_requested_at };
+    return { requested_plan: plan, requested_features: features, plan_requested_at: main.plan_requested_at };
   }
 
   if (action === 'owner-push') {

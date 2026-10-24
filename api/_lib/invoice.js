@@ -3,7 +3,9 @@
 // الأسعار نفسها في لوحة المشتركين ولوحة صاحب المتجر
 // =====================================================================
 // الباقة الشهرية والسنوية نفس المزايا، والفرع الإضافي له سعر شهري وسنوي
-const PLAN_PRICE = { year: 499, month: 59, branch: 199, branchMonth: 19 };
+const PLANS = require('./plans');
+// للتوافق: سعر الباقة الكاملة (المنيو + البيجر + الانتظار) والفرع
+const PLAN_PRICE = { year: PLANS.price(PLANS.LEGACY, 'year').total, month: PLANS.price(PLANS.LEGACY, 'month').total, branch: PLANS.BRANCH.year, branchMonth: PLANS.BRANCH.month };
 const SUPPORT_WA = '966561161448';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

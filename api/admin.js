@@ -10,6 +10,7 @@ const {
 
 const { sendMail, mailConfigured } = require('./_lib/mail');
 const { PLAN_PRICE, invoiceNumber, invoiceEmail, branchProration } = require('./_lib/invoice');
+const PLANS = require('./_lib/plans');
 
 // يرسل الفاتورة لبريد صاحب الحساب (المتجر الرئيسي). ما يوقف العملية لو فشل
 async function sendInvoice(main, invoice) {
@@ -88,10 +89,15 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const target = (await rest(`clients?id=eq.${id}&select=id,parent_id`))[0];
     if (!target) throw new ApiError(404, 'المتجر غير موجود');
     if (target.parent_id) throw new ApiError(400, 'اشتراك الفرع تابع للمتجر الرئيسي، جدّد من بطاقة المتجر الرئيسي', 'BRANCH_FOLLOWS_PARENT');
+    // المميزات: اللي اختارها المدير العام، أو اللي طلبها صاحب المحل، أو باقته الحالية
+    const cur = (await rest(`clients?id=eq.${id}&select=plan_features,requested_features`))[0] || {};
+    const features = PLANS.clean(Array.isArray(b.features) && b.features.length ? b.features : (cur.requested_features && cur.requested_features.length ? cur.requested_features : (cur.plan_features && cur.plan_features.length ? cur.plan_features : PLANS.LEGACY)));
+    if (!features.length) throw new ApiError(400, 'اختر ميزة وحدة على الأقل');
     await rpc('server_activate', { p_client_id: id, p_period: b.period });
-    // الباقة المفعّلة، ونشيل طلب الاشتراك المعلّق (28-plans.sql)
-    await rest(`clients?id=eq.${id}`, { method: 'PATCH', body: { subscription_plan: b.period, requested_plan: null, plan_requested_at: null } })
+    // الباقة والمميزات المفعّلة، ونشيل طلب الاشتراك المعلّق
+    await rest(`clients?id=eq.${id}`, { method: 'PATCH', body: { subscription_plan: b.period, plan_features: features, waitlist_enabled: features.includes('waitlist'), requested_plan: null, requested_features: null, plan_requested_at: null } })
       .catch(e => console.error('PLAN_SAVE', e.message));
+    try { await rest(`clients?parent_id=eq.${id}`, { method: 'PATCH', body: { plan_features: features, waitlist_enabled: features.includes('waitlist') } }); } catch {}
     await syncBranchSubscriptions(id);
     // فاتورة مدفوعة: المتجر + كل فرع
     const main = (await rest(`clients?id=eq.${id}&select=id,name,email,subscription_end_date`))[0];
@@ -99,11 +105,12 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     try { branches = await rest(`clients?parent_id=eq.${id}&select=name,client_slug&order=id.asc`); } catch {}
     const yearly = b.period === 'year';
     const span = yearly ? 'سنة' : 'شهر';
+    const pr = PLANS.price(features, b.period, branches.length);
     const invoice = await sendInvoice(main, {
       status: 'paid', validUntil: main.subscription_end_date,
       lines: [
-        { label: `الباقة ${yearly ? 'السنوية' : 'الشهرية'} — ${main.name}`, detail: `كل المزايا لمدة ${span}`, amount: yearly ? PLAN_PRICE.year : PLAN_PRICE.month },
-        ...branches.map(br => ({ label: `فرع — ${br.name || br.client_slug}`, detail: `ضمن نفس الاشتراك لمدة ${span}`, amount: yearly ? PLAN_PRICE.branch : PLAN_PRICE.branchMonth }))
+        ...pr.lines.map(l => ({ label: l.label, detail: `${l.key === 'branch' ? branches.map(br => br.name || br.client_slug).join('، ') : main.name} لمدة ${span}`, amount: l.amount })),
+        ...pr.discounts.map(d => ({ label: d.label, detail: '', amount: -d.amount }))
       ]
     });
     return { ok: true, invoice };
@@ -152,6 +159,13 @@ module.exports = handler(['GET', 'POST'], async (req) => {
   if (action === 'featured') return patch({ is_featured: b.featured === true });
   // إضافة قائمة الانتظار المدفوعة (يفعّلها المدير العام بعد الدفع)
   if (action === 'waitlist-addon') return patch({ waitlist_enabled: b.enabled === true });
+  // مميزات المحل (المدير العام يتحكم فيها مباشرة)
+  if (action === 'features') {
+    const features = PLANS.clean(b.features);
+    const out = await patch({ plan_features: features, waitlist_enabled: features.includes('waitlist') });
+    try { await rest(`clients?parent_id=eq.${id}`, { method: 'PATCH', body: { plan_features: features, waitlist_enabled: features.includes('waitlist') } }); } catch {}
+    return out;
+  }
   // إضافة ردود التقييمات بالذكاء الاصطناعي
   if (action === 'reviews-addon') return patch({ reviews_enabled: b.enabled === true });
 
