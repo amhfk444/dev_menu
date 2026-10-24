@@ -372,11 +372,11 @@ async function main(req) {
   // ─── كود الختم: انستخدم؟ ولمين؟ (شاشة الكاشير تسأل كل ثانيتين) ───
   if (action === 'loyalty-stamp-code' && req.method === 'GET') {
     const { store } = await context(req);
-    const row = (await rest(`loyalty_stamp_codes?code=eq.${q(String(req.query.code || ''))}&client_id=eq.${store.id}&select=used_at,expires_at,card_id`))[0];
+    const row = (await rest(`loyalty_stamp_codes?code=eq.${q(String(req.query.code || ''))}&client_id=eq.${store.id}&select=used_at,expires_at,card_id,note`))[0];
     if (!row) throw new ApiError(404, 'الكود غير موجود');
     let who = null;
     if (row.card_id) { const c = (await rest(`loyalty_cards?id=eq.${row.card_id}&select=id,name,stamps`))[0] || {}; who = { name: c.name || `زبون #${c.id}`, stamps: c.stamps }; }
-    return { used: !!row.used_at, expired: !row.used_at && Date.parse(row.expires_at) < Date.now(), who };
+    return { used: !!row.used_at, expired: !row.used_at && Date.parse(row.expires_at) < Date.now(), who, note: row.used_at ? null : row.note || null };
   }
 
   // ─── بطاقة الولاء: كل الأعضاء (للقائمة والداشبورد وملف CSV) ───

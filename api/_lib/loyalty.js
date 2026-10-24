@@ -2,7 +2,7 @@
 // DEV MENU — بطاقة الولاء: الإعدادات وحساب المسافة
 // =====================================================================
 
-const COOLDOWNS = [4, 6, 12, 24];
+const COOLDOWNS = [1, 2, 3, 4, 6, 12, 24];
 
 // شكل البطاقة
 const STYLES = ['gradient', 'solid', 'paper', 'dark'];
@@ -59,8 +59,8 @@ function normalizeLoyalty(raw) {
     happy: normalizeHappy(s.happy),
     feedback: { enabled: !(s.feedback && s.feedback.enabled === false), gift: !(s.feedback && s.feedback.gift === false) },
     gifts: { enabled: !(s.gifts && s.gifts.enabled === false) },
-    // طريقة الختم: location = الزبون يختم بنفسه داخل المحل، purchase = بعد الشراء بس (كود الكاشير أو البيجر)
-    stamp_mode: s.stamp_mode === 'purchase' ? 'purchase' : 'location',
+    // الختم بعد الشراء بس: كود الكاشير أو البيجر (الزبون ما يختم بنفسه)
+    stamp_mode: 'purchase',
     pager_stamp: s.pager_stamp !== false
   };
 }

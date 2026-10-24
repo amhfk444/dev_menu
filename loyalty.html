@@ -129,6 +129,7 @@
         <p class="text-sm opacity-75 text-left shrink-0" dir="ltr"><b id="c-count" class="text-2xl"></b></p>
       </div>
       <div id="c-stamps" class="stamps"></div>
+      <button type="button" id="c-member" class="mt-4 text-sm opacity-80 flex items-center gap-1.5"><i class="ph-bold ph-identification-card"></i> رقم عضويتك <b dir="ltr" id="c-member-id"></b> <i class="ph-bold ph-copy text-xs"></i></button>
     </div>
 
     <div id="c-msg" class="msg hidden"></div>
@@ -196,20 +197,21 @@
 <!-- إهداء المكافأة -->
 <div id="gift-sheet" class="fixed inset-0 z-40 bg-black/50 flex items-end sm:items-center justify-center p-4 hidden">
   <div class="card w-full max-w-sm p-6 space-y-4 text-center">
-    <div id="gs-ask" class="space-y-4">
+    <div id="gs-ask" class="space-y-3">
       <i class="ph-bold ph-heart text-4xl text-[#c9a227]"></i>
-      <p class="text-lg font-bold">تهدي مكافأتك لصديق؟</p>
-      <p class="text-sm opacity-70">تنشال أختامك وتبدأ بطاقة جديدة، ويوصلك رابط ترسله له. يسجل منه ويستلمها من المحل خلال 30 يوم.</p>
-      <button id="gs-yes" class="btn btn-gold">أهدها</button>
-      <button id="gs-no" class="btn btn-ghost">لا، بستخدمها أنا</button>
+      <p class="text-lg font-bold">أهدِ مكافأتك لصديق</p>
+      <p class="text-sm opacity-70">اكتب رقم عضوية صديقك (يلقاه تحت بطاقته في نفس المحل).</p>
+      <input id="gs-id" class="field !text-center !text-lg font-bold" inputmode="numeric" placeholder="مثلاً 27" dir="ltr" maxlength="10">
+      <p id="gs-who" class="text-sm font-semibold hidden"></p>
+      <button id="gs-find" class="btn btn-brand">التالي</button>
+      <button id="gs-yes" class="btn btn-gold hidden">أهدها له</button>
+      <button id="gs-no" class="btn btn-ghost">إلغاء</button>
     </div>
     <div id="gs-done" class="space-y-3 hidden">
       <i class="ph-bold ph-check-circle text-4xl text-emerald-600"></i>
-      <p class="text-lg font-bold">هديتك جاهزة!</p>
-      <p class="text-sm opacity-70">أرسل الرابط لصديقك:</p>
-      <a id="gs-wa" target="_blank" rel="noopener" class="btn btn-brand"><i class="ph-bold ph-whatsapp-logo"></i> أرسلها بالواتساب</a>
-      <button id="gs-copy" class="btn btn-ghost"><i class="ph-bold ph-copy"></i> انسخ الرابط</button>
-      <button id="gs-close" class="text-sm opacity-60 pt-1">تم</button>
+      <p class="text-lg font-bold">وصلت هديتك!</p>
+      <p id="gs-done-text" class="text-sm opacity-70"></p>
+      <button id="gs-close" class="btn btn-ghost">تم</button>
     </div>
   </div>
 </div>
@@ -298,6 +300,7 @@
     renderHappy(); renderGifts();
     $('c-survey').classList.toggle('hidden', !survey);
     $('c-hello').textContent = card.name ? `أهلاً ${card.name.split(' ')[0]}` : 'بطاقتك';
+    $('c-member-id').textContent = `#${card.id}`;
     $('c-hint').textContent = card.visits ? `زرتنا ${card.visits} ${card.visits === 1 ? 'مرة' : card.visits <= 10 ? 'مرات' : 'مرة'}${card.rewards ? `، واستخدمت ${card.rewards} ${card.rewards === 1 ? 'مكافأة' : 'مكافآت'}` : ''}.` : '';
     show('card');
   }
@@ -483,23 +486,38 @@
     finally { setBusy($('sv-send'), false); }
   };
 
-  // ─── أهدِ المكافأة لصديق ───
-  let giftUrl = '';
-  $('gift-btn').onclick = () => { $('gs-ask').classList.remove('hidden'); $('gs-done').classList.add('hidden'); $('gift-sheet').classList.remove('hidden'); };
+  // ─── أهدِ المكافأة لصديق برقم عضويته ───
+  let giftTo = null;
+  const resetGift = () => { giftTo = null; $('gs-id').value = ''; $('gs-who').classList.add('hidden'); $('gs-yes').classList.add('hidden'); $('gs-find').classList.remove('hidden'); };
+  $('gift-btn').onclick = () => { resetGift(); $('gs-ask').classList.remove('hidden'); $('gs-done').classList.add('hidden'); $('gift-sheet').classList.remove('hidden'); setTimeout(() => $('gs-id').focus(), 50); };
   $('gs-no').onclick = $('gs-close').onclick = () => $('gift-sheet').classList.add('hidden');
-  $('gs-yes').onclick = async () => {
-    if (busy) return;
-    setBusy($('gs-yes'), true, 'نجهز الهدية');
+  $('gs-id').oninput = () => { if (giftTo) resetGift(); };
+  $('gs-find').onclick = async () => {
+    const id = $('gs-id').value.replace(/[^\d٠-٩]/g, '').replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 1632));
+    if (!id) return $('gs-id').focus();
+    if (card && String(card.id) === id) { $('gs-who').textContent = 'هذا رقم عضويتك أنت، اكتب رقم صديقك'; $('gs-who').classList.remove('hidden'); return; }
+    setBusy($('gs-find'), true, 'نبحث');
     try {
-      const r = await DM.post('/api/loyalty?action=gift', { slug, t: loadToken() });
-      card = r.card; renderCard(); giftUrl = r.url;
-      $('gs-wa').href = `https://wa.me/?text=${encodeURIComponent(r.share)}`;
+      const r = await DM.get(`/api/loyalty?action=member-lookup&slug=${encodeURIComponent(slug)}&id=${encodeURIComponent(id)}`);
+      giftTo = r.member;
+      $('gs-who').innerHTML = `تهديها لـ <b>${esc(r.member.name)}</b> (رقم <span dir="ltr">#${r.member.id}</span>)؟`;
+      $('gs-who').classList.remove('hidden'); $('gs-find').classList.add('hidden'); $('gs-yes').classList.remove('hidden');
+    } catch (e) { $('gs-who').textContent = e.message || 'ما لقينا عضو بهذا الرقم'; $('gs-who').classList.remove('hidden'); }
+    finally { setBusy($('gs-find'), false); }
+  };
+  $('gs-yes').onclick = async () => {
+    if (busy || !giftTo) return;
+    setBusy($('gs-yes'), true, 'نرسل الهدية');
+    try {
+      const r = await DM.post('/api/loyalty?action=gift', { slug, t: loadToken(), to: giftTo.id });
+      card = r.card; renderCard();
+      $('gs-done-text').textContent = `انتقلت ${settings.reward} لبطاقة ${r.to.name}، ويوصله إشعار. وبطاقتك بدأت من جديد.`;
       $('gs-ask').classList.add('hidden'); $('gs-done').classList.remove('hidden');
-      if (navigator.share) navigator.share({ text: r.share }).catch(() => {});
-    } catch (e) { $('gift-sheet').classList.add('hidden'); msg('err', 'ph-warning-circle', e.message || 'تعذر تجهيز الهدية'); }
+    } catch (e) { $('gs-who').textContent = e.message || 'تعذر إرسال الهدية'; }
     finally { setBusy($('gs-yes'), false); }
   };
-  $('gs-copy').onclick = async () => { try { await navigator.clipboard.writeText(giftUrl); $('gs-copy').innerHTML = '<i class="ph-bold ph-check"></i> انسخ'; } catch { prompt('انسخ الرابط:', giftUrl); } };
+  // نسخ رقم العضوية
+  $('c-member').onclick = async () => { try { await navigator.clipboard.writeText(String(card.id)); msg('ok', 'ph-copy', `انسخ رقم عضويتك #${card.id}، أعطه لأصحابك عشان يهدونك`); } catch {} };
 
   // ─── المكافأة ───
   $('redeem-btn').onclick = () => $('confirm').classList.remove('hidden');

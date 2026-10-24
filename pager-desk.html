@@ -284,6 +284,12 @@
         if (++tick % 2) return;   // نسأل كل ثانيتين
         try {
           const st = await call(`loyalty-stamp-code&code=${encodeURIComponent(stampCode)}`);
+          if (!st.used && st.note) {
+            clearInterval(stampTimer);
+            $('stamp-qr').innerHTML = '<i class="ph-bold ph-clock text-7xl text-amber-600"></i>';
+            $('stamp-state').innerHTML = `<b class="text-amber-700 text-base">${esc(st.who ? st.who.name : 'الزبون')}: ${esc(st.note)}</b><br><span class="text-xs">ما انضاف ختم، والكود ما انستخدم</span>`;
+            return;
+          }
           if (st.used) {
             clearInterval(stampTimer);
             $('stamp-qr').innerHTML = '<i class="ph-bold ph-check-circle text-7xl text-emerald-600"></i>';

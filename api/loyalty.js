@@ -15,7 +15,7 @@ const { normalizeLoyalty, distanceM, validPoint, isHappyNow } = require('./_lib/
 const wallet = require('./_lib/wallet');
 const { nearLineFor } = require('./_lib/loyalty-assistant');
 const { loyaltyMessages } = require('./_lib/ai');
-const { purchaseStamp, consumeStampCode, pagerTicket } = require('./_lib/loyalty-stamp');
+const { purchaseStamp, consumeStampCode, pagerTicket, cooldownLeft, leftText } = require('./_lib/loyalty-stamp');
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{10,64}$/;
 const MAX_ACCURACY_M = 100;   // دقة أسوأ من كذا = نطلب منه يحاول مرة ثانية
@@ -44,7 +44,7 @@ function checkPresence(ctx, b) {
   return d;
 }
 
-const cardView = (c) => ({ name: c.name || null, gender: c.gender || null, stamps: c.stamps, visits: c.visits, rewards: c.rewards, last_stamp_at: c.last_stamp_at, in_wallet: !!c.wallet_url, has_phone: !!c.phone, has_profile: !!(c.name && c.phone && c.gender) });
+const cardView = (c) => ({ id: c.id, name: c.name || null, gender: c.gender || null, stamps: c.stamps, visits: c.visits, rewards: c.rewards, last_stamp_at: c.last_stamp_at, in_wallet: !!c.wallet_url, has_phone: !!c.phone, has_profile: !!(c.name && c.phone && c.gender) });
 
 // بيانات التسجيل: الاسم والجوال والنوع (كلها إجبارية)
 function readProfile(b) {
@@ -112,6 +112,18 @@ async function surveyDue(ctx, card) {
   const last = await rest(`loyalty_feedback?card_id=eq.${card.id}&created_at=gte.${q(new Date(Date.now() - 60 * 864e5).toISOString())}&select=id&limit=1`).catch(() => [1]);
   return !last.length;
 }
+// "نوف" ← "نـ**" (يتأكد إنه الشخص الصح بدون ما نكشف الاسم كامل)
+const maskName = (n) => { const f = String(n || '').trim().split(/\s+/)[0]; return f ? (f.length <= 2 ? `${f[0]}*` : `${f.slice(0, 2)}${'*'.repeat(Math.min(4, f.length - 2))}`) : 'عضو'; };
+
+// الزبون مختوم قبل شوي: الكود ما ينستهلك، وشاشة الكاشير تعرف السبب
+async function assertNotCooling(ctx, card, code) {
+  const next = cooldownLeft(card, ctx.settings);
+  if (!next) return;
+  const why = `ختمت قبل شوي، الختم الجاي بعد ${leftText(next)}`;
+  await rest(`loyalty_stamp_codes?code=eq.${q(String(code || ''))}&client_id=eq.${ctx.store.id}&used_at=is.null`, { method: 'PATCH', body: { card_id: card.id, note: why } }).catch(() => {});
+  throw new ApiError(409, why, 'COOLDOWN');
+}
+
 // الهدايا اللي وصلت لهالبطاقة وما استخدمها
 async function giftsFor(ctx, card) {
   const rows = await rest(`loyalty_gifts?to_card=eq.${card.id}&status=eq.claimed&expires_at=gt.${q(new Date().toISOString())}&select=code,reward,from_card,expires_at&order=id.desc&limit=5`).catch(() => []);
@@ -184,6 +196,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       }
       let out;
       if (b.code) {
+        if (!isNew) await assertNotCooling(ctx, card, b.code);
         await consumeStampCode(ctx.store.id, b.code, card.id);
         const r = await purchaseStamp(ctx.store.id, card.id, ctx.settings);
         out = { ...r, card: cardView((await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0]) };
@@ -230,12 +243,9 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       return { ...publicInfo(ctx), token: owner.token, merged: true, card: cardView(fresh) };
     }
 
+    // الزبون ما يختم بنفسه: الختم بكود الكاشير أو مع البيجر بس
     if (action === 'stamp' && req.method === 'POST') {
-      const ctx = await loadStore(b.slug);
-      if (ctx.settings.stamp_mode === 'purchase') throw new ApiError(409, 'الختم في هذا المحل بعد الشراء: امسح كود الختم من الكاشير', 'PURCHASE_ONLY');
-      const card = await cardByToken(ctx, b.t);
-      const distance = checkPresence(ctx, b);
-      return { ...publicInfo(ctx), ...(await stampCard(ctx, card, distance)) };
+      throw new ApiError(409, 'الختم بعد الشراء: اطلب من الكاشير كود الختم وامسحه', 'PURCHASE_ONLY');
     }
 
     // استخدام المكافأة: الزبون يضغط بنفسه قدام الموظف، وتطلع له شاشة تأكيد حيّة
@@ -255,6 +265,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (action === 'stamp-code' && req.method === 'POST') {
       const ctx = await loadStore(b.slug);
       const card = await cardByToken(ctx, b.t);
+      await assertNotCooling(ctx, card, b.code);
       await consumeStampCode(ctx.store.id, b.code, card.id);
       const r = await purchaseStamp(ctx.store.id, card.id, ctx.settings);
       const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
@@ -297,21 +308,36 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       return { ok: true, gifted, card: cardView(fresh) };
     }
 
-    // ─── أهدِ مكافأتك لصديق: تنقص الأختام ويطلع رابط للمشاركة ───
+    // ─── رقم عضوية صديق: نعرض اسمه مخفي جزئياً عشان يتأكد قبل الإهداء ───
+    if (action === 'member-lookup' && req.method === 'GET') {
+      const ctx = await loadStore(req.query.slug);
+      const id = parseInt(String(req.query.id || '').replace(/[^\d]/g, ''), 10);
+      const m = Number.isInteger(id) ? (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${ctx.store.id}&select=id,name`))[0] : null;
+      if (!m) throw new ApiError(404, 'ما لقينا عضو بهذا الرقم في هذا المحل', 'NO_MEMBER');
+      return { member: { id: m.id, name: maskName(m.name) } };
+    }
+
+    // ─── أهدِ مكافأتك لصديق برقم عضويته: تنقص أختامك وتنتقل الهدية لبطاقته على طول ───
     if (action === 'gift' && req.method === 'POST') {
       const ctx = await loadStore(b.slug);
       if (!ctx.settings.gifts.enabled) throw new ApiError(403, 'الإهداء متوقف في هذا المحل');
       const card = await cardByToken(ctx, b.t);
+      const toId = parseInt(String(b.to || '').replace(/[^\d]/g, ''), 10);
+      const friend = Number.isInteger(toId) ? (await rest(`loyalty_cards?id=eq.${toId}&client_id=eq.${ctx.store.id}&select=*`))[0] : null;
+      if (!friend) throw new ApiError(404, 'ما لقينا عضو بهذا الرقم في هذا المحل', 'NO_MEMBER');
+      if (friend.id === card.id) throw new ApiError(409, 'هذا رقم عضويتك أنت، اكتب رقم صديقك', 'OWN_GIFT');
       if (card.stamps < ctx.settings.needed) throw new ApiError(409, 'ما كملت الأختام للحين', 'NOT_ENOUGH');
       const r = await rpc('server_loyalty_gift', { p_card: card.id, p_needed: ctx.settings.needed });
       if (!r.ok) throw new ApiError(409, 'ما كملت الأختام للحين', 'NOT_ENOUGH');
-      const code = crypto.randomBytes(9).toString('base64url');
-      await rest('loyalty_gifts', { method: 'POST', body: { client_id: ctx.store.id, code, from_card: card.id, reward: ctx.settings.reward } });
+      const now = new Date().toISOString();
+      await rest('loyalty_gifts', { method: 'POST', body: { client_id: ctx.store.id, code: crypto.randomBytes(9).toString('base64url'), from_card: card.id, to_card: friend.id, reward: ctx.settings.reward, status: 'claimed', claimed_at: now } });
+      // رسالة لصديقه: تطلع في بطاقته وإشعار في محفظته
+      const who = card.name ? card.name.split(' ')[0] : 'صديقك';
+      await rest('loyalty_messages', { method: 'POST', body: { client_id: ctx.store.id, card_id: friend.id, body: `${who} أهداك ${ctx.settings.reward} 🎁 استخدمها من ${ctx.store.name} خلال 30 يوم`, source: 'owner', kind: 'gift' } }).catch(() => {});
       const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
       await syncWallet(ctx, fresh);
-      const url = `${wallet.cardUrl(ctx.store.client_slug)}${wallet.cardUrl(ctx.store.client_slug).includes('?') ? '&' : '?'}gift=${code}`;
-      const who = card.name ? card.name.split(' ')[0] : 'صديقك';
-      return { url, code, card: cardView(fresh), share: `${who} أهداك ${ctx.settings.reward} من ${ctx.store.name} 🎁\nسجّل من الرابط واستلمها من المحل:\n${url}` };
+      await syncWallet(ctx, friend);
+      return { ok: true, to: { id: friend.id, name: maskName(friend.name) }, card: cardView(fresh) };
     }
 
     // ─── رابط الهدية: مين أهداها ووش هي ───

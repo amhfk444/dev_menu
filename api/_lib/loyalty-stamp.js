@@ -7,16 +7,28 @@ const { rest, rpc, q, ApiError } = require('./core');
 const { normalizeLoyalty, isHappyNow } = require('./loyalty');
 const { pushWalletCards } = require('./loyalty-assistant');
 
+// ختم مع الشراء: يلتزم بإعداد "ختم واحد كل" عشان ما يتكرر مع كل رقم بيجر أو كود
 async function purchaseStamp(storeId, cardId, settings = null) {
   if (!settings) {
     const extra = (await rest(`clients?id=eq.${storeId}&select=loyalty_settings`))[0] || {};
     settings = normalizeLoyalty(extra.loyalty_settings);
   }
   const count = isHappyNow(settings) ? 2 : 1;
-  const r = await rpc('server_loyalty_stamp', { p_card: cardId, p_cooldown_hours: 0, p_needed: settings.needed, p_distance: null, p_count: count });
+  const r = await rpc('server_loyalty_stamp', { p_card: cardId, p_cooldown_hours: settings.cooldown_hours, p_needed: settings.needed, p_distance: null, p_count: count });
   if (r.ok) await pushWalletCards(storeId, { cardIds: [cardId] }).catch(e => console.error('WALLET_SYNC', e.message));
-  return { stamped: !!r.ok, count: r.ok ? count : 0, reason: r.ok ? null : r.reason };
+  return { stamped: !!r.ok, count: r.ok ? count : 0, reason: r.ok ? null : r.reason, next_at: r.next_at || null };
 }
+
+// الزبون مختوم قبل شوي؟ يرجّع وقت الختم الجاي أو null
+function cooldownLeft(card, settings) {
+  if (!card.last_stamp_at) return null;
+  const next = Date.parse(card.last_stamp_at) + settings.cooldown_hours * 3600e3;
+  return next > Date.now() ? new Date(next).toISOString() : null;
+}
+const leftText = (iso) => {
+  const ms = Date.parse(iso) - Date.now(), h = Math.floor(ms / 3600e3), m = Math.ceil((ms % 3600e3) / 60e3);
+  return h ? `${h} ساعة${m && h < 3 ? ` و ${m} دقيقة` : ''}` : `${m} دقيقة`;
+};
 
 // كود ختم جديد لشاشة الكاشير (يصلح لزبون واحد ولمدة 90 ثانية)
 async function newStampCode(storeId) {
@@ -40,4 +52,4 @@ async function pagerTicket(storeId, token) {
   return (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${storeId}&select=id,status,created_at,loyalty_card_id,loyalty_stamped`).catch(() => []))[0] || null;
 }
 
-module.exports = { purchaseStamp, newStampCode, consumeStampCode, pagerTicket };
+module.exports = { purchaseStamp, newStampCode, consumeStampCode, pagerTicket, cooldownLeft, leftText };
