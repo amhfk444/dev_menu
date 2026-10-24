@@ -22,9 +22,11 @@
   .btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; border-radius: 16px; padding: 17px; font-weight: 700; font-size: 17px; transition: transform .1s, opacity .2s; }
   .btn:active { transform: scale(.98); }
   .btn:disabled { opacity: .55; }
-  .btn-brand { background: var(--brand); color: var(--brand-ink, var(--sand)); }
+  .btn-brand { background: var(--brand); color: var(--brand-ink, var(--sand)); box-shadow: 0 10px 22px -12px var(--brand); }
   .btn-gold { background: var(--gold); color: #15271b; }
-  .btn-ghost { background: #fff; color: var(--brand); border: 1.5px solid rgba(35,61,44,.2); }
+  .btn-ghost { background: color-mix(in srgb, var(--brand) 8%, #fff); color: var(--brand); border: 2px solid color-mix(in srgb, var(--brand) 45%, transparent); }
+  /* زر المحفظة: أسود مثل زر آبل الرسمي، يبان على أي لون */
+  .btn-wallet { background: #000; color: #fff; box-shadow: 0 10px 22px -12px rgba(0,0,0,.6); }
   .field { width: 100%; background: #f8f6f1; border: 1.5px solid rgba(35,61,44,.18); border-radius: 14px; padding: 14px 15px; font-size: 16px; color: var(--ink); }
   .field:focus { outline: none; border-color: var(--brand); background: #fff; }
   .reason[aria-checked="true"] { background: var(--brand); color: var(--brand-ink, #fff); border-color: var(--brand); }
@@ -175,7 +177,7 @@
       <p class="font-bold">احفظ بطاقتك في المحفظة</p>
       <p class="text-sm opacity-70">عشان ما تضيع أختامك لو مسحت بيانات المتصفح، وتشوفها بسرعة من جوالك.</p>
     </div>
-    <button id="wallet-btn" type="button" class="btn btn-ghost hidden"><i class="ph-bold ph-wallet"></i> <span>احفظ بطاقتك في المحفظة</span></button>
+    <button id="wallet-btn" type="button" class="btn btn-wallet hidden"><i class="ph-bold ph-wallet"></i> <span>احفظ بطاقتك في المحفظة</span></button>
     <form id="phone-box" class="card p-5 space-y-3 hidden" novalidate>
       <p class="font-bold">كمّل بياناتك</p>
       <p class="text-xs opacity-60">عشان ترجع لبطاقتك لو غيّرت جوالك، ويعرفك المحل.</p>
@@ -188,7 +190,7 @@
         <button type="button" class="gender field !text-center font-semibold" data-g="m" role="radio" aria-checked="false">ذكر</button>
         <button type="button" class="gender field !text-center font-semibold" data-g="f" role="radio" aria-checked="false">أنثى</button>
       </div>
-      <button id="phone-btn" type="submit" class="btn btn-ghost !py-3 !text-base">حفظ</button>
+      <button id="phone-btn" type="submit" class="btn btn-brand !py-3 !text-base"><i class="ph-bold ph-check"></i> حفظ بياناتي</button>
     </form>
     <p id="c-hint" class="hidden"></p>
   </section>
@@ -266,7 +268,8 @@
     ['j-card', 'c-card'].forEach(id => DMLoyaltyCard.apply($(id), settings.design));
     // أزرار الصفحة بلون البطاقة
     const c = settings.design && settings.design.color;
-    if (c) { document.documentElement.style.setProperty('--brand', c); document.documentElement.style.setProperty('--brand-ink', DMLoyaltyCard.inkFor(c)); }
+    // اللون الفاتح (أبيض، بيج...) ما يبان على الخلفية الفاتحة، فنخلي الأزرار بالأخضر الغامق
+    if (c && DMLoyaltyCard.inkFor(c) === '#ffffff') { document.documentElement.style.setProperty('--brand', c); document.documentElement.style.setProperty('--brand-ink', '#ffffff'); }
   };
   const gridClass = (n) => `stamps ${n === 5 || n === 10 ? 'c5' : ''}`;
 
@@ -303,8 +306,7 @@
     $('wallet-btn').classList.toggle('hidden', !walletOn);
     $('wallet-btn').querySelector('span').textContent = card.in_wallet ? 'افتح البطاقة في المحفظة' : 'احفظ بطاقتك في المحفظة';
     $('wallet-prompt').classList.toggle('hidden', !walletOn || card.in_wallet || !justJoined);
-    $('wallet-btn').classList.toggle('btn-brand', walletOn && !card.in_wallet && justJoined);
-    $('wallet-btn').classList.toggle('btn-ghost', !(walletOn && !card.in_wallet && justJoined));
+
     $('phone-box').classList.toggle('hidden', !!card.has_profile);
     $('gift-btn').classList.toggle('hidden', !settings.gifts);
     renderHappy(); renderGifts();
