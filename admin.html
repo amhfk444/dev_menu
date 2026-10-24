@@ -81,7 +81,7 @@
   #nav-count { background: rgba(251, 248, 243, 0.13); font-variant-numeric: tabular-nums; }
 
   /* شريط الجوال السفلي */
-  .bnav { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 8px; font-size: 10px; font-weight: 700; color: rgba(34, 54, 42, 0.5); }
+  .bnav { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 8px; font-size: 10px; font-weight: 700; color: rgba(34, 54, 42, 0.5); }
   .bnav i { font-size: 16px; }
   .bnav.nav-active { color: var(--brand); font-weight: 700; }
   .bnav.nav-active i { color: #384f3d; }
@@ -1519,10 +1519,11 @@
   </div>
 
   <!-- ═════════ شريط التنقل السفلي (جوال) ═════════ -->
-  <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-cream/95 backdrop-blur-xl border-t border-brand/15 grid grid-cols-5" style="padding-bottom: env(safe-area-inset-bottom)">
+  <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-cream/95 backdrop-blur-xl border-t border-brand/15 flex" style="padding-bottom: env(safe-area-inset-bottom)">
     <button data-nav="dashboard" class="bnav"><i class="ph-bold ph-gauge"></i><span>الرئيسية</span></button>
     <button data-nav="menu" class="bnav"><i class="ph-bold ph-fork-knife"></i><span>المنيو</span></button>
     <button data-nav="waitlist" class="bnav relative"><i class="ph-bold ph-hourglass-medium"></i><span>الانتظار</span><span id="bnav-waitlist" class="hidden absolute top-1.5 left-1/2 ml-2 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-400 text-black text-[10px] font-black leading-[18px]">0</span></button>
+    <button data-nav="loyalty" class="bnav"><i class="ph-bold ph-seal-check"></i><span>الولاء</span></button>
     <a href="pager-desk.html" data-feature="pager" onclick="return openPagerDesk(this)" class="bnav"><i class="ph-bold ph-bell"></i><span>البيجر</span></a>
     <button data-nav="settings" class="bnav"><i class="ph-bold ph-palette"></i><span>الهوية</span></button>
   </nav>
@@ -1631,7 +1632,10 @@
     document.querySelectorAll('[data-nav], [data-feature]').forEach(el => {
       const key = el.dataset.feature || PAGE_FEATURE[el.dataset.nav];
       const old = el.querySelector('.lock-tag'); if (old) old.remove();
-      if (key && (key === 'pager' && el.dataset.feature ? deskLocked() : featureLocked(key))) el.insertAdjacentHTML('beforeend', '<i class="lock-tag ph-bold ph-lock-simple text-[11px] opacity-60 mr-auto" aria-label="مو ضمن باقتك"></i>');
+      const locked = key && (key === 'pager' && el.dataset.feature ? deskLocked() : featureLocked(key));
+      // الشريط السفلي في الجوال: نخفي اللي مو ضمن الباقة عشان ما يزدحم
+      if (el.classList.contains('bnav')) { el.style.display = locked ? 'none' : ''; return; }
+      if (locked) el.insertAdjacentHTML('beforeend', '<i class="lock-tag ph-bold ph-lock-simple text-[11px] opacity-60 mr-auto" aria-label="مو ضمن باقتك"></i>');
     });
   }
   function showPage(page) {
