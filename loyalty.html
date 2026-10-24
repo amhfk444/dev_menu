@@ -208,7 +208,7 @@
       <i class="ph-bold ph-heart text-4xl text-[#c9a227]"></i>
       <p class="text-lg font-bold">أهدِ مكافأتك لصديق</p>
       <p class="text-sm opacity-70">اكتب رقم عضوية صديقك (يلقاه تحت بطاقته في نفس المحل).</p>
-      <input id="gs-id" class="field !text-center !text-lg font-bold" inputmode="numeric" placeholder="مثلاً 27" dir="ltr" maxlength="10">
+      <input id="gs-id" class="field !text-center !text-lg font-bold" inputmode="numeric" placeholder="مثلاً 482917" dir="ltr" maxlength="10">
       <p id="gs-who" class="text-sm font-semibold hidden"></p>
       <button id="gs-find" class="btn btn-brand">التالي</button>
       <button id="gs-yes" class="btn btn-gold hidden">أهدها له</button>
@@ -307,14 +307,14 @@
     renderHappy(); renderGifts();
     $('c-survey').classList.toggle('hidden', !survey);
     $('c-hello').textContent = card.name ? `أهلاً ${card.name.split(' ')[0]}` : 'بطاقتك';
-    $('c-member-id').textContent = `#${card.id}`;
+    $('c-member-id').textContent = `#${card.no}`;
     // كود العضوية للكاشير (ما يطلع والبطاقة مكتملة)
     $('c-qr-box').classList.toggle('hidden', !card.qr || full);
     if (card.qr && $('c-qr').dataset.v !== card.qr) {
       $('c-qr').dataset.v = card.qr; $('c-qr').innerHTML = '';
       new QRCode($('c-qr'), { text: card.qr, width: 176, height: 176, colorDark: '#13261b', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
     }
-    $('c-qr-id').textContent = `#${card.id}`;
+    $('c-qr-id').textContent = `#${card.no}`;
     $('c-hint').textContent = card.visits ? `زرتنا ${card.visits} ${card.visits === 1 ? 'مرة' : card.visits <= 10 ? 'مرات' : 'مرة'}${card.rewards ? `، واستخدمت ${card.rewards} ${card.rewards === 1 ? 'مكافأة' : 'مكافآت'}` : ''}.` : '';
     show('card');
   }
@@ -509,12 +509,12 @@
   $('gs-find').onclick = async () => {
     const id = $('gs-id').value.replace(/[^\d٠-٩]/g, '').replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 1632));
     if (!id) return $('gs-id').focus();
-    if (card && String(card.id) === id) { $('gs-who').textContent = 'هذا رقم عضويتك أنت، اكتب رقم صديقك'; $('gs-who').classList.remove('hidden'); return; }
+    if (card && String(card.no) === id) { $('gs-who').textContent = 'هذا رقم عضويتك أنت، اكتب رقم صديقك'; $('gs-who').classList.remove('hidden'); return; }
     setBusy($('gs-find'), true, 'نبحث');
     try {
       const r = await DM.get(`/api/loyalty?action=member-lookup&slug=${encodeURIComponent(slug)}&id=${encodeURIComponent(id)}`);
       giftTo = r.member;
-      $('gs-who').innerHTML = `تهديها لـ <b>${esc(r.member.name)}</b> (رقم <span dir="ltr">#${r.member.id}</span>)؟`;
+      $('gs-who').innerHTML = `تهديها لـ <b>${esc(r.member.name)}</b> (رقم <span dir="ltr">#${r.member.no}</span>)؟`;
       $('gs-who').classList.remove('hidden'); $('gs-find').classList.add('hidden'); $('gs-yes').classList.remove('hidden');
     } catch (e) { $('gs-who').textContent = e.message || 'ما لقينا عضو بهذا الرقم'; $('gs-who').classList.remove('hidden'); }
     finally { setBusy($('gs-find'), false); }
@@ -523,7 +523,7 @@
     if (busy || !giftTo) return;
     setBusy($('gs-yes'), true, 'نرسل الهدية');
     try {
-      const r = await DM.post('/api/loyalty?action=gift', { slug, t: loadToken(), to: giftTo.id });
+      const r = await DM.post('/api/loyalty?action=gift', { slug, t: loadToken(), to: giftTo.no });
       card = r.card; renderCard();
       $('gs-done-text').textContent = `انتقلت ${settings.reward} لبطاقة ${r.to.name}، ويوصله إشعار. وبطاقتك بدأت من جديد.`;
       $('gs-ask').classList.add('hidden'); $('gs-done').classList.remove('hidden');
@@ -531,7 +531,7 @@
     finally { setBusy($('gs-yes'), false); }
   };
   // نسخ رقم العضوية
-  $('c-member').onclick = async () => { try { await navigator.clipboard.writeText(String(card.id)); msg('ok', 'ph-copy', `انسخ رقم عضويتك #${card.id}، أعطه لأصحابك عشان يهدونك`); } catch {} };
+  $('c-member').onclick = async () => { try { await navigator.clipboard.writeText(String(card.no)); msg('ok', 'ph-copy', `انسخ رقم عضويتك #${card.no}، أعطه لأصحابك عشان يهدونك`); } catch {} };
 
   // ─── المكافأة ───
   $('redeem-btn').onclick = () => $('confirm').classList.remove('hidden');

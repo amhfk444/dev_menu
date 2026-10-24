@@ -3757,7 +3757,7 @@
   }
 
   // ─── رسائل الأعضاء ───
-  const lyCardLabel = (c) => `${c.name || `زبون #${c.id}`}${c.phone ? ` (${c.phone})` : ''}`;
+  const lyCardLabel = (c) => `${c.name || `عضو #${c.member_no}`}${c.name ? ` #${c.member_no}` : ''}${c.phone ? ` (${c.phone})` : ''}`;
   function renderLyMessages() {
     const d = ly.data, sel = document.getElementById('ly-msg-to'), keep = sel.value;
     sel.innerHTML = `<option value="">كل الأعضاء (${d.stats.members})</option>` + d.cards.map(c => `<option value="${c.id}">${esc(lyCardLabel(c))}</option>`).join('');
@@ -3799,7 +3799,7 @@
   const DAYMS = 864e5;
   const daysAgo = (iso) => iso ? Math.floor((Date.now() - Date.parse(iso)) / DAYMS) : null;
   const agoText = (iso) => { const d = daysAgo(iso); return d == null ? '' : d === 0 ? 'اليوم' : d === 1 ? 'أمس' : d <= 10 ? `قبل ${d} أيام` : `قبل ${d} يوم`; };
-  const memberName = (c) => c.name || `زبون #${c.id}`;
+  const memberName = (c) => c.name || `عضو #${c.member_no}`;
   const LY_FILTERS = [
     ['all', 'الكل', () => true],
     ['loyal', 'دايم يجون (3 زيارات وأكثر)', c => c.visits >= 3],
@@ -3849,10 +3849,10 @@
     document.getElementById('ly-filters').innerHTML = LY_FILTERS.map(([k, label, fn]) => `<button type="button" onclick="ly.filter='${k}'; renderLyMembers()" class="text-[12px] font-bold px-3 py-1.5 rounded-full border transition ${ly.filter === k ? 'bg-brand text-cream border-brand' : 'border-brand/20 hover:border-brand/40'}">${label} <span class="opacity-60">${M.filter(fn).length}</span></button>`).join('');
     const q = (document.getElementById('ly-q').value || '').trim().toLowerCase();
     const fn = (LY_FILTERS.find(f => f[0] === ly.filter) || LY_FILTERS[0])[2];
-    const list = M.filter(fn).filter(c => !q || memberName(c).toLowerCase().includes(q) || String(c.phone || '').includes(q) || String(c.id) === q);
+    const list = M.filter(fn).filter(c => !q || memberName(c).toLowerCase().includes(q) || String(c.phone || '').includes(q) || String(c.member_no) === q);
     document.getElementById('ly-rows').innerHTML = list.slice(0, 200).map(c => `
       <tr class="border-b border-brand/5 hover:bg-brand/[0.03] cursor-pointer" onclick="openLyMember(${c.id})">
-        <td class="py-2.5 px-1"><p class="font-semibold">${esc(memberName(c))}${c.gender ? ` <span class="text-[10px] text-ink/45">${c.gender === 'f' ? 'أنثى' : 'ذكر'}</span>` : ''}</p>${c.phone ? `<p class="text-[11px] text-ink/50" dir="ltr">${esc(c.phone)}</p>` : ''}</td>
+        <td class="py-2.5 px-1"><p class="font-semibold">${esc(memberName(c))}${c.gender ? ` <span class="text-[10px] text-ink/45">${c.gender === 'f' ? 'أنثى' : 'ذكر'}</span>` : ''}</p><p class="text-[11px] text-ink/50"><span dir="ltr">#${c.member_no}</span>${c.phone ? ` · <span dir="ltr">${esc(c.phone)}</span>` : ''}</p></td>
         <td class="py-2.5 px-1 font-bold" dir="ltr">${Math.min(c.stamps, n)}/${n}</td>
         <td class="py-2.5 px-1">${c.visits}</td>
         <td class="py-2.5 px-1 text-ink/70">${agoText(c.last_stamp_at)}</td>
@@ -3866,7 +3866,7 @@
     const d = (iso) => iso ? new Date(iso).toISOString().slice(0, 16).replace('T', ' ') : '';
     const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const rows = [['رقم العضو', 'الاسم', 'الجوال', 'النوع', 'الأختام', 'المطلوب', 'الزيارات', 'المكافآت المستخدمة', 'آخر زيارة', 'أول زيارة', 'في المحفظة']]
-      .concat(M.map(c => [c.id, c.name || '', c.phone || '', c.gender === 'f' ? 'أنثى' : c.gender === 'm' ? 'ذكر' : '', Math.min(c.stamps, n), n, c.visits, c.rewards, d(c.last_stamp_at), d(c.created_at), c.in_wallet ? 'نعم' : 'لا']));
+      .concat(M.map(c => [c.member_no, c.name || '', c.phone || '', c.gender === 'f' ? 'أنثى' : c.gender === 'm' ? 'ذكر' : '', Math.min(c.stamps, n), n, c.visits, c.rewards, d(c.last_stamp_at), d(c.created_at), c.in_wallet ? 'نعم' : 'لا']));
     const blob = new Blob(['﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `loyalty-members-${client.client_slug}-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
@@ -3886,7 +3886,7 @@
   function renderLyMember(r) {
     const m = r.member, n = ly.data.settings.needed;
     document.getElementById('lm-title').textContent = memberName(m);
-    document.getElementById('lm-sub').textContent = `${m.gender === 'f' ? 'أنثى · ' : m.gender === 'm' ? 'ذكر · ' : ''}${m.phone ? `${m.phone} · ` : ''}عضو من ${new Date(m.created_at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' })}${m.in_wallet ? ' · البطاقة في محفظته' : ''}`;
+    document.getElementById('lm-sub').textContent = `رقم العضوية #${m.member_no} · ${m.gender === 'f' ? 'أنثى · ' : m.gender === 'm' ? 'ذكر · ' : ''}${m.phone ? `${m.phone} · ` : ''}عضو من ${new Date(m.created_at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' })}${m.in_wallet ? ' · البطاقة في محفظته' : ''}`;
     const st = (label, v, ltr = false) => `<div class="rounded-xl bg-brand/[0.04] border border-brand/10 py-2"><p class="text-lg font-bold" ${ltr ? 'dir="ltr"' : ''}>${v}</p><p class="text-[10px] text-ink/60">${label}</p></div>`;
     const dates = r.events.filter(e => e.kind === 'stamp').map(e => Date.parse(e.created_at)).sort((a, b) => a - b);
     const gap = dates.length > 1 ? Math.round((dates[dates.length - 1] - dates[0]) / DAYMS / (dates.length - 1)) : null;

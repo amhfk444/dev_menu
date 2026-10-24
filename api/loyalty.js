@@ -44,7 +44,7 @@ function checkPresence(ctx, b) {
   return d;
 }
 
-const cardView = (c) => ({ id: c.id, qr: c.client_id ? memberQr(c) : null, name: c.name || null, gender: c.gender || null, stamps: c.stamps, visits: c.visits, rewards: c.rewards, last_stamp_at: c.last_stamp_at, in_wallet: !!c.wallet_url, has_phone: !!c.phone, has_profile: !!(c.name && c.phone && c.gender) });
+const cardView = (c) => ({ no: c.member_no, qr: c.client_id ? memberQr(c) : null, name: c.name || null, gender: c.gender || null, stamps: c.stamps, visits: c.visits, rewards: c.rewards, last_stamp_at: c.last_stamp_at, in_wallet: !!c.wallet_url, has_phone: !!c.phone, has_profile: !!(c.name && c.phone && c.gender) });
 
 // بيانات التسجيل: الاسم والجوال والنوع (كلها إجبارية)
 function readProfile(b) {
@@ -311,10 +311,10 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     // ─── رقم عضوية صديق: نعرض اسمه مخفي جزئياً عشان يتأكد قبل الإهداء ───
     if (action === 'member-lookup' && req.method === 'GET') {
       const ctx = await loadStore(req.query.slug);
-      const id = parseInt(String(req.query.id || '').replace(/[^\d]/g, ''), 10);
-      const m = Number.isInteger(id) ? (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${ctx.store.id}&select=id,name`))[0] : null;
+      const no = parseInt(String(req.query.id || '').replace(/[^\d]/g, ''), 10);
+      const m = Number.isInteger(no) ? (await rest(`loyalty_cards?member_no=eq.${no}&client_id=eq.${ctx.store.id}&select=member_no,name`))[0] : null;
       if (!m) throw new ApiError(404, 'ما لقينا عضو بهذا الرقم في هذا المحل', 'NO_MEMBER');
-      return { member: { id: m.id, name: maskName(m.name) } };
+      return { member: { no: m.member_no, name: maskName(m.name) } };
     }
 
     // ─── أهدِ مكافأتك لصديق برقم عضويته: تنقص أختامك وتنتقل الهدية لبطاقته على طول ───
@@ -323,7 +323,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       if (!ctx.settings.gifts.enabled) throw new ApiError(403, 'الإهداء متوقف في هذا المحل');
       const card = await cardByToken(ctx, b.t);
       const toId = parseInt(String(b.to || '').replace(/[^\d]/g, ''), 10);
-      const friend = Number.isInteger(toId) ? (await rest(`loyalty_cards?id=eq.${toId}&client_id=eq.${ctx.store.id}&select=*`))[0] : null;
+      const friend = Number.isInteger(toId) ? (await rest(`loyalty_cards?member_no=eq.${toId}&client_id=eq.${ctx.store.id}&select=*`))[0] : null;
       if (!friend) throw new ApiError(404, 'ما لقينا عضو بهذا الرقم في هذا المحل', 'NO_MEMBER');
       if (friend.id === card.id) throw new ApiError(409, 'هذا رقم عضويتك أنت، اكتب رقم صديقك', 'OWN_GIFT');
       if (card.stamps < ctx.settings.needed) throw new ApiError(409, 'ما كملت الأختام للحين', 'NOT_ENOUGH');
@@ -337,7 +337,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
       await syncWallet(ctx, fresh);
       await syncWallet(ctx, friend);
-      return { ok: true, to: { id: friend.id, name: maskName(friend.name) }, card: cardView(fresh) };
+      return { ok: true, to: { no: friend.member_no, name: maskName(friend.name) }, card: cardView(fresh) };
     }
 
     // ─── رابط الهدية: مين أهداها ووش هي ───

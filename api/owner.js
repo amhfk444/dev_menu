@@ -343,7 +343,7 @@ async function main(req) {
     const extra = (await rest(`clients?id=eq.${store.id}&select=loyalty_enabled,loyalty_settings,loyalty_lat,loyalty_lng,loyalty_ai,loyalty_near_lines`))[0] || {};
     const day = 864e5, iso = (n) => q(new Date(Date.now() - n * day).toISOString());
     const [cards, stamps7, redeemed, messages, feedback, gifts] = await Promise.all([
-      rest(`loyalty_cards?client_id=eq.${store.id}&select=id,name,phone,stamps,visits,rewards,last_stamp_at,created_at&order=last_stamp_at.desc.nullslast&limit=500`),
+      rest(`loyalty_cards?client_id=eq.${store.id}&select=id,member_no,name,phone,stamps,visits,rewards,last_stamp_at,created_at&order=last_stamp_at.desc.nullslast&limit=500`),
       rest(`loyalty_events?client_id=eq.${store.id}&kind=eq.stamp&created_at=gte.${iso(7)}&select=id`),
       rest(`loyalty_events?client_id=eq.${store.id}&kind=eq.redeem&select=id`),
       rest(`loyalty_messages?client_id=eq.${store.id}&select=id,card_id,body,wallet_sent,created_at,source,kind&order=id.desc&limit=15`).catch(() => []),
@@ -375,14 +375,14 @@ async function main(req) {
     const row = (await rest(`loyalty_stamp_codes?code=eq.${q(String(req.query.code || ''))}&client_id=eq.${store.id}&select=used_at,expires_at,card_id,note`))[0];
     if (!row) throw new ApiError(404, 'الكود غير موجود');
     let who = null;
-    if (row.card_id) { const c = (await rest(`loyalty_cards?id=eq.${row.card_id}&select=id,name,stamps`))[0] || {}; who = { name: c.name || `زبون #${c.id}`, stamps: c.stamps }; }
+    if (row.card_id) { const c = (await rest(`loyalty_cards?id=eq.${row.card_id}&select=member_no,name,stamps`))[0] || {}; who = { name: c.name || `عضو #${c.member_no}`, stamps: c.stamps }; }
     return { used: !!row.used_at, expired: !row.used_at && Date.parse(row.expires_at) < Date.now(), who, note: row.used_at ? null : row.note || null };
   }
 
   // ─── بطاقة الولاء: كل الأعضاء (للقائمة والداشبورد وملف CSV) ───
   if (action === 'loyalty-members' && req.method === 'GET') {
     const { store } = await context(req);
-    const cards = await rest(`loyalty_cards?client_id=eq.${store.id}&select=id,name,phone,gender,stamps,visits,rewards,last_stamp_at,created_at,wallet_serial,ai_last_at&order=last_stamp_at.desc.nullslast&limit=5000`);
+    const cards = await rest(`loyalty_cards?client_id=eq.${store.id}&select=id,member_no,name,phone,gender,stamps,visits,rewards,last_stamp_at,created_at,wallet_serial,ai_last_at&order=last_stamp_at.desc.nullslast&limit=5000`);
     return { members: cards.map(({ wallet_serial, ...c }) => ({ ...c, in_wallet: !!wallet_serial })) };
   }
 
@@ -390,7 +390,7 @@ async function main(req) {
   if (action === 'loyalty-member' && req.method === 'GET') {
     const { store } = await context(req);
     const id = int(req.query.id);
-    const card = (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${store.id}&select=id,name,phone,gender,stamps,visits,rewards,last_stamp_at,created_at,wallet_serial,ai_last_at`))[0];
+    const card = (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${store.id}&select=id,member_no,name,phone,gender,stamps,visits,rewards,last_stamp_at,created_at,wallet_serial,ai_last_at`))[0];
     if (!card) throw new ApiError(404, 'العضو غير موجود');
     const [events, messages] = await Promise.all([
       rest(`loyalty_events?card_id=eq.${id}&select=kind,created_at,distance_m&order=id.desc&limit=200`),
@@ -545,10 +545,11 @@ async function main(req) {
     const settings = normalizeLoyalty(x.loyalty_settings);
     let id = null;
     if (b.qr) { id = parseMemberQr(sid, b.qr); if (!id) throw new ApiError(400, 'هذا مو كود عضوية من بطاقتنا', 'BAD_QR'); }
-    else id = parseInt(String(b.member_id || '').replace(/[^\d]/g, ''), 10);
-    const card = Number.isInteger(id) ? (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${sid}&select=*`))[0] : null;
+    const no = b.qr ? null : parseInt(String(b.member_id || '').replace(/[^\d]/g, ''), 10);
+    const card = b.qr ? (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${sid}&select=*`))[0]
+      : Number.isInteger(no) ? (await rest(`loyalty_cards?member_no=eq.${no}&client_id=eq.${sid}&select=*`))[0] : null;
     if (!card) throw new ApiError(404, 'ما لقينا عضو بهذا الرقم', 'NO_MEMBER');
-    const who = { id: card.id, name: card.name || `زبون #${card.id}` };
+    const who = { no: card.member_no, name: card.name || `عضو #${card.member_no}` };
     if (card.stamps >= settings.needed) return { stamped: false, who, reason: 'FULL', note: 'بطاقته مكتملة، يستخدم مكافأته أول', stamps: card.stamps, needed: settings.needed };
     const next = cooldownLeft(card, settings);
     if (next) return { stamped: false, who, reason: 'COOLDOWN', note: `انختم قبل شوي، الختم الجاي بعد ${leftText(next)}`, stamps: card.stamps, needed: settings.needed };
