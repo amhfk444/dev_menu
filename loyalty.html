@@ -26,6 +26,7 @@
   .btn-ghost { background: #fff; color: var(--brand); border: 1.5px solid rgba(35,61,44,.2); }
   .field { width: 100%; background: #f8f6f1; border: 1.5px solid rgba(35,61,44,.18); border-radius: 14px; padding: 14px 15px; font-size: 16px; color: var(--ink); }
   .field:focus { outline: none; border-color: var(--brand); background: #fff; }
+  .gender[aria-checked="true"] { background: var(--brand); color: var(--brand-ink, #fff); border-color: var(--brand); }
 
   .msg { border-radius: 16px; padding: 14px 16px; font-size: 15px; font-weight: 600; display: flex; gap: 10px; align-items: flex-start; }
   .msg i { margin-top: 3px; }
@@ -69,18 +70,29 @@
       <p id="j-reward" class="text-2xl font-bold mt-0.5"></p>
       <div id="j-stamps" class="stamps"></div>
     </div>
-    <div class="card p-5 space-y-3">
-      <button id="join-btn" type="button" class="btn btn-brand"><i class="ph-bold ph-seal-check"></i> خذ ختمك الأول</button>
-      <p class="text-xs opacity-60 text-center leading-relaxed">بدون تسجيل. بنطلب موقعك عشان نتأكد إنك داخل المحل، وما نحفظه.</p>
-      <details class="text-sm">
-        <summary class="cursor-pointer text-center opacity-70 font-semibold">عندك بطاقة قديمة؟ رجّعها برقم جوالك</summary>
-        <span class="flex gap-2 mt-3" dir="ltr">
+    <form id="join-form" class="card p-5 space-y-4" novalidate>
+      <p class="font-bold">سجّل وخذ أول ختم</p>
+      <label class="block">
+        <span class="text-sm font-semibold block mb-1.5">اسمك</span>
+        <input id="f-name" class="field" autocomplete="given-name" maxlength="40" placeholder="مثلاً: سارة">
+      </label>
+      <label class="block">
+        <span class="text-sm font-semibold block mb-1.5">رقم جوالك</span>
+        <span class="flex gap-2" dir="ltr">
           <select id="f-cc" class="field !w-auto !px-2.5" aria-label="رمز الدولة"></select>
           <input id="f-phone" class="field flex-1 min-w-0" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="05xxxxxxxx" maxlength="18">
         </span>
-        <span class="text-xs opacity-60 block mt-1.5">اكتب الرقم اللي ربطته ببطاقتك، واضغط "خذ ختمك".</span>
-      </details>
-    </div>
+      </label>
+      <div>
+        <span class="text-sm font-semibold block mb-1.5">أنت</span>
+        <div class="grid grid-cols-2 gap-2" role="radiogroup" aria-label="النوع">
+          <button type="button" class="gender field !text-center font-semibold" data-g="m" role="radio" aria-checked="false">ذكر</button>
+          <button type="button" class="gender field !text-center font-semibold" data-g="f" role="radio" aria-checked="false">أنثى</button>
+        </div>
+      </div>
+      <button id="join-btn" type="submit" class="btn btn-brand"><i class="ph-bold ph-seal-check"></i> سجّل وخذ ختمك</button>
+      <p class="text-xs opacity-60 text-center leading-relaxed">بنطلب موقعك عشان نتأكد إنك داخل المحل، وما نحفظه. ولو غيّرت جوالك، ترجع لبطاقتك بنفس الرقم.</p>
+    </form>
   </section>
 
   <!-- البطاقة -->
@@ -98,7 +110,7 @@
     <div class="lcard" id="c-card">
       <div class="flex items-start justify-between gap-3">
         <div>
-          <p class="text-sm opacity-75">بطاقتك</p>
+          <p class="text-sm opacity-75" id="c-hello">بطاقتك</p>
           <p id="c-left" class="text-xl font-bold mt-0.5"></p>
         </div>
         <p class="text-sm opacity-75 text-left shrink-0" dir="ltr"><b id="c-count" class="text-2xl"></b></p>
@@ -122,15 +134,20 @@
       <p class="text-sm opacity-70">عشان ما تضيع أختامك لو مسحت بيانات المتصفح، وتشوفها بسرعة من جوالك.</p>
     </div>
     <button id="wallet-btn" type="button" class="btn btn-ghost hidden"><i class="ph-bold ph-wallet"></i> <span>احفظ بطاقتك في المحفظة</span></button>
-    <details id="phone-box" class="card p-4 text-sm hidden">
-      <summary class="cursor-pointer font-semibold opacity-80">اربط رقم جوالك (اختياري)</summary>
-      <p class="text-xs opacity-60 mt-2">لو غيّرت جوالك، ترجع لبطاقتك بنفس الرقم.</p>
-      <span class="flex gap-2 mt-3" dir="ltr">
+    <form id="phone-box" class="card p-5 space-y-3 hidden" novalidate>
+      <p class="font-bold">كمّل بياناتك</p>
+      <p class="text-xs opacity-60">عشان ترجع لبطاقتك لو غيّرت جوالك، ويعرفك المحل.</p>
+      <input id="p-name" class="field" autocomplete="given-name" maxlength="40" placeholder="اسمك">
+      <span class="flex gap-2" dir="ltr">
         <select id="p-cc" class="field !w-auto !px-2.5" aria-label="رمز الدولة"></select>
         <input id="p-phone" class="field flex-1 min-w-0" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="05xxxxxxxx" maxlength="18">
       </span>
-      <button id="phone-btn" type="button" class="btn btn-ghost mt-3 !py-3 !text-base">اربط الرقم</button>
-    </details>
+      <div class="grid grid-cols-2 gap-2" role="radiogroup" aria-label="النوع">
+        <button type="button" class="gender field !text-center font-semibold" data-g="m" role="radio" aria-checked="false">ذكر</button>
+        <button type="button" class="gender field !text-center font-semibold" data-g="f" role="radio" aria-checked="false">أنثى</button>
+      </div>
+      <button id="phone-btn" type="submit" class="btn btn-ghost !py-3 !text-base">حفظ</button>
+    </form>
     <p id="c-hint" class="text-xs opacity-60 text-center"></p>
   </section>
 </main>
@@ -218,7 +235,8 @@
     $('wallet-prompt').classList.toggle('hidden', !walletOn || card.in_wallet || !justJoined);
     $('wallet-btn').classList.toggle('btn-brand', walletOn && !card.in_wallet && justJoined);
     $('wallet-btn').classList.toggle('btn-ghost', !(walletOn && !card.in_wallet && justJoined));
-    $('phone-box').classList.toggle('hidden', !!card.has_phone);
+    $('phone-box').classList.toggle('hidden', !!card.has_profile);
+    $('c-hello').textContent = card.name ? `أهلاً ${card.name.split(' ')[0]}` : 'بطاقتك';
     $('c-hint').textContent = card.visits ? `زرتنا ${card.visits} ${card.visits === 1 ? 'مرة' : card.visits <= 10 ? 'مرات' : 'مرة'}${card.rewards ? `، واستخدمت ${card.rewards} ${card.rewards === 1 ? 'مكافأة' : 'مكافآت'}` : ''}.` : '';
     show('card');
   }
@@ -281,50 +299,65 @@
     } finally { setBusy(btn, false); }
   }
 
-  // ─── أول ختم بدون تسجيل (ولو كتب رقم جواله نرجّع بطاقته القديمة) ───
-  async function join() {
+  // ─── اختيار النوع ───
+  document.querySelectorAll('.gender').forEach(btn => btn.addEventListener('click', () => {
+    btn.parentElement.querySelectorAll('.gender').forEach(x => x.setAttribute('aria-checked', String(x === btn)));
+  }));
+  const pickedGender = (form) => { const b = $(form).querySelector('.gender[aria-checked="true"]'); return b ? b.dataset.g : ''; };
+  function readForm(prefix, form) {
+    const name = $(`${prefix}-name`).value.trim();
+    const phone = DM.intlPhone($(`${prefix}-phone`).value, $(`${prefix}-cc`).value);
+    const gender = pickedGender(form);
+    if (name.length < 2) { $(`${prefix}-name`).focus(); alert('اكتب اسمك'); return null; }
+    if (!phone) { $(`${prefix}-phone`).focus(); alert('رقم الجوال غير صحيح، تأكد من رمز الدولة والرقم'); return null; }
+    if (!gender) { alert('اختر ذكر أو أنثى'); return null; }
+    return { name, phone, gender };
+  }
+
+  // ─── أول تسجيل + أول ختم + رسالة الترحيب ───
+  $('join-form').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
     if (busy) return;
-    const raw = $('f-phone').value.trim();
-    const phone = raw ? DM.intlPhone(raw, $('f-cc').value) : '';
-    if (raw && !phone) { $('f-phone').focus(); return alert('رقم الجوال غير صحيح، تأكد من رمز الدولة والرقم'); }
+    const profile = readForm('f', 'join-form');
+    if (!profile) return;
     const btn = $('join-btn');
     setBusy(btn, true, 'نتأكد من موقعك');
     try {
       const loc = await getLocation().catch(e => { throw { message: locationError(e) }; });
-      const r = await DM.post('/api/loyalty?action=join', { slug, phone, ...loc });
+      const r = await DM.post('/api/loyalty?action=join', { slug, ...profile, ...loc });
       saveToken(r.token);
       if (params.get('s')) { params.delete('s'); history.replaceState(null, '', location.pathname + (params.toString() ? `?${params}` : '')); }
       settings = r.settings; walletOn = !!r.wallet; justJoined = !!r.is_new;
       afterStamp(r);
       if (!r.is_new) msg('ok', 'ph-check-circle', r.stamped ? 'رجعت لبطاقتك، وانضاف ختم اليوم' : 'رجعت لبطاقتك');
+      if (r.message) showMessage(r.message, $('store-name').textContent);
     } catch (e) {
-      alert(e.message || 'تعذر إضافة الختم، حاول مرة ثانية');
+      alert(e.message || 'تعذر التسجيل، حاول مرة ثانية');
     } finally { setBusy(btn, false); }
-  }
-  $('join-btn').onclick = join;
+  });
 
-  // ─── ربط رقم الجوال (اختياري) ───
-  $('phone-btn').onclick = async () => {
+  // ─── إكمال البيانات (للبطاقات القديمة) ───
+  $('phone-box').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
     if (busy) return;
-    const phone = DM.intlPhone($('p-phone').value, $('p-cc').value);
-    if (!phone) { $('p-phone').focus(); return alert('رقم الجوال غير صحيح، تأكد من رمز الدولة والرقم'); }
+    const profile = readForm('p', 'phone-box');
+    if (!profile) return;
     const btn = $('phone-btn');
     setBusy(btn, true, 'لحظة');
     try {
       let r;
-      try { r = await DM.post('/api/loyalty?action=phone', { slug, t: loadToken(), phone }); }
+      try { r = await DM.post('/api/loyalty?action=phone', { slug, t: loadToken(), ...profile }); }
       catch (e) {
-        // الرقم مربوط ببطاقة قديمة: نحتاج نتأكد إنه داخل المحل قبل ما ندمجها
         if (e.code !== 'NO_LOCATION') throw e;
         const loc = await getLocation().catch(x => { throw { message: locationError(x) }; });
-        r = await DM.post('/api/loyalty?action=phone', { slug, t: loadToken(), phone, ...loc });
+        r = await DM.post('/api/loyalty?action=phone', { slug, t: loadToken(), ...profile, ...loc });
       }
       saveToken(r.token); card = r.card; renderCard();
-      msg('ok', 'ph-check-circle', r.merged ? 'رجعت لبطاقتك القديمة وانضافت لها أختامك' : 'تم ربط رقمك ببطاقتك');
+      msg('ok', 'ph-check-circle', r.merged ? 'رجعت لبطاقتك القديمة وانضافت لها أختامك' : 'تم حفظ بياناتك');
     } catch (e) {
-      msg('err', 'ph-warning-circle', e.message || 'تعذر ربط الرقم، حاول مرة ثانية');
+      msg('err', 'ph-warning-circle', e.message || 'تعذر الحفظ، حاول مرة ثانية');
     } finally { setBusy(btn, false); }
-  };
+  });
 
   // ─── المكافأة ───
   $('redeem-btn').onclick = () => $('confirm').classList.remove('hidden');
@@ -417,7 +450,6 @@
       $('j-stamps').className = gridClass(settings.needed);
       $('j-stamps').innerHTML = stampsHTML(0, settings.needed);
       show('join');
-      if (params.get('s') === '1') join();
     } catch (e) {
       if (e.status === 404 && e.code === 'NOT_FOUND') { saveToken(''); return start(); }
       show('unavailable');

@@ -19,6 +19,15 @@ function normalizeDesign(raw) {
   };
 }
 
+// رسالة الترحيب لأول تسجيل: صاحب المحل يكتبها، أو المساعد الذكي يكتب لكل زبون رسالة مختلفة، أو بدون
+function normalizeWelcome(raw) {
+  const w = raw && typeof raw === 'object' ? raw : {};
+  return {
+    mode: ['custom', 'ai', 'off'].includes(w.mode) ? w.mode : 'ai',
+    text: String(w.text || '').trim().slice(0, 200)
+  };
+}
+
 // إعدادات البطاقة بقيم آمنة دايماً
 function normalizeLoyalty(raw) {
   const s = raw && typeof raw === 'object' ? raw : {};
@@ -28,7 +37,8 @@ function normalizeLoyalty(raw) {
     reward: String(s.reward || 'مشروب مجاني').trim().slice(0, 60) || 'مشروب مجاني',
     cooldown_hours: COOLDOWNS.includes(int(s.cooldown_hours, 12)) ? int(s.cooldown_hours, 12) : 12,
     radius_m: Math.min(200, Math.max(25, int(s.radius_m, 50))),
-    design: normalizeDesign(s.design)
+    design: normalizeDesign(s.design),
+    welcome: normalizeWelcome(s.welcome)
   };
 }
 

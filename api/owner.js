@@ -359,7 +359,7 @@ async function main(req) {
   // ─── بطاقة الولاء: كل الأعضاء (للقائمة والداشبورد وملف CSV) ───
   if (action === 'loyalty-members' && req.method === 'GET') {
     const { store } = await context(req);
-    const cards = await rest(`loyalty_cards?client_id=eq.${store.id}&select=id,name,phone,stamps,visits,rewards,last_stamp_at,created_at,wallet_serial,ai_last_at&order=last_stamp_at.desc.nullslast&limit=5000`);
+    const cards = await rest(`loyalty_cards?client_id=eq.${store.id}&select=id,name,phone,gender,stamps,visits,rewards,last_stamp_at,created_at,wallet_serial,ai_last_at&order=last_stamp_at.desc.nullslast&limit=5000`);
     return { members: cards.map(({ wallet_serial, ...c }) => ({ ...c, in_wallet: !!wallet_serial })) };
   }
 
@@ -367,7 +367,7 @@ async function main(req) {
   if (action === 'loyalty-member' && req.method === 'GET') {
     const { store } = await context(req);
     const id = int(req.query.id);
-    const card = (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${store.id}&select=id,name,phone,stamps,visits,rewards,last_stamp_at,created_at,wallet_serial,ai_last_at`))[0];
+    const card = (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${store.id}&select=id,name,phone,gender,stamps,visits,rewards,last_stamp_at,created_at,wallet_serial,ai_last_at`))[0];
     if (!card) throw new ApiError(404, 'العضو غير موجود');
     const [events, messages] = await Promise.all([
       rest(`loyalty_events?card_id=eq.${id}&select=kind,created_at,distance_m&order=id.desc&limit=200`),
@@ -539,7 +539,8 @@ async function main(req) {
     const settings = normalizeLoyalty(extra.loyalty_settings);
     const n = settings.needed;
     const guests = [
-      { ref: 'miss', kind: 'miss', visits: 6, stamps: Math.min(3, n - 2), days_since: 19, usual_gap: 5 },
+      { ref: 'welcome', kind: 'welcome', name: 'سارة', gender: 'f', visits: 1, stamps: 1, days_since: 0 },
+      { ref: 'miss', kind: 'miss', name: 'فهد', gender: 'm', visits: 6, stamps: Math.min(3, n - 2), days_since: 19, usual_gap: 5 },
       { ref: 'second', kind: 'second', visits: 1, stamps: 1, days_since: 8 },
       { ref: 'almost', kind: 'almost', visits: n - 1, stamps: n - 1, days_since: 6, usual_gap: 4 },
       { ref: 'ready', kind: 'ready', visits: n, stamps: n, days_since: 4, usual_gap: 6 },

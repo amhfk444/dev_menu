@@ -92,7 +92,7 @@ async function runAssistant(storeId, { maxGuests = 25 } = {}) {
     }
   }
 
-  const cards = await rest(`loyalty_cards?client_id=eq.${storeId}&select=id,stamps,visits,rewards,last_stamp_at,created_at,ai_last_at,wallet_serial&limit=2000`);
+  const cards = await rest(`loyalty_cards?client_id=eq.${storeId}&select=id,name,gender,stamps,visits,rewards,last_stamp_at,created_at,ai_last_at,wallet_serial&limit=2000`);
   const picked = pickGuests(cards, settings).slice(0, maxGuests);
   if (picked.length) {
     const prev = await rest(`loyalty_messages?client_id=eq.${storeId}&source=eq.ai&card_id=in.(${picked.map(p => p.card.id).join(',')})&select=card_id,body&order=id.desc&limit=200`).catch(() => []);
@@ -100,7 +100,7 @@ async function runAssistant(storeId, { maxGuests = 25 } = {}) {
     for (const m of prev) (previous[m.card_id] = previous[m.card_id] || []).length < 3 && previous[m.card_id].push(m.body);
     const texts = await loyaltyMessages({
       storeName: store.name, businessType: type, reward: settings.reward, needed: settings.needed,
-      guests: picked.map(p => ({ ref: String(p.card.id), kind: p.kind, visits: p.card.visits, stamps: Math.min(p.card.stamps, settings.needed), days_since: p.days, usual_gap: p.gap, previous: previous[p.card.id] || [] }))
+      guests: picked.map(p => ({ ref: String(p.card.id), kind: p.kind, name: p.card.name, gender: p.card.gender, visits: p.card.visits, stamps: Math.min(p.card.stamps, settings.needed), days_since: p.days, usual_gap: p.gap, previous: previous[p.card.id] || [] }))
     });
     const now = new Date().toISOString();
     const rows = picked.filter(p => texts[p.card.id]).map(p => ({ client_id: storeId, card_id: p.card.id, body: texts[p.card.id], source: 'ai', kind: p.kind }));

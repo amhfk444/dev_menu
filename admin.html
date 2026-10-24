@@ -1000,6 +1000,15 @@
                     <option value="25">25 متر</option><option value="50">50 متر</option><option value="100">100 متر (مول أو مبنى كبير)</option><option value="200">200 متر</option>
                   </select></label>
               </div>
+              <div class="space-y-2 pt-1">
+                <p class="text-xs font-semibold text-ink/70">رسالة الترحيب (توصل للزبون أول ما يسجل)</p>
+                <div class="grid sm:grid-cols-3 gap-2" id="ly-welcome-modes">
+                  <label class="cursor-pointer"><input type="radio" name="ly-welcome" value="ai" class="peer sr-only"><span class="block rounded-xl border border-brand/20 p-3 text-[13px] peer-checked:border-brand peer-checked:bg-brand/5"><b class="block"><i class="ph-bold ph-sparkle"></i> المساعد يكتبها</b><span class="text-[11px] text-ink/60">كل زبون تجيه رسالة مختلفة باسمه</span></span></label>
+                  <label class="cursor-pointer"><input type="radio" name="ly-welcome" value="custom" class="peer sr-only"><span class="block rounded-xl border border-brand/20 p-3 text-[13px] peer-checked:border-brand peer-checked:bg-brand/5"><b class="block"><i class="ph-bold ph-pen-nib"></i> أكتبها بنفسي</b><span class="text-[11px] text-ink/60">نفس الرسالة للكل</span></span></label>
+                  <label class="cursor-pointer"><input type="radio" name="ly-welcome" value="off" class="peer sr-only"><span class="block rounded-xl border border-brand/20 p-3 text-[13px] peer-checked:border-brand peer-checked:bg-brand/5"><b class="block"><i class="ph-bold ph-x"></i> بدون ترحيب</b><span class="text-[11px] text-ink/60">ما توصل رسالة</span></span></label>
+                </div>
+                <textarea id="ly-welcome-text" rows="2" maxlength="200" class="input-pro hidden" placeholder="مثلاً: حيّاك الله في بيتك الثاني، هذا أول ختم لك"></textarea>
+              </div>
               <button type="submit" id="ly-save" class="bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition">حفظ</button>
             </form>
 
@@ -1122,6 +1131,10 @@
               <p class="text-xs font-bold text-ink/70 mb-2"><i class="ph-bold ph-clock-counter-clockwise"></i> جوا مرة وحدة وما رجعوا</p>
               <div id="ly-once" class="text-sm"></div>
             </div>
+          </div>
+          <div class="rounded-2xl border border-brand/10 p-4">
+            <p class="text-xs font-bold text-ink/70 mb-3"><i class="ph-bold ph-users"></i> مين عملاؤك</p>
+            <div id="ly-gender" class="space-y-3 text-sm"></div>
           </div>
           <div id="ly-filters" class="flex flex-wrap gap-2"></div>
           <div class="overflow-x-auto -mx-1">
@@ -3634,6 +3647,10 @@
     document.getElementById('ly-reward').value = st.reward;
     document.getElementById('ly-cooldown').value = String(st.cooldown_hours);
     document.getElementById('ly-radius').value = String(st.radius_m);
+    const wm = (st.welcome && st.welcome.mode) || 'ai';
+    document.querySelectorAll('[name="ly-welcome"]').forEach(r => { r.checked = r.value === wm; });
+    document.getElementById('ly-welcome-text').value = (st.welcome && st.welcome.text) || '';
+    document.getElementById('ly-welcome-text').classList.toggle('hidden', wm !== 'custom');
     document.getElementById('ly-loc-status').innerHTML = d.location_set
       ? '<span class="text-emerald-700 font-semibold"><i class="ph-bold ph-check-circle"></i> موقع المحل محدد</span>'
       : '<span class="text-brick font-semibold"><i class="ph-bold ph-warning-circle"></i> ما حددت موقع المحل للحين، والزبائن ما يقدرون يختمون بدونه</span>';
@@ -3712,6 +3729,7 @@
           <p class="text-[11px] text-ink/55 mt-0.5">${m.card_id ? esc(byId[m.card_id] ? lyCardLabel(byId[m.card_id]) : `زبون #${m.card_id}`) : 'لكل الأعضاء'} · ${when(m.created_at)}${m.wallet_sent ? ` · وصلت إشعار لـ ${m.wallet_sent} جوال` : ''}</p>
         </div>`).join('')}</div>` : '';
   }
+  document.addEventListener('change', (e) => { if (e.target && e.target.name === 'ly-welcome') document.getElementById('ly-welcome-text').classList.toggle('hidden', e.target.value !== 'custom'); });
   document.addEventListener('input', (e) => { if (e.target && e.target.id === 'ly-msg-body') document.getElementById('ly-msg-count').textContent = `${e.target.value.length}/200`; });
   async function sendLyMessage() {
     const body = document.getElementById('ly-msg-body').value.trim();
@@ -3740,7 +3758,9 @@
     ['once', 'مرة وحدة وما رجعوا', c => c.visits === 1 && daysAgo(c.last_stamp_at) >= 7],
     ['away', 'غايبين أكثر من 30 يوم', c => daysAgo(c.last_stamp_at) > 30],
     ['ready', 'مكافأتهم جاهزة', c => ly.data && c.stamps >= ly.data.settings.needed],
-    ['wallet', 'حافظينها في المحفظة', c => c.in_wallet]
+    ['wallet', 'حافظينها في المحفظة', c => c.in_wallet],
+    ['m', 'رجال', c => c.gender === 'm'],
+    ['f', 'نساء', c => c.gender === 'f']
   ];
   function renderLyMembers() {
     const M = ly.members || [], n = ly.data ? ly.data.settings.needed : 8;
@@ -3758,13 +3778,19 @@
     const line = (c, right) => `<button type="button" onclick="openLyMember(${c.id})" class="w-full flex items-center justify-between gap-2 py-1.5 hover:bg-brand/[0.03] rounded-lg px-1 text-right"><span class="truncate font-semibold">${esc(memberName(c))}</span><span class="text-xs text-ink/60 shrink-0">${right}</span></button>`;
     document.getElementById('ly-top').innerHTML = top.length ? top.map((c, i) => line(c, `${['🥇', '🥈', '🥉', '', ''][i]} ${c.visits} زيارة`)).join('') : '<p class="text-xs text-ink/50 py-2">للحين ما فيه زيارات.</p>';
     document.getElementById('ly-once').innerHTML = once.length ? once.slice(0, 5).map(c => line(c, `آخر مرة ${agoText(c.last_stamp_at)}`)).join('') + (once.length > 5 ? `<p class="text-[11px] text-ink/50 pt-1">و${once.length - 5} غيرهم</p>` : '') : '<p class="text-xs text-ink/50 py-2">ممتاز، كل اللي جوا رجعوا.</p>';
+    // الفئات: عدد الأعضاء، ومجموع الزيارات، ومتوسط الزيارة لكل فئة
+    const g = (k) => { const L = M.filter(c => c.gender === k); const v = L.reduce((a, c) => a + c.visits, 0); return { n: L.length, v, avg: L.length ? (v / L.length).toFixed(1) : '0' }; };
+    const gm = g('m'), gf = g('f'), gu = M.filter(c => !c.gender).length, totalV = gm.v + gf.v || 1;
+    const bar = (label, x, color) => `<div><div class="flex justify-between text-[13px] mb-1"><span class="font-semibold">${label}</span><span class="text-ink/60">${x.n} عضو · ${x.v} زيارة · متوسط ${x.avg} زيارة</span></div><div class="h-2.5 rounded-full bg-brand/10 overflow-hidden"><div class="h-full rounded-full" style="width:${Math.round(x.v / totalV * 100)}%;background:${color}"></div></div></div>`;
+    const lead = gm.v === gf.v ? '' : `<p class="text-[12px] text-ink/70"><i class="ph-bold ph-crown text-[#c9a227]"></i> ${gm.v > gf.v ? 'الرجال' : 'النساء'} أكثر زيارة: ${Math.round(Math.max(gm.v, gf.v) / totalV * 100)}% من الزيارات</p>`;
+    document.getElementById('ly-gender').innerHTML = M.length ? bar('رجال', gm, '#384f3d') + bar('نساء', gf, '#c9a227') + lead + (gu ? `<p class="text-[11px] text-ink/45">${gu} عضو قديم ما كمّل بياناته</p>` : '') : '<p class="text-xs text-ink/50">لما يسجلون الأعضاء تطلع هنا.</p>';
     document.getElementById('ly-filters').innerHTML = LY_FILTERS.map(([k, label, fn]) => `<button type="button" onclick="ly.filter='${k}'; renderLyMembers()" class="text-[12px] font-bold px-3 py-1.5 rounded-full border transition ${ly.filter === k ? 'bg-brand text-cream border-brand' : 'border-brand/20 hover:border-brand/40'}">${label} <span class="opacity-60">${M.filter(fn).length}</span></button>`).join('');
     const q = (document.getElementById('ly-q').value || '').trim().toLowerCase();
     const fn = (LY_FILTERS.find(f => f[0] === ly.filter) || LY_FILTERS[0])[2];
     const list = M.filter(fn).filter(c => !q || memberName(c).toLowerCase().includes(q) || String(c.phone || '').includes(q) || String(c.id) === q);
     document.getElementById('ly-rows').innerHTML = list.slice(0, 200).map(c => `
       <tr class="border-b border-brand/5 hover:bg-brand/[0.03] cursor-pointer" onclick="openLyMember(${c.id})">
-        <td class="py-2.5 px-1"><p class="font-semibold">${esc(memberName(c))}</p>${c.phone ? `<p class="text-[11px] text-ink/50" dir="ltr">${esc(c.phone)}</p>` : ''}</td>
+        <td class="py-2.5 px-1"><p class="font-semibold">${esc(memberName(c))}${c.gender ? ` <span class="text-[10px] text-ink/45">${c.gender === 'f' ? 'أنثى' : 'ذكر'}</span>` : ''}</p>${c.phone ? `<p class="text-[11px] text-ink/50" dir="ltr">${esc(c.phone)}</p>` : ''}</td>
         <td class="py-2.5 px-1 font-bold" dir="ltr">${Math.min(c.stamps, n)}/${n}</td>
         <td class="py-2.5 px-1">${c.visits}</td>
         <td class="py-2.5 px-1 text-ink/70">${agoText(c.last_stamp_at)}</td>
@@ -3777,8 +3803,8 @@
     const M = ly.members || [], n = ly.data ? ly.data.settings.needed : 8;
     const d = (iso) => iso ? new Date(iso).toISOString().slice(0, 16).replace('T', ' ') : '';
     const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const rows = [['رقم العضو', 'الاسم', 'الجوال', 'الأختام', 'المطلوب', 'الزيارات', 'المكافآت المستخدمة', 'آخر زيارة', 'أول زيارة', 'في المحفظة']]
-      .concat(M.map(c => [c.id, c.name || '', c.phone || '', Math.min(c.stamps, n), n, c.visits, c.rewards, d(c.last_stamp_at), d(c.created_at), c.in_wallet ? 'نعم' : 'لا']));
+    const rows = [['رقم العضو', 'الاسم', 'الجوال', 'النوع', 'الأختام', 'المطلوب', 'الزيارات', 'المكافآت المستخدمة', 'آخر زيارة', 'أول زيارة', 'في المحفظة']]
+      .concat(M.map(c => [c.id, c.name || '', c.phone || '', c.gender === 'f' ? 'أنثى' : c.gender === 'm' ? 'ذكر' : '', Math.min(c.stamps, n), n, c.visits, c.rewards, d(c.last_stamp_at), d(c.created_at), c.in_wallet ? 'نعم' : 'لا']));
     const blob = new Blob(['﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `loyalty-members-${client.client_slug}-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
@@ -3798,7 +3824,7 @@
   function renderLyMember(r) {
     const m = r.member, n = ly.data.settings.needed;
     document.getElementById('lm-title').textContent = memberName(m);
-    document.getElementById('lm-sub').textContent = `عضو من ${new Date(m.created_at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' })}${m.in_wallet ? ' · البطاقة في محفظته' : ''}`;
+    document.getElementById('lm-sub').textContent = `${m.gender === 'f' ? 'أنثى · ' : m.gender === 'm' ? 'ذكر · ' : ''}${m.phone ? `${m.phone} · ` : ''}عضو من ${new Date(m.created_at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' })}${m.in_wallet ? ' · البطاقة في محفظته' : ''}`;
     const st = (label, v, ltr = false) => `<div class="rounded-xl bg-brand/[0.04] border border-brand/10 py-2"><p class="text-lg font-bold" ${ltr ? 'dir="ltr"' : ''}>${v}</p><p class="text-[10px] text-ink/60">${label}</p></div>`;
     const dates = r.events.filter(e => e.kind === 'stamp').map(e => Date.parse(e.created_at)).sort((a, b) => a - b);
     const gap = dates.length > 1 ? Math.round((dates[dates.length - 1] - dates[0]) / DAYMS / (dates.length - 1)) : null;
@@ -3836,7 +3862,7 @@
   }
 
   // ─── المساعد الذكي ───
-  const AI_KINDS = { miss: 'لما يغيب', second: 'بعد أول زيارة', almost: 'باقي له ختم', ready: 'مكافأته جاهزة', near: 'لما يقرب من المحل' };
+  const AI_KINDS = { welcome: 'ترحيب', miss: 'لما يغيب', second: 'بعد أول زيارة', almost: 'باقي له ختم', ready: 'مكافأته جاهزة', near: 'لما يقرب من المحل' };
   async function toggleLyAi() {
     try { const r = await api('loyalty-ai', { enabled: !ly.data.ai }); ly.data.ai = r.ai; renderLoyalty(); showToast(r.ai ? 'المساعد الذكي شغّال، يبدأ يكتب لزبائنك كل يوم' : 'المساعد الذكي متوقف'); }
     catch (e) { showToast(e.message || 'تعذر الحفظ', true); }
@@ -3874,7 +3900,8 @@
     try {
       const r = await api('loyalty-settings', { settings: {
         needed: +document.getElementById('ly-needed').value, reward: document.getElementById('ly-reward').value.trim(),
-        cooldown_hours: +document.getElementById('ly-cooldown').value, radius_m: +document.getElementById('ly-radius').value
+        cooldown_hours: +document.getElementById('ly-cooldown').value, radius_m: +document.getElementById('ly-radius').value,
+        welcome: { mode: (document.querySelector('[name="ly-welcome"]:checked') || {}).value || 'ai', text: document.getElementById('ly-welcome-text').value.trim() }
       } });
       ly.data.settings = r.settings; renderLoyalty(); showToast('تم حفظ إعدادات البطاقة');
     } catch (e) { showToast(e.message || 'تعذر الحفظ', true); }
