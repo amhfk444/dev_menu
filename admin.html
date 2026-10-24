@@ -1422,6 +1422,11 @@
           <span class="block text-[10px] text-ink/60 mt-0.5">عند الإيقاف: يختفي حقل السعرات من نموذج الأطباق، ولا تظهر السعرات للزبائن. السعرات المحفوظة تبقى ولا تنحذف.</span>
         </span>
       </label>
+      <div class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2">
+        <p class="text-xs font-bold text-ink"><i class="ph-bold ph-squares-four text-amber-600"></i> شكل الأطباق في المنيو</p>
+        <div id="menu-layout" class="grid grid-cols-2 gap-2" role="radiogroup" aria-label="شكل الأطباق"></div>
+        <p class="text-[10px] text-ink/60">في الحالتين: الزبون يضغط على الطبق وتفتح صورته كاملة مع التفاصيل.</p>
+      </div>
       <div class="bg-brand/5 p-3 rounded-xl border border-brand/15">
         <label for="info-currency" class="text-xs font-bold text-ink block mb-1.5"><i class="ph-bold ph-coins text-amber-600"></i> عملة المنيو</label>
         <select id="info-currency" onchange="changeCurrency(this.value)" class="input-pro text-xs cursor-pointer"></select>
@@ -1824,6 +1829,7 @@
     renderWaOrderState();
     renderBusinessType();
     applyCaloriesSetting();
+    renderMenuLayout();
     applyCurrencySetting();
     deliveryApps = (Array.isArray(client.delivery_apps) ? client.delivery_apps : []).map(d => ({ ...d }));
     renderDeliveryPicker();
@@ -3730,6 +3736,25 @@
       url: linksUrl(), caption: 'امسح الرمز لكل روابطنا', captionEn: 'Scan for all our links',
       filePrefix: 'links-qr', button: document.getElementById('links-qr-btn')
     });
+  }
+
+  // ─── شكل الأطباق في المنيو ───
+  function renderMenuLayout() {
+    const cur = client.menu_layout === 'photos' ? 'photos' : 'list';
+    const opt = (k, label, sub, art) => `
+      <button type="button" role="radio" aria-checked="${cur === k}" onclick="setMenuLayout('${k}')" class="rounded-xl border-2 p-2.5 text-right transition ${cur === k ? 'border-brand bg-white' : 'border-brand/15 bg-white/60 hover:border-brand/35'}">
+        <span class="block h-14 rounded-lg bg-ink/[0.06] p-1.5 mb-2">${art}</span>
+        <b class="block text-[12px] text-ink">${label}</b><span class="block text-[10px] text-ink/60">${sub}</span>
+      </button>`;
+    const row = '<span class="flex gap-1.5 items-center mb-1"><span class="w-5 h-5 rounded bg-ink/25 shrink-0"></span><span class="flex-1 h-1.5 rounded bg-ink/20"></span></span>';
+    document.getElementById('menu-layout').innerHTML =
+      opt('list', 'قائمة', 'صورة صغيرة جنب الاسم', row + row) +
+      opt('photos', 'صور كبيرة', 'الصورة تغطي البطاقة', '<span class="block h-full rounded-md bg-ink/25 relative"><span class="absolute bottom-1 right-1.5 w-1/2 h-1.5 rounded bg-white/80"></span></span>');
+  }
+  async function setMenuLayout(k) {
+    if ((client.menu_layout || 'list') === k) return;
+    if (await updateClient({ menu_layout: k })) { renderMenuLayout(); showToast(k === 'photos' ? 'المنيو صار بالصور الكبيرة' : 'المنيو رجع قائمة'); }
+    else showToast('تعذر حفظ الإعداد', true);
   }
 
   // ─── عرض السعرات (خيار المتجر) ───

@@ -75,6 +75,21 @@
     width: 90px; height: 90px; object-fit: cover; border-radius: 14px; border: 1px solid var(--img-line); flex-shrink: 0;
   }
   .no-scrollbar::-webkit-scrollbar { display: none; }
+  /* شكل "صور كبيرة": الصورة تغطي البطاقة والاسم والسعر فوقها */
+  .photo-card { position: relative; border-radius: 22px; overflow: hidden; cursor: pointer; background: #111; aspect-ratio: 4 / 3; box-shadow: 0 18px 40px -22px rgba(0,0,0,.6); }
+  .photo-card > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
+  .photo-card:active > img { transform: scale(1.02); }
+  .photo-card .pc-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0) 38%, rgba(0,0,0,.55) 65%, rgba(0,0,0,.88) 100%); }
+  .photo-card .pc-body { position: absolute; inset-inline: 0; bottom: 0; padding: 14px 16px 14px; color: #fff; }
+  .photo-card .pc-name { color: #fff; font-weight: 800; font-size: 17px; line-height: 1.35; }
+  .photo-card .pc-desc { color: rgba(255,255,255,.78); font-size: 11.5px; margin-top: 3px; }
+  .photo-card .pc-price { color: #fff; font-weight: 900; font-size: 15px; white-space: nowrap; }
+  .photo-card.off { opacity: .5; filter: grayscale(1); cursor: default; }
+  /* صورة الطبق كاملة بدون قص */
+  .img-full { position: relative; background: #000; overflow: hidden; }
+  .img-full .blur { position: absolute; inset: -20px; background: center / cover no-repeat; filter: blur(22px) brightness(.55); }
+  .img-full img { position: relative; width: 100%; height: 100%; object-fit: contain; }
+  #imgViewer img { max-width: 100%; max-height: 100%; object-fit: contain; touch-action: pinch-zoom; }
   /* body + :not() حتى يغلب تحويل ألوان الثيم الفاتح بالأسفل */
   body .cat-pill.active, body.tone-light .cat-pill.active:not(.keep-c) {
     background: var(--accent); color: var(--accent-fg); font-weight: 800; box-shadow: 0 4px 15px var(--accent-glow);
@@ -219,13 +234,20 @@
 </div>
 
 <!-- Modal تفاصيل المنتج -->
+<div id="imgViewer" class="fixed inset-0 z-[60] hidden flex-col items-center justify-center p-3" style="background:rgba(0,0,0,.96)" onclick="closeImgViewer()" role="dialog" aria-label="صورة الطبق">
+  <button type="button" style="background:rgba(255,255,255,.15)" class="absolute top-4 left-4 w-10 h-10 rounded-full text-white keep-c flex items-center justify-center" aria-label="إغلاق"><i class="fas fa-xmark"></i></button>
+  <img src="" alt="">
+  <p class="text-white keep-c font-bold text-sm mt-3 text-center"></p>
+</div>
 <div id="productModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-xl opacity-0 pointer-events-none transition-all duration-300">
   <div class="modal-panel border border-white/20 w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden overflow-y-auto overscroll-contain max-h-[92vh] shadow-2xl relative text-right" style="padding-bottom: env(safe-area-inset-bottom)">
     <button onclick="closeModal()" class="absolute top-4 left-4 z-20 w-8 h-8 rounded-full bg-black/80 text-white keep-c flex items-center justify-center border border-white/30">
       <i class="fas fa-xmark"></i>
     </button>
-    <div class="relative h-60 bg-black">
-      <img id="modalImg" src="" class="w-full h-full object-cover">
+    <div class="img-full h-72 cursor-zoom-in" id="modalImgBox" onclick="openImgViewer()">
+      <span class="blur" id="modalImgBlur"></span>
+      <img id="modalImg" src="" alt="">
+      <span class="absolute bottom-3 right-3 z-10 w-8 h-8 rounded-full text-white keep-c flex items-center justify-center text-xs" style="background:rgba(0,0,0,.6)" aria-hidden="true"><i class="fa-solid fa-expand"></i></span>
       <span id="modalCal" class="hidden absolute bottom-3 left-3 items-center gap-1.5 bg-white/95 text-black text-[11px] font-black px-3 py-1.5 rounded-full shadow-lg"></span>
     </div>
     <div class="p-5 space-y-3">
@@ -869,6 +891,34 @@
       </article>`;
   }
 
+  const photoLayout = () => project && project.menu_layout === 'photos';
+  function photoCard(p) {
+    const img = safeUrl(p.image_url);
+    if (!img) return productCard(p);   // الطبق بدون صورة يطلع بالشكل العادي
+    const available = p.is_available !== false;
+    const name = productName(p), desc = productDesc(p);
+    const canOrder = available && orderingOn();
+    const inCart = canOrder ? cartQty(p.id) : 0;
+    return `
+      <article ${available ? `data-product="${esc(p.id)}" role="button" tabindex="0"` : ''} class="photo-card ${available ? '' : 'off'}">
+        <img src="${esc(img)}" alt="" loading="lazy">
+        <span class="pc-shade"></span>
+        ${canOrder ? `<button type="button" data-add="${esc(p.id)}" aria-label="${currentLang === 'ar' ? 'أضف للطلب' : 'Add to order'}"
+            class="absolute top-3 left-3 z-10 min-w-[38px] h-[38px] px-2 rounded-full ${inCart ? 'bg-[#25d366] text-black' : 'text-white keep-c'} text-sm font-black flex items-center justify-center active:scale-90 transition backdrop-blur" style="${inCart ? '' : 'background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.3)'}">
+            ${inCart ? inCart : '<i class="fa-solid fa-plus text-xs"></i>'}</button>` : ''}
+        ${p.is_bestseller === true ? `<span style="background:rgba(0,0,0,.55)" class="absolute top-3 right-3 z-10 inline-flex items-center gap-1 text-white keep-c text-[10px] px-2 py-1 rounded-full font-bold backdrop-blur"><i class="fa-solid fa-fire text-amber-400"></i> ${currentLang === 'ar' ? 'مميز' : 'Featured'}</span>` : ''}
+        <div class="pc-body">
+          <div class="flex items-end justify-between gap-3">
+            <h4 class="pc-name line-clamp-2 min-w-0">${esc(name)}</h4>
+            <span class="pc-price">${sizesOf(p).length ? `<span class="text-[10px] font-bold opacity-75">${currentLang === 'ar' ? 'من' : 'From'}</span> ` : ''}${priceHtml(minBase(p), minPrice(p))}</span>
+          </div>
+          ${desc ? `<p class="pc-desc line-clamp-1">${esc(desc)}</p>` : ''}
+          ${dealBadges(p)}
+          ${!available ? `<p class="text-[11px] font-bold mt-1" style="color:#fca5a5">${currentLang === 'ar' ? 'غير متوفر حالياً' : 'Currently unavailable'}</p>` : ''}
+        </div>
+      </article>`;
+  }
+
   function renderMenu(products, isSearch) {
     const container = document.getElementById('dynamic-menu-sections');
     // البحث يشمل كل الأقسام، والتصفح يعرض أقسام الفئة المختارة فقط
@@ -885,7 +935,7 @@
     container.innerHTML = groups.map(([cat, ps]) => `
       <section id="section-${esc(cat.id)}" class="space-y-3 scroll-mt-24">
         <h3 class="sec-title font-bold text-base text-white tracking-wide border-b pb-1.5">${esc(catName(cat))}</h3>
-        <div class="space-y-2.5">${ps.map(productCard).join('')}</div>
+        <div class="${photoLayout() ? 'space-y-3.5' : 'space-y-2.5'}">${ps.map(photoLayout() ? photoCard : productCard).join('')}</div>
       </section>`).join('');
   }
 
@@ -951,6 +1001,7 @@
     const modalImg = document.getElementById('modalImg');
     modalImg.parentElement.classList.toggle('hidden', !img);
     modalImg.src = img || '';
+    document.getElementById('modalImgBlur').style.backgroundImage = img ? `url("${img.replace(/"/g, '%22')}")` : '';
     document.getElementById('modalTitle').closest('.p-5').classList.toggle('pt-14', !img);
     document.getElementById('modalTitle').textContent = productName(p);
     modalSize = sizesOf(p).length ? sizesOf(p)[0].name : null;
@@ -1242,9 +1293,20 @@
 
   function closeModal() {
     document.getElementById('productModal').classList.add('opacity-0', 'pointer-events-none');
+    closeImgViewer();
   }
+  // الصورة بملء الشاشة (تقدر تكبّرها بإصبعين)
+  function openImgViewer() {
+    const src = document.getElementById('modalImg').src;
+    if (!src) return;
+    const v = document.getElementById('imgViewer');
+    v.querySelector('img').src = src;
+    v.querySelector('p').textContent = document.getElementById('modalTitle').textContent;
+    v.classList.remove('hidden'); v.classList.add('flex');
+  }
+  function closeImgViewer() { const v = document.getElementById('imgViewer'); v.classList.add('hidden'); v.classList.remove('flex'); }
   document.getElementById('productModal').addEventListener('click', (e) => { if (e.target.id === 'productModal') closeModal(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeModal(); closeCart(); } });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (!document.getElementById('imgViewer').classList.contains('hidden')) return closeImgViewer(); closeModal(); closeCart(); } });
 
   initMenu();
 </script>

@@ -799,6 +799,7 @@ async function main(req) {
     if (has('opening_hours')) p.opening_hours = str(b.opening_hours, 80, 'ساعات العمل');
     if (has('whatsapp_orders')) p.whatsapp_orders = b.whatsapp_orders === true;
     if (has('show_calories')) p.show_calories = b.show_calories !== false;
+    if (has('menu_layout')) p.menu_layout = b.menu_layout === 'photos' ? 'photos' : 'list';
     if (has('currency')) {
       if (!Object.prototype.hasOwnProperty.call(CURRENCIES, b.currency)) throw new ApiError(400, 'العملة غير مدعومة');
       p.currency = b.currency;
