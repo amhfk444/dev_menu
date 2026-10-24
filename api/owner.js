@@ -18,7 +18,7 @@ const { normalizeLoyalty, validPoint } = require('./_lib/loyalty');
 const PLANS = require('./_lib/plans');
 const wallet = require('./_lib/wallet');
 const { pushWalletCards, runAssistant } = require('./_lib/loyalty-assistant');
-const { loyaltyMessages } = require('./_lib/ai');
+const { loyaltyMessages, loyaltyNearLines } = require('./_lib/ai');
 const { purchaseStamp, newStampCode, parseMemberQr, cooldownLeft, leftText } = require('./_lib/loyalty-stamp');
 
 const bySort = (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id;
@@ -511,8 +511,18 @@ async function main(req) {
     if (design.stamp_image && !ownsMediaUrl(design.stamp_image, sid)) throw new ApiError(400, 'صورة الختم غير تابعة لمتجرك');
     const settings = normalizeLoyalty({ ...current, ...(b.settings || {}), design });
     const body = { loyalty_settings: settings };
+    // الشروط تغيّرت: رسائل الذكاء القديمة (مثلاً "باقي لك 5 من 8") تختفي، وجمل القرب تنكتب من جديد
+    const rulesChanged = settings.needed !== current.needed || settings.reward !== current.reward || JSON.stringify(settings.happy) !== JSON.stringify(current.happy);
+    if (rulesChanged) {
+      settings.rules_at = new Date().toISOString();
+      body.loyalty_near_lines = null; body.loyalty_near_at = null;
+    }
     if (typeof b.enabled === 'boolean') body.loyalty_enabled = b.enabled;
-    const row = (await rest(`clients?id=eq.${sid}`, { method: 'PATCH', body, prefer: 'return=representation' }))[0];
+    let row = (await rest(`clients?id=eq.${sid}`, { method: 'PATCH', body, prefer: 'return=representation' }))[0];
+    if (rulesChanged && row.loyalty_ai) {
+      const lines = await loyaltyNearLines({ storeName: row.name, businessType: { restaurant: 'مطعم', cafe: 'مقهى', mixed: 'مطعم ومقهى', bakery: 'مخبز وحلويات' }[row.business_type] || '', reward: settings.reward }).catch(() => []);
+      if (lines.length) await rest(`clients?id=eq.${sid}`, { method: 'PATCH', body: { loyalty_near_lines: lines, loyalty_near_at: new Date().toISOString() } }).catch(() => {});
+    }
     // الشكل أو المكافأة تغيّرت ← نحدّث البطاقات اللي في المحفظة
     const wallet_updated = await pushWalletCards(sid);
     return { enabled: row.loyalty_enabled === true, settings: normalizeLoyalty(row.loyalty_settings), wallet_updated };

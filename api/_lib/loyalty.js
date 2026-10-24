@@ -65,9 +65,13 @@ function normalizeLoyalty(raw) {
     gifts: { enabled: !(s.gifts && s.gifts.enabled === false) },
     // الختم بعد الشراء بس: كود الكاشير أو البيجر (الزبون ما يختم بنفسه)
     stamp_mode: 'purchase',
-    pager_stamp: s.pager_stamp !== false
+    pager_stamp: s.pager_stamp !== false,
+    // آخر مرة تغيّرت فيها شروط البطاقة (عدد الأختام، المكافأة، ساعات الهدوء): رسائل الذكاء الأقدم منها ما تطلع
+    rules_at: typeof s.rules_at === 'string' && !isNaN(Date.parse(s.rules_at)) ? s.rules_at : null
   };
 }
+// رسالة الذكاء انكتبت على شروط قديمة؟
+const staleAi = (m, settings) => !!(m && m.source === 'ai' && settings.rules_at && Date.parse(m.created_at) < Date.parse(settings.rules_at));
 
 // المسافة بالمتر بين نقطتين (Haversine)
 function distanceM(lat1, lng1, lat2, lng2) {
@@ -79,4 +83,4 @@ function distanceM(lat1, lng1, lat2, lng2) {
 // موقع صالح؟
 const validPoint = (lat, lng) => Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && !(lat === 0 && lng === 0);
 
-module.exports = { normalizeLoyalty, normalizeDesign, isHappyNow, distanceM, validPoint, COOLDOWNS, STYLES, ICONS };
+module.exports = { normalizeLoyalty, normalizeDesign, isHappyNow, distanceM, validPoint, COOLDOWNS, STYLES, ICONS, staleAi };

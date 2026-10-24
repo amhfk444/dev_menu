@@ -5,7 +5,7 @@
 //   وجمل "أنت قريب" تطلع على شاشة قفل الآيفون لما يقرب من المحل (تتجدد كل أسبوع)
 // =====================================================================
 const { rest, q } = require('./core');
-const { normalizeLoyalty } = require('./loyalty');
+const { normalizeLoyalty, staleAi } = require('./loyalty');
 const wallet = require('./wallet');
 const { loyaltyMessages, loyaltyNearLines } = require('./ai');
 
@@ -22,10 +22,11 @@ function nearLineFor(store, card) {
 }
 
 // آخر رسالة لكل بطاقة (للكل أو لها)، عشان التحديث ما يطلع إشعار قديم من جديد
-async function latestNotices(storeId) {
-  const msgs = await rest(`loyalty_messages?client_id=eq.${storeId}&select=id,card_id,body&order=id.desc&limit=300`).catch(() => []);
+async function latestNotices(storeId, settings) {
+  const msgs = await rest(`loyalty_messages?client_id=eq.${storeId}&select=id,card_id,body,source,created_at&order=id.desc&limit=300`).catch(() => []);
   const latest = { all: null, by: {} };
-  for (const m of msgs) { if (m.card_id == null) { if (!latest.all) latest.all = m; } else if (!latest.by[m.card_id]) latest.by[m.card_id] = m; }
+  for (const m of msgs) {
+    if (staleAi(m, settings)) continue; if (m.card_id == null) { if (!latest.all) latest.all = m; } else if (!latest.by[m.card_id]) latest.by[m.card_id] = m; }
   return (card) => { const a = latest.all, o = latest.by[card.id]; return ((a && o ? (a.id > o.id ? a : o) : a || o) || {}).body; };
 }
 
@@ -43,7 +44,7 @@ async function pushWalletCards(storeId, { cardIds = null, notice = null, notices
   const filter = cardIds ? `&id=in.(${cardIds.map(Number).join(',')})` : '';
   const cards = await rest(`loyalty_cards?client_id=eq.${storeId}${filter}&wallet_serial=not.is.null&select=*&limit=500`);
   if (!cards.length) return 0;
-  const noticeFor = notice != null || notices ? null : await latestNotices(storeId);
+  const noticeFor = notice != null || notices ? null : await latestNotices(storeId, settings);
   let sent = 0;
   const started = Date.now();
   for (let i = 0; i < cards.length && Date.now() - started < 40e3; i += 6) {

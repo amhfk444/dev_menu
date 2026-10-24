@@ -11,7 +11,7 @@
 // =====================================================================
 const crypto = require('crypto');
 const { handler, rest, rpc, q, ApiError, readBody, findPublicStore, waNumber, storeHasFeature } = require('./_lib/core');
-const { normalizeLoyalty, distanceM, validPoint, isHappyNow } = require('./_lib/loyalty');
+const { normalizeLoyalty, distanceM, validPoint, isHappyNow, staleAi } = require('./_lib/loyalty');
 const wallet = require('./_lib/wallet');
 const { nearLineFor } = require('./_lib/loyalty-assistant');
 const { loyaltyMessages } = require('./_lib/ai');
@@ -79,8 +79,12 @@ async function welcomeMessage(ctx, card) {
 const optionalPhone = (v) => { if (!String(v || '').trim()) return ''; try { return waNumber(v); } catch { throw new ApiError(400, 'رقم الجوال غير صحيح'); } };
 
 // آخر رسالة من المحل لهالبطاقة (للكل أو له هو)
-const latestMessage = async (storeId, cardId) => ((await rest(`loyalty_messages?client_id=eq.${storeId}&or=${q(`(card_id.is.null,card_id.eq.${cardId})`)}&select=id,body,created_at&order=id.desc&limit=1`).catch(() => []))[0]) || null;
-const walletCtx = async (ctx, card) => wallet.buildCtx({ store: ctx.store, settings: ctx.settings, card, lat: ctx.lat, lng: ctx.lng, notice: ((await latestMessage(ctx.store.id, card.id)) || {}).body, nearText: nearLineFor({ loyalty_near_lines: ctx.nearLines }, card) });
+// (رسالة الذكاء اللي انكتبت قبل ما تتغير شروط البطاقة ما تطلع)
+const latestMessage = async (storeId, cardId, settings) => {
+  const m = ((await rest(`loyalty_messages?client_id=eq.${storeId}&or=${q(`(card_id.is.null,card_id.eq.${cardId})`)}&select=id,body,created_at,source&order=id.desc&limit=1`).catch(() => []))[0]) || null;
+  return settings && staleAi(m, settings) ? null : m;
+};
+const walletCtx = async (ctx, card) => wallet.buildCtx({ store: ctx.store, settings: ctx.settings, card, lat: ctx.lat, lng: ctx.lng, notice: ((await latestMessage(ctx.store.id, card.id, ctx.settings)) || {}).body, nearText: nearLineFor({ loyalty_near_lines: ctx.nearLines }, card) });
 // البطاقة في المحفظة تتحدث مع كل ختم (لو الزبون ضافها)
 const syncWallet = async (ctx, card) => {
   if (!card.wallet_serial) return;
@@ -167,7 +171,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       const ctx = await loadStore(req.query.slug);
       const card = await cardByToken(ctx, req.query.t);
       // رسالة المحل تطلع إذا عمرها أقل من 14 يوم
-      const m = await latestMessage(ctx.store.id, card.id);
+      const m = await latestMessage(ctx.store.id, card.id, ctx.settings);
       const message = m && Date.parse(m.created_at) > Date.now() - 14 * 864e5 ? { id: m.id, body: m.body, at: m.created_at } : null;
       const [survey, gifts] = await Promise.all([surveyDue(ctx, card), giftsFor(ctx, card)]);
       return { ...publicInfo(ctx), card: cardView(card), message, survey, gifts };
