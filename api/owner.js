@@ -396,7 +396,7 @@ async function main(req) {
   if (action === 'loyalty-member' && req.method === 'GET') {
     const { store } = await context(req);
     const id = int(req.query.id);
-    const card = (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${store.id}&select=id,member_no,name,phone,gender,stamps,visits,rewards,last_stamp_at,created_at,wallet_serial,ai_last_at`))[0];
+    const card = (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${store.id}&select=id,member_no,name,phone,gender,stamps,visits,rewards,last_stamp_at,created_at,wallet_serial,ai_last_at,transferred,transferred_at`))[0];
     if (!card) throw new ApiError(404, 'العضو غير موجود');
     const [events, messages] = await Promise.all([
       rest(`loyalty_events?card_id=eq.${id}&select=kind,created_at,distance_m&order=id.desc&limit=200`),
@@ -444,7 +444,7 @@ async function main(req) {
   req._sid = sid;
   // المميزات حسب باقة المحل
   if (['pager-update', 'pager-invoice', 'pager-ring'].includes(action) && !PLANS.has(store, 'pager')) throw new ApiError(403, 'البيجر مو ضمن باقتك', 'ADDON_OFF');
-  if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-give-stamp', 'loyalty-message', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء مو ضمن باقتك، أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
+  if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-message', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء مو ضمن باقتك، أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
 
 
   // ─── ربط قوقل ماب ───
@@ -569,13 +569,30 @@ async function main(req) {
     const card = b.qr ? (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${sid}&select=*`))[0]
       : Number.isInteger(no) ? (await rest(`loyalty_cards?member_no=eq.${no}&client_id=eq.${sid}&select=*`))[0] : null;
     if (!card) throw new ApiError(404, 'ما لقينا عضو بهذا الرقم', 'NO_MEMBER');
-    const who = { no: card.member_no, name: card.name || `عضو #${card.member_no}` };
+    const who = { no: card.member_no, name: card.name || `عضو #${card.member_no}`, transferred: card.transferred_at ? card.transferred : null };
     if (card.stamps >= settings.needed) return { stamped: false, who, reason: 'FULL', note: 'بطاقته مكتملة، يستخدم مكافأته أول', stamps: card.stamps, needed: settings.needed };
     const next = cooldownLeft(card, settings);
     if (next) return { stamped: false, who, reason: 'COOLDOWN', note: `انختم قبل شوي، الختم الجاي بعد ${leftText(next)}`, stamps: card.stamps, needed: settings.needed };
     const r = await purchaseStamp(sid, card.id, settings);
     const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=stamps`))[0] || {};
     return { stamped: r.stamped, count: r.count, who, reason: r.reason, stamps: fresh.stamps, needed: settings.needed };
+  }
+
+  // ─── نقل رصيد من بطاقة قديمة: الكاشير يشوف البطاقة القديمة ويضيف أختامها (مرة وحدة لكل عضو) ───
+  if (action === 'loyalty-transfer') {
+    const x = (await rest(`clients?id=eq.${sid}&select=loyalty_settings`))[0] || {};
+    const settings = normalizeLoyalty(x.loyalty_settings);
+    const no = parseInt(String(b.member_no || '').replace(/[^\d]/g, ''), 10);
+    const card = Number.isInteger(no) ? (await rest(`loyalty_cards?member_no=eq.${no}&client_id=eq.${sid}&select=id,name,member_no,stamps,transferred_at`))[0] : null;
+    if (!card) throw new ApiError(404, 'ما لقينا العضو', 'NO_MEMBER');
+    if (card.transferred_at) throw new ApiError(409, 'هذا العضو نقل رصيده القديم من قبل', 'ALREADY');
+    const count = int(b.count);
+    if (!Number.isInteger(count) || count < 1 || count > settings.needed) throw new ApiError(400, `عدد الأختام من 1 إلى ${settings.needed}`);
+    const stamps = Math.min(settings.needed, card.stamps + count);
+    const row = (await rest(`loyalty_cards?id=eq.${card.id}&transferred_at=is.null`, { method: 'PATCH', prefer: 'return=representation', body: { stamps, transferred: count, transferred_at: new Date().toISOString() } }))[0];
+    if (!row) throw new ApiError(409, 'هذا العضو نقل رصيده القديم من قبل', 'ALREADY');
+    await pushWalletCards(sid, { cardIds: [card.id] }).catch(() => 0);
+    return { ok: true, who: { no: card.member_no, name: card.name || `عضو #${card.member_no}` }, stamps: row.stamps, needed: settings.needed, count };
   }
 
   // ─── بطاقة الولاء: صاحب المحل يعطي ختم لعضو بنفسه ───

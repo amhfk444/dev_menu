@@ -127,6 +127,18 @@
       <input id="scan-id" inputmode="numeric" placeholder="أو اكتب رقم العضوية" class="flex-1 min-w-0 rounded-2xl border border-[#233d2c]/20 px-4 py-3 font-bold text-center" dir="ltr">
       <button class="bg-[#233d2c] text-white font-black rounded-2xl px-5">ختم</button>
     </form>
+    <!-- آخر عضو انمسح: نقل رصيد بطاقته القديمة -->
+    <div id="tr-box" class="hidden rounded-2xl border-2 border-[#c9a227] bg-[#fbf6e6] p-3 text-right">
+      <div class="flex items-center gap-2">
+        <div class="flex-1 min-w-0"><p class="text-[11px] font-bold opacity-60">آخر عضو</p><p id="tr-who" class="font-black truncate"></p></div>
+        <button id="tr-open" class="shrink-0 bg-[#233d2c] text-white font-black rounded-xl px-3 py-2.5 text-sm"><i class="ph-bold ph-arrows-left-right"></i> نقل رصيد قديم</button>
+      </div>
+      <div id="tr-pick" class="hidden mt-3">
+        <p class="text-sm font-bold mb-2">كم ختم في بطاقته القديمة؟</p>
+        <div id="tr-nums" class="grid grid-cols-6 gap-1.5"></div>
+        <p class="text-[11px] opacity-60 mt-2">شوف البطاقة القديمة في جواله أو الورقة. النقل مرة وحدة بس لكل عضو.</p>
+      </div>
+    </div>
     <button id="scan-close" class="w-full bg-[#f5f2eb] font-black rounded-2xl py-3">إغلاق</button>
   </div>
 </div>
@@ -316,6 +328,7 @@
     scanBusy = true;
     try {
       const r = await call('loyalty-scan', payload);
+      setTransfer(r);
       const who = esc(r.who.name), n = Math.min(r.stamps, r.needed);
       const dots = `<span class="flex flex-wrap justify-center gap-1.5 mt-1">${Array.from({ length: r.needed }, (_, i) => `<span class="w-4 h-4 rounded-full ${i < n ? 'bg-[#c9a227]' : 'bg-white/25'}"></span>`).join('')}</span>`;
       const no = `<span class="text-xs font-bold opacity-75" dir="ltr">#${esc(r.who.no)}</span>`;
@@ -350,11 +363,39 @@
     } catch { scanShow(false, '<i class="ph-bold ph-camera-slash text-5xl"></i><b>ما قدرنا نفتح الكاميرا</b><span class="text-sm">اكتب رقم العضوية تحت</span>'); }
   }
   function closeScanner() {
+    setTransfer(null);
     cancelAnimationFrame(scanLoop);
     if (scanStream) scanStream.getTracks().forEach(t => t.stop());
     scanStream = null;
     $('scan-modal').classList.add('hidden'); $('scan-modal').classList.remove('flex');
   }
+  // ─── نقل رصيد بطاقة قديمة (منصة ثانية أو ورق) ───
+  let trMember = null;
+  function setTransfer(r) {
+    trMember = r && r.who ? { no: r.who.no, name: r.who.name, needed: r.needed, done: r.who.transferred != null } : null;
+    $('tr-box').classList.toggle('hidden', !trMember);
+    $('tr-pick').classList.add('hidden');
+    if (!trMember) return;
+    $('tr-who').textContent = `${trMember.name} #${trMember.no}`;
+    $('tr-open').disabled = trMember.done;
+    $('tr-open').innerHTML = trMember.done ? `<i class="ph-bold ph-check"></i> نقل ${r.who.transferred} من قبل` : '<i class="ph-bold ph-arrows-left-right"></i> نقل رصيد قديم';
+    $('tr-open').classList.toggle('opacity-50', trMember.done);
+  }
+  $('tr-open').onclick = () => {
+    if (!trMember || trMember.done) return;
+    $('tr-nums').innerHTML = Array.from({ length: trMember.needed }, (_, i) => `<button data-tr="${i + 1}" class="bg-white border border-[#233d2c]/20 rounded-xl py-2.5 font-black text-lg">${i + 1}</button>`).join('');
+    $('tr-pick').classList.toggle('hidden');
+  };
+  $('tr-nums').onclick = async (e) => {
+    const b = e.target.closest('[data-tr]'); if (!b || !trMember) return;
+    const count = +b.dataset.tr;
+    if (!confirm(`تنقل ${count} ${count === 1 ? 'ختم' : 'أختام'} لـ ${trMember.name}؟`)) return;
+    try {
+      const r = await call('loyalty-transfer', { member_no: trMember.no, count });
+      scanShow(true, `<i class="ph-bold ph-arrows-left-right text-7xl"></i><b class="text-2xl">انتقل الرصيد</b><b class="text-lg">${esc(r.who.name)}</b><span class="font-bold">صار عنده ${Math.min(r.stamps, r.needed)} من ${r.needed}${r.stamps >= r.needed ? ' · المكافأة جاهزة' : ''}</span>`);
+      trMember.done = true; setTransfer({ who: { ...r.who, transferred: count }, needed: r.needed });
+    } catch (err) { scanShow(false, `<i class="ph-bold ph-warning-circle text-6xl"></i><b>${esc(err.message || 'تعذر النقل')}</b>`); }
+  };
   $('scan-btn').onclick = openScanner;
   $('scan-close').onclick = closeScanner;
   $('scan-manual').onsubmit = (e) => { e.preventDefault(); const id = normDigits($('scan-id').value).replace(/\D/g, ''); if (id) { stampMember({ member_id: id }); $('scan-id').value = ''; } };

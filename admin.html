@@ -4034,6 +4034,11 @@
         <span>${e.kind === 'gift' ? '<i class="ph-bold ph-heart text-[#c9a227]"></i> أهدى مكافأته لصديق' : e.kind === 'gift_redeem' ? '<i class="ph-bold ph-gift text-[#c9a227]"></i> استخدم هدية من صديق' : e.kind === 'redeem' ? '<i class="ph-bold ph-gift text-[#c9a227]"></i> استخدم المكافأة' : e.distance_m == null ? '<i class="ph-bold ph-seal-check text-ink/50"></i> ختم من صاحب المحل' : '<i class="ph-bold ph-seal-check text-emerald-700"></i> ختم زيارة'}</span>
         <span class="text-xs text-ink/55">${new Date(e.created_at).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}</span>
       </div>`).join('') : '<p class="text-xs text-ink/50 py-2">ما فيه زيارات.</p>';
+    if (m.transferred_at) document.getElementById('lm-events').insertAdjacentHTML('beforeend', `
+      <div class="flex items-center justify-between gap-2 py-2">
+        <span><i class="ph-bold ph-arrows-left-right text-[#c9a227]"></i> نقل ${m.transferred} ${m.transferred === 1 ? 'ختم' : 'أختام'} من بطاقته القديمة</span>
+        <span class="text-xs text-ink/55">${new Date(m.transferred_at).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}</span>
+      </div>`);
     document.getElementById('lm-msgs').innerHTML = r.messages.length ? `<p class="text-xs font-bold text-ink/70 mb-1">رسائله</p><div class="text-sm divide-y divide-brand/10">${r.messages.map(x => `
       <div class="py-2"><p>${x.source === 'ai' ? '<span class="text-[10px] font-bold bg-violet-500/10 text-violet-700 rounded-full px-2 py-0.5 ml-1">المساعد</span>' : ''}${esc(x.body)}</p><p class="text-[11px] text-ink/50">${agoText(x.created_at)}</p></div>`).join('')}</div>` : '';
   }

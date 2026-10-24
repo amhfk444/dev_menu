@@ -11,6 +11,7 @@
 .ph-arrow-square-out:before { content: "\e5de"; }
 .ph-arrow-up:before { content: "\e08e"; }
 .ph-arrows-clockwise:before { content: "\e094"; }
+.ph-arrows-left-right:before { content: "\e0a0"; }
 .ph-arrows-out:before { content: "\e0a2"; }
 .ph-bell:before { content: "\e0ce"; }
 .ph-bell-simple-ringing:before { content: "\e5ea"; }
