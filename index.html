@@ -211,6 +211,7 @@
     </a>
     <nav class="hidden md:flex items-center gap-8 text-[13px] font-extrabold text-[#233d2c]/65">
       <a href="#guest" class="hover:text-[#233d2c] transition">المنيو</a>
+      <a href="#loyalty" class="hover:text-[#233d2c] transition">بطاقة الولاء</a>
       <a href="#how" class="hover:text-[#233d2c] transition">كيف يعمل؟</a>
       <a href="#features" class="hover:text-[#233d2c] transition">المزايا</a>
       <a href="#examples" class="examples-link hover:text-[#233d2c] transition">أمثلة</a>
@@ -232,11 +233,11 @@
         تجربة مجانية 7 أيام — بدون بطاقة ائتمانية
       </span>
       <h1 class="display hero-title">
-        منيو رقمي يليق بمطعمك،<br>ويرفع <em>مبيعاتك</em>
+        منيو رقمي وبيجر وبطاقة ولاء،<br>ترجّع لك <em>زبونك</em>
       </h1>
       <p class="lead max-w-xl mx-auto lg:mx-0">
-        أنشئ منيو مطعمك أو كافيهك خلال دقائق، شاركه مع ضيوفك برمز QR أنيق،
-        وحدّث أطباقك وأسعارك لحظياً — واستقبل الطلبات على الواتساب، بدون أي تطبيق.
+        منيو بصور أطباقك يفتح برمز QR، وبيجر يرن في جوال زبونك لما يجهز طلبه،
+        وبطاقة ولاء في محفظة جواله تجمع أختامه وترجّعه لك. كلها بدون أي تطبيق، واختر منها اللي تحتاجه بس.
       </p>
       <div class="flex flex-wrap items-center justify-center lg:justify-start gap-3">
         <a href="#register" class="btn-primary px-8 py-4 rounded-2xl text-sm font-black flex items-center gap-2">
@@ -248,8 +249,8 @@
       </div>
       <ul class="flex flex-wrap justify-center lg:justify-start gap-x-6 gap-y-2 text-[12.5px] font-bold text-[#233d2c]/60">
         <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-700 text-[11px]"></i> جاهز خلال دقائق</li>
-        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-700 text-[11px]"></i> عربي وإنجليزي</li>
-        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-700 text-[11px]"></i> رمز QR جاهز للطباعة</li>
+        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-700 text-[11px]"></i> بيجر بدون أجهزة</li>
+        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-700 text-[11px]"></i> بطاقة ولاء في Apple Wallet</li>
       </ul>
     </div>
 
@@ -274,7 +275,7 @@
       <div><b>7 أيام</b><span>تجربة مجانية</span></div>
       <div><b dir="ltr">&#x20C1; 499</b><span>سنوياً، أو 59 شهرياً</span></div>
       <div><b>عربي + EN</b><span>منيو بلغتين</span></div>
-      <div><b>QR</b><span>جاهز للطباعة</span></div>
+      <div><b>4 مميزات</b><span>اختر اللي تحتاجه</span></div>
     </div>
   </div>
 </section>
@@ -296,9 +297,47 @@
       <p class="lead">صور أطباقك، أسعارها، وصفها، وتصنيفاتها — بتصميم يحمل ألوان مطعمك وخلفيته. بدون تحميل تطبيق، وبدون منيو ورقي يتلف أو يحتاج طباعة من جديد كل ما تغيّر سعر.</p>
       <ul class="check-list space-y-3.5 inline-block text-right">
         <li><span><i class="fa-solid fa-check"></i></span> ثيمات وألوان وخلفية صورة أو فيديو</li>
+        <li><span><i class="fa-solid fa-check"></i></span> شكل قائمة أو صور كبيرة، والصورة تنفتح كاملة</li>
         <li><span><i class="fa-solid fa-check"></i></span> أحجام وأسعار متعددة لكل صنف</li>
         <li><span><i class="fa-solid fa-check"></i></span> السعرات الحرارية ومسببات الحساسية</li>
       </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ بطاقة الولاء ═══════════ -->
+<section id="loyalty" class="py-20 md:py-28 bg-[#ece6d9]/60">
+  <div class="wrap grid lg:grid-cols-[0.9fr_1.1fr] gap-14 lg:gap-20 items-center">
+    <div class="relative flex justify-center py-6 reveal order-last lg:order-first">
+      <div class="halo"></div>
+      <div class="phone rotate-[2deg]">
+        <video src="videos/loyalty-ad.mp4" poster="videos/loyalty-ad.jpg" autoplay muted loop playsinline preload="metadata" aria-label="كيف تشتغل بطاقة الولاء من DEV MENU"></video>
+      </div>
+      <div class="float-chip animate-float top-[10%] start-0 md:-start-6">
+        <span class="chip-ic bg-[#047857] text-white"><i class="fa-solid fa-stamp"></i></span>
+        <div>تم الختم — 4 من 8<small>الكاشير مسح كود الزبون</small></div>
+      </div>
+      <div class="float-chip animate-float bottom-[12%] end-0 md:-end-4" style="animation-delay:-2.7s">
+        <span class="chip-ic bg-[#233d2c] text-[#c9a227]"><i class="fa-solid fa-gift"></i></span>
+        <div>مكافأتك جاهزة<small>قهوة مجانية</small></div>
+      </div>
+    </div>
+    <div class="space-y-6 text-center lg:text-right reveal">
+      <span class="tag"><i class="fa-solid fa-award"></i> جديد: بطاقة الولاء</span>
+      <h2 class="display h2">زبونك جا مرة،<br>خلّه يرجع كل مرة</h2>
+      <p class="lead">بطاقة أختام رقمية باسم زبونك، يحفظها في محفظة جواله. بعد كل شراء ينختم له، ولما يكمّل ياخذ مكافأته. وإذا غاب، تجيه رسالة تذكّره فيك.</p>
+      <ul class="check-list space-y-3.5 inline-block text-right">
+        <li><span><i class="fa-solid fa-check"></i></span> يسجل مرة وحدة من كرت QR ثابت عند الكاشير</li>
+        <li><span><i class="fa-solid fa-check"></i></span> الختم بعد الشراء بس: الكاشير يمسح كوده، أو يختم تلقائياً مع البيجر</li>
+        <li><span><i class="fa-solid fa-check"></i></span> بطاقة في Apple Wallet بشعارك وألوانك وصورتك واسم الزبون</li>
+        <li><span><i class="fa-solid fa-check"></i></span> مساعد ذكي يكتب لكل زبون رسالة باسمه لما يغيب أو يقرب من مكافأته</li>
+        <li><span><i class="fa-solid fa-check"></i></span> ساعات هادية بختم دبل، وإهداء المكافأة لصديق</li>
+        <li><span><i class="fa-solid fa-check"></i></span> عندك بطاقة ولاء قديمة؟ الكاشير ينقل رصيد زبونك بضغطة</li>
+      </ul>
+      <div class="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-1">
+        <a href="#register" class="btn-primary px-7 py-3.5 rounded-2xl text-sm font-black">جرّبها مجاناً 7 أيام</a>
+        <a href="#pricing" class="text-sm font-black text-[#233d2c] underline underline-offset-4">باقة مستقلة، أو مع المنيو</a>
+      </div>
     </div>
   </div>
 </section>
@@ -338,7 +377,7 @@
   <div class="wrap">
     <div class="text-center max-w-2xl mx-auto mb-12 reveal">
       <span class="tag"><i class="fa-solid fa-star"></i> المزايا</span>
-      <h2 class="display h2">كل اللي يحتاجه منيو مطعمك</h2>
+      <h2 class="display h2">كل اللي يحتاجه مطعمك</h2>
     </div>
     <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
       <article class="feat feat-wide lg:col-span-2 reveal">
@@ -350,6 +389,16 @@
         <span class="feat-ic" style="background:#fdf6e3;color:#8a6d0f"><i class="fa-solid fa-palette"></i></span>
         <h3>بهوية مطعمك</h3>
         <p>ثيمات وألوان، وخلفية صورة أو فيديو، وزينة المناسبات: رمضان والعيد واليوم الوطني.</p>
+      </article>
+      <article class="feat reveal">
+        <span class="feat-ic" style="background:#fdf6e3;color:#8a6d0f"><i class="fa-solid fa-bell"></i></span>
+        <h3>البيجر في جوال زبونك</h3>
+        <p>يمسح الكود وياخذ رقمه، ولما يجهز طلبه يرن جواله على طول. بدون أجهزة بيجر تضيع أو تخرب.</p>
+      </article>
+      <article class="feat reveal">
+        <span class="feat-ic" style="background:#f5f3ff;color:#6d28d9"><i class="fa-solid fa-award"></i></span>
+        <h3>بطاقة ولاء بالأختام</h3>
+        <p>أختام بعد كل شراء، بطاقة في محفظة الجوال، ومساعد ذكي يرجّع لك زبونك. <a href="#loyalty" class="font-black text-[#233d2c] underline underline-offset-4">التفاصيل</a></p>
       </article>
       <article class="feat reveal">
         <span class="feat-ic" style="background:#eef6f0;color:#233d2c"><i class="fa-solid fa-hourglass-half"></i></span>
@@ -580,7 +629,7 @@
 <!-- ═══════════ الدعوة الأخيرة ═══════════ -->
 <section class="wrap pb-20">
   <div class="reveal rounded-[36px] text-center text-[#f5f2eb] px-6 py-16 md:py-20" style="background:radial-gradient(500px 260px at 50% 0%, rgba(201,162,39,.25), transparent 70%), linear-gradient(160deg,#2f5139,#233d2c 55%,#15271b)">
-    <h2 class="display text-3xl md:text-5xl leading-snug">منيو مطعمك يستاهل يكون أجمل</h2>
+    <h2 class="display text-3xl md:text-5xl leading-snug">مطعمك يستاهل زبون يرجع</h2>
     <p class="text-[15px] font-bold text-[#f5f2eb]/70 mt-4 mb-8">ابدأ خلال دقيقة، وجرّب كل المزايا 7 أيام مجاناً.</p>
     <div class="flex flex-wrap justify-center gap-3">
       <a href="#register" class="btn-gold px-8 py-4 rounded-2xl text-sm font-black flex items-center gap-2">أنشئ منيوك الآن <i class="fa-solid fa-arrow-left text-[11px]"></i></a>
@@ -606,6 +655,7 @@
       <h4 class="text-xs font-black mb-4 text-[#c9a227]">روابط سريعة</h4>
       <ul class="space-y-3 text-[12px] font-bold text-[#f5f2eb]/70">
         <li class="examples-link"><a href="#examples" class="hover:text-white transition">أمثلة على المنيو</a></li>
+        <li><a href="#loyalty" class="hover:text-white transition">بطاقة الولاء</a></li>
         <li><a href="#how" class="hover:text-white transition">كيف يعمل المنصة؟</a></li>
         <li><a href="#pricing" class="hover:text-white transition">الباقات والأسعار</a></li>
       </ul>
