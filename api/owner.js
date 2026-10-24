@@ -515,7 +515,7 @@ async function main(req) {
     const rulesChanged = settings.needed !== current.needed || settings.reward !== current.reward || JSON.stringify(settings.happy) !== JSON.stringify(current.happy);
     if (rulesChanged) {
       settings.rules_at = new Date().toISOString();
-      body.loyalty_near_lines = null; body.loyalty_near_at = null;
+      body.loyalty_near_lines = []; body.loyalty_near_at = null;
     }
     if (typeof b.enabled === 'boolean') body.loyalty_enabled = b.enabled;
     let row = (await rest(`clients?id=eq.${sid}`, { method: 'PATCH', body, prefer: 'return=representation' }))[0];
