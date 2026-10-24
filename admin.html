@@ -1009,6 +1009,20 @@
                 </div>
                 <textarea id="ly-welcome-text" rows="2" maxlength="200" class="input-pro hidden" placeholder="مثلاً: حيّاك الله في بيتك الثاني، هذا أول ختم لك"></textarea>
               </div>
+              <div class="space-y-3 pt-2 border-t border-brand/10">
+                <label class="flex items-center justify-between gap-3 pt-3"><span><b class="text-[13px] block"><i class="ph-bold ph-clock"></i> ساعات الهدوء: الختم فيها دبل</b><span class="text-[11px] text-ink/60">املأ الوقت اللي يكون فيه المحل فاضي، بدل ما تعطي خصم للكل</span></span>
+                  <input type="checkbox" id="ly-happy" class="w-5 h-5 accent-[#384f3d]"></label>
+                <div id="ly-happy-box" class="space-y-2 hidden">
+                  <div class="flex flex-wrap items-center gap-2 text-[13px]">من <select id="ly-happy-from" class="input-pro !w-auto !min-h-0 !py-1.5"></select> إلى <select id="ly-happy-to" class="input-pro !w-auto !min-h-0 !py-1.5"></select></div>
+                  <div id="ly-happy-days" class="flex flex-wrap gap-1.5"></div>
+                </div>
+                <label class="flex items-center justify-between gap-3"><span><b class="text-[13px] block"><i class="ph-bold ph-question"></i> "ليش ما رجعت؟"</b><span class="text-[11px] text-ink/60">سؤال للي غاب 10 أيام وأكثر، وتشوف الأسباب تحت</span></span>
+                  <input type="checkbox" id="ly-fb" class="w-5 h-5 accent-[#384f3d]"></label>
+                <label class="flex items-center justify-between gap-3 ps-5"><span class="text-[12px] text-ink/70">أعطه ختم هدية على جوابه (يزيد الردود ويرجّعه)</span>
+                  <input type="checkbox" id="ly-fb-gift" class="w-4 h-4 accent-[#384f3d]"></label>
+                <label class="flex items-center justify-between gap-3"><span><b class="text-[13px] block"><i class="ph-bold ph-heart"></i> "أهدها لصديق"</b><span class="text-[11px] text-ink/60">اللي يكمّل بطاقته يهدي مكافأته برابط، وصديقه يجيك زبون جديد</span></span>
+                  <input type="checkbox" id="ly-gifts" class="w-5 h-5 accent-[#384f3d]"></label>
+              </div>
               <button type="submit" id="ly-save" class="bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition">حفظ</button>
             </form>
 
@@ -1135,6 +1149,16 @@
           <div class="rounded-2xl border border-brand/10 p-4">
             <p class="text-xs font-bold text-ink/70 mb-3"><i class="ph-bold ph-users"></i> مين عملاؤك</p>
             <div id="ly-gender" class="space-y-3 text-sm"></div>
+          </div>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="rounded-2xl border border-brand/10 p-4">
+              <p class="text-xs font-bold text-ink/70 mb-3"><i class="ph-bold ph-question"></i> ليش ما رجعوا؟ <span class="font-normal text-ink/45">(آخر 3 شهور)</span></p>
+              <div id="ly-fb-stats" class="space-y-2.5 text-sm"></div>
+            </div>
+            <div class="rounded-2xl border border-brand/10 p-4">
+              <p class="text-xs font-bold text-ink/70 mb-3"><i class="ph-bold ph-heart"></i> الهدايا لأصدقائهم</p>
+              <div id="ly-gift-stats" class="grid grid-cols-2 gap-2"></div>
+            </div>
           </div>
           <div id="ly-filters" class="flex flex-wrap gap-2"></div>
           <div class="overflow-x-auto -mx-1">
@@ -3651,6 +3675,17 @@
     document.querySelectorAll('[name="ly-welcome"]').forEach(r => { r.checked = r.value === wm; });
     document.getElementById('ly-welcome-text').value = (st.welcome && st.welcome.text) || '';
     document.getElementById('ly-welcome-text').classList.toggle('hidden', wm !== 'custom');
+    const hp = st.happy || {}, hours = Array.from({ length: 25 }, (_, h) => h);
+    const hlabel = (h) => h === 0 || h === 24 ? '12 بالليل' : h < 12 ? `${h} الصبح` : h === 12 ? '12 الظهر' : h <= 17 ? `${h - 12} العصر` : `${h - 12} بالليل`;
+    document.getElementById('ly-happy').checked = !!hp.enabled;
+    document.getElementById('ly-happy-box').classList.toggle('hidden', !hp.enabled);
+    document.getElementById('ly-happy-from').innerHTML = hours.slice(0, 24).map(h => `<option value="${h}" ${h === hp.from ? 'selected' : ''}>${hlabel(h)}</option>`).join('');
+    document.getElementById('ly-happy-to').innerHTML = hours.slice(1).map(h => `<option value="${h}" ${h === hp.to ? 'selected' : ''}>${hlabel(h)}</option>`).join('');
+    ly.happyDays = new Set(hp.days || [0, 1, 2, 3, 4, 5, 6]);
+    renderHappyDays();
+    document.getElementById('ly-fb').checked = !st.feedback || st.feedback.enabled !== false;
+    document.getElementById('ly-fb-gift').checked = !st.feedback || st.feedback.gift !== false;
+    document.getElementById('ly-gifts').checked = !st.gifts || st.gifts.enabled !== false;
     document.getElementById('ly-loc-status').innerHTML = d.location_set
       ? '<span class="text-emerald-700 font-semibold"><i class="ph-bold ph-check-circle"></i> موقع المحل محدد</span>'
       : '<span class="text-brick font-semibold"><i class="ph-bold ph-warning-circle"></i> ما حددت موقع المحل للحين، والزبائن ما يقدرون يختمون بدونه</span>';
@@ -3729,6 +3764,11 @@
           <p class="text-[11px] text-ink/55 mt-0.5">${m.card_id ? esc(byId[m.card_id] ? lyCardLabel(byId[m.card_id]) : `زبون #${m.card_id}`) : 'لكل الأعضاء'} · ${when(m.created_at)}${m.wallet_sent ? ` · وصلت إشعار لـ ${m.wallet_sent} جوال` : ''}</p>
         </div>`).join('')}</div>` : '';
   }
+  const LY_DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  function renderHappyDays() {
+    document.getElementById('ly-happy-days').innerHTML = LY_DAYS.map((d, i) => `<button type="button" onclick="ly.happyDays.has(${i}) ? ly.happyDays.delete(${i}) : ly.happyDays.add(${i}); renderHappyDays()" class="text-[12px] font-bold px-2.5 py-1 rounded-full border ${ly.happyDays.has(i) ? 'bg-brand text-cream border-brand' : 'border-brand/20'}">${d}</button>`).join('');
+  }
+  document.addEventListener('change', (e) => { if (e.target && e.target.id === 'ly-happy') document.getElementById('ly-happy-box').classList.toggle('hidden', !e.target.checked); });
   document.addEventListener('change', (e) => { if (e.target && e.target.name === 'ly-welcome') document.getElementById('ly-welcome-text').classList.toggle('hidden', e.target.value !== 'custom'); });
   document.addEventListener('input', (e) => { if (e.target && e.target.id === 'ly-msg-body') document.getElementById('ly-msg-count').textContent = `${e.target.value.length}/200`; });
   async function sendLyMessage() {
@@ -3784,6 +3824,20 @@
     const bar = (label, x, color) => `<div><div class="flex justify-between text-[13px] mb-1"><span class="font-semibold">${label}</span><span class="text-ink/60">${x.n} عضو · ${x.v} زيارة · متوسط ${x.avg} زيارة</span></div><div class="h-2.5 rounded-full bg-brand/10 overflow-hidden"><div class="h-full rounded-full" style="width:${Math.round(x.v / totalV * 100)}%;background:${color}"></div></div></div>`;
     const lead = gm.v === gf.v ? '' : `<p class="text-[12px] text-ink/70"><i class="ph-bold ph-crown text-[#c9a227]"></i> ${gm.v > gf.v ? 'الرجال' : 'النساء'} أكثر زيارة: ${Math.round(Math.max(gm.v, gf.v) / totalV * 100)}% من الزيارات</p>`;
     document.getElementById('ly-gender').innerHTML = M.length ? bar('رجال', gm, '#384f3d') + bar('نساء', gf, '#c9a227') + lead + (gu ? `<p class="text-[11px] text-ink/45">${gu} عضو قديم ما كمّل بياناته</p>` : '') : '<p class="text-xs text-ink/50">لما يسجلون الأعضاء تطلع هنا.</p>';
+    // ليش ما رجعوا + الهدايا
+    if (ly.data) {
+      const fb = ly.data.feedback || { total: 0, reasons: {}, notes: [] };
+      const RS = { wait: 'الانتظار طويل', price: 'الأسعار', quality: 'الطعم أو الجودة', far: 'المكان بعيد', busy: 'ما صار عندهم وقت', other: 'شي ثاني' };
+      const sorted = Object.entries(fb.reasons).sort((a, b) => b[1] - a[1]);
+      document.getElementById('ly-fb-stats').innerHTML = fb.total ? sorted.map(([k, v]) => `
+        <div><div class="flex justify-between text-[13px] mb-1"><span class="font-semibold">${RS[k] || k}</span><span class="text-ink/60">${Math.round(v / fb.total * 100)}% (${v})</span></div>
+        <div class="h-2 rounded-full bg-brand/10 overflow-hidden"><div class="h-full rounded-full bg-brick/70" style="width:${Math.round(v / fb.total * 100)}%"></div></div></div>`).join('') +
+        (fb.notes.length ? `<div class="pt-2 space-y-1.5">${fb.notes.slice(0, 4).map(n => `<p class="text-[12px] text-ink/70 bg-brand/[0.04] rounded-lg px-2.5 py-1.5">«${esc(n.note)}»</p>`).join('')}</div>` : '')
+        : '<p class="text-xs text-ink/50">للحين ما فيه ردود. السؤال يطلع للي غابوا 10 أيام وأكثر.</p>';
+      const gs = ly.data.gifts || {};
+      const tile = (l, v) => `<div class="rounded-xl bg-brand/[0.04] border border-brand/10 p-2.5"><p class="text-[10px] text-ink/60">${l}</p><p class="text-lg font-bold">${v || 0}</p></div>`;
+      document.getElementById('ly-gift-stats').innerHTML = tile('هدايا انرسلت', gs.sent) + tile('انستلمت', gs.claimed) + tile('انصرفت في المحل', gs.redeemed) + tile('زبائن جدد جوا بهدية', gs.new_members);
+    }
     document.getElementById('ly-filters').innerHTML = LY_FILTERS.map(([k, label, fn]) => `<button type="button" onclick="ly.filter='${k}'; renderLyMembers()" class="text-[12px] font-bold px-3 py-1.5 rounded-full border transition ${ly.filter === k ? 'bg-brand text-cream border-brand' : 'border-brand/20 hover:border-brand/40'}">${label} <span class="opacity-60">${M.filter(fn).length}</span></button>`).join('');
     const q = (document.getElementById('ly-q').value || '').trim().toLowerCase();
     const fn = (LY_FILTERS.find(f => f[0] === ly.filter) || LY_FILTERS[0])[2];
@@ -3834,7 +3888,7 @@
     document.getElementById('lm-stamp').disabled = m.stamps >= n;
     document.getElementById('lm-events').innerHTML = r.events.length ? r.events.map(e => `
       <div class="flex items-center justify-between gap-2 py-2">
-        <span>${e.kind === 'redeem' ? '<i class="ph-bold ph-gift text-[#c9a227]"></i> استخدم المكافأة' : e.distance_m == null ? '<i class="ph-bold ph-seal-check text-ink/50"></i> ختم من صاحب المحل' : '<i class="ph-bold ph-seal-check text-emerald-700"></i> ختم زيارة'}</span>
+        <span>${e.kind === 'gift' ? '<i class="ph-bold ph-heart text-[#c9a227]"></i> أهدى مكافأته لصديق' : e.kind === 'gift_redeem' ? '<i class="ph-bold ph-gift text-[#c9a227]"></i> استخدم هدية من صديق' : e.kind === 'redeem' ? '<i class="ph-bold ph-gift text-[#c9a227]"></i> استخدم المكافأة' : e.distance_m == null ? '<i class="ph-bold ph-seal-check text-ink/50"></i> ختم من صاحب المحل' : '<i class="ph-bold ph-seal-check text-emerald-700"></i> ختم زيارة'}</span>
         <span class="text-xs text-ink/55">${new Date(e.created_at).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}</span>
       </div>`).join('') : '<p class="text-xs text-ink/50 py-2">ما فيه زيارات.</p>';
     document.getElementById('lm-msgs').innerHTML = r.messages.length ? `<p class="text-xs font-bold text-ink/70 mb-1">رسائله</p><div class="text-sm divide-y divide-brand/10">${r.messages.map(x => `
@@ -3901,7 +3955,10 @@
       const r = await api('loyalty-settings', { settings: {
         needed: +document.getElementById('ly-needed').value, reward: document.getElementById('ly-reward').value.trim(),
         cooldown_hours: +document.getElementById('ly-cooldown').value, radius_m: +document.getElementById('ly-radius').value,
-        welcome: { mode: (document.querySelector('[name="ly-welcome"]:checked') || {}).value || 'ai', text: document.getElementById('ly-welcome-text').value.trim() }
+        welcome: { mode: (document.querySelector('[name="ly-welcome"]:checked') || {}).value || 'ai', text: document.getElementById('ly-welcome-text').value.trim() },
+        happy: { enabled: document.getElementById('ly-happy').checked, from: +document.getElementById('ly-happy-from').value, to: +document.getElementById('ly-happy-to').value, days: [...(ly.happyDays || [])] },
+        feedback: { enabled: document.getElementById('ly-fb').checked, gift: document.getElementById('ly-fb-gift').checked },
+        gifts: { enabled: document.getElementById('ly-gifts').checked }
       } });
       ly.data.settings = r.settings; renderLoyalty(); showToast('تم حفظ إعدادات البطاقة');
     } catch (e) { showToast(e.message || 'تعذر الحفظ', true); }

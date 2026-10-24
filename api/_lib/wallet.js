@@ -98,4 +98,4 @@ function buildCtx({ store, settings, card, lat, lng, notice, nearText }) {
   return { store, settings, card, url, restoreUrl: `${url}${url.includes('?') ? '&' : '?'}t=${encodeURIComponent(card.token)}`, lat, lng, notice, nearText };
 }
 
-module.exports = { configured, createPass, updatePass, buildCtx };
+module.exports = { configured, createPass, updatePass, buildCtx, cardUrl };

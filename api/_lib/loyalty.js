@@ -28,6 +28,23 @@ function normalizeWelcome(raw) {
   };
 }
 
+// ساعات الهدوء: الختم فيها دبل (بتوقيت الرياض). from/to ساعات من 0 إلى 24، days من 0 (الأحد) إلى 6
+function normalizeHappy(raw) {
+  const h = raw && typeof raw === 'object' ? raw : {};
+  const hr = (v, d) => (Number.isInteger(+v) && +v >= 0 && +v <= 24 ? +v : d);
+  let from = hr(h.from, 15), to = hr(h.to, 17);
+  if (to <= from) to = Math.min(24, from + 1);
+  const days = Array.isArray(h.days) ? [...new Set(h.days.map(Number).filter(d => Number.isInteger(d) && d >= 0 && d <= 6))].sort() : [0, 1, 2, 3, 4, 5, 6];
+  return { enabled: h.enabled === true, from, to, days: days.length ? days : [0, 1, 2, 3, 4, 5, 6] };
+}
+// هل الحين ساعات الهدوء؟ (الرياض UTC+3 طول السنة)
+function isHappyNow(settings, now = new Date()) {
+  const h = settings.happy;
+  if (!h || !h.enabled) return false;
+  const riyadh = new Date(now.getTime() + 3 * 3600e3);
+  return h.days.includes(riyadh.getUTCDay()) && riyadh.getUTCHours() >= h.from && riyadh.getUTCHours() < h.to;
+}
+
 // إعدادات البطاقة بقيم آمنة دايماً
 function normalizeLoyalty(raw) {
   const s = raw && typeof raw === 'object' ? raw : {};
@@ -38,7 +55,10 @@ function normalizeLoyalty(raw) {
     cooldown_hours: COOLDOWNS.includes(int(s.cooldown_hours, 12)) ? int(s.cooldown_hours, 12) : 12,
     radius_m: Math.min(200, Math.max(25, int(s.radius_m, 50))),
     design: normalizeDesign(s.design),
-    welcome: normalizeWelcome(s.welcome)
+    welcome: normalizeWelcome(s.welcome),
+    happy: normalizeHappy(s.happy),
+    feedback: { enabled: !(s.feedback && s.feedback.enabled === false), gift: !(s.feedback && s.feedback.gift === false) },
+    gifts: { enabled: !(s.gifts && s.gifts.enabled === false) }
   };
 }
 
@@ -52,4 +72,4 @@ function distanceM(lat1, lng1, lat2, lng2) {
 // موقع صالح؟
 const validPoint = (lat, lng) => Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && !(lat === 0 && lng === 0);
 
-module.exports = { normalizeLoyalty, normalizeDesign, distanceM, validPoint, COOLDOWNS, STYLES, ICONS };
+module.exports = { normalizeLoyalty, normalizeDesign, isHappyNow, distanceM, validPoint, COOLDOWNS, STYLES, ICONS };

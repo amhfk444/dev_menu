@@ -26,6 +26,10 @@
   .btn-ghost { background: #fff; color: var(--brand); border: 1.5px solid rgba(35,61,44,.2); }
   .field { width: 100%; background: #f8f6f1; border: 1.5px solid rgba(35,61,44,.18); border-radius: 14px; padding: 14px 15px; font-size: 16px; color: var(--ink); }
   .field:focus { outline: none; border-color: var(--brand); background: #fff; }
+  .reason[aria-checked="true"] { background: var(--brand); color: var(--brand-ink, #fff); border-color: var(--brand); }
+  .happy { border-radius: 16px; padding: 12px 14px; font-size: 14px; font-weight: 600; display: flex; gap: 10px; align-items: center; background: rgba(201,162,39,.14); color: #6b520a; }
+  .happy.now { background: var(--gold); color: #15271b; animation: glow 2s ease-in-out infinite; }
+  @keyframes glow { 50% { box-shadow: 0 0 0 6px rgba(201,162,39,.25); } }
   .gender[aria-checked="true"] { background: var(--brand); color: var(--brand-ink, #fff); border-color: var(--brand); }
 
   .msg { border-radius: 16px; padding: 14px 16px; font-size: 15px; font-weight: 600; display: flex; gap: 10px; align-items: flex-start; }
@@ -65,6 +69,12 @@
 
   <!-- التسجيل: أول مرة -->
   <section id="v-join" class="space-y-4 hidden">
+    <div id="j-gift" class="card p-5 text-center space-y-1 hidden">
+      <i class="ph-bold ph-gift text-4xl text-[#c9a227]"></i>
+      <p class="font-bold text-lg"><span id="jg-from"></span> أهداك <span id="jg-reward"></span></p>
+      <p class="text-sm opacity-70">سجّل هنا وتنحفظ الهدية في بطاقتك، واستلمها من المحل.</p>
+    </div>
+    <div class="happy-box hidden"></div>
     <div class="lcard" id="j-card">
       <p class="text-sm opacity-75">اجمع <b id="j-needed"></b> أختام وخذ</p>
       <p id="j-reward" class="text-2xl font-bold mt-0.5"></p>
@@ -97,6 +107,8 @@
 
   <!-- البطاقة -->
   <section id="v-card" class="space-y-4 hidden">
+    <div class="happy-box hidden"></div>
+    <div id="c-gifts" class="space-y-3 hidden"></div>
     <div id="c-message" class="card p-4 hidden">
       <div class="flex items-start gap-3">
         <span class="w-10 h-10 rounded-xl bg-[#233d2c]/10 text-[#233d2c] grid place-items-center shrink-0"><i class="ph-bold ph-megaphone"></i></span>
@@ -120,11 +132,28 @@
 
     <div id="c-msg" class="msg hidden"></div>
 
+    <div id="c-survey" class="card p-5 space-y-3 hidden">
+      <p class="font-bold">وحشتنا! وش اللي خلاك ما ترجع؟</p>
+      <p class="text-xs opacity-60">جوابك يوصل لصاحب المحل مباشرة، ويساعده يتحسن.</p>
+      <div class="grid grid-cols-2 gap-2" id="sv-reasons">
+        <button type="button" class="reason field !text-center !text-sm font-semibold" data-r="wait">الانتظار طويل</button>
+        <button type="button" class="reason field !text-center !text-sm font-semibold" data-r="price">الأسعار</button>
+        <button type="button" class="reason field !text-center !text-sm font-semibold" data-r="quality">الطعم أو الجودة</button>
+        <button type="button" class="reason field !text-center !text-sm font-semibold" data-r="far">المكان بعيد عني</button>
+        <button type="button" class="reason field !text-center !text-sm font-semibold" data-r="busy">ما صار عندي وقت</button>
+        <button type="button" class="reason field !text-center !text-sm font-semibold" data-r="other">شي ثاني</button>
+      </div>
+      <textarea id="sv-note" rows="2" maxlength="300" class="field hidden" placeholder="قلنا أكثر (اختياري)"></textarea>
+      <button type="button" id="sv-send" class="btn btn-brand !py-3 hidden">أرسل</button>
+      <p id="sv-gift" class="text-xs text-center opacity-70 hidden"><i class="ph-bold ph-gift"></i> وعلى جوابك ختم هدية</p>
+    </div>
+
     <div id="c-reward" class="card p-5 text-center space-y-3 hidden">
       <i class="ph-bold ph-gift text-4xl text-[#c9a227]"></i>
       <p class="font-bold text-lg">مكافأتك جاهزة: <span id="c-reward-name"></span></p>
       <p class="text-sm opacity-70">اطلب من الموظف، واضغط الزر قدامه.</p>
       <button id="redeem-btn" type="button" class="btn btn-gold"><i class="ph-bold ph-gift"></i> استخدم المكافأة الحين</button>
+      <button id="gift-btn" type="button" class="btn btn-ghost hidden"><i class="ph-bold ph-heart"></i> أهدها لصديق</button>
     </div>
 
     <button id="stamp-btn" type="button" class="btn btn-brand"><i class="ph-bold ph-seal-check"></i> سجّل زيارتي</button>
@@ -162,10 +191,31 @@
   </div>
 </div>
 
+<!-- إهداء المكافأة -->
+<div id="gift-sheet" class="fixed inset-0 z-40 bg-black/50 flex items-end sm:items-center justify-center p-4 hidden">
+  <div class="card w-full max-w-sm p-6 space-y-4 text-center">
+    <div id="gs-ask" class="space-y-4">
+      <i class="ph-bold ph-heart text-4xl text-[#c9a227]"></i>
+      <p class="text-lg font-bold">تهدي مكافأتك لصديق؟</p>
+      <p class="text-sm opacity-70">تنشال أختامك وتبدأ بطاقة جديدة، ويوصلك رابط ترسله له. يسجل منه ويستلمها من المحل خلال 30 يوم.</p>
+      <button id="gs-yes" class="btn btn-gold">أهدها</button>
+      <button id="gs-no" class="btn btn-ghost">لا، بستخدمها أنا</button>
+    </div>
+    <div id="gs-done" class="space-y-3 hidden">
+      <i class="ph-bold ph-check-circle text-4xl text-emerald-600"></i>
+      <p class="text-lg font-bold">هديتك جاهزة!</p>
+      <p class="text-sm opacity-70">أرسل الرابط لصديقك:</p>
+      <a id="gs-wa" target="_blank" rel="noopener" class="btn btn-brand"><i class="ph-bold ph-whatsapp-logo"></i> أرسلها بالواتساب</a>
+      <button id="gs-copy" class="btn btn-ghost"><i class="ph-bold ph-copy"></i> انسخ الرابط</button>
+      <button id="gs-close" class="text-sm opacity-60 pt-1">تم</button>
+    </div>
+  </div>
+</div>
+
 <!-- إثبات المكافأة للموظف -->
 <section id="v-proof" class="hidden">
   <div class="ring"><i class="ph-bold ph-check"></i></div>
-  <p class="text-lg opacity-90 mt-6">مكافأة مستخدمة</p>
+  <p class="text-lg opacity-90 mt-6" id="proof-title">مكافأة مستخدمة</p>
   <p id="proof-reward" class="text-3xl font-bold mt-1"></p>
   <p id="proof-name" class="text-lg opacity-90 mt-1"></p>
   <p id="proof-clock" class="mt-6"></p>
@@ -183,7 +233,8 @@
   const show = (v) => VIEWS.forEach(x => $(`v-${x}`).classList.toggle('hidden', x !== v));
   const loadToken = () => { try { return localStorage.getItem(KEY) || ''; } catch { return ''; } };
   const saveToken = (t) => { try { t ? localStorage.setItem(KEY, t) : localStorage.removeItem(KEY); } catch {} };
-  let settings = null, card = null, busy = false, walletOn = false, justJoined = false;
+  let settings = null, card = null, busy = false, walletOn = false, justJoined = false, happyNow = false, gifts = [], survey = false;
+  const giftCode = (params.get('gift') || '').trim();
 
   $('f-cc').innerHTML = DM.countryOptions();
   $('p-cc').innerHTML = DM.countryOptions();
@@ -236,6 +287,9 @@
     $('wallet-btn').classList.toggle('btn-brand', walletOn && !card.in_wallet && justJoined);
     $('wallet-btn').classList.toggle('btn-ghost', !(walletOn && !card.in_wallet && justJoined));
     $('phone-box').classList.toggle('hidden', !!card.has_profile);
+    $('gift-btn').classList.toggle('hidden', !settings.gifts);
+    renderHappy(); renderGifts();
+    $('c-survey').classList.toggle('hidden', !survey);
     $('c-hello').textContent = card.name ? `أهلاً ${card.name.split(' ')[0]}` : 'بطاقتك';
     $('c-hint').textContent = card.visits ? `زرتنا ${card.visits} ${card.visits === 1 ? 'مرة' : card.visits <= 10 ? 'مرات' : 'مرة'}${card.rewards ? `، واستخدمت ${card.rewards} ${card.rewards === 1 ? 'مكافأة' : 'مكافآت'}` : ''}.` : '';
     show('card');
@@ -276,7 +330,7 @@
     if (r.stamped) {
       renderCard(Math.min(card.stamps, settings.needed) - 1);
       if (navigator.vibrate) navigator.vibrate(60);
-      msg('ok', 'ph-check-circle', card.stamps >= settings.needed ? 'انضاف ختمك وكمّلت البطاقة!' : 'انضاف ختمك، شكراً لزيارتك');
+      msg('ok', 'ph-check-circle', card.stamps >= settings.needed ? (r.count > 1 ? 'انضاف لك ختمين وكمّلت البطاقة!' : 'انضاف ختمك وكمّلت البطاقة!') : r.count > 1 ? 'انضاف لك ختمين! (وقت الختم الدبل)' : 'انضاف ختمك، شكراً لزيارتك');
     } else {
       renderCard();
       if (r.reason === 'COOLDOWN') msg('warn', 'ph-clock', `ختمت زيارة قريبة. الختم الجاي بعد ${timeLeft(r.next_at) || 'شوي'}.`);
@@ -324,11 +378,13 @@
     setBusy(btn, true, 'نتأكد من موقعك');
     try {
       const loc = await getLocation().catch(e => { throw { message: locationError(e) }; });
-      const r = await DM.post('/api/loyalty?action=join', { slug, ...profile, ...loc });
+      const r = await DM.post('/api/loyalty?action=join', { slug, ...profile, ...loc, gift: giftCode || undefined });
       saveToken(r.token);
       if (params.get('s')) { params.delete('s'); history.replaceState(null, '', location.pathname + (params.toString() ? `?${params}` : '')); }
-      settings = r.settings; walletOn = !!r.wallet; justJoined = !!r.is_new;
+      settings = r.settings; walletOn = !!r.wallet; justJoined = !!r.is_new; happyNow = !!r.happy_now; gifts = r.gifts || [];
       afterStamp(r);
+      if (r.gift_error) msg('warn', 'ph-gift', r.gift_error);
+      if (giftCode) { params.delete('gift'); history.replaceState(null, '', location.pathname + (params.toString() ? `?${params}` : '')); }
       if (!r.is_new) msg('ok', 'ph-check-circle', r.stamped ? 'رجعت لبطاقتك، وانضاف ختم اليوم' : 'رجعت لبطاقتك');
       if (r.message) showMessage(r.message, $('store-name').textContent);
     } catch (e) {
@@ -359,6 +415,83 @@
     } finally { setBusy(btn, false); }
   });
 
+  // ─── ساعات الهدوء (ختم دبل) ───
+  const DAY_NAMES = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  const hourText = (h) => h === 0 || h === 24 ? '12 بالليل' : h < 12 ? `${h} الصبح` : h === 12 ? '12 الظهر' : h <= 17 ? `${h - 12} العصر` : `${h - 12} بالليل`;
+  function renderHappy() {
+    const h = settings && settings.happy;
+    document.querySelectorAll('.happy-box').forEach(box => {
+      if (!h || !h.enabled) { box.classList.add('hidden'); return; }
+      const days = h.days.length === 7 ? 'كل يوم' : h.days.map(d => DAY_NAMES[d]).join(' و');
+      box.className = `happy-box happy ${happyNow ? 'now' : ''}`;
+      box.innerHTML = `<i class="ph-bold ph-clock text-xl"></i><span>${happyNow ? `الحين وقت الختم الدبل! لين ${hourText(h.to)}` : `ختم دبل ${days} من ${hourText(h.from)} إلى ${hourText(h.to)}`}</span>`;
+    });
+  }
+
+  // ─── الهدايا اللي وصلته ───
+  function renderGifts() {
+    const box = $('c-gifts');
+    box.classList.toggle('hidden', !gifts.length);
+    box.innerHTML = gifts.map(g => `
+      <div class="card p-5 text-center space-y-2" style="border-color:rgba(201,162,39,.5)">
+        <i class="ph-bold ph-gift text-4xl text-[#c9a227]"></i>
+        <p class="font-bold">${esc(g.from)} أهداك ${esc(g.reward)}</p>
+        <p class="text-xs opacity-60">استخدمها من المحل قدام الموظف قبل ${new Date(g.expires_at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long' })}</p>
+        <button type="button" class="btn btn-gold" data-gift="${esc(g.code)}"><i class="ph-bold ph-gift"></i> استخدم الهدية الحين</button>
+      </div>`).join('');
+  }
+  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  $('c-gifts').addEventListener('click', async (ev) => {
+    const btn = ev.target.closest('[data-gift]');
+    if (!btn || busy) return;
+    if (!confirm('اعرض جوالك للموظف واضغط موافق')) return;
+    setBusy(btn, true, 'لحظة');
+    try {
+      const loc = await getLocation().catch(e => { throw { message: locationError(e) }; });
+      const r = await DM.post('/api/loyalty?action=gift-redeem', { slug, t: loadToken(), code: btn.dataset.gift, ...loc });
+      gifts = r.gifts || [];
+      showProof(r.redeemed_at, r.reward, 'هدية مستخدمة');
+      renderGifts();
+    } catch (e) { msg('err', 'ph-warning-circle', e.message || 'تعذر استخدام الهدية'); }
+    finally { setBusy(btn, false); }
+  });
+
+  // ─── ليش ما رجعت؟ ───
+  let svReason = '';
+  document.querySelectorAll('.reason').forEach(b => b.addEventListener('click', () => {
+    svReason = b.dataset.r;
+    document.querySelectorAll('.reason').forEach(x => x.setAttribute('aria-checked', String(x === b)));
+    $('sv-note').classList.remove('hidden'); $('sv-send').classList.remove('hidden');
+  }));
+  $('sv-send').onclick = async () => {
+    if (busy || !svReason) return;
+    setBusy($('sv-send'), true, 'نرسل');
+    try {
+      const r = await DM.post('/api/loyalty?action=feedback', { slug, t: loadToken(), reason: svReason, note: $('sv-note').value.trim() });
+      survey = false; card = r.card; renderCard(r.gifted ? Math.min(card.stamps, settings.needed) - 1 : -1);
+      msg('ok', 'ph-heart', r.gifted ? 'شكراً لك! وصل ردك، وهذا ختم هدية منّا' : 'شكراً لك! وصل ردك لصاحب المحل');
+    } catch (e) { survey = false; renderCard(); msg('ok', 'ph-heart', e.message || 'شكراً لك'); }
+    finally { setBusy($('sv-send'), false); }
+  };
+
+  // ─── أهدِ المكافأة لصديق ───
+  let giftUrl = '';
+  $('gift-btn').onclick = () => { $('gs-ask').classList.remove('hidden'); $('gs-done').classList.add('hidden'); $('gift-sheet').classList.remove('hidden'); };
+  $('gs-no').onclick = $('gs-close').onclick = () => $('gift-sheet').classList.add('hidden');
+  $('gs-yes').onclick = async () => {
+    if (busy) return;
+    setBusy($('gs-yes'), true, 'نجهز الهدية');
+    try {
+      const r = await DM.post('/api/loyalty?action=gift', { slug, t: loadToken() });
+      card = r.card; renderCard(); giftUrl = r.url;
+      $('gs-wa').href = `https://wa.me/?text=${encodeURIComponent(r.share)}`;
+      $('gs-ask').classList.add('hidden'); $('gs-done').classList.remove('hidden');
+      if (navigator.share) navigator.share({ text: r.share }).catch(() => {});
+    } catch (e) { $('gift-sheet').classList.add('hidden'); msg('err', 'ph-warning-circle', e.message || 'تعذر تجهيز الهدية'); }
+    finally { setBusy($('gs-yes'), false); }
+  };
+  $('gs-copy').onclick = async () => { try { await navigator.clipboard.writeText(giftUrl); $('gs-copy').innerHTML = '<i class="ph-bold ph-check"></i> انسخ'; } catch { prompt('انسخ الرابط:', giftUrl); } };
+
   // ─── المكافأة ───
   $('redeem-btn').onclick = () => $('confirm').classList.remove('hidden');
   $('confirm-no').onclick = () => $('confirm').classList.add('hidden');
@@ -379,9 +512,10 @@
   };
 
   let clockTimer = null;
-  function showProof(iso) {
-    $('proof-reward').textContent = settings.reward;
-    $('proof-name').textContent = `المكافأة رقم ${card.rewards} لهالبطاقة`;
+  function showProof(iso, reward, title) {
+    $('proof-reward').textContent = reward || settings.reward;
+    $('proof-title').textContent = title || 'مكافأة مستخدمة';
+    $('proof-name').textContent = card.name ? card.name : '';
     const used = new Date(iso);
     $('proof-date').textContent = `استُخدمت ${used.toLocaleTimeString('ar-SA-u-nu-latn', { hour: 'numeric', minute: '2-digit' })}، ${used.toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long' })}`;
     const tick = () => { $('proof-clock').textContent = new Date().toLocaleTimeString('en-GB', { hour12: false }); };
@@ -433,6 +567,13 @@
       if (token) {
         const r = await DM.get(`/api/loyalty?action=card&slug=${encodeURIComponent(slug)}&t=${encodeURIComponent(token)}`);
         setStore(r.store); settings = r.settings; card = r.card; walletOn = !!r.wallet;
+        happyNow = !!r.happy_now; gifts = r.gifts || []; survey = !!r.survey;
+        // جاي من رابط هدية وعنده بطاقة: نستلمها على طول
+        if (giftCode) {
+          try { const g = await DM.post('/api/loyalty?action=gift-claim', { slug, t: token, code: giftCode }); gifts = g.gifts || gifts; msg('ok', 'ph-gift', 'وصلتك الهدية! استخدمها من المحل'); }
+          catch (e) { msg('warn', 'ph-gift', e.message || 'تعذر استلام الهدية'); }
+          params.delete('gift'); history.replaceState(null, '', location.pathname + (params.toString() ? `?${params}` : ''));
+        }
         renderCard();
         showMessage(r.message, r.store.name);
         // جاي من مسح الكود: نختم على طول
@@ -443,7 +584,14 @@
         return;
       }
       const r = await DM.get(`/api/loyalty?action=info&slug=${encodeURIComponent(slug)}`);
-      setStore(r.store); settings = r.settings;
+      setStore(r.store); settings = r.settings; happyNow = !!r.happy_now;
+      renderHappy();
+      if (giftCode) {
+        try {
+          const g = (await DM.get(`/api/loyalty?action=gift-info&slug=${encodeURIComponent(slug)}&code=${encodeURIComponent(giftCode)}`)).gift;
+          if (g.available) { $('jg-from').textContent = g.from; $('jg-reward').textContent = g.reward; $('j-gift').classList.remove('hidden'); }
+        } catch {}
+      }
       $('j-needed').textContent = settings.needed;
       $('j-reward').textContent = settings.reward;
       paint();

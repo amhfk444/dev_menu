@@ -340,11 +340,13 @@ async function main(req) {
     const { store } = await context(req);
     const extra = (await rest(`clients?id=eq.${store.id}&select=loyalty_enabled,loyalty_settings,loyalty_lat,loyalty_lng,loyalty_ai,loyalty_near_lines`))[0] || {};
     const day = 864e5, iso = (n) => q(new Date(Date.now() - n * day).toISOString());
-    const [cards, stamps7, redeemed, messages] = await Promise.all([
+    const [cards, stamps7, redeemed, messages, feedback, gifts] = await Promise.all([
       rest(`loyalty_cards?client_id=eq.${store.id}&select=id,name,phone,stamps,visits,rewards,last_stamp_at,created_at&order=last_stamp_at.desc.nullslast&limit=500`),
       rest(`loyalty_events?client_id=eq.${store.id}&kind=eq.stamp&created_at=gte.${iso(7)}&select=id`),
       rest(`loyalty_events?client_id=eq.${store.id}&kind=eq.redeem&select=id`),
-      rest(`loyalty_messages?client_id=eq.${store.id}&select=id,card_id,body,wallet_sent,created_at,source,kind&order=id.desc&limit=15`).catch(() => [])
+      rest(`loyalty_messages?client_id=eq.${store.id}&select=id,card_id,body,wallet_sent,created_at,source,kind&order=id.desc&limit=15`).catch(() => []),
+      rest(`loyalty_feedback?client_id=eq.${store.id}&created_at=gte.${iso(90)}&select=reason,note,created_at,card_id&order=id.desc&limit=500`).catch(() => []),
+      rest(`loyalty_gifts?client_id=eq.${store.id}&select=status,new_member,created_at&limit=5000`).catch(() => [])
     ]);
     const active = cards.filter(c => c.last_stamp_at && Date.parse(c.last_stamp_at) > Date.now() - 30 * day).length;
     return {
@@ -352,7 +354,16 @@ async function main(req) {
       location_set: validPoint(extra.loyalty_lat, extra.loyalty_lng), slug: store.client_slug,
       stats: { members: cards.length, active30: active, stamps7: stamps7.length, redeemed: redeemed.length },
       cards: cards.slice(0, 50), messages, wallet: wallet.configured(),
-      ai: extra.loyalty_ai === true, near_lines: Array.isArray(extra.loyalty_near_lines) ? extra.loyalty_near_lines : []
+      ai: extra.loyalty_ai === true, near_lines: Array.isArray(extra.loyalty_near_lines) ? extra.loyalty_near_lines : [],
+      feedback: {
+        total: feedback.length,
+        reasons: feedback.reduce((a, f) => (a[f.reason] = (a[f.reason] || 0) + 1, a), {}),
+        notes: feedback.filter(f => f.note).slice(0, 10).map(f => ({ note: f.note, reason: f.reason, created_at: f.created_at }))
+      },
+      gifts: {
+        sent: gifts.length, claimed: gifts.filter(g => g.status !== 'sent').length,
+        redeemed: gifts.filter(g => g.status === 'redeemed').length, new_members: gifts.filter(g => g.new_member).length
+      }
     };
   }
 

@@ -57,6 +57,16 @@ async function pushWalletCards(storeId, { cardIds = null, notice = null, notices
   return sent;
 }
 
+// ساعات الهدوء كعرض حقيقي يقدر المساعد يذكره
+const DAY_NAMES = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+const hourText = (h) => h === 0 || h === 24 ? '12 بالليل' : h < 12 ? `${h} الصبح` : h === 12 ? '12 الظهر' : h <= 17 ? `${h - 12} العصر` : `${h - 12} بالليل`;
+function happyText(settings) {
+  const h = settings.happy;
+  if (!h || !h.enabled) return '';
+  const days = h.days.length === 7 ? 'كل يوم' : h.days.map(d => DAY_NAMES[d]).join(' و');
+  return `الختم دبل ${days} من ${hourText(h.from)} إلى ${hourText(h.to)}`;
+}
+
 // مين يستاهل رسالة اليوم؟ (الأولوية: مكافأة جاهزة، باقي ختم، زيارة ثانية، اشتياق)
 function pickGuests(cards, settings, now = Date.now()) {
   const out = [];
@@ -99,7 +109,7 @@ async function runAssistant(storeId, { maxGuests = 25 } = {}) {
     const previous = {};
     for (const m of prev) (previous[m.card_id] = previous[m.card_id] || []).length < 3 && previous[m.card_id].push(m.body);
     const texts = await loyaltyMessages({
-      storeName: store.name, businessType: type, reward: settings.reward, needed: settings.needed,
+      storeName: store.name, businessType: type, reward: settings.reward, needed: settings.needed, offer: happyText(settings),
       guests: picked.map(p => ({ ref: String(p.card.id), kind: p.kind, name: p.card.name, gender: p.card.gender, visits: p.card.visits, stamps: Math.min(p.card.stamps, settings.needed), days_since: p.days, usual_gap: p.gap, previous: previous[p.card.id] || [] }))
     });
     const now = new Date().toISOString();

@@ -98,7 +98,7 @@ Every message must feel written fresh for this guest:
 - Vary the opening, the rhythm and the image every time. Do not start with greetings like "مرحبا" or "عزيزي العميل" and never reuse a line from the guest's previous messages.
 - No marketing clichés ("لا تفوت الفرصة", "عرض حصري", "نسعد بزيارتك"). No hashtags. At most one emoji, often none.
 - 50 to 120 characters. One or two short sentences.
-- Do not invent offers, discounts, events or menu items. Only mention the reward that is given.
+- Do not invent offers, discounts, events or menu items. Only mention the reward that is given, and the <offer> if one is given (use it in some messages, not all).
 - Never mention AI, automation, data or tracking (don't say "لاحظنا إنك غبت 23 يوم"; say it the way a friend would feel it).
 - If the guest's first name and gender are given, write with correct Arabic gender agreement (masculine for m, feminine for f) and use the first name naturally in some messages, not all. If they are missing, keep the wording neutral so it fits anyone.
 
@@ -142,11 +142,12 @@ const clean = (t, max) => String(t || '').replace(/\s+/g, ' ').replace(/^["«]|[
  * guests: [{ ref, kind, visits, stamps, days_since, usual_gap, previous: [نصوص سابقة] }]
  * @returns {Promise<Record<string,string>>} ref → نص الرسالة
  */
-async function loyaltyMessages({ storeName, businessType, reward, needed, guests }) {
+async function loyaltyMessages({ storeName, businessType, reward, needed, guests, offer }) {
   if (!guests.length) return {};
   const prompt = [
     `<place>${storeName}${businessType ? ` (${businessType})` : ''}</place>`,
     `<reward>${reward} بعد ${needed} أختام</reward>`,
+    offer ? `<offer>${offer}</offer>` : '',
     `<guests>`,
     ...guests.map(g => `<guest ref="${g.ref}" kind="${g.kind}"${g.name ? ` first_name="${String(g.name).replace(/["<>]/g, '').split(/\s+/)[0].slice(0, 20)}"` : ''}${g.gender ? ` gender="${g.gender}"` : ''} visits="${g.visits}" stamps="${g.stamps}/${needed}" days_since_last_visit="${g.days_since}"${g.usual_gap ? ` usually_comes_every_days="${g.usual_gap}"` : ''}>${(g.previous || []).length ? `previous messages (don't repeat): ${g.previous.map(p => `«${p}»`).join(' ')}` : ''}</guest>`),
     `</guests>`,

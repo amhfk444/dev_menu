@@ -11,7 +11,7 @@
 // =====================================================================
 const crypto = require('crypto');
 const { handler, rest, rpc, q, ApiError, readBody, findPublicStore, waNumber } = require('./_lib/core');
-const { normalizeLoyalty, distanceM, validPoint } = require('./_lib/loyalty');
+const { normalizeLoyalty, distanceM, validPoint, isHappyNow } = require('./_lib/loyalty');
 const wallet = require('./_lib/wallet');
 const { nearLineFor } = require('./_lib/loyalty-assistant');
 const { loyaltyMessages } = require('./_lib/ai');
@@ -88,15 +88,51 @@ const syncWallet = async (ctx, card) => {
 };
 const publicInfo = (ctx) => ({
   store: { name: ctx.store.name, logo_url: ctx.store.logo_url },
-  settings: { needed: ctx.settings.needed, reward: ctx.settings.reward, cooldown_hours: ctx.settings.cooldown_hours, design: ctx.settings.design },
+  settings: { needed: ctx.settings.needed, reward: ctx.settings.reward, cooldown_hours: ctx.settings.cooldown_hours, design: ctx.settings.design,
+              happy: ctx.settings.happy, gifts: ctx.settings.gifts.enabled },
+  happy_now: isHappyNow(ctx.settings),
   wallet: wallet.configured()
 });
 
+// ختم زيارة (ختمين في ساعات الهدوء)
 async function stampCard(ctx, card, distance) {
-  const r = await rpc('server_loyalty_stamp', { p_card: card.id, p_cooldown_hours: ctx.settings.cooldown_hours, p_needed: ctx.settings.needed, p_distance: distance });
+  const count = isHappyNow(ctx.settings) ? 2 : 1;
+  const r = await rpc('server_loyalty_stamp', { p_card: card.id, p_cooldown_hours: ctx.settings.cooldown_hours, p_needed: ctx.settings.needed, p_distance: distance, p_count: count });
   const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
   if (r.ok) await syncWallet(ctx, fresh);
-  return { stamped: !!r.ok, reason: r.ok ? null : r.reason, next_at: r.next_at || null, card: cardView(fresh) };
+  return { stamped: !!r.ok, count: r.ok ? count : 0, reason: r.ok ? null : r.reason, next_at: r.next_at || null, card: cardView(fresh) };
+}
+
+const FEEDBACK = ['wait', 'price', 'quality', 'far', 'busy', 'other'];
+// "ليش ما رجعت؟" يطلع للي غاب 10 أيام وأكثر، ومرة وحدة كل شهرين
+async function surveyDue(ctx, card) {
+  if (!ctx.settings.feedback.enabled || !card.last_stamp_at) return false;
+  if (Date.now() - Date.parse(card.last_stamp_at) < 10 * 864e5) return false;
+  const last = await rest(`loyalty_feedback?card_id=eq.${card.id}&created_at=gte.${q(new Date(Date.now() - 60 * 864e5).toISOString())}&select=id&limit=1`).catch(() => [1]);
+  return !last.length;
+}
+// الهدايا اللي وصلت لهالبطاقة وما استخدمها
+async function giftsFor(ctx, card) {
+  const rows = await rest(`loyalty_gifts?to_card=eq.${card.id}&status=eq.claimed&expires_at=gt.${q(new Date().toISOString())}&select=code,reward,from_card,expires_at&order=id.desc&limit=5`).catch(() => []);
+  if (!rows.length) return [];
+  const from = await rest(`loyalty_cards?id=in.(${rows.map(r => r.from_card).join(',')})&select=id,name`).catch(() => []);
+  const names = Object.fromEntries(from.map(f => [f.id, f.name]));
+  return rows.map(r => ({ code: r.code, reward: r.reward, from: names[r.from_card] || 'صديقك', expires_at: r.expires_at }));
+}
+// ربط هدية بالبطاقة (الصديق استلمها)
+async function claimGift(ctx, card, code, isNew) {
+  if (!/^[A-Za-z0-9_-]{8,40}$/.test(String(code || ''))) return null;
+  const g = (await rest(`loyalty_gifts?code=eq.${q(code)}&client_id=eq.${ctx.store.id}&select=*`))[0];
+  if (!g) throw new ApiError(404, 'الهدية غير موجودة', 'GIFT_NOT_FOUND');
+  if (g.from_card === card.id) throw new ApiError(409, 'ما تقدر تستلم هديتك أنت، أرسلها لصديقك', 'OWN_GIFT');
+  if (g.status !== 'sent') {
+    if (g.to_card === card.id) return g;
+    throw new ApiError(409, 'هذي الهدية انستلمت من قبل', 'GIFT_TAKEN');
+  }
+  if (Date.parse(g.expires_at) < Date.now()) throw new ApiError(409, 'انتهت صلاحية الهدية', 'GIFT_EXPIRED');
+  const rows = await rest(`loyalty_gifts?id=eq.${g.id}&status=eq.sent`, { method: 'PATCH', prefer: 'return=representation', body: { to_card: card.id, status: 'claimed', claimed_at: new Date().toISOString(), new_member: !!isNew } });
+  if (!rows.length) throw new ApiError(409, 'هذي الهدية انستلمت من قبل', 'GIFT_TAKEN');
+  return rows[0];
 }
 
 async function cardByToken(ctx, token) {
@@ -120,7 +156,8 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       // رسالة المحل تطلع إذا عمرها أقل من 14 يوم
       const m = await latestMessage(ctx.store.id, card.id);
       const message = m && Date.parse(m.created_at) > Date.now() - 14 * 864e5 ? { id: m.id, body: m.body, at: m.created_at } : null;
-      return { ...publicInfo(ctx), card: cardView(card), message };
+      const [survey, gifts] = await Promise.all([surveyDue(ctx, card), giftsFor(ctx, card)]);
+      return { ...publicInfo(ctx), card: cardView(card), message, survey, gifts };
     }
 
     // بطاقة جديدة (أو رجوع لبطاقته من جوال ثاني بنفس الرقم، وهو داخل المحل) + ختم أول زيارة
@@ -141,8 +178,11 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
         await rest(`loyalty_cards?id=eq.${card.id}`, { method: 'PATCH', body: { name: card.name || profile.name, gender: card.gender || profile.gender } });
       }
       const out = await stampCard(ctx, card, distance);
+      // جاي من رابط هدية: نستلمها مع التسجيل
+      let gift_error = null;
+      if (b.gift) { try { await claimGift(ctx, card, b.gift, isNew); } catch (e) { gift_error = e.message; } }
       const welcome = isNew ? await welcomeMessage(ctx, { ...card, ...out.card }) : null;
-      return { ...publicInfo(ctx), token: card.token, is_new: isNew, ...out, message: welcome };
+      return { ...publicInfo(ctx), token: card.token, is_new: isNew, ...out, message: welcome, gifts: await giftsFor(ctx, card), gift_error };
     }
 
     // إكمال البيانات (للبطاقات القديمة اللي انسجلت بدون اسم). لو الرقم مربوط ببطاقة ثانية ندمجهم
@@ -189,6 +229,71 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
       await syncWallet(ctx, fresh);
       return { ...publicInfo(ctx), redeemed: true, redeemed_at: new Date().toISOString(), card: cardView(fresh) };
+    }
+
+    // ─── ليش ما رجعت؟ ───
+    if (action === 'feedback' && req.method === 'POST') {
+      const ctx = await loadStore(b.slug);
+      const card = await cardByToken(ctx, b.t);
+      if (!FEEDBACK.includes(b.reason)) throw new ApiError(400, 'اختر سبب');
+      if (!(await surveyDue(ctx, card))) throw new ApiError(409, 'وصلنا ردك، شكراً لك', 'DONE');
+      const note = String(b.note || '').replace(/\s+/g, ' ').trim().slice(0, 300);
+      await rest('loyalty_feedback', { method: 'POST', body: { client_id: ctx.store.id, card_id: card.id, reason: b.reason, note: note || null } });
+      // ختم هدية على الرد (لو صاحب المحل مفعّلها)
+      let gifted = false;
+      if (ctx.settings.feedback.gift && card.stamps < ctx.settings.needed) {
+        const r = await rpc('server_loyalty_stamp', { p_card: card.id, p_cooldown_hours: 0, p_needed: ctx.settings.needed, p_distance: null, p_count: 1 });
+        gifted = !!r.ok;
+      }
+      const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
+      if (gifted) await syncWallet(ctx, fresh);
+      return { ok: true, gifted, card: cardView(fresh) };
+    }
+
+    // ─── أهدِ مكافأتك لصديق: تنقص الأختام ويطلع رابط للمشاركة ───
+    if (action === 'gift' && req.method === 'POST') {
+      const ctx = await loadStore(b.slug);
+      if (!ctx.settings.gifts.enabled) throw new ApiError(403, 'الإهداء متوقف في هذا المحل');
+      const card = await cardByToken(ctx, b.t);
+      if (card.stamps < ctx.settings.needed) throw new ApiError(409, 'ما كملت الأختام للحين', 'NOT_ENOUGH');
+      const r = await rpc('server_loyalty_gift', { p_card: card.id, p_needed: ctx.settings.needed });
+      if (!r.ok) throw new ApiError(409, 'ما كملت الأختام للحين', 'NOT_ENOUGH');
+      const code = crypto.randomBytes(9).toString('base64url');
+      await rest('loyalty_gifts', { method: 'POST', body: { client_id: ctx.store.id, code, from_card: card.id, reward: ctx.settings.reward } });
+      const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
+      await syncWallet(ctx, fresh);
+      const url = `${wallet.cardUrl(ctx.store.client_slug)}${wallet.cardUrl(ctx.store.client_slug).includes('?') ? '&' : '?'}gift=${code}`;
+      const who = card.name ? card.name.split(' ')[0] : 'صديقك';
+      return { url, code, card: cardView(fresh), share: `${who} أهداك ${ctx.settings.reward} من ${ctx.store.name} 🎁\nسجّل من الرابط واستلمها من المحل:\n${url}` };
+    }
+
+    // ─── رابط الهدية: مين أهداها ووش هي ───
+    if (action === 'gift-info' && req.method === 'GET') {
+      const ctx = await loadStore(req.query.slug);
+      const g = (await rest(`loyalty_gifts?code=eq.${q(String(req.query.code || ''))}&client_id=eq.${ctx.store.id}&select=from_card,reward,status,expires_at`))[0];
+      if (!g) throw new ApiError(404, 'الهدية غير موجودة', 'GIFT_NOT_FOUND');
+      const from = (await rest(`loyalty_cards?id=eq.${g.from_card}&select=name`))[0] || {};
+      return { ...publicInfo(ctx), gift: { from: from.name ? from.name.split(' ')[0] : 'صديقك', reward: g.reward, available: g.status === 'sent' && Date.parse(g.expires_at) > Date.now() } };
+    }
+
+    // ─── استلام هدية لبطاقة موجودة ───
+    if (action === 'gift-claim' && req.method === 'POST') {
+      const ctx = await loadStore(b.slug);
+      const card = await cardByToken(ctx, b.t);
+      await claimGift(ctx, card, b.code, false);
+      return { ok: true, gifts: await giftsFor(ctx, card) };
+    }
+
+    // ─── استخدام الهدية في المحل (قدام الموظف) ───
+    if (action === 'gift-redeem' && req.method === 'POST') {
+      const ctx = await loadStore(b.slug);
+      const card = await cardByToken(ctx, b.t);
+      checkPresence(ctx, b);
+      const rows = await rest(`loyalty_gifts?code=eq.${q(String(b.code || ''))}&to_card=eq.${card.id}&status=eq.claimed&expires_at=gt.${q(new Date().toISOString())}`,
+        { method: 'PATCH', prefer: 'return=representation', body: { status: 'redeemed', redeemed_at: new Date().toISOString() } });
+      if (!rows.length) throw new ApiError(409, 'الهدية مستخدمة أو منتهية', 'GIFT_USED');
+      await rest('loyalty_events', { method: 'POST', body: { client_id: ctx.store.id, card_id: card.id, kind: 'gift_redeem' } }).catch(() => {});
+      return { ok: true, reward: rows[0].reward, redeemed_at: new Date().toISOString(), gifts: await giftsFor(ctx, card) };
     }
 
     // إضافة البطاقة للمحفظة: نجهزها أول مرة يطلبها الزبون بس (عشان ما نستهلك رصيد الخدمة على الكل)
