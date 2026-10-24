@@ -15,7 +15,7 @@ const { normalizeLoyalty, distanceM, validPoint, isHappyNow } = require('./_lib/
 const wallet = require('./_lib/wallet');
 const { nearLineFor } = require('./_lib/loyalty-assistant');
 const { loyaltyMessages } = require('./_lib/ai');
-const { purchaseStamp, consumeStampCode, pagerTicket, cooldownLeft, leftText } = require('./_lib/loyalty-stamp');
+const { purchaseStamp, consumeStampCode, pagerTicket, cooldownLeft, leftText, memberQr } = require('./_lib/loyalty-stamp');
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{10,64}$/;
 const MAX_ACCURACY_M = 100;   // دقة أسوأ من كذا = نطلب منه يحاول مرة ثانية
@@ -44,7 +44,7 @@ function checkPresence(ctx, b) {
   return d;
 }
 
-const cardView = (c) => ({ id: c.id, name: c.name || null, gender: c.gender || null, stamps: c.stamps, visits: c.visits, rewards: c.rewards, last_stamp_at: c.last_stamp_at, in_wallet: !!c.wallet_url, has_phone: !!c.phone, has_profile: !!(c.name && c.phone && c.gender) });
+const cardView = (c) => ({ id: c.id, qr: c.client_id ? memberQr(c) : null, name: c.name || null, gender: c.gender || null, stamps: c.stamps, visits: c.visits, rewards: c.rewards, last_stamp_at: c.last_stamp_at, in_wallet: !!c.wallet_url, has_phone: !!c.phone, has_profile: !!(c.name && c.phone && c.gender) });
 
 // بيانات التسجيل: الاسم والجوال والنوع (كلها إجبارية)
 function readProfile(b) {

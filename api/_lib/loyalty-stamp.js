@@ -52,4 +52,16 @@ async function pagerTicket(storeId, token) {
   return (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${storeId}&select=id,status,created_at,loyalty_card_id,loyalty_stamped`).catch(() => []))[0] || null;
 }
 
-module.exports = { purchaseStamp, newStampCode, consumeStampCode, pagerTicket, cooldownLeft, leftText };
+// كود العضوية اللي يعرضه الزبون للكاشير: DMV1.<رقم العضوية>.<توقيع>
+// التوقيع بمفتاح الخادم، فما أحد يقدر يسوي كود لرقم ثاني. وما فيه الرقم السري للبطاقة
+const SECRET = `devmenu-member:${process.env.SUPABASE_SERVICE_ROLE_KEY || ''}`;
+const sign = (storeId, cardId) => crypto.createHmac('sha256', SECRET).update(`${storeId}:${cardId}`).digest('base64url').slice(0, 10);
+const memberQr = (card) => `DMV1.${card.id}.${sign(card.client_id, card.id)}`;
+function parseMemberQr(storeId, value) {
+  const m = String(value || '').trim().match(/^DMV1\.(\d{1,12})\.([A-Za-z0-9_-]{10})$/);
+  if (!m) return null;
+  const id = Number(m[1]);
+  return crypto.timingSafeEqual(Buffer.from(m[2]), Buffer.from(sign(storeId, id))) ? id : null;
+}
+
+module.exports = { purchaseStamp, newStampCode, consumeStampCode, pagerTicket, cooldownLeft, leftText, memberQr, parseMemberQr };

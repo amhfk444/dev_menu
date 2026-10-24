@@ -18,6 +18,8 @@
 .ph-bowl-food:before { content: "\eaa4"; }
 .ph-bread:before { content: "\e81c"; }
 .ph-cake:before { content: "\e780"; }
+.ph-camera:before { content: "\e10e"; }
+.ph-camera-slash:before { content: "\e110"; }
 .ph-caret-down:before { content: "\e136"; }
 .ph-caret-left:before { content: "\e138"; }
 .ph-carrot:before { content: "\ed38"; }

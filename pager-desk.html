@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="/css/icons.css">
 <!-- رمز QR بنقاط دائرية وعيون مزخرفة -->
 <script src="/js/vendor/qr-code-styling.js"></script>
+<script src="/js/vendor/jsqr.js"></script>
 <script src="js/api.js"></script>
 <style>
   :root { --brand: #233d2c; --sand: #f5f2eb; --gold: #c9a227; }
@@ -59,6 +60,7 @@
       </div>
     </div>
     <div class="flex gap-2 shrink-0">
+      <button id="scan-btn" class="mini bg-[#233d2c] text-white hidden"><i class="ph-bold ph-camera"></i> امسح بطاقة زبون</button>
       <button id="stamp-btn" class="mini bg-[#c9a227] text-[#15271b] hidden"><i class="ph-bold ph-seal-check"></i> كود ختم</button>
       <button id="qr-btn" class="mini bg-white border border-[#233d2c]/15"><i class="ph-bold ph-qr-code"></i> QR للطباعة</button>
     </div>
@@ -100,6 +102,23 @@
 </div>
 
 <!-- QR -->
+<!-- مسح بطاقة الزبون بالكاميرا: الزبون يعرض كود عضويته، والكاشير يختمه -->
+<div id="scan-modal" class="fixed inset-0 z-50 bg-black/80 hidden items-center justify-center p-5">
+  <div class="bg-white rounded-[28px] w-full max-w-sm p-5 text-center space-y-3">
+    <p class="text-lg font-black"><i class="ph-bold ph-camera text-[#c9a227]"></i> وجّه الكاميرا على كود الزبون</p>
+    <div class="relative rounded-2xl overflow-hidden bg-black aspect-square">
+      <video id="scan-video" playsinline muted class="w-full h-full object-cover"></video>
+      <div class="absolute inset-[18%] border-4 border-[#c9a227] rounded-2xl pointer-events-none"></div>
+      <div id="scan-result" class="absolute inset-0 hidden flex-col items-center justify-center gap-2 p-4 text-white text-center"></div>
+    </div>
+    <form id="scan-manual" class="flex gap-2" dir="rtl">
+      <input id="scan-id" inputmode="numeric" placeholder="أو اكتب رقم العضوية" class="flex-1 min-w-0 rounded-2xl border border-[#233d2c]/20 px-4 py-3 font-bold text-center" dir="ltr">
+      <button class="bg-[#233d2c] text-white font-black rounded-2xl px-5">ختم</button>
+    </form>
+    <button id="scan-close" class="w-full bg-[#f5f2eb] font-black rounded-2xl py-3">إغلاق</button>
+  </div>
+</div>
+
 <!-- كود ختم بطاقة الولاء: يطلع بعد الدفع، والزبون يمسحه -->
 <div id="stamp-modal" class="fixed inset-0 z-50 bg-black/75 hidden items-center justify-center p-5">
   <div class="bg-white rounded-[28px] w-full max-w-sm p-6 text-center space-y-4">
@@ -253,6 +272,7 @@
       const r = await call('pager');
       slug = r.slug; $('store-name').textContent = r.name || ''; maxRings = r.max_rings || 5;
       $('stamp-btn').classList.toggle('hidden', !r.loyalty);
+      $('scan-btn').classList.toggle('hidden', !r.loyalty);
       // تحديث لحظي: رقم جديد أو عميل شاف التنبيه يظهر هنا على طول
       if (r.live && !liveOn) { liveOn = true; DM.live(r.live, () => load()); }
       // ما نلمس الأرقام اللي جاري تحديثها
@@ -262,6 +282,61 @@
     } catch (e) { if (e.status !== 401) toast(e.message || 'تعذر التحديث'); }
     timer = setTimeout(load, document.hidden ? 15000 : 4000);
   }
+
+  // ─── مسح بطاقة الزبون بالكاميرا ───
+  let scanStream = null, scanBusy = false, scanLoop = null, lastQr = '', lastQrAt = 0;
+  const scanCanvas = document.createElement('canvas'), scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true });
+  function scanShow(ok, html) {
+    const el = $('scan-result');
+    el.className = `absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-white text-center ${ok ? 'bg-emerald-700/90' : 'bg-amber-700/90'}`;
+    el.innerHTML = html;
+    clearTimeout(el._h); el._h = setTimeout(() => { el.className = 'absolute inset-0 hidden'; }, 2800);
+  }
+  async function stampMember(payload) {
+    if (scanBusy) return;
+    scanBusy = true;
+    try {
+      const r = await call('loyalty-scan', payload);
+      const who = esc(r.who.name);
+      if (r.stamped) {
+        scanShow(true, `<i class="ph-bold ph-check-circle text-6xl"></i><b class="text-xl">${r.count > 1 ? 'ختمين' : 'ختم'} لـ ${who}</b><span class="font-bold" dir="ltr">${Math.min(r.stamps, r.needed)} / ${r.needed}</span>`);
+        if (navigator.vibrate) navigator.vibrate(80);
+      } else scanShow(false, `<i class="ph-bold ph-clock text-6xl"></i><b class="text-lg">${who}</b><span class="font-bold">${esc(r.note || 'ما انضاف ختم')}</span>`);
+    } catch (e) { scanShow(false, `<i class="ph-bold ph-warning-circle text-6xl"></i><b>${esc(e.message || 'تعذر الختم')}</b>`); }
+    setTimeout(() => { scanBusy = false; }, 1500);
+  }
+  function scanTick() {
+    const v = $('scan-video');
+    if (v.readyState >= 2 && !scanBusy && window.jsQR) {
+      const w = 480, h = Math.round(w * v.videoHeight / v.videoWidth) || 480;
+      scanCanvas.width = w; scanCanvas.height = h;
+      scanCtx.drawImage(v, 0, 0, w, h);
+      const code = jsQR(scanCtx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'dontInvert' });
+      // نفس الكود ما ينقرأ مرتين ورا بعض خلال 6 ثواني
+      if (code && code.data && !(code.data === lastQr && Date.now() - lastQrAt < 6000)) {
+        lastQr = code.data; lastQrAt = Date.now();
+        stampMember({ qr: code.data });
+      }
+    }
+    scanLoop = requestAnimationFrame(scanTick);
+  }
+  async function openScanner() {
+    $('scan-modal').classList.remove('hidden'); $('scan-modal').classList.add('flex');
+    try {
+      scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+      $('scan-video').srcObject = scanStream; await $('scan-video').play();
+      scanLoop = requestAnimationFrame(scanTick);
+    } catch { scanShow(false, '<i class="ph-bold ph-camera-slash text-5xl"></i><b>ما قدرنا نفتح الكاميرا</b><span class="text-sm">اكتب رقم العضوية تحت</span>'); }
+  }
+  function closeScanner() {
+    cancelAnimationFrame(scanLoop);
+    if (scanStream) scanStream.getTracks().forEach(t => t.stop());
+    scanStream = null;
+    $('scan-modal').classList.add('hidden'); $('scan-modal').classList.remove('flex');
+  }
+  $('scan-btn').onclick = openScanner;
+  $('scan-close').onclick = closeScanner;
+  $('scan-manual').onsubmit = (e) => { e.preventDefault(); const id = normDigits($('scan-id').value).replace(/\D/g, ''); if (id) { stampMember({ member_id: id }); $('scan-id').value = ''; } };
 
   // ─── كود ختم بطاقة الولاء ───
   let stampTimer = null, stampCode = '', stampExpires = 0;

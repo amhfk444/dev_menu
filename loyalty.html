@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="/css/loyalty-card.css">
 <script src="js/api.js"></script>
 <script src="/js/loyalty-card.js"></script>
+<script src="/js/vendor/qrcode.min.js"></script>
 <style>
   :root { --brand: #233d2c; --brand-2: #2f5139; --sand: #f5f2eb; --gold: #c9a227; --ink: #1b3022; }
   body { font-family: 'IBM Plex Sans Arabic', sans-serif; background: var(--sand); color: var(--ink); min-height: 100vh; min-height: 100dvh; -webkit-text-size-adjust: 100%; }
@@ -44,6 +45,7 @@
   @keyframes flow { 0% { background-position: 0% 50%; } 100% { background-position: 400% 50%; } }
   #v-proof .ring { width: 130px; height: 130px; border-radius: 50%; background: rgba(255,255,255,.18); display: grid; place-items: center; font-size: 64px; animation: breathe 1.4s ease-in-out infinite; }
   @keyframes breathe { 50% { transform: scale(1.08); } }
+  #c-qr img, #c-qr canvas { width: 100% !important; height: 100% !important; }
   #proof-clock { font-size: 56px; font-weight: 700; direction: ltr; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
   .hidden { display: none !important; }
   @media (prefers-reduced-motion: reduce) { #v-proof { animation-duration: 20s; } }
@@ -159,7 +161,12 @@
     </div>
 
     <button id="stamp-btn" type="button" class="btn btn-brand"><i class="ph-bold ph-seal-check"></i> سجّل زيارتي</button>
-    <p id="c-purchase" class="card p-4 text-sm text-center font-semibold hidden"><i class="ph-bold ph-receipt"></i> بعد ما تدفع، اطلب من الكاشير <b>كود الختم</b> وامسحه بكاميرا جوالك<span id="c-pager-hint">، أو خذ رقم بيجر وينختم لك تلقائياً</span>.</p>
+    <div id="c-qr-box" class="card p-5 text-center space-y-3 hidden">
+      <p class="font-bold"><i class="ph-bold ph-qr-code"></i> اعرض هذا الكود للكاشير بعد ما تدفع</p>
+      <div id="c-qr" class="w-48 h-48 mx-auto bg-white p-2 rounded-2xl"></div>
+      <p class="text-sm opacity-70">رقم عضويتك <b dir="ltr" id="c-qr-id"></b></p>
+    </div>
+    <p id="c-purchase" class="text-xs text-center opacity-70 hidden"><i class="ph-bold ph-receipt"></i> أو اطلب من الكاشير <b>كود الختم</b> وامسحه بكاميرا جوالك<span id="c-pager-hint">، ولو أخذت رقم بيجر ينختم لك تلقائياً</span>.</p>
     <div id="wallet-prompt" class="card p-5 space-y-3 text-center hidden">
       <i class="ph-bold ph-wallet text-3xl text-[#233d2c]"></i>
       <p class="font-bold">احفظ بطاقتك في المحفظة</p>
@@ -301,6 +308,13 @@
     $('c-survey').classList.toggle('hidden', !survey);
     $('c-hello').textContent = card.name ? `أهلاً ${card.name.split(' ')[0]}` : 'بطاقتك';
     $('c-member-id').textContent = `#${card.id}`;
+    // كود العضوية للكاشير (ما يطلع والبطاقة مكتملة)
+    $('c-qr-box').classList.toggle('hidden', !card.qr || full);
+    if (card.qr && $('c-qr').dataset.v !== card.qr) {
+      $('c-qr').dataset.v = card.qr; $('c-qr').innerHTML = '';
+      new QRCode($('c-qr'), { text: card.qr, width: 176, height: 176, colorDark: '#13261b', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    }
+    $('c-qr-id').textContent = `#${card.id}`;
     $('c-hint').textContent = card.visits ? `زرتنا ${card.visits} ${card.visits === 1 ? 'مرة' : card.visits <= 10 ? 'مرات' : 'مرة'}${card.rewards ? `، واستخدمت ${card.rewards} ${card.rewards === 1 ? 'مكافأة' : 'مكافآت'}` : ''}.` : '';
     show('card');
   }

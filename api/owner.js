@@ -18,7 +18,7 @@ const { normalizeLoyalty, validPoint } = require('./_lib/loyalty');
 const wallet = require('./_lib/wallet');
 const { pushWalletCards, runAssistant } = require('./_lib/loyalty-assistant');
 const { loyaltyMessages } = require('./_lib/ai');
-const { purchaseStamp, newStampCode } = require('./_lib/loyalty-stamp');
+const { purchaseStamp, newStampCode, parseMemberQr, cooldownLeft, leftText } = require('./_lib/loyalty-stamp');
 
 const bySort = (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id;
 const COFFEE_TYPES = ['cafe', 'mixed'];
@@ -536,6 +536,25 @@ async function main(req) {
     const row = await newStampCode(sid);
     const url = `${wallet.cardUrl(store.client_slug)}${wallet.cardUrl(store.client_slug).includes('?') ? '&' : '?'}c=${row.code}`;
     return { code: row.code, url, expires_at: row.expires_at };
+  }
+
+  // ─── الكاشير يمسح كود عضوية الزبون (أو يكتب رقمه) ويختمه بعد الدفع ───
+  if (action === 'loyalty-scan') {
+    const x = (await rest(`clients?id=eq.${sid}&select=loyalty_enabled,loyalty_settings`))[0] || {};
+    if (!x.loyalty_enabled) throw new ApiError(409, 'شغّل بطاقة الولاء أول من لوحة التحكم');
+    const settings = normalizeLoyalty(x.loyalty_settings);
+    let id = null;
+    if (b.qr) { id = parseMemberQr(sid, b.qr); if (!id) throw new ApiError(400, 'هذا مو كود عضوية من بطاقتنا', 'BAD_QR'); }
+    else id = parseInt(String(b.member_id || '').replace(/[^\d]/g, ''), 10);
+    const card = Number.isInteger(id) ? (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${sid}&select=*`))[0] : null;
+    if (!card) throw new ApiError(404, 'ما لقينا عضو بهذا الرقم', 'NO_MEMBER');
+    const who = { id: card.id, name: card.name || `زبون #${card.id}` };
+    if (card.stamps >= settings.needed) return { stamped: false, who, reason: 'FULL', note: 'بطاقته مكتملة، يستخدم مكافأته أول', stamps: card.stamps, needed: settings.needed };
+    const next = cooldownLeft(card, settings);
+    if (next) return { stamped: false, who, reason: 'COOLDOWN', note: `انختم قبل شوي، الختم الجاي بعد ${leftText(next)}`, stamps: card.stamps, needed: settings.needed };
+    const r = await purchaseStamp(sid, card.id, settings);
+    const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=stamps`))[0] || {};
+    return { stamped: r.stamped, count: r.count, who, reason: r.reason, stamps: fresh.stamps, needed: settings.needed };
   }
 
   // ─── بطاقة الولاء: صاحب المحل يعطي ختم لعضو بنفسه ───

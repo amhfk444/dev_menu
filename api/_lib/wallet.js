@@ -37,10 +37,13 @@ function passBody({ store, settings, card, url, restoreUrl, lat, lng, notice, st
     headerFields: [{ label: 'الأختام', value: `${s} / ${n}`, changeMessage: 'صار عندك %@ ختم' }],
     secondaryFields: [{ label: 'المكافأة', value: settings.reward }, { label: s >= n ? 'جاهزة' : 'باقي', value: s >= n ? 'استخدمها الحين' : `${n - s} أختام` }],
     backFields: [
+      { label: 'رقم العضوية', value: `#${card.id}` },
       { label: 'زياراتك', value: String(card.visits || 0) },
-      { label: 'طريقة الختم', value: 'امسح كود المحل وأنت داخله، وينضاف ختمك على طول.' },
+      { label: 'طريقة الختم', value: 'بعد ما تدفع، اعرض الكود اللي في البطاقة للكاشير، أو امسح كود الختم اللي يطلعه لك.' },
       { label: 'افتح بطاقتك', value: restoreUrl || url }
     ],
+    // كود العضوية: الكاشير يصوّره من المحفظة ويختم
+    ...(card.client_id ? { barcodeValue: require('./loyalty-stamp').memberQr(card), barcodeFormat: 'QR', barcodeAltText: `رقم العضوية #${card.id}` } : {}),
     sharingProhibited: true,
     // رسالة المحل: لما تتغير تطلع إشعار على الجوال (لازم تكون موجودة من أول مرة، عشان كذا مسافة لو ما فيه رسالة)
     notification: String(notice || ' ').slice(0, 250)
