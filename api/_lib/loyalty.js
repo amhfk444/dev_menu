@@ -17,10 +17,9 @@ function normalizeDesign(raw) {
     stamp_color: HEX.test(d.stamp_color) ? d.stamp_color.toLowerCase() : '#c9a227',
     icon: ICONS.includes(d.icon) ? d.icon : 'coffee',
     stamp_image: okUrl(d.stamp_image),
-    // خلفية البطاقة: لون (حسب الشكل)، أو صورة، أو فيديو (والصورة تكون أول لقطة منه للمحفظة)
-    bg: ['color', 'image', 'video'].includes(d.bg) && (d.bg !== 'image' || okUrl(d.bg_image)) && (d.bg !== 'video' || okUrl(d.bg_video)) ? d.bg : 'color',
-    bg_image: okUrl(d.bg_image),
-    bg_video: okUrl(d.bg_video)
+    // خلفية البطاقة: لون (حسب الشكل) أو صورة. (الفيديو انشال: المحفظة ما تشغّله، واللي اختاره قبل تبقى صورته)
+    bg: (d.bg === 'image' || d.bg === 'video') && okUrl(d.bg_image) ? 'image' : 'color',
+    bg_image: okUrl(d.bg_image)
   };
 }
 

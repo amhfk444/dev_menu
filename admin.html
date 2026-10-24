@@ -1061,11 +1061,11 @@
               </div>
               <div class="space-y-2">
                 <p class="text-xs font-semibold text-ink/70">خلفية البطاقة</p>
-                <div id="ly-bg" class="grid grid-cols-3 gap-2"></div>
+                <div id="ly-bg" class="grid grid-cols-2 gap-2"></div>
+                <input type="file" id="ly-bg-file" accept="image/png,image/jpeg,image/webp" class="hidden" onchange="uploadCardBg(this)">
                 <div id="ly-bg-up" class="flex flex-wrap items-center gap-2 pt-1 hidden">
-                  <label class="cursor-pointer bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-3.5 py-2 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-upload-simple"></i> <span id="ly-bg-up-label"></span>
-                    <input type="file" id="ly-bg-file" class="hidden" onchange="uploadCardBg(this)"></label>
-                  <span id="ly-bg-hint" class="text-[11px] text-ink/55"></span>
+                  <label for="ly-bg-file" class="cursor-pointer bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-3.5 py-2 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-upload-simple"></i> غيّر الصورة</label>
+                  <span class="text-[11px] text-ink/55">تغطي البطاقة كلها، وفي المحفظة تطلع ورا الأختام.</span>
                 </div>
               </div>
               <div class="space-y-2" id="ly-style-box">
@@ -3817,17 +3817,11 @@
     const pv = document.getElementById('ly-pv-stamps');
     pv.className = `stamps ${st.needed === 5 || st.needed === 10 ? 'c5' : ''}`;
     pv.innerHTML = DMLoyaltyCard.stamps(Math.min(3, st.needed - 1), st.needed, d);
-    const bg = d.bg || 'color';
-    document.getElementById('ly-bg').innerHTML = [['color', 'لون', 'ph-palette'], ['image', 'صورة', 'ph-image'], ['video', 'فيديو', 'ph-video-camera']].map(([k, label, ic]) => `
+    const bg = d.bg === 'image' && d.bg_image ? 'image' : 'color';
+    document.getElementById('ly-bg').innerHTML = [['color', 'لون', 'ph-palette'], ['image', 'صورة', 'ph-image']].map(([k, label, ic]) => `
       <button type="button" onclick="pickCardBg('${k}')" class="rounded-xl border px-3 py-2.5 text-[13px] font-bold transition ${bg === k ? 'border-brand bg-brand text-cream' : 'border-brand/20 bg-white hover:border-brand/40'}"><i class="ph-bold ${ic}"></i> ${label}</button>`).join('');
-    document.getElementById('ly-bg-up').classList.toggle('hidden', bg === 'color');
+    document.getElementById('ly-bg-up').classList.toggle('hidden', bg !== 'image');
     document.getElementById('ly-style-box').classList.toggle('hidden', bg !== 'color');
-    const has = bg === 'video' ? d.bg_video : d.bg_image;
-    document.getElementById('ly-bg-up-label').textContent = bg === 'video' ? (has ? 'غيّر الفيديو' : 'ارفع فيديو') : (has ? 'غيّر الصورة' : 'ارفع صورة');
-    document.getElementById('ly-bg-file').accept = bg === 'video' ? 'video/mp4,video/quicktime' : 'image/png,image/jpeg,image/webp';
-    document.getElementById('ly-bg-hint').textContent = bg === 'video'
-      ? 'فيديو قصير (أقل من 15 ميجا) يشتغل بدون صوت. في المحفظة تطلع أول لقطة منه ورا الأختام.'
-      : 'تغطي البطاقة كلها، وفي المحفظة تطلع ورا الأختام.';
     document.getElementById('ly-styles').innerHTML = LY_STYLES.map(([k, label]) => `
       <button type="button" onclick="setLyDesign({ style: '${k}' })" class="rounded-xl border px-3 py-2.5 text-[13px] font-bold transition ${d.style === k ? 'border-brand bg-brand text-cream' : 'border-brand/20 bg-white hover:border-brand/40'}">${label}</button>`).join('');
     const swatches = (list, key, cur) => list.map(c => `
@@ -3841,50 +3835,18 @@
     document.getElementById('ly-stamp-clear').classList.toggle('hidden', !d.stamp_image);
     document.getElementById('ly-design-save').textContent = ly.dirty ? 'حفظ الشكل' : 'محفوظ';
   }
-  // خلفية البطاقة: صورة أو فيديو (مع أول لقطة منه كصورة للمحفظة)
+  // خلفية البطاقة: صورة تغطي البطاقة، وفي المحفظة تطلع ورا الأختام
   function pickCardBg(k) {
-    const d = ly.design;
-    if (k === 'color' || (k === 'image' && d.bg_image && !d.bg_video) || (k === 'video' && d.bg_video)) return setLyDesign({ bg: k });
-    ly.pendingBg = k;
-    const f = document.getElementById('ly-bg-file');
-    setLyDesign({}); f.accept = k === 'video' ? 'video/mp4,video/quicktime' : 'image/png,image/jpeg,image/webp';
-    document.getElementById('ly-bg-up').classList.remove('hidden');
-    f.click();
-  }
-  function videoPoster(file) {
-    return new Promise((resolve) => {
-      const v = document.createElement('video'), url = URL.createObjectURL(file);
-      const done = (blob) => { URL.revokeObjectURL(url); resolve(blob); };
-      v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = url;
-      v.onloadeddata = () => { v.currentTime = Math.min(0.5, (v.duration || 1) / 4); };
-      v.onseeked = () => {
-        const scale = Math.min(1, 1280 / Math.max(v.videoWidth, v.videoHeight));
-        const c = document.createElement('canvas'); c.width = Math.round(v.videoWidth * scale); c.height = Math.round(v.videoHeight * scale);
-        c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
-        c.toBlob(b => done(b ? new File([b], 'poster.jpg', { type: 'image/jpeg' }) : null), 'image/jpeg', .85);
-      };
-      v.onerror = () => done(null);
-      setTimeout(() => done(null), 15000);
-    });
+    if (k === 'color' || ly.design.bg_image) return setLyDesign({ bg: k });
+    document.getElementById('ly-bg-file').click();
   }
   async function uploadCardBg(input) {
     const file = input.files && input.files[0]; input.value = '';
     if (!file) return;
-    const kind = file.type.startsWith('video/') ? 'video' : 'image';
-    if (kind === 'video' && file.size > 15 * 1024 * 1024) return showToast('الفيديو كبير، الحد 15 ميجا. قصّه لأقل من 10 ثواني', true);
-    if (kind === 'video') {
-      showToast('جاري تجهيز الفيديو...');
-      const poster = await videoPoster(file);
-      const [vurl, purl] = await Promise.all([uploadFile(file, 'card_video'), poster ? uploadFile(poster, 'card_bg', 1280) : null]);
-      if (!vurl) return showToast(lastUploadError || 'تعذر رفع الفيديو', true);
-      setLyDesign({ bg: 'video', bg_video: vurl, bg_image: purl || null });
-    } else {
-      const url = await uploadFile(file, 'card_bg', 1280);
-      if (!url) return showToast(lastUploadError || 'تعذر رفع الصورة', true);
-      setLyDesign({ bg: 'image', bg_image: url, bg_video: null });
-    }
-    ly.pendingBg = null;
-    showToast('انرفعت، اضغط "حفظ الشكل"');
+    const url = await uploadFile(file, 'card_bg', 1280);
+    if (!url) return showToast(lastUploadError || 'تعذر رفع الصورة', true);
+    setLyDesign({ bg: 'image', bg_image: url });
+    showToast('انرفعت الصورة، اضغط "حفظ الشكل"');
   }
   async function uploadStampImage(input) {
     const file = input.files && input.files[0]; input.value = '';
