@@ -22,6 +22,28 @@
     el.style.setProperty('--stamp-ink', inkFor(d.stamp_color || '#c9a227'));
     const solidInk = inkFor(d.color || '#233d2c');
     el.style.setProperty('--ink', d.style === 'paper' ? (d.color || '#233d2c') : d.style === 'dark' ? '#f5f5f5' : solidInk);
+    media(el, d);
+  }
+  // خلفية صورة أو فيديو تغطي البطاقة كلها، وفوقها طبقة غامقة عشان الكلام والأختام تبان
+  function media(el, d) {
+    const kind = d.bg === 'video' && d.bg_video ? 'video' : d.bg === 'image' && d.bg_image ? 'image' : '';
+    const key = kind && `${kind}|${d.bg_video || ''}|${d.bg_image || ''}`;
+    let box = el.querySelector(':scope > .lcard-media');
+    el.classList.toggle('has-media', !!kind);
+    if (!kind) { if (box) box.remove(); return; }
+    if (box && box.dataset.key === key) return;
+    if (box) box.remove();
+    box = document.createElement('div');
+    box.className = 'lcard-media'; box.dataset.key = key;
+    if (kind === 'video') {
+      const v = document.createElement('video');
+      Object.assign(v, { muted: true, loop: true, autoplay: true, playsInline: true, src: d.bg_video });
+      v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
+      if (d.bg_image) v.poster = d.bg_image;
+      if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) v.autoplay = false;
+      box.appendChild(v);
+    } else box.style.backgroundImage = `url("${String(d.bg_image).replace(/"/g, '%22')}")`;
+    el.prepend(box);
   }
   function stamps(count, needed, d, fresh = -1) {
     d = d || {};

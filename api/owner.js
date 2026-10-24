@@ -994,12 +994,12 @@ async function main(req) {
   // ─── رابط رفع ملف (الرفع يتم مباشرة للتخزين برابط موقّع صالح لملف واحد) ───
   if (action === 'upload-url') {
     const kind = b.kind;
-    if (!['logo', 'bg_image', 'bg_video', 'prod', 'sticker', 'stamp'].includes(kind)) throw new ApiError(400, 'نوع ملف غير صحيح');
-    const isVideo = kind === 'bg_video';
+    if (!['logo', 'bg_image', 'bg_video', 'prod', 'sticker', 'stamp', 'card_bg', 'card_video'].includes(kind)) throw new ApiError(400, 'نوع ملف غير صحيح');
+    const isVideo = kind === 'bg_video' || kind === 'card_video';
     const ext = (isVideo ? VIDEO_TYPES : IMAGE_TYPES)[b.type];
     if (!ext) throw new ApiError(400, isVideo ? 'الملف لازم يكون فيديو MP4' : 'صيغة الصورة غير مدعومة، استخدم JPG أو PNG أو WebP');
     const size = int(b.size);
-    const maxMb = isVideo ? 30 : kind === 'sticker' || kind === 'stamp' ? 2 : 5;
+    const maxMb = kind === 'card_video' ? 15 : isVideo ? 30 : kind === 'sticker' || kind === 'stamp' ? 2 : 5;
     if (!Number.isInteger(size) || size <= 0 || size > maxMb * 1024 * 1024) throw new ApiError(400, `حجم الملف أكبر من المسموح (${maxMb} ميجا)`);
     const path = `${sid}/${kind}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const signed = await storage(`object/upload/sign/${BUCKET}/${path.split('/').map(encodeURIComponent).join('/')}`, { body: {} });

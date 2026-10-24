@@ -35,7 +35,7 @@ function passBody({ store, settings, card, url, restoreUrl, lat, lng, notice, st
     colorPreset: 'green',
     // العدد فوق (يبان حتى والبطاقة بين البطاقات)، والأختام نفسها في الصورة العريضة
     headerFields: [{ label: 'الأختام', value: `${s} / ${n}`, changeMessage: 'صار عندك %@ ختم' }],
-    secondaryFields: [{ label: 'المكافأة', value: settings.reward }, { label: s >= n ? 'جاهزة' : 'باقي', value: s >= n ? 'استخدمها الحين' : `${n - s} أختام` }],
+    secondaryFields: [...(card.name ? [{ label: 'صاحب البطاقة', value: String(card.name).slice(0, 40) }] : []), { label: 'المكافأة', value: settings.reward }, { label: s >= n ? 'جاهزة' : 'باقي', value: s >= n ? 'استخدمها الحين' : `${n - s} أختام` }],
     backFields: [
       { label: 'رقم العضوية', value: `#${card.member_no || ''}` },
       { label: 'زياراتك', value: String(card.visits || 0) },

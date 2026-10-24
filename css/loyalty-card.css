@@ -14,6 +14,17 @@
 .lcard.st-paper::after { display: none; }
 .lcard.st-dark { background: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--c) 35%, #161616) 0%, #121212 60%); color: #f5f5f5; }
 .lcard > * { position: relative; z-index: 1; }
+/* خلفية صورة أو فيديو */
+.lcard > .lcard-media { position: absolute; inset: 0; z-index: 0; background: center / cover no-repeat #111; }
+.lcard-media video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.lcard-media::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.28) 0%, rgba(0,0,0,.45) 55%, rgba(0,0,0,.68) 100%); }
+.lcard.has-media { --ink: #fff; color: #fff; border: 0; background: #111; }
+.lcard.has-media::after { display: none; }
+.lcard.has-media .stamp:not(.on) { border-color: rgba(255,255,255,.55); color: rgba(255,255,255,.75); background: rgba(0,0,0,.18); }
+/* اسم صاحب البطاقة */
+.lcard-holder { margin-top: 18px; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.lcard-holder small { display: block; font-size: 11px; opacity: .7; }
+.lcard-holder b { display: block; font-size: 17px; font-weight: 700; letter-spacing: .01em; }
 
 .stamps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 20px; }
 .stamps.c5 { grid-template-columns: repeat(5, 1fr); }

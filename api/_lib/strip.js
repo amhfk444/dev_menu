@@ -41,7 +41,13 @@ async function stampStrip(settings, card) {
     const D = Math.floor(Math.min((W - 2 * pad - (cols - 1) * gap) / cols, (H - 2 * pad - (rows - 1) * gap) / rows));
     const gridW = cols * D + (cols - 1) * gap, gridH = rows * D + (rows - 1) * gap;
     const x0 = (W - gridW) / 2, y0 = (H - gridH) / 2;
-    const bg = background(d);
+    // صورة خلفية المحل (أو أول لقطة من الفيديو): تنحط ورا الأختام بطبقة غامقة عشان تبان
+    let photo = null;
+    if (d.bg !== 'color' && d.bg_image) {
+      const res = await fetch(d.bg_image, { signal: AbortSignal.timeout(8000) }).catch(() => null);
+      if (res && res.ok) photo = await sharp(Buffer.from(await res.arrayBuffer())).resize(W, H, { fit: 'cover' }).png().toBuffer().catch(() => null);
+    }
+    const bg = photo ? { fill: 'none', ink: '#ffffff', glow: '' } : background(d);
     const stampInk = inkFor(d.stamp_color || '#c9a227');
     let shapes = '';
     const pos = [];
@@ -57,8 +63,10 @@ async function stampStrip(settings, card) {
       if (last && !on) shapes += icon('gift', cx - s / 2, cy - s / 2, s, d.stamp_color, .95);
       else if (!d.stamp_image) shapes += icon(d.icon, cx - s / 2, cy - s / 2, s, on ? stampInk : bg.ink, on ? 1 : .35);
     }
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}"><defs>${bg.glow}</defs><rect width="${W}" height="${H}" fill="${bg.fill}"/><rect width="${W}" height="${H}" fill="url(#g)"/>${shapes}</svg>`;
-    let base = sharp(Buffer.from(svg)).png();
+    const svg = photo
+      ? `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="#000" fill-opacity=".5"/>${shapes}</svg>`
+      : `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}"><defs>${bg.glow}</defs><rect width="${W}" height="${H}" fill="${bg.fill}"/><rect width="${W}" height="${H}" fill="url(#g)"/>${shapes}</svg>`;
+    let base = photo ? sharp(photo).composite([{ input: Buffer.from(svg) }]).png() : sharp(Buffer.from(svg)).png();
 
     // صورة الختم الخاصة بالمحل
     if (d.stamp_image) {
@@ -77,7 +85,7 @@ async function stampStrip(settings, card) {
         base = sharp(await base.toBuffer()).composite(layers).png();
       }
     }
-    const png = await base.png({ compressionLevel: 9, palette: true, quality: 90 }).toBuffer();
+    const png = await base.png({ compressionLevel: 9, palette: true, quality: photo ? 95 : 90, dither: photo ? 1 : 0 }).toBuffer();
     return `data:image/png;base64,${png.toString('base64')}`;
   } catch (e) {
     console.error('STAMP_STRIP', e.message);

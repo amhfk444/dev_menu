@@ -131,7 +131,10 @@
         <p class="text-sm opacity-75 text-left shrink-0" dir="ltr"><b id="c-count" class="text-2xl"></b></p>
       </div>
       <div id="c-stamps" class="stamps"></div>
-      <button type="button" id="c-member" class="mt-4 text-sm opacity-80 flex items-center gap-1.5"><i class="ph-bold ph-identification-card"></i> رقم عضويتك <b dir="ltr" id="c-member-id"></b> <i class="ph-bold ph-copy text-xs"></i></button>
+      <div class="lcard-holder">
+        <div class="min-w-0"><small>صاحب البطاقة</small><b id="c-holder" class="truncate"></b></div>
+        <button type="button" id="c-member" class="text-left shrink-0" aria-label="انسخ رقم عضويتك"><small>رقم العضوية <i class="ph-bold ph-copy"></i></small><b dir="ltr" id="c-member-id"></b></button>
+      </div>
     </div>
 
     <div id="c-msg" class="msg hidden"></div>
@@ -308,6 +311,7 @@
     $('c-survey').classList.toggle('hidden', !survey);
     $('c-hello').textContent = card.name ? `أهلاً ${card.name.split(' ')[0]}` : 'بطاقتك';
     $('c-member-id').textContent = `#${card.no}`;
+    $('c-holder').textContent = card.name || 'عضو';
     // كود العضوية للكاشير (ما يطلع والبطاقة مكتملة)
     $('c-qr-box').classList.toggle('hidden', !card.qr || full);
     if (card.qr && $('c-qr').dataset.v !== card.qr) {

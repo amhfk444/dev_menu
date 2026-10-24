@@ -8,6 +8,7 @@ const COOLDOWNS = [1, 2, 3, 4, 6, 12, 24];
 const STYLES = ['gradient', 'solid', 'paper', 'dark'];
 const ICONS = ['coffee', 'fork-knife', 'hamburger', 'pizza', 'ice-cream', 'bread', 'cookie', 'cake', 'bowl-food', 'popcorn', 'heart', 'star'];
 const HEX = /^#[0-9a-f]{6}$/i;
+const okUrl = (u) => typeof u === 'string' && /^https:\/\/[^\s"'<>]{8,500}$/.test(u) ? u : null;
 function normalizeDesign(raw) {
   const d = raw && typeof raw === 'object' ? raw : {};
   return {
@@ -15,7 +16,11 @@ function normalizeDesign(raw) {
     color: HEX.test(d.color) ? d.color.toLowerCase() : '#233d2c',
     stamp_color: HEX.test(d.stamp_color) ? d.stamp_color.toLowerCase() : '#c9a227',
     icon: ICONS.includes(d.icon) ? d.icon : 'coffee',
-    stamp_image: typeof d.stamp_image === 'string' && /^https:\/\/[^\s"'<>]{8,500}$/.test(d.stamp_image) ? d.stamp_image : null
+    stamp_image: okUrl(d.stamp_image),
+    // خلفية البطاقة: لون (حسب الشكل)، أو صورة، أو فيديو (والصورة تكون أول لقطة منه للمحفظة)
+    bg: ['color', 'image', 'video'].includes(d.bg) && (d.bg !== 'image' || okUrl(d.bg_image)) && (d.bg !== 'video' || okUrl(d.bg_video)) ? d.bg : 'color',
+    bg_image: okUrl(d.bg_image),
+    bg_video: okUrl(d.bg_video)
   };
 }
 
