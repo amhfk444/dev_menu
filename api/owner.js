@@ -23,7 +23,8 @@ const { purchaseStamp, newStampCode, parseMemberQr, cooldownLeft, leftText } = r
 
 const bySort = (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id;
 const COFFEE_TYPES = ['cafe', 'mixed'];
-const BUSINESS_TYPES = ['restaurant', 'cafe', 'mixed', 'bakery'];
+const SECTORS = require('./_lib/sectors');
+const BUSINESS_TYPES = SECTORS.KEYS;
 const ALLERGENS = ['gluten', 'milk', 'egg', 'nuts', 'peanut', 'sesame', 'fish', 'shellfish', 'soy'];
 const PROCESS = ['washed', 'natural', 'honey', 'anaerobic', 'carbonic', 'other'];
 const ROAST = ['light', 'medium', 'dark'];
@@ -251,6 +252,11 @@ async function main(req) {
     const type = BUSINESS_TYPES.includes(b.business_type) ? b.business_type : 'restaurant';
     try {
       const slug = await rpc('server_register_client', { p_email: user.email, p_name: name, p_phone: phone, p_type: type });
+      // الأنواع الجديدة (عيادة، صالون...) تنحفظ بعد الإنشاء، ومعها اسم النشاط لو اختار "أخرى"
+      const label = type === 'other' ? str(b.business_label, 60, 'اسم النشاط') : null;
+      if (!['restaurant', 'cafe', 'mixed', 'bakery'].includes(type) || label) {
+        await rest(`clients?client_slug=eq.${q(slug)}`, { method: 'PATCH', body: { business_type: type, business_label: label || null } }).catch(e => console.error('REGISTER_TYPE', e.message));
+      }
       // الباقة اللي اختارها قبل التسجيل: تنحفظ كطلب اشتراك، يبدأ التجربة المجانية، ونتواصل معه للدفع
       const plan = ['month', 'year'].includes(b.plan) ? b.plan : null;
       const features = PLANS.clean(Array.isArray(b.features) ? b.features : []);
@@ -565,7 +571,7 @@ async function main(req) {
     if (typeof b.enabled === 'boolean') body.loyalty_enabled = b.enabled;
     let row = (await rest(`clients?id=eq.${sid}`, { method: 'PATCH', body, prefer: 'return=representation' }))[0];
     if (rulesChanged && row.loyalty_ai) {
-      const lines = await loyaltyNearLines({ storeName: row.name, businessType: { restaurant: 'مطعم', cafe: 'مقهى', mixed: 'مطعم ومقهى', bakery: 'مخبز وحلويات' }[row.business_type] || '', reward: settings.reward }).catch(() => []);
+      const lines = await loyaltyNearLines({ storeName: row.name, businessType: SECTORS.label(row), reward: settings.reward }).catch(() => []);
       if (lines.length) await rest(`clients?id=eq.${sid}`, { method: 'PATCH', body: { loyalty_near_lines: lines, loyalty_near_at: new Date().toISOString() } }).catch(() => {});
     }
     // الشكل أو المكافأة تغيّرت ← نحدّث البطاقات اللي في المحفظة
@@ -680,8 +686,7 @@ async function main(req) {
       { ref: 'ready', kind: 'ready', visits: n, stamps: n, days_since: 4, usual_gap: 6 },
       { ref: 'near', kind: 'near', visits: 3, stamps: 3, days_since: 2 }
     ];
-    const types = { restaurant: 'مطعم', cafe: 'مقهى', mixed: 'مطعم ومقهى', bakery: 'مخبز وحلويات' };
-    return { examples: await loyaltyMessages({ storeName: store.name, businessType: types[store.business_type] || '', reward: settings.reward, needed: n, guests }) };
+    return { examples: await loyaltyMessages({ storeName: store.name, businessType: SECTORS.label(store), reward: settings.reward, needed: n, guests }) };
   }
 
   // ─── بطاقة الولاء: موقع المحل (صاحب المحل يحدده وهو داخل المحل) ───
@@ -921,6 +926,7 @@ async function main(req) {
     if (has('occasions')) p.occasions = cleanOccasions(b.occasions, sid);
     if (has('business_type')) {
       if (!BUSINESS_TYPES.includes(b.business_type)) throw new ApiError(400, 'نوع نشاط غير صحيح');
+      if (has('business_label') || b.business_type !== 'other') p.business_label = b.business_type === 'other' ? (str(b.business_label, 60, 'اسم النشاط') || null) : null;
       p.business_type = b.business_type;
     }
     for (const k of ['logo_url', 'bg_image_url', 'bg_video_url']) {

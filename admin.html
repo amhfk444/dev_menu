@@ -16,6 +16,7 @@
 <script src="js/dialog.js"></script>
 <script src="/js/loyalty-card.js"></script>
 <script src="/js/plans.js"></script>
+<script src="/js/sectors.js"></script>
 <script src="js/theme.js"></script>
 <script src="js/occasions.js"></script>
 <!-- مكتبة توليد الـ QR Code -->
@@ -1257,6 +1258,10 @@
             <span class="text-[10px] text-ink/50">يحدد الحقول اللي تظهر لك عند إضافة الأطباق</span>
           </div>
           <div id="biz-type" class="grid grid-cols-2 md:grid-cols-4 gap-2"></div>
+          <div id="biz-other" class="hidden flex gap-2">
+            <input id="biz-label" maxlength="60" class="input-pro text-xs flex-1" placeholder="وش نشاطك؟ مثلاً: مركز تدريب">
+            <button type="button" onclick="saveBizLabel()" class="bg-brand hover:bg-brand-dark text-cream px-4 rounded-xl text-xs font-bold">حفظ</button>
+          </div>
         </div>
         <div class="pro-card p-5 space-y-4">
           <h3 class="text-xs font-bold text-ink border-b border-brand/20 pb-2 flex items-center gap-2">
@@ -1415,9 +1420,9 @@
           <input type="url" id="info-location" placeholder="https://maps.app.goo.gl/..." class="input-pro text-xs" dir="ltr">
         </div>
         <div class="md:col-span-2">
-          <label class="text-[10px] text-ink/75 block mb-1"><i class="ph-bold ph-star text-amber-500"></i> رابط "اكتب تقييم" في قوقل (اختياري)</label>
+          <label class="text-[10px] text-ink/75 block mb-1"><i class="ph-bold ph-star text-amber-500"></i> رابط التقييم في قوقل ماب</label>
           <input type="url" id="info-review" placeholder="https://g.page/r/.../review" class="input-pro text-xs" dir="ltr">
-          <p class="text-[10px] text-ink/55 mt-1">بعد ما يستلم الزبون طلبه من البيجر نسأله عن تجربته، واللي يعطي 4 أو 5 نجوم نطلب منه يقيّمك على قوقل. تلقى الرابط في Google Business ← "اطلب تقييمات".</p>
+          <p class="text-[10px] text-ink/55 mt-1">لما يرن البيجر يطلع للزبون زر "قيّمنا على قوقل ماب" يفتح هالرابط. تلقاه في Google Business ← "اطلب تقييمات". لو ما حطيته نستخدم رابط موقعك في قوقل ماب اللي فوق.</p>
         </div>
       </div>
       <label class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
@@ -4426,16 +4431,14 @@
   }
 
   // ─── نوع النشاط ───
-  const BUSINESS_TYPES = {
-    restaurant: ['مطعم', 'ph-fork-knife', 'أطباق ووجبات'],
-    cafe:       ['مقهى', 'ph-coffee', 'قهوة مختصة ومشروبات'],
-    mixed:      ['مطعم ومقهى', 'ph-hamburger', 'أطباق وقهوة مختصة'],
-    bakery:     ['مخبز وحلويات', 'ph-bread', 'مخبوزات وحلا']
-  };
+  const BIZ_HINTS = { restaurant: 'أطباق ووجبات', cafe: 'قهوة مختصة ومشروبات', mixed: 'أطباق وقهوة مختصة', bakery: 'مخبوزات وحلا', clinic: 'مواعيد ومراجعين', salon: 'حلاقة وتجميل', carwash: 'غسيل وتلميع', laundry: 'غسيل وكوي', retail: 'محل ومتجر', pharmacy: 'أدوية ومستلزمات', services: 'خدمات وانتظار', other: 'اكتب نشاطك' };
+  const BUSINESS_TYPES = Object.fromEntries(Object.entries(DMSectors.SECTORS).map(([k, v]) => [k, [v.name, v.icon, BIZ_HINTS[k]]]));
   const allowsCoffee = () => ['cafe', 'mixed'].includes(client && client.business_type);
 
   function renderBusinessType() {
     const current = client.business_type || 'restaurant';
+    document.getElementById('biz-other').classList.toggle('hidden', current !== 'other');
+    document.getElementById('biz-label').value = client.business_label || '';
     document.getElementById('biz-type').innerHTML = Object.entries(BUSINESS_TYPES).map(([k, [name, icon, hint]]) => `
       <button type="button" onclick="setBusinessType('${k}')"
         class="text-right p-3 rounded-xl border transition ${k === current ? 'bg-brand text-cream border-brand' : 'bg-brand/5 border-brand/15 text-ink/90 hover:bg-brand/10'}">
@@ -4449,6 +4452,11 @@
     if (!allowsCoffee()) coffeeBox.open = false;
   }
 
+  async function saveBizLabel() {
+    const label = document.getElementById('biz-label').value.trim();
+    if (await updateClient({ business_type: 'other', business_label: label })) showToast('تم حفظ نوع النشاط');
+    else showToast('تعذر الحفظ', true);
+  }
   async function setBusinessType(type) {
     if (!BUSINESS_TYPES[type] || type === client.business_type) return;
     const hadCoffee = allowsCoffee();

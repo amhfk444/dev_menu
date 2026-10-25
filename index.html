@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="/css/tw/index.css">
 <script src="/js/api.js"></script>
 <script src="/js/plans.js"></script>
+<script src="/js/sectors.js"></script>
 <script src="/js/vendor/qrcode.min.js" defer></script>
 <style>
   :root { --brand: #233d2c; --brand-dark: #15271b; --ink: #1b3022; --sand: #f6f3ec; --gold: #7fb685; --gold-deep: #3f7a4a;
@@ -143,6 +144,9 @@
   .type-chip { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 11px 6px; border-radius: 14px; border: 1.5px solid #dcd6c8; background: #faf8f3; font-size: 13px; font-weight: 700; color: var(--muted); cursor: pointer; }
   .peer:checked + .type-chip { background: var(--brand); border-color: var(--brand); color: #fff; }
   .peer:focus-visible + .type-chip { outline: 3px solid var(--gold); outline-offset: 2px; }
+  .sector { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px; border-radius: 14px; border: 1.5px solid #dcd6c8; background: #faf8f3; font-size: 12px; font-weight: 700; color: var(--muted); }
+  .sector i { font-size: 18px; }
+  .sector[aria-checked="true"] { background: var(--brand); border-color: var(--brand); color: #fff; }
   .chosen { background: var(--sand); border-radius: 18px; padding: 14px 16px; }
   .otp-box { width: 46px; height: 56px; text-align: center; font-size: 22px; font-weight: 700; background: #faf8f3; border: 1.5px solid #dcd6c8; border-radius: 14px; color: var(--brand); }
   .otp-box:focus { outline: none; border-color: var(--brand); }
@@ -384,7 +388,13 @@
             <label><input type="radio" name="reg-type" value="restaurant" class="peer sr-only" checked><span class="type-chip"><i class="ph-bold ph-fork-knife"></i> مطعم</span></label>
             <label><input type="radio" name="reg-type" value="cafe" class="peer sr-only"><span class="type-chip"><i class="ph-bold ph-coffee"></i> مقهى</span></label>
             <label><input type="radio" name="reg-type" value="mixed" class="peer sr-only"><span class="type-chip"><i class="ph-bold ph-hamburger"></i> مطعم ومقهى</span></label>
-            <label><input type="radio" name="reg-type" value="bakery" class="peer sr-only"><span class="type-chip"><i class="ph-bold ph-bread"></i> مخبز وحلويات</span></label>
+            <label><input type="radio" name="reg-type" value="more" class="peer sr-only"><span class="type-chip"><i class="ph-bold ph-dots-three-circle"></i> أخرى</span></label>
+          </div>
+          <!-- "أخرى": منشآت تحتاج البيجر أو الانتظار أو الولاء -->
+          <div id="reg-more" class="hidden mt-3 space-y-2">
+            <p class="text-[12.5px] font-semibold text-[color:var(--muted)]">وش نوع منشأتك؟</p>
+            <div id="reg-sectors" class="grid grid-cols-3 gap-2"></div>
+            <input type="text" id="reg-label" maxlength="60" placeholder="اكتب نشاطك، مثلاً: مركز تدريب" class="field hidden">
           </div>
         </div>
         <div>
@@ -548,6 +558,7 @@
 
   // ─── اختيار الباقة: يتحفظ ويروح مع التسجيل ───
   const CHOICE_KEY = 'dm_plan_choice';
+  let typeTouched = false;
   let choice = { period: 'year', features: ['menu', 'pager', 'waitlist'] };
   try { const c = JSON.parse(localStorage.getItem(CHOICE_KEY) || 'null'); if (c && Array.isArray(c.features)) choice = { period: c.period === 'month' ? 'month' : 'year', features: DMPlans.clean(c.features) }; } catch {}
   const PRESETS = [
@@ -581,6 +592,10 @@
     $('sum-go').classList.toggle('opacity-50', !pr.features.length);
     $('chosen-name').textContent = pr.features.length ? `${pr.features.map(k => P.FEATURES[k].name).join(' + ')} (${p === 'month' ? 'شهري' : 'سنوي'})` : 'ما اخترت باقة';
     $('chosen-price').textContent = pr.features.length ? money(pr.total) : '';
+    // اختار البيجر أو الانتظار أو الولاء بدون منيو؟ غالباً منشأته مو مطعم، فنفتح له "أخرى"
+    const noMenu = pr.features.length && !pr.features.includes('menu');
+    const more = document.querySelector('[name="reg-type"][value="more"]');
+    if (more && noMenu && !more.checked && !typeTouched) { more.checked = true; more.dispatchEvent(new Event('change')); }
   }
   $('picks').addEventListener('click', (e) => {
     const b = e.target.closest('[data-feat]'); if (!b) return;
@@ -599,6 +614,26 @@
   $('sum-go').addEventListener('click', () => setTimeout(() => $('reg-name').focus({ preventScroll: true }), 600));
   renderPricing();
   const planPayload = () => choice.features.length ? { plan: choice.period, features: choice.features } : {};
+
+  // ─── نوع المنشأة: مطعم/مقهى، أو "أخرى" وتطلع المنشآت اللي تحتاج البيجر والانتظار والولاء ───
+  let sector = 'clinic';
+  $('reg-type').addEventListener('click', () => { typeTouched = true; });
+  function renderSectors() {
+    $('reg-sectors').innerHTML = DMSectors.OTHERS.map(k => `<button type="button" role="radio" aria-checked="${k === sector}" data-sector="${k}" class="sector"><i class="ph-bold ${DMSectors.SECTORS[k].icon}"></i>${DMSectors.SECTORS[k].name}</button>`).join('');
+    $('reg-label').classList.toggle('hidden', sector !== 'other');
+  }
+  $('reg-sectors').addEventListener('click', (e) => { const b = e.target.closest('[data-sector]'); if (b) { sector = b.dataset.sector; renderSectors(); if (sector === 'other') $('reg-label').focus(); } });
+  document.querySelectorAll('[name="reg-type"]').forEach(r => r.addEventListener('change', () => {
+    const more = document.querySelector('[name="reg-type"]:checked').value === 'more';
+    $('reg-more').classList.toggle('hidden', !more);
+    if (more) renderSectors();
+  }));
+  function businessType() {
+    const v = document.querySelector('[name="reg-type"]:checked')?.value || 'restaurant';
+    return v === 'more' ? sector : v;
+  }
+  const businessLabel = () => businessType() === 'other' ? $('reg-label').value.trim() : '';
+  renderPricing();   // بعد تجهيز نوع المنشأة
 
   // ─── التسجيل (رمز على البريد أو حساب Google) ───
   let formDataCache = {};
@@ -635,8 +670,8 @@
     if (!phone) return showToast('رقم الجوال غير صحيح، تأكد من رمز الدولة والرقم', 'error');
     setRegisterBusy(true);
     try {
-      const businessType = document.querySelector('[name="reg-type"]:checked')?.value || 'restaurant';
-      formDataCache = { name, email, phone, businessType };
+      if (businessType() === 'other' && !businessLabel()) { $('reg-label').focus(); return showToast('اكتب نوع نشاطك', 'error'); }
+      formDataCache = { name, email, phone, businessType: businessType(), businessLabel: businessLabel() };
       try { await DM.sendOtp(email); } catch (error) { return showToast(otpErrorMessage(error), 'error'); }
       $('register-form').classList.add('hidden');
       $('otp-section').classList.remove('hidden');
@@ -688,7 +723,7 @@
     try {
       try { await DM.verifyOtp(formDataCache.email, token); } catch { return showToast('الرمز غير صحيح أو انتهت صلاحيته', 'error'); }
       let regErr = null;
-      try { await DM.post('/api/owner?action=register', { name: formDataCache.name, phone: formDataCache.phone, business_type: formDataCache.businessType, ...planPayload() }, true); }
+      try { await DM.post('/api/owner?action=register', { name: formDataCache.name, phone: formDataCache.phone, business_type: formDataCache.businessType, business_label: formDataCache.businessLabel, ...planPayload() }, true); }
       catch (e) { regErr = e; }
       if (regErr) {
         if (regErr.code === 'EMAIL_TAKEN') { showToast('هذا البريد له حساب من قبل، جاري تحويلك للوحة التحكم...', 'info'); redirecting = true; setTimeout(() => { location.href = 'admin.html'; }, 1800); }
@@ -709,8 +744,8 @@
     const phone = normalizeMobile($('reg-phone').value);
     if (!name) { $('reg-name').focus(); return showToast('اكتب اسم المطعم أو الكافيه', 'error'); }
     if (!phone) { $('reg-phone').focus(); return showToast('رقم الجوال غير صحيح، تأكد من رمز الدولة والرقم', 'error'); }
-    const businessType = document.querySelector('[name="reg-type"]:checked')?.value || 'restaurant';
-    try { localStorage.setItem(PENDING_KEY, JSON.stringify({ name, phone, businessType, ...planPayload(), at: Date.now() })); } catch {}
+    if (businessType() === 'other' && !businessLabel()) { $('reg-label').focus(); return showToast('اكتب نوع نشاطك', 'error'); }
+    try { localStorage.setItem(PENDING_KEY, JSON.stringify({ name, phone, businessType: businessType(), businessLabel: businessLabel(), ...planPayload(), at: Date.now() })); } catch {}
     $('google-btn').disabled = true;
     location.href = DM.googleUrl(location.origin + location.pathname);
   }
@@ -725,7 +760,7 @@
     if (!pending) { location.href = 'login.html'; return; }
     showToast('جاري إنشاء حسابك...', 'info');
     try {
-      await DM.post('/api/owner?action=register', { name: pending.name, phone: pending.phone, business_type: pending.businessType, plan: pending.plan, features: pending.features }, true);
+      await DM.post('/api/owner?action=register', { name: pending.name, phone: pending.phone, business_type: pending.businessType, business_label: pending.businessLabel, plan: pending.plan, features: pending.features }, true);
       try { localStorage.removeItem(CHOICE_KEY); } catch {}
       showToast('حسابك جاهز! تجربتك المجانية بدأت', 'success');
     } catch (e) {

@@ -11,6 +11,7 @@ const {
 const { sendMail, mailConfigured } = require('./_lib/mail');
 const { PLAN_PRICE, invoiceNumber, invoiceEmail, branchProration } = require('./_lib/invoice');
 const PLANS = require('./_lib/plans');
+const SECTORS = require('./_lib/sectors');
 
 // يرسل الفاتورة لبريد صاحب الحساب (المتجر الرئيسي). ما يوقف العملية لو فشل
 async function sendInvoice(main, invoice) {
@@ -157,6 +158,11 @@ module.exports = handler(['GET', 'POST'], async (req) => {
   }
   if (action === 'notify') return patch({ admin_notification: str(b.message, 300, 'الإشعار') || null });
   if (action === 'featured') return patch({ is_featured: b.featured === true });
+  // نوع نشاط المحل (المدير العام يعدّله)
+  if (action === 'business-type') {
+    if (!SECTORS.KEYS.includes(b.type)) throw new ApiError(400, 'نوع نشاط غير صحيح');
+    return patch({ business_type: b.type, business_label: b.type === 'other' ? (str(b.label, 60, 'اسم النشاط') || null) : null });
+  }
   // إضافة قائمة الانتظار المدفوعة (يفعّلها المدير العام بعد الدفع)
   if (action === 'waitlist-addon') return patch({ waitlist_enabled: b.enabled === true });
   // مميزات المحل (المدير العام يتحكم فيها مباشرة)

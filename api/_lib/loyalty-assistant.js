@@ -10,8 +10,8 @@ const wallet = require('./wallet');
 const { loyaltyMessages, loyaltyNearLines } = require('./ai');
 
 const DAY = 864e5;
-const STORE_FIELDS = 'id,name,client_slug,logo_url,business_type,loyalty_enabled,loyalty_ai,loyalty_settings,loyalty_lat,loyalty_lng,loyalty_near_lines,loyalty_near_at';
-const BUSINESS = { restaurant: 'مطعم', cafe: 'مقهى', mixed: 'مطعم ومقهى', bakery: 'مخبز وحلويات' };
+const STORE_FIELDS = 'id,name,client_slug,logo_url,business_type,business_label,loyalty_enabled,loyalty_ai,loyalty_settings,loyalty_lat,loyalty_lng,loyalty_near_lines,loyalty_near_at';
+const SECTORS = require('./sectors');
 
 // جملة "أنت قريب" لهالبطاقة: تتغير كل أسبوع وتختلف بين الزبائن
 function nearLineFor(store, card) {
@@ -91,7 +91,7 @@ async function runAssistant(storeId, { maxGuests = 25 } = {}) {
   const store = (await rest(`clients?id=eq.${storeId}&select=${STORE_FIELDS}`))[0];
   if (!store || !store.loyalty_enabled || !store.loyalty_ai) return { skipped: true };
   const settings = normalizeLoyalty(store.loyalty_settings);
-  const type = BUSINESS[store.business_type] || '';
+  const type = SECTORS.label(store);
   const result = { near: false, messages: 0, wallet: 0 };
 
   // جمل القرب: كل أسبوع

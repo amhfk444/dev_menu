@@ -129,6 +129,7 @@
     <p class="text-sm font-bold opacity-70">تفضّل استلمه من الكاشير</p>
     <a id="r-loyalty" class="hidden block text-[13px] font-black rounded-2xl py-3 px-3"></a>
     <button id="got-btn" class="btn btn-brand"><i class="ph-bold ph-check"></i> استلمت طلبي</button>
+    <a id="r-review" target="_blank" rel="noopener" class="hidden btn btn-ghost !py-3.5 !text-base"><i class="ph-bold ph-star text-[#c9a227]"></i> قيّمنا على قوقل ماب</a>
   </section>
 
   <!-- انتهى -->
@@ -360,6 +361,9 @@
     ['w-invoice', 'r-invoice'].forEach(id => { $(id).classList.toggle('hidden', !inv); $(id).querySelector('span').textContent = inv; });
     $('w-tell').classList.toggle('hidden', !!inv);
     $('w-demo').classList.toggle('hidden', !r.demo);
+    reviewLink = r.review_url || reviewLink;
+    $('r-review').classList.toggle('hidden', !reviewLink);
+    if (reviewLink) { $('r-review').href = reviewLink; $('rate-google').href = reviewLink; }
     if (st === 'waiting') { show('waiting'); keepAwake(); renderPush(); if (keeperMode === 'silent') setMedia(`رقمك ${curNumber} — جاري تجهيز طلبك`); }
     else if (st === 'ready') { show('ready'); if (!dismissed) startRinging(); if (!document.hidden) ack(); }
     else {
@@ -452,7 +456,7 @@
   $('got-btn').onclick = () => { clearTimeout(pollTimer); ack(); offerRating(loadToken()); dismissed = true; stopRinging(); $('d-title').textContent = 'بالعافية!'; $('d-sub').textContent = 'نتشرف بزيارتك مرة ثانية.'; saveToken(''); show('done'); };
 
   // ─── تقييم التجربة بعد الاستلام (مرة وحدة لكل رقم) ───
-  let rateTok = '', rated = 0;
+  let rateTok = '', rated = 0, reviewLink = '';
   const RATED_KEY = `dm_pager_rated_${slug}`;
   function hideRating() { $('rate-box').classList.add('hidden'); }
   function offerRating(tok) {
@@ -476,7 +480,8 @@
     if (rated >= 4) {
       $('rate-thanks').textContent = 'يسعدنا هالشي! شكراً لك 💚';
       $('rate-thanks').classList.remove('hidden');
-      if (r.google) { $('rate-google').href = r.google; $('rate-google').classList.remove('hidden'); }
+      const g = r.google || reviewLink;
+      if (g) { $('rate-google').href = g; $('rate-google').classList.remove('hidden'); }
     } else $('rate-low').classList.remove('hidden');
   };
   $('rate-note-btn').onclick = async () => {

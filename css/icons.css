@@ -19,9 +19,11 @@
 .ph-bell-slash:before { content: "\e0d4"; }
 .ph-bowl-food:before { content: "\eaa4"; }
 .ph-bread:before { content: "\e81c"; }
+.ph-buildings:before { content: "\e102"; }
 .ph-cake:before { content: "\e780"; }
 .ph-camera:before { content: "\e10e"; }
 .ph-camera-slash:before { content: "\e110"; }
+.ph-car:before { content: "\e112"; }
 .ph-caret-down:before { content: "\e136"; }
 .ph-caret-left:before { content: "\e138"; }
 .ph-carrot:before { content: "\ed38"; }
@@ -43,6 +45,7 @@
 .ph-door:before { content: "\e61c"; }
 .ph-dots-six-vertical:before { content: "\eae2"; }
 .ph-dots-three:before { content: "\e1fe"; }
+.ph-dots-three-circle:before { content: "\e200"; }
 .ph-dots-three-vertical:before { content: "\e208"; }
 .ph-download-simple:before { content: "\e20c"; }
 .ph-envelope-simple:before { content: "\e218"; }
@@ -52,6 +55,7 @@
 .ph-file:before { content: "\e230"; }
 .ph-file-arrow-down:before { content: "\e232"; }
 .ph-fire:before { content: "\e242"; }
+.ph-first-aid-kit:before { content: "\e570"; }
 .ph-fish:before { content: "\e728"; }
 .ph-flame:before { content: "\e624"; }
 .ph-flask:before { content: "\e79e"; }
@@ -96,6 +100,7 @@
 .ph-pen-nib:before { content: "\e3ac"; }
 .ph-pencil-simple:before { content: "\e3b4"; }
 .ph-phone:before { content: "\e3b8"; }
+.ph-pill:before { content: "\e700"; }
 .ph-pizza:before { content: "\e796"; }
 .ph-plant:before { content: "\ebae"; }
 .ph-play:before { content: "\e3d0"; }
@@ -111,6 +116,7 @@
 .ph-scissors:before { content: "\eae0"; }
 .ph-seal-check:before { content: "\e606"; }
 .ph-share-network:before { content: "\e408"; }
+.ph-shopping-bag:before { content: "\e416"; }
 .ph-shuffle:before { content: "\e422"; }
 .ph-sign-out:before { content: "\e42a"; }
 .ph-sliders-horizontal:before { content: "\e434"; }
@@ -124,6 +130,7 @@
 .ph-star-half:before { content: "\e70a"; }
 .ph-storefront:before { content: "\e470"; }
 .ph-swatches:before { content: "\e5b8"; }
+.ph-t-shirt:before { content: "\e670"; }
 .ph-tag:before { content: "\e478"; }
 .ph-ticket:before { content: "\e490"; }
 .ph-tiktok-logo:before { content: "\eaf2"; }

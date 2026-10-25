@@ -693,7 +693,7 @@
     if (window.DMTheme) DMTheme.apply(p);
     document.title = `${p.name || 'Dev Menu'} | المنيو الرقمي`;
     document.getElementById('project-title').textContent = p.name || 'Dev Menu';
-    const TYPE_LABELS = { restaurant: 'RESTAURANT', cafe: 'SPECIALTY COFFEE', mixed: 'RESTAURANT &amp; CAFE', bakery: 'BAKERY &amp; SWEETS' };
+    const TYPE_LABELS = { restaurant: 'RESTAURANT', cafe: 'SPECIALTY COFFEE', mixed: 'RESTAURANT &amp; CAFE', bakery: 'BAKERY &amp; SWEETS', clinic: 'CLINIC', salon: 'SALON', carwash: 'CAR WASH', laundry: 'LAUNDRY', retail: 'STORE', pharmacy: 'PHARMACY', services: 'SERVICES' };
     if (p.business_type && TYPE_LABELS[p.business_type]) document.getElementById('project-type').innerHTML = TYPE_LABELS[p.business_type];
     const logo = safeUrl(p.logo_url);
     const logoEl = document.getElementById('project-logo');

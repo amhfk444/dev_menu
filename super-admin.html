@@ -15,6 +15,7 @@
 <script src="js/api.js"></script>
 <script src="js/dialog.js"></script>
 <script src="js/plans.js"></script>
+<script src="js/sectors.js"></script>
 
 <style>
   body { font-family: 'SaudiRiyal', 'IBM Plex Sans Arabic', sans-serif; background: #efe5dc; color: #22362a; min-height: 100vh; -webkit-text-size-adjust: 100%; }
@@ -84,6 +85,18 @@
   </div>
 </div>
 
+<div id="type-dlg" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-ink/40 backdrop-blur-sm">
+  <div class="w-full max-w-md card p-6 space-y-4">
+    <div><h2 class="text-sm font-black"><i class="ph-bold ph-storefront"></i> نوع النشاط</h2><p id="type-store" class="text-xs text-ink/60 mt-1"></p></div>
+    <div id="type-grid" class="grid grid-cols-3 gap-2"></div>
+    <input id="type-label" maxlength="60" class="field hidden" placeholder="اسم النشاط، مثلاً: مركز تدريب">
+    <div class="flex gap-2 justify-end">
+      <button onclick="closeTypeDlg()" class="px-4 py-2 rounded-xl text-xs font-bold bg-brand/10">إلغاء</button>
+      <button onclick="saveType()" class="px-4 py-2 rounded-xl text-xs font-bold bg-brand text-cream">حفظ</button>
+    </div>
+  </div>
+</div>
+
 <div id="feat-dlg" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-ink/40 backdrop-blur-sm">
   <div class="w-full max-w-md card p-6 space-y-4 max-h-[92vh] overflow-y-auto">
     <div>
@@ -149,6 +162,7 @@
           <input id="search" type="search" placeholder="ابحث بالاسم أو الرابط أو البريد أو الجوال..." class="field pr-9">
         </div>
         <div class="flex gap-2">
+          <select id="sector" class="field md:w-44" aria-label="نوع النشاط"><option value="">كل الأنشطة</option></select>
           <select id="sort" class="field md:w-52">
             <option value="new">الأحدث تسجيلاً</option>
             <option value="expiry">الأقرب انتهاءً</option>
@@ -199,7 +213,8 @@
     const amount = Math.round(PLAN_PRICE.branch * s.left / 365);
     return { amount, days: s.left, text: `المستحق الآن ${money(amount)} عن ${s.left} يوم الباقية لين تجديد الحساب في ${s.endText}، وبعدها يتجدد مع الحساب بـ ${money(PLAN_PRICE.branch)} سنوياً.` };
   }
-  const TYPES = { restaurant: ['مطعم', 'ph-fork-knife'], cafe: ['مقهى', 'ph-coffee'], mixed: ['مطعم ومقهى', 'ph-hamburger'], bakery: ['مخبز', 'ph-bread'] };
+  const TYPES = Object.fromEntries(Object.entries(DMSectors.SECTORS).map(([k, v]) => [k, [v.name, v.icon]]));
+  const typeOf = (c) => [DMSectors.label(c), (TYPES[c.business_type] || TYPES.restaurant)[1]];
 
   let clients = [], filter = 'all', openMenu = null, notifyId = null;
 
@@ -297,7 +312,7 @@
     if (manual) showToast('تم التحديث');
   }
 
-  function renderAll() { renderKpis(); renderRevenue(); renderSignups(); renderFilters(); renderStores(); }
+  function renderAll() { renderKpis(); renderRevenue(); renderSignups(); renderFilters(); renderSectorFilter(); renderStores(); }
 
   // ─── الأرقام ───
   function counts() {
@@ -381,6 +396,14 @@
   }
   document.getElementById('search').addEventListener('input', () => renderStores());
   document.getElementById('sort').addEventListener('change', () => renderStores());
+  document.getElementById('sector').addEventListener('change', () => renderStores());
+  function renderSectorFilter() {
+    const sel = document.getElementById('sector'), keep = sel.value;
+    const accounts = clients.filter(c => !c.parent_id);
+    sel.innerHTML = '<option value="">كل الأنشطة</option>' + DMSectors.KEYS.map(k => [k, accounts.filter(c => (c.business_type || 'restaurant') === k).length]).filter(([, n]) => n)
+      .map(([k, n]) => `<option value="${k}">${TYPES[k][0]} (${n})</option>`).join('');
+    sel.value = keep;
+  }
 
   function visibleClients() {
     const q = document.getElementById('search').value.trim().toLowerCase();
@@ -391,7 +414,8 @@
       ...Object.fromEntries(DMPlans.ORDER.map(k => ['f_' + k, c => statusOf(c).key === 'paid' && planFeats(c).includes(k)]))
     }[filter] || (() => true);
     const hit = (c) => [c.name, c.client_slug, c.email, c.phone].some(v => v && String(v).toLowerCase().includes(q));
-    const list = clients.filter(c => !c.parent_id).filter(match).filter(c => !q || hit(c) || branchesOf(c).some(hit));
+    const sector = document.getElementById('sector').value;
+    const list = clients.filter(c => !c.parent_id).filter(match).filter(c => !sector || (c.business_type || 'restaurant') === sector).filter(c => !q || hit(c) || branchesOf(c).some(hit));
     const sort = document.getElementById('sort').value;
     if (sort === 'name') list.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ar'));
     else if (sort === 'expiry') list.sort((a, b) => (statusOf(a).left ?? 1e9) - (statusOf(b).left ?? 1e9));
@@ -412,7 +436,7 @@
     const id = Number(c.id), s = statusOf(c);
     const slug = encodeURIComponent(c.client_slug || '');
     const logo = safeUrl(c.logo_url);
-    const type = TYPES[c.business_type] || TYPES.restaurant;
+    const type = typeOf(c);
     const phone = waPhone(c.phone);
     const days = s.left === null ? '' : s.left > 0 ? ` · باقي ${s.left} يوم` : ` · منذ ${Math.abs(s.left)} يوم`;
     return `
@@ -499,6 +523,7 @@
         ${remind && !c.parent_id ? `<a href="${esc(remind)}" target="_blank" rel="noopener"><i class="ph-bold ph-whatsapp-logo" style="color:#16a34a"></i> رسالة تذكير بالتجديد</a>` : ''}
         ${!c.parent_id ? `<button onclick="addBranch(${id})"><i class="ph-bold ph-git-branch" style="color:#047857"></i> إضافة فرع · ${money(PLAN_PRICE.branch)}/سنة</button>` : ''}
         <button onclick="renameStore(${id})"><i class="ph-bold ph-pencil-simple"></i> تعديل الاسم</button>
+        ${!c.parent_id ? `<button onclick="openTypeDlg(${id})"><i class="ph-bold ph-storefront"></i> نوع النشاط: ${esc(DMSectors.label(c))}</button>` : ''}
         <button onclick="openNotify(${id})"><i class="ph-bold ph-bell"></i> ${c.admin_notification ? 'تعديل الإشعار' : 'إرسال إشعار'}</button>
         <div class="h-px bg-brand/10 my-1"></div>
         ${c.parent_id ? '' : `<button onclick="setFeatured(${id}, ${!c.is_featured})"><i class="ph-bold ph-star" ${c.is_featured ? 'style="color:#d97706"' : ''}></i> ${c.is_featured ? 'إزالة من أمثلة الرئيسية' : 'عرضه في أمثلة الرئيسية'}</button>`}
@@ -649,6 +674,27 @@
     }[inv.reason] || '';
   }
 
+  // نافذة نوع النشاط
+  const td = { id: null, type: 'restaurant' };
+  function openTypeDlg(id) {
+    openMenu = null; renderStores();
+    const c = find(id); td.id = id; td.type = c.business_type || 'restaurant';
+    document.getElementById('type-store').textContent = c.name || c.client_slug;
+    document.getElementById('type-label').value = c.business_label || '';
+    renderTypeGrid();
+    const d = document.getElementById('type-dlg'); d.classList.remove('hidden'); d.classList.add('flex');
+  }
+  function renderTypeGrid() {
+    document.getElementById('type-grid').innerHTML = DMSectors.KEYS.map(k => `<button type="button" onclick="td.type='${k}'; renderTypeGrid()" class="rounded-xl border px-2 py-2.5 text-[11px] font-bold ${td.type === k ? 'bg-brand text-cream border-brand' : 'border-brand/15 bg-white'}"><i class="ph-bold ${TYPES[k][1]}"></i> ${TYPES[k][0]}</button>`).join('');
+    document.getElementById('type-label').classList.toggle('hidden', td.type !== 'other');
+  }
+  function closeTypeDlg() { const d = document.getElementById('type-dlg'); d.classList.add('hidden'); d.classList.remove('flex'); }
+  async function saveType() {
+    const error = await post('business-type', { id: td.id, type: td.type, label: document.getElementById('type-label').value.trim() });
+    if (error) return showToast(`تعذر الحفظ: ${error.message}`, true);
+    closeTypeDlg(); showToast('تم تغيير نوع النشاط'); loadClients();
+  }
+
   // نافذة المميزات: mode = activate (تفعيل/تجديد مع فاتورة) أو features (تعديل الباقة بدون تمديد)
   const fd = { id: null, mode: 'activate', period: 'year', feats: new Set() };
   function activate(id, period) { openFeat(id, 'activate', period); }
@@ -793,7 +839,7 @@
     const rows = [['الاسم', 'الرابط', 'النوع', 'البريد', 'الجوال', 'الحالة', 'ينتهي', 'قائمة الانتظار', 'مثال في الرئيسية']];
     visibleClients().forEach(c => {
       const s = statusOf(c);
-      rows.push([c.name, c.client_slug, (TYPES[c.business_type] || TYPES.restaurant)[0], c.email, c.phone, s.label, s.endText, c.waitlist_enabled ? 'نعم' : 'لا', c.is_featured ? 'نعم' : 'لا']);
+      rows.push([c.name, c.client_slug, DMSectors.label(c), c.email, c.phone, s.label, s.endText, c.waitlist_enabled ? 'نعم' : 'لا', c.is_featured ? 'نعم' : 'لا']);
     });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob(['\ufeff' + rows.map(r => r.map(qv).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' }));

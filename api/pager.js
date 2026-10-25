@@ -21,6 +21,12 @@ async function loyaltyOf(storeId) {
 }
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{10,64}$/;
+// رابط تقييم المحل في قوقل ماب: رابط "اكتب تقييم" لو حطه، وإلا رابط موقعه في قوقل ماب
+const GOOGLE_RE = /^https:\/\/(g\.page|search\.google\.com|www\.google\.com|maps\.app\.goo\.gl|goo\.gl|maps\.google\.com|g\.co)\//i;
+async function reviewUrl(storeId) {
+  const x = (await rest(`clients?id=eq.${storeId}&select=google_review_url,location_url`).catch(() => []))[0] || {};
+  return [x.google_review_url, x.location_url].find(u => u && GOOGLE_RE.test(u) && u.length < 500) || null;
+}
 // محل التجربة في الصفحة التعريفية: الرقم يجهز تلقائياً بعد ثواني عشان الزائر يجرب الرنّة بنفسه
 const DEMO = new Set(['bistrobella']);
 const DEMO_AFTER = 12e3;
@@ -81,7 +87,8 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     }
     // رقم من يوم سابق ما زال ينتظر = منتهي
     const stale = t.status === 'waiting' && Date.now() - Date.parse(t.created_at) > 18 * 3600e3;
-    return { demo: DEMO.has(store.client_slug), store: { name: store.name, logo_url: store.logo_url }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
+    const review = ['ready', 'done'].includes(t.status) ? await reviewUrl(store.id) : null;
+    return { demo: DEMO.has(store.client_slug), review_url: review, store: { name: store.name, logo_url: store.logo_url }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
       loyalty: { ...(await loyaltyOf(store.id)), linked: !!t.loyalty_card_id, stamped: !!t.loyalty_stamped } };
   }
 
@@ -124,9 +131,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     // لو الزبون ضغط "استلمت" قبل الكاشير، نقفل الرقم
     await rest(`pager_tickets?id=eq.${rows[0].id}&status=eq.ready`, { method: 'PATCH', body: { status: 'done', closed_at: new Date().toISOString(), push_sub: null } }).catch(() => {});
     await poke(topic('pager', store.id));
-    const x = (await rest(`clients?id=eq.${store.id}&select=google_review_url`).catch(() => []))[0] || {};
-    const url = /^https:\/\/[^\s"'<>]{8,500}$/.test(x.google_review_url || '') ? x.google_review_url : null;
-    return { ok: true, google: rating >= 4 ? url : null };
+    return { ok: true, google: rating >= 4 ? await reviewUrl(store.id) : null };
   }
 
   throw new ApiError(404, 'Unknown action');
