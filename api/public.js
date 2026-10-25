@@ -153,7 +153,11 @@ async function waitlistOpen(storeId) {
 async function menuPayload(slug) {
   const store = await findStore(slug);
   // المنيو ضمن باقة المحل؟ (اللي مشترك في الولاء بس، ما يطلع له منيو)
-  if (!(await storeHasFeature(store.id, 'menu'))) throw new ApiError(404, 'المنيو غير متاح حالياً', 'NOT_AVAILABLE');
+  // ما عنده منيو؟ رابط المحل الرئيسي يفتح أول خدمة عنده (البيجر، الانتظار، الولاء)
+  if (!(await storeHasFeature(store.id, 'menu'))) {
+    for (const k of ['pager', 'waitlist', 'loyalty']) if (await storeHasFeature(store.id, k)) throw new ApiError(404, 'المنيو غير متاح', `GO:${k}`);
+    throw new ApiError(404, 'المنيو غير متاح حالياً', 'NOT_AVAILABLE');
+  }
   const [categories, products, waitlist_open, has_coupons, occasion, promos] = await Promise.all([
     rest(`categories?client_id=eq.${store.id}&select=id,key,name,name_en,sort_order,group_name`),
     // المنتجات المخفية ما توصل للزبون أصلاً
@@ -188,9 +192,11 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
   // صفحة الروابط السريعة: نفس بيانات المتجر بدون الأقسام والأطباق
   if (action === 'links' && req.method === 'GET') {
     const store = await findStore(req.query.slug);
-    if (!(await storeHasFeature(store.id, 'menu'))) throw new ApiError(404, 'الصفحة غير متاحة حالياً', 'NOT_AVAILABLE');
+    // صفحة الروابط لكل المشتركين (مو بس المنيو)، وتعرف وش الخدمات اللي عنده
+    const services = {};
+    for (const k of ['menu', 'pager', 'waitlist', 'loyalty']) services[k] = await storeHasFeature(store.id, k);
     const [waitlist_open, occasion] = await Promise.all([waitlistOpen(store.id), activeOccasion(store.id)]);
-    return { store: { ...store, waitlist_open, occasion } };
+    return { store: { ...store, waitlist_open, occasion, services } };
   }
 
   if (action === 'featured' && req.method === 'GET') {

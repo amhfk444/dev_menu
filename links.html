@@ -8,11 +8,11 @@
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
 <meta name="theme-color" content="#0b0b0b">
 <title>روابطنا | DEV MENU</title>
-<meta name="description" content="كل روابط المحل في مكان واحد: المنيو، الطلبات، تطبيقات التوصيل، التواصل والموقع.">
+<meta name="description" content="كل روابط المحل في مكان واحد: الخدمات، التواصل والموقع.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="DEV MENU">
 <meta property="og:title" content="روابطنا | DEV MENU">
-<meta property="og:description" content="كل روابط المحل في مكان واحد: المنيو، الطلبات، تطبيقات التوصيل، التواصل والموقع.">
+<meta property="og:description" content="كل روابط المحل في مكان واحد: الخدمات، التواصل والموقع.">
 <meta name="twitter:card" content="summary">
 
 <link rel="stylesheet" href="/css/fonts.css">
@@ -142,7 +142,10 @@
     const out = [];
 
     // 1) المنيو و 2) قائمة الانتظار
-    out.push(linkBtn({ href: DM.storePage('menu', p.client_slug), label: 'عرض المنيو', icon: 'ph-bold ph-fork-knife', primary: true, external: false }));
+    const sv = p.services || { menu: true };
+    if (sv.menu) out.push(linkBtn({ href: DM.storePage('menu', p.client_slug), label: 'عرض المنيو', icon: 'ph-bold ph-fork-knife', primary: true, external: false }));
+    if (sv.pager) out.push(linkBtn({ href: DM.storePage('pager', p.client_slug), label: 'خذ رقمك', icon: 'ph-bold ph-bell', primary: !sv.menu, external: false }));
+    if (sv.loyalty) out.push(linkBtn({ href: DM.storePage('loyalty', p.client_slug), label: 'بطاقة الولاء', icon: 'ph-bold ph-seal-check', external: false }));
     if (p.waitlist_open === true) out.push(linkBtn({ href: DM.storePage('waitlist', p.client_slug), label: 'انضم لقائمة الانتظار', icon: 'ph-bold ph-hourglass-medium', external: false }));
 
     // 3) أرقام الطلبات و 4) واتساب

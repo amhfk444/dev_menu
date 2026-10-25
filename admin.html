@@ -218,9 +218,9 @@
       <a href="pager-desk.html" data-feature="pager" onclick="return openPagerDesk(this)" class="nav-item"><i class="ph-bold ph-bell"></i> شاشة البيجر <span class="mr-auto text-[9px] bg-[#c9a227] text-[#15271b] font-black px-1.5 py-0.5 rounded-md">جديد</span></a>
       <button data-nav="settings" class="nav-item"><i class="ph-bold ph-palette"></i> هوية المنشأة</button>
       <p class="px-3 pt-5 pb-1 text-[10px] text-cream/45 font-bold">اختصارات</p>
-      <a id="sidebar-preview" href="#" target="_blank" rel="noopener" class="nav-item"><i class="ph-bold ph-arrow-square-out"></i> معاينة المنيو</a>
-      <button onclick="copyMenuLink()" class="nav-item"><i class="ph-bold ph-link-simple"></i> نسخ رابط المنيو</button>
-      <button onclick="downloadQrCard()" class="nav-item"><i class="ph-bold ph-printer"></i> بطاقة QR</button>
+      <a id="sidebar-preview" data-needs="menu" href="#" target="_blank" rel="noopener" class="nav-item"><i class="ph-bold ph-arrow-square-out"></i> معاينة المنيو</a>
+      <button onclick="copyMenuLink()" data-needs="menu" class="nav-item"><i class="ph-bold ph-link-simple"></i> نسخ رابط المنيو</button>
+      <button onclick="downloadQrCard()" data-needs="menu" class="nav-item"><i class="ph-bold ph-printer"></i> بطاقة QR</button>
       <a id="sa-link" href="super-admin.html" class="nav-item hidden"><i class="ph-bold ph-crown text-amber-300"></i> لوحة المشتركين</a>
     </nav>
 
@@ -247,7 +247,7 @@
         <div class="flex items-center gap-2 shrink-0">
           <select id="branch-switch" onchange="switchBranch(this.value)" aria-label="الفرع" class="hidden max-w-[150px] sm:max-w-[220px] text-xs font-bold bg-cream border border-brand/25 rounded-xl px-2.5 py-2 text-ink"></select>
           <span id="admin-mode-badge" class="hidden text-[10px] font-bold bg-amber-400/15 text-amber-700 border border-amber-400/30 px-2.5 py-1 rounded-full"><i class="ph-bold ph-crown"></i> وضع المدير العام</span>
-          <a id="preview-menu-btn" href="#" target="_blank" rel="noopener" class="text-xs bg-brand text-cream font-bold px-3.5 py-2 rounded-xl transition hover:bg-brand-dark flex items-center gap-1.5">
+          <a id="preview-menu-btn" data-needs="menu" href="#" target="_blank" rel="noopener" class="text-xs bg-brand text-cream font-bold px-3.5 py-2 rounded-xl transition hover:bg-brand-dark flex items-center gap-1.5">
             <i class="ph-bold ph-eye text-[10px]"></i> <span class="hidden sm:inline">معاينة المنيو</span>
           </a>
           <button onclick="logout()" aria-label="خروج" class="lg:hidden bg-brand/10 hover:bg-brand/15 text-ink w-9 h-9 rounded-xl border border-brand/25 flex items-center justify-center">
@@ -274,18 +274,18 @@
         <div class="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 id="greeting" class="text-xl md:text-2xl font-black">أهلاً بك</h2>
-            <p class="text-xs text-ink/60 mt-1">هذا ملخص متجرك وأداء المنيو.</p>
+            <p class="text-xs text-ink/60 mt-1">هذا ملخص منشأتك وخدماتك.</p>
           </div>
           <div class="flex gap-2">
-            <button onclick="goAddDish()" class="bg-brand text-cream hover:bg-brand-dark px-4 py-2.5 rounded-xl text-xs font-black transition"><i class="ph-bold ph-plus"></i> أضف طبق</button>
-            <button onclick="downloadQrCard()" class="bg-brand/10 hover:bg-brand/15 text-ink px-4 py-2.5 rounded-xl text-xs font-bold border border-brand/25 transition"><i class="ph-bold ph-printer"></i> بطاقة QR</button>
+            <button onclick="goAddDish()" data-needs="menu" class="bg-brand text-cream hover:bg-brand-dark px-4 py-2.5 rounded-xl text-xs font-black transition"><i class="ph-bold ph-plus"></i> أضف طبق</button>
+            <button onclick="downloadQrCard()" data-needs="menu" class="bg-brand/10 hover:bg-brand/15 text-ink px-4 py-2.5 rounded-xl text-xs font-bold border border-brand/25 transition"><i class="ph-bold ph-printer"></i> بطاقة QR</button>
           </div>
         </div>
 
         <div id="renew-banner" class="hidden rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 border"></div>
 
-        <div id="quick-counts" class="pro-card grid grid-cols-2 lg:grid-cols-4 overflow-hidden"></div>
-        <button type="button" onclick="location.hash='loyalty'" class="lg:hidden pro-card w-full flex items-center gap-3 p-4 text-right hover:bg-brand/[0.03] transition">
+        <div id="quick-counts" data-needs="menu" class="pro-card grid grid-cols-2 lg:grid-cols-4 overflow-hidden"></div>
+        <button type="button" data-needs="loyalty" onclick="location.hash='loyalty'" class="lg:hidden pro-card w-full flex items-center gap-3 p-4 text-right hover:bg-brand/[0.03] transition">
           <span class="w-10 h-10 rounded-xl bg-brand/10 text-brand grid place-items-center shrink-0"><i class="ph-bold ph-seal-check"></i></span>
           <span class="flex-1 min-w-0"><span class="block text-sm font-semibold">بطاقة الولاء</span><span class="block text-xs text-ink/60">زبونك يجمع أختامه بنفسه ويرجع لك</span></span>
           <i class="ph-bold ph-caret-left text-xs text-ink/40"></i>
@@ -299,7 +299,7 @@
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
           <div class="xl:col-span-2 space-y-6">
   <!-- إحصائيات المنيو -->
-            <div class="pro-card p-5 space-y-5">
+            <div data-needs="menu" class="pro-card p-5 space-y-5">
               <div class="flex flex-wrap items-center justify-between gap-3 border-b border-brand/20 pb-3">
                 <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-chart-bar text-emerald-600"></i> إحصائيات المنيو</h3>
                 <div class="flex items-center gap-2">
@@ -317,6 +317,12 @@
             </div>
           </div>
           <div class="space-y-6 order-first xl:order-none">
+    <!-- روابط الخدمات: رابط لكل خدمة مفعّلة -->
+            <div class="pro-card p-5 space-y-3">
+              <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-link-simple text-emerald-600"></i> روابط خدماتك</h3>
+              <p class="text-[11px] text-ink/60">شاركها مع عملائك أو اطبع لها كود QR. الرابط الرئيسي يفتح أول خدمة عندك.</p>
+              <div id="svc-links" class="space-y-2"></div>
+            </div>
     <!-- حالة الاشتراك -->
             <div id="subscription-card" class="pro-card p-5 space-y-3">
               <h3 class="text-[13px] font-bold text-ink flex items-center gap-1.5"><i class="ph-bold ph-identification-card text-ink/60"></i> اشتراكك</h3>
@@ -336,7 +342,7 @@
             </div>
 
     <!-- رابط المنيو والـ QR Code -->
-            <div class="pro-card p-5 flex items-center justify-between gap-4">
+            <div data-needs="menu" class="pro-card p-5 flex items-center justify-between gap-4">
               <div class="space-y-2">
                 <h3 class="text-xs font-bold text-ink"><i class="ph-bold ph-qr-code text-amber-600"></i> باركود المنيو الخاص بك</h3>
                 <p class="text-[10px] text-ink/60">امسح الكود لفتح المنيو أو شاركه مع زملائك</p>
@@ -373,7 +379,7 @@
               </div>
             </div>
             <!-- جاهزية المنيو -->
-            <div class="pro-card p-5 space-y-3">
+            <div data-needs="menu" class="pro-card p-5 space-y-3">
               <div class="flex items-center justify-between">
                 <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-list-checks text-emerald-600"></i> جاهزية المنيو</h3>
                 <span id="checklist-pct" class="text-[11px] font-black text-emerald-700">0%</span>
@@ -1252,7 +1258,7 @@
             <a id="short-link-open" href="#" target="_blank" rel="noopener" class="sm:w-32 text-center bg-brand/10 hover:bg-brand/15 text-ink font-bold py-2.5 rounded-xl text-xs border border-brand/25 transition"><i class="ph-bold ph-arrow-square-out text-[10px]"></i> فتح</a>
           </div>
         </div>
-        <div class="pro-card p-5 space-y-3">
+        <div data-hide-always class="pro-card p-5 space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-storefront text-ink/75"></i> نوع النشاط</h3>
             <span class="text-[10px] text-ink/50">يحدد الحقول اللي تظهر لك عند إضافة الأطباق</span>
@@ -1283,13 +1289,13 @@
         <button onclick="uploadMedia('logo')" class="w-full bg-brand/10 hover:bg-brand/15 text-ink text-xs font-bold py-2 rounded-xl transition border border-brand/25">تحديث الشعار</button>
       </div>
 
-      <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
+      <div data-needs="menu" class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
         <label class="text-[11px] font-bold text-ink/75">صورة الخلفية للمنيو</label>
         <input type="file" id="bg-img-file" accept="image/*" class="input-pro text-[10px]">
         <button onclick="uploadMedia('bg_image')" class="w-full bg-brand/10 hover:bg-brand/15 text-ink text-xs font-bold py-2 rounded-xl transition border border-brand/25">تحديث الخلفية</button>
       </div>
 
-      <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
+      <div data-needs="menu" class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
         <label class="text-[11px] font-bold text-ink/75">فيديو الخلفية (MP4)</label>
         <input type="file" id="bg-video-file" accept="video/*" class="input-pro text-[10px]">
         <button onclick="uploadMedia('bg_video')" class="w-full bg-brand/10 hover:bg-brand/15 text-ink text-xs font-bold py-2 rounded-xl transition border border-brand/25">تحديث الفيديو</button>
@@ -1297,7 +1303,7 @@
     </div>
         </div>
         <!-- مظهر المنيو: الثيم ولون الهوية -->
-        <div class="pro-card p-5 space-y-4">
+        <div data-needs="menu" class="pro-card p-5 space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-2 border-b border-brand/20 pb-2">
             <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-swatches text-ink/75"></i> مظهر المنيو</h3>
             <span class="text-[10px] text-ink/50">يتطبق على المنيو وصفحة الروابط</span>
@@ -1320,7 +1326,7 @@
           </div>
         </div>
         <!-- المناسبات والزينة -->
-        <div class="pro-card p-5 space-y-4">
+        <div data-needs="menu" class="pro-card p-5 space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-2 border-b border-brand/20 pb-2">
             <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-magic-wand text-amber-600"></i> المناسبات والزينة</h3>
             <span class="text-[10px] text-ink/50">زينة وتهنئة تظهر في المنيو تلقائياً خلال تواريخ المناسبة</span>
@@ -1408,7 +1414,7 @@
     <!-- معلومات المنشأة -->
     <div class="pro-card p-5 space-y-3">
       <h4 class="text-xs font-bold text-ink flex items-center gap-1.5">
-        <i class="ph-bold ph-storefront text-emerald-600"></i> معلومات المنشأة (تظهر أعلى المنيو)
+        <i class="ph-bold ph-storefront text-emerald-600"></i> معلومات المنشأة
       </h4>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
@@ -1425,24 +1431,24 @@
           <p class="text-[10px] text-ink/55 mt-1">لما يرن البيجر يطلع للزبون زر "قيّمنا على قوقل ماب" يفتح هالرابط. تلقاه في Google Business ← "اطلب تقييمات". لو ما حطيته نستخدم رابط موقعك في قوقل ماب اللي فوق.</p>
         </div>
       </div>
-      <label class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
+      <label data-needs="menu" class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
         <input type="checkbox" id="info-show-calories" onchange="toggleCalories(this.checked)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
         <span class="text-xs">
           <b class="text-ink"><i class="ph-bold ph-flame text-amber-600"></i> عرض السعرات الحرارية في المنيو</b>
           <span class="block text-[10px] text-ink/60 mt-0.5">عند الإيقاف: يختفي حقل السعرات من نموذج الأطباق، ولا تظهر السعرات للزبائن. السعرات المحفوظة تبقى ولا تنحذف.</span>
         </span>
       </label>
-      <div class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2">
+      <div data-needs="menu" class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2">
         <p class="text-xs font-bold text-ink"><i class="ph-bold ph-squares-four text-amber-600"></i> شكل الأطباق في المنيو</p>
         <div id="menu-layout" class="grid grid-cols-2 gap-2" role="radiogroup" aria-label="شكل الأطباق"></div>
         <p class="text-[10px] text-ink/60">في الحالتين: الزبون يضغط على الطبق وتفتح صورته كاملة مع التفاصيل.</p>
       </div>
-      <div class="bg-brand/5 p-3 rounded-xl border border-brand/15">
+      <div data-needs="menu" class="bg-brand/5 p-3 rounded-xl border border-brand/15">
         <label for="info-currency" class="text-xs font-bold text-ink block mb-1.5"><i class="ph-bold ph-coins text-amber-600"></i> عملة المنيو</label>
         <select id="info-currency" onchange="changeCurrency(this.value)" class="input-pro text-xs cursor-pointer"></select>
         <span class="block text-[10px] text-ink/60 mt-1">تظهر بجانب كل الأسعار في المنيو وفي رسائل طلبات واتساب. تغيير العملة ما يغيّر أرقام الأسعار نفسها.</span>
       </div>
-      <div id="wa-orders-box" class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2.5">
+      <div data-needs="menu" id="wa-orders-box" class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2.5">
         <label id="wa-orders-label" class="flex items-start gap-2.5 cursor-pointer">
           <input type="checkbox" id="info-wa-orders" class="w-4 h-4 mt-0.5 accent-green-500 cursor-pointer disabled:cursor-not-allowed">
           <span class="text-xs">
@@ -1455,7 +1461,7 @@
       <button onclick="updateRestaurantInfo()" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2 rounded-xl text-xs transition shadow-md">حفظ معلومات المنشأة</button>
     </div>
     <!-- العروض والرسائل الترويجية -->
-    <div class="pro-card p-5 space-y-3">
+    <div data-needs="menu" class="pro-card p-5 space-y-3">
       <h4 class="text-xs font-bold text-ink flex items-center gap-1.5">
         <i class="ph-bold ph-megaphone text-amber-700"></i> الرسائل الترويجية والعروض (تظهر أعلى المنيو للعملاء)
       </h4>
@@ -1506,7 +1512,7 @@
       <button onclick="updateSocialLinks()" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2 rounded-xl text-xs transition shadow-md">حفظ روابط التواصل</button>
     </div>
         <!-- تطبيقات التوصيل -->
-        <div class="pro-card p-5 space-y-4">
+        <div data-needs="menu" class="pro-card p-5 space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-moped text-amber-600"></i> تطبيقات التوصيل</h3>
             <span class="text-[10px] text-ink/50">اختر التطبيقات اللي منشأتك موجودة فيها، وتظهر للزبائن في المنيو</span>
@@ -1517,7 +1523,7 @@
         </div>
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
           <!-- أرقام الطلبات -->
-          <div class="pro-card p-5 space-y-4">
+          <div data-needs="menu" class="pro-card p-5 space-y-4">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-phone text-emerald-600"></i> أرقام الطلبات</h3>
               <span id="order-numbers-count" class="text-[10px] text-ink/50"></span>
@@ -1618,7 +1624,7 @@
 
   // ─── التنقل بين الصفحات ───
   const PAGES = {
-    dashboard: ['الرئيسية', 'نظرة عامة على متجرك وأداء المنيو'],
+    dashboard: ['الرئيسية', 'نظرة عامة على منشأتك وخدماتك'],
     menu:      ['المنيو', 'أضف أطباقك وأقسامك ورتّبها'],
     waitlist:  ['قائمة الانتظار', 'سجّل عملاءك وبلّغهم لما يجي دورهم'],
     loyalty:   ['بطاقة الولاء', 'زبونك يجمع أختامه بنفسه ويرجع لك'],
@@ -1631,7 +1637,8 @@
   }
   // المميزات اللي مو ضمن باقة المشترك: الصفحة تعرض "أضفها لباقتك" بدل محتواها
   const PAGE_FEATURE = { menu: 'menu', waitlist: 'waitlist', loyalty: 'loyalty' };
-  const featureLocked = (key) => !!client && client.subscription_status === 'active' && !DMPlans.has(client, key);
+  // الخدمات اللي مو ضمن باقته (في التجربة أو الاشتراك) تختفي من اللوحة كلها
+  const featureLocked = (key) => !!client && ['active', 'trial'].includes(client.subscription_status) && !DMPlans.has(client, key);
   let lockedKey = null;
   function showLocked(key) {
     lockedKey = key;
@@ -1653,16 +1660,33 @@
     if (deskLocked()) { location.hash = 'pager'; showPage('pager'); return false; }
     a.href = 'pager-desk.html' + location.search; return true;
   }
+  // روابط الخدمات المفعّلة
+  const SVC_PAGES = [['menu', 'menu', 'المنيو', 'ph-fork-knife'], ['pager', 'pager', 'البيجر', 'ph-bell'], ['waitlist', 'waitlist', 'قائمة الانتظار', 'ph-hourglass-medium'], ['loyalty', 'loyalty', 'بطاقة الولاء', 'ph-seal-check']];
+  function renderServiceLinks() {
+    const box = document.getElementById('svc-links');
+    if (!box || !client) return;
+    const on = SVC_PAGES.filter(([k]) => !featureLocked(k));
+    const rows = [['home', 'الرابط الرئيسي', 'ph-house', DM.storeUrl(client.client_slug)], ...on.filter(([k]) => k !== 'menu').map(([k, page, name, icon]) => [k, name, icon, DM.storeUrl(client.client_slug, page)]), ['links', 'صفحة الروابط', 'ph-link', DM.storeUrl(client.client_slug, 'links')]];
+    box.innerHTML = rows.map(([k, name, icon, url]) => `
+      <div class="flex items-center gap-2 bg-brand/5 border border-brand/15 rounded-xl px-3 py-2">
+        <i class="ph-bold ${icon} text-ink/60"></i>
+        <div class="min-w-0 flex-1"><p class="text-[12px] font-bold">${name}</p><p class="text-[11px] text-ink/55 truncate" dir="ltr">${esc(url.replace(/^https?:\/\//, ''))}</p></div>
+        <button type="button" onclick="navigator.clipboard.writeText('${esc(url)}').then(() => showToast('تم نسخ الرابط'))" class="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-white border border-brand/15"><i class="ph-bold ph-copy"></i> نسخ</button>
+        <a href="${esc(url)}" target="_blank" rel="noopener" class="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-white border border-brand/15"><i class="ph-bold ph-arrow-square-out"></i></a>
+      </div>`).join('');
+  }
   function applyFeatureLocks() {
+    renderServiceLinks();
     document.querySelectorAll('[data-nav], [data-feature]').forEach(el => {
       const key = el.dataset.feature || PAGE_FEATURE[el.dataset.nav];
-      const old = el.querySelector('.lock-tag'); if (old) old.remove();
-      const locked = key && (key === 'pager' && el.dataset.feature ? deskLocked() : featureLocked(key));
-      // الشريط السفلي في الجوال: نخفي اللي مو ضمن الباقة عشان ما يزدحم
-      if (el.classList.contains('bnav')) { el.style.display = locked ? 'none' : ''; return; }
-      if (locked) el.insertAdjacentHTML('beforeend', '<i class="lock-tag ph-bold ph-lock-simple text-[11px] opacity-60 mr-auto" aria-label="مو ضمن باقتك"></i>');
+      if (!key) return;
+      const off = key === 'pager' && el.dataset.feature ? deskLocked() : featureLocked(key);
+      el.style.display = off ? 'none' : '';
     });
+    document.querySelectorAll('[data-needs]').forEach(el => { el.style.display = featureLocked(el.dataset.needs) ? 'none' : ''; });
+    document.querySelectorAll('[data-hide-always]').forEach(el => { el.style.display = 'none'; });
   }
+
   function showPage(page) {
     if (!PAGES[page] && page !== 'pager') page = 'dashboard';
     const key = page === 'pager' ? 'pager' : PAGE_FEATURE[page];
@@ -1905,6 +1929,8 @@
       const r = await api('plan-request', { plan, features });
       planChoice = r.requested_plan;
       if (!client.parent_id) { client.requested_plan = r.requested_plan; client.requested_features = r.requested_features; }
+      // في التجربة الخدمات تتفعّل على طول
+      if (client.subscription_status === 'trial') { client.plan_features = r.requested_features; client.waitlist_enabled = r.requested_features.includes('waitlist'); applyFeatureLocks(); }
       showToast(`وصلنا طلبك، بنتواصل معك للدفع والتفعيل`);
     } catch (e) { showToast(e.message || 'تعذر إرسال الطلب، جرّب مرة ثانية', true); }
     planSending = false; renderSubscriptionStatus();

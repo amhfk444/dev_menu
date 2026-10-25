@@ -673,6 +673,7 @@
     try {
       menuData = await DM.get(`/api/public?action=menu&slug=${encodeURIComponent(clientSlug)}`);
     } catch (e) {
+      if (e.status === 404 && String(e.code || '').startsWith('GO:')) return location.replace(DM.storePage(e.code.slice(3), clientSlug));
       if (e.status === 404 || e.status === 400) return showUnavailable('المنيو غير متاح حالياً', 'هذا المنيو غير موجود أو متوقف مؤقتاً.');
       console.error(e);
       return showUnavailable('تعذر تحميل المنيو', 'تحقق من اتصالك بالإنترنت ثم أعد تحميل الصفحة.');

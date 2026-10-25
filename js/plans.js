@@ -39,7 +39,8 @@
   // المميزات المتاحة للمحل الحين: التجربة فيها كل شي، والمشترك حسب باقته
   function featuresOf(store) {
     if (!store) return [];
-    if (store.subscription_status === 'trial') return ORDER.slice();
+    // التجربة: الخدمات اللي اختارها عند التسجيل (المسجلين قبل نظام الاختيار: كل شي)
+    if (store.subscription_status === 'trial') return Array.isArray(store.plan_features) && store.plan_features.length ? clean(store.plan_features) : ORDER.slice();
     if (store.subscription_status === 'active') return Array.isArray(store.plan_features) && store.plan_features.length ? clean(store.plan_features) : LEGACY.slice();
     return [];
   }

@@ -261,8 +261,10 @@ async function main(req) {
       const plan = ['month', 'year'].includes(b.plan) ? b.plan : null;
       const features = PLANS.clean(Array.isArray(b.features) ? b.features : []);
       if (plan && features.length) {
+        // الخدمات اللي اختارها تشتغل على طول في التجربة، والإدارة يوصلها إشعار بس
         const main = (await rest(`clients?client_slug=eq.${q(slug)}`, { method: 'PATCH', prefer: 'return=representation',
-          body: { requested_plan: plan, requested_features: features, plan_requested_at: new Date().toISOString() } }).catch(() => []))[0];
+          body: { plan_features: features, waitlist_enabled: features.includes('waitlist'), loyalty_enabled: features.includes('loyalty'),
+                  requested_plan: plan, requested_features: features, plan_requested_at: new Date().toISOString() } }).catch(() => []))[0];
         if (main && mailConfigured()) {
           await sendMail({
             to: process.env.ADMIN_EMAIL || 'dmenu950@gmail.com', fromName: 'DEV MENU',
@@ -705,9 +707,13 @@ async function main(req) {
     const features = PLANS.clean(b.features && b.features.length ? b.features : PLANS.LEGACY);
     if (!features.length) throw new ApiError(400, 'اختر ميزة وحدة على الأقل');
     const mainId = store.parent_id || sid;   // اشتراك الفروع تابع للمتجر الرئيسي
+    // في التجربة: الخدمات الجديدة تشتغل على طول (والمشترك يتعدل بعد الدفع من لوحة المشتركين)
+    const cur = (await rest(`clients?id=eq.${mainId}&select=subscription_status`))[0] || {};
+    const live = cur.subscription_status === 'trial' ? { plan_features: features, waitlist_enabled: features.includes('waitlist') } : {};
     const main = (await rest(`clients?id=eq.${mainId}`, {
-      method: 'PATCH', body: { requested_plan: plan, requested_features: features, plan_requested_at: new Date().toISOString() }, prefer: 'return=representation'
+      method: 'PATCH', body: { ...live, requested_plan: plan, requested_features: features, plan_requested_at: new Date().toISOString() }, prefer: 'return=representation'
     }))[0];
+    if (live.plan_features) await rest(`clients?parent_id=eq.${mainId}`, { method: 'PATCH', body: live }).catch(() => {});
     if (!main) throw new ApiError(404, 'المتجر غير موجود');
     console.log('PLAN_REQUEST', mainId, plan);
     // تنبيه للإدارة بالبريد
