@@ -686,7 +686,10 @@ async function main(req) {
       const r = await rpc('server_loyalty_redeem', { p_card: card.id, p_needed: settings.needed, p_distance: null });
       if (!r.ok) throw new ApiError(409, 'أختامه ما كملت', 'NOT_ENOUGH');
     }
-    await pushWalletCards(sid, { cardIds: [card.id] }).catch(() => 0);
+    // رسالة تهنئة على بطاقة العميل مع الصرف (والتحديث نفسه يصفّر أختامه)
+    const first = String(card.name || '').trim().split(/\s+/)[0];
+    const sent = await walletNotice(sid, card.id, `🎁 ${first ? `مبروك يا ${first}!` : 'مبروك!'} استلمت مكافأتك: ${reward}. شكراً لوفائك لـ ${store.name}، ننتظرك مرة ثانية`).catch(() => 'error');
+    if (sent !== 'sent') await pushWalletCards(sid, { cardIds: [card.id] }).catch(() => 0);
     const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
     await poke(topic('pager', sid)).catch(() => {});
     return { ok: true, reward, who: { id: card.id, no: card.member_no, name: card.name || `عضو #${card.member_no}` }, stamps: fresh.stamps, needed: settings.needed, rewards: await readyRewards(sid, fresh, settings) };
