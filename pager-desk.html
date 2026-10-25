@@ -66,6 +66,7 @@
       <button id="scan-btn" class="mini bg-[#233d2c] text-white hidden"><i class="ph-bold ph-camera"></i> امسح بطاقة زبون</button>
       <button id="stamp-btn" class="mini bg-[#c9a227] text-[#15271b] hidden"><i class="ph-bold ph-seal-check"></i> كود ختم</button>
       <button id="join-btn" class="mini bg-white border border-[#233d2c]/15 hidden"><i class="ph-bold ph-user-plus"></i> QR تسجيل الولاء</button>
+      <a id="kiosk-btn" href="kiosk.html" onclick="this.href='kiosk.html'+location.search" class="mini bg-white border border-[#233d2c]/15 hidden"><i class="ph-bold ph-device-tablet"></i> شاشة الختم</a>
       <button id="stats-btn" class="mini bg-white border border-[#233d2c]/15 hidden"><i class="ph-bold ph-chart-bar"></i> الإحصائيات</button>
       <button id="qr-btn" class="mini bg-white border border-[#233d2c]/15 hidden"><i class="ph-bold ph-qr-code"></i> QR البيجر</button>
     </div>
@@ -330,6 +331,7 @@
       $('stamp-btn').classList.toggle('hidden', !r.loyalty);
       $('scan-btn').classList.toggle('hidden', !r.loyalty);
       $('join-btn').classList.toggle('hidden', !r.loyalty);
+      $('kiosk-btn').classList.toggle('hidden', !r.loyalty);
       const pager = r.pager !== false;
       $('qr-btn').classList.toggle('hidden', !pager);
       $('stats-btn').classList.toggle('hidden', !pager);
