@@ -134,7 +134,12 @@
   details.q summary::-webkit-details-marker { display: none; }
   details.q summary i { transition: transform .2s; color: var(--muted); }
   details.q[open] summary i { transform: rotate(45deg); }
-  details.q p { padding: 0 0 20px; font-size: 15px; line-height: 1.85; color: var(--muted); }
+  details.q p { padding: 0 0 14px; font-size: 15px; line-height: 1.85; color: var(--muted); }
+  details.q .faq-list { padding: 0 0 18px; display: grid; gap: 10px; font-size: 15px; line-height: 1.85; color: var(--muted); }
+  details.q .faq-list li { position: relative; padding-inline-start: 18px; }
+  details.q .faq-list li::before { content: ''; position: absolute; inset-inline-start: 2px; top: .75em; width: 6px; height: 6px; border-radius: 50%; background: var(--gold-deep); }
+  details.q .faq-list b { color: var(--ink); }
+  details.q .faq-note { font-size: 13px; padding-bottom: 20px; }
 
   /* التسجيل */
   .reg { background: #fff; border: 1px solid var(--line); border-radius: 32px; padding: 28px; box-shadow: 0 40px 80px -50px rgba(21,39,27,.55); }
@@ -465,18 +470,18 @@
 <!-- ═══════════ الأسئلة ═══════════ -->
 <section id="faq" class="py-16 md:py-20">
   <div class="wrap max-w-3xl">
-    <h2 class="h2 text-center mb-10 reveal">أسئلة <em>تهمك.</em></h2>
+    <h2 class="h2 text-center mb-10 reveal">الأسئلة <em>الشائعة</em></h2>
     <div class="space-y-3 reveal">
-      <details class="q"><summary>هل يحتاج الزبون يحمّل تطبيق؟ <i class="ph-bold ph-plus"></i></summary><p>لا. يمسح الكود بكاميرا جواله ويفتح كل شي من المتصفح: المنيو والبيجر وبطاقة الولاء. والبطاقة يقدر يحفظها في محفظة الآيفون بضغطة.</p></details>
-      <details class="q"><summary>كيف أدفع؟ <i class="ph-bold ph-plus"></i></summary><p>تبدأ مجاناً 7 أيام بدون بطاقة بنكية. خلال التجربة نتواصل معك على جوالك لإتمام الدفع، ويتفعّل اشتراكك بنفس اليوم. تقدر تدفع شهري أو سنوي.</p></details>
-      <details class="q"><summary>أقدر أغيّر باقتي بعدين؟ <i class="ph-bold ph-plus"></i></summary><p>أكيد. تضيف أو تشيل أي أداة من لوحة التحكم، ويتعدل سعرك حسب اللي اخترته.</p></details>
-      <details class="q"><summary>كيف يوصل التنبيه لجوال العميل؟ <i class="ph-bold ph-plus"></i></summary><p>لما تضغط "جاهز" يرن جوال العميل بالصوت ويوصله إشعار من المتصفح. على الأندرويد يوصله الإشعار حتى لو قفل الشاشة أو يشوف فيديو. على الآيفون يرن بالصوت والمتصفح مفتوح بالخلفية (حتى لو الجوال على الصامت)، والإشعار يوصل من بطاقة الولاء في المحفظة للمسجلين فيها، أو من المتصفح لو أضاف الصفحة للشاشة الرئيسية. هذي قيود من آبل وقوقل على كل المواقع، مو علينا بس.</p></details>
-      <details class="q"><summary>وش أسوي عشان أضمن إن التنبيه يوصل؟ <i class="ph-bold ph-plus"></i></summary><p>قبل ما تبدأ، جرّب الرحلة كاملة على جوالات مثل جوالات عملائك: آيفون وأندرويد. وخلّ العميل يرفع صوت الوسائط ويسمح بالإشعارات أول ما ياخذ رقمه. وخلّ عند فريقك طريقة احتياط، مثل مناداة الرقم بالصوت، للعميل اللي جواله ما يساعد.</p></details>
-      <details class="q"><summary>العميل يشوف فيديو في تطبيق ثاني، يوصله التنبيه؟ <i class="ph-bold ph-plus"></i></summary><p>على الأندرويد نعم، يوصله الإشعار. على الآيفون الجوال يعطي الصوت للتطبيق اللي شغّال، فيوصله الإشعار من بطاقة الولاء في المحفظة لو مسجل فيها، أو من المتصفح لو أضاف الصفحة للشاشة الرئيسية. غير كذا يرن أول ما يرجع للمتصفح.</p></details>
-      <details class="q"><summary>عندي حساب، كيف أدخل؟ <i class="ph-bold ph-plus"></i></summary><p>اضغط "دخول" فوق في الصفحة، أو افتح <a href="login.html" class="underline font-bold">صفحة الدخول</a>، وادخل بنفس البريد أو حساب Google اللي سجلت فيه.</p></details>
-      <details class="q"><summary>هل أحتاج أشتري تابلت أو أجهزة؟ <i class="ph-bold ph-plus"></i></summary><p>لا. شاشة الكاشير تشتغل على أي جوال أو تابلت أو كمبيوتر عندك.</p></details>
-      <details class="q"><summary>عندي أكثر من فرع؟ <i class="ph-bold ph-plus"></i></summary><p>كل فرع له رابطه وأكواده وأسعاره، وتديرها كلها من لوحة وحدة. الفرع الإضافي بـ 19 ريال بالشهر أو 199 بالسنة.</p></details>
-      <details class="q"><summary>عندي بطاقة ولاء في منصة ثانية، وش يصير لزبائني؟ <i class="ph-bold ph-plus"></i></summary><p>زبونك يسجل في بطاقتك الجديدة، والكاشير ينقل رصيده القديم بضغطة لما يشوف بطاقته القديمة. ما تحتاج ملفات ولا تصدير.</p></details>
+      <details class="q"><summary>هل يحتاج العميل إلى تحميل تطبيق؟ <i class="ph-bold ph-plus"></i></summary><p>لا. يمسح العميل رمز QR بكاميرا جواله، فتُفتح الخدمة مباشرة في المتصفح: المنيو أو البيجر أو بطاقة الولاء. ويمكنه حفظ بطاقة الولاء في محفظة الجوال بضغطة واحدة.</p></details>
+      <details class="q"><summary>كيف يتم الدفع؟ <i class="ph-bold ph-plus"></i></summary><p>تبدأ بتجربة مجانية مدتها 7 أيام دون الحاجة إلى بطاقة بنكية. وخلال فترة التجربة يتواصل معك فريقنا لإتمام الدفع، ويُفعَّل اشتراكك في اليوم نفسه. ويتوفر الاشتراك الشهري والسنوي.</p></details>
+      <details class="q"><summary>هل يمكنني تعديل باقتي لاحقاً؟ <i class="ph-bold ph-plus"></i></summary><p>نعم. يمكنك إضافة أي خدمة أو إلغاؤها من لوحة التحكم في أي وقت، ويُحتسب السعر وفق الخدمات المختارة.</p></details>
+      <details class="q"><summary>كيف يصل التنبيه إلى جوال العميل؟ <i class="ph-bold ph-plus"></i></summary><p>عند الضغط على زر النداء يرن جوال العميل ويصله إشعار، وتختلف طريقة الوصول بحسب نوع الجهاز:</p><ul class="faq-list"><li><b>أجهزة أندرويد:</b> يصل إشعار المتصفح حتى عند قفل الشاشة أو أثناء استخدام تطبيق آخر.</li><li><b>أجهزة آيفون:</b> يرن الجوال صوتياً ما دام المتصفح مفتوحاً في الخلفية، حتى في الوضع الصامت. ويصل الإشعار عبر بطاقة الولاء في محفظة الجوال للعملاء المسجلين فيها، أو عبر المتصفح إذا أُضيفت الصفحة إلى الشاشة الرئيسية.</li></ul><p class="faq-note">هذه القيود تفرضها شركتا آبل وقوقل على جميع المواقع الإلكترونية.</p></details>
+      <details class="q"><summary>ما الذي يضمن وصول التنبيه إلى العملاء؟ <i class="ph-bold ph-plus"></i></summary><p>ننصح بالخطوات التالية قبل بدء التشغيل:</p><ul class="faq-list"><li>تجربة الخدمة كاملة على أجهزة مشابهة لأجهزة عملائك، من نوعي آيفون وأندرويد.</li><li>توجيه العميل إلى رفع صوت الوسائط والسماح بالإشعارات عند أخذ رقمه.</li><li>اعتماد طريقة احتياطية لدى فريقك، مثل النداء الصوتي، للعملاء الذين لا تدعم أجهزتهم التنبيه.</li></ul></details>
+      <details class="q"><summary>هل يصل التنبيه إذا كان العميل يشاهد مقطع فيديو في تطبيق آخر؟ <i class="ph-bold ph-plus"></i></summary><ul class="faq-list"><li><b>أجهزة أندرويد:</b> نعم، يصل الإشعار بشكل طبيعي.</li><li><b>أجهزة آيفون:</b> يمنح النظام الصوت للتطبيق المفتوح، لذلك يصل الإشعار عبر بطاقة الولاء في المحفظة للعملاء المسجلين فيها، أو عبر المتصفح إذا أُضيفت الصفحة إلى الشاشة الرئيسية. وفي غير ذلك يرن الجوال فور عودة العميل إلى المتصفح.</li></ul></details>
+      <details class="q"><summary>لدي حساب، كيف أسجل الدخول؟ <i class="ph-bold ph-plus"></i></summary><p>اضغط على زر "دخول" في أعلى الصفحة، أو انتقل إلى <a href="login.html" class="underline font-bold">صفحة الدخول</a>، ثم ادخل بالبريد الإلكتروني أو حساب Google الذي سجلت به.</p></details>
+      <details class="q"><summary>هل أحتاج إلى شراء أجهزة أو تابلت؟ <i class="ph-bold ph-plus"></i></summary><p>لا. تعمل شاشة الكاشير على أي جوال أو جهاز لوحي أو حاسب متوفر لديك.</p></details>
+      <details class="q"><summary>لدي أكثر من فرع، كيف أديرها؟ <i class="ph-bold ph-plus"></i></summary><p>يحصل كل فرع على رابط ورمز QR وأسعار خاصة به، وتُدار جميع الفروع من لوحة تحكم واحدة. وتبلغ تكلفة الفرع الإضافي 19 ريالاً شهرياً أو 199 ريالاً سنوياً.</p></details>
+      <details class="q"><summary>لدي بطاقة ولاء في منصة أخرى، فماذا يحدث لعملائي؟ <i class="ph-bold ph-plus"></i></summary><p>يسجل العميل في بطاقتك الجديدة، ثم ينقل الكاشير رصيده السابق بضغطة واحدة بعد الاطلاع على بطاقته القديمة، دون الحاجة إلى ملفات أو تصدير بيانات.</p></details>
     </div>
   </div>
 </section>
