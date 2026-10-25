@@ -17,7 +17,7 @@ const { topic, storeTopics, poke } = require('./_lib/live');
 const { normalizeLoyalty, validPoint } = require('./_lib/loyalty');
 const PLANS = require('./_lib/plans');
 const wallet = require('./_lib/wallet');
-const { pushWalletCards, runAssistant, pagerReadyNotice, walletNotice } = require('./_lib/loyalty-assistant');
+const { pushWalletCards, pushWalletBatch, runAssistant, pagerReadyNotice, walletNotice } = require('./_lib/loyalty-assistant');
 const { loyaltyMessages, loyaltyNearLines } = require('./_lib/ai');
 const { purchaseStamp, newStampCode, parseMemberQr, cooldownLeft, leftText } = require('./_lib/loyalty-stamp');
 
@@ -497,7 +497,7 @@ async function main(req) {
   req._sid = sid;
   // المميزات حسب باقة المحل
   if (['pager-update', 'pager-invoice', 'pager-ring'].includes(action) && !PLANS.has(store, 'pager')) throw new ApiError(403, 'البيجر مو ضمن باقتك', 'ADDON_OFF');
-  if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-message', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء مو ضمن باقتك، أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
+  if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-message', 'loyalty-message-push', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء مو ضمن باقتك، أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
 
 
   // ─── ربط قوقل ماب ───
@@ -586,9 +586,10 @@ async function main(req) {
   if (action === 'loyalty-message') {
     const body = str(b.body, 200, 'الرسالة');
     if (body.length < 2) throw new ApiError(400, 'اكتب الرسالة');
-    const since = new Date(Date.now() - 864e5).toISOString();
-    const today = await rest(`loyalty_messages?client_id=eq.${sid}&created_at=gte.${q(since)}&or=${q('(source.is.null,source.neq.system)')}&select=id`).catch(() => []);
-    if (today.length >= 5) throw new ApiError(429, 'وصلت حد 5 رسائل في اليوم، عشان ما تزعج زبائنك');
+    // بدون حد يومي، بس نفس الرسالة ما تنرسل مرتين ورا بعض بالغلط
+    const since = new Date(Date.now() - 60e3).toISOString();
+    const dup = await rest(`loyalty_messages?client_id=eq.${sid}&created_at=gte.${q(since)}&body=eq.${q(body)}&select=id&limit=1`).catch(() => []);
+    if (dup.length) throw new ApiError(429, 'انرسلت هالرسالة قبل شوي');
     let cardId = null;
     if (b.card_id != null && b.card_id !== '') {
       cardId = int(b.card_id);
@@ -596,10 +597,22 @@ async function main(req) {
       if (!own) throw new ApiError(404, 'العضو غير موجود');
     }
     const msg = (await rest('loyalty_messages', { method: 'POST', prefer: 'return=representation', body: { client_id: sid, card_id: cardId, body } }))[0];
-    // المحفظة
-    const sent = await pushWalletCards(sid, { cardIds: cardId ? [cardId] : null, notice: body });
-    await rest(`loyalty_messages?id=eq.${msg.id}`, { method: 'PATCH', body: { wallet_sent: sent } }).catch(() => {});
-    return { message: { ...msg, wallet_sent: sent } };
+    // المحفظة: لعضو واحد على طول، وللكل على دفعات (لوحة التحكم تكمّل الباقي بـ loyalty-message-push)
+    if (cardId) {
+      const sent = await pushWalletCards(sid, { cardIds: [cardId], notice: body });
+      await rest(`loyalty_messages?id=eq.${msg.id}`, { method: 'PATCH', body: { wallet_sent: sent } }).catch(() => {});
+      return { message: { ...msg, wallet_sent: sent }, progress: { done: true, sent, total: 1 } };
+    }
+    const p = await pushWalletBatch(sid, { notice: body });
+    await rest(`loyalty_messages?id=eq.${msg.id}`, { method: 'PATCH', body: { wallet_sent: p.sent } }).catch(() => {});
+    return { message: { ...msg, wallet_sent: p.sent }, progress: p };
+  }
+  if (action === 'loyalty-message-push') {
+    const msg = (await rest(`loyalty_messages?id=eq.${int(b.message_id)}&client_id=eq.${sid}&card_id=is.null&select=id,body,wallet_sent`))[0];
+    if (!msg) throw new ApiError(404, 'الرسالة غير موجودة');
+    const p = await pushWalletBatch(sid, { notice: msg.body, afterId: int(b.after) || 0 });
+    await rest(`loyalty_messages?id=eq.${msg.id}`, { method: 'PATCH', body: { wallet_sent: (msg.wallet_sent || 0) + p.sent } }).catch(() => {});
+    return { progress: p };
   }
 
   // ─── كود ختم جديد من شاشة الكاشير (بعد الدفع) ───

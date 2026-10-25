@@ -3963,7 +3963,16 @@
     try {
       const r = await api('loyalty-message', { body, card_id: to || null });
       document.getElementById('ly-msg-body').value = ''; document.getElementById('ly-msg-count').textContent = '0/200';
-      showToast(r.message.wallet_sent ? `انرسلت، ووصلت إشعار لـ ${r.message.wallet_sent} جوال` : 'انرسلت، وتطلع لهم في صفحة البطاقة');
+      // للكل: نكمّل الإرسال على دفعات لين توصل لكل جوال
+      let p = r.progress || { done: true }, sent = p.sent || 0;
+      const total = p.total;
+      while (!p.done) {
+        btn.innerHTML = `<i class="ph-bold ph-spinner-gap ph-spin"></i> وصلت لـ ${sent}${total ? ` من ${total}` : ''}`;
+        p = (await api('loyalty-message-push', { message_id: r.message.id, after: p.lastId })).progress;
+        sent += p.sent;
+      }
+      btn.innerHTML = '<i class="ph-bold ph-paper-plane-tilt"></i> أرسل';
+      showToast(sent ? `انرسلت، ووصلت إشعار لـ ${sent} جوال` : 'انرسلت، وتطلع لهم في صفحة البطاقة');
       await onLoyaltyPage();
     } catch (e) { showToast(e.message || 'تعذر الإرسال', true); }
     btn.disabled = false;

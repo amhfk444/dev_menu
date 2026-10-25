@@ -42,13 +42,13 @@ async function pushWalletCards(storeId, { cardIds = null, notice = null, notices
   if (!store) return 0;
   const settings = normalizeLoyalty(store.loyalty_settings);
   const filter = cardIds ? `&id=in.(${cardIds.map(Number).join(',')})` : '';
-  const cards = await rest(`loyalty_cards?client_id=eq.${storeId}${filter}&wallet_serial=not.is.null&select=*&limit=500`);
+  const cards = await rest(`loyalty_cards?client_id=eq.${storeId}${filter}&wallet_serial=not.is.null&select=*&limit=5000`);
   if (!cards.length) return 0;
   const noticeFor = notice != null || notices ? null : await latestNotices(storeId, settings);
   let sent = 0;
   const started = Date.now();
-  for (let i = 0; i < cards.length && Date.now() - started < 40e3; i += 6) {
-    await Promise.all(cards.slice(i, i + 6).map(async (c) => {
+  for (let i = 0; i < cards.length && Date.now() - started < 50e3; i += 12) {
+    await Promise.all(cards.slice(i, i + 12).map(async (c) => {
       const text = notices ? notices[c.id] : notice != null ? notice : noticeFor(c);
       const err = await wallet.updatePass(c.wallet_serial, ctxFor(store, settings, c, text));
       if (!err || err.startsWith('ok')) sent++;
@@ -56,6 +56,28 @@ async function pushWalletCards(storeId, { cardIds = null, notice = null, notices
     }));
   }
   return sent;
+}
+
+// رسالة لكل الأعضاء على دفعات (عشان توصل للكل مهما كثروا): كل طلب يرسل دفعة ويرجع وين وقف
+async function pushWalletBatch(storeId, { notice, afterId = 0, limit = 40 } = {}) {
+  if (!wallet.configured()) return { sent: 0, lastId: afterId, done: true, total: 0 };
+  const store = (await rest(`clients?id=eq.${storeId}&select=${STORE_FIELDS}`))[0];
+  if (!store) return { sent: 0, lastId: afterId, done: true, total: 0 };
+  const settings = normalizeLoyalty(store.loyalty_settings);
+  const base = `loyalty_cards?client_id=eq.${storeId}&wallet_serial=not.is.null`;
+  const [cards, all] = await Promise.all([
+    rest(`${base}&id=gt.${Number(afterId) || 0}&select=*&order=id.asc&limit=${limit}`),
+    afterId ? Promise.resolve(null) : rest(`${base}&select=id`).catch(() => [])
+  ]);
+  let sent = 0;
+  for (let i = 0; i < cards.length; i += 10) {
+    await Promise.all(cards.slice(i, i + 10).map(async (c) => {
+      const err = await wallet.updatePass(c.wallet_serial, ctxFor(store, settings, c, notice));
+      if (!err || err.startsWith('ok')) sent++;
+      await rest(`loyalty_cards?id=eq.${c.id}`, { method: 'PATCH', body: { wallet_error: err } }).catch(() => {});
+    }));
+  }
+  return { sent, lastId: cards.length ? cards[cards.length - 1].id : afterId, done: cards.length < limit, total: all ? all.length : null };
 }
 
 // ساعات الهدوء كعرض حقيقي يقدر المساعد يذكره
@@ -87,7 +109,7 @@ function pickGuests(cards, settings, now = Date.now()) {
 }
 
 // تشغيل المساعد لمتجر واحد. force = من زر "جرّب الحين" (يتجاوز شرط الأسبوع لجمل القرب)
-async function runAssistant(storeId, { maxGuests = 25 } = {}) {
+async function runAssistant(storeId, { maxGuests = 80 } = {}) {
   const store = (await rest(`clients?id=eq.${storeId}&select=${STORE_FIELDS}`))[0];
   if (!store || !store.loyalty_enabled || !store.loyalty_ai) return { skipped: true };
   const settings = normalizeLoyalty(store.loyalty_settings);
@@ -144,4 +166,4 @@ async function walletNotice(storeId, cardId, body) {
   } catch (e) { console.error('PAGER_WALLET', e.message); return 'error'; }
 }
 
-module.exports = { pushWalletCards, runAssistant, nearLineFor, STORE_FIELDS, pickGuests, pagerReadyNotice, walletNotice };
+module.exports = { pushWalletBatch, pushWalletCards, runAssistant, nearLineFor, STORE_FIELDS, pickGuests, pagerReadyNotice, walletNotice };
