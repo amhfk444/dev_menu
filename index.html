@@ -163,6 +163,7 @@
 
   @media (max-width: 767px) {
     .topbar a.lnk { display: none; }
+    .topbar a.lnk.login-lnk { display: inline-flex; align-items: center; gap: 5px; color: var(--ink); font-weight: 700; border: 1.5px solid var(--line); padding: 8px 12px; }
     .dark { border-radius: 30px; margin: 0 6px; }
     .cmp-head { display: none; }
     .cmp-row { grid-template-columns: 1fr 1fr; }
@@ -182,7 +183,7 @@
     <a href="#how" class="lnk">كيف يعمل</a>
     <a href="#pricing" class="lnk">الأسعار</a>
     <a href="#faq" class="lnk">الأسئلة</a>
-    <a href="login.html" class="lnk">دخول</a>
+    <a href="login.html" class="lnk login-lnk"><i class="ph-bold ph-sign-in"></i> دخول</a>
     <a href="#pricing" class="btn btn-main px-4 py-2.5 !rounded-full text-[13.5px] ms-1">ابدأ مجاناً</a>
   </nav>
 </header>
@@ -417,6 +418,7 @@
         <button type="submit" id="submit-btn" class="btn btn-main w-full py-4 text-[15px] disabled:opacity-60">
           <span id="btn-text">أرسل رمز التحقق</span> <i id="btn-spinner" class="ph-bold ph-spinner-gap ph-spin hidden"></i>
         </button>
+        <p class="text-[13px] font-bold text-center">عندك حساب؟ <a href="login.html" class="underline underline-offset-4 text-[color:var(--brand)]">ادخل من هنا</a></p>
         <p class="text-[12px] font-semibold text-[color:var(--muted)] text-center">بالتسجيل توافق على <a href="privacy.html" target="_blank" class="underline">سياسة الخصوصية</a>.</p>
       </form>
 
@@ -468,6 +470,10 @@
       <details class="q"><summary>هل يحتاج الزبون يحمّل تطبيق؟ <i class="ph-bold ph-plus"></i></summary><p>لا. يمسح الكود بكاميرا جواله ويفتح كل شي من المتصفح: المنيو والبيجر وبطاقة الولاء. والبطاقة يقدر يحفظها في محفظة الآيفون بضغطة.</p></details>
       <details class="q"><summary>كيف أدفع؟ <i class="ph-bold ph-plus"></i></summary><p>تبدأ مجاناً 7 أيام بدون بطاقة بنكية. خلال التجربة نتواصل معك على جوالك لإتمام الدفع، ويتفعّل اشتراكك بنفس اليوم. تقدر تدفع شهري أو سنوي.</p></details>
       <details class="q"><summary>أقدر أغيّر باقتي بعدين؟ <i class="ph-bold ph-plus"></i></summary><p>أكيد. تضيف أو تشيل أي أداة من لوحة التحكم، ويتعدل سعرك حسب اللي اخترته.</p></details>
+      <details class="q"><summary>كيف يوصل التنبيه لجوال العميل؟ <i class="ph-bold ph-plus"></i></summary><p>لما تضغط "جاهز" يرن جوال العميل بالصوت ويوصله إشعار من المتصفح. على الأندرويد يوصله الإشعار حتى لو قفل الشاشة أو يشوف فيديو. على الآيفون يرن بالصوت والمتصفح مفتوح بالخلفية (حتى لو الجوال على الصامت)، والإشعار يوصل من بطاقة الولاء في المحفظة للمسجلين فيها، أو من المتصفح لو أضاف الصفحة للشاشة الرئيسية. هذي قيود من آبل وقوقل على كل المواقع، مو علينا بس.</p></details>
+      <details class="q"><summary>وش أسوي عشان أضمن إن التنبيه يوصل؟ <i class="ph-bold ph-plus"></i></summary><p>قبل ما تبدأ، جرّب الرحلة كاملة على جوالات مثل جوالات عملائك: آيفون وأندرويد. وخلّ العميل يرفع صوت الوسائط ويسمح بالإشعارات أول ما ياخذ رقمه. وخلّ عند فريقك طريقة احتياط، مثل مناداة الرقم بالصوت، للعميل اللي جواله ما يساعد.</p></details>
+      <details class="q"><summary>العميل يشوف فيديو في تطبيق ثاني، يوصله التنبيه؟ <i class="ph-bold ph-plus"></i></summary><p>على الأندرويد نعم، يوصله الإشعار. على الآيفون الجوال يعطي الصوت للتطبيق اللي شغّال، فيوصله الإشعار من بطاقة الولاء في المحفظة لو مسجل فيها، أو من المتصفح لو أضاف الصفحة للشاشة الرئيسية. غير كذا يرن أول ما يرجع للمتصفح.</p></details>
+      <details class="q"><summary>عندي حساب، كيف أدخل؟ <i class="ph-bold ph-plus"></i></summary><p>اضغط "دخول" فوق في الصفحة، أو افتح <a href="login.html" class="underline font-bold">صفحة الدخول</a>، وادخل بنفس البريد أو حساب Google اللي سجلت فيه.</p></details>
       <details class="q"><summary>هل أحتاج أشتري تابلت أو أجهزة؟ <i class="ph-bold ph-plus"></i></summary><p>لا. شاشة الكاشير تشتغل على أي جوال أو تابلت أو كمبيوتر عندك.</p></details>
       <details class="q"><summary>عندي أكثر من فرع؟ <i class="ph-bold ph-plus"></i></summary><p>كل فرع له رابطه وأكواده وأسعاره، وتديرها كلها من لوحة وحدة. الفرع الإضافي بـ 19 ريال بالشهر أو 199 بالسنة.</p></details>
       <details class="q"><summary>عندي بطاقة ولاء في منصة ثانية، وش يصير لزبائني؟ <i class="ph-bold ph-plus"></i></summary><p>زبونك يسجل في بطاقتك الجديدة، والكاشير ينقل رصيده القديم بضغطة لما يشوف بطاقته القديمة. ما تحتاج ملفات ولا تصدير.</p></details>

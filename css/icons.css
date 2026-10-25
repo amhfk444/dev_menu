@@ -119,6 +119,7 @@
 .ph-share-network:before { content: "\e408"; }
 .ph-shopping-bag:before { content: "\e416"; }
 .ph-shuffle:before { content: "\e422"; }
+.ph-sign-in:before { content: "\e428"; }
 .ph-sign-out:before { content: "\e42a"; }
 .ph-sliders-horizontal:before { content: "\e434"; }
 .ph-snapchat-logo:before { content: "\e668"; }
