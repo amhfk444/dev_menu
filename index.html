@@ -14,6 +14,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="js/api.js"></script>
+<script src="/js/vendor/qrcode.min.js" defer></script>
 
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -342,6 +343,31 @@
   </div>
 </section>
 
+<!-- ═══════════ جرّب البيجر بنفسك ═══════════ -->
+<section id="try-pager" class="py-16 md:py-20">
+  <div class="wrap reveal">
+    <div class="pro-card p-7 md:p-10 grid md:grid-cols-[1fr_auto] gap-8 items-center">
+      <div class="space-y-4 text-center md:text-right">
+        <span class="tag"><i class="fa-solid fa-bell"></i> جرّب بنفسك</span>
+        <h2 class="display h2">خلّ البيجر يرن في جوالك الحين</h2>
+        <p class="lead">بدون تسجيل. هذي نفس التجربة اللي يعيشها زبونك:</p>
+        <ol class="space-y-2.5 text-[14px] font-bold text-[#233d2c]/80 inline-block text-right">
+          <li><b class="text-[#8a6d0f]">1.</b> امسح الكود بكاميرا جوالك، أو اضغط الزر من الجوال</li>
+          <li><b class="text-[#8a6d0f]">2.</b> اضغط "خذ رقمي وفعّل التنبيه"</li>
+          <li><b class="text-[#8a6d0f]">3.</b> خلال ثواني يجهز الطلب ويرن جوالك، حتى لو قفلت الشاشة</li>
+        </ol>
+        <div class="md:hidden pt-1">
+          <a href="https://bistrobella.devmenu.digital/pager" target="_blank" rel="noopener" class="btn-primary inline-flex items-center gap-2 px-7 py-4 rounded-2xl text-sm font-black"><i class="fa-solid fa-bell"></i> جرّب البيجر الحين</a>
+        </div>
+      </div>
+      <div class="hidden md:block text-center">
+        <div id="try-qr" class="w-52 h-52 bg-white p-3 rounded-3xl border border-[#233d2c]/10 shadow-sm mx-auto"></div>
+        <p class="text-[12px] font-bold text-[#233d2c]/55 mt-3">امسحه بجوالك</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ═══════════ كيف يعمل؟ ═══════════ -->
 <section id="how" class="how py-20 md:py-24">
   <div class="wrap">
@@ -605,7 +631,7 @@
       <h4 class="text-base font-black text-[#1b3022] text-center md:text-right">أو اختر اللي تحتاجه بس</h4>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
         <div class="rounded-2xl border border-[#233d2c]/10 p-4"><p class="text-[13px] font-black">المنيو الرقمي</p><p class="display text-2xl mt-1" dir="ltr">&#x20C1; 39</p><p class="text-[11px] font-bold text-[#233d2c]/55">بالشهر · 349 سنوياً</p></div>
-        <div class="rounded-2xl border border-[#233d2c]/10 p-4"><p class="text-[13px] font-black">البيجر</p><p class="display text-2xl mt-1" dir="ltr">&#x20C1; 15</p><p class="text-[11px] font-bold text-[#233d2c]/55">بالشهر · 129 سنوياً</p></div>
+        <div class="rounded-2xl border border-[#233d2c]/10 p-4"><p class="text-[13px] font-black">البيجر</p><p class="display text-2xl mt-1" dir="ltr">&#x20C1; 25</p><p class="text-[11px] font-bold text-[#233d2c]/55">بالشهر · 249 سنوياً</p></div>
         <div class="rounded-2xl border border-[#233d2c]/10 p-4"><p class="text-[13px] font-black">قائمة الانتظار</p><p class="display text-2xl mt-1" dir="ltr">&#x20C1; 15</p><p class="text-[11px] font-bold text-[#233d2c]/55">بالشهر · 129 سنوياً</p></div>
         <div class="rounded-2xl border-2 border-[#c9a227] p-4"><p class="text-[13px] font-black">بطاقة الولاء</p><p class="display text-2xl mt-1" dir="ltr">&#x20C1; 49</p><p class="text-[11px] font-bold text-[#233d2c]/55">بالشهر · 449 سنوياً</p></div>
       </div>
@@ -969,6 +995,12 @@
     }
   }
   loadExamples();
+</script>
+<script>
+  window.addEventListener('load', () => {
+    const el = document.getElementById('try-qr');
+    if (el && window.QRCode) new QRCode(el, { text: 'https://bistrobella.devmenu.digital/pager', width: 184, height: 184, colorDark: '#1b3022', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+  });
 </script>
 </body>
 </html>

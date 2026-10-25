@@ -1414,6 +1414,11 @@
           <label class="text-[10px] text-ink/75 block mb-1">رابط الموقع على خرائط Google</label>
           <input type="url" id="info-location" placeholder="https://maps.app.goo.gl/..." class="input-pro text-xs" dir="ltr">
         </div>
+        <div class="md:col-span-2">
+          <label class="text-[10px] text-ink/75 block mb-1"><i class="ph-bold ph-star text-amber-500"></i> رابط "اكتب تقييم" في قوقل (اختياري)</label>
+          <input type="url" id="info-review" placeholder="https://g.page/r/.../review" class="input-pro text-xs" dir="ltr">
+          <p class="text-[10px] text-ink/55 mt-1">بعد ما يستلم الزبون طلبه من البيجر نسأله عن تجربته، واللي يعطي 4 أو 5 نجوم نطلب منه يقيّمك على قوقل. تلقى الرابط في Google Business ← "اطلب تقييمات".</p>
+        </div>
       </div>
       <label class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
         <input type="checkbox" id="info-show-calories" onchange="toggleCalories(this.checked)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
@@ -1825,6 +1830,7 @@
 
     document.getElementById('info-hours').value = client.opening_hours || '';
     document.getElementById('info-location').value = client.location_url || '';
+    document.getElementById('info-review').value = client.google_review_url || '';
     document.getElementById('info-wa-orders').checked = client.whatsapp_orders === true;
     renderWaOrderState();
     renderBusinessType();
@@ -2400,11 +2406,13 @@
     const loc = document.getElementById('info-location').value.trim();
     const waOrders = document.getElementById('info-wa-orders').checked;
     if (loc && !safeUrl(loc)) return showToast('رابط الموقع غير صحيح، يجب أن يبدأ بـ https://', true);
+    const review = document.getElementById('info-review').value.trim();
+    if (review && !/^https:\/\/(g\.page|search\.google\.com|www\.google\.com|maps\.app\.goo\.gl|goo\.gl|maps\.google\.com|g\.co)\//i.test(review)) return showToast('رابط التقييم لازم يكون من قوقل، مثل g.page/r/.../review', true);
     if (waOrders && !isValidWa(client.whatsapp_number)) {
       renderWaOrderState();
       return showToast('أضف رقم واتساب صحيح في روابط التواصل واحفظه أولاً', true);
     }
-    if (await updateClient({ opening_hours: hours, location_url: loc, whatsapp_orders: waOrders })) showToast('تم حفظ معلومات المطعم');
+    if (await updateClient({ opening_hours: hours, location_url: loc, whatsapp_orders: waOrders, google_review_url: review })) showToast('تم حفظ معلومات المطعم');
     else showToast('تعذر حفظ معلومات المطعم', true);
   }
 

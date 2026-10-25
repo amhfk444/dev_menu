@@ -342,6 +342,37 @@ async function main(req) {
     return { tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub })), slug: store.client_slug, name: store.name, max_rings: PAGER_MAX_RINGS, live: topic('pager', store.id), loyalty: lx.loyalty_enabled === true, pager: hasPager, loyalty_entitled: PLANS.has(store, 'loyalty') };
   }
 
+  // ─── إحصائيات البيجر: وقت الانتظار، الإنجاز، أوقات الذروة، والتقييم (آخر 30 يوم) ───
+  if (action === 'pager-stats' && req.method === 'GET') {
+    const { store } = await context(req);
+    if (!PLANS.has(store, 'pager')) throw new ApiError(403, 'البيجر مو ضمن باقتك', 'ADDON_OFF');
+    const days = Math.min(90, Math.max(7, int(req.query.days) || 30));
+    const since = new Date(Date.now() - days * 864e5).toISOString();
+    const base = `pager_tickets?client_id=eq.${store.id}&created_at=gte.${q(since)}&order=id.asc&limit=20000&select=created_at,ready_at,closed_at,status`;
+    const rows = await rest(`${base},rating,rating_note`).catch(() => rest(base));
+    const min = (a, b) => (Date.parse(b) - Date.parse(a)) / 6e4;
+    const waits = rows.filter(t => t.ready_at).map(t => min(t.created_at, t.ready_at)).filter(m => m >= 0 && m < 240);
+    const services = rows.filter(t => t.status === 'done' && t.closed_at).map(t => min(t.created_at, t.closed_at)).filter(m => m >= 0 && m < 300);
+    const avg = (l) => l.length ? Math.round(l.reduce((a, x) => a + x, 0) / l.length * 10) / 10 : null;
+    const hour = (iso) => (new Date(Date.parse(iso) + 3 * 3600e3)).getUTCHours();   // الرياض
+    const byHour = Array.from({ length: 24 }, () => ({ n: 0, w: [] }));
+    rows.forEach(t => { const h = byHour[hour(t.created_at)]; h.n++; if (t.ready_at) { const m = min(t.created_at, t.ready_at); if (m >= 0 && m < 240) h.w.push(m); } });
+    const dayKey = (iso) => new Date(Date.parse(iso) + 3 * 3600e3).toISOString().slice(0, 10);
+    const byDay = {}; rows.forEach(t => { byDay[dayKey(t.created_at)] = (byDay[dayKey(t.created_at)] || 0) + 1; });
+    const rated = rows.filter(t => t.rating);
+    const dist = [1, 2, 3, 4, 5].map(r => rated.filter(t => t.rating === r).length);
+    return {
+      days, total: rows.length,
+      done: rows.filter(t => t.status === 'done').length,
+      cancelled: rows.filter(t => t.status === 'cancelled').length,
+      wait: { avg: avg(waits), max: waits.length ? Math.round(Math.max(...waits)) : null, min: waits.length ? Math.round(Math.min(...waits)) : null, n: waits.length },
+      service: { avg: avg(services) },
+      hours: byHour.map((h, i) => ({ h: i, n: h.n, wait: avg(h.w) })),
+      daily: Object.entries(byDay).map(([d, n]) => ({ d, n })),
+      rating: { avg: avg(rated.map(t => t.rating)), n: rated.length, dist, notes: rated.filter(t => t.rating_note).slice(-8).reverse().map(t => ({ r: t.rating, note: t.rating_note, at: t.created_at })) }
+    };
+  }
+
   // ─── بطاقة الولاء: الإعدادات والإحصائيات وآخر البطاقات ───
   if (action === 'loyalty' && req.method === 'GET') {
     const { store } = await context(req);
@@ -817,6 +848,11 @@ async function main(req) {
     if (has('whatsapp_orders')) p.whatsapp_orders = b.whatsapp_orders === true;
     if (has('show_calories')) p.show_calories = b.show_calories !== false;
     if (has('menu_layout')) p.menu_layout = b.menu_layout === 'photos' ? 'photos' : 'list';
+    if (has('google_review_url')) {
+      const u = String(b.google_review_url || '').trim();
+      if (u && !/^https:\/\/(g\.page|search\.google\.com|www\.google\.com|maps\.app\.goo\.gl|goo\.gl|maps\.google\.com|g\.co)\//i.test(u)) throw new ApiError(400, 'رابط تقييم قوقل لازم يكون من قوقل (مثل g.page/r/... أو maps.app.goo.gl)');
+      p.google_review_url = u.slice(0, 500) || null;
+    }
     if (has('currency')) {
       if (!Object.prototype.hasOwnProperty.call(CURRENCIES, b.currency)) throw new ApiError(400, 'العملة غير مدعومة');
       p.currency = b.currency;

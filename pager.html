@@ -32,6 +32,9 @@
   body.ringing > header, body.ringing > p { color: #fff; }
   @keyframes shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-2deg); } 75% { transform: rotate(2deg); } }
   /* ─── لعبة الانتظار: طابق البطاقات ─── */
+  .star { font-size: 40px; color: #d8d2c4; transition: transform .12s, color .12s; line-height: 1; }
+  .star.on { color: var(--gold); }
+  .star:active { transform: scale(.88); }
   .mm-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; perspective: 800px; }
   .mm-card { position: relative; aspect-ratio: 1; border-radius: 14px; transform-style: preserve-3d; transition: transform .35s ease; cursor: pointer; }
   .mm-card.up, .mm-card.done { transform: rotateY(180deg); }
@@ -77,6 +80,7 @@
 
   <!-- ينتظر -->
   <section id="v-waiting" class="card p-7 text-center space-y-5 hidden">
+    <p id="w-demo" class="hidden text-[13px] font-black text-[#15271b] bg-[#c9a227]/25 border border-[#c9a227]/50 rounded-2xl py-3 px-3">هذي تجربة: خلال ثواني بيجهز الطلب ويرن جوالك 🔔</p>
     <p class="text-sm font-black opacity-60">رقمك</p>
     <div id="w-number" class="num">—</div>
     <p id="w-tell" class="text-sm font-black">ورّ هذا الرقم للكاشير مع طلبك</p>
@@ -132,6 +136,17 @@
     <i class="ph-bold ph-check-circle text-4xl text-emerald-600"></i>
     <h2 id="d-title" class="text-xl font-black">بالعافية!</h2>
     <p id="d-sub" class="text-sm font-bold opacity-60">نتشرف بزيارتك مرة ثانية.</p>
+    <!-- تقييم التجربة -->
+    <div id="rate-box" class="hidden space-y-3 bg-[#f5f2eb] rounded-2xl p-4">
+      <p class="font-black">كيف كانت تجربتك؟</p>
+      <div id="rate-stars" class="flex justify-center gap-2" dir="ltr" role="radiogroup" aria-label="التقييم"></div>
+      <div id="rate-low" class="hidden space-y-2">
+        <textarea id="rate-note" rows="2" maxlength="300" class="w-full rounded-xl border border-[#233d2c]/20 bg-white p-3 text-sm font-bold" placeholder="وش اللي نقدر نحسّنه؟ (اختياري)"></textarea>
+        <button id="rate-note-btn" class="btn btn-brand !py-3 !text-base">أرسل</button>
+      </div>
+      <p id="rate-thanks" class="hidden text-sm font-black text-emerald-800"></p>
+      <a id="rate-google" target="_blank" rel="noopener" class="hidden btn btn-brand !py-3 !text-base"><i class="ph-bold ph-star"></i> قيّمنا على قوقل ماب</a>
+    </div>
     <button id="new-btn" class="btn btn-ghost"><i class="ph-bold ph-ticket"></i> خذ رقم جديد</button>
   </section>
 </main>
@@ -326,7 +341,7 @@
   async function poll() {
     clearTimeout(pollTimer);
     const token = loadToken();
-    if (!token) return show('start');
+    if (!token) return $('v-done').classList.contains('hidden') ? show('start') : undefined;   // شاشة "بالعافية" والتقييم تبقى
     let r;
     try { r = await DM.get(`/api/pager?action=status&slug=${encodeURIComponent(slug)}&t=${encodeURIComponent(token)}`); }
     catch (e) {
@@ -344,9 +359,12 @@
     const inv = r.ticket.invoice_no || '';
     ['w-invoice', 'r-invoice'].forEach(id => { $(id).classList.toggle('hidden', !inv); $(id).querySelector('span').textContent = inv; });
     $('w-tell').classList.toggle('hidden', !!inv);
+    $('w-demo').classList.toggle('hidden', !r.demo);
     if (st === 'waiting') { show('waiting'); keepAwake(); renderPush(); if (keeperMode === 'silent') setMedia(`رقمك ${curNumber} — جاري تجهيز طلبك`); }
     else if (st === 'ready') { show('ready'); if (!dismissed) startRinging(); if (!document.hidden) ack(); }
     else {
+      if (st === 'done') offerRating(token);
+      else hideRating();
       stopRinging(); saveToken('');
       $('d-title').textContent = st === 'cancelled' ? 'تم إلغاء الرقم' : st === 'expired' ? 'انتهت صلاحية الرقم' : 'بالعافية!';
       $('d-sub').textContent = st === 'done' ? 'نتشرف بزيارتك مرة ثانية.' : 'تقدر تاخذ رقم جديد.';
@@ -431,8 +449,44 @@
   $('keep-btn').onclick = () => { unlockAudio(); startKeeper(); };
   $('push-btn').onclick = askPush;
   $('test-btn').onclick = () => { unlockAudio(); ringOnce(); };
-  $('got-btn').onclick = () => { ack(); dismissed = true; stopRinging(); $('d-title').textContent = 'بالعافية!'; $('d-sub').textContent = 'نتشرف بزيارتك مرة ثانية.'; saveToken(''); show('done'); };
-  $('new-btn').onclick = () => { saveToken(''); show('start'); };
+  $('got-btn').onclick = () => { clearTimeout(pollTimer); ack(); offerRating(loadToken()); dismissed = true; stopRinging(); $('d-title').textContent = 'بالعافية!'; $('d-sub').textContent = 'نتشرف بزيارتك مرة ثانية.'; saveToken(''); show('done'); };
+
+  // ─── تقييم التجربة بعد الاستلام (مرة وحدة لكل رقم) ───
+  let rateTok = '', rated = 0;
+  const RATED_KEY = `dm_pager_rated_${slug}`;
+  function hideRating() { $('rate-box').classList.add('hidden'); }
+  function offerRating(tok) {
+    if (!tok || tok === rateTok) return;
+    let done = ''; try { done = localStorage.getItem(RATED_KEY) || ''; } catch {}
+    if (done === tok) return hideRating();
+    rateTok = tok; rated = 0;
+    ['rate-low', 'rate-thanks', 'rate-google'].forEach(id => $(id).classList.add('hidden'));
+    $('rate-stars').classList.remove('hidden');
+    paintStars(0);
+    $('rate-box').classList.remove('hidden');
+  }
+  function paintStars(n) {
+    $('rate-stars').innerHTML = [1, 2, 3, 4, 5].map(i => `<button type="button" role="radio" aria-checked="${i === n}" aria-label="${i} من 5" data-r="${i}" class="star ${i <= n ? 'on' : ''}"><i class="ph-bold ph-star"></i></button>`).join('');
+  }
+  $('rate-stars').onclick = async (e) => {
+    const b = e.target.closest('[data-r]'); if (!b || rated) return;
+    rated = +b.dataset.r; paintStars(rated);
+    try { localStorage.setItem(RATED_KEY, rateTok); } catch {}
+    let r = {}; try { r = await DM.post('/api/pager?action=rate', { slug, t: rateTok, rating: rated }); } catch {}
+    if (rated >= 4) {
+      $('rate-thanks').textContent = 'يسعدنا هالشي! شكراً لك 💚';
+      $('rate-thanks').classList.remove('hidden');
+      if (r.google) { $('rate-google').href = r.google; $('rate-google').classList.remove('hidden'); }
+    } else $('rate-low').classList.remove('hidden');
+  };
+  $('rate-note-btn').onclick = async () => {
+    const note = $('rate-note').value.trim();
+    if (note) { try { await DM.post('/api/pager?action=rate', { slug, t: rateTok, rating: rated, note, note_only: true }); } catch {} }
+    $('rate-low').classList.add('hidden');
+    $('rate-thanks').textContent = 'وصلت ملاحظتك، شكراً لأنك ساعدتنا نتحسّن';
+    $('rate-thanks').classList.remove('hidden');
+  };
+  $('new-btn').onclick = () => { saveToken(''); hideRating(); show('start'); };
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { keepAwake(); if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {}); if (keeperMode && keeper.paused) keeper.play().catch(() => {}); if (loadToken()) poll(); } });
 
   (async function init() {

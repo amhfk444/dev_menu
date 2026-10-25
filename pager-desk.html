@@ -63,6 +63,7 @@
       <button id="scan-btn" class="mini bg-[#233d2c] text-white hidden"><i class="ph-bold ph-camera"></i> امسح بطاقة زبون</button>
       <button id="stamp-btn" class="mini bg-[#c9a227] text-[#15271b] hidden"><i class="ph-bold ph-seal-check"></i> كود ختم</button>
       <button id="join-btn" class="mini bg-white border border-[#233d2c]/15 hidden"><i class="ph-bold ph-user-plus"></i> QR تسجيل الولاء</button>
+      <button id="stats-btn" class="mini bg-white border border-[#233d2c]/15 hidden"><i class="ph-bold ph-chart-bar"></i> الإحصائيات</button>
       <button id="qr-btn" class="mini bg-white border border-[#233d2c]/15 hidden"><i class="ph-bold ph-qr-code"></i> QR البيجر</button>
     </div>
   </div>
@@ -114,6 +115,18 @@
 </div>
 
 <!-- QR -->
+<!-- إحصائيات البيجر -->
+<div id="stats-modal" class="fixed inset-0 z-50 bg-black/60 hidden items-start justify-center p-4 overflow-y-auto">
+  <div class="bg-[#fbf8f3] rounded-[28px] w-full max-w-3xl p-5 md:p-7 space-y-5 my-6">
+    <div class="flex items-center justify-between gap-3">
+      <div><p class="text-xl font-black">إحصائيات البيجر</p><p class="text-xs font-bold opacity-60">آخر <span id="st-days">30</span> يوم</p></div>
+      <div class="flex gap-1.5" id="st-range"></div>
+      <button id="stats-close" class="w-10 h-10 rounded-xl bg-white border border-[#233d2c]/15" aria-label="إغلاق"><i class="ph-bold ph-x"></i></button>
+    </div>
+    <div id="st-body" class="space-y-5"><p class="text-center opacity-60 font-bold py-10"><i class="ph-bold ph-spinner-gap ph-spin"></i></p></div>
+  </div>
+</div>
+
 <!-- مسح بطاقة الزبون بالكاميرا: الزبون يعرض كود عضويته، والكاشير يختمه -->
 <div id="scan-modal" class="fixed inset-0 z-50 bg-black/80 hidden items-center justify-center p-5">
   <div class="bg-white rounded-[28px] w-full max-w-sm p-5 text-center space-y-3">
@@ -300,6 +313,7 @@
       $('join-btn').classList.toggle('hidden', !r.loyalty);
       const pager = r.pager !== false;
       $('qr-btn').classList.toggle('hidden', !pager);
+      $('stats-btn').classList.toggle('hidden', !pager);
       document.querySelectorAll('[data-pager]').forEach(el => el.classList.toggle('hidden', !pager));
       $('loyalty-desk').classList.toggle('hidden', pager || !r.loyalty);
       if (!pager) $('desk-title').textContent = 'شاشة الكاشير';
@@ -439,6 +453,48 @@
   $('stamp-btn').onclick = () => { $('stamp-modal').classList.remove('hidden'); $('stamp-modal').classList.add('flex'); newStampCode(); };
   $('stamp-new').onclick = newStampCode;
   $('stamp-close').onclick = () => { clearInterval(stampTimer); $('stamp-modal').classList.add('hidden'); $('stamp-modal').classList.remove('flex'); };
+
+  // ─── الإحصائيات ───
+  let stDays = 30;
+  const mins = (m) => m == null ? '—' : m < 1 ? 'أقل من دقيقة' : `${Math.round(m)} د`;
+  async function loadStats() {
+    $('st-days').textContent = stDays;
+    $('st-range').innerHTML = [7, 30, 90].map(d => `<button data-d="${d}" class="px-3 py-1.5 rounded-xl text-xs font-black ${d === stDays ? 'bg-[#233d2c] text-white' : 'bg-white border border-[#233d2c]/15'}">${d} يوم</button>`).join('');
+    $('st-body').innerHTML = '<p class="text-center opacity-60 font-bold py-10"><i class="ph-bold ph-spinner-gap ph-spin"></i></p>';
+    let r;
+    try { r = await call(`pager-stats&days=${stDays}`); } catch (e) { $('st-body').innerHTML = `<p class="text-center font-bold text-rose-700 py-8">${esc(e.message || 'تعذر التحميل')}</p>`; return; }
+    if (!r.total) { $('st-body').innerHTML = '<p class="text-center opacity-60 font-bold py-10">ما فيه أرقام في هالفترة للحين.</p>'; return; }
+    const tile = (v, l, sub = '') => `<div class="bg-white rounded-2xl border border-[#233d2c]/10 p-4"><p class="text-2xl font-black">${v}</p><p class="text-xs font-bold opacity-60 mt-1">${l}</p>${sub ? `<p class="text-[11px] font-bold opacity-45 mt-0.5">${sub}</p>` : ''}</div>`;
+    const rate = Math.round(r.done / r.total * 100);
+    const hrs = r.hours.filter(h => h.n), maxN = Math.max(1, ...r.hours.map(h => h.n));
+    const peak = hrs.slice().sort((a, b) => b.n - a.n)[0];
+    const slow = hrs.filter(h => h.wait != null && h.n >= 3).sort((a, b) => b.wait - a.wait)[0];
+    const hl = (h) => h === 0 ? '12 ص' : h < 12 ? `${h} ص` : h === 12 ? '12 م' : `${h - 12} م`;
+    const R = r.rating || {};
+    $('st-body').innerHTML = `
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        ${tile(mins(r.wait.avg), 'متوسط الانتظار', 'من أخذ الرقم لين يجهز')}
+        ${tile(mins(r.wait.max), 'أطول انتظار')}
+        ${tile(`${rate}%`, 'نسبة الاستلام', `${r.done} من ${r.total} رقم`)}
+        ${tile(R.n ? `${R.avg} ★` : '—', 'تقييم الزبائن', R.n ? `${R.n} تقييم` : 'ما فيه تقييمات للحين')}
+      </div>
+      <div class="bg-white rounded-2xl border border-[#233d2c]/10 p-4">
+        <div class="flex flex-wrap items-baseline justify-between gap-2"><p class="font-black">الزحمة حسب الساعة</p>
+          <p class="text-xs font-bold opacity-60">${peak ? `الذروة ${hl(peak.h)} (${peak.n} رقم)` : ''}${slow ? ` · أبطأ ساعة ${hl(slow.h)} (${mins(slow.wait)} انتظار)` : ''}</p></div>
+        <div class="flex items-end gap-1 h-36 mt-4" dir="ltr">${r.hours.map(h => `<div class="flex-1 flex flex-col items-center justify-end h-full" title="${hl(h.h)}: ${h.n} رقم${h.wait != null ? `، انتظار ${mins(h.wait)}` : ''}"><div class="w-full rounded-t ${h.wait != null && h.wait > (r.wait.avg || 0) * 1.4 ? 'bg-[#c9a227]' : 'bg-[#233d2c]/75'}" style="height:${h.n ? Math.max(4, h.n / maxN * 100) : 0}%"></div></div>`).join('')}</div>
+        <div class="flex justify-between text-[10px] font-bold opacity-50 mt-1" dir="ltr"><span>12 ص</span><span>6 ص</span><span>12 م</span><span>6 م</span><span>11 م</span></div>
+        <p class="text-[11px] font-bold opacity-55 mt-2"><span class="inline-block w-2.5 h-2.5 rounded-sm bg-[#c9a227] align-middle"></span> ساعات انتظارها أطول من المعتاد</p>
+      </div>
+      ${R.n ? `<div class="bg-white rounded-2xl border border-[#233d2c]/10 p-4 space-y-3">
+        <p class="font-black">تقييمات الزبائن</p>
+        ${[5, 4, 3, 2, 1].map(k => `<div class="flex items-center gap-2 text-xs font-bold"><span class="w-8" dir="ltr">${k} ★</span><div class="flex-1 h-2.5 rounded-full bg-[#233d2c]/10 overflow-hidden"><div class="h-full ${k >= 4 ? 'bg-emerald-600' : k === 3 ? 'bg-[#c9a227]' : 'bg-rose-600'}" style="width:${R.dist[k - 1] / R.n * 100}%"></div></div><span class="w-8 text-left">${R.dist[k - 1]}</span></div>`).join('')}
+        ${R.notes.length ? `<div class="divide-y divide-[#233d2c]/10 text-sm">${R.notes.map(x => `<p class="py-2"><b class="${x.r >= 4 ? 'text-emerald-700' : 'text-rose-700'}" dir="ltr">${x.r} ★</b> ${esc(x.note)}</p>`).join('')}</div>` : ''}
+      </div>` : ''}
+      <p class="text-[11px] font-bold opacity-50">متوسط الخدمة (من أخذ الرقم لين الاستلام): ${mins(r.service.avg)} · ألغيت ${r.cancelled}</p>`;
+  }
+  $('stats-btn').onclick = () => { $('stats-modal').classList.replace('hidden', 'flex'); loadStats(); };
+  $('stats-close').onclick = () => $('stats-modal').classList.replace('flex', 'hidden');
+  $('st-range').onclick = (e) => { const b = e.target.closest('[data-d]'); if (b) { stDays = +b.dataset.d; loadStats(); } };
 
   document.querySelectorAll('[data-open]').forEach(b => { b.onclick = () => $(b.dataset.open).click(); });
   const QR_KINDS = {
