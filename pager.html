@@ -47,19 +47,50 @@
   .mm-card:focus-visible { outline: 3px solid #c9a227; outline-offset: 2px; }
   @keyframes mmPop { 50% { transform: rotateY(180deg) scale(1.08); } }
   .mm-card.pop { animation: mmPop .35s ease; }
+  .ticket { position: relative; background: linear-gradient(160deg, #2c4a36 0%, #233d2c 45%, #15271b 100%); color: #fff; border-radius: 30px; padding: 28px 22px; box-shadow: 0 30px 60px -30px rgba(21,39,27,.75); overflow: hidden; }
+  .ticket::before, .ticket::after { content: ''; position: absolute; width: 26px; height: 26px; border-radius: 50%; background: var(--sand); top: 62%; }
+  .ticket::before { left: -13px; } .ticket::after { right: -13px; }
+  .ticket .num { color: #fff; font-size: 108px; margin: 4px 0 6px; }
+  .ticket .tear { border-top: 2px dashed rgba(255,255,255,.25); margin: 18px 6px 14px; }
+  .ticket.ready { background: linear-gradient(160deg, #e2bd3f 0%, #c9a227 55%, #a8851a 100%); color: #15271b; }
+  .ticket.ready .num { color: #15271b; }
+  .ticket.ready::before, .ticket.ready::after, .ticket.plain::before, .ticket.plain::after { display: none; }
+  .ticket::before, .ticket::after { top: auto; bottom: 52px; }
+  .ring-ic { width: 64px; height: 64px; border-radius: 22px; background: rgba(255,255,255,.12); color: #e9c95a; display: grid; place-items: center; font-size: 30px; }
+  .ticket.ready .ring-ic { background: rgba(21,39,27,.12); color: #15271b; }
+  .ringing-ic { animation: shake .5s infinite; }
+  .btn-gold { background: #c9a227; color: #15271b; box-shadow: 0 16px 30px -14px rgba(138,109,15,.7); }
+  .btn-wallet { background: #000; color: #fff; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 800; padding: 8px 12px; border-radius: 999px; background: #fff; border: 1.5px solid rgba(35,61,44,.12); }
+  .chip.ok { color: #047857; border-color: rgba(4,120,87,.25); background: #ecfdf5; }
+  .steps { display: grid; gap: 8px; }
+  .steps li { display: flex; align-items: center; gap: 10px; background: #fff; border: 1.5px solid rgba(35,61,44,.1); border-radius: 18px; padding: 12px 14px; font-size: 14px; font-weight: 700; }
+  .steps b { width: 26px; height: 26px; border-radius: 9px; background: #233d2c; color: #e9c95a; display: grid; place-items: center; font-size: 13px; flex-shrink: 0; }
+  .field { width: 100%; background: #f8f6f1; border: 1.5px solid rgba(35,61,44,.18); border-radius: 14px; padding: 12px 14px; font-size: 16px; font-weight: 600; }
+  .field:focus { outline: none; border-color: #233d2c; background: #fff; }
+  .jn-g[aria-checked="true"] { background: #233d2c; color: #fff; border-color: #233d2c; }
+  .tips { background: #fff; border: 1.5px solid rgba(35,61,44,.1); border-radius: 18px; padding: 12px 16px; font-size: 13px; font-weight: 700; }
+  .tips summary { cursor: pointer; opacity: .75; list-style: none; }
+  .tips summary::-webkit-details-marker { display: none; }
+  .tips ul { margin-top: 10px; display: grid; gap: 6px; opacity: .75; }
+  .tips li i { margin-left: 6px; }
+  body.ringing #got-btn { background: #fff; color: #15271b; }
+  body.ringing #r-review { background: rgba(255,255,255,.9); }
   .hidden { display: none !important; }
 </style>
 <link rel="stylesheet" href="/css/tw/pager.css">
 </head>
 <body class="flex flex-col items-center px-5 py-8">
 
-<header class="text-center mb-6">
-  <img id="logo" alt="" class="w-16 h-16 rounded-2xl object-cover mx-auto mb-3 bg-white border border-[#233d2c]/10 hidden">
-  <h1 id="store-name" class="text-xl font-black">…</h1>
-  <p class="text-xs font-bold opacity-60"><i class="ph-bold ph-bell"></i> البيجر الرقمي</p>
+<header class="w-full max-w-sm flex items-center gap-3 mb-5">
+  <img id="logo" alt="" class="w-12 h-12 rounded-2xl object-cover bg-white border border-[#233d2c]/10 hidden">
+  <div class="min-w-0 flex-1">
+    <h1 id="store-name" class="text-lg font-black truncate">…</h1>
+    <p class="text-[12px] font-bold opacity-55"><i class="ph-bold ph-bell"></i> البيجر الرقمي</p>
+  </div>
 </header>
 
-<main class="w-full max-w-sm space-y-4">
+<main class="w-full max-w-sm space-y-3.5">
   <!-- جاري التحميل -->
   <section id="v-loading" class="card p-10 text-center"><i class="ph-bold ph-spinner-gap ph-spin text-2xl opacity-50"></i></section>
 
@@ -71,38 +102,77 @@
   </section>
 
   <!-- أخذ رقم -->
-  <section id="v-start" class="card p-7 text-center space-y-5 hidden">
-    <div class="w-20 h-20 rounded-3xl bg-[#233d2c] text-[#c9a227] grid place-items-center mx-auto text-3xl"><i class="ph-bold ph-bell"></i></div>
-    <div>
-      <h2 class="text-2xl font-black">خذ رقمك</h2>
-      <p id="t-start" class="text-sm font-bold opacity-65 mt-2 leading-relaxed"></p>
+  <section id="v-start" class="hidden space-y-3.5">
+    <div class="ticket plain text-center">
+      <div class="ring-ic mx-auto"><i class="ph-bold ph-bell-ringing"></i></div>
+      <h2 class="text-[28px] font-black mt-4">خذ رقمك</h2>
+      <p id="t-start" class="text-[14px] font-bold opacity-75 mt-2 leading-relaxed"></p>
     </div>
-    <button id="take-btn" class="btn btn-brand"><i class="ph-bold ph-ticket"></i> خذ رقمي وفعّل التنبيه</button>
+    <button id="take-btn" class="btn btn-gold"><i class="ph-bold ph-ticket"></i> خذ رقمي وفعّل التنبيه</button>
+    <ul class="steps">
+      <li><b>1</b> اضغط الزر واسمح بالإشعارات</li>
+      <li><b>2</b> قل رقمك للموظف</li>
+      <li><b>3</b> <span id="t-step3">يرن جوالك وقت ما يجي دورك</span></li>
+    </ul>
   </section>
 
   <!-- ينتظر -->
-  <section id="v-waiting" class="card p-7 text-center space-y-5 hidden">
-    <p id="w-demo" class="hidden text-[13px] font-black text-[#15271b] bg-[#c9a227]/25 border border-[#c9a227]/50 rounded-2xl py-3 px-3">هذي تجربة: خلال ثواني يرن جوالك 🔔</p>
-    <p class="text-sm font-black opacity-60">رقمك</p>
-    <div id="w-number" class="num">—</div>
-    <p id="w-tell" class="text-sm font-black"></p>
-    <p id="w-invoice" class="hidden text-base font-black text-[#233d2c] bg-[#f5f2eb] rounded-2xl py-2.5">🧾 فاتورتك: <span dir="ltr"></span></p>
-    <div class="flex items-center justify-center gap-2 text-[13px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-2xl py-3">
-      <span class="pulse-dot"></span> <span id="t-waiting"></span>
+  <section id="v-waiting" class="hidden space-y-3.5">
+    <p id="w-demo" class="hidden text-[13px] font-black text-[#15271b] bg-[#c9a227]/25 border border-[#c9a227]/50 rounded-2xl py-3 px-3 text-center">هذي تجربة: خلال ثواني يرن جوالك 🔔</p>
+    <div class="ticket text-center">
+      <p class="text-[13px] font-bold opacity-70">رقمك</p>
+      <div id="w-number" class="num">—</div>
+      <p id="w-tell" class="text-[14px] font-bold opacity-85"></p>
+      <p id="w-invoice" class="hidden text-[14px] font-black mt-3 bg-white/10 rounded-xl py-2">🧾 فاتورتك: <span dir="ltr"></span></p>
+      <div class="tear"></div>
+      <p class="text-[13px] font-bold flex items-center justify-center gap-2"><span class="pulse-dot"></span> <span id="t-waiting"></span></p>
     </div>
-    <div id="push-on" class="hidden text-[13px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl py-3 px-3">🔔 الإشعارات مفعّلة: بيوصلك إشعار من المتصفح <span class="t-when"></span></div>
-    <button id="push-btn" class="btn btn-brand hidden"><i class="ph-bold ph-bell"></i> فعّل الإشعارات (يوصلك والجوال مقفول)</button>
-    <div id="keep-on" class="hidden text-[13px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl py-3 px-3">🔊 الرنين شغّال: بيرن جوالك حتى لو كان على الصامت أو قفلت الشاشة (خلّ صوت الوسائط مرتفع)</div>
-    <button id="keep-btn" class="btn btn-brand hidden"><i class="ph-bold ph-speaker-high"></i> فعّل الرنين حتى لو جوالك صامت</button>
+    <div class="flex flex-wrap gap-2 justify-center">
+      <span id="push-on" class="chip ok hidden"><i class="ph-bold ph-bell"></i> الإشعارات مفعّلة</span>
+      <span id="keep-on" class="chip ok hidden"><i class="ph-bold ph-speaker-high"></i> الرنين شغّال حتى على الصامت</span>
+    </div>
+    <button id="push-btn" class="btn btn-brand hidden"><i class="ph-bold ph-bell"></i> فعّل الإشعارات</button>
+    <button id="keep-btn" class="btn btn-ghost hidden"><i class="ph-bold ph-speaker-high"></i> فعّل الرنين حتى لو جوالك صامت</button>
+    <button id="unlock-btn" class="btn btn-ghost hidden"><i class="ph-bold ph-speaker-high"></i> فعّل صوت التنبيه</button>
     <p id="push-denied" class="hidden text-[12px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-2xl py-2.5 px-3">الإشعارات مقفلة لهذا الموقع في متصفحك. الرنين يشتغل عادي، ولو تبي الإشعار فعّله من إعدادات المتصفح.</p>
-    <button id="unlock-btn" class="btn btn-brand hidden"><i class="ph-bold ph-speaker-high"></i> فعّل صوت التنبيه</button>
     <a id="w-loyalty" class="hidden block text-[13px] font-black rounded-2xl py-3 px-3"></a>
-    <ul class="text-[12.5px] font-bold opacity-70 space-y-1.5 text-right bg-[#f5f2eb] rounded-2xl p-4">
-      <li><i class="ph-bold ph-device-mobile ml-1"></i> تقدر تطلع من الصفحة وتقفل الجوال، بس لا تسكّر المتصفح</li>
-      <li><i class="ph-bold ph-speaker-high ml-1"></i> ارفع صوت الجوال (صوت الوسائط)</li>
-      <li><i class="ph-bold ph-music-notes ml-1"></i> لا تشغّل مقطع أو موسيقى ثانية وانت تنتظر</li>
-    </ul>
-    <button id="test-btn" class="text-xs font-black opacity-60 underline">جرّب صوت التنبيه</button>
+
+    <!-- تسجيل في الولاء من نفس الصفحة -->
+    <section id="v-join" class="card p-5 space-y-3.5 hidden">
+      <div class="flex items-start gap-3">
+        <span class="w-11 h-11 rounded-2xl bg-[#c9a227]/20 text-[#8a6d0f] grid place-items-center text-xl shrink-0"><i class="ph-bold ph-seal-check"></i></span>
+        <div class="min-w-0">
+          <p class="font-black text-[16px]">انضم لبطاقة الولاء</p>
+          <p id="jn-sub" class="text-[12.5px] font-bold opacity-65 leading-relaxed"></p>
+        </div>
+      </div>
+      <form id="jn-form" class="space-y-2.5" novalidate>
+        <input id="jn-name" class="field" autocomplete="given-name" maxlength="40" placeholder="اسمك">
+        <span class="flex gap-2" dir="ltr">
+          <select id="jn-cc" class="field !w-auto !px-2.5" aria-label="رمز الدولة"></select>
+          <input id="jn-phone" class="field flex-1 min-w-0" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="05xxxxxxxx" maxlength="18">
+        </span>
+        <div class="grid grid-cols-2 gap-2" role="radiogroup" aria-label="النوع">
+          <button type="button" class="jn-g field !text-center font-bold" data-g="m" role="radio" aria-checked="false">ذكر</button>
+          <button type="button" class="jn-g field !text-center font-bold" data-g="f" role="radio" aria-checked="false">أنثى</button>
+        </div>
+        <button id="jn-btn" class="btn btn-brand !py-3.5 !text-base"><i class="ph-bold ph-user-plus"></i> سجّلني وخذ ختم</button>
+      </form>
+      <div id="jn-done" class="hidden text-center space-y-3">
+        <p class="font-black text-emerald-800"><i class="ph-bold ph-check-circle"></i> صرت عضو! بينضاف لك ختم <span class="t-when"></span></p>
+        <button id="jn-wallet" class="btn btn-wallet !py-3.5 !text-base"><i class="ph-bold ph-wallet"></i> أضف البطاقة للمحفظة</button>
+      </div>
+    </section>
+
+    <details class="tips">
+      <summary><i class="ph-bold ph-info"></i> نصائح عشان يوصلك التنبيه</summary>
+      <ul>
+        <li><i class="ph-bold ph-device-mobile"></i> تقدر تطلع من الصفحة وتقفل الجوال، بس لا تسكّر المتصفح</li>
+        <li><i class="ph-bold ph-speaker-high"></i> ارفع صوت الوسائط</li>
+        <li><i class="ph-bold ph-music-notes"></i> لا تشغّل مقطع أو موسيقى ثانية وانت تنتظر</li>
+      </ul>
+      <button id="test-btn" class="text-xs font-black underline opacity-70 mt-2">جرّب صوت التنبيه</button>
+    </details>
   </section>
 
   <!-- يتسلّى وهو ينتظر -->
@@ -124,23 +194,24 @@
   </section>
 
   <!-- جاهز -->
-  <section id="v-ready" class="card p-7 text-center space-y-5 hidden">
-    <div class="text-6xl">🔔</div>
-    <h2 id="t-ready" class="text-3xl font-black"></h2>
-    <div id="r-number" class="num">—</div>
-    <p id="r-invoice" class="hidden text-base font-black">🧾 فاتورة <span dir="ltr"></span></p>
-    <p class="text-sm font-bold opacity-70">تفضّل استلمه من الموظف</p>
-    <a id="r-loyalty" class="hidden block text-[13px] font-black rounded-2xl py-3 px-3"></a>
+  <section id="v-ready" class="hidden space-y-3.5">
+    <div class="ticket ready text-center">
+      <div class="ring-ic mx-auto ringing-ic"><i class="ph-bold ph-bell-ringing"></i></div>
+      <h2 id="t-ready" class="text-[30px] font-black mt-3"></h2>
+      <div id="r-number" class="num">—</div>
+      <p id="r-invoice" class="hidden text-[14px] font-black">🧾 فاتورة <span dir="ltr"></span></p>
+      <p id="r-body" class="text-[15px] font-bold opacity-85"></p>
+    </div>
     <button id="got-btn" class="btn btn-brand"><i class="ph-bold ph-check"></i> <span id="t-got"></span></button>
+    <a id="r-loyalty" class="hidden block text-[13px] font-black rounded-2xl py-3 px-3"></a>
     <a id="r-review" target="_blank" rel="noopener" class="hidden btn btn-ghost !py-3.5 !text-base"><i class="ph-bold ph-star text-[#c9a227]"></i> قيّمنا على قوقل ماب</a>
   </section>
 
   <!-- انتهى -->
-  <section id="v-done" class="card p-8 text-center space-y-4 hidden">
+  <section id="v-done" class="card p-7 text-center space-y-4 hidden">
     <i class="ph-bold ph-check-circle text-4xl text-emerald-600"></i>
     <h2 id="d-title" class="text-xl font-black">بالعافية!</h2>
     <p id="d-sub" class="text-sm font-bold opacity-60">نتشرف بزيارتك مرة ثانية.</p>
-    <!-- تقييم التجربة -->
     <div id="rate-box" class="hidden space-y-3 bg-[#f5f2eb] rounded-2xl p-4">
       <p class="font-black">كيف كانت تجربتك؟</p>
       <div id="rate-stars" class="flex justify-center gap-2" dir="ltr" role="radiogroup" aria-label="التقييم"></div>
@@ -335,6 +406,8 @@
     $('t-waiting').textContent = `${T.waiting} بنرن جوالك ${T.ringWhen}`;
     $('mm-title').textContent = T.game;
     $('t-ready').textContent = T.ready;
+    $('r-body').textContent = `${T.readyBody} من ${storeInfo.name || 'الموظف'}`;
+    $('t-step3').textContent = `يرن جوالك ${T.ringWhen}`;
     $('t-got').textContent = T.got;
     document.querySelectorAll('.t-when').forEach(el => { el.textContent = T.ringWhen; });
   }
@@ -342,7 +415,8 @@
   function setStore(s) {
     if (!s) return;
     storeInfo = s;
-    if (s.business_type) { T = DMSectors.terms(s); applyTerms(); }
+    if (s.business_type) T = DMSectors.terms(s);
+    applyTerms();
     $('store-name').textContent = s.name || '';
     if (s.logo_url) { $('logo').src = s.logo_url; $('logo').classList.remove('hidden'); }
   }
@@ -360,6 +434,9 @@
   function renderLoyalty(l, st, token) {
     const show = (id, html, cls, href) => { const el = $(id); el.classList.toggle('hidden', !html); if (!html) return; el.innerHTML = html; el.className = `block text-[13px] font-black rounded-2xl py-3 px-3 ${cls}`; if (href) el.href = href; else el.removeAttribute('href'); };
     lastLoyalty = l || null;
+    const showJoin = !!(l && l.enabled && !l.linked && st === 'waiting' && !joined);
+    $('v-join').classList.toggle('hidden', !showJoin && !joined);
+    if (showJoin) $('jn-sub').textContent = `بعد ${l.needed} أختام تاخذ ${l.reward}. وأول ختم على هالزيارة، ويوصلك إشعار من المحفظة ${T.ringWhen}.`;
     if (!l || !l.enabled) { show('w-loyalty', ''); show('r-loyalty', ''); return; }
     const join = `${DM.storePage('loyalty', slug)}${DM.hostSlug() ? '?' : '&'}pt=${encodeURIComponent(token)}`;
     if (l.linked) {
@@ -368,10 +445,38 @@
       show('r-loyalty', l.stamped ? '<i class="ph-bold ph-seal-check"></i> انضاف لك ختم في بطاقة الولاء' : '', 'text-[#233d2c] bg-[#c9a227]/15 border border-[#c9a227]/30', `${DM.storePage('loyalty', slug)}`);
     } else {
       const html = `<i class="ph-bold ph-wallet"></i> سجّل في بطاقة الولاء وأضفها للمحفظة: يوصلك إشعار ${T.ringWhen}، وتاخذ ختم`;
-      show('w-loyalty', html, 'text-white bg-[#233d2c] underline-offset-4', join);
+      show('w-loyalty', '');
       show('r-loyalty', html, 'text-white bg-[#233d2c]', join);
     }
-  }
+  }  // ─── التسجيل في الولاء من صفحة البيجر ───
+  let joined = false, jnGender = '', lyToken = '';
+  $('jn-cc').innerHTML = DM.countryOptions();
+  document.querySelectorAll('.jn-g').forEach(b => b.onclick = () => { jnGender = b.dataset.g; document.querySelectorAll('.jn-g').forEach(x => x.setAttribute('aria-checked', String(x === b))); });
+  $('jn-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const name = $('jn-name').value.trim(), phone = DM.intlPhone($('jn-phone').value, $('jn-cc').value);
+    if (name.length < 2) return $('jn-name').focus();
+    if (!phone) { $('jn-phone').focus(); return alert('رقم الجوال غير صحيح، تأكد من رمز الدولة والرقم'); }
+    if (!jnGender) return alert('اختر ذكر أو أنثى');
+    const btn = $('jn-btn'); btn.disabled = true; btn.innerHTML = '<i class="ph-bold ph-spinner-gap ph-spin"></i>';
+    try {
+      const r = await DM.post('/api/loyalty?action=join', { slug, name, phone, gender: jnGender, pt: loadToken() });
+      lyToken = r.token; joined = true;
+      try { localStorage.setItem(`dm_loyalty_${slug}`, r.token); } catch {}
+      $('jn-form').classList.add('hidden'); $('jn-done').classList.remove('hidden');
+      document.querySelectorAll('.t-when').forEach(el => { el.textContent = T.ringWhen; });
+      if (!r.wallet) $('jn-wallet').classList.add('hidden');
+      poll();
+    } catch (err) { alert(err.message || 'تعذر التسجيل، حاول مرة ثانية'); }
+    btn.disabled = false; btn.innerHTML = '<i class="ph-bold ph-user-plus"></i> سجّلني وخذ ختم';
+  };
+  $('jn-wallet').onclick = async () => {
+    const btn = $('jn-wallet'); btn.disabled = true;
+    try { const r = await DM.post('/api/loyalty?action=wallet', { slug, t: lyToken || localStorage.getItem(`dm_loyalty_${slug}`) }); if (r.url) location.href = r.url; }
+    catch (err) { alert(err.message || 'تعذر إضافة البطاقة'); }
+    btn.disabled = false;
+  };
+
 
   async function poll() {
     clearTimeout(pollTimer);

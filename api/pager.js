@@ -19,7 +19,9 @@ const SECTORS = require('./_lib/sectors');
 // بطاقة الولاء في المحل: شغالة؟ وتختم مع البيجر؟
 async function loyaltyOf(storeId) {
   const x = (await rest(`clients?id=eq.${storeId}&select=loyalty_enabled,loyalty_settings`).catch(() => []))[0] || {};
-  return { enabled: x.loyalty_enabled === true && normalizeLoyalty(x.loyalty_settings).pager_stamp };
+  const st = normalizeLoyalty(x.loyalty_settings);
+  const entitled = await storeHasFeature(storeId, 'loyalty');
+  return { enabled: entitled && x.loyalty_enabled === true && st.pager_stamp, reward: st.reward, needed: st.needed };
 }
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{10,64}$/;
