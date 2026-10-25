@@ -402,17 +402,24 @@ async function main(req) {
     const day = 864e5, iso = (n) => q(new Date(Date.now() - n * day).toISOString());
     const [cards, stamps7, redeemed, messages, feedback, gifts] = await Promise.all([
       rest(`loyalty_cards?client_id=eq.${store.id}&select=id,member_no,name,phone,stamps,visits,rewards,last_stamp_at,created_at&order=last_stamp_at.desc.nullslast&limit=500`),
-      rest(`loyalty_events?client_id=eq.${store.id}&kind=eq.stamp&created_at=gte.${iso(7)}&select=id`),
+      rest(`loyalty_events?client_id=eq.${store.id}&kind=eq.stamp&created_at=gte.${iso(7)}&select=id,card_id,created_at&order=id.desc&limit=5000`),
       rest(`loyalty_events?client_id=eq.${store.id}&kind=eq.redeem&select=id`),
       rest(`loyalty_messages?client_id=eq.${store.id}&or=${q('(kind.is.null,kind.neq.pager)')}&select=id,card_id,body,wallet_sent,created_at,source,kind&order=id.desc&limit=15`).catch(() => []),
       rest(`loyalty_feedback?client_id=eq.${store.id}&created_at=gte.${iso(90)}&select=reason,note,created_at,card_id&order=id.desc&limit=500`).catch(() => []),
       rest(`loyalty_gifts?client_id=eq.${store.id}&select=status,new_member,created_at&limit=5000`).catch(() => [])
     ]);
     const active = cards.filter(c => c.last_stamp_at && Date.parse(c.last_stamp_at) > Date.now() - 30 * day).length;
+    // آخر 7 أيام (بتوقيت الرياض): زيارات كل يوم، والعملاء العائدين، وآخر الزيارات
+    const dayKey = (t) => new Date(Date.parse(t) + 3 * 3600e3).toISOString().slice(0, 10);
+    const week = Array.from({ length: 7 }, (_, i) => ({ d: dayKey(new Date(Date.now() - (6 - i) * day).toISOString()), n: 0 }));
+    stamps7.forEach(e => { const w = week.find(x => x.d === dayKey(e.created_at)); if (w) w.n++; });
+    const byId = Object.fromEntries(cards.map(c => [c.id, c]));
+    const returning = new Set(stamps7.filter(e => byId[e.card_id] && byId[e.card_id].visits > 1).map(e => e.card_id)).size;
+    const recent = stamps7.slice(0, 8).map(e => ({ id: e.card_id, at: e.created_at, name: (byId[e.card_id] || {}).name || null, no: (byId[e.card_id] || {}).member_no, stamps: (byId[e.card_id] || {}).stamps }));
     return {
       enabled: extra.loyalty_enabled === true, settings: normalizeLoyalty(extra.loyalty_settings),
       location_set: validPoint(extra.loyalty_lat, extra.loyalty_lng), slug: store.client_slug,
-      stats: { members: cards.length, active30: active, stamps7: stamps7.length, redeemed: redeemed.length },
+      stats: { members: cards.length, active30: active, stamps7: stamps7.length, redeemed: redeemed.length, returning7: returning }, week, recent,
       cards: cards.slice(0, 50), messages, wallet: wallet.configured(),
       entitled: PLANS.has(store, 'loyalty'),
       ai: extra.loyalty_ai === true, near_lines: Array.isArray(extra.loyalty_near_lines) ? extra.loyalty_near_lines : [],
@@ -497,7 +504,7 @@ async function main(req) {
   req._sid = sid;
   // المميزات حسب باقة المحل
   if (['pager-update', 'pager-invoice', 'pager-ring'].includes(action) && !PLANS.has(store, 'pager')) throw new ApiError(403, 'البيجر مو ضمن باقتك', 'ADDON_OFF');
-  if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-message', 'loyalty-message-push', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء مو ضمن باقتك، أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
+  if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-member-delete', 'loyalty-message', 'loyalty-message-push', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء مو ضمن باقتك، أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
 
 
   // ─── ربط قوقل ماب ───
@@ -659,6 +666,15 @@ async function main(req) {
     if (!row) throw new ApiError(409, 'هذا العضو نقل رصيده القديم من قبل', 'ALREADY');
     await pushWalletCards(sid, { cardIds: [card.id] }).catch(() => 0);
     return { ok: true, who: { no: card.member_no, name: card.name || `عضو #${card.member_no}` }, stamps: row.stamps, needed: settings.needed, count };
+  }
+
+  // ─── حذف عضو من بطاقة الولاء (وأختامه ورسائله تنحذف معه) ───
+  if (action === 'loyalty-member-delete') {
+    const id = int(b.card_id);
+    const card = (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${sid}&select=id,wallet_serial`))[0];
+    if (!card) throw new ApiError(404, 'العضو غير موجود');
+    await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${sid}`, { method: 'DELETE' });
+    return { ok: true };
   }
 
   // ─── بطاقة الولاء: صاحب المحل يعطي ختم لعضو بنفسه ───
