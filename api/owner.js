@@ -379,6 +379,7 @@ async function main(req) {
   // ─── البيجر: أرقام اليوم ───
   // ─── شاشة العرض للزبون (تابلت عند الكاشير): بيانات المحل وخدماته ───
   if (action === 'kiosk' && req.method === 'GET') {
+    const { store } = await context(req);
     const x = (await rest(`clients?id=eq.${store.id}&select=loyalty_enabled,loyalty_settings`))[0] || {};
     const settings = normalizeLoyalty(x.loyalty_settings);
     const f = PLANS.featuresOf(store);
