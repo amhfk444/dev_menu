@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#233d2c">
+<link rel="manifest" href="/kiosk-manifest.json">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+<title>شاشة الختم | DEV MENU</title>
+<link rel="stylesheet" href="/css/fonts.css">
+<link rel="stylesheet" href="/css/icons.css">
+<script src="/js/vendor/qr-code-styling.js"></script>
+<script src="/js/vendor/jsqr.js"></script>
+<script src="js/api.js"></script>
+<style>
+  :root { --brand: #233d2c; --sand: #f5f2eb; --gold: #c9a227; --ink: #1b3022; }
+  /* الشاشة ثابتة: ما فيه تمرير ولا تكبير ولا تحديد نص ولا قائمة ضغط مطوّل */
+  html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; }
+  body { position: fixed; inset: 0; font-family: 'IBM Plex Sans Arabic', sans-serif; background: var(--sand); color: var(--ink);
+    touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+  img, video, canvas { pointer-events: none; -webkit-user-drag: none; }
+  .wrap { height: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 4vmin; padding: 5vmin; box-sizing: border-box; }
+  @media (orientation: portrait) { .wrap { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; } }
+  .side { display: flex; flex-direction: column; justify-content: center; gap: 3vmin; }
+  .brand { display: flex; align-items: center; gap: 2.4vmin; }
+  .brand img { width: 11vmin; height: 11vmin; border-radius: 3vmin; object-fit: cover; background: #fff; }
+  .brand b { font-size: 4.2vmin; font-weight: 800; }
+  h1 { font-size: 6.4vmin; line-height: 1.25; margin: 0; font-weight: 800; color: var(--brand); }
+  .sub { font-size: 3vmin; opacity: .75; margin: 0; line-height: 1.6; }
+  .steps { display: flex; gap: 2vmin; font-size: 2.6vmin; font-weight: 700; }
+  .steps span { background: #fff; border: 1.5px solid rgba(35,61,44,.12); border-radius: 2.4vmin; padding: 1.6vmin 2.2vmin; display: flex; align-items: center; gap: 1vmin; }
+  .steps i { color: var(--gold); font-size: 3.4vmin; }
+  .cam { position: relative; border-radius: 4vmin; overflow: hidden; background: #0f1d14; min-height: 40vmin; }
+  .cam video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+  .cam.back video { transform: none; }
+  .frame { position: absolute; inset: 18%; border-radius: 3vmin; box-shadow: 0 0 0 200vmax rgba(15,29,20,.35); }
+  .frame::before { content: ''; position: absolute; inset: 0; border-radius: 3vmin; border: .7vmin solid var(--gold); animation: breathe 2.4s ease-in-out infinite; }
+  @keyframes breathe { 50% { opacity: .45; } }
+  .cam-note { position: absolute; bottom: 3vmin; inset-inline: 0; text-align: center; color: #fff; font-weight: 700; font-size: 2.6vmin; }
+  .join { display: flex; align-items: center; gap: 2.4vmin; background: #fff; border-radius: 3vmin; padding: 2vmin; border: 1.5px solid rgba(35,61,44,.12); }
+  .join #join-qr { width: 15vmin; height: 15vmin; flex: none; }
+  .join #join-qr canvas { width: 100% !important; height: 100% !important; }
+  .join b { font-size: 3vmin; display: block; }
+  .join span { font-size: 2.3vmin; opacity: .7; }
+  /* النتيجة */
+  .result { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 2.4vmin; text-align: center; color: #fff; z-index: 10; padding: 6vmin; }
+  .result.on { display: flex; animation: pop .25s ease-out; }
+  @keyframes pop { from { transform: scale(.97); } }
+  .result.ok { background: var(--brand); }
+  .result.wait { background: #5a4a1a; }
+  .result.err { background: #7a2e22; }
+  .result i.big { font-size: 20vmin; }
+  .result .t { font-size: 7vmin; font-weight: 800; }
+  .result .n { font-size: 4.4vmin; font-weight: 700; opacity: .9; }
+  .dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.6vmin; max-width: 70vmin; }
+  .dots span { width: 6vmin; height: 6vmin; border-radius: 50%; background: rgba(255,255,255,.2); }
+  .dots span.f { background: var(--gold); }
+  .gift { background: #fff7dc; color: #6b540b; border-radius: 3vmin; padding: 2.4vmin 3.6vmin; font-size: 3.6vmin; font-weight: 800; display: flex; align-items: center; gap: 1.6vmin; }
+  /* بداية التشغيل (الموظف يضغط مرة وحدة) */
+  .start { position: fixed; inset: 0; z-index: 20; background: var(--brand); color: var(--sand); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3vmin; text-align: center; padding: 6vmin; }
+  .start b { font-size: 5.4vmin; }
+  .start p { font-size: 2.8vmin; opacity: .8; max-width: 80vmin; line-height: 1.7; margin: 0; }
+  .start .go { background: var(--gold); color: var(--ink); font-weight: 800; font-size: 3.6vmin; padding: 2.4vmin 6vmin; border-radius: 3vmin; }
+</style>
+</head>
+<body>
+<div class="start" id="start">
+  <i class="ph-bold ph-scan" style="font-size:14vmin"></i>
+  <b>شاشة الختم للزبون</b>
+  <p>بعد التشغيل تصير الشاشة ثابتة: الزبون يقرّب كود بطاقته من الكاميرا وينضاف له الختم تلقائياً، وما يقدر يتحكم بشي.</p>
+  <span class="go" id="go">ابدأ الشاشة</span>
+  <p id="start-err" style="color:#ffb4a6"></p>
+</div>
+
+<div class="wrap">
+  <div class="side">
+    <div class="brand"><img id="logo" alt="" hidden><b id="store">...</b></div>
+    <h1>قرّب كود بطاقتك من الكاميرا</h1>
+    <p class="sub" id="sub">ينضاف ختمك تلقائياً</p>
+    <div class="steps">
+      <span><i class="ph-bold ph-wallet"></i> افتح بطاقتك</span>
+      <span><i class="ph-bold ph-qr-code"></i> وجّه الكود للكاميرا</span>
+    </div>
+  </div>
+  <div class="cam" id="cam">
+    <video id="video" playsinline muted autoplay></video>
+    <div class="frame"></div>
+    <div class="cam-note">الكود داخل الإطار</div>
+  </div>
+  <div class="join" id="join" hidden>
+    <div id="join-qr"></div>
+    <div><b>مو مشترك؟</b><span>امسح الكود بجوالك وسجّل في البطاقة</span></div>
+  </div>
+</div>
+
+<div class="result" id="result"></div>
+
+<script>
+  const P = new URLSearchParams(location.search);
+  const extra = `${P.get('client') ? `&client=${encodeURIComponent(P.get('client'))}` : ''}${P.get('branch') ? `&branch=${encodeURIComponent(P.get('branch'))}` : ''}`;
+  const O = (a) => `/api/owner?action=${a}${extra}`;
+  const $ = (id) => document.getElementById(id);
+  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const BACK = P.get('cam') === 'back';   // الافتراضي الكاميرا الأمامية (اللي تقابل الزبون)
+  let info = null, busy = false, lastQr = '', lastAt = 0, hideT = null;
+
+  // ─── قفل الشاشة: نمنع اللمس والسحب والتكبير والرجوع ───
+  const stop = (e) => { if (e.cancelable) e.preventDefault(); };
+  ['contextmenu', 'dragstart', 'selectstart', 'gesturestart', 'gesturechange', 'dblclick', 'wheel'].forEach(t => document.addEventListener(t, stop, { passive: false }));
+  document.addEventListener('touchmove', stop, { passive: false });
+  document.addEventListener('touchstart', (e) => { if (e.touches.length > 1) stop(e); }, { passive: false });
+  document.addEventListener('keydown', stop);
+  history.pushState(null, '', location.href);
+  addEventListener('popstate', () => history.pushState(null, '', location.href));
+
+  // الشاشة تبقى شغالة
+  let lock = null;
+  async function keepAwake() { try { if ('wakeLock' in navigator && !document.hidden) lock = await navigator.wakeLock.request('screen'); } catch {} }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { keepAwake(); if (!stream) openCam(); } });
+
+  // صوت قصير مع الختم
+  let actx = null;
+  function beep(ok) {
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.frequency.value = ok ? 880 : 330; o.connect(g); g.connect(actx.destination);
+      g.gain.setValueAtTime(.25, actx.currentTime); g.gain.exponentialRampToValueAtTime(.001, actx.currentTime + .35);
+      o.start(); o.stop(actx.currentTime + .36);
+    } catch {}
+  }
+
+  async function call(action, body) {
+    try { return body === undefined ? await DM.get(O(action), true) : await DM.post(O(action), body, true); }
+    catch (e) { if (e.status === 401) location.replace('login.html'); throw e; }
+  }
+
+  // ─── الكاميرا ───
+  let stream = null, loop = 0;
+  const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d', { willReadFrequently: true });
+  async function openCam() {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: BACK ? 'environment' : 'user', width: { ideal: 1280 } }, audio: false });
+    $('video').srcObject = stream; await $('video').play();
+    cancelAnimationFrame(loop); loop = requestAnimationFrame(tick);
+  }
+  function tick() {
+    const v = $('video');
+    if (v.readyState >= 2 && !busy && window.jsQR) {
+      const w = 560, h = Math.round(w * v.videoHeight / v.videoWidth) || 560;
+      canvas.width = w; canvas.height = h;
+      ctx.drawImage(v, 0, 0, w, h);
+      const code = jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'attemptBoth' });
+      // نفس الكود ما ينقرأ مرة ثانية خلال 10 ثواني
+      if (code && code.data && !(code.data === lastQr && Date.now() - lastAt < 10000)) {
+        lastQr = code.data; lastAt = Date.now();
+        stamp(code.data);
+      }
+    }
+    loop = requestAnimationFrame(tick);
+  }
+
+  function show(kind, html, ms) {
+    clearTimeout(hideT);
+    $('result').className = `result on ${kind}`; $('result').innerHTML = html;
+    hideT = setTimeout(() => { $('result').className = 'result'; busy = false; }, ms);
+  }
+  const dots = (n, needed) => `<div class="dots">${Array.from({ length: needed }, (_, i) => `<span class="${i < n ? 'f' : ''}"></span>`).join('')}</div>`;
+
+  async function stamp(qr) {
+    busy = true;
+    try {
+      const r = await call('loyalty-scan', { qr });
+      const n = Math.min(r.stamps, r.needed), name = esc(String(r.who.name || '').split(/\s+/)[0]);
+      const gift = (r.rewards || []).length ? `<div class="gift"><i class="ph-bold ph-gift"></i> ${esc(r.rewards[0].label)} جاهزة لك، اطلبها من الموظف</div>` : '';
+      if (r.stamped) {
+        beep(true);
+        show('ok', `<i class="ph-bold ph-check-circle big"></i><div class="t">${r.count > 1 ? 'انضاف لك ختمين' : 'انضاف ختمك'}${name ? ` يا ${name}` : ''}</div>${dots(n, r.needed)}<div class="n">${n} من ${r.needed}${n < r.needed ? `، باقي ${r.needed - n} على ${esc(info.reward)}` : ''}</div>${gift}`, gift ? 7000 : 4500);
+      } else {
+        beep(false);
+        const full = r.reason === 'FULL';
+        show(full ? 'ok' : 'wait', `<i class="ph-bold ${full ? 'ph-gift' : 'ph-clock'} big"></i><div class="t">${full ? 'بطاقتك مكتملة' : 'ختمك مسجل'}${name ? ` يا ${name}` : ''}</div>${dots(n, r.needed)}<div class="n">${full ? '' : esc(r.note || '')}</div>${gift}`, 6000);
+      }
+    } catch (e) {
+      beep(false);
+      show('err', `<i class="ph-bold ph-warning-circle big"></i><div class="t">${esc(e.code === 'BAD_QR' ? 'هذا الكود مو من بطاقتنا' : e.code === 'NO_MEMBER' ? 'ما لقينا البطاقة' : 'ما قدرنا نختم، كلّم الموظف')}</div>`, 4000);
+    }
+  }
+
+  async function load() {
+    info = await call('kiosk');
+    $('store').textContent = info.name;
+    if (info.logo_url) { $('logo').src = info.logo_url; $('logo').hidden = false; }
+    $('sub').textContent = `ينضاف ختمك تلقائياً، و${info.needed} أختام = ${info.reward}`;
+    if (!info.enabled) { $('start-err').textContent = 'بطاقة الولاء متوقفة، شغّلها من لوحة التحكم أول'; return false; }
+    $('join').hidden = false;
+    new QRCodeStyling({ width: 300, height: 300, type: 'canvas', data: DM.storeUrl(info.slug, 'loyalty'), margin: 0,
+      qrOptions: { errorCorrectionLevel: 'M' }, dotsOptions: { type: 'rounded', color: '#1b3022' },
+      cornersSquareOptions: { type: 'extra-rounded', color: '#233d2c' }, cornersDotOptions: { type: 'dot', color: '#c9a227' },
+      backgroundOptions: { color: '#ffffff' } }).append($('join-qr'));
+    return true;
+  }
+
+  $('cam').classList.toggle('back', BACK);
+  $('start').addEventListener('click', async () => {
+    if (!info || !info.enabled) return;
+    $('start-err').textContent = '';
+    // ملء الشاشة (أندرويد والكمبيوتر) وتشغيل الصوت يحتاجون ضغطة
+    try { await document.documentElement.requestFullscreen({ navigationUI: 'hide' }); } catch {}
+    beep(true);
+    try { await openCam(); } catch { $('start-err').textContent = 'ما قدرنا نفتح الكاميرا، اسمح للمتصفح يستخدمها وحاول مرة ثانية'; return; }
+    keepAwake();
+    $('start').remove();
+  });
+
+  if (!DM.signedIn()) location.replace('login.html');
+  else load().catch(e => { $('start-err').textContent = e.message || 'تعذر التحميل'; });
+</script>
+</body>
+</html>

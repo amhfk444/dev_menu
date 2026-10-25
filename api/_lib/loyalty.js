@@ -60,6 +60,8 @@ function normalizeLoyalty(raw) {
     radius_m: Math.min(200, Math.max(25, int(s.radius_m, 50))),
     design: normalizeDesign(s.design),
     welcome: normalizeWelcome(s.welcome),
+    // رسالة تسليم المكافأة: يكتبها صاحب المحل، أو المساعد، أو بدون
+    redeem_msg: normalizeWelcome(s.redeem_msg),
     happy: normalizeHappy(s.happy),
     feedback: { enabled: !(s.feedback && s.feedback.enabled === false), gift: !(s.feedback && s.feedback.gift === false) },
     gifts: { enabled: !(s.gifts && s.gifts.enabled === false) },

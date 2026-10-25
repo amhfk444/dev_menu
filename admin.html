@@ -1052,6 +1052,11 @@
                 <label class="flex items-center justify-between gap-3 pt-1"><span class="text-[12px] text-ink/75"><i class="ph-bold ph-bell"></i> اللي ياخذ رقم بيجر ينختم له تلقائياً لما يجهز طلبه</span>
                   <input type="checkbox" id="ly-pager-stamp" class="w-4 h-4 accent-[#384f3d]"></label>
                 <a href="pager-desk.html" onclick="this.href='pager-desk.html'+location.search" class="inline-block text-[12px] font-bold text-brand underline underline-offset-4">افتح شاشة الكاشير (فيها زر "كود ختم")</a>
+                <div class="rounded-xl border border-brand/15 bg-brand/5 p-3 mt-2 space-y-1.5">
+                  <p class="text-[12px] font-bold"><i class="ph-bold ph-device-tablet"></i> شاشة الختم للزبون</p>
+                  <p class="text-[11.5px] text-ink/65 leading-relaxed">افتحها على تابلت عند الكاشير وسجّل دخولك فيه. الزبون يقرّب كود بطاقته من الكاميرا وينضاف ختمه تلقائياً (مرة وحدة حسب "ختم واحد كل"). الشاشة ثابتة ما فيها أزرار.</p>
+                  <a href="kiosk.html" onclick="this.href='kiosk.html'+location.search" target="_blank" class="inline-block text-[12px] font-bold text-brand underline underline-offset-4">افتح شاشة الختم</a>
+                </div>
               </div>
               <div class="space-y-2 pt-1">
                 <p class="text-xs font-semibold text-ink/70">رسالة الترحيب (توصل للزبون أول ما يسجل)</p>
@@ -1061,6 +1066,15 @@
                   <label class="cursor-pointer"><input type="radio" name="ly-welcome" value="off" class="peer sr-only"><span class="block rounded-xl border border-brand/20 p-3 text-[13px] peer-checked:border-brand peer-checked:bg-brand/5"><b class="block"><i class="ph-bold ph-x"></i> بدون ترحيب</b><span class="text-[11px] text-ink/60">ما توصل رسالة</span></span></label>
                 </div>
                 <textarea id="ly-welcome-text" rows="2" maxlength="200" class="input-pro hidden" placeholder="مثلاً: حيّاك الله في بيتك الثاني، هذا أول ختم لك"></textarea>
+              </div>
+              <div class="space-y-2 pt-1">
+                <p class="text-xs font-semibold text-ink/70">رسالة تسليم المكافأة (توصل على بطاقة الزبون لما الموظف يصرفها)</p>
+                <div class="grid sm:grid-cols-3 gap-2">
+                  <label class="cursor-pointer"><input type="radio" name="ly-redeem" value="ai" class="peer sr-only"><span class="block rounded-xl border border-brand/20 p-3 text-[13px] peer-checked:border-brand peer-checked:bg-brand/5"><b class="block"><i class="ph-bold ph-sparkle"></i> المساعد يكتبها</b><span class="text-[11px] text-ink/60">تهنئة مختلفة لكل زبون باسمه</span></span></label>
+                  <label class="cursor-pointer"><input type="radio" name="ly-redeem" value="custom" class="peer sr-only"><span class="block rounded-xl border border-brand/20 p-3 text-[13px] peer-checked:border-brand peer-checked:bg-brand/5"><b class="block"><i class="ph-bold ph-pen-nib"></i> أكتبها بنفسي</b><span class="text-[11px] text-ink/60">نفس الرسالة للكل</span></span></label>
+                  <label class="cursor-pointer"><input type="radio" name="ly-redeem" value="off" class="peer sr-only"><span class="block rounded-xl border border-brand/20 p-3 text-[13px] peer-checked:border-brand peer-checked:bg-brand/5"><b class="block"><i class="ph-bold ph-x"></i> بدون رسالة</b><span class="text-[11px] text-ink/60">ما توصل رسالة</span></span></label>
+                </div>
+                <textarea id="ly-redeem-text" rows="2" maxlength="200" class="input-pro hidden" placeholder="مثلاً: بالعافية عليك! شكراً لوفائك، وبطاقتك الجديدة بدأت"></textarea>
               </div>
               <div class="space-y-3 pt-2 border-t border-brand/10">
                 <label class="flex items-center justify-between gap-3 pt-3"><span><b class="text-[13px] block"><i class="ph-bold ph-clock"></i> ساعات الهدوء: الختم فيها دبل</b><span class="text-[11px] text-ink/60">املأ الوقت اللي يكون فيه المحل فاضي، بدل ما تعطي خصم للكل</span></span>
@@ -3915,6 +3929,10 @@
     document.querySelectorAll('[name="ly-welcome"]').forEach(r => { r.checked = r.value === wm; });
     document.getElementById('ly-welcome-text').value = (st.welcome && st.welcome.text) || '';
     document.getElementById('ly-welcome-text').classList.toggle('hidden', wm !== 'custom');
+    const rm = (st.redeem_msg && st.redeem_msg.mode) || 'ai';
+    document.querySelectorAll('[name="ly-redeem"]').forEach(r => { r.checked = r.value === rm; });
+    document.getElementById('ly-redeem-text').value = (st.redeem_msg && st.redeem_msg.text) || '';
+    document.getElementById('ly-redeem-text').classList.toggle('hidden', rm !== 'custom');
     const hp = st.happy || {}, hours = Array.from({ length: 25 }, (_, h) => h);
     const hlabel = (h) => h === 0 || h === 24 ? '12 بالليل' : h < 12 ? `${h} الصبح` : h === 12 ? '12 الظهر' : h <= 17 ? `${h - 12} العصر` : `${h - 12} بالليل`;
     document.getElementById('ly-happy').checked = !!hp.enabled;
@@ -4028,6 +4046,7 @@
   }
   document.addEventListener('change', (e) => { if (e.target && e.target.id === 'ly-happy') document.getElementById('ly-happy-box').classList.toggle('hidden', !e.target.checked); });
   document.addEventListener('change', (e) => { if (e.target && e.target.name === 'ly-welcome') document.getElementById('ly-welcome-text').classList.toggle('hidden', e.target.value !== 'custom'); });
+  document.addEventListener('change', (e) => { if (e.target && e.target.name === 'ly-redeem') document.getElementById('ly-redeem-text').classList.toggle('hidden', e.target.value !== 'custom'); });
   document.addEventListener('input', (e) => { if (e.target && e.target.id === 'ly-msg-body') document.getElementById('ly-msg-count').textContent = `${e.target.value.length}/200`; });
   async function sendLyMessage() {
     const body = document.getElementById('ly-msg-body').value.trim();
@@ -4266,6 +4285,7 @@
         needed: +document.getElementById('ly-needed').value, reward: document.getElementById('ly-reward').value.trim(),
         cooldown_hours: +document.getElementById('ly-cooldown').value, radius_m: +document.getElementById('ly-radius').value,
         welcome: { mode: (document.querySelector('[name="ly-welcome"]:checked') || {}).value || 'ai', text: document.getElementById('ly-welcome-text').value.trim() },
+        redeem_msg: { mode: (document.querySelector('[name="ly-redeem"]:checked') || {}).value || 'ai', text: document.getElementById('ly-redeem-text').value.trim() },
         happy: { enabled: document.getElementById('ly-happy').checked, from: +document.getElementById('ly-happy-from').value, to: +document.getElementById('ly-happy-to').value, days: [...(ly.happyDays || [])] },
         feedback: { enabled: document.getElementById('ly-fb').checked, gift: document.getElementById('ly-fb-gift').checked },
         gifts: { enabled: document.getElementById('ly-gifts').checked },

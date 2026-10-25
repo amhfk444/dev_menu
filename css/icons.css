@@ -42,6 +42,7 @@
 .ph-crosshair:before { content: "\e1d6"; }
 .ph-crown:before { content: "\e614"; }
 .ph-device-mobile:before { content: "\e1e0"; }
+.ph-device-tablet:before { content: "\e1e6"; }
 .ph-door:before { content: "\e61c"; }
 .ph-dots-six-vertical:before { content: "\eae2"; }
 .ph-dots-three:before { content: "\e1fe"; }
@@ -113,6 +114,7 @@
 .ph-qr-code:before { content: "\e3e6"; }
 .ph-question:before { content: "\e3e8"; }
 .ph-receipt:before { content: "\e3ec"; }
+.ph-scan:before { content: "\ebb6"; }
 .ph-scissors:before { content: "\eae0"; }
 .ph-seal-check:before { content: "\e606"; }
 .ph-share-network:before { content: "\e408"; }

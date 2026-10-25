@@ -6,7 +6,7 @@ const { execFileSync } = require('child_process');
 
 const root = path.join(__dirname, '..');
 const src = path.join(root, 'node_modules/@phosphor-icons/web/src');
-const PAGES = ['index', 'admin', 'login', 'links', 'waitlist', 'pager', 'pager-desk', 'super-admin', 'loyalty'].map(p => `${p}.html`).concat('js/dialog.js', 'js/loyalty-card.js', 'js/sectors.js', 'js/plans.js');
+const PAGES = ['index', 'admin', 'login', 'links', 'waitlist', 'pager', 'pager-desk', 'super-admin', 'loyalty', 'kiosk'].map(p => `${p}.html`).concat('js/dialog.js', 'js/loyalty-card.js', 'js/sectors.js', 'js/plans.js');
 // هذي الأيقونات تطلع ممتلئة (نجمة التقييم، النقطة)
 const FILLED = ['star', 'star-half', 'circle'];
 

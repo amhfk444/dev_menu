@@ -233,6 +233,23 @@ async function ringTicket(store, t) {
 }
 
 // المكافآت الجاهزة لعضو: مكافأة الأختام + هدايا الأصدقاء المستلمة
+// رسالة تسليم المكافأة: نص صاحب المحل، أو يكتبها المساعد لهالعميل، أو بدون
+async function redeemMessage(store, settings, card, reward) {
+  const m = settings.redeem_msg;
+  if (m.mode === 'off') return '';
+  if (m.mode === 'custom' && m.text) return m.text;
+  const first = String(card.name || '').trim().split(/\s+/)[0];
+  try {
+    const out = await Promise.race([
+      loyaltyMessages({ storeName: store.name, businessType: SECTORS.label(store), reward, needed: settings.needed,
+        guests: [{ ref: 'r', kind: 'redeemed', name: card.name, gender: card.gender, visits: card.visits || 0, stamps: 0, days_since: 0 }] }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000))
+    ]);
+    if (out.r) return `🎁 ${out.r}`;
+  } catch (e) { console.error('REDEEM_AI', e.message); }
+  return `🎁 ${first ? `مبروك يا ${first}!` : 'مبروك!'} استلمت مكافأتك: ${reward}. شكراً لوفائك لـ ${store.name}، ننتظرك مرة ثانية`;
+}
+
 async function readyRewards(storeId, card, settings) {
   const out = [];
   if (card.stamps >= settings.needed) out.push({ type: 'stamps', label: settings.reward });
@@ -521,7 +538,7 @@ async function main(req) {
   req._sid = sid;
   // المميزات حسب باقة المحل
   if (['pager-update', 'pager-invoice', 'pager-ring'].includes(action) && !PLANS.has(store, 'pager')) throw new ApiError(403, 'البيجر مو ضمن باقتك', 'ADDON_OFF');
-  if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-member-delete', 'loyalty-redeem', 'loyalty-message', 'loyalty-message-push', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء مو ضمن باقتك، أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
+  if (['kiosk', 'loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-member-delete', 'loyalty-redeem', 'loyalty-message', 'loyalty-message-push', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء مو ضمن باقتك، أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
 
 
   // ─── ربط قوقل ماب ───
@@ -649,6 +666,12 @@ async function main(req) {
   }
 
   // ─── الكاشير يمسح كود عضوية الزبون (أو يكتب رقمه) ويختمه بعد الدفع ───
+  // ─── شاشة العرض للزبون (تابلت عند الكاشير): بيانات المحل بس ───
+  if (action === 'kiosk') {
+    const x = (await rest(`clients?id=eq.${sid}&select=loyalty_enabled,loyalty_settings`))[0] || {};
+    const settings = normalizeLoyalty(x.loyalty_settings);
+    return { name: store.name, logo_url: store.logo_url || '', slug: store.client_slug, enabled: !!x.loyalty_enabled, needed: settings.needed, reward: settings.reward };
+  }
   if (action === 'loyalty-scan') {
     const x = (await rest(`clients?id=eq.${sid}&select=loyalty_enabled,loyalty_settings`))[0] || {};
     if (!x.loyalty_enabled) throw new ApiError(409, 'شغّل بطاقة الولاء أول من لوحة التحكم');
@@ -686,9 +709,9 @@ async function main(req) {
       const r = await rpc('server_loyalty_redeem', { p_card: card.id, p_needed: settings.needed, p_distance: null });
       if (!r.ok) throw new ApiError(409, 'أختامه ما كملت', 'NOT_ENOUGH');
     }
-    // رسالة تهنئة على بطاقة العميل مع الصرف (والتحديث نفسه يصفّر أختامه)
-    const first = String(card.name || '').trim().split(/\s+/)[0];
-    const sent = await walletNotice(sid, card.id, `🎁 ${first ? `مبروك يا ${first}!` : 'مبروك!'} استلمت مكافأتك: ${reward}. شكراً لوفائك لـ ${store.name}، ننتظرك مرة ثانية`).catch(() => 'error');
+    // رسالة تسليم المكافأة على بطاقة العميل (والتحديث نفسه يصفّر أختامه)
+    const msg = await redeemMessage(store, settings, card, reward);
+    const sent = msg ? await walletNotice(sid, card.id, msg).catch(() => 'error') : 'off';
     if (sent !== 'sent') await pushWalletCards(sid, { cardIds: [card.id] }).catch(() => 0);
     const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
     await poke(topic('pager', sid)).catch(() => {});
