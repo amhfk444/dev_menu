@@ -14,7 +14,7 @@ const { sendMail } = require('./_lib/mail');
 // المتجر لازم يكون ساري + مفعّل عنده قائمة الانتظار
 async function loadStore(slug) {
   // يقبل الرابط الحالي أو القديم للمتجر (رموز QR المطبوعة قبل تغيير الرابط)
-  const { store: live, bad } = await findPublicStore(slug, 'id,name,client_slug,logo_url,bg_image_url');
+  const { store: live, bad } = await findPublicStore(slug, 'id,name,client_slug,logo_url,bg_image_url,business_type');
   if (bad) throw new ApiError(400, 'الرابط غير صحيح');
   if (!live) throw new ApiError(404, 'قائمة الانتظار غير متاحة حالياً', 'NOT_AVAILABLE');
   const extra = (await rest(`clients?id=eq.${live.id}&select=waitlist_enabled,waitlist_settings`))[0] || {};
@@ -101,7 +101,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const expired = me.status === 'waiting' && !entries.some(e => e.id === me.id);   // تسجيل من يوم سابق
     const { position, eta } = positionOf(me, entries, settings);
     return {
-      store: { name: store.name, logo_url: store.logo_url },
+      store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type },
       entry: { ticket: me.ticket, name: me.name, party_size: me.party_size, status: expired ? 'expired' : me.status, created_at: me.created_at, notified_at: me.notified_at },
       position, eta, hold_minutes: settings.hold_minutes, live: topic('wl', store.id)
     };

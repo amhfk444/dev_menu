@@ -60,14 +60,15 @@ const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<'
 
 // قالب البريد (عربي + سطر إنجليزي مختصر)
 function emailTemplate(kind, { store, entry, statusUrl, eta, hold }) {
+  const T = require('./sectors').terms(store);
   const logo = store.logo_url ? `<img src="${esc(store.logo_url)}" alt="" width="64" height="64" style="border-radius:16px;object-fit:cover;display:block;margin:0 auto 10px">` : '';
   const isReady = kind === 'ready';
-  const title = isReady ? 'جاء دورك! 🎉' : 'تم تأكيد تسجيلك في قائمة الانتظار ✅';
+  const title = isReady ? `${T.wlReady} 🎉` : 'تم تأكيد تسجيلك في قائمة الانتظار ✅';
   const lines = isReady
-    ? `<p style="margin:0 0 8px">أهلاً ${esc(entry.name || '')}، جاء دورك في <b>${esc(store.name)}</b>.</p>
+    ? `<p style="margin:0 0 8px">أهلاً ${esc(entry.name || '')}، ${T.wlReadyLine} في <b>${esc(store.name)}</b>.</p>
        <p style="margin:0">توجّه للاستقبال خلال <b>${hold} دقائق</b> وأخبرهم برقم دورك.</p>`
     : `<p style="margin:0 0 8px">أهلاً ${esc(entry.name || '')}، سجّلناك في قائمة الانتظار لدى <b>${esc(store.name)}</b>.</p>
-       <p style="margin:0">وقت الانتظار التقريبي: <b>${eta} دقيقة</b>. راح يوصلك بريد ثاني أول ما يجي دورك.</p>`;
+       <p style="margin:0">وقت الانتظار التقريبي: <b>${eta} دقيقة</b>. راح يوصلك بريد ثاني ${T.wlWhen}.</p>`;
   const color = isReady ? '#15803d' : '#384f3d';
   const html = `
 <div dir="rtl" style="background:#efe5dc;padding:28px 12px;font-family:Tahoma,Arial,sans-serif;color:#22362a">
@@ -94,9 +95,9 @@ function emailTemplate(kind, { store, entry, statusUrl, eta, hold }) {
     </td></tr>
   </table>
 </div>`;
-  const subject = isReady ? `جاء دورك في ${store.name} — دور #${entry.ticket}` : `تم تسجيلك في قائمة انتظار ${store.name} — دور #${entry.ticket}`;
+  const subject = isReady ? `${T.wlReady} ${store.name}، دور #${entry.ticket}` : `تم تسجيلك في قائمة انتظار ${store.name} — دور #${entry.ticket}`;
   const text = isReady
-    ? `جاء دورك في ${store.name}. رقم دورك #${entry.ticket}. توجّه للاستقبال خلال ${hold} دقائق.${statusUrl ? `\n${statusUrl}` : ''}`
+    ? `${T.wlReadyLine} في ${store.name}. رقم دورك #${entry.ticket}. توجّه للاستقبال خلال ${hold} دقائق.${statusUrl ? `\n${statusUrl}` : ''}`
     : `تم تسجيلك في قائمة انتظار ${store.name}. رقم دورك #${entry.ticket}. الوقت التقريبي ${eta} دقيقة.${statusUrl ? `\nتابع دورك: ${statusUrl}` : ''}`;
   return { subject, html, text };
 }

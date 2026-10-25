@@ -222,8 +222,8 @@ async function ringTicket(store, t) {
   const n = (t.ring_count || 0) + 1;
   const url = `https://${store.client_slug}.devmenu.digital/pager`;
   const payload = n === 1
-    ? { title: `🔔 جاء دورك! رقم ${t.number}`, body: `تفضّل للموظف في ${store.name}` }
-    : { title: `🔔 تذكير: جاء دورك! رقم ${t.number}`, body: `الموظف بانتظارك في ${store.name} (${n}/${PAGER_MAX_RINGS})` };
+    ? { title: `🔔 ${SECTORS.terms(store).ready} رقم ${t.number}`, body: `${SECTORS.terms(store).readyBody} من ${store.name}` }
+    : { title: `🔔 تذكير: ${SECTORS.terms(store).ready} رقم ${t.number}`, body: `الموظف بانتظارك في ${store.name} (${n}/${PAGER_MAX_RINGS})` };
   // وسم مختلف لكل رنّة عشان الجوال يرن كل مرة (الآيفون ما يعيد التنبيه لنفس الوسم)
   const result = await sendPush(t.push_sub, { ...payload, url, tag: `pager-${t.id}-${n}` });
   console.log('PAGER_RING', store.id, t.id, n, result);
@@ -361,7 +361,7 @@ async function main(req) {
     const tickets = !hasPager ? [] : await rest(`${base},ring_count,acked_at,invoice_no`).catch(() => rest(`${base},ring_count,acked_at`)).catch(() => rest(base));
     const lx = (await rest(`clients?id=eq.${store.id}&select=loyalty_enabled`).catch(() => []))[0] || {};
     lx.loyalty_enabled = lx.loyalty_enabled && PLANS.has(store, 'loyalty');
-    return { tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub })), slug: store.client_slug, name: store.name, max_rings: PAGER_MAX_RINGS, live: topic('pager', store.id), loyalty: lx.loyalty_enabled === true, pager: hasPager, loyalty_entitled: PLANS.has(store, 'loyalty') };
+    return { tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub })), slug: store.client_slug, name: store.name, business_type: store.business_type, max_rings: PAGER_MAX_RINGS, live: topic('pager', store.id), loyalty: lx.loyalty_enabled === true, pager: hasPager, loyalty_entitled: PLANS.has(store, 'loyalty') };
   }
 
   // ─── إحصائيات البيجر: وقت الانتظار، الإنجاز، أوقات الذروة، والتقييم (آخر 30 يوم) ───
@@ -793,7 +793,7 @@ async function main(req) {
     }
     // بطاقة ولاء مربوطة وفي المحفظة: إشعار "طلبك جاهز" من البطاقة (يوصل الآيفون حتى لو المتصفح مسكّر)
     if (status === 'ready' && t.loyalty_card_id && PLANS.has(store, 'loyalty')) {
-      const wr = await pagerReadyNotice(sid, t.loyalty_card_id, t.number, store.name);
+      const wr = await pagerReadyNotice(sid, t.loyalty_card_id, t.number, store.name, SECTORS.terms(store));
       console.log('PAGER_WALLET', sid, t.id, wr);
     }
     await poke([topic('pager', sid), topic('ticket', t.token)]);

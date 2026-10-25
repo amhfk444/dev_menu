@@ -15,6 +15,7 @@
 <script src="/js/vendor/qr-code-styling.js"></script>
 <script src="/js/vendor/jsqr.js"></script>
 <script src="js/api.js"></script>
+<script src="/js/sectors.js"></script>
 <style>
   :root { --brand: #233d2c; --sand: #f5f2eb; --gold: #c9a227; }
   body { font-family: 'IBM Plex Sans Arabic', sans-serif; background: var(--sand); color: #1b3022; }
@@ -83,7 +84,7 @@
 
   <section class="panel p-5" data-pager>
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-black">بالانتظار <span id="wait-count" class="text-sm opacity-50"></span></h2>
+      <h2 class="text-lg font-black"><span id="t-dwait">بالانتظار</span> <span id="wait-count" class="text-sm opacity-50"></span></h2>
       <span class="text-[11px] font-bold opacity-50"><i class="ph-bold ph-arrows-clockwise"></i> يتحدث تلقائياً</span>
     </div>
     <div class="relative mb-4">
@@ -95,7 +96,7 @@
   </section>
 
   <section class="panel p-5" data-pager>
-    <h2 class="text-lg font-black mb-4">تم النداء، بانتظار الحضور <span id="ready-count" class="text-sm opacity-50"></span></h2>
+    <h2 class="text-lg font-black mb-4"><span id="t-dready">تم النداء، بانتظار الحضور</span> <span id="ready-count" class="text-sm opacity-50"></span></h2>
     <div id="ready-grid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3"></div>
     <p id="ready-empty" class="text-center text-sm font-bold opacity-50 py-6 hidden">ما فيه أحد تم نداؤه.</p>
   </section>
@@ -198,7 +199,7 @@
   const extra = `${P.get('client') ? `&client=${encodeURIComponent(P.get('client'))}` : ''}${P.get('branch') ? `&branch=${encodeURIComponent(P.get('branch'))}` : ''}`;
   const O = (a) => `/api/owner?action=${a}${extra}`;
   const $ = (id) => document.getElementById(id);
-  let slug = '', tickets = [], busy = new Set(), maxRings = 5;
+  let slug = '', tickets = [], busy = new Set(), maxRings = 5, T = DMSectors.terms(null);
 
   function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.remove('hidden'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.add('hidden'), 2600); }
   const ago = (iso) => { const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000)); return m < 1 ? 'الآن' : `${m} د`; };
@@ -268,7 +269,7 @@
           ${t.invoice_no ? `🧾 ${esc(t.invoice_no)}` : '🧾 أضف الفاتورة'}
         </button>
         <button class="mini w-full mt-1.5 bg-white text-[#233d2c]" data-ready="${t.id}" ${busy.has(t.id) ? 'disabled' : ''}>
-          ${busy.has(t.id) ? '<i class="ph-bold ph-spinner-gap ph-spin"></i>' : '<i class="ph-bold ph-bell"></i> نادِ'}
+          ${busy.has(t.id) ? '<i class="ph-bold ph-spinner-gap ph-spin"></i>' : `<i class="ph-bold ph-bell"></i> ${T.deskCall}`}
         </button>
         <div class="text-[10px] mt-1.5 opacity-50">${ago(t.created_at)}${t.has_push ? ' · <i class="ph-bold ph-device-mobile" title="الإشعارات مفعّلة"></i>' : ''}</div>
       </div>`).join('');
@@ -278,7 +279,7 @@
         ${t.invoice_no ? `<div class="text-[12px] font-black mt-1">🧾 ${esc(t.invoice_no)}</div>` : ''}
         <div class="text-[11px] mt-1 opacity-70">${ringLabel(t)}</div>
         <div class="flex gap-1.5 mt-3">
-          <button class="mini flex-1 bg-[#233d2c] text-white" data-done="${t.id}"><i class="ph-bold ph-check"></i> حضر</button>
+          <button class="mini flex-1 bg-[#233d2c] text-white" data-done="${t.id}"><i class="ph-bold ph-check"></i> ${T.deskDone}</button>
           <button class="mini bg-white border border-[#c9a227]/40" data-undo="${t.id}" title="إرجاع للتجهيز"><i class="ph-bold ph-arrow-counter-clockwise"></i></button>
         </div>
       </div>`).join('');
@@ -298,7 +299,7 @@
     const r = e.target.closest('[data-ready]'), d = e.target.closest('[data-done]'), u = e.target.closest('[data-undo]'), inv = e.target.closest('[data-invoice]');
     if (inv) return openInvoice(+inv.dataset.invoice);
     if (r) setStatus(+r.dataset.ready, 'ready', '🔔 جوال رقم # يرن الحين');
-    if (d) setStatus(+d.dataset.done, 'done', '✓ رقم # حضر');
+    if (d) setStatus(+d.dataset.done, 'done', `✓ رقم # ${T.deskDone}`);
     if (u) setStatus(+u.dataset.undo, 'waiting', 'رقم # رجع للانتظار');
   });
 
@@ -307,7 +308,8 @@
     clearTimeout(timer);
     try {
       const r = await call('pager');
-      slug = r.slug; $('store-name').textContent = r.name || ''; maxRings = r.max_rings || 5;
+      slug = r.slug; $('store-name').textContent = r.name || '';
+      if (r.business_type) { T = DMSectors.terms(r); $('t-dwait').textContent = T.deskWait; $('t-dready').textContent = T.deskReady; } maxRings = r.max_rings || 5;
       $('stamp-btn').classList.toggle('hidden', !r.loyalty);
       $('scan-btn').classList.toggle('hidden', !r.loyalty);
       $('join-btn').classList.toggle('hidden', !r.loyalty);
@@ -507,7 +509,7 @@
   function openPrintQr() {
     if (!slug) return;
     const url = DM.storeUrl(slug, qrKind);   // كود ثابت ما ينتهي
-    const k = QR_KINDS[qrKind];
+    const k = qrKind === 'pager' ? { ...QR_KINDS.pager, steps: ['امسح الرمز بكاميرا جوالك', T.tell.replace('ورّ هذا الرقم', 'قل رقمك'), `يرن جوالك ${T.ringWhen}`] } : QR_KINDS[qrKind];
     $('qr-title').textContent = k.title;
     $('qr-steps').innerHTML = k.steps.map((t, i) => `<div><b>${i + 1}</b><span>${t}</span></div>`).join('');
     $('qr-store').textContent = $('store-name').textContent;

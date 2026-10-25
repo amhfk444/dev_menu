@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="/css/fonts.css">
 <link rel="stylesheet" href="/css/icons.css">
 <script src="js/api.js"></script>
+<script src="/js/sectors.js"></script>
 <script src="js/dialog.js"></script>
 
 <style>
@@ -81,7 +82,7 @@
       <div data-field="email">
         <label class="lbl" for="f-email">البريد الإلكتروني <span class="req hidden">*</span></label>
         <input id="f-email" type="email" inputmode="email" maxlength="120" autocomplete="email" placeholder="name@example.com" class="field" dir="ltr">
-        <p class="text-[10px] text-ink/50 mt-1">يوصلك عليه تأكيد التسجيل، وتنبيه أول ما يجي دورك.</p>
+        <p class="text-[10px] text-ink/50 mt-1">يوصلك عليه تأكيد التسجيل، وتنبيه <span class="t-when">أول ما يجي دورك</span>.</p>
       </div>
       <div data-field="party_size">
         <span class="lbl">عدد الأشخاص <span class="req hidden">*</span></span>
@@ -160,7 +161,9 @@
   }
   const saveToken = (t) => { token = t; try { t ? localStorage.setItem(tokenKey, t) : localStorage.removeItem(tokenKey); } catch {} };
 
+  let WT = DMSectors.terms(null);
   function setStore(store) {
+    if (store.business_type) { WT = DMSectors.terms(store); document.querySelectorAll('.t-when').forEach(el => { el.textContent = WT.wlWhen; }); }
     document.getElementById('store-name').textContent = store.name || '';
     document.title = `قائمة الانتظار | ${store.name || 'DEV MENU'}`;
     if (store.logo_url) document.getElementById('store-logo').src = store.logo_url;
@@ -249,10 +252,10 @@
           <p class="text-3xl font-black">~${s.eta}<span class="text-xs font-bold text-ink/50"> د</span></p>
         </div>
       </div>
-      <p class="text-xs font-bold text-ink/65 leading-relaxed">${s.position === 1 ? 'أنت التالي! جهّز نفسك 👌' : 'أنت في القائمة ✅ راح يوصلك بريد أول ما يجي دورك.'}</p>`,
+      <p class="text-xs font-bold text-ink/65 leading-relaxed">${s.position === 1 ? 'أنت التالي! جهّز نفسك 👌' : `أنت في القائمة ✅ راح يوصلك بريد ${WT.wlWhen}.`}</p>`,
     notified: (s) => `
       <div class="pulse-ring mx-auto w-20 h-20 rounded-full bg-green-600 text-white flex items-center justify-center text-3xl"><i class="ph-bold ph-bell-simple-ringing"></i></div>
-      <p class="text-2xl font-black text-green-700">جاء دورك! 🎉</p>
+      <p class="text-2xl font-black text-green-700">${WT.wlReady} 🎉</p>
       <p class="text-sm font-bold text-ink/75 leading-relaxed">توجّه للاستقبال خلال <b>${s.hold_minutes} دقائق</b> وأخبرهم برقم دورك.</p>`,
     seated: () => `<p class="text-lg font-black">أهلاً وسهلاً 🌿</p><p class="text-xs text-ink/60">نتمنى لك وقت ممتع.</p>`,
     cancelled: () => `<p class="text-lg font-black">تم إلغاء تسجيلك</p><p class="text-xs text-ink/60">تقدر تسجّل من جديد في أي وقت.</p>`,
