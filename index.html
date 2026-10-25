@@ -173,7 +173,7 @@
 <!-- ═══════════ الشريط العلوي ═══════════ -->
 <header class="topbar">
   <nav aria-label="القائمة">
-    <a href="#" class="logo"><span><i class="ph-bold ph-device-mobile"></i></span>DEV MENU</a>
+    <a href="#" class="logo" aria-label="DEV MENU"><img src="images/logo-mark.png" alt="DEV MENU" width="56" height="38" class="h-[38px] w-auto"></a>
     <a href="#products" class="lnk">المميزات</a>
     <a href="#how" class="lnk">كيف يعمل</a>
     <a href="#pricing" class="lnk">الأسعار</a>
@@ -291,7 +291,10 @@
 <section id="how" class="py-16 md:py-24">
   <div class="wrap grid lg:grid-cols-[.95fr_1.05fr] gap-12 items-center">
     <div class="reveal order-last lg:order-first">
-      <div class="phone !w-[270px]"><video src="videos/loyalty-ad.mp4" poster="videos/loyalty-ad.jpg" autoplay muted loop playsinline preload="none" aria-label="بطاقة الولاء من DEV MENU"></video></div>
+      <div class="flex justify-center gap-4">
+        <div class="phone !w-[220px] !m-0" style="margin-top:40px !important"><video src="videos/pager-ad.mp4" poster="videos/pager-ad.jpg" autoplay muted loop playsinline preload="none" aria-label="البيجر يرن في جوال الزبون"></video></div>
+        <div class="phone !w-[220px] !m-0 hidden sm:block"><video src="videos/loyalty-ad.mp4" poster="videos/loyalty-ad.jpg" autoplay muted loop playsinline preload="none" aria-label="بطاقة الولاء من DEV MENU"></video></div>
+      </div>
     </div>
     <div class="reveal">
       <p class="pill mb-3"><i class="ph-bold ph-play-circle"></i> كيف يعمل</p>
@@ -466,6 +469,7 @@
 <section class="pb-20">
   <div class="wrap">
     <div class="dark !m-0 px-6 py-14 md:py-16 text-center reveal">
+      <img src="images/logo-mark-white.png" alt="DEV MENU" width="150" height="101" class="h-[100px] w-auto mx-auto mb-8 opacity-95" loading="lazy">
       <h2 class="h2">زبونك جا مرة. <span class="text-[color:var(--gold)]">خلّه يرجع.</span></h2>
       <p class="sub mt-4 mb-8">ابدأ خلال دقيقة، وجرّب كل شي 7 أيام مجاناً.</p>
       <div class="flex flex-wrap justify-center gap-3">
@@ -480,7 +484,7 @@
 <footer class="border-t border-[color:var(--line)]">
   <div class="wrap py-10 grid md:grid-cols-3 gap-8 text-[14px]">
     <div class="space-y-3">
-      <p class="logo !p-0"><span><i class="ph-bold ph-device-mobile"></i></span>DEV MENU</p>
+      <img src="images/logo-mark.png" alt="DEV MENU" width="110" height="74" class="h-[74px] w-auto" loading="lazy">
       <p class="text-[color:var(--muted)] leading-relaxed">منيو رقمي وبيجر وبطاقة ولاء للمطاعم والمقاهي.</p>
     </div>
     <ul class="space-y-2.5 font-semibold text-[color:var(--muted)]">
@@ -515,7 +519,7 @@
   }
 
   // ─── بطاقة التجربة: فيديو لكل ميزة، وصوت التنبيه ───
-  const DEMOS = { menu: ['videos/devmenu-ad.mp4', 'videos/devmenu-ad.jpg', 0], pager: ['videos/devmenu-ad.mp4', 'videos/devmenu-ad.jpg', 17], loyalty: ['videos/loyalty-ad.mp4', 'videos/loyalty-ad.jpg', 0] };
+  const DEMOS = { menu: ['videos/devmenu-ad.mp4', 'videos/devmenu-ad.jpg', 0], pager: ['videos/pager-ad.mp4', 'videos/pager-ad.jpg', 0], loyalty: ['videos/loyalty-ad.mp4', 'videos/loyalty-ad.jpg', 0] };
   document.querySelector('.tabs').addEventListener('click', (e) => {
     const b = e.target.closest('[data-tab]'); if (!b) return;
     document.querySelectorAll('.tabs [data-tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
