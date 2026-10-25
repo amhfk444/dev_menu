@@ -141,7 +141,7 @@
 
     <div id="c-msg" class="msg hidden"></div>
     <div id="c-qr-box" class="card p-5 text-center space-y-3 hidden">
-      <p class="text-lg font-bold"><i class="ph-bold ph-qr-code"></i> بعد ما تدفع، اعرض الكود للكاشير</p>
+      <p id="c-qr-title" class="text-lg font-bold"><i class="ph-bold ph-qr-code"></i> بعد ما تدفع، اعرض الكود للكاشير</p>
       <div id="c-qr" class="w-48 h-48 mx-auto bg-white p-2 rounded-2xl"></div>
       <p class="text-sm opacity-70">رقم عضويتك <b dir="ltr" id="c-qr-id"></b></p>
       <p id="c-purchase" class="text-xs opacity-60 hidden"><i class="ph-bold ph-receipt"></i> أو اطلب من الكاشير <b>كود الختم</b> وامسحه<span id="c-pager-hint">، ولو أخذت رقم بيجر ينختم لك تلقائياً</span>.</p>
@@ -166,8 +166,8 @@
     <div id="c-reward" class="card p-5 text-center space-y-3 hidden">
       <i class="ph-bold ph-gift text-4xl text-[#c9a227]"></i>
       <p class="font-bold text-lg">مكافأتك جاهزة: <span id="c-reward-name"></span></p>
-      <p class="text-sm opacity-70">اطلب من الموظف، واضغط الزر قدامه.</p>
-      <button id="redeem-btn" type="button" class="btn btn-gold"><i class="ph-bold ph-gift"></i> استخدم المكافأة الحين</button>
+      <p class="text-sm opacity-70">اعرض كود بطاقتك للكاشير ويصرفها لك، أو خلّها لزيارتك الجاية.</p>
+      <button id="redeem-btn" type="button" class="hidden"></button>
       <button id="gift-btn" type="button" class="btn btn-ghost hidden"><i class="ph-bold ph-heart"></i> أهدها لصديق</button>
     </div>
 
@@ -315,7 +315,8 @@
     $('c-member-id').textContent = `#${card.no}`;
     $('c-holder').textContent = card.name || 'عضو';
     // كود العضوية للكاشير (ما يطلع والبطاقة مكتملة)
-    $('c-qr-box').classList.toggle('hidden', !card.qr || full);
+    $('c-qr-box').classList.toggle('hidden', !card.qr);
+    $('c-qr-title').innerHTML = full || (gifts && gifts.length) ? '<i class="ph-bold ph-gift"></i> اعرض الكود للكاشير يصرف مكافأتك' : '<i class="ph-bold ph-qr-code"></i> بعد ما تدفع، اعرض الكود للكاشير';
     if (card.qr && $('c-qr').dataset.v !== card.qr) {
       $('c-qr').dataset.v = card.qr; $('c-qr').innerHTML = '';
       new QRCode($('c-qr'), { text: card.qr, width: 176, height: 176, colorDark: '#13261b', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
@@ -470,7 +471,7 @@
         <i class="ph-bold ph-gift text-4xl text-[#c9a227]"></i>
         <p class="font-bold">${esc(g.from)} أهداك ${esc(g.reward)}</p>
         <p class="text-xs opacity-60">استخدمها من المحل قدام الموظف قبل ${new Date(g.expires_at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long' })}</p>
-        <button type="button" class="btn btn-gold" data-gift="${esc(g.code)}"><i class="ph-bold ph-gift"></i> استخدم الهدية الحين</button>
+        <p class="text-[13px] font-bold text-[#8a6d0f]"><i class="ph-bold ph-qr-code"></i> اعرض كود بطاقتك للكاشير ويصرفها لك</p>
       </div>`).join('');
   }
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

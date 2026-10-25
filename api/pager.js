@@ -27,6 +27,14 @@ async function loyaltyOf(storeId) {
 }
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{10,64}$/;
+// بطاقة الولاء المربوطة بالرقم: في المحفظة؟ وعنده مكافأة جاهزة؟ (تطلع للعميل وللموظف)
+async function linkedCard(storeId, cardId) {
+  if (!cardId) return { wallet: false, reward_ready: false };
+  const c = (await rest(`loyalty_cards?id=eq.${cardId}&select=stamps,wallet_serial`).catch(() => []))[0] || {};
+  const x = (await rest(`clients?id=eq.${storeId}&select=loyalty_settings`).catch(() => []))[0] || {};
+  const gifts = await rest(`loyalty_gifts?to_card=eq.${cardId}&status=eq.claimed&expires_at=gt.${q(new Date().toISOString())}&select=code&limit=1`).catch(() => []);
+  return { wallet: !!c.wallet_serial, reward_ready: (c.stamps || 0) >= normalizeLoyalty(x.loyalty_settings).needed || gifts.length > 0 };
+}
 // رابط تقييم المحل في قوقل ماب: رابط "اكتب تقييم" لو حطه، وإلا رابط موقعه في قوقل ماب
 const GOOGLE_RE = /^https:\/\/(g\.page|search\.google\.com|www\.google\.com|maps\.app\.goo\.gl|goo\.gl|maps\.google\.com|g\.co)\//i;
 async function reviewUrl(storeId) {
@@ -98,7 +106,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const review = ['ready', 'done'].includes(t.status) ? await reviewUrl(store.id) : null;
     return { demo: DEMO.has(store.client_slug), review_url: review, store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
       loyalty: { ...(await loyaltyOf(store.id)), linked: !!t.loyalty_card_id, stamped: !!t.loyalty_stamped,
-        wallet: t.loyalty_card_id ? !!((await rest(`loyalty_cards?id=eq.${t.loyalty_card_id}&select=wallet_serial`).catch(() => []))[0] || {}).wallet_serial : false } };
+        ...(await linkedCard(store.id, t.loyalty_card_id)) } };
   }
 
   if (action === 'subscribe' && req.method === 'POST') {

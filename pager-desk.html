@@ -26,6 +26,8 @@
   .tile-wait:hover { box-shadow: 0 18px 30px -14px rgba(35,61,44,.8); }
   .tile-ready { background: #fff7dc; color: #8a6d0f; border: 2px solid rgba(201,162,39,.5); }
   .tile .n { font-size: 46px; line-height: 1; }
+  @keyframes rwp { 50% { box-shadow: 0 0 0 6px rgba(201,162,39,.25); } }
+  .rw-pulse { animation: rwp 1.6s infinite; }
   .mini { font-size: 12px; font-weight: 800; border-radius: 12px; padding: 7px 10px; }
   /* ─── بطاقة الطاولة: تنطبع لحالها على ورقة A6 ─── */
   .qr-card { width: 340px; background: #fbf8f3; color: #1b3022; border-radius: 26px; overflow: hidden; box-shadow: 0 30px 70px -30px rgba(0,0,0,.55); }
@@ -116,6 +118,16 @@
 </div>
 
 <!-- QR -->
+<!-- صرف المكافأة -->
+<div id="rw-modal" class="fixed inset-0 z-[60] bg-black/60 hidden items-center justify-center p-5">
+  <div class="bg-white rounded-[28px] w-full max-w-sm p-6 text-center space-y-4">
+    <div class="w-16 h-16 rounded-2xl bg-[#c9a227]/20 text-[#8a6d0f] grid place-items-center mx-auto text-3xl"><i class="ph-bold ph-gift"></i></div>
+    <div><p class="text-xl font-black">عنده مكافأة جاهزة</p><p id="rw-who" class="text-sm font-bold opacity-60 mt-1"></p></div>
+    <div id="rw-list" class="space-y-2"></div>
+    <button id="rw-later" class="w-full bg-[#f5f2eb] font-black rounded-2xl py-3">خلّها لبعدين</button>
+  </div>
+</div>
+
 <!-- إحصائيات البيجر -->
 <div id="stats-modal" class="fixed inset-0 z-50 bg-black/60 hidden items-start justify-center p-4 overflow-y-auto">
   <div class="bg-[#fbf8f3] rounded-[28px] w-full max-w-3xl p-5 md:p-7 space-y-5 my-6">
@@ -271,6 +283,7 @@
         <button class="mini w-full mt-1.5 bg-white text-[#233d2c]" data-ready="${t.id}" ${busy.has(t.id) ? 'disabled' : ''}>
           ${busy.has(t.id) ? '<i class="ph-bold ph-spinner-gap ph-spin"></i>' : `<i class="ph-bold ph-bell"></i> ${T.deskCall}`}
         </button>
+        ${t.reward ? `<button class="mini w-full mt-1.5 bg-[#c9a227] text-[#15271b] rw-pulse" data-reward="${t.id}"><i class="ph-bold ph-gift"></i> عنده مكافأة</button>` : ''}
         <div class="text-[10px] mt-1.5 opacity-50">${ago(t.created_at)}${t.has_push ? ' · <i class="ph-bold ph-device-mobile" title="الإشعارات مفعّلة"></i>' : ''}</div>
       </div>`).join('');
     $('ready-grid').innerHTML = ready.map(t => `
@@ -278,6 +291,7 @@
         <div class="n">${t.number}</div>
         ${t.invoice_no ? `<div class="text-[12px] font-black mt-1">🧾 ${esc(t.invoice_no)}</div>` : ''}
         <div class="text-[11px] mt-1 opacity-70">${ringLabel(t)}</div>
+        ${t.reward ? `<button class="mini w-full mt-1.5 bg-[#c9a227] text-[#15271b] rw-pulse" data-reward="${t.id}"><i class="ph-bold ph-gift"></i> عنده مكافأة</button>` : ''}
         <div class="flex gap-1.5 mt-3">
           <button class="mini flex-1 bg-[#233d2c] text-white" data-done="${t.id}"><i class="ph-bold ph-check"></i> ${T.deskDone}</button>
           <button class="mini bg-white border border-[#c9a227]/40" data-undo="${t.id}" title="إرجاع للتجهيز"><i class="ph-bold ph-arrow-counter-clockwise"></i></button>
@@ -296,6 +310,8 @@
   }
 
   document.addEventListener('click', (e) => {
+    const rw = e.target.closest('[data-reward]');
+    if (rw) { const t = tickets.find(x => x.id === +rw.dataset.reward); if (t && t.reward) openReward({ id: t.reward.card_id, name: t.reward.name }, t.reward.rewards); return; }
     const r = e.target.closest('[data-ready]'), d = e.target.closest('[data-done]'), u = e.target.closest('[data-undo]'), inv = e.target.closest('[data-invoice]');
     if (inv) return openInvoice(+inv.dataset.invoice);
     if (r) setStatus(+r.dataset.ready, 'ready', '🔔 جوال رقم # يرن الحين');
@@ -344,6 +360,7 @@
     scanBusy = true;
     try {
       const r = await call('loyalty-scan', payload);
+      lastScan = r;
       setTransfer(r);
       const who = esc(r.who.name), n = Math.min(r.stamps, r.needed);
       const dots = `<span class="flex flex-wrap justify-center gap-1.5 mt-1">${Array.from({ length: r.needed }, (_, i) => `<span class="w-4 h-4 rounded-full ${i < n ? 'bg-[#c9a227]' : 'bg-white/25'}"></span>`).join('')}</span>`;
@@ -353,6 +370,8 @@
         if (navigator.vibrate) navigator.vibrate(80);
       } else scanShow(false, `<i class="ph-bold ${r.reason === 'FULL' ? 'ph-gift' : 'ph-clock'} text-7xl"></i><b class="text-2xl">ما انضاف ختم</b><b class="text-lg">${who}</b>${no}<span class="font-bold">${esc(r.note || '')}</span>`);
     } catch (e) { scanShow(false, `<i class="ph-bold ph-warning-circle text-6xl"></i><b>${esc(e.message || 'تعذر الختم')}</b>`); }
+    if (lastScan && lastScan.rewards && lastScan.rewards.length) setTimeout(() => openReward(lastScan.who, lastScan.rewards), 900);
+    lastScan = null;
     setTimeout(() => { scanBusy = false; }, 1500);
   }
   function scanTick() {
@@ -385,6 +404,29 @@
     scanStream = null;
     $('scan-modal').classList.add('hidden'); $('scan-modal').classList.remove('flex');
   }
+  // ─── صرف المكافأة عند الموظف ───
+  let lastScan = null, rwMember = null;
+  function openReward(who, rewards) {
+    rwMember = who;
+    $('rw-who').textContent = who.name || '';
+    $('rw-list').innerHTML = rewards.map((r, i) => `<div class="flex items-center justify-between gap-3 bg-[#fbf6e6] border border-[#c9a227]/40 rounded-2xl p-3">
+      <span class="font-black text-right"><i class="ph-bold ph-gift text-[#8a6d0f]"></i> ${esc(r.label)}</span>
+      <button class="bg-[#233d2c] text-white font-black rounded-xl px-4 py-2.5 shrink-0" data-rw-type="${r.type}" data-rw-code="${esc(r.code || '')}">اصرف الحين</button></div>`).join('');
+    $('rw-modal').classList.replace('hidden', 'flex');
+  }
+  $('rw-later').onclick = () => $('rw-modal').classList.replace('flex', 'hidden');
+  $('rw-list').onclick = async (e) => {
+    const b = e.target.closest('[data-rw-type]'); if (!b || !rwMember) return;
+    b.disabled = true; b.innerHTML = '<i class="ph-bold ph-spinner-gap ph-spin"></i>';
+    try {
+      const r = await call('loyalty-redeem', { card_id: rwMember.id, gift: b.dataset.rwType === 'gift' ? b.dataset.rwCode : undefined });
+      $('rw-modal').classList.replace('flex', 'hidden');
+      toast(`🎁 تم صرف ${r.reward} لـ ${r.who.name}`);
+      if (r.rewards && r.rewards.length) setTimeout(() => openReward(r.who, r.rewards), 600);
+      load();
+    } catch (err) { toast(err.message || 'تعذر الصرف'); b.disabled = false; b.textContent = 'اصرف الحين'; }
+  };
+
   // ─── نقل رصيد بطاقة قديمة (منصة ثانية أو ورق) ───
   let trMember = null;
   function setTransfer(r) {

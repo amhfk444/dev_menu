@@ -255,7 +255,9 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     }
 
     // استخدام المكافأة: الزبون يضغط بنفسه قدام الموظف، وتطلع له شاشة تأكيد حيّة
-    if (action === 'redeem' && req.method === 'POST') {
+    // صرف المكافأة والهدايا صار عند الموظف بس (يمسح كود العضو أو من رقم البيجر)
+    if ((action === 'redeem' || action === 'gift-redeem') && req.method === 'POST') throw new ApiError(409, 'اعرض كود بطاقتك للموظف ويصرفها لك', 'STAFF_REDEEM');
+    if (action === 'redeem-legacy' && req.method === 'POST') {
       const ctx = await loadStore(b.slug);
       const card = await cardByToken(ctx, b.t);
       if (card.stamps < ctx.settings.needed) throw new ApiError(409, 'ما كملت الأختام للحين', 'NOT_ENOUGH');

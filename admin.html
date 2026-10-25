@@ -1244,6 +1244,7 @@
             <div id="lm-stats" class="grid grid-cols-4 gap-2 text-center"></div>
             <div class="flex flex-wrap gap-2">
               <button type="button" id="lm-stamp" onclick="giveLyStamp()" class="bg-brand hover:bg-brand-dark text-cream px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-seal-check"></i> أعطه ختم</button>
+              <button type="button" id="lm-redeem" onclick="redeemLyMember()" class="hidden bg-[#c9a227] hover:bg-[#b8931f] text-[#15271b] px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-gift"></i> اصرف المكافأة</button>
               <button type="button" onclick="ly.member && deleteLyMember(ly.member.id)" class="bg-brick/10 hover:bg-brick/15 text-brick px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-trash"></i> حذف العضو</button>
               <a id="lm-wa" target="_blank" rel="noopener" class="hidden bg-[#25d366]/10 hover:bg-[#25d366]/20 text-[#128c7e] px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-whatsapp-logo"></i> واتساب</a>
             </div>
@@ -4149,6 +4150,12 @@
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   }
 
+  async function redeemLyMember() {
+    if (!ly.member) return;
+    if (!(await DMDialog.confirm({ title: 'صرف المكافأة', message: `تصرف ${ly.data.settings.reward} لـ ${memberName(ly.member)} الحين؟`, confirmText: 'اصرفها', cancelText: 'تراجع' }))) return;
+    try { const r = await api('loyalty-redeem', { card_id: ly.member.id }); showToast(`تم صرف ${r.reward}`); const id = ly.member.id; await onLoyaltyPage(); openLyMember(id); }
+    catch (e) { showToast(e.message || 'تعذر الصرف', true); }
+  }
   // ─── حذف عضو ───
   async function deleteLyMember(id) {
     const c = (ly.members || []).find(x => x.id === id) || ly.member || { id };
@@ -4184,6 +4191,7 @@
     const wa = document.getElementById('lm-wa');
     wa.classList.toggle('hidden', !m.phone); if (m.phone) wa.href = `https://wa.me/${m.phone}`;
     document.getElementById('lm-stamp').disabled = m.stamps >= n;
+    document.getElementById('lm-redeem').classList.toggle('hidden', m.stamps < n);
     document.getElementById('lm-events').innerHTML = r.events.length ? r.events.map(e => `
       <div class="flex items-center justify-between gap-2 py-2">
         <span>${e.kind === 'gift' ? '<i class="ph-bold ph-heart text-[#c9a227]"></i> أهدى مكافأته لصديق' : e.kind === 'gift_redeem' ? '<i class="ph-bold ph-gift text-[#c9a227]"></i> استخدم هدية من صديق' : e.kind === 'redeem' ? '<i class="ph-bold ph-gift text-[#c9a227]"></i> استخدم المكافأة' : e.distance_m == null ? '<i class="ph-bold ph-seal-check text-ink/50"></i> ختم من صاحب المحل' : '<i class="ph-bold ph-seal-check text-emerald-700"></i> ختم زيارة'}</span>

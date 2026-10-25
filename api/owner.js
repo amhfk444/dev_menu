@@ -232,6 +232,15 @@ async function ringTicket(store, t) {
   return result;
 }
 
+// المكافآت الجاهزة لعضو: مكافأة الأختام + هدايا الأصدقاء المستلمة
+async function readyRewards(storeId, card, settings) {
+  const out = [];
+  if (card.stamps >= settings.needed) out.push({ type: 'stamps', label: settings.reward });
+  const gifts = await rest(`loyalty_gifts?client_id=eq.${storeId}&to_card=eq.${card.id}&status=eq.claimed&expires_at=gt.${q(new Date().toISOString())}&select=code,reward`).catch(() => []);
+  gifts.forEach(g => out.push({ type: 'gift', code: g.code, label: `${g.reward} (هدية)` }));
+  return out;
+}
+
 async function main(req) {
   const action = req.query.action;
   const b = req.method === 'POST' ? readBody(req) : {};
@@ -358,10 +367,18 @@ async function main(req) {
     if (!hasPager && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'البيجر مو ضمن باقتك، أضفه من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
     const base = `pager_tickets?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&order=number.asc&select=id,number,status,created_at,ready_at,closed_at,push_sub`;
     // أعمدة التكرار من 21-pager-repeat.sql — لو ما انضافت نكمل بدونها
-    const tickets = !hasPager ? [] : await rest(`${base},ring_count,acked_at,invoice_no`).catch(() => rest(`${base},ring_count,acked_at`)).catch(() => rest(base));
+    const tickets = !hasPager ? [] : await rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id`).catch(() => rest(`${base},ring_count,acked_at,invoice_no`)).catch(() => rest(`${base},ring_count,acked_at`)).catch(() => rest(base));
     const lx = (await rest(`clients?id=eq.${store.id}&select=loyalty_enabled`).catch(() => []))[0] || {};
     lx.loyalty_enabled = lx.loyalty_enabled && PLANS.has(store, 'loyalty');
-    return { tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub })), slug: store.client_slug, name: store.name, business_type: store.business_type, max_rings: PAGER_MAX_RINGS, live: topic('pager', store.id), loyalty: lx.loyalty_enabled === true, pager: hasPager, loyalty_entitled: PLANS.has(store, 'loyalty') };
+    // أرقام مربوطة ببطاقات ولاء فيها مكافأة جاهزة
+    const rewardsBy = {};
+    const linked = [...new Set(tickets.filter(t => t.loyalty_card_id && t.status !== 'done').map(t => t.loyalty_card_id))];
+    if (linked.length && lx.loyalty_enabled) {
+      const st = normalizeLoyalty((await rest(`clients?id=eq.${store.id}&select=loyalty_settings`).catch(() => []))[0]?.loyalty_settings);
+      const cards = await rest(`loyalty_cards?id=in.(${linked.join(',')})&select=id,member_no,name,stamps`).catch(() => []);
+      for (const c of cards) { const r = await readyRewards(store.id, c, st); if (r.length) rewardsBy[c.id] = { card_id: c.id, name: c.name || `عضو #${c.member_no}`, rewards: r }; }
+    }
+    return { tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub, reward: t.loyalty_card_id ? rewardsBy[t.loyalty_card_id] || null : null })), slug: store.client_slug, name: store.name, business_type: store.business_type, max_rings: PAGER_MAX_RINGS, live: topic('pager', store.id), loyalty: lx.loyalty_enabled === true, pager: hasPager, loyalty_entitled: PLANS.has(store, 'loyalty') };
   }
 
   // ─── إحصائيات البيجر: وقت الانتظار، الإنجاز، أوقات الذروة، والتقييم (آخر 30 يوم) ───
@@ -504,7 +521,7 @@ async function main(req) {
   req._sid = sid;
   // المميزات حسب باقة المحل
   if (['pager-update', 'pager-invoice', 'pager-ring'].includes(action) && !PLANS.has(store, 'pager')) throw new ApiError(403, 'البيجر مو ضمن باقتك', 'ADDON_OFF');
-  if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-member-delete', 'loyalty-message', 'loyalty-message-push', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء مو ضمن باقتك، أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
+  if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-member-delete', 'loyalty-redeem', 'loyalty-message', 'loyalty-message-push', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء مو ضمن باقتك، أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
 
 
   // ─── ربط قوقل ماب ───
@@ -642,13 +659,37 @@ async function main(req) {
     const card = b.qr ? (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${sid}&select=*`))[0]
       : Number.isInteger(no) ? (await rest(`loyalty_cards?member_no=eq.${no}&client_id=eq.${sid}&select=*`))[0] : null;
     if (!card) throw new ApiError(404, 'ما لقينا عضو بهذا الرقم', 'NO_MEMBER');
-    const who = { no: card.member_no, name: card.name || `عضو #${card.member_no}`, transferred: card.transferred_at ? card.transferred : null };
-    if (card.stamps >= settings.needed) return { stamped: false, who, reason: 'FULL', note: 'بطاقته مكتملة، يستخدم مكافأته أول', stamps: card.stamps, needed: settings.needed };
+    const who = { id: card.id, no: card.member_no, name: card.name || `عضو #${card.member_no}`, transferred: card.transferred_at ? card.transferred : null };
+    const rewards = await readyRewards(sid, card, settings);
+    if (card.stamps >= settings.needed) return { stamped: false, rewards, who, reason: 'FULL', note: 'بطاقته مكتملة، يستخدم مكافأته أول', stamps: card.stamps, needed: settings.needed };
     const next = cooldownLeft(card, settings);
     if (next) return { stamped: false, who, reason: 'COOLDOWN', note: `انختم قبل شوي، الختم الجاي بعد ${leftText(next)}`, stamps: card.stamps, needed: settings.needed };
     const r = await purchaseStamp(sid, card.id, settings);
     const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=stamps`))[0] || {};
-    return { stamped: r.stamped, count: r.count, who, reason: r.reason, stamps: fresh.stamps, needed: settings.needed };
+    return { stamped: r.stamped, count: r.count, who, reason: r.reason, stamps: fresh.stamps, needed: settings.needed, rewards: await readyRewards(sid, { ...card, stamps: fresh.stamps }, settings) };
+  }
+
+  // ─── صرف المكافأة (أو هدية صديق) عند الموظف: من مسح كود العضو أو من رقم البيجر ───
+  if (action === 'loyalty-redeem') {
+    const x = (await rest(`clients?id=eq.${sid}&select=loyalty_settings`))[0] || {};
+    const settings = normalizeLoyalty(x.loyalty_settings);
+    const card = (await rest(`loyalty_cards?id=eq.${int(b.card_id)}&client_id=eq.${sid}&select=*`))[0];
+    if (!card) throw new ApiError(404, 'العضو غير موجود');
+    let reward = settings.reward;
+    if (b.gift) {
+      const rows = await rest(`loyalty_gifts?code=eq.${q(String(b.gift))}&to_card=eq.${card.id}&status=eq.claimed&expires_at=gt.${q(new Date().toISOString())}`,
+        { method: 'PATCH', prefer: 'return=representation', body: { status: 'redeemed', redeemed_at: new Date().toISOString() } });
+      if (!rows.length) throw new ApiError(409, 'الهدية مستخدمة أو منتهية', 'GIFT_USED');
+      await rest('loyalty_events', { method: 'POST', body: { client_id: sid, card_id: card.id, kind: 'gift_redeem' } }).catch(() => {});
+      reward = rows[0].reward;
+    } else {
+      const r = await rpc('server_loyalty_redeem', { p_card: card.id, p_needed: settings.needed, p_distance: null });
+      if (!r.ok) throw new ApiError(409, 'أختامه ما كملت', 'NOT_ENOUGH');
+    }
+    await pushWalletCards(sid, { cardIds: [card.id] }).catch(() => 0);
+    const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
+    await poke(topic('pager', sid)).catch(() => {});
+    return { ok: true, reward, who: { id: card.id, no: card.member_no, name: card.name || `عضو #${card.member_no}` }, stamps: fresh.stamps, needed: settings.needed, rewards: await readyRewards(sid, fresh, settings) };
   }
 
   // ─── نقل رصيد من بطاقة قديمة: الكاشير يشوف البطاقة القديمة ويضيف أختامها (مرة وحدة لكل عضو) ───
