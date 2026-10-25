@@ -298,6 +298,8 @@
 
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
           <div class="xl:col-span-2 space-y-6">
+            <!-- ملخص الخدمات: لكل خدمة مفعّلة أرقامها اليوم -->
+            <div id="svc-summary" class="grid sm:grid-cols-2 gap-4"></div>
   <!-- إحصائيات المنيو -->
             <div data-needs="menu" class="pro-card p-5 space-y-5">
               <div class="flex flex-wrap items-center justify-between gap-3 border-b border-brand/20 pb-3">
@@ -316,7 +318,7 @@
               <div id="stats-body" class="text-xs text-ink/60 space-y-5">جاري التحميل...</div>
             </div>
           </div>
-          <div class="space-y-6 order-first xl:order-none">
+          <div class="space-y-6">
     <!-- روابط الخدمات: رابط لكل خدمة مفعّلة -->
             <div class="pro-card p-5 space-y-3">
               <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-link-simple text-emerald-600"></i> روابط خدماتك</h3>
@@ -1666,7 +1668,7 @@
     const box = document.getElementById('svc-links');
     if (!box || !client) return;
     const on = SVC_PAGES.filter(([k]) => !featureLocked(k));
-    const rows = [['home', 'الرابط الرئيسي', 'ph-house', DM.storeUrl(client.client_slug)], ...on.filter(([k]) => k !== 'menu').map(([k, page, name, icon]) => [k, name, icon, DM.storeUrl(client.client_slug, page)]), ['links', 'صفحة الروابط', 'ph-link', DM.storeUrl(client.client_slug, 'links')]];
+    const rows = [['home', 'الرابط الرئيسي', 'ph-house', DM.storeUrl(client.client_slug)], ...on.filter(([k]) => k !== 'menu').map(([k, page, name, icon]) => [k, name, icon, DM.storeUrl(client.client_slug, page)])];
     box.innerHTML = rows.map(([k, name, icon, url]) => `
       <div class="flex items-center gap-2 bg-brand/5 border border-brand/15 rounded-xl px-3 py-2">
         <i class="ph-bold ${icon} text-ink/60"></i>
@@ -1675,8 +1677,46 @@
         <a href="${esc(url)}" target="_blank" rel="noopener" class="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-white border border-brand/15"><i class="ph-bold ph-arrow-square-out"></i></a>
       </div>`).join('');
   }
+  // ─── ملخص الخدمات في الرئيسية ───
+  const tile = (v, l) => `<div class="rounded-xl bg-brand/[0.04] border border-brand/10 py-2.5 text-center"><p class="text-xl font-bold tnum">${v}</p><p class="text-[10.5px] text-ink/60">${l}</p></div>`;
+  const svcCard = (icon, title, href, tiles, foot) => `
+    <div class="pro-card p-5 space-y-3.5">
+      <div class="flex items-center justify-between gap-2">
+        <h3 class="text-[13px] font-bold flex items-center gap-2"><i class="ph-bold ${icon} text-brand"></i> ${title}</h3>
+        <a href="${href}" class="text-[11px] font-bold text-brand underline underline-offset-4">${href.startsWith('#') ? 'افتح' : 'افتح الشاشة'}</a>
+      </div>
+      <div class="grid grid-cols-3 gap-2">${tiles}</div>
+      ${foot ? `<p class="text-[11px] text-ink/60">${foot}</p>` : ''}
+    </div>`;
+  async function renderServiceSummary() {
+    const box = document.getElementById('svc-summary');
+    if (!box || !client) return;
+    const jobs = [];
+    const mins = (m) => m == null ? '—' : `${Math.round(m)} د`;
+    if (!featureLocked('pager')) jobs.push(Promise.all([api('pager').catch(() => null), api('pager-stats&days=7').catch(() => null)]).then(([d, st]) => {
+      const tk = (d && d.tickets) || [];
+      return svcCard('ph-bell', 'البيجر اليوم', 'pager-desk.html' + location.search,
+        tile(tk.filter(t => t.status === 'waiting').length, 'بالانتظار') + tile(tk.filter(t => t.status === 'ready').length, 'تم النداء') + tile(tk.length, 'أرقام اليوم'),
+        st && st.total ? `آخر 7 أيام: متوسط الانتظار ${mins(st.wait.avg)}${st.rating && st.rating.n ? `، والتقييم ${st.rating.avg} ★ من ${st.rating.n}` : ''}` : 'أول ما ياخذون أرقام تطلع الأرقام هنا');
+    }));
+    if (!featureLocked('loyalty')) jobs.push(api('loyalty').catch(() => null).then(d => {
+      const st = (d && d.stats) || {};
+      return svcCard('ph-seal-check', 'بطاقة الولاء', '#loyalty',
+        tile(st.members || 0, 'عضو') + tile(st.stamps7 || 0, 'ختم هالأسبوع') + tile(st.redeemed || 0, 'مكافأة'),
+        d && !d.enabled ? 'البطاقة متوقفة، شغّلها من صفحة الولاء' : `${st.active30 || 0} عضو زاروك آخر 30 يوم`);
+    }));
+    if (!featureLocked('waitlist') && client.waitlist_enabled) jobs.push(api('waitlist').catch(() => null).then(d => {
+      const en = (d && d.entries) || [];
+      return svcCard('ph-hourglass-medium', 'قائمة الانتظار اليوم', '#waitlist',
+        tile(en.filter(e => e.status === 'waiting').length, 'ينتظرون') + tile(en.filter(e => e.status === 'notified').length, 'تم نداؤهم') + tile(en.filter(e => e.status === 'seated').length, 'حضروا'), '');
+    }));
+    const cards = await Promise.all(jobs);
+    box.innerHTML = cards.join('');
+    box.classList.toggle('hidden', !cards.length);
+  }
   function applyFeatureLocks() {
     renderServiceLinks();
+    renderServiceSummary();
     document.querySelectorAll('[data-nav], [data-feature]').forEach(el => {
       const key = el.dataset.feature || PAGE_FEATURE[el.dataset.nav];
       if (!key) return;
