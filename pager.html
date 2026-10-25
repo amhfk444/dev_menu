@@ -74,22 +74,22 @@
     <div class="w-20 h-20 rounded-3xl bg-[#233d2c] text-[#c9a227] grid place-items-center mx-auto text-3xl"><i class="ph-bold ph-bell"></i></div>
     <div>
       <h2 class="text-2xl font-black">خذ رقمك</h2>
-      <p class="text-sm font-bold opacity-65 mt-2 leading-relaxed">اضغط الزر واسمح بالإشعارات، وقل رقمك للموظف مع طلبك. لما يجهز يرن جوالك ويوصلك إشعار، حتى لو كان على الصامت.</p>
+      <p class="text-sm font-bold opacity-65 mt-2 leading-relaxed">اضغط الزر واسمح بالإشعارات، وقل رقمك للموظف. لما يجي دورك يرن جوالك ويوصلك إشعار، حتى لو كان على الصامت.</p>
     </div>
     <button id="take-btn" class="btn btn-brand"><i class="ph-bold ph-ticket"></i> خذ رقمي وفعّل التنبيه</button>
   </section>
 
   <!-- ينتظر -->
   <section id="v-waiting" class="card p-7 text-center space-y-5 hidden">
-    <p id="w-demo" class="hidden text-[13px] font-black text-[#15271b] bg-[#c9a227]/25 border border-[#c9a227]/50 rounded-2xl py-3 px-3">هذي تجربة: خلال ثواني بيجهز الطلب ويرن جوالك 🔔</p>
+    <p id="w-demo" class="hidden text-[13px] font-black text-[#15271b] bg-[#c9a227]/25 border border-[#c9a227]/50 rounded-2xl py-3 px-3">هذي تجربة: خلال ثواني يجي دورك ويرن جوالك 🔔</p>
     <p class="text-sm font-black opacity-60">رقمك</p>
     <div id="w-number" class="num">—</div>
-    <p id="w-tell" class="text-sm font-black">ورّ هذا الرقم للموظف مع طلبك</p>
+    <p id="w-tell" class="text-sm font-black">ورّ هذا الرقم للموظف</p>
     <p id="w-invoice" class="hidden text-base font-black text-[#233d2c] bg-[#f5f2eb] rounded-2xl py-2.5">🧾 فاتورتك: <span dir="ltr"></span></p>
     <div class="flex items-center justify-center gap-2 text-[13px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-2xl py-3">
-      <span class="pulse-dot"></span> جاري التجهيز… بنرن جوالك أول ما يجهز
+      <span class="pulse-dot"></span> انتظر دورك… بنرن جوالك أول ما يجي
     </div>
-    <div id="push-on" class="hidden text-[13px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl py-3 px-3">🔔 الإشعارات مفعّلة: بيوصلك إشعار من المتصفح أول ما يجهز طلبك</div>
+    <div id="push-on" class="hidden text-[13px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl py-3 px-3">🔔 الإشعارات مفعّلة: بيوصلك إشعار من المتصفح أول ما يجي دورك</div>
     <button id="push-btn" class="btn btn-brand hidden"><i class="ph-bold ph-bell"></i> فعّل الإشعارات (يوصلك والجوال مقفول)</button>
     <div id="keep-on" class="hidden text-[13px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl py-3 px-3">🔊 الرنين شغّال: بيرن جوالك حتى لو كان على الصامت أو قفلت الشاشة (خلّ صوت الوسائط مرتفع)</div>
     <button id="keep-btn" class="btn btn-brand hidden"><i class="ph-bold ph-speaker-high"></i> فعّل الرنين حتى لو جوالك صامت</button>
@@ -108,7 +108,7 @@
   <section id="v-game" class="card p-5 space-y-4 hidden" aria-labelledby="mm-title">
     <div class="flex items-center justify-between gap-3">
       <div>
-        <h2 id="mm-title" class="text-base font-black">تسلّى لين يجهز طلبك</h2>
+        <h2 id="mm-title" class="text-base font-black">تسلّى لين يجي دورك</h2>
         <p class="text-xs font-bold opacity-60">طابق كل بطاقتين متشابهتين</p>
       </div>
       <span class="shrink-0 text-xs font-black bg-[#f5f2eb] rounded-full px-3 py-1.5">رقمك <span id="mm-num">—</span></span>
@@ -125,12 +125,12 @@
   <!-- جاهز -->
   <section id="v-ready" class="card p-7 text-center space-y-5 hidden">
     <div class="text-6xl">🔔</div>
-    <h2 class="text-3xl font-black">طلبك جاهز!</h2>
+    <h2 class="text-3xl font-black">جاء دورك!</h2>
     <div id="r-number" class="num">—</div>
     <p id="r-invoice" class="hidden text-base font-black">🧾 فاتورة <span dir="ltr"></span></p>
     <p class="text-sm font-bold opacity-70">تفضّل استلمه من الموظف</p>
     <a id="r-loyalty" class="hidden block text-[13px] font-black rounded-2xl py-3 px-3"></a>
-    <button id="got-btn" class="btn btn-brand"><i class="ph-bold ph-check"></i> استلمت طلبي</button>
+    <button id="got-btn" class="btn btn-brand"><i class="ph-bold ph-check"></i> تمام، وصلت</button>
     <a id="r-review" target="_blank" rel="noopener" class="hidden btn btn-ghost !py-3.5 !text-base"><i class="ph-bold ph-star text-[#c9a227]"></i> قيّمنا على قوقل ماب</a>
   </section>
 
@@ -161,7 +161,7 @@
   <div class="card w-full max-w-sm p-6 text-center space-y-4" style="animation: pop .35s cubic-bezier(.3,1.4,.5,1)">
     <div class="w-16 h-16 rounded-2xl bg-[#233d2c] text-[#c9a227] grid place-items-center mx-auto text-3xl"><i class="ph-bold ph-bell-ringing"></i></div>
     <h2 id="perm-title" class="text-xl font-black">رقمك <span id="perm-num"></span>. نفعّل لك التنبيه؟</h2>
-    <p id="perm-sub" class="text-sm font-bold opacity-70 leading-relaxed">عشان يرن جوالك ويوصلك إشعار أول ما يجهز طلبك، حتى لو كان على الصامت أو قفلت الشاشة.</p>
+    <p id="perm-sub" class="text-sm font-bold opacity-70 leading-relaxed">عشان يرن جوالك ويوصلك إشعار أول ما يجي دورك، حتى لو كان على الصامت أو قفلت الشاشة.</p>
     <ul class="text-[13px] font-bold text-right space-y-2 bg-[#f5f2eb] rounded-2xl p-4">
       <li id="perm-n"><i class="ph-bold ph-bell ml-1"></i> الإشعارات: <span></span></li>
       <li id="perm-s"><i class="ph-bold ph-speaker-high ml-1"></i> الصوت: <span></span></li>
@@ -252,14 +252,14 @@
     silentUrl = silentUrl || wavUrl(3, () => (Math.random() - 0.5) * 0.0002);
     if (keeperMode !== 'ring') { keeper.src = silentUrl; keeperMode = 'silent'; }
     keeper.play().catch(() => { if (!interrupted) { keeperMode = ''; renderPush(); } });
-    setMedia(curNumber ? `رقمك ${curNumber} — جاري تجهيز طلبك` : 'البيجر — جاري تجهيز طلبك');
+    setMedia(curNumber ? `رقمك ${curNumber}: انتظر دورك` : 'البيجر: انتظر دورك');
   }
   function keeperRing() {
     if (!keeperMode) return false;   // حتى لو موقوف مؤقتاً، نجهّز الرنين عشان يشتغل أول ما يرجع الصوت
     ringUrl = ringUrl || wavUrl(1.6, ringWave);
     keeperMode = 'ring'; keeper.src = ringUrl;
     keeper.play().catch(() => {});
-    setMedia(`🔔 طلبك جاهز! رقم ${curNumber}`);
+    setMedia(`🔔 جاء دورك! رقم ${curNumber}`);
     return true;
   }
   function stopKeeper() {
@@ -274,7 +274,7 @@
     keeperRing();
     const tick = () => ringOnce(!(keeperMode === 'ring' && !keeper.paused));
     tick(); ringTimer = setInterval(tick, 1600);
-    let on = false; titleTimer = setInterval(() => { document.title = (on = !on) ? '🔔 طلبك جاهز!' : 'البيجر | DEV MENU'; }, 800);
+    let on = false; titleTimer = setInterval(() => { document.title = (on = !on) ? '🔔 جاء دورك!' : 'البيجر | DEV MENU'; }, 800);
   }
   let titleTimer = null;
   function stopRinging() {
@@ -349,11 +349,11 @@
     if (!l || !l.enabled) { show('w-loyalty', ''); show('r-loyalty', ''); return; }
     const join = `${DM.storePage('loyalty', slug)}${DM.hostSlug() ? '?' : '&'}pt=${encodeURIComponent(token)}`;
     if (l.linked) {
-      if (l.wallet) show('w-loyalty', '<i class="ph-bold ph-wallet"></i> بطاقتك مربوطة: يوصلك إشعار من المحفظة لما يجهز طلبك، وينضاف لك ختم', 'text-[#233d2c] bg-[#c9a227]/15 border border-[#c9a227]/30');
-      else show('w-loyalty', '<i class="ph-bold ph-wallet"></i> بطاقتك مربوطة. أضفها للمحفظة عشان يوصلك إشعار لما يجهز طلبك', 'text-white bg-[#233d2c]', `${DM.storePage('loyalty', slug)}`);
+      if (l.wallet) show('w-loyalty', '<i class="ph-bold ph-wallet"></i> بطاقتك مربوطة: يوصلك إشعار من المحفظة لما يجي دورك، وينضاف لك ختم', 'text-[#233d2c] bg-[#c9a227]/15 border border-[#c9a227]/30');
+      else show('w-loyalty', '<i class="ph-bold ph-wallet"></i> بطاقتك مربوطة. أضفها للمحفظة عشان يوصلك إشعار لما يجي دورك', 'text-white bg-[#233d2c]', `${DM.storePage('loyalty', slug)}`);
       show('r-loyalty', l.stamped ? '<i class="ph-bold ph-seal-check"></i> انضاف لك ختم في بطاقة الولاء' : '', 'text-[#233d2c] bg-[#c9a227]/15 border border-[#c9a227]/30', `${DM.storePage('loyalty', slug)}`);
     } else {
-      const html = '<i class="ph-bold ph-wallet"></i> سجّل في بطاقة الولاء وأضفها للمحفظة: يوصلك إشعار لما يجهز طلبك، وتاخذ ختم';
+      const html = '<i class="ph-bold ph-wallet"></i> سجّل في بطاقة الولاء وأضفها للمحفظة: يوصلك إشعار لما يجي دورك، وتاخذ ختم';
       show('w-loyalty', html, 'text-white bg-[#233d2c] underline-offset-4', join);
       show('r-loyalty', html, 'text-white bg-[#233d2c]', join);
     }
@@ -384,7 +384,7 @@
     reviewLink = r.review_url || reviewLink;
     $('r-review').classList.toggle('hidden', !reviewLink);
     if (reviewLink) { $('r-review').href = reviewLink; $('rate-google').href = reviewLink; }
-    if (st === 'waiting') { show('waiting'); keepAwake(); renderPush(); if (keeperMode === 'silent') setMedia(`رقمك ${curNumber} — جاري تجهيز طلبك`); }
+    if (st === 'waiting') { show('waiting'); keepAwake(); renderPush(); if (keeperMode === 'silent') setMedia(`رقمك ${curNumber}: انتظر دورك`); }
     else if (st === 'ready') { show('ready'); if (!dismissed) startRinging(); if (!document.hidden) ack(); }
     else {
       if (st === 'done') offerRating(token);

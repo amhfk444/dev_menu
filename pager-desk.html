@@ -56,7 +56,7 @@
       <a href="admin.html" class="w-10 h-10 rounded-xl bg-white border border-[#233d2c]/15 grid place-items-center text-[#233d2c]" title="لوحة التحكم"><i class="ph-bold ph-arrow-right"></i></a>
       <div class="min-w-0">
         <h1 class="text-base font-black truncate"><i class="ph-bold ph-bell text-[#c9a227]"></i> <span id="desk-title">شاشة البيجر</span> — <span id="store-name">…</span></h1>
-        <p id="desk-sub" class="text-[11px] font-bold opacity-55">اضغط على الرقم لما يجهز الطلب، ويرن جوال العميل</p>
+        <p id="desk-sub" class="text-[11px] font-bold opacity-55">اضغط على الرقم لما يجي دوره، ويرن جوال العميل</p>
       </div>
     </div>
     <div class="flex gap-2 shrink-0">
@@ -83,7 +83,7 @@
 
   <section class="panel p-5" data-pager>
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-black">قيد التجهيز <span id="wait-count" class="text-sm opacity-50"></span></h2>
+      <h2 class="text-lg font-black">بالانتظار <span id="wait-count" class="text-sm opacity-50"></span></h2>
       <span class="text-[11px] font-bold opacity-50"><i class="ph-bold ph-arrows-clockwise"></i> يتحدث تلقائياً</span>
     </div>
     <div class="relative mb-4">
@@ -95,9 +95,9 @@
   </section>
 
   <section class="panel p-5" data-pager>
-    <h2 class="text-lg font-black mb-4">جاهز — بانتظار الاستلام <span id="ready-count" class="text-sm opacity-50"></span></h2>
+    <h2 class="text-lg font-black mb-4">تم النداء، بانتظار الحضور <span id="ready-count" class="text-sm opacity-50"></span></h2>
     <div id="ready-grid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3"></div>
-    <p id="ready-empty" class="text-center text-sm font-bold opacity-50 py-6 hidden">ما فيه طلبات جاهزة.</p>
+    <p id="ready-empty" class="text-center text-sm font-bold opacity-50 py-6 hidden">ما فيه أحد تم نداؤه.</p>
   </section>
 </main>
 
@@ -180,8 +180,8 @@
       <div class="qr-frame"><div id="qr-box"></div></div>
       <div id="qr-steps" class="qr-steps">
         <div><b>1</b><span>امسح الرمز بكاميرا جوالك</span></div>
-        <div><b>2</b><span>قل رقمك للكاشير مع طلبك</span></div>
-        <div><b>3</b><span>يرن جوالك لما يجهز طلبك</span></div>
+        <div><b>2</b><span>قل رقمك للموظف</span></div>
+        <div><b>3</b><span>يرن جوالك لما يجي دورك</span></div>
       </div>
       <div class="qr-card-foot"><span id="qr-url" dir="ltr" class="truncate"></span><span class="shrink-0">DEV MENU</span></div>
     </div>
@@ -237,7 +237,7 @@
 
   function ringLabel(t) {
     if (t.acked_at) return '<span class="text-emerald-700"><i class="ph-bold ph-check-circle"></i> شاف التنبيه</span>';
-    if (!t.has_push) return `<i class="ph-bold ph-bell ph-shake"></i> جاهز من ${ago(t.ready_at)}`;
+    if (!t.has_push) return `<i class="ph-bold ph-bell ph-shake"></i> تم النداء من ${ago(t.ready_at)}`;
     const n = t.ring_count || 0;
     return n >= maxRings ? `<i class="ph-bold ph-bell-slash"></i> رنّ ${n} مرات — نادِه` : `<i class="ph-bold ph-bell ph-shake"></i> رنّة ${n}/${maxRings}`;
   }
@@ -268,7 +268,7 @@
           ${t.invoice_no ? `🧾 ${esc(t.invoice_no)}` : '🧾 أضف الفاتورة'}
         </button>
         <button class="mini w-full mt-1.5 bg-white text-[#233d2c]" data-ready="${t.id}" ${busy.has(t.id) ? 'disabled' : ''}>
-          ${busy.has(t.id) ? '<i class="ph-bold ph-spinner-gap ph-spin"></i>' : '<i class="ph-bold ph-bell"></i> جاهز'}
+          ${busy.has(t.id) ? '<i class="ph-bold ph-spinner-gap ph-spin"></i>' : '<i class="ph-bold ph-bell"></i> نادِ'}
         </button>
         <div class="text-[10px] mt-1.5 opacity-50">${ago(t.created_at)}${t.has_push ? ' · <i class="ph-bold ph-device-mobile" title="الإشعارات مفعّلة"></i>' : ''}</div>
       </div>`).join('');
@@ -278,7 +278,7 @@
         ${t.invoice_no ? `<div class="text-[12px] font-black mt-1">🧾 ${esc(t.invoice_no)}</div>` : ''}
         <div class="text-[11px] mt-1 opacity-70">${ringLabel(t)}</div>
         <div class="flex gap-1.5 mt-3">
-          <button class="mini flex-1 bg-[#233d2c] text-white" data-done="${t.id}"><i class="ph-bold ph-check"></i> استلم</button>
+          <button class="mini flex-1 bg-[#233d2c] text-white" data-done="${t.id}"><i class="ph-bold ph-check"></i> حضر</button>
           <button class="mini bg-white border border-[#c9a227]/40" data-undo="${t.id}" title="إرجاع للتجهيز"><i class="ph-bold ph-arrow-counter-clockwise"></i></button>
         </div>
       </div>`).join('');
@@ -298,8 +298,8 @@
     const r = e.target.closest('[data-ready]'), d = e.target.closest('[data-done]'), u = e.target.closest('[data-undo]'), inv = e.target.closest('[data-invoice]');
     if (inv) return openInvoice(+inv.dataset.invoice);
     if (r) setStatus(+r.dataset.ready, 'ready', '🔔 جوال رقم # يرن الحين');
-    if (d) setStatus(+d.dataset.done, 'done', '✓ رقم # استلم طلبه');
-    if (u) setStatus(+u.dataset.undo, 'waiting', 'رقم # رجع للتجهيز');
+    if (d) setStatus(+d.dataset.done, 'done', '✓ رقم # حضر');
+    if (u) setStatus(+u.dataset.undo, 'waiting', 'رقم # رجع للانتظار');
   });
 
   let timer = null, liveOn = false;
@@ -498,7 +498,7 @@
 
   document.querySelectorAll('[data-open]').forEach(b => { b.onclick = () => $(b.dataset.open).click(); });
   const QR_KINDS = {
-    pager: { title: 'امسح وخذ رقمك', steps: ['امسح الرمز بكاميرا جوالك', 'قل رقمك للكاشير مع طلبك', 'يرن جوالك لما يجهز طلبك'] },
+    pager: { title: 'امسح وخذ رقمك', steps: ['امسح الرمز بكاميرا جوالك', 'قل رقمك للموظف', 'يرن جوالك لما يجي دورك'] },
     loyalty: { title: 'امسح وسجّل بطاقتك', steps: ['امسح الرمز وسجّل اسمك مرة وحدة', 'بعد كل شراء اعرض كود بطاقتك للكاشير', 'اجمع الأختام وخذ مكافأتك'] }
   };
   let qrKind = 'pager';

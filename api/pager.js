@@ -37,7 +37,7 @@ async function demoRing(store, token) {
   const t = rows[0];
   if (!t) return;
   if (t.loyalty_card_id) await pagerReadyNotice(store.id, t.loyalty_card_id, t.number, store.name);
-  if (t.push_sub) await sendPush(t.push_sub, { title: `🔔 طلبك جاهز! رقم ${t.number}`, body: `هذي تجربة من DEV MENU، كذا يوصل التنبيه لزبونك`, url: `https://${store.client_slug}.devmenu.digital/pager`, tag: `pager-${t.id}-1` }).catch(() => {});
+  if (t.push_sub) await sendPush(t.push_sub, { title: `🔔 جاء دورك! رقم ${t.number}`, body: `هذي تجربة من DEV MENU، كذا يوصل التنبيه لزبونك`, url: `https://${store.client_slug}.devmenu.digital/pager`, tag: `pager-${t.id}-1` }).catch(() => {});
   await poke([topic('pager', store.id), topic('ticket', token)]);
 }
 

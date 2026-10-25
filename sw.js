@@ -5,9 +5,9 @@ self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
 self.addEventListener('push', (event) => {
   let d = {};
   try { d = event.data ? event.data.json() : {}; } catch { d = { title: event.data && event.data.text() }; }
-  const title = d.title || '🔔 طلبك جاهز!';
+  const title = d.title || '🔔 جاء دورك!';
   event.waitUntil(self.registration.showNotification(title, {
-    body: d.body || 'تفضّل استلمه من الموظف',
+    body: d.body || 'تفضّل للموظف',
     tag: d.tag || 'pager',
     renotify: true,
     requireInteraction: true,
