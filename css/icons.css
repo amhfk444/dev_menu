@@ -14,6 +14,7 @@
 .ph-arrows-left-right:before { content: "\e0a0"; }
 .ph-arrows-out:before { content: "\e0a2"; }
 .ph-bell:before { content: "\e0ce"; }
+.ph-bell-ringing:before { content: "\e5e8"; }
 .ph-bell-simple-ringing:before { content: "\e5ea"; }
 .ph-bell-slash:before { content: "\e0d4"; }
 .ph-bowl-food:before { content: "\eaa4"; }
@@ -98,6 +99,7 @@
 .ph-pizza:before { content: "\e796"; }
 .ph-plant:before { content: "\ebae"; }
 .ph-play:before { content: "\e3d0"; }
+.ph-play-circle:before { content: "\e3d2"; }
 .ph-plus:before { content: "\e3d4"; }
 .ph-popcorn:before { content: "\eb4e"; }
 .ph-power:before { content: "\e3da"; }

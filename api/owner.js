@@ -251,6 +251,20 @@ async function main(req) {
     const type = BUSINESS_TYPES.includes(b.business_type) ? b.business_type : 'restaurant';
     try {
       const slug = await rpc('server_register_client', { p_email: user.email, p_name: name, p_phone: phone, p_type: type });
+      // الباقة اللي اختارها قبل التسجيل: تنحفظ كطلب اشتراك، يبدأ التجربة المجانية، ونتواصل معه للدفع
+      const plan = ['month', 'year'].includes(b.plan) ? b.plan : null;
+      const features = PLANS.clean(Array.isArray(b.features) ? b.features : []);
+      if (plan && features.length) {
+        const main = (await rest(`clients?client_slug=eq.${q(slug)}`, { method: 'PATCH', prefer: 'return=representation',
+          body: { requested_plan: plan, requested_features: features, plan_requested_at: new Date().toISOString() } }).catch(() => []))[0];
+        if (main && mailConfigured()) {
+          await sendMail({
+            to: process.env.ADMIN_EMAIL || 'dmenu950@gmail.com', fromName: 'DEV MENU',
+            subject: `متجر جديد مع طلب اشتراك: ${main.name}`,
+            text: `${main.name} (${main.client_slug}) سجّل وبدأ التجربة المجانية.\nاختار ${plan === 'month' ? 'الشهري' : 'السنوي'}: ${features.map(k => PLANS.FEATURES[k].name).join('، ')} = ${PLANS.price(features, plan).total} ر.س.\nجوال: ${main.phone || '-'}\nبريد: ${main.email || '-'}\nلوحة المشتركين: https://www.devmenu.digital/super-admin.html`
+          }).catch(e => console.error('REGISTER_PLAN_MAIL', e.message));
+        }
+      }
       return { slug };
     } catch (e) {
       if (String(e.dbMessage || e.message).includes('EMAIL_TAKEN')) throw new ApiError(409, 'هذا البريد مرتبط بمتجر مسجل مسبقاً', 'EMAIL_TAKEN');
