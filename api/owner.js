@@ -246,7 +246,7 @@ async function main(req) {
   if (action === 'register' && req.method === 'POST') {
     const user = await getUser(req);
     const name = str(b.name, 80, 'اسم المتجر');
-    if (!name) throw new ApiError(400, 'اكتب اسم المطعم أو الكافيه', 'INVALID_NAME');
+    if (!name) throw new ApiError(400, 'اكتب اسم المنشأة', 'INVALID_NAME');
     let phone = '';
     try { phone = waNumber(b.phone); } catch { throw new ApiError(400, 'رقم الجوال غير صحيح', 'INVALID_PHONE'); }
     const type = BUSINESS_TYPES.includes(b.business_type) ? b.business_type : 'restaurant';
@@ -859,7 +859,7 @@ async function main(req) {
   if (action === 'update-store') {
     const p = {};
     const has = (k) => Object.prototype.hasOwnProperty.call(b, k);
-    if (has('name')) { p.name = str(b.name, 80, 'الاسم'); if (!p.name) throw new ApiError(400, 'اكتب اسم المطعم'); }
+    if (has('name')) { p.name = str(b.name, 80, 'الاسم'); if (!p.name) throw new ApiError(400, 'اكتب اسم المنشأة'); }
     if (has('promo_message')) p.promo_message = str(b.promo_message, 120, 'العرض');
     for (const k of ['website_url', 'tiktok_url', 'instagram_url', 'snapchat_url', 'location_url']) if (has(k)) p[k] = httpUrl(b[k], k);
     if (has('whatsapp_number')) p.whatsapp_number = waNumber(b.whatsapp_number);

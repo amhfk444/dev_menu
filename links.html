@@ -8,11 +8,11 @@
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
 <meta name="theme-color" content="#0b0b0b">
 <title>روابطنا | DEV MENU</title>
-<meta name="description" content="كل روابط المطعم في مكان واحد: المنيو، الطلبات، تطبيقات التوصيل، التواصل والموقع.">
+<meta name="description" content="كل روابط المحل في مكان واحد: المنيو، الطلبات، تطبيقات التوصيل، التواصل والموقع.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="DEV MENU">
 <meta property="og:title" content="روابطنا | DEV MENU">
-<meta property="og:description" content="كل روابط المطعم في مكان واحد: المنيو، الطلبات، تطبيقات التوصيل، التواصل والموقع.">
+<meta property="og:description" content="كل روابط المحل في مكان واحد: المنيو، الطلبات، تطبيقات التوصيل، التواصل والموقع.">
 <meta name="twitter:card" content="summary">
 
 <link rel="stylesheet" href="/css/fonts.css">
@@ -214,7 +214,7 @@
   }
 
   (async () => {
-    if (!slug) return showUnavailable('الرابط غير مكتمل', 'اطلب الرابط الصحيح من المطعم، أو امسح رمز QR الخاص به.');
+    if (!slug) return showUnavailable('الرابط غير مكتمل', 'اطلب الرابط الصحيح من المحل، أو امسح رمز QR الخاص به.');
     try {
       const data = await DM.get(`/api/public?action=links&slug=${encodeURIComponent(slug)}`);
       render(data.store);

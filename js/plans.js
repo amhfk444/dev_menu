@@ -8,7 +8,7 @@
   const FEATURES = {
     menu:     { name: 'المنيو الرقمي',  desc: 'المنيو بصوره وأسعاره، كود QR للطاولات، الطلب على الواتساب، الثيمات والإحصائيات', icon: 'ph-fork-knife', month: 39, year: 349 },
     pager:    { name: 'البيجر',          desc: 'جوال الزبون يرن لما يجهز طلبه، بدون أجهزة', icon: 'ph-bell', month: 25, year: 249 },
-    waitlist: { name: 'قائمة الانتظار', desc: 'الزبون يسجل دوره ويجيه تنبيه لما تجهز طاولته', icon: 'ph-hourglass-medium', month: 15, year: 129 },
+    waitlist: { name: 'قائمة الانتظار', desc: 'الزبون يسجل دوره ويجيه تنبيه لما يجي دوره', icon: 'ph-hourglass-medium', month: 15, year: 129 },
     loyalty:  { name: 'بطاقة الولاء',    desc: 'أختام ومكافآت ومحفظة الجوال ومساعد ذكي يكلم زبائنك', icon: 'ph-seal-check', month: 49, year: 449 }
   };
   const ORDER = ['menu', 'pager', 'waitlist', 'loyalty'];
@@ -17,7 +17,7 @@
   // (أي إضافة لازم ما تخلي السعر أغلى من الباقة الكاملة)
   const BUNDLES = [
     { keys: ['menu', 'pager'], name: 'خصم المنيو مع البيجر', month: 10, year: 128 },
-    { keys: ['menu', 'pager', 'waitlist'], name: 'خصم باقة المطعم الكاملة', month: 10, year: 100 },
+    { keys: ['menu', 'pager', 'waitlist'], name: 'خصم الباقة الكاملة', month: 10, year: 100 },
     { keys: ['menu', 'loyalty'], name: 'خصم الولاء مع المنيو', month: 9, year: 49 }
   ];
   // المشتركين القدامى (قبل نظام المميزات) كانت باقتهم المنيو + البيجر + الانتظار

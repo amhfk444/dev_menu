@@ -58,8 +58,8 @@ module.exports = handler(['GET', 'POST'], async (req) => {
   // ─── منيو جاهز لعميل محتمل: متجر بدون صاحب (بدون بريد) يجهّزه المدير العام ويرسل رابطه ───
   // ما أحد يقدر يدخل لوحته غير المدير العام، لين يُنقل لبريد صاحب المطعم بـ "transfer"
   if (action === 'prospect-create') {
-    const name = str(b.name, 80, 'اسم المطعم');
-    if (!name) throw new ApiError(400, 'اكتب اسم المطعم');
+    const name = str(b.name, 80, 'اسم المنشأة');
+    if (!name) throw new ApiError(400, 'اكتب اسم المنشأة');
     let phone = '';
     try { phone = waNumber(b.phone); } catch { throw new ApiError(400, 'رقم الجوال غير صحيح'); }
     const slugWanted = String(b.slug || '').trim().toLowerCase();
@@ -149,7 +149,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
         text: `مرحباً،\n\nجهّزنا منيو "${target.name}" الرقمي على DEV MENU:\n${url}\n\nلإدارته (تعديل الأسعار والأطباق): ادخل على https://www.devmenu.digital/login.html بهذا البريد (${email}).\nتجربتك المجانية 7 أيام.\n\nفريق DEV MENU`,
         html: `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;line-height:1.9;color:#1b3022">
           <h2 style="margin:0 0 10px">منيو ${escHtml(target.name)} جاهز</h2>
-          <p>جهّزنا منيو مطعمك الرقمي على DEV MENU: <a href="${url}">${url}</a></p>
+          <p>جهّزنا منيو منشأتك الرقمي على DEV MENU: <a href="${url}">${url}</a></p>
           <p>لإدارته (تعديل الأسعار والأطباق والصور) ادخل على <a href="https://www.devmenu.digital/login.html">صفحة الدخول</a> بهذا البريد: <b dir="ltr">${escHtml(email)}</b></p>
           <p>تجربتك المجانية 7 أيام.</p><p style="color:#6b7280">فريق DEV MENU</p></div>`
       }).catch(() => false);

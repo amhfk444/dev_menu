@@ -220,7 +220,7 @@
       <p class="px-3 pt-5 pb-1 text-[10px] text-cream/45 font-bold">اختصارات</p>
       <a id="sidebar-preview" href="#" target="_blank" rel="noopener" class="nav-item"><i class="ph-bold ph-arrow-square-out"></i> معاينة المنيو</a>
       <button onclick="copyMenuLink()" class="nav-item"><i class="ph-bold ph-link-simple"></i> نسخ رابط المنيو</button>
-      <button onclick="downloadQrCard()" class="nav-item"><i class="ph-bold ph-printer"></i> بطاقة الطاولة</button>
+      <button onclick="downloadQrCard()" class="nav-item"><i class="ph-bold ph-printer"></i> بطاقة QR</button>
       <a id="sa-link" href="super-admin.html" class="nav-item hidden"><i class="ph-bold ph-crown text-amber-300"></i> لوحة المشتركين</a>
     </nav>
 
@@ -278,7 +278,7 @@
           </div>
           <div class="flex gap-2">
             <button onclick="goAddDish()" class="bg-brand text-cream hover:bg-brand-dark px-4 py-2.5 rounded-xl text-xs font-black transition"><i class="ph-bold ph-plus"></i> أضف طبق</button>
-            <button onclick="downloadQrCard()" class="bg-brand/10 hover:bg-brand/15 text-ink px-4 py-2.5 rounded-xl text-xs font-bold border border-brand/25 transition"><i class="ph-bold ph-printer"></i> بطاقة الطاولة</button>
+            <button onclick="downloadQrCard()" class="bg-brand/10 hover:bg-brand/15 text-ink px-4 py-2.5 rounded-xl text-xs font-bold border border-brand/25 transition"><i class="ph-bold ph-printer"></i> بطاقة QR</button>
           </div>
         </div>
 
@@ -712,14 +712,14 @@
           <div class="bg-brand text-cream p-6 md:p-8 space-y-3">
             <span class="inline-flex items-center gap-1.5 text-[10px] font-black bg-amber-400 text-black px-2.5 py-1 rounded-full"><i class="ph-bold ph-star"></i> ضمن باقتك</span>
             <h2 class="text-xl md:text-2xl font-black">قائمة انتظار ذكية لمنشأتك</h2>
-            <p class="text-xs text-cream/75 leading-relaxed max-w-xl">بدل الزحمة عند الباب والأوراق: ضيفك يسجّل من جواله برمز QR، يشوف ترتيبه ووقت الانتظار مباشرة، ويوصله بريد أول ما تجهز طاولته.</p>
+            <p class="text-xs text-cream/75 leading-relaxed max-w-xl">بدل الزحمة عند الباب والأوراق: ضيفك يسجّل من جواله برمز QR، يشوف ترتيبه ووقت الانتظار مباشرة، ويوصله بريد أول ما يجي دوره.</p>
           </div>
           <div class="p-6 md:p-8 grid md:grid-cols-2 gap-6 items-center">
             <ul class="space-y-2.5 text-xs font-bold text-ink/80">
               <li class="flex gap-2"><i class="ph-bold ph-check text-green-600 mt-0.5"></i> رابط ورمز QR خاص للتسجيل في الانتظار</li>
               <li class="flex gap-2"><i class="ph-bold ph-check text-green-600 mt-0.5"></i> تختار البيانات المطلوبة: الاسم، الجوال، عدد الأشخاص...</li>
               <li class="flex gap-2"><i class="ph-bold ph-check text-green-600 mt-0.5"></i> رقم دور ووقت انتظار تقريبي يتحدث تلقائياً</li>
-              <li class="flex gap-2"><i class="ph-bold ph-check text-green-600 mt-0.5"></i> بريد تأكيد، وبريد "طاولتك جاهزة" بضغطة زر</li>
+              <li class="flex gap-2"><i class="ph-bold ph-check text-green-600 mt-0.5"></i> بريد تأكيد، وبريد "جاء دورك" بضغطة زر</li>
               <li class="flex gap-2"><i class="ph-bold ph-check text-green-600 mt-0.5"></i> إحصائيات: متوسط الانتظار، اللي جلسوا، اللي ما حضروا</li>
             </ul>
             <div class="text-center space-y-3 bg-brand/5 border border-brand/15 rounded-2xl p-5">
@@ -815,10 +815,10 @@
                   <input id="wl-max-party" type="number" min="1" max="100" class="input-pro text-xs" dir="ltr">
                 </div>
               </div>
-              <p class="text-[10px] text-ink/50 leading-relaxed -mt-1">الوقت التقريبي للضيف = ترتيبه × دقائق كل مجموعة. ومهلة الحضور تظهر له في بريد "طاولتك جاهزة".</p>
+              <p class="text-[10px] text-ink/50 leading-relaxed -mt-1">الوقت التقريبي للضيف = ترتيبه × دقائق كل مجموعة. ومهلة الحضور تظهر له في بريد "جاء دورك".</p>
               <div>
                 <label class="text-[10px] font-bold text-ink/70 block mb-1">رسالة للضيوف (اختياري)</label>
-                <input id="wl-message" type="text" maxlength="200" placeholder="مثال: الطاولات الخارجية متاحة للعوائل فقط" class="input-pro text-xs">
+                <input id="wl-message" type="text" maxlength="200" placeholder="مثال: الانتظار التقريبي 15 دقيقة" class="input-pro text-xs">
               </div>
               <button onclick="saveWaitlistSettings()" class="w-full bg-brand hover:bg-brand-dark text-cream font-bold py-2.5 rounded-xl text-xs transition">حفظ الإعدادات</button>
             </div>
@@ -1149,7 +1149,7 @@
           <!-- الكود -->
           <div class="pro-card p-5 md:p-6 space-y-4 text-center lg:sticky lg:top-24">
             <h3 class="text-sm font-bold">كرت التسجيل</h3>
-            <p class="text-[12px] text-ink/60">كود ثابت ما ينتهي. اطبعه وحطه عند الكاشير أو على الطاولات، والزبون يمسحه ويسجل في البطاقة.</p>
+            <p class="text-[12px] text-ink/60">كود ثابت ما ينتهي. اطبعه وحطه عند الكاشير أو في المحل، والزبون يمسحه ويسجل في البطاقة.</p>
             <div id="ly-qr" class="w-48 h-48 mx-auto bg-white p-2 rounded-xl border border-brand/10"></div>
             <input id="ly-link" readonly dir="ltr" class="input-pro text-center !text-xs">
             <div class="flex gap-2 justify-center">
@@ -1462,7 +1462,7 @@
       <div id="promo-status" class="flex items-center gap-2 text-[11px]"></div>
       <div class="flex flex-col sm:flex-row gap-2">
         <div class="relative flex-1">
-          <input type="text" id="promo-message-input" maxlength="120" placeholder="مثال: خصم 20% على جميع الأطباق الرئيسية اليوم!" class="input-pro text-xs pl-14">
+          <input type="text" id="promo-message-input" maxlength="120" placeholder="مثال: خصم 20% على كل شي اليوم!" class="input-pro text-xs pl-14">
           <span id="promo-counter" class="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-ink/50 font-mono" dir="ltr">0/120</span>
         </div>
         <div class="flex gap-2 shrink-0">
@@ -1620,7 +1620,7 @@
   const PAGES = {
     dashboard: ['الرئيسية', 'نظرة عامة على متجرك وأداء المنيو'],
     menu:      ['المنيو', 'أضف أطباقك وأقسامك ورتّبها'],
-    waitlist:  ['قائمة الانتظار', 'سجّل ضيوفك وبلّغهم لما تجهز طاولتهم'],
+    waitlist:  ['قائمة الانتظار', 'سجّل عملاءك وبلّغهم لما يجي دورهم'],
     loyalty:   ['بطاقة الولاء', 'زبونك يجمع أختامه بنفسه ويرجع لك'],
     reviews:   ['ردود التقييمات', 'رد على تعليقات قوقل ماب برد بشري جاهز'],
     settings:  ['هوية المنشأة', 'الاسم والشعار والخلفية ومعلومات التواصل']
@@ -2352,7 +2352,7 @@
       a.download = `${opts.filePrefix || 'qr'}-${client.client_slug}.png`;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 3000);
-      showToast('تم تحميل بطاقة الطاولة، اطبعها بمقاس A6 أو A5');
+      showToast('تم تحميل بطاقة QR، اطبعها بمقاس A6 أو A5');
     } catch (e) {
       console.error(e);
       showToast('تعذر إنشاء بطاقة الطباعة', true);
@@ -2497,8 +2497,8 @@
         <div class="text-center py-8 space-y-3">
           <div class="w-12 h-12 mx-auto rounded-2xl bg-brand/5 border border-brand/15 flex items-center justify-center text-ink/60"><i class="ph-bold ph-chart-line-up"></i></div>
           <p class="text-sm font-bold text-ink">ما فيه زيارات خلال آخر ${data.days} يوم</p>
-          <p class="text-[11px] text-ink/60 max-w-sm mx-auto">اطبع بطاقة الـ QR وحطها على الطاولات، أو شارك رابط المنيو في حساباتك. الإحصائيات تبدأ تظهر هنا مع أول زيارة.</p>
-          <button onclick="downloadQrCard()" class="bg-amber-400 hover:bg-amber-300 text-black px-4 py-2 rounded-xl text-[11px] font-black"><i class="ph-bold ph-printer"></i> تحميل بطاقة الطاولة</button>
+          <p class="text-[11px] text-ink/60 max-w-sm mx-auto">اطبع بطاقة الـ QR وحطها في محلك، أو شارك رابط المنيو في حساباتك. الإحصائيات تبدأ تظهر هنا مع أول زيارة.</p>
+          <button onclick="downloadQrCard()" class="bg-amber-400 hover:bg-amber-300 text-black px-4 py-2 rounded-xl text-[11px] font-black"><i class="ph-bold ph-printer"></i> تحميل بطاقة QR</button>
         </div>`;
       return;
     }
@@ -2874,7 +2874,7 @@
         ? `<button onclick="wlSet(${id},'seated')" class="bg-green-600 text-white">جلس ✓</button>
            <button onclick="wlSet(${id},'notified',true)" class="bg-brand/10 text-ink border border-brand/20">إعادة التنبيه</button>
            <button onclick="wlSet(${id},'no_show')" class="bg-red-500/10 text-red-700 border border-red-500/20">لم يحضر</button>`
-        : `<button onclick="wlSet(${id},'notified')" class="bg-brand text-cream col-span-2 sm:col-span-1"><i class="ph-bold ph-bell"></i> الطاولة جاهزة</button>
+        : `<button onclick="wlSet(${id},'notified')" class="bg-brand text-cream col-span-2 sm:col-span-1"><i class="ph-bold ph-bell"></i> جاء دوره</button>
            <button onclick="wlSet(${id},'seated')" class="bg-brand/10 text-ink border border-brand/20">جلس مباشرة</button>
            <button onclick="wlSet(${id},'cancelled')" class="bg-red-500/10 text-red-700 border border-red-500/20">إلغاء</button>`)
         : `<button onclick="wlSet(${id},'waiting')" class="bg-brand/10 text-ink border border-brand/20"><i class="ph-bold ph-arrow-counter-clockwise"></i> إرجاع للقائمة</button>`;
