@@ -538,7 +538,7 @@ async function main(req) {
   req._sid = sid;
   // المميزات حسب باقة المحل
   if (['pager-update', 'pager-invoice', 'pager-ring'].includes(action) && !PLANS.has(store, 'pager')) throw new ApiError(403, 'البيجر مو ضمن باقتك', 'ADDON_OFF');
-  if (['kiosk', 'loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-member-delete', 'loyalty-redeem', 'loyalty-message', 'loyalty-message-push', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء مو ضمن باقتك، أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
+  if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-member-delete', 'loyalty-redeem', 'loyalty-message', 'loyalty-message-push', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء مو ضمن باقتك، أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
 
 
   // ─── ربط قوقل ماب ───
@@ -666,11 +666,13 @@ async function main(req) {
   }
 
   // ─── الكاشير يمسح كود عضوية الزبون (أو يكتب رقمه) ويختمه بعد الدفع ───
-  // ─── شاشة العرض للزبون (تابلت عند الكاشير): بيانات المحل بس ───
+  // ─── شاشة العرض للزبون (تابلت عند الكاشير): بيانات المحل وخدماته ───
   if (action === 'kiosk') {
     const x = (await rest(`clients?id=eq.${sid}&select=loyalty_enabled,loyalty_settings`))[0] || {};
     const settings = normalizeLoyalty(x.loyalty_settings);
-    return { name: store.name, logo_url: store.logo_url || '', slug: store.client_slug, enabled: !!x.loyalty_enabled, needed: settings.needed, reward: settings.reward };
+    const f = PLANS.featuresOf(store);
+    const services = ['menu', 'pager', 'waitlist', 'loyalty'].filter(k => f.includes(k) && (k !== 'waitlist' || store.waitlist_enabled) && (k !== 'loyalty' || x.loyalty_enabled));
+    return { name: store.name, logo_url: store.logo_url || '', slug: store.client_slug, business_type: store.business_type, business_label: store.business_label, services, enabled: services.includes('loyalty'), needed: settings.needed, reward: settings.reward };
   }
   if (action === 'loyalty-scan') {
     const x = (await rest(`clients?id=eq.${sid}&select=loyalty_enabled,loyalty_settings`))[0] || {};

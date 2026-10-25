@@ -17,6 +17,7 @@
 .ph-bell-ringing:before { content: "\e5e8"; }
 .ph-bell-simple-ringing:before { content: "\e5ea"; }
 .ph-bell-slash:before { content: "\e0d4"; }
+.ph-book-open-text:before { content: "\e8f2"; }
 .ph-bowl-food:before { content: "\eaa4"; }
 .ph-bread:before { content: "\e81c"; }
 .ph-buildings:before { content: "\e102"; }
@@ -114,7 +115,6 @@
 .ph-qr-code:before { content: "\e3e6"; }
 .ph-question:before { content: "\e3e8"; }
 .ph-receipt:before { content: "\e3ec"; }
-.ph-scan:before { content: "\ebb6"; }
 .ph-scissors:before { content: "\eae0"; }
 .ph-seal-check:before { content: "\e606"; }
 .ph-share-network:before { content: "\e408"; }

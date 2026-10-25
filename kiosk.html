@@ -10,42 +10,70 @@
 <link rel="manifest" href="/kiosk-manifest.json">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<title>شاشة الختم | DEV MENU</title>
+<title>شاشة الزبون | DEV MENU</title>
 <link rel="stylesheet" href="/css/fonts.css">
 <link rel="stylesheet" href="/css/icons.css">
 <script src="/js/vendor/qr-code-styling.js"></script>
 <script src="/js/vendor/jsqr.js"></script>
 <script src="js/api.js"></script>
+<script src="/js/sectors.js"></script>
 <style>
-  :root { --brand: #233d2c; --sand: #f5f2eb; --gold: #c9a227; --ink: #1b3022; }
+  :root { --brand: #233d2c; --deep: #15271b; --sand: #f5f2eb; --gold: #c9a227; --ink: #1b3022; }
   /* الشاشة ثابتة: ما فيه تمرير ولا تكبير ولا تحديد نص ولا قائمة ضغط مطوّل */
   html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; }
   body { position: fixed; inset: 0; font-family: 'IBM Plex Sans Arabic', sans-serif; background: var(--sand); color: var(--ink);
     touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
   img, video, canvas { pointer-events: none; -webkit-user-drag: none; }
-  .wrap { height: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 4vmin; padding: 5vmin; box-sizing: border-box; }
-  @media (orientation: portrait) { .wrap { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; } }
-  .side { display: flex; flex-direction: column; justify-content: center; gap: 3vmin; }
-  .brand { display: flex; align-items: center; gap: 2.4vmin; }
-  .brand img { width: 11vmin; height: 11vmin; border-radius: 3vmin; object-fit: cover; background: #fff; }
-  .brand b { font-size: 4.2vmin; font-weight: 800; }
-  h1 { font-size: 6.4vmin; line-height: 1.25; margin: 0; font-weight: 800; color: var(--brand); }
-  .sub { font-size: 3vmin; opacity: .75; margin: 0; line-height: 1.6; }
-  .steps { display: flex; gap: 2vmin; font-size: 2.6vmin; font-weight: 700; }
-  .steps span { background: #fff; border: 1.5px solid rgba(35,61,44,.12); border-radius: 2.4vmin; padding: 1.6vmin 2.2vmin; display: flex; align-items: center; gap: 1vmin; }
-  .steps i { color: var(--gold); font-size: 3.4vmin; }
-  .cam { position: relative; border-radius: 4vmin; overflow: hidden; background: #0f1d14; min-height: 40vmin; }
-  .cam video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+
+  .wrap { height: 100%; box-sizing: border-box; padding: 3.2vmin; display: grid; gap: 3vmin;
+    grid-template-columns: 1.05fr .95fr; grid-template-rows: auto 1fr; grid-template-areas: "head head" "codes cam"; }
+  .wrap.no-cam { grid-template-columns: 1fr; grid-template-areas: "head" "codes"; }
+  @media (orientation: portrait) {
+    .wrap { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; grid-template-areas: "head" "cam" "codes"; }
+    .wrap.no-cam { grid-template-rows: auto 1fr; grid-template-areas: "head" "codes"; }
+  }
+
+  header { grid-area: head; display: flex; align-items: center; gap: 2.4vmin; }
+  header img { width: 9vmin; height: 9vmin; border-radius: 2.4vmin; object-fit: cover; background: #fff; box-shadow: 0 0 0 1.5px rgba(35,61,44,.1); }
+  header b { font-size: 4.4vmin; font-weight: 800; display: block; line-height: 1.2; }
+  header span { font-size: 2.4vmin; opacity: .6; font-weight: 600; }
+
+  /* أكواد الخدمات */
+  .codes { grid-area: codes; display: grid; gap: 2.4vmin; grid-template-columns: repeat(2, 1fr); align-content: center; min-height: 0; }
+  .codes.n1 { grid-template-columns: 1fr; }
+  .codes.n3 > .code:first-child { grid-column: 1 / -1; }
+  .wrap.no-cam .codes { grid-template-columns: repeat(var(--n, 2), 1fr); }
+  @media (orientation: portrait) { .codes { grid-template-columns: repeat(var(--n, 2), 1fr) !important; } .codes.n3 > .code:first-child { grid-column: auto; } }
+  .code { background: #fff; border-radius: 3vmin; padding: 2.6vmin 2vmin; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1.6vmin;
+    box-shadow: 0 0 0 1.5px rgba(35,61,44,.08), 0 1.6vmin 3vmin -2vmin rgba(35,61,44,.25); min-width: 0; }
+  .qr { width: 21vmin; height: 21vmin; flex: none; }
+  .codes.n3 > .code:first-child { flex-direction: row; text-align: right; gap: 3vmin; }
+  .codes.n3 > .code:first-child .tt { justify-content: flex-start; }
+  @media (orientation: portrait) { .qr { width: 17vmin; height: 17vmin; } .codes.n3 > .code:first-child { flex-direction: column; text-align: center; } }
+  .wrap.no-cam .qr { width: 24vmin; height: 24vmin; }
+  .qr canvas { width: 100% !important; height: 100% !important; display: block; }
+  .code .tt { display: flex; align-items: center; justify-content: center; gap: 1.2vmin; font-size: 3vmin; font-weight: 800; color: var(--brand); }
+  .code .tt i { color: var(--gold); font-size: 3.6vmin; }
+  .code p { margin: .8vmin 0 0; font-size: 2.2vmin; line-height: 1.55; opacity: .68; font-weight: 600; }
+
+  /* الكاميرا */
+  .cam { grid-area: cam; position: relative; border-radius: 3.6vmin; overflow: hidden; background: var(--deep); min-height: 38vmin; }
+  .cam[hidden] { display: none; }
+  .cam-head { position: absolute; top: 0; inset-inline: 0; z-index: 2; padding: 3vmin 3vmin 6vmin; color: #fff;
+    background: linear-gradient(rgba(21,39,27,.92), rgba(21,39,27,0)); }
+  .cam-head b { font-size: 3.6vmin; font-weight: 800; display: flex; align-items: center; gap: 1.2vmin; }
+  .cam-head b i { color: var(--gold); }
+  .cam-head span { font-size: 2.3vmin; opacity: .8; font-weight: 600; }
+  .cam video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
   .cam.back video { transform: none; }
-  .frame { position: absolute; inset: 18%; border-radius: 3vmin; box-shadow: 0 0 0 200vmax rgba(15,29,20,.35); }
-  .frame::before { content: ''; position: absolute; inset: 0; border-radius: 3vmin; border: .7vmin solid var(--gold); animation: breathe 2.4s ease-in-out infinite; }
-  @keyframes breathe { 50% { opacity: .45; } }
-  .cam-note { position: absolute; bottom: 3vmin; inset-inline: 0; text-align: center; color: #fff; font-weight: 700; font-size: 2.6vmin; }
-  .join { display: flex; align-items: center; gap: 2.4vmin; background: #fff; border-radius: 3vmin; padding: 2vmin; border: 1.5px solid rgba(35,61,44,.12); }
-  .join #join-qr { width: 15vmin; height: 15vmin; flex: none; }
-  .join #join-qr canvas { width: 100% !important; height: 100% !important; }
-  .join b { font-size: 3vmin; display: block; }
-  .join span { font-size: 2.3vmin; opacity: .7; }
+  .frame { position: absolute; width: 44%; aspect-ratio: 1; left: 50%; top: 55%; transform: translate(-50%, -50%); border-radius: 3vmin;
+    box-shadow: 0 0 0 200vmax rgba(15,29,20,.42); border: .6vmin solid var(--gold); }
+  .scanline { position: absolute; inset-inline: 8%; height: .5vmin; border-radius: 1vmin; background: var(--gold); box-shadow: 0 0 2vmin var(--gold); animation: scan 2.6s ease-in-out infinite; }
+  @keyframes scan { 0%, 100% { top: 10%; } 50% { top: 88%; } }
+  @media (prefers-reduced-motion: reduce) { .scanline { animation: none; top: 50%; } }
+  .cam-foot { position: absolute; bottom: 0; inset-inline: 0; z-index: 2; padding: 6vmin 3vmin 2.6vmin; text-align: center; color: #fff; font-size: 2.3vmin; font-weight: 700;
+    background: linear-gradient(rgba(21,39,27,0), rgba(21,39,27,.9)); }
+
   /* النتيجة */
   .result { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 2.4vmin; text-align: center; color: #fff; z-index: 10; padding: 6vmin; }
   .result.on { display: flex; animation: pop .25s ease-out; }
@@ -60,6 +88,7 @@
   .dots span { width: 6vmin; height: 6vmin; border-radius: 50%; background: rgba(255,255,255,.2); }
   .dots span.f { background: var(--gold); }
   .gift { background: #fff7dc; color: #6b540b; border-radius: 3vmin; padding: 2.4vmin 3.6vmin; font-size: 3.6vmin; font-weight: 800; display: flex; align-items: center; gap: 1.6vmin; }
+
   /* بداية التشغيل (الموظف يضغط مرة وحدة) */
   .start { position: fixed; inset: 0; z-index: 20; background: var(--brand); color: var(--sand); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3vmin; text-align: center; padding: 6vmin; }
   .start b { font-size: 5.4vmin; }
@@ -69,31 +98,21 @@
 </head>
 <body>
 <div class="start" id="start">
-  <i class="ph-bold ph-scan" style="font-size:14vmin"></i>
-  <b>شاشة الختم للزبون</b>
-  <p>بعد التشغيل تصير الشاشة ثابتة: الزبون يقرّب كود بطاقته من الكاميرا وينضاف له الختم تلقائياً، وما يقدر يتحكم بشي.</p>
-  <span class="go" id="go">ابدأ الشاشة</span>
+  <i class="ph-bold ph-device-tablet" style="font-size:14vmin"></i>
+  <b>شاشة الزبون</b>
+  <p id="start-desc">بعد التشغيل تصير الشاشة ثابتة: تعرض أكواد خدماتك، والزبون يقرّب كود بطاقة الولاء من الكاميرا وينضاف ختمه تلقائياً.</p>
+  <span class="go">ابدأ الشاشة</span>
   <p id="start-err" style="color:#ffb4a6"></p>
 </div>
 
-<div class="wrap">
-  <div class="side">
-    <div class="brand"><img id="logo" alt="" hidden><b id="store">...</b></div>
-    <h1>قرّب كود بطاقتك من الكاميرا</h1>
-    <p class="sub" id="sub">ينضاف ختمك تلقائياً</p>
-    <div class="steps">
-      <span><i class="ph-bold ph-wallet"></i> افتح بطاقتك</span>
-      <span><i class="ph-bold ph-qr-code"></i> وجّه الكود للكاميرا</span>
-    </div>
-  </div>
-  <div class="cam" id="cam">
+<div class="wrap" id="wrap">
+  <header><img id="logo" alt="" hidden><div><b id="store">...</b><span>امسح الكود بكاميرا جوالك</span></div></header>
+  <div class="codes" id="codes"></div>
+  <div class="cam" id="cam" hidden>
     <video id="video" playsinline muted autoplay></video>
-    <div class="frame"></div>
-    <div class="cam-note">الكود داخل الإطار</div>
-  </div>
-  <div class="join" id="join" hidden>
-    <div id="join-qr"></div>
-    <div><b>مو مشترك؟</b><span>امسح الكود بجوالك وسجّل في البطاقة</span></div>
+    <div class="cam-head"><b><i class="ph-bold ph-seal-check"></i> عندك بطاقة ولاء؟</b><span id="cam-sub">قرّب كود بطاقتك من الكاميرا وينضاف ختمك</span></div>
+    <div class="frame"><div class="scanline"></div></div>
+    <div class="cam-foot">افتح بطاقتك وخلّ الكود داخل الإطار</div>
   </div>
 </div>
 
@@ -106,7 +125,7 @@
   const $ = (id) => document.getElementById(id);
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const BACK = P.get('cam') === 'back';   // الافتراضي الكاميرا الأمامية (اللي تقابل الزبون)
-  let info = null, busy = false, lastQr = '', lastAt = 0, hideT = null;
+  let info = null, busy = false, lastQr = '', lastAt = 0, hideT = null, started = false;
 
   // ─── قفل الشاشة: نمنع اللمس والسحب والتكبير والرجوع ───
   const stop = (e) => { if (e.cancelable) e.preventDefault(); };
@@ -118,9 +137,8 @@
   addEventListener('popstate', () => history.pushState(null, '', location.href));
 
   // الشاشة تبقى شغالة
-  let lock = null;
-  async function keepAwake() { try { if ('wakeLock' in navigator && !document.hidden) lock = await navigator.wakeLock.request('screen'); } catch {} }
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) { keepAwake(); if (!stream) openCam(); } });
+  async function keepAwake() { try { if ('wakeLock' in navigator && !document.hidden) await navigator.wakeLock.request('screen'); } catch {} }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && started) { keepAwake(); if (info.enabled && !stream) openCam().catch(() => {}); } });
 
   // صوت قصير مع الختم
   let actx = null;
@@ -190,29 +208,47 @@
     }
   }
 
+  // ─── أكواد الخدمات: المنيو، البيجر، الانتظار، التسجيل في الولاء (حسب اشتراك المحل) ───
+  function renderCodes() {
+    const T = DMSectors.terms(info);
+    const all = {
+      menu: { icon: 'ph-book-open-text', title: 'المنيو', text: 'تصفّح الأصناف والأسعار' },
+      pager: { icon: 'ph-bell-ringing', title: 'خذ رقمك', text: `ويرن جوالك ${T.ringWhen}` },
+      waitlist: { icon: 'ph-users-three', title: 'قائمة الانتظار', text: 'سجّل اسمك ونبلغك بدورك' },
+      loyalty: { icon: 'ph-seal-check', title: 'بطاقة الولاء', text: `سجّل واجمع الأختام: ${info.needed} = ${info.reward}` }
+    };
+    const list = (info.services || []).filter(k => all[k]).map(k => ({ key: k, ...all[k] }));
+    const box = $('codes');
+    box.className = `codes n${list.length}`; box.style.setProperty('--n', Math.max(1, list.length));
+    box.innerHTML = list.map(c => `<div class="code"><div class="qr" id="qr-${c.key}"></div><div><div class="tt"><i class="ph-bold ${c.icon}"></i> ${esc(c.title)}</div><p>${esc(c.text)}</p></div></div>`).join('');
+    list.forEach(c => new QRCodeStyling({ width: 360, height: 360, type: 'canvas', data: DM.storeUrl(info.slug, c.key), margin: 0,
+      qrOptions: { errorCorrectionLevel: 'M' }, dotsOptions: { type: 'rounded', color: '#1b3022' },
+      cornersSquareOptions: { type: 'extra-rounded', color: '#233d2c' }, cornersDotOptions: { type: 'dot', color: '#c9a227' },
+      backgroundOptions: { color: '#ffffff' } }).append($(`qr-${c.key}`)));
+  }
+
   async function load() {
     info = await call('kiosk');
     $('store').textContent = info.name;
     if (info.logo_url) { $('logo').src = info.logo_url; $('logo').hidden = false; }
-    $('sub').textContent = `ينضاف ختمك تلقائياً، و${info.needed} أختام = ${info.reward}`;
-    if (!info.enabled) { $('start-err').textContent = 'بطاقة الولاء متوقفة، شغّلها من لوحة التحكم أول'; return false; }
-    $('join').hidden = false;
-    new QRCodeStyling({ width: 300, height: 300, type: 'canvas', data: DM.storeUrl(info.slug, 'loyalty'), margin: 0,
-      qrOptions: { errorCorrectionLevel: 'M' }, dotsOptions: { type: 'rounded', color: '#1b3022' },
-      cornersSquareOptions: { type: 'extra-rounded', color: '#233d2c' }, cornersDotOptions: { type: 'dot', color: '#c9a227' },
-      backgroundOptions: { color: '#ffffff' } }).append($('join-qr'));
-    return true;
+    $('cam').hidden = !info.enabled;
+    $('wrap').classList.toggle('no-cam', !info.enabled);
+    if (info.enabled) $('cam-sub').textContent = `قرّب كود بطاقتك من الكاميرا وينضاف ختمك. ${info.needed} أختام = ${info.reward}`;
+    else $('start-desc').textContent = 'بعد التشغيل تصير الشاشة ثابتة وتعرض أكواد خدماتك للزبائن.';
+    renderCodes();
   }
 
   $('cam').classList.toggle('back', BACK);
   $('start').addEventListener('click', async () => {
-    if (!info || !info.enabled) return;
+    if (!info) return;
     $('start-err').textContent = '';
     // ملء الشاشة (أندرويد والكمبيوتر) وتشغيل الصوت يحتاجون ضغطة
     try { await document.documentElement.requestFullscreen({ navigationUI: 'hide' }); } catch {}
-    beep(true);
-    try { await openCam(); } catch { $('start-err').textContent = 'ما قدرنا نفتح الكاميرا، اسمح للمتصفح يستخدمها وحاول مرة ثانية'; return; }
-    keepAwake();
+    if (info.enabled) {
+      beep(true);
+      try { await openCam(); } catch { $('start-err').textContent = 'ما قدرنا نفتح الكاميرا، اسمح للمتصفح يستخدمها وحاول مرة ثانية'; return; }
+    }
+    keepAwake(); started = true;
     $('start').remove();
   });
 
