@@ -379,7 +379,7 @@ async function main(req) {
   // ─── البيجر: أرقام اليوم ───
   // ─── شاشة العرض للزبون (تابلت عند الكاشير): بيانات المحل وخدماته ───
   if (action === 'kiosk' && req.method === 'GET') {
-    const x = (await rest(`clients?id=eq.${sid}&select=loyalty_enabled,loyalty_settings`))[0] || {};
+    const x = (await rest(`clients?id=eq.${store.id}&select=loyalty_enabled,loyalty_settings`))[0] || {};
     const settings = normalizeLoyalty(x.loyalty_settings);
     const f = PLANS.featuresOf(store);
     const services = ['menu', 'pager', 'waitlist', 'loyalty'].filter(k => f.includes(k) && (k !== 'waitlist' || store.waitlist_enabled) && (k !== 'loyalty' || x.loyalty_enabled));
