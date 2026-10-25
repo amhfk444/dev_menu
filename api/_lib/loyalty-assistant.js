@@ -131,14 +131,17 @@ async function runAssistant(storeId, { maxGuests = 25 } = {}) {
 // البيجر جهز ← إشعار من بطاقة الولاء في محفظة الجوال (يشتغل على الآيفون بدون المتصفح)
 // ننحفظ الإشعار كرسالة (kind=pager) عشان التحديثات الجاية للبطاقة ما ترجّع إشعار قديم
 async function pagerReadyNotice(storeId, cardId, number, storeName, T = SECTORS.terms(null)) {
+  return walletNotice(storeId, cardId, `🔔 ${T.ready} رقم ${number}. ${T.readyBody}${storeName ? ` من ${storeName}` : ''}`);
+}
+// إشعار من بطاقة المحفظة (البيجر وقائمة الانتظار)
+async function walletNotice(storeId, cardId, body) {
   try {
     const card = (await rest(`loyalty_cards?id=eq.${Number(cardId)}&client_id=eq.${storeId}&select=id,wallet_serial`))[0];
     if (!card || !card.wallet_serial) return 'no-wallet';
-    const body = `🔔 ${T.ready} رقم ${number}. ${T.readyBody}${storeName ? ` من ${storeName}` : ''}`;
     await rest('loyalty_messages', { method: 'POST', body: { client_id: storeId, card_id: card.id, body, source: 'system', kind: 'pager' } }).catch(() => {});
     const sent = await pushWalletCards(storeId, { cardIds: [card.id], notice: body });
     return sent ? 'sent' : 'failed';
   } catch (e) { console.error('PAGER_WALLET', e.message); return 'error'; }
 }
 
-module.exports = { pushWalletCards, runAssistant, nearLineFor, STORE_FIELDS, pickGuests, pagerReadyNotice };
+module.exports = { pushWalletCards, runAssistant, nearLineFor, STORE_FIELDS, pickGuests, pagerReadyNotice, walletNotice };

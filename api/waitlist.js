@@ -25,6 +25,15 @@ async function loadStore(slug) {
 const todayEntries = (clientId) =>
   rest(`waitlist_entries?client_id=eq.${clientId}&created_at=gte.${q(riyadhDayStart())}&select=id,status&order=id.asc`);
 
+// عنده بطاقة ولاء؟ (من نفس الجوال، أو بنفس رقم الجوال) نربطها بالدور عشان يوصله إشعار المحفظة
+async function linkLoyalty(storeId, token, lt, phone) {
+  let card = null;
+  if (/^[A-Za-z0-9_-]{10,64}$/.test(String(lt || ''))) card = (await rest(`loyalty_cards?token=eq.${q(lt)}&client_id=eq.${storeId}&select=id`).catch(() => []))[0];
+  const digits = String(phone || '').replace(/\D/g, '');
+  if (!card && digits.length >= 9) card = (await rest(`loyalty_cards?client_id=eq.${storeId}&phone=in.(${q(digits)},${q('+' + digits)})&select=id&limit=1`).catch(() => []))[0];
+  if (card) await rest(`waitlist_entries?token=eq.${q(token)}&client_id=eq.${storeId}`, { method: 'PATCH', body: { loyalty_card_id: card.id } });
+}
+
 module.exports = handler(['GET', 'POST'], async (req) => {
   const action = req.query.action;
   const b = req.method === 'POST' ? readBody(req) : {};
@@ -78,6 +87,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       throw e;
     }
     if (res.duplicate) return { token: res.token, ticket: res.ticket, duplicate: true };
+    await linkLoyalty(store.id, res.token, b.lt, val.phone).catch(e => console.error('WL_LOYALTY', e.message));
     await poke(topic('wl', store.id));
 
     // الترتيب والوقت ثم بريد التأكيد

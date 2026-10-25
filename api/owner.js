@@ -17,7 +17,7 @@ const { topic, storeTopics, poke } = require('./_lib/live');
 const { normalizeLoyalty, validPoint } = require('./_lib/loyalty');
 const PLANS = require('./_lib/plans');
 const wallet = require('./_lib/wallet');
-const { pushWalletCards, runAssistant, pagerReadyNotice } = require('./_lib/loyalty-assistant');
+const { pushWalletCards, runAssistant, pagerReadyNotice, walletNotice } = require('./_lib/loyalty-assistant');
 const { loyaltyMessages, loyaltyNearLines } = require('./_lib/ai');
 const { purchaseStamp, newStampCode, parseMemberQr, cooldownLeft, leftText } = require('./_lib/loyalty-stamp');
 
@@ -861,6 +861,11 @@ async function main(req) {
         to: updated.email, fromName: store.name,
         ...emailTemplate('ready', { store, entry: updated, statusUrl: statusUrlFor(req, store.client_slug, updated.token), hold: settings.hold_minutes })
       });
+    }
+    // مربوط ببطاقة ولاء في المحفظة: إشعار "جاء دورك/طاولتك جاهزة" من البطاقة
+    if (status === 'notified' && updated.loyalty_card_id && PLANS.has(store, 'loyalty')) {
+      const T = SECTORS.terms(store);
+      await walletNotice(sid, updated.loyalty_card_id, `🔔 ${T.wlReady} دور #${updated.ticket}. تفضّل للاستقبال في ${store.name}`).catch(() => {});
     }
     await poke(topic('wl', sid));
     return { entry: updated, email_sent };
