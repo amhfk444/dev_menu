@@ -73,7 +73,7 @@
     <div class="w-20 h-20 rounded-3xl bg-[#233d2c] text-[#c9a227] grid place-items-center mx-auto text-3xl"><i class="ph-bold ph-bell"></i></div>
     <div>
       <h2 class="text-2xl font-black">خذ رقمك</h2>
-      <p class="text-sm font-bold opacity-65 mt-2 leading-relaxed">بعدها قل الرقم للكاشير مع طلبك. ولما يجهز طلبك، بيرن جوالك تلقائياً.</p>
+      <p class="text-sm font-bold opacity-65 mt-2 leading-relaxed">اضغط الزر واسمح بالإشعارات، وقل رقمك للكاشير مع طلبك. لما يجهز يرن جوالك ويوصلك إشعار، حتى لو كان على الصامت.</p>
     </div>
     <button id="take-btn" class="btn btn-brand"><i class="ph-bold ph-ticket"></i> خذ رقمي وفعّل التنبيه</button>
   </section>
@@ -88,10 +88,11 @@
     <div class="flex items-center justify-center gap-2 text-[13px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-2xl py-3">
       <span class="pulse-dot"></span> جاري التجهيز… بنرن جوالك أول ما يجهز
     </div>
-    <div id="push-on" class="hidden text-[13px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl py-3 px-3">✅ الإشعارات مفعّلة — بيوصلك التنبيه حتى لو قفلت الجوال</div>
+    <div id="push-on" class="hidden text-[13px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl py-3 px-3">🔔 الإشعارات مفعّلة: بيوصلك إشعار من المتصفح أول ما يجهز طلبك</div>
     <button id="push-btn" class="btn btn-brand hidden"><i class="ph-bold ph-bell"></i> فعّل الإشعارات (يوصلك والجوال مقفول)</button>
-    <div id="keep-on" class="hidden text-[13px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl py-3 px-3">✅ التنبيه شغّال — بيرن جوالك حتى لو طلعت من الصفحة أو قفلت الشاشة</div>
-    <button id="keep-btn" class="btn btn-brand hidden"><i class="ph-bold ph-bell"></i> فعّل التنبيه وانت برا الصفحة</button>
+    <div id="keep-on" class="hidden text-[13px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl py-3 px-3">🔊 الرنين شغّال: بيرن جوالك حتى لو كان على الصامت أو قفلت الشاشة (خلّ صوت الوسائط مرتفع)</div>
+    <button id="keep-btn" class="btn btn-brand hidden"><i class="ph-bold ph-speaker-high"></i> فعّل الرنين حتى لو جوالك صامت</button>
+    <p id="push-denied" class="hidden text-[12px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-2xl py-2.5 px-3">الإشعارات مقفلة لهذا الموقع في متصفحك. الرنين يشتغل عادي، ولو تبي الإشعار فعّله من إعدادات المتصفح.</p>
     <button id="unlock-btn" class="btn btn-brand hidden"><i class="ph-bold ph-speaker-high"></i> فعّل صوت التنبيه</button>
     <a id="w-loyalty" class="hidden block text-[13px] font-black rounded-2xl py-3 px-3"></a>
     <ul class="text-[12.5px] font-bold opacity-70 space-y-1.5 text-right bg-[#f5f2eb] rounded-2xl p-4">
@@ -286,7 +287,7 @@
       const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(pushKey) });
       await DM.post('/api/pager?action=subscribe', { slug, t: token, sub: sub.toJSON() });
       try { localStorage.setItem(`${KEY}_push`, token); } catch {}
-      if (keeperMode === 'silent') stopKeeper();   // الإشعار يكفي، ما نحتاج الصوت بالخلفية
+      // نخلي صوت الخلفية شغّال مع الإشعار: صوت الوسائط يرن حتى لو الجوال على الصامت
       return true;
     } catch (e) { console.warn('push subscribe failed', e); return false; }
   }
@@ -302,9 +303,10 @@
     const denied = supported && Notification.permission === 'denied';
     const kept = keeperOn();
     $('push-on').classList.toggle('hidden', !on);
-    $('keep-on').classList.toggle('hidden', on || !kept);
+    $('keep-on').classList.toggle('hidden', !kept);
     $('push-btn').classList.toggle('hidden', on || denied || !supported);
-    $('keep-btn').classList.toggle('hidden', on || kept || (supported && !denied));
+    $('keep-btn').classList.toggle('hidden', kept);
+    $('push-denied').classList.toggle('hidden', !denied);
     $('unlock-btn').classList.toggle('hidden', !on || audioReady());
   }
 
