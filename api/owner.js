@@ -17,7 +17,7 @@ const { topic, storeTopics, poke } = require('./_lib/live');
 const { normalizeLoyalty, validPoint } = require('./_lib/loyalty');
 const PLANS = require('./_lib/plans');
 const wallet = require('./_lib/wallet');
-const { pushWalletCards, runAssistant } = require('./_lib/loyalty-assistant');
+const { pushWalletCards, runAssistant, pagerReadyNotice } = require('./_lib/loyalty-assistant');
 const { loyaltyMessages, loyaltyNearLines } = require('./_lib/ai');
 const { purchaseStamp, newStampCode, parseMemberQr, cooldownLeft, leftText } = require('./_lib/loyalty-stamp');
 
@@ -402,7 +402,7 @@ async function main(req) {
       rest(`loyalty_cards?client_id=eq.${store.id}&select=id,member_no,name,phone,stamps,visits,rewards,last_stamp_at,created_at&order=last_stamp_at.desc.nullslast&limit=500`),
       rest(`loyalty_events?client_id=eq.${store.id}&kind=eq.stamp&created_at=gte.${iso(7)}&select=id`),
       rest(`loyalty_events?client_id=eq.${store.id}&kind=eq.redeem&select=id`),
-      rest(`loyalty_messages?client_id=eq.${store.id}&select=id,card_id,body,wallet_sent,created_at,source,kind&order=id.desc&limit=15`).catch(() => []),
+      rest(`loyalty_messages?client_id=eq.${store.id}&or=${q('(kind.is.null,kind.neq.pager)')}&select=id,card_id,body,wallet_sent,created_at,source,kind&order=id.desc&limit=15`).catch(() => []),
       rest(`loyalty_feedback?client_id=eq.${store.id}&created_at=gte.${iso(90)}&select=reason,note,created_at,card_id&order=id.desc&limit=500`).catch(() => []),
       rest(`loyalty_gifts?client_id=eq.${store.id}&select=status,new_member,created_at&limit=5000`).catch(() => [])
     ]);
@@ -451,7 +451,7 @@ async function main(req) {
     if (!card) throw new ApiError(404, 'العضو غير موجود');
     const [events, messages] = await Promise.all([
       rest(`loyalty_events?card_id=eq.${id}&select=kind,created_at,distance_m&order=id.desc&limit=200`),
-      rest(`loyalty_messages?client_id=eq.${store.id}&card_id=eq.${id}&select=id,body,source,kind,created_at&order=id.desc&limit=30`).catch(() => [])
+      rest(`loyalty_messages?client_id=eq.${store.id}&card_id=eq.${id}&or=${q('(kind.is.null,kind.neq.pager)')}&select=id,body,source,kind,created_at&order=id.desc&limit=30`).catch(() => [])
     ]);
     const { wallet_serial, ...rest_ } = card;
     return { member: { ...rest_, in_wallet: !!wallet_serial }, events, messages };
@@ -585,7 +585,7 @@ async function main(req) {
     const body = str(b.body, 200, 'الرسالة');
     if (body.length < 2) throw new ApiError(400, 'اكتب الرسالة');
     const since = new Date(Date.now() - 864e5).toISOString();
-    const today = await rest(`loyalty_messages?client_id=eq.${sid}&created_at=gte.${q(since)}&select=id`).catch(() => []);
+    const today = await rest(`loyalty_messages?client_id=eq.${sid}&created_at=gte.${q(since)}&or=${q('(source.is.null,source.neq.system)')}&select=id`).catch(() => []);
     if (today.length >= 5) throw new ApiError(429, 'وصلت حد 5 رسائل في اليوم، عشان ما تزعج زبائنك');
     let cardId = null;
     if (b.card_id != null && b.card_id !== '') {
@@ -784,6 +784,11 @@ async function main(req) {
           await purchaseStamp(sid, t.loyalty_card_id, ls);
         }
       } catch (e) { console.error('PAGER_STAMP', e.message); }
+    }
+    // بطاقة ولاء مربوطة وفي المحفظة: إشعار "طلبك جاهز" من البطاقة (يوصل الآيفون حتى لو المتصفح مسكّر)
+    if (status === 'ready' && t.loyalty_card_id && PLANS.has(store, 'loyalty')) {
+      const wr = await pagerReadyNotice(sid, t.loyalty_card_id, t.number, store.name);
+      console.log('PAGER_WALLET', sid, t.id, wr);
     }
     await poke([topic('pager', sid), topic('ticket', t.token)]);
     return { ticket: { id: t.id, number: t.number, status: t.status, created_at: t.created_at, ready_at: t.ready_at, closed_at: t.closed_at, has_push: !!t.push_sub, ring_count: t.ring_count || 0, acked_at: t.acked_at || null }, push };

@@ -13,6 +13,7 @@ const { handler, rest, rpc, q, ApiError, readBody, findPublicStore, storeHasFeat
 const { pushPublicKey, cleanSubscription, sendPush } = require('./_lib/push');
 const { topic, poke } = require('./_lib/live');
 const { normalizeLoyalty } = require('./_lib/loyalty');
+const { pagerReadyNotice } = require('./_lib/loyalty-assistant');
 
 // بطاقة الولاء في المحل: شغالة؟ وتختم مع البيجر؟
 async function loyaltyOf(storeId) {
@@ -35,6 +36,7 @@ async function demoRing(store, token) {
     body: { status: 'ready', ready_at: new Date().toISOString(), ring_count: 1, last_ring_at: new Date().toISOString() } }).catch(() => []);
   const t = rows[0];
   if (!t) return;
+  if (t.loyalty_card_id) await pagerReadyNotice(store.id, t.loyalty_card_id, t.number, store.name);
   if (t.push_sub) await sendPush(t.push_sub, { title: `🔔 طلبك جاهز! رقم ${t.number}`, body: `هذي تجربة من DEV MENU، كذا يوصل التنبيه لزبونك`, url: `https://${store.client_slug}.devmenu.digital/pager`, tag: `pager-${t.id}-1` }).catch(() => {});
   await poke([topic('pager', store.id), topic('ticket', token)]);
 }
@@ -89,7 +91,8 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const stale = t.status === 'waiting' && Date.now() - Date.parse(t.created_at) > 18 * 3600e3;
     const review = ['ready', 'done'].includes(t.status) ? await reviewUrl(store.id) : null;
     return { demo: DEMO.has(store.client_slug), review_url: review, store: { name: store.name, logo_url: store.logo_url }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
-      loyalty: { ...(await loyaltyOf(store.id)), linked: !!t.loyalty_card_id, stamped: !!t.loyalty_stamped } };
+      loyalty: { ...(await loyaltyOf(store.id)), linked: !!t.loyalty_card_id, stamped: !!t.loyalty_stamped,
+        wallet: t.loyalty_card_id ? !!((await rest(`loyalty_cards?id=eq.${t.loyalty_card_id}&select=wallet_serial`).catch(() => []))[0] || {}).wallet_serial : false } };
   }
 
   if (action === 'subscribe' && req.method === 'POST') {

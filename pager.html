@@ -345,13 +345,15 @@
   // ─── بطاقة الولاء: ختم مع الطلب ───
   function renderLoyalty(l, st, token) {
     const show = (id, html, cls, href) => { const el = $(id); el.classList.toggle('hidden', !html); if (!html) return; el.innerHTML = html; el.className = `block text-[13px] font-black rounded-2xl py-3 px-3 ${cls}`; if (href) el.href = href; else el.removeAttribute('href'); };
+    lastLoyalty = l || null;
     if (!l || !l.enabled) { show('w-loyalty', ''); show('r-loyalty', ''); return; }
     const join = `${DM.storePage('loyalty', slug)}${DM.hostSlug() ? '?' : '&'}pt=${encodeURIComponent(token)}`;
     if (l.linked) {
-      show('w-loyalty', '<i class="ph-bold ph-seal-check"></i> بطاقة الولاء مربوطة: ينضاف لك ختم أول ما يجهز طلبك', 'text-[#233d2c] bg-[#c9a227]/15 border border-[#c9a227]/30');
+      if (l.wallet) show('w-loyalty', '<i class="ph-bold ph-wallet"></i> بطاقتك مربوطة: يوصلك إشعار من المحفظة لما يجهز طلبك، وينضاف لك ختم', 'text-[#233d2c] bg-[#c9a227]/15 border border-[#c9a227]/30');
+      else show('w-loyalty', '<i class="ph-bold ph-wallet"></i> بطاقتك مربوطة. أضفها للمحفظة عشان يوصلك إشعار لما يجهز طلبك', 'text-white bg-[#233d2c]', `${DM.storePage('loyalty', slug)}`);
       show('r-loyalty', l.stamped ? '<i class="ph-bold ph-seal-check"></i> انضاف لك ختم في بطاقة الولاء' : '', 'text-[#233d2c] bg-[#c9a227]/15 border border-[#c9a227]/30', `${DM.storePage('loyalty', slug)}`);
     } else {
-      const html = '<i class="ph-bold ph-gift"></i> سجّل في بطاقة الولاء وخذ ختم على طلبك هذا';
+      const html = '<i class="ph-bold ph-wallet"></i> سجّل في بطاقة الولاء وأضفها للمحفظة: يوصلك إشعار لما يجهز طلبك، وتاخذ ختم';
       show('w-loyalty', html, 'text-white bg-[#233d2c] underline-offset-4', join);
       show('r-loyalty', html, 'text-white bg-[#233d2c]', join);
     }
@@ -471,7 +473,8 @@
   // ─── نافذة الموافقة ───
   const needPush = () => pushSupported() && !pushDone() && Notification.permission !== 'denied';
   function permState() {
-    const n = !pushSupported() ? 'مو متاحة في هالمتصفح (الرنين يكفي)' : Notification.permission === 'denied' ? 'مقفلة من إعدادات المتصفح' : pushDone() ? 'مفعّلة ✅' : 'بنطلب موافقتك';
+    const viaWallet = lastLoyalty && lastLoyalty.enabled;
+    const n = !pushSupported() ? (viaWallet ? (lastLoyalty.wallet ? 'توصلك من بطاقة الولاء في المحفظة ✅' : 'أضف بطاقة الولاء للمحفظة ويوصلك الإشعار منها') : 'مو متاحة في هالمتصفح (الرنين يكفي)') : Notification.permission === 'denied' ? 'مقفلة من إعدادات المتصفح' : pushDone() ? 'مفعّلة ✅' : 'بنطلب موافقتك';
     $('perm-n').querySelector('span').textContent = n;
     $('perm-s').querySelector('span').textContent = keeperOn() && audioReady() ? 'شغّال ✅' : 'يحتاج ضغطة منك';
   }
@@ -502,7 +505,7 @@
   $('got-btn').onclick = () => { clearTimeout(pollTimer); ack(); offerRating(loadToken()); dismissed = true; stopRinging(); $('d-title').textContent = 'بالعافية!'; $('d-sub').textContent = 'نتشرف بزيارتك مرة ثانية.'; saveToken(''); show('done'); };
 
   // ─── تقييم التجربة بعد الاستلام (مرة وحدة لكل رقم) ───
-  let rateTok = '', rated = 0, reviewLink = '';
+  let rateTok = '', rated = 0, reviewLink = '', lastLoyalty = null;
   const RATED_KEY = `dm_pager_rated_${slug}`;
   function hideRating() { $('rate-box').classList.add('hidden'); }
   function offerRating(tok) {

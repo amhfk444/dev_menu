@@ -80,11 +80,12 @@ const optionalPhone = (v) => { if (!String(v || '').trim()) return ''; try { ret
 
 // آخر رسالة من المحل لهالبطاقة (للكل أو له هو)
 // (رسالة الذكاء اللي انكتبت قبل ما تتغير شروط البطاقة ما تطلع)
-const latestMessage = async (storeId, cardId, settings) => {
-  const m = ((await rest(`loyalty_messages?client_id=eq.${storeId}&or=${q(`(card_id.is.null,card_id.eq.${cardId})`)}&select=id,body,created_at,source&order=id.desc&limit=1`).catch(() => []))[0]) || null;
+// (إشعار "طلبك جاهز" من البيجر ينحسب للمحفظة بس، وما يطلع في صفحة البطاقة كرسالة من المحل)
+const latestMessage = async (storeId, cardId, settings, forWallet = false) => {
+  const m = ((await rest(`loyalty_messages?client_id=eq.${storeId}&or=${q(`(card_id.is.null,card_id.eq.${cardId})`)}&select=id,body,created_at,source,kind&order=id.desc&limit=4`).catch(() => [])).find(x => forWallet || x.kind !== 'pager')) || null;
   return settings && staleAi(m, settings) ? null : m;
 };
-const walletCtx = async (ctx, card) => wallet.buildCtx({ store: ctx.store, settings: ctx.settings, card, lat: ctx.lat, lng: ctx.lng, notice: ((await latestMessage(ctx.store.id, card.id, ctx.settings)) || {}).body, nearText: nearLineFor({ loyalty_near_lines: ctx.nearLines }, card) });
+const walletCtx = async (ctx, card) => wallet.buildCtx({ store: ctx.store, settings: ctx.settings, card, lat: ctx.lat, lng: ctx.lng, notice: ((await latestMessage(ctx.store.id, card.id, ctx.settings, true)) || {}).body, nearText: nearLineFor({ loyalty_near_lines: ctx.nearLines }, card) });
 // البطاقة في المحفظة تتحدث مع كل ختم (لو الزبون ضافها)
 const syncWallet = async (ctx, card) => {
   if (!card.wallet_serial) return;
