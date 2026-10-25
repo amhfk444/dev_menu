@@ -123,7 +123,7 @@
       <p class="text-[13px] font-bold opacity-70">رقمك</p>
       <div id="w-number" class="num">—</div>
       <p id="w-tell" class="text-[14px] font-bold opacity-85"></p>
-      <p id="w-invoice" class="hidden text-[14px] font-black mt-3 bg-white/10 rounded-xl py-2">🧾 فاتورتك: <span dir="ltr"></span></p>
+      <button type="button" id="w-invoice" class="hidden text-[14px] font-black mt-3 bg-white/10 rounded-xl py-2 px-4 mx-auto">🧾 فاتورتك: <span dir="ltr"></span> <i class="ph-bold ph-pencil-simple text-xs opacity-70"></i></button>
       <div class="tear"></div>
       <p class="text-[13px] font-bold flex items-center justify-center gap-2"><span class="pulse-dot"></span> <span id="t-waiting"></span></p>
     </div>
@@ -135,6 +135,16 @@
     <button id="keep-btn" class="btn btn-ghost hidden"><i class="ph-bold ph-speaker-high"></i> فعّل الرنين حتى لو جوالك صامت</button>
     <button id="unlock-btn" class="btn btn-ghost hidden"><i class="ph-bold ph-speaker-high"></i> فعّل صوت التنبيه</button>
     <p id="push-denied" class="hidden text-[12px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-2xl py-2.5 px-3">الإشعارات مقفلة لهذا الموقع في متصفحك. الرنين يشتغل عادي، ولو تبي الإشعار فعّله من إعدادات المتصفح.</p>
+    <!-- العميل يكتب رقم فاتورته -->
+    <form id="inv-form" class="card p-4 space-y-2.5 hidden" novalidate>
+      <label for="inv-in" class="block font-black text-[14px]"><i class="ph-bold ph-receipt"></i> رقم فاتورتك <span class="font-bold opacity-55 text-[12px]">(اختياري)</span></label>
+      <p class="text-[12px] font-bold opacity-60 -mt-1">اكتبه عشان يعرف الموظف طلبك أسرع</p>
+      <div class="flex gap-2">
+        <input id="inv-in" class="field flex-1 min-w-0 text-center !text-lg !font-black tracking-widest" inputmode="numeric" autocomplete="off" maxlength="20" dir="ltr" placeholder="1045">
+        <button id="inv-save" class="btn btn-brand !w-auto !px-5 !py-3 !text-base">حفظ</button>
+      </div>
+      <p id="inv-err" class="hidden text-[12px] font-bold text-rose-700"></p>
+    </form>
     <a id="w-loyalty" class="hidden block text-[13px] font-black rounded-2xl py-3 px-3"></a>
 
     <!-- تسجيل في الولاء من نفس الصفحة -->
@@ -448,7 +458,24 @@
       show('w-loyalty', '');
       show('r-loyalty', html, 'text-white bg-[#233d2c]', join);
     }
-  }  // ─── التسجيل في الولاء من صفحة البيجر ───
+  }  // ─── رقم الفاتورة من العميل ───
+  let invEditing = false;
+  $('w-invoice').onclick = () => { invEditing = true; $('inv-in').value = $('w-invoice').querySelector('span').textContent; $('inv-form').classList.remove('hidden'); $('inv-in').focus(); };
+  $('inv-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const invoice = $('inv-in').value.trim();
+    const btn = $('inv-save'); btn.disabled = true; $('inv-err').classList.add('hidden');
+    try {
+      const r = await DM.post('/api/pager?action=invoice', { slug, t: loadToken(), invoice });
+      invEditing = false; $('inv-in').value = '';
+      ['w-invoice', 'r-invoice'].forEach(id => { $(id).classList.toggle('hidden', !r.invoice_no); $(id).querySelector('span').textContent = r.invoice_no || ''; });
+      $('w-tell').classList.toggle('hidden', !!r.invoice_no);
+      $('inv-form').classList.toggle('hidden', !!r.invoice_no);
+    } catch (err) { $('inv-err').textContent = err.message || 'تعذر الحفظ'; $('inv-err').classList.remove('hidden'); }
+    btn.disabled = false;
+  };
+
+  // ─── التسجيل في الولاء من صفحة البيجر ───
   let joined = false, jnGender = '', lyToken = '';
   $('jn-cc').innerHTML = DM.countryOptions();
   document.querySelectorAll('.jn-g').forEach(b => b.onclick = () => { jnGender = b.dataset.g; document.querySelectorAll('.jn-g').forEach(x => x.setAttribute('aria-checked', String(x === b))); });
@@ -499,6 +526,7 @@
     const inv = r.ticket.invoice_no || '';
     ['w-invoice', 'r-invoice'].forEach(id => { $(id).classList.toggle('hidden', !inv); $(id).querySelector('span').textContent = inv; });
     $('w-tell').classList.toggle('hidden', !!inv);
+    if (!invEditing) $('inv-form').classList.toggle('hidden', !!inv || st !== 'waiting');
     $('w-demo').classList.toggle('hidden', !r.demo);
     reviewLink = r.review_url || reviewLink;
     $('r-review').classList.toggle('hidden', !reviewLink);

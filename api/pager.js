@@ -5,6 +5,7 @@
 //   GET  /api/pager?action=status&slug=&t= حالة الرقم (waiting / ready / done / cancelled)
 //   POST /api/pager?action=subscribe       اشتراك إشعارات الجوال للرقم { slug, t, sub }
 //   POST /api/pager?action=ack             العميل شاف التنبيه ← يوقف تكرار الإشعار { slug, t }
+//   POST /api/pager?action=invoice         العميل يكتب رقم فاتورته، ويطلع عند الموظف { slug, t, invoice }
 //   POST /api/pager?action=rate            تقييم الزبون بعد الاستلام { slug, t, rating, note } ← رابط تقييم قوقل للراضين
 // الكاشير يغيّر الحالة من /api/owner?action=pager-update
 // =====================================================================
@@ -15,6 +16,7 @@ const { topic, poke } = require('./_lib/live');
 const { normalizeLoyalty } = require('./_lib/loyalty');
 const { pagerReadyNotice } = require('./_lib/loyalty-assistant');
 const SECTORS = require('./_lib/sectors');
+const { riyadhDayStart } = require('./_lib/waitlist');
 
 // بطاقة الولاء في المحل: شغالة؟ وتختم مع البيجر؟
 async function loyaltyOf(storeId) {
@@ -121,6 +123,24 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       { method: 'PATCH', body: { acked_at: new Date().toISOString() } }).catch(() => {});
     await poke(topic('pager', store.id));
     return { ok: true };
+  }
+
+  // ─── العميل يكتب رقم فاتورته (الموظف يشوفه على شاشته على طول) ───
+  if (action === 'invoice' && req.method === 'POST') {
+    const store = await loadStore(b.slug);
+    const token = String(b.t || '');
+    if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
+    const invoice = String(b.invoice ?? '').trim().replace(/\s+/g, '').replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15));
+    if (invoice && !/^[A-Za-z0-9#\-_/]{1,20}$/.test(invoice)) throw new ApiError(400, 'رقم الفاتورة: أرقام وحروف إنجليزية فقط');
+    const t = (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=in.(waiting,ready)&select=id,number`))[0];
+    if (!t) throw new ApiError(404, 'الرقم غير موجود أو انتهى', 'NOT_FOUND');
+    if (invoice) {
+      const dup = await rest(`pager_tickets?client_id=eq.${store.id}&invoice_no=eq.${q(invoice)}&id=neq.${t.id}&created_at=gte.${q(riyadhDayStart())}&status=in.(waiting,ready)&select=number&limit=1`);
+      if (dup.length) throw new ApiError(409, 'هذي الفاتورة مسجلة على رقم ثاني، تأكد من الرقم', 'DUPLICATE');
+    }
+    await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { invoice_no: invoice || null } });
+    await poke([topic('pager', store.id), topic('ticket', token)]);
+    return { invoice_no: invoice || null };
   }
 
   // ─── تقييم الزبون بعد الاستلام: الراضي (4-5) نعطيه رابط تقييم المحل في قوقل ───
