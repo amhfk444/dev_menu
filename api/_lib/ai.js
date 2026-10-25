@@ -144,6 +144,13 @@ const clean = (t, max) => String(t || '').replace(/\s+/g, ' ').replace(/^["«]|[
  */
 async function loyaltyMessages({ storeName, businessType, reward, needed, guests, offer }) {
   if (!guests.length) return {};
+  // كثير ضيوف؟ نقسمهم على طلبات (25 لكل طلب) بالتوازي عشان ما ينقطع الرد
+  if (guests.length > 25) {
+    const parts = [];
+    for (let i = 0; i < guests.length; i += 25) parts.push(guests.slice(i, i + 25));
+    const maps = await Promise.all(parts.map(g => loyaltyMessages({ storeName, businessType, reward, needed, guests: g, offer }).catch(() => ({}))));
+    return Object.assign({}, ...maps);
+  }
   const prompt = [
     `<place>${storeName}${businessType ? ` (${businessType})` : ''}</place>`,
     `<reward>${reward} بعد ${needed} أختام</reward>`,
