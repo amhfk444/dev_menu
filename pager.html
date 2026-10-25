@@ -32,6 +32,7 @@
   body.ringing > header, body.ringing > p { color: #fff; }
   @keyframes shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-2deg); } 75% { transform: rotate(2deg); } }
   /* ─── لعبة الانتظار: طابق البطاقات ─── */
+  @keyframes pop { from { transform: translateY(24px) scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
   .star { font-size: 40px; color: #d8d2c4; transition: transform .12s, color .12s; line-height: 1; }
   .star.on { color: var(--gold); }
   .star:active { transform: scale(.88); }
@@ -154,6 +155,21 @@
 </main>
 
 <p class="text-xs font-bold opacity-40 mt-8">DEV MENU</p>
+
+<!-- موافقة الإشعارات والصوت: تطلع أول ما ياخذ رقمه -->
+<div id="perm" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-black/55 p-4" role="dialog" aria-modal="true" aria-labelledby="perm-title">
+  <div class="card w-full max-w-sm p-6 text-center space-y-4" style="animation: pop .35s cubic-bezier(.3,1.4,.5,1)">
+    <div class="w-16 h-16 rounded-2xl bg-[#233d2c] text-[#c9a227] grid place-items-center mx-auto text-3xl"><i class="ph-bold ph-bell-ringing"></i></div>
+    <h2 id="perm-title" class="text-xl font-black">رقمك <span id="perm-num"></span>. نفعّل لك التنبيه؟</h2>
+    <p id="perm-sub" class="text-sm font-bold opacity-70 leading-relaxed">عشان يرن جوالك ويوصلك إشعار أول ما يجهز طلبك، حتى لو كان على الصامت أو قفلت الشاشة.</p>
+    <ul class="text-[13px] font-bold text-right space-y-2 bg-[#f5f2eb] rounded-2xl p-4">
+      <li id="perm-n"><i class="ph-bold ph-bell ml-1"></i> الإشعارات: <span></span></li>
+      <li id="perm-s"><i class="ph-bold ph-speaker-high ml-1"></i> الصوت: <span></span></li>
+    </ul>
+    <button id="perm-yes" class="btn btn-brand"><i class="ph-bold ph-check"></i> فعّل الإشعارات والصوت</button>
+    <button id="perm-no" class="text-xs font-black opacity-50 underline">لاحقاً</button>
+  </div>
+</div>
 
 <script>
   const params = new URLSearchParams(location.search);
@@ -400,6 +416,7 @@
       if (perm) await perm;
       await subscribePush();
       await poll();
+      offerPerm(true);   // بعد أخذ الرقم تطلع دايماً: يا يوافق، يا يتأكد إن كل شي مفعّل
     } catch (e) {
       stopKeeper();
       unavailable(e.code === 'FULL' ? 'وصلنا الحد اليومي للأرقام' : 'تعذر أخذ رقم', 'اسأل الكاشير.');
@@ -450,6 +467,33 @@
   });
   $('mm-restart').onclick = mmNew;
   mmNew();
+
+  // ─── نافذة الموافقة ───
+  const needPush = () => pushSupported() && !pushDone() && Notification.permission !== 'denied';
+  function permState() {
+    const n = !pushSupported() ? 'مو متاحة في هالمتصفح (الرنين يكفي)' : Notification.permission === 'denied' ? 'مقفلة من إعدادات المتصفح' : pushDone() ? 'مفعّلة ✅' : 'بنطلب موافقتك';
+    $('perm-n').querySelector('span').textContent = n;
+    $('perm-s').querySelector('span').textContent = keeperOn() && audioReady() ? 'شغّال ✅' : 'يحتاج ضغطة منك';
+  }
+  function offerPerm(always = false) {
+    if (!loadToken() || $('v-waiting').classList.contains('hidden')) return;
+    if (!always && !needPush() && keeperOn() && audioReady()) return;
+    $('perm-num').textContent = curNumber || '';
+    permState();
+    const ready = !needPush() && keeperOn() && audioReady();
+    $('perm-yes').innerHTML = ready ? '<i class="ph-bold ph-check"></i> تمام، جرّب الصوت' : '<i class="ph-bold ph-check"></i> فعّل الإشعارات والصوت';
+    $('perm-no').classList.toggle('hidden', ready);
+    $('perm').classList.replace('hidden', 'flex');
+  }
+  $('perm-yes').onclick = async () => {
+    unlockAudio(); startKeeper();
+    try { if (pushSupported() && Notification.permission === 'default') await Notification.requestPermission(); } catch {}
+    await subscribePush(); renderPush(); permState();
+    // رنّة قصيرة عشان يتأكد إن الصوت يوصله
+    if (audioReady()) { const t = ctx.currentTime; [0, 0.18].forEach((d, i) => beep(t + d, i ? 1320 : 990, 0.12)); }
+    setTimeout(() => $('perm').classList.replace('flex', 'hidden'), 900);
+  };
+  $('perm-no').onclick = () => $('perm').classList.replace('flex', 'hidden');
 
   $('unlock-btn').onclick = unlockAudio;
   $('keep-btn').onclick = () => { unlockAudio(); startKeeper(); };
@@ -502,7 +546,7 @@
     try { const info = await DM.get(`/api/pager?action=info&slug=${encodeURIComponent(slug)}`); setStore(info.store); pushKey = info.push_key || ''; }
     catch (e) { return unavailable('البيجر غير متاح حالياً', 'اسأل الكاشير.'); }
     if ('serviceWorker' in navigator && pushKey) navigator.serviceWorker.register('/sw.js').catch(() => {});
-    if (loadToken()) return poll();
+    if (loadToken()) { await poll(); return offerPerm(); }   // رجع للصفحة: الصوت يحتاج ضغطة منه من جديد
     show('start');
   })();
 </script>
