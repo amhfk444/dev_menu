@@ -607,7 +607,7 @@
   }
 
   // ─── منيو جاهز لعميل محتمل ───
-  // متجر بدون بريد: يجهّزه المدير العام من لوحته، ولما يوافق صاحب المطعم يتسلّمه ببريده
+  // متجر بدون بريد: يجهّزه المدير العام من لوحته، ولما يوافق صاحب المنشأة يتسلّمه ببريده
   const isProspect = (c) => !c.parent_id && (!c.email || /@prospect\.invalid$/i.test(c.email));
   function pitchLink(c) {
     const phone = waPhone(c.phone);
@@ -618,11 +618,11 @@
     const r = await DMDialog.form({
       title: 'منيو جاهز لعميل محتمل', subtitle: 'متجر بدون صاحب، تجهّزه أنت وترسل رابطه', icon: 'ph-magic-wand', confirmText: 'إنشاء',
       fields: [
-        { name: 'name', label: 'اسم المطعم', maxlength: 80, required: true, placeholder: 'مثال: مطعم أوسلو برجر' },
+        { name: 'name', label: 'اسم المنشأة', maxlength: 80, required: true, placeholder: 'مثال: مطعم أوسلو برجر' },
         { name: 'slug', label: 'الرابط', dir: 'ltr', maxlength: 30, placeholder: 'oslo-burger',
           hint: 'حروف إنجليزية صغيرة وأرقام وشرطة. اتركه فاضي ونختاره تلقائياً.',
           validate: (v) => v && !/^[a-z0-9](?:[a-z0-9-]{1,28})[a-z0-9]$/.test(v.toLowerCase()) ? 'الرابط من 3 إلى 30 حرف: حروف إنجليزية صغيرة وأرقام وشرطة' : '' },
-        { name: 'phone', label: 'جوال المطعم (اختياري، لإرسال الرابط واتساب)', dir: 'ltr', maxlength: 20, placeholder: '05xxxxxxxx أو +971...' }
+        { name: 'phone', label: 'جوال المنشأة (اختياري، لإرسال الرابط واتساب)', dir: 'ltr', maxlength: 20, placeholder: '05xxxxxxxx أو +971...' }
       ],
       note: 'يبدأ بتجربة 30 يوم عشان يبقى الرابط شغال لين يرد العميل. لما يوافق: من قائمة المتجر اختر "تسليم المتجر لصاحبه" واكتب بريده.'
     });
@@ -633,7 +633,7 @@
       const c = res.client;
       const go = await DMDialog.confirm({
         title: 'تم إنشاء المتجر', icon: 'ph-check-circle', tone: 'success',
-        message: `${c.name} · ${DM.storeUrl(c.client_slug)}\n\nالخطوة الجاية: افتح لوحته وأضف الأقسام والأطباق والصور، وبعدها أرسل الرابط للمطعم.`,
+        message: `${c.name} · ${DM.storeUrl(c.client_slug)}\n\nالخطوة الجاية: افتح لوحته وأضف الأقسام والأطباق والصور، وبعدها أرسل الرابط للمنشأة.`,
         confirmText: 'افتح لوحته وجهّز المنيو', cancelText: 'لاحقاً'
       });
       if (go) window.open(`admin.html?client=${encodeURIComponent(c.client_slug)}`, '_blank', 'noopener');
@@ -644,7 +644,7 @@
     const c = find(id); if (!c) return;
     const r = await DMDialog.form({
       title: 'تسليم المتجر لصاحبه', subtitle: c.name, icon: 'ph-key', confirmText: 'تسليم',
-      fields: [{ name: 'email', label: 'بريد صاحب المطعم', dir: 'ltr', maxlength: 120, required: true, placeholder: 'owner@example.com',
+      fields: [{ name: 'email', label: 'بريد صاحب المنشأة', dir: 'ltr', maxlength: 120, required: true, placeholder: 'owner@example.com',
         validate: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? '' : 'اكتب بريد صحيح' }],
       note: 'يدخل بهذا البريد من صفحة الدخول (رمز تحقق أو Google) ويلقى المنيو جاهز بكل أطباقه. تبدأ تجربته المجانية 7 أيام من الآن.'
     });

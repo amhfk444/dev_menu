@@ -108,7 +108,7 @@
   .dish-row.sold-out .dish-name, .dish-row.sold-out .dish-price { color: var(--ink-3); }
   .dish-row.sold-out .dish-price { text-decoration: line-through; }
   .dish-row.is-hidden .dish-main { opacity: .55; }
-  /* مفتاح التوفر: أكثر شي يستخدمه صاحب المطعم وقت الدوام */
+  /* مفتاح التوفر: أكثر شي يستخدمه صاحب المنشأة وقت الدوام */
   .avail { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 2px; font-size: 12px; font-weight: 600; flex-shrink: 0; }
   .avail-track { position: relative; width: 40px; height: 24px; border-radius: 999px; background: var(--brick); transition: background-color .18s; flex-shrink: 0; }
   .avail-track::after { content: ''; position: absolute; top: 3px; inset-inline-start: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .25); transition: inset-inline-start .18s; }
@@ -216,7 +216,7 @@
       <button data-nav="loyalty" class="nav-item"><i class="ph-bold ph-seal-check"></i> بطاقة الولاء</button>
       <button data-nav="reviews" class="nav-item"><i class="ph-bold ph-star-half"></i> ردود التقييمات</button>
       <a href="pager-desk.html" data-feature="pager" onclick="return openPagerDesk(this)" class="nav-item"><i class="ph-bold ph-bell"></i> شاشة البيجر <span class="mr-auto text-[9px] bg-[#c9a227] text-[#15271b] font-black px-1.5 py-0.5 rounded-md">جديد</span></a>
-      <button data-nav="settings" class="nav-item"><i class="ph-bold ph-palette"></i> هوية المطعم</button>
+      <button data-nav="settings" class="nav-item"><i class="ph-bold ph-palette"></i> هوية المنشأة</button>
       <p class="px-3 pt-5 pb-1 text-[10px] text-cream/45 font-bold">اختصارات</p>
       <a id="sidebar-preview" href="#" target="_blank" rel="noopener" class="nav-item"><i class="ph-bold ph-arrow-square-out"></i> معاينة المنيو</a>
       <button onclick="copyMenuLink()" class="nav-item"><i class="ph-bold ph-link-simple"></i> نسخ رابط المنيو</button>
@@ -711,7 +711,7 @@
         <div id="wl-upsell" class="hidden pro-card overflow-hidden">
           <div class="bg-brand text-cream p-6 md:p-8 space-y-3">
             <span class="inline-flex items-center gap-1.5 text-[10px] font-black bg-amber-400 text-black px-2.5 py-1 rounded-full"><i class="ph-bold ph-star"></i> ضمن باقتك</span>
-            <h2 class="text-xl md:text-2xl font-black">قائمة انتظار ذكية لمطعمك</h2>
+            <h2 class="text-xl md:text-2xl font-black">قائمة انتظار ذكية لمنشأتك</h2>
             <p class="text-xs text-cream/75 leading-relaxed max-w-xl">بدل الزحمة عند الباب والأوراق: ضيفك يسجّل من جواله برمز QR، يشوف ترتيبه ووقت الانتظار مباشرة، ويوصله بريد أول ما تجهز طاولته.</p>
           </div>
           <div class="p-6 md:p-8 grid md:grid-cols-2 gap-6 items-center">
@@ -881,7 +881,7 @@
         </div>
       </section>
 
-      <!-- ═════════════════ صفحة هوية المطعم ═════════════════ -->
+      <!-- ═════════════════ صفحة هوية المنشأة ═════════════════ -->
       <section data-page="reviews" class="hidden space-y-5">
 
         <!-- غير مفعّلة -->
@@ -1269,14 +1269,14 @@
           </h3>
     <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4">
       <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
-        <label class="text-[11px] font-bold text-ink/75">اسم المطعم في المنيو</label>
-        <input type="text" id="setting-name" placeholder="اسم المطعم" class="input-pro text-xs">
+        <label class="text-[11px] font-bold text-ink/75">اسم المنشأة</label>
+        <input type="text" id="setting-name" placeholder="اسم المنشأة" class="input-pro text-xs">
         <button onclick="updateRestaurantName()" class="w-full bg-brand text-cream hover:bg-brand-dark text-xs font-bold py-2 rounded-xl transition">حفظ الاسم</button>
       </div>
 
       <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
         <div class="flex items-center justify-between">
-          <label class="text-[11px] font-bold text-ink/75">شعار المطعم (Logo)</label>
+          <label class="text-[11px] font-bold text-ink/75">شعار المنشأة (Logo)</label>
           <img id="logo-preview" src="images/logo.jpeg" class="w-7 h-7 object-cover rounded-full border border-brand/30" onerror="this.onerror=null;this.src='images/logo.jpeg'">
         </div>
         <input type="file" id="logo-file" accept="image/*" class="input-pro text-[10px]">
@@ -1405,10 +1405,10 @@
           <button onclick="saveOccasions()" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition">حفظ المناسبات</button>
         </div>
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
-    <!-- معلومات المطعم -->
+    <!-- معلومات المنشأة -->
     <div class="pro-card p-5 space-y-3">
       <h4 class="text-xs font-bold text-ink flex items-center gap-1.5">
-        <i class="ph-bold ph-storefront text-emerald-600"></i> معلومات المطعم (تظهر أعلى المنيو)
+        <i class="ph-bold ph-storefront text-emerald-600"></i> معلومات المنشأة (تظهر أعلى المنيو)
       </h4>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
@@ -1447,12 +1447,12 @@
           <input type="checkbox" id="info-wa-orders" class="w-4 h-4 mt-0.5 accent-green-500 cursor-pointer disabled:cursor-not-allowed">
           <span class="text-xs">
             <b class="text-ink"><i class="ph-bold ph-whatsapp-logo text-green-600"></i> استقبال الطلبات عبر واتساب</b>
-            <span class="block text-[10px] text-ink/60 mt-0.5">يظهر زر "اطلب عبر واتساب" في تفاصيل كل طبق، ويصل الطلب مباشرة إلى واتساب المطعم.</span>
+            <span class="block text-[10px] text-ink/60 mt-0.5">يظهر زر "اطلب عبر واتساب" في تفاصيل كل طبق، ويصل الطلب مباشرة إلى واتساب المنشأة.</span>
           </span>
         </label>
         <div id="wa-orders-status" class="text-[11px]"></div>
       </div>
-      <button onclick="updateRestaurantInfo()" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2 rounded-xl text-xs transition shadow-md">حفظ معلومات المطعم</button>
+      <button onclick="updateRestaurantInfo()" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2 rounded-xl text-xs transition shadow-md">حفظ معلومات المنشأة</button>
     </div>
     <!-- العروض والرسائل الترويجية -->
     <div class="pro-card p-5 space-y-3">
@@ -1479,7 +1479,7 @@
     <!-- روابط التواصل الاجتماعي -->
     <div class="pro-card p-5 space-y-3">
       <h4 class="text-xs font-bold text-ink flex items-center gap-1.5">
-        <i class="ph-bold ph-share-network text-blue-600"></i> روابط منصات التواصل الاجتماعي وموقع المطعم
+        <i class="ph-bold ph-share-network text-blue-600"></i> روابط منصات التواصل الاجتماعي وموقع المنشأة
       </h4>
       <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <div>
@@ -1509,7 +1509,7 @@
         <div class="pro-card p-5 space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-moped text-amber-600"></i> تطبيقات التوصيل</h3>
-            <span class="text-[10px] text-ink/50">اختر التطبيقات اللي مطعمك موجود فيها، وتظهر للزبائن في المنيو</span>
+            <span class="text-[10px] text-ink/50">اختر التطبيقات اللي منشأتك موجودة فيها، وتظهر للزبائن في المنيو</span>
           </div>
           <div id="delivery-picker" class="grid grid-cols-3 sm:grid-cols-5 gap-2"></div>
           <div id="delivery-list" class="space-y-2"></div>
@@ -1623,7 +1623,7 @@
     waitlist:  ['قائمة الانتظار', 'سجّل ضيوفك وبلّغهم لما تجهز طاولتهم'],
     loyalty:   ['بطاقة الولاء', 'زبونك يجمع أختامه بنفسه ويرجع لك'],
     reviews:   ['ردود التقييمات', 'رد على تعليقات قوقل ماب برد بشري جاهز'],
-    settings:  ['هوية المطعم', 'الاسم والشعار والخلفية ومعلومات التواصل']
+    settings:  ['هوية المنشأة', 'الاسم والشعار والخلفية ومعلومات التواصل']
   };
   if (!REVIEWS_LIVE) {
     delete PAGES.reviews;
@@ -1733,13 +1733,13 @@
       cell('نفدت الكمية', soldOut, 'menu', soldOut > 0);
 
     const items = [
-      ['شعار المطعم', !!client.logo_url, 'settings'],
+      ['شعار المنشأة', !!client.logo_url, 'settings'],
       ['خلفية المنيو (صورة أو فيديو)', !!(client.bg_image_url || client.bg_video_url), 'settings'],
       ['قسم واحد على الأقل', loadedCategories.length > 0, 'menu'],
       ['5 أطباق أو أكثر', total >= 5, 'menu'],
       [noImg ? `صور لكل الأطباق (باقي ${noImg})` : 'صور لكل الأطباق', total > 0 && noImg === 0, 'menu'],
       ...(showCalories() ? [[noCal ? `السعرات لكل الأطباق (باقي ${noCal})` : 'السعرات لكل الأطباق', total > 0 && noCal === 0, 'menu']] : []),
-      ['رقم واتساب المطعم', isValidWa(client.whatsapp_number), 'settings'],
+      ['رقم واتساب المنشأة', isValidWa(client.whatsapp_number), 'settings'],
       ['ساعات العمل', !!client.opening_hours, 'settings']
     ];
     const done = items.filter(i => i[1]).length;
@@ -2063,7 +2063,7 @@
 
   async function updateRestaurantName() {
     const newName = document.getElementById('setting-name').value.trim();
-    if (!newName) return showToast('يرجى كتابة اسم المطعم', true);
+    if (!newName) return showToast('يرجى كتابة اسم المنشأة', true);
     if (await updateClient({ name: newName })) {
       showToast('تم حفظ الاسم');
       setStoreName(newName);
@@ -2399,13 +2399,13 @@
          </div>
          <p class="text-[10px] text-ink/50 mt-1.5">اضغط "اختبر الرقم": إذا فتحت محادثة في واتساب فالرقم شغال. وإذا ظهرت رسالة إن الرقم غير صالح، صحّحه في روابط التواصل.</p>`
       : `<div class="flex flex-wrap items-center justify-between gap-2 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
-           <span class="text-amber-800"><i class="ph-bold ph-info"></i> لتفعيل الطلبات، أضف رقم واتساب المطعم واحفظه أولاً.</span>
+           <span class="text-amber-800"><i class="ph-bold ph-info"></i> لتفعيل الطلبات، أضف رقم واتساب المنشأة واحفظه أولاً.</span>
            <button type="button" onclick="document.getElementById('social-whatsapp').focus(); document.getElementById('social-whatsapp').scrollIntoView({behavior:'smooth', block:'center'})"
                    class="bg-brand/10 hover:bg-brand/15 text-ink font-bold px-2.5 py-1 rounded-md text-[10px] border border-brand/25 transition">إضافة الرقم</button>
          </div>`;
   }
 
-  // ─── معلومات المطعم ───
+  // ─── معلومات المنشأة ───
   async function updateRestaurantInfo() {
     const hours = document.getElementById('info-hours').value.trim();
     const loc = document.getElementById('info-location').value.trim();
@@ -2417,8 +2417,8 @@
       renderWaOrderState();
       return showToast('أضف رقم واتساب صحيح في روابط التواصل واحفظه أولاً', true);
     }
-    if (await updateClient({ opening_hours: hours, location_url: loc, whatsapp_orders: waOrders, google_review_url: review })) showToast('تم حفظ معلومات المطعم');
-    else showToast('تعذر حفظ معلومات المطعم', true);
+    if (await updateClient({ opening_hours: hours, location_url: loc, whatsapp_orders: waOrders, google_review_url: review })) showToast('تم حفظ معلومات المنشأة');
+    else showToast('تعذر حفظ معلومات المنشأة', true);
   }
 
   // ─── الإحصائيات ───
@@ -2556,7 +2556,7 @@
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
         ${kpiTile('زيارات المنيو', fmtNum(views), `${deltaBadge(views, pv.views)} <span class="text-[10px] text-ink/50">مقارنة بالفترة السابقة</span>`, 'ph-bold ph-eye', 'text-emerald-600')}
         ${kpiTile('مشاهدات الأطباق', fmtNum(dishOpens), deltaBadge(dishOpens, pv.dishes), 'ph-bold ph-fork-knife', 'text-blue-700')}
-        ${kpiTile('طلبات واتساب', waEnabled || orders ? fmtNum(orders) : '—', waEnabled || orders ? deltaBadge(orders, pv.orders) : '<span class="text-[10px] text-amber-700">فعّلها من معلومات المطعم</span>', 'ph-bold ph-whatsapp-logo', 'text-green-600')}
+        ${kpiTile('طلبات واتساب', waEnabled || orders ? fmtNum(orders) : '—', waEnabled || orders ? deltaBadge(orders, pv.orders) : '<span class="text-[10px] text-amber-700">فعّلها من معلومات المنشأة</span>', 'ph-bold ph-whatsapp-logo', 'text-green-600')}
         ${kpiTile('أطباق لكل زيارة', (dishOpens / views).toFixed(1), '<span class="text-[10px] text-ink/50">متوسط الأطباق اللي يفتحها الزبون</span>', 'ph-bold ph-hand-pointing', 'text-amber-700')}
       </div>
 
@@ -3168,7 +3168,7 @@
             : `<b class="text-xs text-ink">${DELIVERY_APPS[d.app].name}</b>`}
         </div>
         <div class="flex items-center gap-2 flex-1">
-          <input type="url" dir="ltr" value="${esc(d.url || '')}" oninput="deliveryApps[${i}].url=this.value.trim()" placeholder="رابط صفحة مطعمك في التطبيق https://..." class="input-pro !py-1.5 text-xs flex-1">
+          <input type="url" dir="ltr" value="${esc(d.url || '')}" oninput="deliveryApps[${i}].url=this.value.trim()" placeholder="رابط صفحة منشأتك في التطبيق https://..." class="input-pro !py-1.5 text-xs flex-1">
           <button type="button" onclick="removeDeliveryApp(${i})" aria-label="إزالة" class="shrink-0 w-9 h-9 rounded-lg bg-red-500/10 text-red-600 border border-red-500/20 hover:bg-red-500/20"><i class="ph-bold ph-x"></i></button>
         </div>
       </div>`).join('')
@@ -3370,7 +3370,7 @@
         <select onchange="occDraft().stickers[${i}].size=this.value; renderOccasionPreview()" class="input-pro !py-1.5 text-[11px] !w-auto bg-cream">${opts(DMOccasions.SIZES, k.size)}</select>
         <select onchange="occDraft().stickers[${i}].animation=this.value; renderOccasionPreview()" class="input-pro !py-1.5 text-[11px] !w-auto bg-cream">${opts(DMOccasions.ANIMS, k.animation)}</select>
         <button type="button" onclick="occDraft().stickers.splice(${i}, 1); renderStickerRows(); renderOccasionPreview(); renderOccasionList()" aria-label="حذف الملصق" class="w-9 h-9 rounded-lg bg-red-500/10 text-red-600 border border-red-500/20"><i class="ph-bold ph-x"></i></button>
-      </div>`).join('') : '<p class="text-[10px] text-ink/50">اختياري: ارفع شخصية مطعمك أو أي ملصق، والمنصة تحرّكه.</p>';
+      </div>`).join('') : '<p class="text-[10px] text-ink/50">اختياري: ارفع شخصية منشأتك أو أي ملصق، والمنصة تحرّكه.</p>';
     document.getElementById('occ-upload-btn').classList.toggle('hidden', o.stickers.length >= MAX_STICKERS);
   }
   async function uploadSticker(input) {
@@ -4200,7 +4200,7 @@
         <div class="flex flex-col sm:flex-row sm:items-center gap-4">
           <div class="flex-1">
             <h3 class="text-[15px] font-bold">الرد التلقائي على تقييمات قوقل ماب</h3>
-            <p class="text-sm text-ink/65 mt-1 leading-relaxed">اربط حساب قوقل اللي تدير منه مطعمك. أول ما يكتب أحد تعليق، نكتب لك الرد ونرسل لك إشعار، وما ينزل الرد في قوقل إلا بعد موافقتك.</p>
+            <p class="text-sm text-ink/65 mt-1 leading-relaxed">اربط حساب قوقل اللي تدير منه منشأتك. أول ما يكتب أحد تعليق، نكتب لك الرد ونرسل لك إشعار، وما ينزل الرد في قوقل إلا بعد موافقتك.</p>
           </div>
           <button type="button" onclick="connectGoogle()" class="shrink-0 flex items-center justify-center gap-2 bg-white border border-brand/25 hover:border-brand/50 text-ink font-semibold px-4 py-3 rounded-xl text-sm transition">${gIcon} ربط حساب قوقل</button>
         </div>`;
@@ -4233,7 +4233,7 @@
         ? `<p class="font-semibold text-ink mb-2">اختر فرعك:</p><div class="space-y-2">${locations.map((l, i) => `
             <button type="button" data-loc="${i}" class="w-full text-right border border-brand/20 hover:border-brand/50 rounded-xl px-4 py-3 transition">
               <span class="block font-semibold text-ink">${esc(l.title)}</span>${l.address ? `<span class="block text-xs text-ink/55">${esc(l.address)}</span>` : ''}</button>`).join('')}</div>`
-        : '<p class="text-brick font-semibold">ما لقينا أي نشاط في قوقل ماب على هذا الحساب. اربط الحساب اللي تدير منه مطعمك.</p>';
+        : '<p class="text-brick font-semibold">ما لقينا أي نشاط في قوقل ماب على هذا الحساب. اربط الحساب اللي تدير منه منشأتك.</p>';
       box.querySelectorAll('[data-loc]').forEach(b => b.onclick = async () => {
         const l = locations[Number(b.dataset.loc)];
         try { await api('google-select', { account: l.account, location: l.location }); showToast(`انربط فرع "${l.title}"`); loadGoogle(); }
@@ -4282,7 +4282,7 @@
       connected: ['انربط حساب قوقل. أول ما يوصل تعليق جديد بنكتب لك الرد ونبلغك.', false],
       choose: ['انربط حساب قوقل. اختر فرعك من القائمة.', false],
       pending: ['انربط حسابك، والجلب التلقائي يبدأ أول ما يوافق قوقل على صلاحية DEV MENU.', false],
-      nolocation: ['ما لقينا نشاط في قوقل ماب على هذا الحساب. اربط الحساب اللي تدير منه مطعمك.', true],
+      nolocation: ['ما لقينا نشاط في قوقل ماب على هذا الحساب. اربط الحساب اللي تدير منه منشأتك.', true],
       denied: ['ألغيت الربط من صفحة قوقل.', true],
       scope: ['لازم تسمح بصلاحية "إدارة نشاطك التجاري" في صفحة قوقل، جرّب الربط مرة ثانية.', true],
       expired: ['انتهت صلاحية رابط الربط، جرّب مرة ثانية.', true],
@@ -4294,7 +4294,7 @@
     history.replaceState(null, '', location.pathname + (p.toString() ? `?${p}` : '') + location.hash);
   })();
 
-  // التعليقات اللي جت من قوقل وتنتظر موافقة صاحب المطعم
+  // التعليقات اللي جت من قوقل وتنتظر موافقة صاحب المنشأة
   function renderPending() {
     const list = rv.drafts.filter(d => d.source === 'google' && (d.status === 'pending' || d.status === 'failed'));
     document.getElementById('rv-pending-wrap').classList.toggle('hidden', !list.length);

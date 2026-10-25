@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="/images/icon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
 <meta name="theme-color" content="#f6f3ec">
-<title>DEV MENU | منيو رقمي وبيجر وبطاقة ولاء لمطعمك</title>
+<title>DEV MENU | منيو رقمي وبيجر وبطاقة ولاء لمنشأتك</title>
 <meta name="description" content="منيو رقمي بصور أطباقك، بيجر يرن في جوال زبونك، وبطاقة ولاء في محفظة جواله. بدون تطبيق وبدون أجهزة. اختر اللي تحتاجه وابدأ مجاناً 7 أيام.">
 <link rel="stylesheet" href="/css/fonts.css">
 <link rel="stylesheet" href="/css/icons.css">
@@ -379,7 +379,7 @@
 
       <form id="register-form" class="space-y-4" novalidate>
         <div>
-          <label for="reg-name" class="lbl">اسم المطعم أو الكافيه</label>
+          <label for="reg-name" class="lbl">اسم المنشأة</label>
           <input type="text" id="reg-name" placeholder="مثال: جولت كوفي" required class="field">
         </div>
         <div>
@@ -742,7 +742,7 @@
   function registerWithGoogle() {
     const name = $('reg-name').value.trim();
     const phone = normalizeMobile($('reg-phone').value);
-    if (!name) { $('reg-name').focus(); return showToast('اكتب اسم المطعم أو الكافيه', 'error'); }
+    if (!name) { $('reg-name').focus(); return showToast('اكتب اسم المنشأة', 'error'); }
     if (!phone) { $('reg-phone').focus(); return showToast('رقم الجوال غير صحيح، تأكد من رمز الدولة والرقم', 'error'); }
     if (businessType() === 'other' && !businessLabel()) { $('reg-label').focus(); return showToast('اكتب نوع نشاطك', 'error'); }
     try { localStorage.setItem(PENDING_KEY, JSON.stringify({ name, phone, businessType: businessType(), businessLabel: businessLabel(), ...planPayload(), at: Date.now() })); } catch {}
