@@ -131,6 +131,12 @@
       <span id="push-on" class="chip ok hidden"><i class="ph-bold ph-bell"></i> الإشعارات مفعّلة</span>
       <span id="keep-on" class="chip ok hidden"><i class="ph-bold ph-speaker-high"></i> الرنين شغّال حتى على الصامت</span>
     </div>
+    <!-- رقمه في المحفظة: إشعار من النظام حتى لو يشوف فيديو أو سكّر المتصفح -->
+    <div id="pw-box" class="card p-4 space-y-2.5 hidden">
+      <p class="font-black text-[14px]"><i class="ph-bold ph-video"></i> تبي تشوف فيديو وانت تنتظر؟</p>
+      <p class="text-[12.5px] font-bold opacity-65 leading-relaxed">أضف رقمك للمحفظة، ويوصلك إشعار من الجوال <span class="t-when"></span> حتى لو تشوف تيك توك أو سكّرت المتصفح.</p>
+      <button id="pw-btn" class="btn btn-wallet !py-3.5 !text-base"><i class="ph-bold ph-wallet"></i> <span>أضف رقمي للمحفظة</span></button>
+    </div>
     <button id="push-btn" class="btn btn-brand hidden"><i class="ph-bold ph-bell"></i> فعّل الإشعارات</button>
     <button id="keep-btn" class="btn btn-ghost hidden"><i class="ph-bold ph-speaker-high"></i> فعّل الرنين حتى لو جوالك صامت</button>
     <button id="unlock-btn" class="btn btn-ghost hidden"><i class="ph-bold ph-speaker-high"></i> فعّل صوت التنبيه</button>
@@ -179,7 +185,7 @@
       <ul>
         <li><i class="ph-bold ph-device-mobile"></i> تقدر تطلع من الصفحة وتقفل الجوال، بس لا تسكّر المتصفح</li>
         <li><i class="ph-bold ph-speaker-high"></i> ارفع صوت الوسائط</li>
-        <li><i class="ph-bold ph-music-notes"></i> لا تشغّل مقطع أو موسيقى ثانية وانت تنتظر</li>
+        <li><i class="ph-bold ph-music-notes"></i> تبي تشوف فيديو؟ أضف رقمك للمحفظة عشان يوصلك التنبيه</li>
       </ul>
       <button id="test-btn" class="text-xs font-black underline opacity-70 mt-2">جرّب صوت التنبيه</button>
     </details>
@@ -458,7 +464,20 @@
       show('w-loyalty', '');
       show('r-loyalty', html, 'text-white bg-[#233d2c]', join);
     }
-  }  // ─── رقم الفاتورة من العميل ───
+  }  // ─── رقم البيجر في المحفظة ───
+  $('pw-btn').onclick = async () => {
+    const btn = $('pw-btn'); btn.disabled = true;
+    const label = btn.querySelector('span').textContent;
+    btn.querySelector('span').textContent = 'جاري التجهيز…';
+    try {
+      const r = await DM.post('/api/pager?action=wallet', { slug, t: loadToken() });
+      try { localStorage.setItem(`${KEY}_wallet`, loadToken()); } catch {}
+      if (r.url) location.href = r.url;
+    } catch (err) { alert(err.message || 'تعذر الإضافة للمحفظة'); btn.querySelector('span').textContent = label; }
+    btn.disabled = false;
+  };
+
+  // ─── رقم الفاتورة من العميل ───
   let invEditing = false;
   $('w-invoice').onclick = () => { invEditing = true; $('inv-in').value = $('w-invoice').querySelector('span').textContent; $('inv-form').classList.remove('hidden'); $('inv-in').focus(); };
   $('inv-form').onsubmit = async (e) => {
@@ -528,6 +547,8 @@
     $('w-tell').classList.toggle('hidden', !!inv);
     if (!invEditing) $('inv-form').classList.toggle('hidden', !!inv || st !== 'waiting');
     $('w-demo').classList.toggle('hidden', !r.demo);
+    $('pw-box').classList.toggle('hidden', !r.wallet || st !== 'waiting');
+    if (localStorage.getItem(`${KEY}_wallet`) === token) $('pw-btn').querySelector('span').textContent = 'رقمك في المحفظة ✓ افتحه';
     reviewLink = r.review_url || reviewLink;
     $('r-review').classList.toggle('hidden', !reviewLink);
     if (reviewLink) { $('r-review').href = reviewLink; $('rate-google').href = reviewLink; }

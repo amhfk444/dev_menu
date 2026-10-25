@@ -804,6 +804,12 @@ async function main(req) {
         }
       } catch (e) { console.error('PAGER_STAMP', e.message); }
     }
+    // رقمه مضاف للمحفظة: تحديث يطلع إشعار من النظام (حتى لو يشوف فيديو)
+    if (status === 'ready' && t.wallet_serial) {
+      const T = SECTORS.terms(store);
+      const wr = await wallet.updatePagerPass(t.wallet_serial, { store, number: t.number, status: T.ready, notice: `🔔 ${T.ready} رقم ${t.number}. ${T.readyBody}`, url: `https://${store.client_slug}.devmenu.digital/pager` });
+      console.log('PAGER_PASS', sid, t.id, wr);
+    }
     // بطاقة ولاء مربوطة وفي المحفظة: إشعار "طلبك جاهز" من البطاقة (يوصل الآيفون حتى لو المتصفح مسكّر)
     if (status === 'ready' && t.loyalty_card_id && PLANS.has(store, 'loyalty')) {
       const wr = await pagerReadyNotice(sid, t.loyalty_card_id, t.number, store.name, SECTORS.terms(store));

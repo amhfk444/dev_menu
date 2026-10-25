@@ -101,4 +101,38 @@ function buildCtx({ store, settings, card, lat, lng, notice, nearText }) {
   return { store, settings, card, url, restoreUrl: `${url}${url.includes('?') ? '&' : '?'}t=${encodeURIComponent(card.token)}`, lat, lng, notice, nearText };
 }
 
-module.exports = { configured, createPass, updatePass, buildCtx, cardUrl };
+// ─── رقم البيجر كبطاقة في المحفظة: يوصله إشعار النظام لما يجي دوره (حتى وهو يشوف فيديو) ───
+function pagerBody({ store, number, status, notice, url, color }) {
+  const body = {
+    logoText: String(store.name || 'DEV MENU').slice(0, 40),
+    organizationName: String(store.name || 'DEV MENU').slice(0, 64),
+    description: `رقمك في ${store.name || ''}`.slice(0, 120),
+    colorPreset: 'green',
+    headerFields: [{ label: 'رقمك', value: String(number) }],
+    secondaryFields: [{ label: 'الحالة', value: String(status).slice(0, 40) }],
+    backFields: [{ label: 'صفحة رقمك', value: url }],
+    sharingProhibited: true,
+    notification: String(notice || ' ').slice(0, 250)
+  };
+  if (color) { body.color = color; delete body.colorPreset; }
+  if (store.logo_url && /^https:\/\//.test(store.logo_url)) body.logoURL = store.logo_url;
+  return body;
+}
+async function createPagerPass(ctx) {
+  if (!configured()) throw new ApiError(503, 'المحفظة مو متاحة حالياً', 'WALLET_OFF');
+  try { return await call('POST', '', pagerBody(ctx)); }
+  catch (e) {
+    if (e.status >= 400 && e.status < 500 && e.status !== 401 && e.status !== 429) {
+      const b = pagerBody(ctx); delete b.logoURL; delete b.color; b.colorPreset = 'green';
+      try { return await call('POST', '', b); } catch {}
+    }
+    throw new ApiError(502, 'تعذر تجهيز رقمك للمحفظة، جرّب بعد شوي', 'WALLET_FAILED');
+  }
+}
+async function updatePagerPass(serial, ctx) {
+  if (!configured() || !serial) return 'off';
+  try { const r = await call('PUT', `/${encodeURIComponent(serial)}`, pagerBody(ctx)); return `ok devices=${r.notifiedDevices ?? '?'}`; }
+  catch (e) { return `${e.status || ''} ${e.message || ''}`.trim().slice(0, 200); }
+}
+
+module.exports = { configured, createPass, updatePass, buildCtx, cardUrl, createPagerPass, updatePagerPass };
