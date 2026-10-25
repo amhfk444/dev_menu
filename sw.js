@@ -7,7 +7,7 @@ self.addEventListener('push', (event) => {
   try { d = event.data ? event.data.json() : {}; } catch { d = { title: event.data && event.data.text() }; }
   const title = d.title || '🔔 طلبك جاهز!';
   event.waitUntil(self.registration.showNotification(title, {
-    body: d.body || 'تفضّل استلمه من الكاشير',
+    body: d.body || 'تفضّل استلمه من الموظف',
     tag: d.tag || 'pager',
     renotify: true,
     requireInteraction: true,

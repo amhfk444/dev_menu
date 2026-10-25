@@ -134,7 +134,7 @@ async function pagerReadyNotice(storeId, cardId, number, storeName) {
   try {
     const card = (await rest(`loyalty_cards?id=eq.${Number(cardId)}&client_id=eq.${storeId}&select=id,wallet_serial`))[0];
     if (!card || !card.wallet_serial) return 'no-wallet';
-    const body = `🔔 طلبك جاهز! رقم ${number}. تفضّل استلمه من ${storeName || 'الكاشير'}`;
+    const body = `🔔 طلبك جاهز! رقم ${number}. تفضّل استلمه من ${storeName || 'الموظف'}`;
     await rest('loyalty_messages', { method: 'POST', body: { client_id: storeId, card_id: card.id, body, source: 'system', kind: 'pager' } }).catch(() => {});
     const sent = await pushWalletCards(storeId, { cardIds: [card.id], notice: body });
     return sent ? 'sent' : 'failed';

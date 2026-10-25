@@ -66,7 +66,7 @@
   <section id="v-unavailable" class="card p-8 text-center space-y-2 hidden">
     <i class="ph-bold ph-warning-circle text-3xl text-amber-600"></i>
     <h2 id="u-title" class="text-lg font-black">البيجر غير متاح حالياً</h2>
-    <p id="u-sub" class="text-sm font-bold opacity-60">اسأل الكاشير.</p>
+    <p id="u-sub" class="text-sm font-bold opacity-60">اسأل الموظف.</p>
   </section>
 
   <!-- أخذ رقم -->
@@ -74,7 +74,7 @@
     <div class="w-20 h-20 rounded-3xl bg-[#233d2c] text-[#c9a227] grid place-items-center mx-auto text-3xl"><i class="ph-bold ph-bell"></i></div>
     <div>
       <h2 class="text-2xl font-black">خذ رقمك</h2>
-      <p class="text-sm font-bold opacity-65 mt-2 leading-relaxed">اضغط الزر واسمح بالإشعارات، وقل رقمك للكاشير مع طلبك. لما يجهز يرن جوالك ويوصلك إشعار، حتى لو كان على الصامت.</p>
+      <p class="text-sm font-bold opacity-65 mt-2 leading-relaxed">اضغط الزر واسمح بالإشعارات، وقل رقمك للموظف مع طلبك. لما يجهز يرن جوالك ويوصلك إشعار، حتى لو كان على الصامت.</p>
     </div>
     <button id="take-btn" class="btn btn-brand"><i class="ph-bold ph-ticket"></i> خذ رقمي وفعّل التنبيه</button>
   </section>
@@ -84,7 +84,7 @@
     <p id="w-demo" class="hidden text-[13px] font-black text-[#15271b] bg-[#c9a227]/25 border border-[#c9a227]/50 rounded-2xl py-3 px-3">هذي تجربة: خلال ثواني بيجهز الطلب ويرن جوالك 🔔</p>
     <p class="text-sm font-black opacity-60">رقمك</p>
     <div id="w-number" class="num">—</div>
-    <p id="w-tell" class="text-sm font-black">ورّ هذا الرقم للكاشير مع طلبك</p>
+    <p id="w-tell" class="text-sm font-black">ورّ هذا الرقم للموظف مع طلبك</p>
     <p id="w-invoice" class="hidden text-base font-black text-[#233d2c] bg-[#f5f2eb] rounded-2xl py-2.5">🧾 فاتورتك: <span dir="ltr"></span></p>
     <div class="flex items-center justify-center gap-2 text-[13px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-2xl py-3">
       <span class="pulse-dot"></span> جاري التجهيز… بنرن جوالك أول ما يجهز
@@ -128,7 +128,7 @@
     <h2 class="text-3xl font-black">طلبك جاهز!</h2>
     <div id="r-number" class="num">—</div>
     <p id="r-invoice" class="hidden text-base font-black">🧾 فاتورة <span dir="ltr"></span></p>
-    <p class="text-sm font-bold opacity-70">تفضّل استلمه من الكاشير</p>
+    <p class="text-sm font-bold opacity-70">تفضّل استلمه من الموظف</p>
     <a id="r-loyalty" class="hidden block text-[13px] font-black rounded-2xl py-3 px-3"></a>
     <button id="got-btn" class="btn btn-brand"><i class="ph-bold ph-check"></i> استلمت طلبي</button>
     <a id="r-review" target="_blank" rel="noopener" class="hidden btn btn-ghost !py-3.5 !text-base"><i class="ph-bold ph-star text-[#c9a227]"></i> قيّمنا على قوقل ماب</a>
@@ -367,7 +367,7 @@
     try { r = await DM.get(`/api/pager?action=status&slug=${encodeURIComponent(slug)}&t=${encodeURIComponent(token)}`); }
     catch (e) {
       if (e.status === 404 && e.code === 'NOT_FOUND') { saveToken(''); return show('start'); }
-      if (e.status === 404 || e.status === 400) return unavailable('البيجر غير متاح حالياً', 'اسأل الكاشير.');
+      if (e.status === 404 || e.status === 400) return unavailable('البيجر غير متاح حالياً', 'اسأل الموظف.');
       pollTimer = setTimeout(poll, 5000); return;   // انقطاع مؤقت: نعيد المحاولة
     }
     setStore(r.store);
@@ -421,7 +421,7 @@
       offerPerm(true);   // بعد أخذ الرقم تطلع دايماً: يا يوافق، يا يتأكد إن كل شي مفعّل
     } catch (e) {
       stopKeeper();
-      unavailable(e.code === 'FULL' ? 'وصلنا الحد اليومي للأرقام' : 'تعذر أخذ رقم', 'اسأل الكاشير.');
+      unavailable(e.code === 'FULL' ? 'وصلنا الحد اليومي للأرقام' : 'تعذر أخذ رقم', 'اسأل الموظف.');
     } finally { btn.disabled = false; btn.innerHTML = '<i class="ph-bold ph-ticket"></i> خذ رقمي وفعّل التنبيه'; }
   };
   // ─── لعبة الانتظار: طابق البطاقات (8 أزواج) ───
@@ -544,10 +544,10 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { keepAwake(); if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {}); if (keeperMode && keeper.paused) keeper.play().catch(() => {}); if (loadToken()) poll(); } });
 
   (async function init() {
-    if (!slug) return unavailable('الرابط غير صحيح', 'امسح رمز QR من عند الكاشير.');
+    if (!slug) return unavailable('الرابط غير صحيح', 'امسح رمز QR من عند الموظف.');
     // نتأكد إن المتجر موجود، ونجيب مفتاح الإشعارات
     try { const info = await DM.get(`/api/pager?action=info&slug=${encodeURIComponent(slug)}`); setStore(info.store); pushKey = info.push_key || ''; }
-    catch (e) { return unavailable('البيجر غير متاح حالياً', 'اسأل الكاشير.'); }
+    catch (e) { return unavailable('البيجر غير متاح حالياً', 'اسأل الموظف.'); }
     if ('serviceWorker' in navigator && pushKey) navigator.serviceWorker.register('/sw.js').catch(() => {});
     if (loadToken()) { await poll(); return offerPerm(); }   // رجع للصفحة: الصوت يحتاج ضغطة منه من جديد
     show('start');

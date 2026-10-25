@@ -223,7 +223,7 @@ async function ringTicket(store, t) {
   const url = `https://${store.client_slug}.devmenu.digital/pager`;
   const payload = n === 1
     ? { title: `🔔 طلبك جاهز! رقم ${t.number}`, body: `تفضّل استلمه من ${store.name}` }
-    : { title: `🔔 تذكير: طلبك جاهز! رقم ${t.number}`, body: `طلبك ينتظرك عند الكاشير (${n}/${PAGER_MAX_RINGS})` };
+    : { title: `🔔 تذكير: طلبك جاهز! رقم ${t.number}`, body: `طلبك ينتظرك عند الموظف (${n}/${PAGER_MAX_RINGS})` };
   // وسم مختلف لكل رنّة عشان الجوال يرن كل مرة (الآيفون ما يعيد التنبيه لنفس الوسم)
   const result = await sendPush(t.push_sub, { ...payload, url, tag: `pager-${t.id}-${n}` });
   console.log('PAGER_RING', store.id, t.id, n, result);
