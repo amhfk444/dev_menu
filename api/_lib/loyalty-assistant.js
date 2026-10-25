@@ -157,6 +157,9 @@ async function pagerReadyNotice(storeId, cardId, number, storeName, T = SECTORS.
 }
 // إشعار من بطاقة المحفظة (البيجر وقائمة الانتظار)
 async function walletNotice(storeId, cardId, body) {
+  // المحفظة ما تطلع إشعار إذا النص نفس آخر رسالة (الأرقام تتكرر كل يوم)، فنضيف الوقت عشان يكون مختلف دايماً
+  const time = new Date(Date.now() + 3 * 3600e3).toISOString().slice(11, 16);
+  body = `${body} (${time})`;
   try {
     const card = (await rest(`loyalty_cards?id=eq.${Number(cardId)}&client_id=eq.${storeId}&select=id,wallet_serial`))[0];
     if (!card || !card.wallet_serial) return 'no-wallet';

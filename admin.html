@@ -1041,7 +1041,7 @@
                   <select id="ly-cooldown" class="input-pro">
                     <option value="1">ساعة</option><option value="2">ساعتين</option><option value="3">3 ساعات</option><option value="4">4 ساعات</option><option value="6">6 ساعات</option><option value="12">12 ساعة</option><option value="24">يوم كامل</option>
                   </select></label>
-                <label class="block"><span class="text-xs font-semibold text-ink/70 block mb-1.5">المسافة المسموحة لاستخدام المكافأة</span>
+                <label class="hidden"><span class="text-xs font-semibold text-ink/70 block mb-1.5">المسافة المسموحة لاستخدام المكافأة</span>
                   <select id="ly-radius" class="input-pro">
                     <option value="25">25 متر</option><option value="50">50 متر</option><option value="100">100 متر (مول أو مبنى كبير)</option><option value="200">200 متر</option>
                   </select></label>
@@ -3928,7 +3928,7 @@
     document.getElementById('ly-gifts').checked = !st.gifts || st.gifts.enabled !== false;
     document.getElementById('ly-loc-status').innerHTML = d.location_set
       ? '<span class="text-emerald-700 font-semibold"><i class="ph-bold ph-check-circle"></i> موقع المحل محدد</span>'
-      : '<span class="text-brick font-semibold"><i class="ph-bold ph-warning-circle"></i> ما حددت موقع المحل للحين: الزبون يحتاجه عشان يستخدم مكافأته</span>';
+      : '<span class="text-ink/60 font-semibold"><i class="ph-bold ph-info"></i> اختياري: لو حددته، تطلع بطاقة الزبون على شاشة قفل جواله لما يقرب من المحل. الختم والصرف والإشعارات ما تعتمد عليه.</span>';
     // الكود
     const url = loyaltyUrl();
     document.getElementById('ly-link').value = url.replace(/^https?:\/\//, '');
@@ -4255,7 +4255,6 @@
 
   async function toggleLoyalty() {
     const next = !(ly.data && ly.data.enabled);
-    if (next && ly.data && !ly.data.location_set) showToast('لا تنسى تحدد موقع المحل وأنت داخله');
     try { const r = await api('loyalty-settings', { enabled: next }); ly.data.enabled = r.enabled; renderLoyalty(); showToast(r.enabled ? 'بطاقة الولاء شغّالة' : 'بطاقة الولاء متوقفة'); }
     catch (e) { showToast(e.message || 'تعذر الحفظ', true); }
   }
