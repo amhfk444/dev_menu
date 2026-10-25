@@ -17,7 +17,7 @@
 <script src="/js/plans.js"></script>
 <script src="/js/vendor/qrcode.min.js" defer></script>
 <style>
-  :root { --brand: #233d2c; --brand-dark: #15271b; --ink: #1b3022; --sand: #f6f3ec; --gold: #c9a227; --gold-deep: #8a6d0f;
+  :root { --brand: #233d2c; --brand-dark: #15271b; --ink: #1b3022; --sand: #f6f3ec; --gold: #7fb685; --gold-deep: #3f7a4a;
           --muted: rgba(27,48,34,.64); --line: rgba(27,48,34,.1); }
   html { scroll-behavior: smooth; }
   body { font-family: 'SaudiRiyal', 'IBM Plex Sans Arabic', system-ui, sans-serif; background: var(--sand); color: var(--ink); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
@@ -40,7 +40,7 @@
   .btn-main:hover { background: var(--brand-dark); }
   .btn-soft { background: #fff; color: var(--ink); border: 1.5px solid var(--line); }
   .btn-soft:hover { border-color: rgba(27,48,34,.3); }
-  .btn-gold { background: var(--gold); color: #15271b; box-shadow: 0 14px 26px -14px rgba(138,109,15,.7); }
+  .btn-gold { background: var(--gold); color: #15271b; box-shadow: 0 14px 26px -14px rgba(63,122,74,.7); }
   .pill { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--gold-deep); }
 
   /* الواجهة */
@@ -89,7 +89,7 @@
   .step-row p { font-size: 14.5px; color: var(--muted); line-height: 1.75; margin-top: 2px; }
 
   /* الأسعار (قسم داكن) */
-  .dark { background: radial-gradient(900px 500px at 85% 0%, rgba(201,162,39,.16), transparent 60%), linear-gradient(180deg, #1a3022, #10200f 120%); color: #f6f3ec; border-radius: 44px; margin: 0 12px; }
+  .dark { background: radial-gradient(900px 500px at 85% 0%, rgba(127,182,133,.18), transparent 60%), linear-gradient(180deg, #1a3022, #10200f 120%); color: #f6f3ec; border-radius: 44px; margin: 0 12px; }
   .dark .sub { color: rgba(246,243,236,.7); }
   .period { display: inline-grid; grid-template-columns: 1fr 1fr; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); border-radius: 16px; padding: 4px; }
   .period button { padding: 10px 22px; border-radius: 12px; font-weight: 700; font-size: 14px; color: rgba(246,243,236,.7); }
@@ -251,7 +251,7 @@
         <p class="from">من <b dir="ltr">&#x20C1; 39</b> بالشهر</p>
       </article>
       <article class="prod reveal">
-        <span class="prod-ic" style="background:#fbf3dc;color:#8a6d0f"><i class="ph-bold ph-bell-ringing"></i></span>
+        <span class="prod-ic" style="background:#e3f1ef;color:#0f766e"><i class="ph-bold ph-bell-ringing"></i></span>
         <h3>البيجر في جوال زبونك</h3>
         <p>زبونك يمسح الكود وياخذ رقمه، ولما يجهز طلبه يرن جواله حتى لو قفل الشاشة. بدون أجهزة تضيع أو تخرب.</p>
         <ul class="space-y-1.5">
@@ -367,7 +367,7 @@
       </div>
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-[17px] font-bold">بيانات محلك</h3>
-        <span id="step-indicator" class="text-[12px] font-bold text-[color:var(--gold-deep)] bg-[#c9a227]/15 px-3 py-1.5 rounded-full">الخطوة 1 من 2</span>
+        <span id="step-indicator" class="text-[12px] font-bold text-[color:var(--gold-deep)] bg-[#7fb685]/20 px-3 py-1.5 rounded-full">الخطوة 1 من 2</span>
       </div>
 
       <form id="register-form" class="space-y-4" novalidate>
