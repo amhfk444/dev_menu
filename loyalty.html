@@ -124,6 +124,22 @@
         <button id="m-close" type="button" aria-label="إغلاق" class="w-8 h-8 rounded-lg opacity-50 hover:opacity-100"><i class="ph-bold ph-x"></i></button>
       </div>
     </div>
+    <div id="c-survey" class="card p-5 space-y-3 hidden">
+      <p class="font-bold">وحشتنا! وش اللي خلاك ما ترجع؟</p>
+      <p class="text-xs opacity-60">جوابك يوصل لصاحب المحل مباشرة، ويساعده يتحسن.</p>
+      <div class="grid grid-cols-2 gap-2" id="sv-reasons">
+        <button type="button" class="reason field !text-center !text-sm font-semibold" data-r="wait">الانتظار طويل</button>
+        <button type="button" class="reason field !text-center !text-sm font-semibold" data-r="price">الأسعار</button>
+        <button type="button" class="reason field !text-center !text-sm font-semibold" data-r="quality">الطعم أو الجودة</button>
+        <button type="button" class="reason field !text-center !text-sm font-semibold" data-r="far">المكان بعيد عني</button>
+        <button type="button" class="reason field !text-center !text-sm font-semibold" data-r="busy">ما صار عندي وقت</button>
+        <button type="button" class="reason field !text-center !text-sm font-semibold" data-r="other">شي ثاني</button>
+      </div>
+      <textarea id="sv-note" rows="2" maxlength="300" class="field hidden" placeholder="قلنا أكثر (اختياري)"></textarea>
+      <button type="button" id="sv-send" class="btn btn-brand !py-3 hidden">أرسل</button>
+      <p id="sv-gift" class="text-xs text-center opacity-70 hidden"><i class="ph-bold ph-gift"></i> وعلى جوابك ختم هدية</p>
+    </div>
+
     <div class="lcard" id="c-card">
       <div class="flex items-start justify-between gap-3">
         <div>
@@ -145,22 +161,6 @@
       <div id="c-qr" class="w-48 h-48 mx-auto bg-white p-2 rounded-2xl"></div>
       <p class="text-sm opacity-70">رقم عضويتك <b dir="ltr" id="c-qr-id"></b></p>
       <p id="c-purchase" class="text-xs opacity-60 hidden"><i class="ph-bold ph-receipt"></i> أو اطلب من الكاشير <b>كود الختم</b> وامسحه<span id="c-pager-hint">، ولو أخذت رقم بيجر ينختم لك تلقائياً</span>.</p>
-    </div>
-
-    <div id="c-survey" class="card p-5 space-y-3 hidden">
-      <p class="font-bold">وحشتنا! وش اللي خلاك ما ترجع؟</p>
-      <p class="text-xs opacity-60">جوابك يوصل لصاحب المحل مباشرة، ويساعده يتحسن.</p>
-      <div class="grid grid-cols-2 gap-2" id="sv-reasons">
-        <button type="button" class="reason field !text-center !text-sm font-semibold" data-r="wait">الانتظار طويل</button>
-        <button type="button" class="reason field !text-center !text-sm font-semibold" data-r="price">الأسعار</button>
-        <button type="button" class="reason field !text-center !text-sm font-semibold" data-r="quality">الطعم أو الجودة</button>
-        <button type="button" class="reason field !text-center !text-sm font-semibold" data-r="far">المكان بعيد عني</button>
-        <button type="button" class="reason field !text-center !text-sm font-semibold" data-r="busy">ما صار عندي وقت</button>
-        <button type="button" class="reason field !text-center !text-sm font-semibold" data-r="other">شي ثاني</button>
-      </div>
-      <textarea id="sv-note" rows="2" maxlength="300" class="field hidden" placeholder="قلنا أكثر (اختياري)"></textarea>
-      <button type="button" id="sv-send" class="btn btn-brand !py-3 hidden">أرسل</button>
-      <p id="sv-gift" class="text-xs text-center opacity-70 hidden"><i class="ph-bold ph-gift"></i> وعلى جوابك ختم هدية</p>
     </div>
 
     <div id="c-reward" class="card p-5 text-center space-y-3 hidden">
