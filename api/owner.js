@@ -3,6 +3,7 @@
 // كل طلب: نتحقق من الجلسة ← نحدد متجر المستخدم من بريده ← ننفذ
 // المدير العام يقدر يدير أي متجر عبر ?client=slug
 // =====================================================================
+const crypto = require('crypto');
 const {
   handler, rest, rpc, q, storage, publicUrl, ownsMediaUrl, SUPABASE_URL, BUCKET,
   ApiError, getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody, SLUG_RE, RESERVED_SLUGS, CURRENCIES
@@ -558,7 +559,7 @@ async function main(req) {
   req._sid = sid;
   // المميزات حسب باقة المحل
   if (['pager-update', 'pager-invoice', 'pager-ring'].includes(action) && !PLANS.has(store, 'pager')) throw new ApiError(403, 'البيجر مو ضمن باقتك', 'ADDON_OFF');
-  if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-member-delete', 'loyalty-redeem', 'loyalty-message', 'loyalty-message-push', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء مو ضمن باقتك، أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
+  if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-member-delete', 'loyalty-import', 'loyalty-redeem', 'loyalty-message', 'loyalty-message-push', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء مو ضمن باقتك، أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
 
 
   // ─── ربط قوقل ماب ───
@@ -776,6 +777,39 @@ async function main(req) {
   }
 
   // ─── حذف عضو من بطاقة الولاء (وأختامه ورسائله تنحذف معه) ───
+  // ─── استيراد أعضاء من نظام ولاء سابق (ملف Excel أو CSV): الاسم والجوال والأختام ───
+  // ينحفظون كبطاقات جاهزة، ولما يمسح الزبون كود التسجيل ويكتب نفس جواله تطلع له بطاقته بأختامه
+  if (action === 'loyalty-import') {
+    const x = (await rest(`clients?id=eq.${sid}&select=loyalty_settings`))[0] || {};
+    const settings = normalizeLoyalty(x.loyalty_settings);
+    const rows = Array.isArray(b.rows) ? b.rows.slice(0, 1000) : [];
+    if (!rows.length) throw new ApiError(400, 'الملف فاضي');
+    const seen = new Map();
+    let invalid = 0;
+    for (const r of rows) {
+      let phone = '';
+      try { phone = waNumber(String((r && r.phone) || '').replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15))); } catch {}
+      if (!phone) { invalid++; continue; }
+      const stamps = Math.max(0, Math.min(settings.needed, parseInt(String((r && r.stamps) || 0).replace(/[^\d]/g, ''), 10) || 0));
+      const name = String((r && r.name) || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+      if (!seen.has(phone)) seen.set(phone, { name, stamps });
+    }
+    const phones = [...seen.keys()];
+    const existing = new Set();
+    for (let i = 0; i < phones.length; i += 200) {
+      const got = await rest(`loyalty_cards?client_id=eq.${sid}&phone=in.(${phones.slice(i, i + 200).join(',')})&select=phone`);
+      got.forEach(c => existing.add(c.phone));
+    }
+    const now = new Date().toISOString();
+    const fresh = phones.filter(p => !existing.has(p)).map(p => {
+      const v = seen.get(p);
+      return { client_id: sid, token: crypto.randomBytes(18).toString('base64url'), name: v.name || 'عضو', phone: p, stamps: v.stamps,
+        transferred: v.stamps, transferred_at: now };
+    });
+    for (let i = 0; i < fresh.length; i += 500) await rest('loyalty_cards', { method: 'POST', body: fresh.slice(i, i + 500) });
+    return { added: fresh.length, existing: existing.size, invalid };
+  }
+
   if (action === 'loyalty-member-delete') {
     const id = int(b.card_id);
     const card = (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${sid}&select=id,wallet_serial`))[0];

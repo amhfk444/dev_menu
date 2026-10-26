@@ -195,8 +195,11 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
           method: 'POST', prefer: 'return=representation',
           body: { client_id: ctx.store.id, token: crypto.randomBytes(18).toString('base64url'), ...profile }
         }))[0];
-      } else if (!card.name || !card.gender) {
-        await rest(`loyalty_cards?id=eq.${card.id}`, { method: 'PATCH', body: { name: card.name || profile.name, gender: card.gender || profile.gender } });
+      } else if (!card.name || card.name === 'عضو' || !card.gender) {
+        // بطاقة مستوردة من نظام سابق (أو قديمة بدون بيانات): نكمّلها باسمه وجنسه
+        const name = card.name && card.name !== 'عضو' ? card.name : profile.name;
+        await rest(`loyalty_cards?id=eq.${card.id}`, { method: 'PATCH', body: { name, gender: card.gender || profile.gender } });
+        card = { ...card, name, gender: card.gender || profile.gender };
       }
       let out;
       if (b.code) {

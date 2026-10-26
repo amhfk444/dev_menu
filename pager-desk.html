@@ -158,6 +158,7 @@
       <input id="scan-id" inputmode="numeric" placeholder="أو اكتب رقم العضوية" class="flex-1 min-w-0 rounded-2xl border border-[#233d2c]/20 px-4 py-3 font-bold text-center" dir="ltr">
       <button class="bg-[#233d2c] text-white font-black rounded-2xl px-5">ختم</button>
     </form>
+    <p id="tr-hint" class="rounded-2xl bg-[#fbf6e6] border border-[#c9a227]/40 px-3 py-2.5 text-[12px] font-bold text-right"><i class="ph-bold ph-arrows-left-right text-[#8a6d0f]"></i> عنده أختام من نظام قديم؟ امسح كوده أو اكتب رقم عضويته، ويطلع لك زر <b>نقل رصيد قديم</b></p>
     <!-- آخر عضو انمسح: نقل رصيد بطاقته القديمة -->
     <div id="tr-box" class="hidden rounded-2xl border-2 border-[#c9a227] bg-[#fbf6e6] p-3 text-right">
       <div class="flex items-center gap-2">
@@ -455,6 +456,7 @@
   function setTransfer(r) {
     trMember = r && r.who ? { no: r.who.no, name: r.who.name, needed: r.needed, done: r.who.transferred != null } : null;
     $('tr-box').classList.toggle('hidden', !trMember);
+    $('tr-hint').classList.toggle('hidden', !!trMember);
     $('tr-pick').classList.add('hidden');
     if (!trMember) return;
     $('tr-who').textContent = `${trMember.name} #${trMember.no}`;
