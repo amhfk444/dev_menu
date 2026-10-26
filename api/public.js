@@ -9,7 +9,7 @@
 //   POST /api/public?action=track           تسجيل زيارة/مشاهدة (مجهولة)
 // =====================================================================
 const crypto = require('crypto');
-const { handler, rest, rpc, q, ApiError, readBody, int, findPublicStore, CURRENCIES, storeHasFeature } = require('./_lib/core');
+const { handler, rest, rpc, q, ApiError, readBody, int, findPublicStore, CURRENCIES, storeHasFeature, storeFeatures } = require('./_lib/core');
 const { topic } = require('./_lib/live');
 
 const STORE_FIELDS = 'id,name,client_slug,logo_url,bg_image_url,bg_video_url,promo_message,website_url,tiktok_url,instagram_url,whatsapp_number,snapchat_url,opening_hours,location_url,whatsapp_orders,business_type,show_calories,menu_layout,delivery_apps,theme,accent_color,order_numbers,custom_links';
@@ -154,8 +154,9 @@ async function menuPayload(slug) {
   const store = await findStore(slug);
   // المنيو ضمن باقة المحل؟ (اللي مشترك في الولاء بس، ما يطلع له منيو)
   // ما عنده منيو؟ رابط المحل الرئيسي يفتح أول خدمة عنده (البيجر، الانتظار، الولاء)
-  if (!(await storeHasFeature(store.id, 'menu'))) {
-    for (const k of ['pager', 'waitlist', 'loyalty']) if (await storeHasFeature(store.id, k)) throw new ApiError(404, 'المنيو غير متاح', `GO:${k}`);
+  const feats = await storeFeatures(store.id);
+  if (!feats.menu) {
+    for (const k of ['pager', 'waitlist', 'loyalty']) if (feats[k]) throw new ApiError(404, 'المنيو غير متاح', `GO:${k}`);
     throw new ApiError(404, 'المنيو غير متاح حالياً', 'NOT_AVAILABLE');
   }
   const [categories, products, waitlist_open, has_coupons, occasion, promos] = await Promise.all([
@@ -194,7 +195,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const store = await findStore(req.query.slug);
     // صفحة الروابط لكل المشتركين (مو بس المنيو)، وتعرف وش الخدمات اللي عنده
     const services = {};
-    for (const k of ['menu', 'pager', 'waitlist', 'loyalty']) services[k] = await storeHasFeature(store.id, k);
+    Object.assign(services, await storeFeatures(store.id));
     const [waitlist_open, occasion] = await Promise.all([waitlistOpen(store.id), activeOccasion(store.id)]);
     return { store: { ...store, waitlist_open, occasion, services } };
   }

@@ -132,6 +132,13 @@ async function findPublicStore(rawSlug, fields) {
   return { slug, store: old };
 }
 
+// كل خدمات المحل باستعلام واحد (بدل استعلام لكل خدمة): { menu, pager, waitlist, loyalty }
+async function storeFeatures(storeId) {
+  const PLANS = require('./plans');
+  const s = (await rest(`clients?id=eq.${storeId}&select=subscription_status,plan_features,parent_id,is_active,trial_ends_at,subscription_end_date`))[0];
+  return Object.fromEntries(['menu', 'pager', 'waitlist', 'loyalty'].map(k => [k, !!s && PLANS.has(s, k)]));
+}
+
 // الميزة ضمن باقة المحل؟ (التجربة فيها كل شي). الفرع ياخذ مميزات المتجر الرئيسي
 async function storeHasFeature(storeId, key) {
   const PLANS = require('./plans');
@@ -176,5 +183,5 @@ function handler(methods, fn) {
 module.exports = {
   SUPABASE_URL, BUCKET, ApiError, rest, rpc, q, storage, publicUrl, ownsMediaUrl, storagePathFromUrl,
   getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody, handler,
-  SLUG_RE, RESERVED_SLUGS, findPublicStore, CURRENCIES, storeHasFeature
+  SLUG_RE, RESERVED_SLUGS, findPublicStore, CURRENCIES, storeHasFeature, storeFeatures
 };
