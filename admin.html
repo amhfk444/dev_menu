@@ -347,6 +347,8 @@
               <div id="subscription-info" class="space-y-4 text-ink/90">
                 <p>جاري التحقق من الاشتراك...</p>
               </div>
+              <!-- طلباتك للإدارة: التجديد وتغيير الباقة والتواصل، بدون واتساب -->
+              <div id="support-box" class="pt-3 mt-1 border-t border-brand/10 space-y-2.5"></div>
             </div>
 
     <!-- تنبيهات الإدارة -->
@@ -750,7 +752,7 @@
               <p class="text-xs font-bold text-ink/60">غير مفعّلة لمتجرك حالياً</p>
               <p class="text-3xl font-black"><span id="wl-price-month"></span></p>
               <p class="text-[11px] text-ink/60"><span id="wl-price-year"></span></p>
-              <a id="wl-request" href="#" target="_blank" rel="noopener" class="block bg-brand hover:bg-brand-dark text-cream font-black text-sm py-3 rounded-xl transition"><i class="ph-bold ph-whatsapp-logo"></i> اطلب التفعيل</a>
+              <a id="wl-request" href="#" class="block bg-brand hover:bg-brand-dark text-cream font-black text-sm py-3 rounded-xl transition"><i class="ph-bold ph-chat-circle-text"></i> اطلب التفعيل</a>
             </div>
           </div>
         </div>
@@ -923,7 +925,7 @@
             </ul>
             <div class="text-center space-y-3 bg-brand/5 border border-brand/15 rounded-2xl p-5">
               <p class="text-sm font-semibold text-ink/70">إضافة مدفوعة، غير مفعّلة لمتجرك</p>
-              <a id="rv-request" href="#" target="_blank" rel="noopener" class="block bg-brand hover:bg-brand-dark text-cream font-bold text-sm py-3 rounded-xl transition"><i class="ph-bold ph-whatsapp-logo"></i> اطلب التفعيل</a>
+              <a id="rv-request" href="#" class="block bg-brand hover:bg-brand-dark text-cream font-bold text-sm py-3 rounded-xl transition"><i class="ph-bold ph-chat-circle-text"></i> اطلب التفعيل</a>
             </div>
           </div>
         </div>
@@ -2008,13 +2010,12 @@
     document.getElementById('links-preview').href = linksUrl();
     renderWaitlistShell();
 
-    renderSubscriptionStatus();
+    renderSubscriptionStatus(); loadSupport();
     renderPromoState();
     applyFeatureLocks();
   }
 
   // ─── الاشتراك والتجديد ───
-  const SUPPORT_WA = '966561161448';
   const daysText = (n) => n === 1 ? 'يوم واحد' : n === 2 ? 'يومين' : n <= 10 ? `${n} أيام` : `${n} يوم`;
   // ─── الباقة بالمميزات (الأسعار في js/plans.js) ───
   // الحساب = المتجر الرئيسي وفروعه باشتراك واحد، شهري أو سنوي
@@ -2030,12 +2031,44 @@
     return DMPlans.clean([...pickFeatures]);
   }
   const planTotal = (plan = 'year', feats = chosenFeatures()) => DMPlans.price(feats, plan, branchCount()).total;
-  function renewLink(plan, extra = '') {
-    const main = branches.find(b => !b.parent_id) || client;
+  function renewMsg(plan) {
     const feats = chosenFeatures();
     const names = feats.map(k => DMPlans.FEATURES[k].name).join(' + ');
-    const msg = extra || `مرحباً، أبغى أشترك/أجدد متجر "${main.name || ''}" (${main.client_slug}) بالباقة ${plan === 'month' ? 'الشهرية' : 'السنوية'}: ${names}${branchCount() ? ` + ${branchCount()} فرع` : ''}. المجموع ${planTotal(plan)} ر.س.`;
-    return `https://wa.me/${SUPPORT_WA}?text=${encodeURIComponent(msg)}`;
+    return `أبغى أشترك/أجدد بالباقة ${plan === 'month' ? 'الشهرية' : 'السنوية'}: ${names}${branchCount() ? ` + ${branchCount()} فرع` : ''}. المجموع ${planTotal(plan)} ر.س.`;
+  }
+
+  // ─── التواصل مع الإدارة: الطلب يوصل لصفحة المدير العام، والرد يطلع هنا ───
+  const SUPPORT_KIND = { renew: 'تجديد', plan: 'تغيير باقة', addon: 'تفعيل إضافة', suspended: 'حساب موقوف', contact: 'رسالة' };
+  async function contactAdmin(kind = 'contact', prefill = '', title = 'راسل إدارة DEV MENU') {
+    const v = await DMDialog.form({ title, subtitle: 'توصل لإدارة DEV MENU، والرد يطلع لك هنا تحت "اشتراكك"', icon: 'ph-chat-circle-text',
+      fields: [{ name: 'body', label: 'رسالتك', value: prefill, maxlength: 1000, required: true, multiline: true }], confirmText: 'أرسل' });
+    if (!v) return;
+    try {
+      await api('support-send', { kind, body: v.body });
+      showToast('وصل طلبك للإدارة، والرد يطلع لك تحت "اشتراكك"');
+      loadSupport();
+    } catch (e) { showToast(e.message || 'تعذر الإرسال', true); }
+  }
+  async function loadSupport() {
+    const box = document.getElementById('support-box');
+    if (!box) return;
+    let r = { requests: [] };
+    try { r = await api('support-list'); } catch {}
+    const when = (iso) => new Date(iso).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short' });
+    box.innerHTML = `
+      <div class="flex items-center justify-between gap-2">
+        <p class="text-[12px] font-bold text-ink/75"><i class="ph-bold ph-chat-circle-text"></i> طلباتك للإدارة</p>
+        <button type="button" onclick="contactAdmin()" class="text-[12px] font-bold px-3 py-1.5 rounded-lg bg-brand text-cream">راسل الإدارة</button>
+      </div>
+      ${(r.requests || []).slice(0, 5).map(x => `
+        <div class="rounded-xl border border-brand/10 bg-brand/[0.03] p-3 space-y-1.5">
+          <div class="flex items-center justify-between gap-2 text-[11px]">
+            <span class="font-bold">${SUPPORT_KIND[x.kind] || 'رسالة'}</span>
+            <span class="${x.status === 'done' ? 'text-emerald-700' : 'text-amber-700'} font-bold">${x.status === 'done' ? 'تم' : 'قيد المتابعة'} <span class="text-ink/45 font-normal">${when(x.created_at)}</span></span>
+          </div>
+          <p class="text-[12px] text-ink/75 whitespace-pre-line">${esc(x.body)}</p>
+          ${x.reply ? `<p class="text-[12px] bg-white rounded-lg border border-brand/10 px-2.5 py-2"><b class="text-brand">رد الإدارة:</b> ${esc(x.reply)}</p>` : ''}
+        </div>`).join('') || '<p class="text-[11px] text-ink/50">التجديد وتغيير الباقة وأي استفسار: راسلنا من هنا، والرد يطلع لك في نفس المكان.</p>'}`;
   }
 
   // ─── اختيار الباقة: العميل يختار المميزات والمدة، والطلب يوصل للإدارة (لوحة المشتركين + بريد) ───
@@ -2077,7 +2110,7 @@
             <p class="font-bold text-[13px] text-ink">وصلنا طلبك للباقة ${planName(req)}</p>
             <p class="text-[12px] text-ink/70 mt-0.5">${feats.map(k => DMPlans.FEATURES[k].name).join('، ')}: ${sar(planTotal(req, feats))} ${req === 'month' ? 'بالشهر' : 'بالسنة'}. بنتواصل معك على جوالك للدفع، وبعدها يتفعّل اشتراكك على طول.</p>
             <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2.5 text-[12px] font-bold">
-              <a href="${esc(renewLink(req))}" target="_blank" rel="noopener" class="text-brand hover:underline"><i class="ph-bold ph-whatsapp-logo"></i> كلمنا على الواتساب</a>
+              <button type="button" onclick="contactAdmin('renew', renewMsg('${req}'))" class="text-brand hover:underline"><i class="ph-bold ph-chat-circle-text"></i> راسل الإدارة</button>
               <button type="button" onclick="changePlan()" class="text-ink/55 hover:text-ink">غيّر الباقة</button>
             </div>
           </div>
@@ -2178,7 +2211,7 @@
           <i class="ph-bold ${danger ? 'ph-warning-circle' : 'ph-clock'}"></i> ${esc(text)}
         </p>
         ${suspended
-          ? `<a href="https://wa.me/${SUPPORT_WA}" target="_blank" rel="noopener" class="bg-brand text-cream px-3 py-1.5 rounded-lg text-[11px] font-black"><i class="ph-bold ph-whatsapp-logo"></i> تواصل معنا</a>`
+          ? `<button type="button" onclick="contactAdmin('suspended', 'حسابي موقوف، أبغى أعرف السبب وكيف أرجّعه.')" class="bg-brand text-cream px-3 py-1.5 rounded-lg text-[11px] font-black"><i class="ph-bold ph-chat-circle-text"></i> راسل الإدارة</button>`
           : `<button type="button" onclick="goToPlans()" class="bg-brand hover:bg-brand-dark text-cream px-3.5 py-2 rounded-lg text-[12px] font-bold">${requestedPlan() ? 'تابع طلبك' : 'اختر باقتك'}</button>`}`;
       banner.classList.remove('hidden');
     } else {
@@ -2859,8 +2892,7 @@
     document.getElementById('wl-app').classList.toggle('hidden', !on);
     document.getElementById('wl-price-month').textContent = 'مشمولة';
     document.getElementById('wl-price-year').textContent = 'في باقتك السنوية';
-    document.getElementById('wl-request').href = renewLink('year',
-      `مرحباً، أبغى أفعّل "قائمة الانتظار" لمتجر "${client.name || ''}" (${client.client_slug}).`);
+    document.getElementById('wl-request').onclick = (e) => { e.preventDefault(); contactAdmin('addon', 'أبغى أفعّل "قائمة الانتظار".'); };
     if (!on) return;
     document.getElementById('wl-link').value = wlUrl();
     document.getElementById('wl-open-link').href = wlUrl();
@@ -4637,7 +4669,7 @@
     const on = client.reviews_enabled === true || isSuperAdmin;
     document.getElementById('rv-upsell').classList.toggle('hidden', on);
     document.getElementById('rv-app').classList.toggle('hidden', !on);
-    document.getElementById('rv-request').href = renewLink('year', `مرحباً، أبغى أفعّل "ردود التقييمات بالذكاء الاصطناعي" لمتجر "${client.name || ''}" (${client.client_slug}).`);
+    document.getElementById('rv-request').onclick = (e) => { e.preventDefault(); contactAdmin('addon', 'أبغى أفعّل "ردود التقييمات بالذكاء الاصطناعي".'); };
     if (!on) return;
     renderRvStars();
     loadRvHistory();

@@ -135,7 +135,7 @@ async function findPublicStore(rawSlug, fields) {
 // الميزة ضمن باقة المحل؟ (التجربة فيها كل شي). الفرع ياخذ مميزات المتجر الرئيسي
 async function storeHasFeature(storeId, key) {
   const PLANS = require('./plans');
-  const s = (await rest(`clients?id=eq.${storeId}&select=subscription_status,plan_features,parent_id`))[0];
+  const s = (await rest(`clients?id=eq.${storeId}&select=subscription_status,plan_features,parent_id,is_active,trial_ends_at,subscription_end_date`))[0];
   if (!s) return false;
   return PLANS.has(s, key);
 }

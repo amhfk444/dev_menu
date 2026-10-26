@@ -2,6 +2,7 @@
 // DEV MENU — نوافذ حوار بهوية المنصة (بدل prompt و confirm حق المتصفح)
 //   DMDialog.form({ title, subtitle, icon, fields, confirmText, note })  → قيم الحقول أو null
 //   DMDialog.confirm({ title, message, confirmText, tone })              → true / false
+//   حقل نص طويل: { name, label, multiline: true }
 // الحقول: { name, label, value, placeholder, hint, dir, maxlength, required }
 //         أو { name, label, type: 'choice', value, options: [{ value, label, desc, icon }] }
 //         ولحقل نصي: suggestions: ['...'] تظهر كأزرار سريعة
@@ -69,8 +70,10 @@
         }
         return `<div class="dmd-field">
           <label class="dmd-label" for="dmd-f${i}">${esc(f.label)}${f.required ? '' : ' <small>(اختياري)</small>'}</label>
-          <input id="dmd-f${i}" class="dmd-input" data-name="${esc(f.name)}" value="${esc(f.value ?? '')}" placeholder="${esc(f.placeholder || '')}"
-            ${f.maxlength ? `maxlength="${Number(f.maxlength)}"` : ''} ${f.dir ? `dir="${esc(f.dir)}"` : ''} autocomplete="off">
+          ${f.multiline
+            ? `<textarea id="dmd-f${i}" class="dmd-input" rows="4" data-name="${esc(f.name)}" placeholder="${esc(f.placeholder || '')}" ${f.maxlength ? `maxlength="${Number(f.maxlength)}"` : ''} style="resize:vertical;min-height:96px;line-height:1.6">${esc(f.value ?? '')}</textarea>`
+            : `<input id="dmd-f${i}" class="dmd-input" data-name="${esc(f.name)}" value="${esc(f.value ?? '')}" placeholder="${esc(f.placeholder || '')}"
+            ${f.maxlength ? `maxlength="${Number(f.maxlength)}"` : ''} ${f.dir ? `dir="${esc(f.dir)}"` : ''} autocomplete="off">`}
           ${f.suggestions && f.suggestions.length ? `<div class="dmd-sugg">${f.suggestions.map(s => `<button type="button" data-fill="${i}" data-v="${esc(s)}">${esc(s)}</button>`).join('')}</div>` : ''}
           ${f.hint ? `<p class="dmd-hint">${esc(f.hint)}</p>` : ''}
           <p class="dmd-err" data-err="${i}"></p>
@@ -116,7 +119,7 @@
       };
       function onKey(e) {
         if (e.key === 'Escape') { e.preventDefault(); close(null); }
-        else if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('dmd-input')) { e.preventDefault(); submit(); }
+        else if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('dmd-input') && e.target.tagName !== 'TEXTAREA') { e.preventDefault(); submit(); }
       }
       document.addEventListener('keydown', onKey, true);
       back.addEventListener('click', (e) => {

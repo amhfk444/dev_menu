@@ -4,6 +4,7 @@
 // يشغّلها pg_cron داخل Supabase كل ربع ساعة (27-reviews-cron.sql)، والمفتاح محفوظ في app_settings.
 // =====================================================================
 const { rest, handler } = require('./_lib/core');
+const PLANS = require('./_lib/plans');
 const { assertCronKey } = require('./_lib/cron');
 const { syncStore } = require('./_lib/reviews');
 
@@ -17,8 +18,9 @@ module.exports = handler(['GET', 'POST'], async (req) => {
   const results = [];
   for (const conn of conns) {
     if (Date.now() - started > DEADLINE_MS) break;
-    const store = (await rest(`clients?id=eq.${conn.client_id}&select=id,name,email,parent_id,business_type,reviews_enabled,is_active`))[0];
-    if (!store || !store.reviews_enabled || store.is_active === false) continue;
+    const store = (await rest(`clients?id=eq.${conn.client_id}&select=id,name,email,parent_id,business_type,reviews_enabled,is_active,subscription_status,trial_ends_at,subscription_end_date`))[0];
+    // اشتراك منتهي أو موقوف: ما نسحب ولا نكتب ردود
+    if (!store || !store.reviews_enabled || !PLANS.live(store)) continue;
     try { results.push({ store: store.id, ...(await syncStore(store, conn)) }); }
     catch (e) { results.push({ store: store.id, error: e.code || e.message }); }
   }

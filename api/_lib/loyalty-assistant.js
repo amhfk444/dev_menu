@@ -4,7 +4,7 @@
 //   ويكتب له رسالة عفوية (اشتياق، تشجيع، تذكير بالمكافأة) توصله إشعار في المحفظة وتطلع في صفحة بطاقته
 //   وجمل "أنت قريب" تطلع على شاشة قفل الآيفون لما يقرب من المحل (تتجدد كل أسبوع)
 // =====================================================================
-const { rest, q } = require('./core');
+const { rest, q, storeHasFeature } = require('./core');
 const { normalizeLoyalty, staleAi } = require('./loyalty');
 const wallet = require('./wallet');
 const { loyaltyMessages, loyaltyNearLines } = require('./ai');
@@ -38,6 +38,7 @@ const ctxFor = (store, settings, card, notice) => wallet.buildCtx({
 // تحديث بطاقات المحفظة (كلها أو اللي نحددها). notices: card.id → نص الرسالة الجديدة
 async function pushWalletCards(storeId, { cardIds = null, notice = null, notices = null } = {}) {
   if (!wallet.configured()) return 0;
+  if (!(await storeHasFeature(storeId, 'loyalty'))) return 0;   // اشتراك منتهي أو موقوف
   const store = (await rest(`clients?id=eq.${storeId}&select=${STORE_FIELDS}`))[0];
   if (!store) return 0;
   const settings = normalizeLoyalty(store.loyalty_settings);
@@ -60,7 +61,7 @@ async function pushWalletCards(storeId, { cardIds = null, notice = null, notices
 
 // رسالة لكل الأعضاء على دفعات (عشان توصل للكل مهما كثروا): كل طلب يرسل دفعة ويرجع وين وقف
 async function pushWalletBatch(storeId, { notice, afterId = 0, limit = 40 } = {}) {
-  if (!wallet.configured()) return { sent: 0, lastId: afterId, done: true, total: 0 };
+  if (!wallet.configured() || !(await storeHasFeature(storeId, 'loyalty'))) return { sent: 0, lastId: afterId, done: true, total: 0 };
   const store = (await rest(`clients?id=eq.${storeId}&select=${STORE_FIELDS}`))[0];
   if (!store) return { sent: 0, lastId: afterId, done: true, total: 0 };
   const settings = normalizeLoyalty(store.loyalty_settings);
@@ -112,6 +113,7 @@ function pickGuests(cards, settings, now = Date.now()) {
 async function runAssistant(storeId, { maxGuests = 80 } = {}) {
   const store = (await rest(`clients?id=eq.${storeId}&select=${STORE_FIELDS}`))[0];
   if (!store || !store.loyalty_enabled || !store.loyalty_ai) return { skipped: true };
+  if (!(await storeHasFeature(storeId, 'loyalty'))) return { skipped: true, expired: true };
   const settings = normalizeLoyalty(store.loyalty_settings);
   const type = SECTORS.label(store);
   const result = { near: false, messages: 0, wallet: 0 };

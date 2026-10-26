@@ -52,8 +52,24 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     return { clients: await rest('clients?select=*&order=id.desc') };
   }
 
+  // طلبات المشتركين (تجديد، باقة، تفعيل، تواصل)
+  if (action === 'support' && req.method === 'GET') {
+    const rows = await rest('support_requests?select=id,client_id,kind,body,status,reply,created_at,handled_at&order=status.desc,id.desc&limit=200').catch(() => null);
+    return { requests: rows || [], ready: !!rows };
+  }
+
   if (req.method !== 'POST') throw new ApiError(404, 'Unknown action');
   const b = readBody(req);
+
+  if (action === 'support-update') {
+    const id = Number(b.id);
+    if (!Number.isInteger(id)) throw new ApiError(400, 'الطلب غير صحيح');
+    const body = { status: b.status === 'open' ? 'open' : 'done', handled_at: b.status === 'open' ? null : new Date().toISOString() };
+    if (typeof b.reply === 'string') body.reply = b.reply.trim().slice(0, 1000) || null;
+    const row = (await rest(`support_requests?id=eq.${id}`, { method: 'PATCH', prefer: 'return=representation', body }))[0];
+    if (!row) throw new ApiError(404, 'الطلب غير موجود');
+    return { request: row };
+  }
 
   // ─── منيو جاهز لعميل محتمل: متجر بدون صاحب (بدون بريد) يجهّزه المدير العام ويرسل رابطه ───
   // ما أحد يقدر يدخل لوحته غير المدير العام، لين يُنقل لبريد صاحب المطعم بـ "transfer"

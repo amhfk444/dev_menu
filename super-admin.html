@@ -154,6 +154,15 @@
       </div>
     </section>
 
+    <!-- طلبات المشتركين: التجديد وتغيير الباقة والتواصل (بدل الواتساب) -->
+    <section class="card p-5 space-y-3">
+      <div class="flex items-center justify-between gap-2">
+        <p class="text-xs font-black flex items-center gap-2"><i class="ph-bold ph-chat-circle-text text-blue-700"></i> طلبات المشتركين <span id="sup-open" class="text-[10px] font-black bg-red-500 text-white rounded-full px-2 py-0.5 hidden"></span></p>
+        <button type="button" onclick="loadSupport()" class="text-[11px] font-bold text-ink/60"><i class="ph-bold ph-arrow-clockwise"></i> تحديث</button>
+      </div>
+      <div id="sup-list" class="space-y-2"></div>
+    </section>
+
     <!-- الأدوات -->
     <section class="card p-3 md:p-4 space-y-3 sticky top-2 z-20">
       <div class="flex flex-col md:flex-row gap-2">
@@ -312,7 +321,46 @@
     if (manual) showToast('تم التحديث');
   }
 
-  function renderAll() { renderKpis(); renderRevenue(); renderSignups(); renderFilters(); renderSectorFilter(); renderStores(); }
+  // ─── طلبات المشتركين ───
+  const SUP_KIND = { renew: 'تجديد', plan: 'تغيير باقة', addon: 'تفعيل إضافة', suspended: 'حساب موقوف', contact: 'رسالة' };
+  let supRows = [];
+  async function loadSupport() {
+    let r;
+    try { r = await DM.get(A('support'), true); } catch (e) { return; }
+    supRows = r.requests || [];
+    const open = supRows.filter(x => x.status === 'open').length;
+    const badge = document.getElementById('sup-open');
+    badge.textContent = open; badge.classList.toggle('hidden', !open);
+    const byId = Object.fromEntries(clients.map(c => [c.id, c]));
+    const when = (iso) => new Date(iso).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+    document.getElementById('sup-list').innerHTML = !r.ready ? '<p class="text-[12px] text-red-700">جدول الطلبات ما انشأ للحين: شغّل supabase/48-support-requests.sql</p>'
+      : supRows.slice(0, 30).map(x => { const c = byId[x.client_id] || {}; return `
+        <div class="rounded-xl border ${x.status === 'open' ? 'border-amber-400/60 bg-amber-50/60' : 'border-ink/10 bg-white/60'} p-3 space-y-1.5">
+          <div class="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+            <span class="font-black">${esc(c.name || `متجر #${x.client_id}`)} <span class="text-ink/45 font-bold" dir="ltr">${esc(c.client_slug || '')}</span> · ${SUP_KIND[x.kind] || 'رسالة'}</span>
+            <span class="text-ink/50">${when(x.created_at)}</span>
+          </div>
+          <p class="text-[12.5px] whitespace-pre-line">${esc(x.body)}</p>
+          ${x.reply ? `<p class="text-[12px] text-ink/70"><b>ردك:</b> ${esc(x.reply)}</p>` : ''}
+          <div class="flex flex-wrap gap-2 pt-1">
+            <button type="button" onclick="replySupport(${x.id})" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-ink text-white">${x.reply ? 'عدّل الرد' : 'رد'}</button>
+            <button type="button" onclick="setSupport(${x.id}, '${x.status === 'open' ? 'done' : 'open'}')" class="text-[11px] font-bold px-3 py-1.5 rounded-lg border border-ink/15">${x.status === 'open' ? 'تم' : 'رجّعه مفتوح'}</button>
+            ${c.phone ? `<span class="text-[11px] text-ink/50 self-center" dir="ltr">${esc(c.phone)}</span>` : ''}
+          </div>
+        </div>`; }).join('') || '<p class="text-[12px] text-ink/50">ما فيه طلبات.</p>';
+  }
+  async function setSupport(id, status, reply) {
+    try { await DM.post(A('support-update'), { id, status, ...(reply !== undefined ? { reply } : {}) }, true); await loadSupport(); }
+    catch (e) { showToast(e.message || 'تعذر الحفظ', true); }
+  }
+  async function replySupport(id) {
+    const x = supRows.find(r => r.id === id); if (!x) return;
+    const v = await DMDialog.form({ title: 'رد على الطلب', subtitle: 'يطلع الرد لصاحب المتجر في لوحته تحت "اشتراكك"', icon: 'ph-chat-circle-text',
+      fields: [{ name: 'reply', label: 'الرد', value: x.reply || '', maxlength: 1000, required: true, multiline: true }], confirmText: 'أرسل الرد وأقفل الطلب' });
+    if (v) setSupport(id, 'done', v.reply);
+  }
+
+  function renderAll() { loadSupport(); renderKpis(); renderRevenue(); renderSignups(); renderFilters(); renderSectorFilter(); renderStores(); }
 
   // ─── الأرقام ───
   function counts() {

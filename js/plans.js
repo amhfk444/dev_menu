@@ -44,9 +44,17 @@
     if (store.subscription_status === 'active') return Array.isArray(store.plan_features) && store.plan_features.length ? clean(store.plan_features) : LEGACY.slice();
     return [];
   }
-  const has = (store, key) => featuresOf(store).includes(key);
+  // الحساب شغال؟ موقوف من الإدارة، أو انتهت تجربته، أو انتهى اشتراكه (بعد مهلة 3 أيام) = كل المميزات تتوقف
+  function live(store) {
+    if (!store || store.is_active === false) return false;
+    const now = Date.now(), t = (v) => (v ? Date.parse(v) : NaN);
+    if (store.subscription_status === 'trial') return !(t(store.trial_ends_at) <= now);
+    if (store.subscription_status === 'active') return !(t(store.subscription_end_date) + 3 * 864e5 <= now);
+    return false;
+  }
+  const has = (store, key) => live(store) && featuresOf(store).includes(key);
 
-  const api = { FEATURES, ORDER, BRANCH, BUNDLES, LEGACY, price, featuresOf, has, clean };
+  const api = { FEATURES, ORDER, BRANCH, BUNDLES, LEGACY, price, featuresOf, has, live, clean };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.DMPlans = api;
 })(typeof window !== 'undefined' ? window : globalThis);

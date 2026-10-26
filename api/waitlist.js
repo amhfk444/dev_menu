@@ -6,7 +6,7 @@
 //   POST /api/waitlist?action=cancel          إلغاء التسجيل
 // =====================================================================
 const crypto = require('crypto');
-const { handler, rest, rpc, q, ApiError, readBody, str, int, findPublicStore } = require('./_lib/core');
+const { handler, rest, rpc, q, ApiError, readBody, str, int, findPublicStore, storeHasFeature } = require('./_lib/core');
 const { topic, poke } = require('./_lib/live');
 const { SEATING, normalizeSettings, riyadhDayStart, positionOf, emailTemplate, statusUrlFor } = require('./_lib/waitlist');
 const { sendMail } = require('./_lib/mail');
@@ -18,7 +18,7 @@ async function loadStore(slug) {
   if (bad) throw new ApiError(400, 'الرابط غير صحيح');
   if (!live) throw new ApiError(404, 'قائمة الانتظار غير متاحة حالياً', 'NOT_AVAILABLE');
   const extra = (await rest(`clients?id=eq.${live.id}&select=waitlist_enabled,waitlist_settings`))[0] || {};
-  if (!extra.waitlist_enabled) throw new ApiError(404, 'قائمة الانتظار غير متاحة حالياً', 'NOT_AVAILABLE');
+  if (!extra.waitlist_enabled || !(await storeHasFeature(live.id, 'waitlist'))) throw new ApiError(404, 'قائمة الانتظار غير متاحة حالياً', 'NOT_AVAILABLE');
   return { store: live, settings: normalizeSettings(extra.waitlist_settings) };
 }
 

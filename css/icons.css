@@ -32,6 +32,7 @@
 .ph-chair:before { content: "\e950"; }
 .ph-chart-bar:before { content: "\e150"; }
 .ph-chart-line-up:before { content: "\e156"; }
+.ph-chat-circle-text:before { content: "\e16e"; }
 .ph-check:before { content: "\e182"; }
 .ph-check-circle:before { content: "\e184"; }
 .ph-circle:before { content: "\e18a"; }
@@ -57,6 +58,7 @@
 .ph-eye-slash:before { content: "\e224"; }
 .ph-file:before { content: "\e230"; }
 .ph-file-arrow-down:before { content: "\e232"; }
+.ph-file-arrow-up:before { content: "\e61e"; }
 .ph-fire:before { content: "\e242"; }
 .ph-first-aid-kit:before { content: "\e570"; }
 .ph-fish:before { content: "\e728"; }

@@ -330,6 +330,35 @@ async function main(req) {
     return { email: user.email, is_admin: admin, store, branches, categories: categories.sort(bySort), products: products.sort(bySort), live: storeTopics(store.id) };
   }
 
+  // ─── طلبات صاحب المتجر للإدارة (تجديد، باقة، تفعيل، تواصل): بدل الواتساب ───
+  if (action === 'support-list' && req.method === 'GET') {
+    const { store } = await context(req);
+    const mainId = store.parent_id || store.id;
+    const rows = await rest(`support_requests?client_id=eq.${mainId}&select=id,kind,body,status,reply,created_at,handled_at&order=id.desc&limit=20`).catch(() => null);
+    return { requests: rows || [], ready: !!rows };
+  }
+  if (action === 'support-send' && req.method === 'POST') {
+    // الموقوف والمنتهي يقدرون يرسلون كمان (عشان يجددون)
+    const { store } = await context(req);
+    const mainId = store.parent_id || store.id;
+    const kind = ['renew', 'plan', 'addon', 'suspended', 'contact'].includes(b.kind) ? b.kind : 'contact';
+    const body = str(b.body, 1000, 'الرسالة');
+    if (!body || body.length < 3) throw new ApiError(400, 'اكتب رسالتك');
+    const today = await rest(`support_requests?client_id=eq.${mainId}&created_at=gte.${q(new Date(Date.now() - 864e5).toISOString())}&select=id`).catch(() => null);
+    if (!today) throw new ApiError(503, 'خدمة الطلبات تتجهز، حاول بعد شوي', 'NOT_READY');
+    if (today.length >= 10) throw new ApiError(429, 'أرسلت طلبات كثيرة اليوم، بنرد عليك قريب');
+    const row = (await rest('support_requests', { method: 'POST', prefer: 'return=representation', body: { client_id: mainId, kind, body } }))[0];
+    if (mailConfigured()) {
+      const KIND = { renew: 'تجديد', plan: 'تغيير باقة', addon: 'تفعيل إضافة', suspended: 'حساب موقوف', contact: 'رسالة' };
+      await sendMail({
+        to: process.env.ADMIN_EMAIL || 'dmenu950@gmail.com', fromName: 'DEV MENU',
+        subject: `طلب ${KIND[kind]}: ${store.name}`,
+        text: `${store.name} (${store.client_slug})\n\n${body}\n\nرد عليه من لوحة المشتركين: https://www.devmenu.digital/super-admin.html`
+      }).catch(e => console.error('SUPPORT_MAIL', e.message));
+    }
+    return { request: row };
+  }
+
   // ─── الإحصائيات ───
   if (action === 'stats') {
     const { store } = await context(req);
@@ -340,7 +369,7 @@ async function main(req) {
   // ─── قائمة الانتظار: تسجيلات اليوم ───
   if (action === 'waitlist' && req.method === 'GET') {
     const { store } = await context(req);
-    if (!store.waitlist_enabled) throw new ApiError(403, 'قائمة الانتظار غير مفعّلة لمتجرك', 'ADDON_OFF');
+    if (!store.waitlist_enabled || !PLANS.has(store, 'waitlist')) throw new ApiError(403, 'قائمة الانتظار متوقفة: غير مفعّلة أو انتهى اشتراكك', 'ADDON_OFF');
     const settings = normalizeSettings(store.waitlist_settings);
     const dayStart = riyadhDayStart();
     const entries = await rest(`waitlist_entries?client_id=eq.${store.id}&created_at=gte.${q(dayStart)}&select=*&order=id.asc`);
@@ -391,8 +420,7 @@ async function main(req) {
     const { store } = await context(req);
     const x = (await rest(`clients?id=eq.${store.id}&select=loyalty_enabled,loyalty_settings`))[0] || {};
     const settings = normalizeLoyalty(x.loyalty_settings);
-    const f = PLANS.featuresOf(store);
-    const services = ['menu', 'pager', 'waitlist', 'loyalty'].filter(k => f.includes(k) && (k !== 'waitlist' || store.waitlist_enabled) && (k !== 'loyalty' || x.loyalty_enabled));
+    const services = ['menu', 'pager', 'waitlist', 'loyalty'].filter(k => PLANS.has(store, k) && (k !== 'waitlist' || store.waitlist_enabled) && (k !== 'loyalty' || x.loyalty_enabled));
     return { name: store.name, logo_url: store.logo_url || '', slug: store.client_slug, business_type: store.business_type, business_label: store.business_label, services, enabled: services.includes('loyalty'), needed: settings.needed, reward: settings.reward };
   }
   if (action === 'pager' && req.method === 'GET') {
@@ -559,7 +587,7 @@ async function main(req) {
   req._sid = sid;
   // المميزات حسب باقة المحل
   if (['pager-update', 'pager-invoice', 'pager-ring'].includes(action) && !PLANS.has(store, 'pager')) throw new ApiError(403, 'البيجر مو ضمن باقتك', 'ADDON_OFF');
-  if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-member-delete', 'loyalty-import', 'loyalty-redeem', 'loyalty-message', 'loyalty-message-push', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء مو ضمن باقتك، أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
+  if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-member-delete', 'loyalty-import', 'loyalty-redeem', 'loyalty-message', 'loyalty-message-push', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء متوقفة: مو ضمن باقتك أو انتهى اشتراكك. جدّد من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
 
 
   // ─── ربط قوقل ماب ───
@@ -1001,7 +1029,7 @@ async function main(req) {
 
   // ─── قائمة الانتظار: الإعدادات ───
   if (action === 'waitlist-settings') {
-    if (!store.waitlist_enabled) throw new ApiError(403, 'قائمة الانتظار غير مفعّلة لمتجرك', 'ADDON_OFF');
+    if (!store.waitlist_enabled || !PLANS.has(store, 'waitlist')) throw new ApiError(403, 'قائمة الانتظار متوقفة: غير مفعّلة أو انتهى اشتراكك', 'ADDON_OFF');
     const current = normalizeSettings(store.waitlist_settings);
     const next = normalizeSettings({ ...current, ...b, fields: { ...current.fields, ...(b.fields || {}) } });
     const saved = await patchStore(sid, { waitlist_settings: next });
@@ -1011,7 +1039,7 @@ async function main(req) {
 
   // ─── قائمة الانتظار: تغيير حالة عميل (الطاولة جاهزة / جلس / لم يحضر / إلغاء) ───
   if (action === 'waitlist-update') {
-    if (!store.waitlist_enabled) throw new ApiError(403, 'قائمة الانتظار غير مفعّلة لمتجرك', 'ADDON_OFF');
+    if (!store.waitlist_enabled || !PLANS.has(store, 'waitlist')) throw new ApiError(403, 'قائمة الانتظار متوقفة: غير مفعّلة أو انتهى اشتراكك', 'ADDON_OFF');
     const id = int(b.id);
     const status = b.status;
     if (!['waiting', 'notified', 'seated', 'no_show', 'cancelled'].includes(status)) throw new ApiError(400, 'حالة غير صحيحة');
