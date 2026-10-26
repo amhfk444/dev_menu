@@ -1721,7 +1721,7 @@
   }
   // ─── ملخص الخدمات في الرئيسية ───
   const tile = (v, l) => `<div class="rounded-xl bg-brand/[0.04] border border-brand/10 py-2.5 text-center"><p class="text-xl font-bold tnum">${v}</p><p class="text-[10.5px] text-ink/60">${l}</p></div>`;
-  const svcCard = (icon, title, href, tiles, foot) => `
+  const svcCard = (icon, title, href, tiles, foot, actions = '') => `
     <div class="pro-card p-5 space-y-3.5">
       <div class="flex items-center justify-between gap-2">
         <h3 class="text-[13px] font-bold flex items-center gap-2"><i class="ph-bold ${icon} text-brand"></i> ${title}</h3>
@@ -1729,7 +1729,17 @@
       </div>
       <div class="grid grid-cols-3 gap-2">${tiles}</div>
       ${foot ? `<p class="text-[11px] text-ink/60">${foot}</p>` : ''}
+      ${actions}
     </div>`;
+  // أدوات الولاء اليومية: تفتح شاشة الكاشير على الأداة مباشرة
+  const deskUrl = (open) => `pager-desk.html${location.search ? `${location.search}&` : '?'}open=${open}`;
+  const lyActions = () => `
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <a href="${deskUrl('scan')}" class="flex items-center gap-2 rounded-xl bg-brand text-cream px-3 py-3 text-[13px] font-bold"><i class="ph-bold ph-camera text-lg text-[#c9a227]"></i> امسح بطاقة زبون</a>
+        <a href="${deskUrl('stamp')}" class="flex items-center gap-2 rounded-xl bg-[#c9a227] text-[#15271b] px-3 py-3 text-[13px] font-bold"><i class="ph-bold ph-seal-check text-lg"></i> كود ختم</a>
+        <a href="${deskUrl('join')}" class="flex items-center gap-2 rounded-xl bg-white border border-brand/15 px-3 py-3 text-[13px] font-bold"><i class="ph-bold ph-user-plus text-lg"></i> QR تسجيل الولاء</a>
+        <a href="kiosk.html${location.search}" target="_blank" class="flex items-center gap-2 rounded-xl bg-white border border-brand/15 px-3 py-3 text-[13px] font-bold"><i class="ph-bold ph-device-tablet text-lg"></i> شاشة الختم</a>
+      </div>`;
   async function renderServiceSummary() {
     const box = document.getElementById('svc-summary');
     if (!box || !client) return;
@@ -1745,7 +1755,8 @@
       const st = (d && d.stats) || {};
       return svcCard('ph-seal-check', 'بطاقة الولاء', '#loyalty',
         tile(st.members || 0, 'عضو') + tile(st.stamps7 || 0, 'ختم هالأسبوع') + tile(st.redeemed || 0, 'مكافأة'),
-        d && !d.enabled ? 'البطاقة متوقفة، شغّلها من صفحة الولاء' : `${st.active30 || 0} عضو زاروك آخر 30 يوم`);
+        d && !d.enabled ? 'البطاقة متوقفة، شغّلها من صفحة الولاء' : `${st.active30 || 0} عضو زاروك آخر 30 يوم`,
+        d && d.enabled ? lyActions() : '');
     }));
     if (!featureLocked('waitlist') && client.waitlist_enabled) jobs.push(api('waitlist').catch(() => null).then(d => {
       const en = (d && d.entries) || [];

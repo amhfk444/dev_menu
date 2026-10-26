@@ -339,6 +339,9 @@
       $('loyalty-desk').classList.toggle('hidden', pager || !r.loyalty);
       if (!pager) $('desk-title').textContent = 'شاشة الكاشير';
       if (!pager) $('desk-sub').textContent = r.loyalty ? 'بعد ما يدفع الزبون امسح بطاقته وانختم له' : 'شغّل بطاقة الولاء من لوحة التحكم';
+      // جاي من أزرار الرئيسية في لوحة التحكم (?open=scan|stamp|join): نفتح الأداة مرة وحدة
+      const open = { scan: 'scan-btn', stamp: 'stamp-btn', join: 'join-btn' }[P.get('open')];
+      if (open && r.loyalty && !load.opened) { load.opened = true; $(open).click(); }
       // تحديث لحظي: رقم جديد أو عميل شاف التنبيه يظهر هنا على طول
       if (r.live && !liveOn) { liveOn = true; DM.live(r.live, () => load()); }
       // ما نلمس الأرقام اللي جاري تحديثها
