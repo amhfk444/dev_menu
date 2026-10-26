@@ -1086,8 +1086,10 @@
                   <div class="flex flex-wrap items-center gap-2 text-[13px]">من <select id="ly-happy-from" class="input-pro !w-auto !min-h-0 !py-1.5"></select> إلى <select id="ly-happy-to" class="input-pro !w-auto !min-h-0 !py-1.5"></select></div>
                   <div id="ly-happy-days" class="flex flex-wrap gap-1.5"></div>
                 </div>
-                <label class="flex items-center justify-between gap-3"><span><b class="text-[13px] block"><i class="ph-bold ph-question"></i> "ليش ما رجعت؟"</b><span class="text-[11px] text-ink/60">سؤال للي غاب 10 أيام وأكثر، وتشوف الأسباب تحت</span></span>
+                <label class="flex items-center justify-between gap-3"><span><b class="text-[13px] block"><i class="ph-bold ph-question"></i> "ليش ما رجعت؟"</b><span class="text-[11px] text-ink/60">اللي يغيب يجيه إشعار على بطاقته يسأله وش أخّره، وتشوف ردوده باسمه في "نظرة عامة"</span></span>
                   <input type="checkbox" id="ly-fb" class="w-5 h-5 accent-[#384f3d]"></label>
+                <label class="flex items-center justify-between gap-3 ps-5"><span class="text-[12px] text-ink/70">نسأله إذا غاب</span>
+                  <select id="ly-fb-days" class="input-pro !w-auto !min-h-0 !py-1.5"><option value="14">14 يوم</option><option value="21">21 يوم</option><option value="30">30 يوم</option><option value="45">45 يوم</option><option value="60">60 يوم</option></select></label>
                 <label class="flex items-center justify-between gap-3 ps-5"><span class="text-[12px] text-ink/70">أعطه ختم هدية على جوابه (يزيد الردود ويرجّعه)</span>
                   <input type="checkbox" id="ly-fb-gift" class="w-4 h-4 accent-[#384f3d]"></label>
                 <label class="flex items-center justify-between gap-3"><span><b class="text-[13px] block"><i class="ph-bold ph-heart"></i> "أهدها لصديق"</b><span class="text-[11px] text-ink/60">اللي يكمّل بطاقته يهدي مكافأته برابط، وصديقه يجيك زبون جديد</span></span>
@@ -3946,6 +3948,7 @@
     renderHappyDays();
     document.getElementById('ly-fb').checked = !st.feedback || st.feedback.enabled !== false;
     document.getElementById('ly-fb-gift').checked = !st.feedback || st.feedback.gift !== false;
+    document.getElementById('ly-fb-days').value = String((st.feedback && st.feedback.days) || 30);
     document.getElementById('ly-gifts').checked = !st.gifts || st.gifts.enabled !== false;
     document.getElementById('ly-loc-status').innerHTML = d.location_set
       ? '<span class="text-emerald-700 font-semibold"><i class="ph-bold ph-check-circle"></i> موقع المحل محدد</span>'
@@ -4133,8 +4136,12 @@
       document.getElementById('ly-fb-stats').innerHTML = fb.total ? sorted.map(([k, v]) => `
         <div><div class="flex justify-between text-[13px] mb-1"><span class="font-semibold">${RS[k] || k}</span><span class="text-ink/60">${Math.round(v / fb.total * 100)}% (${v})</span></div>
         <div class="h-2 rounded-full bg-brand/10 overflow-hidden"><div class="h-full rounded-full bg-brick/70" style="width:${Math.round(v / fb.total * 100)}%"></div></div></div>`).join('') +
-        (fb.notes.length ? `<div class="pt-2 space-y-1.5">${fb.notes.slice(0, 4).map(n => `<p class="text-[12px] text-ink/70 bg-brand/[0.04] rounded-lg px-2.5 py-1.5">«${esc(n.note)}»</p>`).join('')}</div>` : '')
-        : '<p class="text-xs text-ink/50">للحين ما فيه ردود. السؤال يطلع للي غابوا 10 أيام وأكثر.</p>';
+        ((fb.latest || []).length ? `<div class="pt-3 mt-1 border-t border-brand/10"><p class="text-[12px] font-bold mb-2">آخر الردود</p><div class="space-y-1.5 max-h-72 overflow-y-auto">${fb.latest.map(r => `
+          <button type="button" onclick="openLyMember(${Number(r.card_id)})" class="w-full text-right rounded-lg bg-brand/[0.04] hover:bg-brand/[0.08] px-2.5 py-2 block">
+            <span class="flex items-center justify-between gap-2 text-[12px]"><b>${esc(r.name || `عضو #${r.no || ''}`)}</b><span class="text-ink/50" dir="ltr">${new Date(r.created_at).toLocaleDateString('ar-SA-u-nu-latn', { day: 'numeric', month: 'short' })}</span></span>
+            <span class="block text-[12px] text-brick font-semibold">${RS[r.reason] || r.reason}</span>
+            ${r.note ? `<span class="block text-[12px] text-ink/70">«${esc(r.note)}»</span>` : ''}</button>`).join('')}</div></div>` : '')
+        : `<p class="text-xs text-ink/50">للحين ما فيه ردود. اللي يغيب ${(ly.data.settings.feedback && ly.data.settings.feedback.days) || 30} يوم يجيه إشعار على بطاقته يسأله وش أخّره.</p>`;
       const gs = ly.data.gifts || {};
       const tile = (l, v) => `<div class="rounded-xl bg-brand/[0.04] border border-brand/10 p-2.5"><p class="text-[10px] text-ink/60">${l}</p><p class="text-lg font-bold">${v || 0}</p></div>`;
       document.getElementById('ly-gift-stats').innerHTML = tile('هدايا انرسلت', gs.sent) + tile('انستلمت', gs.claimed) + tile('انصرفت في المحل', gs.redeemed) + tile('زبائن جدد جوا بهدية', gs.new_members);
@@ -4224,8 +4231,10 @@
         <span><i class="ph-bold ph-arrows-left-right text-[#c9a227]"></i> نقل ${m.transferred} ${m.transferred === 1 ? 'ختم' : 'أختام'} من بطاقته القديمة</span>
         <span class="text-xs text-ink/55">${new Date(m.transferred_at).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}</span>
       </div>`);
-    document.getElementById('lm-msgs').innerHTML = r.messages.length ? `<p class="text-xs font-bold text-ink/70 mb-1">رسائله</p><div class="text-sm divide-y divide-brand/10">${r.messages.map(x => `
-      <div class="py-2"><p>${x.source === 'ai' ? '<span class="text-[10px] font-bold bg-violet-500/10 text-violet-700 rounded-full px-2 py-0.5 ml-1">المساعد</span>' : ''}${esc(x.body)}</p><p class="text-[11px] text-ink/50">${agoText(x.created_at)}</p></div>`).join('')}</div>` : '';
+    const RSN = { wait: 'الانتظار طويل', price: 'الأسعار', quality: 'الطعم أو الجودة', far: 'المكان بعيد', busy: 'ما صار عنده وقت', other: 'شي ثاني' };
+    const fbHtml = (r.feedback || []).length ? `<div class="rounded-xl border border-brick/20 bg-brick/[0.04] p-3 mb-3"><p class="text-xs font-bold text-brick mb-1"><i class="ph-bold ph-question"></i> ليش غاب؟ (جوابه)</p>${r.feedback.map(f => `<p class="text-[13px]"><b>${RSN[f.reason] || f.reason}</b>${f.note ? `: «${esc(f.note)}»` : ''} <span class="text-[11px] text-ink/50">${agoText(f.created_at)}</span></p>`).join('')}</div>` : '';
+    document.getElementById('lm-msgs').innerHTML = fbHtml + (r.messages.length ? `<p class="text-xs font-bold text-ink/70 mb-1">رسائله</p><div class="text-sm divide-y divide-brand/10">${r.messages.map(x => `
+      <div class="py-2"><p>${x.source === 'ai' ? '<span class="text-[10px] font-bold bg-violet-500/10 text-violet-700 rounded-full px-2 py-0.5 ml-1">المساعد</span>' : ''}${esc(x.body)}</p><p class="text-[11px] text-ink/50">${agoText(x.created_at)}</p></div>`).join('')}</div>` : '');
   }
   function closeLyMember() { const box = document.getElementById('ly-member'); box.classList.add('hidden'); box.classList.remove('flex'); ly.member = null; }
   async function giveLyStamp() {
@@ -4290,7 +4299,7 @@
         welcome: { mode: (document.querySelector('[name="ly-welcome"]:checked') || {}).value || 'ai', text: document.getElementById('ly-welcome-text').value.trim() },
         redeem_msg: { mode: (document.querySelector('[name="ly-redeem"]:checked') || {}).value || 'ai', text: document.getElementById('ly-redeem-text').value.trim() },
         happy: { enabled: document.getElementById('ly-happy').checked, from: +document.getElementById('ly-happy-from').value, to: +document.getElementById('ly-happy-to').value, days: [...(ly.happyDays || [])] },
-        feedback: { enabled: document.getElementById('ly-fb').checked, gift: document.getElementById('ly-fb-gift').checked },
+        feedback: { enabled: document.getElementById('ly-fb').checked, gift: document.getElementById('ly-fb-gift').checked, days: +document.getElementById('ly-fb-days').value || 30 },
         gifts: { enabled: document.getElementById('ly-gifts').checked },
         pager_stamp: document.getElementById('ly-pager-stamp').checked
       } });

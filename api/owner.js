@@ -469,7 +469,9 @@ async function main(req) {
       feedback: {
         total: feedback.length,
         reasons: feedback.reduce((a, f) => (a[f.reason] = (a[f.reason] || 0) + 1, a), {}),
-        notes: feedback.filter(f => f.note).slice(0, 10).map(f => ({ note: f.note, reason: f.reason, created_at: f.created_at }))
+        notes: feedback.filter(f => f.note).slice(0, 10).map(f => ({ note: f.note, reason: f.reason, created_at: f.created_at })),
+        // آخر الردود بأسماء أصحابها، عشان التاجر يعرف مين وليش ويتواصل معه
+        latest: feedback.slice(0, 20).map(f => ({ card_id: f.card_id, name: (byId[f.card_id] || {}).name || null, no: (byId[f.card_id] || {}).member_no, phone: (byId[f.card_id] || {}).phone || null, reason: f.reason, note: f.note, created_at: f.created_at }))
       },
       gifts: {
         sent: gifts.length, claimed: gifts.filter(g => g.status !== 'sent').length,
@@ -501,12 +503,13 @@ async function main(req) {
     const id = int(req.query.id);
     const card = (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${store.id}&select=id,member_no,name,phone,gender,stamps,visits,rewards,last_stamp_at,created_at,wallet_serial,ai_last_at,transferred,transferred_at`))[0];
     if (!card) throw new ApiError(404, 'العضو غير موجود');
-    const [events, messages] = await Promise.all([
+    const [events, messages, feedback] = await Promise.all([
       rest(`loyalty_events?card_id=eq.${id}&select=kind,created_at,distance_m&order=id.desc&limit=200`),
-      rest(`loyalty_messages?client_id=eq.${store.id}&card_id=eq.${id}&or=${q('(kind.is.null,kind.neq.pager)')}&select=id,body,source,kind,created_at&order=id.desc&limit=30`).catch(() => [])
+      rest(`loyalty_messages?client_id=eq.${store.id}&card_id=eq.${id}&or=${q('(kind.is.null,kind.neq.pager)')}&select=id,body,source,kind,created_at&order=id.desc&limit=30`).catch(() => []),
+      rest(`loyalty_feedback?client_id=eq.${store.id}&card_id=eq.${id}&select=reason,note,created_at&order=id.desc&limit=10`).catch(() => [])
     ]);
     const { wallet_serial, ...rest_ } = card;
-    return { member: { ...rest_, in_wallet: !!wallet_serial }, events, messages };
+    return { member: { ...rest_, in_wallet: !!wallet_serial }, events, messages, feedback };
   }
 
   // ─── ردود التقييمات: آخر الردود المكتوبة ───

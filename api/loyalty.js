@@ -110,10 +110,10 @@ async function stampCard(ctx, card, distance) {
 }
 
 const FEEDBACK = ['wait', 'price', 'quality', 'far', 'busy', 'other'];
-// "ليش ما رجعت؟" يطلع للي غاب 10 أيام وأكثر، ومرة وحدة كل شهرين
+// "ليش ما رجعت؟" يطلع للي غاب المدة اللي حددها صاحب المحل (30 يوم افتراضياً)، ومرة وحدة كل شهرين
 async function surveyDue(ctx, card) {
   if (!ctx.settings.feedback.enabled || !card.last_stamp_at) return false;
-  if (Date.now() - Date.parse(card.last_stamp_at) < 10 * 864e5) return false;
+  if (Date.now() - Date.parse(card.last_stamp_at) < ctx.settings.feedback.days * 864e5) return false;
   const last = await rest(`loyalty_feedback?card_id=eq.${card.id}&created_at=gte.${q(new Date(Date.now() - 60 * 864e5).toISOString())}&select=id&limit=1`).catch(() => [1]);
   return !last.length;
 }

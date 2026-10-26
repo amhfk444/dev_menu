@@ -24,6 +24,7 @@ function normalizeDesign(raw) {
 }
 
 // رسالة الترحيب لأول تسجيل: صاحب المحل يكتبها، أو المساعد الذكي يكتب لكل زبون رسالة مختلفة، أو بدون
+const FEEDBACK_DAYS = [14, 21, 30, 45, 60];
 function normalizeWelcome(raw) {
   const w = raw && typeof raw === 'object' ? raw : {};
   return {
@@ -63,7 +64,9 @@ function normalizeLoyalty(raw) {
     // رسالة تسليم المكافأة: يكتبها صاحب المحل، أو المساعد، أو بدون
     redeem_msg: normalizeWelcome(s.redeem_msg),
     happy: normalizeHappy(s.happy),
-    feedback: { enabled: !(s.feedback && s.feedback.enabled === false), gift: !(s.feedback && s.feedback.gift === false) },
+    // "ليش ما رجعت؟": يوصل للي غاب كذا يوم (إشعار على بطاقته)، ويطلع له السؤال لما يفتحها
+    feedback: { enabled: !(s.feedback && s.feedback.enabled === false), gift: !(s.feedback && s.feedback.gift === false),
+      days: FEEDBACK_DAYS.includes(int(s.feedback && s.feedback.days, 30)) ? int(s.feedback && s.feedback.days, 30) : 30 },
     gifts: { enabled: !(s.gifts && s.gifts.enabled === false) },
     // الختم بعد الشراء بس: كود الكاشير أو البيجر (الزبون ما يختم بنفسه)
     stamp_mode: 'purchase',
