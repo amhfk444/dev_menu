@@ -17,7 +17,7 @@ const { topic, storeTopics, poke } = require('./_lib/live');
 const { normalizeLoyalty, validPoint } = require('./_lib/loyalty');
 const PLANS = require('./_lib/plans');
 const wallet = require('./_lib/wallet');
-const { pushWalletCards, pushWalletBatch, runAssistant, pagerReadyNotice, walletNotice } = require('./_lib/loyalty-assistant');
+const { pushWalletCards, pushWalletBatch, runAssistant, pagerReadyNotice, walletNotice, askAbsence } = require('./_lib/loyalty-assistant');
 const { loyaltyMessages, loyaltyNearLines } = require('./_lib/ai');
 const { purchaseStamp, newStampCode, parseMemberQr, cooldownLeft, leftText } = require('./_lib/loyalty-stamp');
 
@@ -550,7 +550,7 @@ async function main(req) {
   req._sid = sid;
   // المميزات حسب باقة المحل
   if (['pager-update', 'pager-invoice', 'pager-ring'].includes(action) && !PLANS.has(store, 'pager')) throw new ApiError(403, 'البيجر مو ضمن باقتك', 'ADDON_OFF');
-  if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-member-delete', 'loyalty-redeem', 'loyalty-message', 'loyalty-message-push', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء مو ضمن باقتك، أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
+  if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-member-delete', 'loyalty-ask-absence', 'loyalty-redeem', 'loyalty-message', 'loyalty-message-push', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء مو ضمن باقتك، أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
 
 
   // ─── ربط قوقل ماب ───
@@ -742,6 +742,16 @@ async function main(req) {
   }
 
   // ─── حذف عضو من بطاقة الولاء (وأختامه ورسائله تنحذف معه) ───
+  // ─── "ليش ما رجعت؟" لعضو واحد من ملفه ───
+  if (action === 'loyalty-ask-absence') {
+    const card = (await rest(`loyalty_cards?id=eq.${int(b.card_id)}&client_id=eq.${sid}&select=id,name,wallet_serial`))[0];
+    if (!card) throw new ApiError(404, 'العضو غير موجود');
+    if (!card.wallet_serial) throw new ApiError(409, 'بطاقته مو في محفظة جواله، فما يوصله إشعار. تواصل معه بالواتساب', 'NO_WALLET');
+    const sent = await askAbsence(sid, card);
+    if (!sent) throw new ApiError(502, 'ما قدرنا نوصل الإشعار لبطاقته، حاول بعد شوي');
+    return { ok: true };
+  }
+
   if (action === 'loyalty-member-delete') {
     const id = int(b.card_id);
     const card = (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${sid}&select=id,wallet_serial`))[0];

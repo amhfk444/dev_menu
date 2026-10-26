@@ -169,6 +169,20 @@ async function walletNotice(storeId, cardId, body, kind = 'pager') {
   } catch (e) { console.error('PAGER_WALLET', e.message); return 'error'; }
 }
 
+const absenceText = (store, settings, card) => {
+  const first = String(card.name || '').trim().split(/\s+/)[0];
+  return `وحشتنا${first ? ` يا ${first}` : ''}! وش اللي أخّرك عن ${store.name}؟ افتح بطاقتك وجاوب بضغطة${settings.feedback.gift ? ' وخذ ختم هدية' : ''}`;
+};
+
+// التاجر يسأل عضو واحد بنفسه من ملفه
+async function askAbsence(storeId, card) {
+  const store = (await rest(`clients?id=eq.${storeId}&select=${STORE_FIELDS}`))[0];
+  const settings = normalizeLoyalty(store.loyalty_settings);
+  const body = absenceText(store, settings, card);
+  await rest('loyalty_messages', { method: 'POST', body: { client_id: storeId, card_id: card.id, body, source: 'owner', kind: 'survey' } });
+  return pushWalletCards(storeId, { cardIds: [card.id], notices: { [card.id]: body } });
+}
+
 // "ليش ما رجعت؟": اللي غاب المدة المحددة يجيه إشعار على بطاقته، ولما يفتحها يطلع له السؤال.
 // مرة وحدة كل شهرين لكل عضو، وبحد 60 عضو باليوم لكل محل
 async function absenceNudges(storeId) {
@@ -188,15 +202,11 @@ async function absenceNudges(storeId) {
   const skip = new Set([...asked, ...answered].map(r => r.card_id));
   const pick = cards.filter(c => !skip.has(c.id)).slice(0, 60);
   if (!pick.length) return { asked: 0 };
-  const gift = settings.feedback.gift ? ' وخذ ختم هدية' : '';
   const notices = {};
-  for (const c of pick) {
-    const first = String(c.name || '').trim().split(/\s+/)[0];
-    notices[c.id] = `وحشتنا${first ? ` يا ${first}` : ''}! وش اللي أخّرك عن ${store.name}؟ افتح بطاقتك وجاوب بضغطة${gift}`;
-  }
+  for (const c of pick) notices[c.id] = absenceText(store, settings, c);
   await rest('loyalty_messages', { method: 'POST', body: pick.map(c => ({ client_id: storeId, card_id: c.id, body: notices[c.id], source: 'system', kind: 'survey' })) });
   const sent = await pushWalletCards(storeId, { cardIds: pick.map(c => c.id), notices });
   return { asked: pick.length, sent };
 }
 
-module.exports = { pushWalletBatch, pushWalletCards, runAssistant, nearLineFor, STORE_FIELDS, pickGuests, pagerReadyNotice, walletNotice, absenceNudges };
+module.exports = { pushWalletBatch, pushWalletCards, runAssistant, nearLineFor, STORE_FIELDS, pickGuests, pagerReadyNotice, walletNotice, absenceNudges, askAbsence };

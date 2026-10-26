@@ -1265,6 +1265,7 @@
               <button type="button" id="lm-stamp" onclick="giveLyStamp()" class="bg-brand hover:bg-brand-dark text-cream px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-seal-check"></i> أعطه ختم</button>
               <button type="button" id="lm-redeem" onclick="redeemLyMember()" class="hidden bg-[#c9a227] hover:bg-[#b8931f] text-[#15271b] px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-gift"></i> اصرف المكافأة</button>
               <button type="button" onclick="ly.member && deleteLyMember(ly.member.id)" class="bg-brick/10 hover:bg-brick/15 text-brick px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-trash"></i> حذف العضو</button>
+              <button type="button" id="lm-ask" onclick="askLyAbsence()" class="hidden bg-brick/10 hover:bg-brick/20 text-brick px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-question"></i> اسأله ليش غاب</button>
               <a id="lm-wa" target="_blank" rel="noopener" class="hidden bg-[#25d366]/10 hover:bg-[#25d366]/20 text-[#128c7e] px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-whatsapp-logo"></i> واتساب</a>
             </div>
             <div class="space-y-2">
@@ -4219,6 +4220,7 @@
     document.getElementById('lm-stats').innerHTML = st('الأختام', `${Math.min(m.stamps, n)}/${n}`, true) + st('الزيارات', m.visits) + st('المكافآت', m.rewards) + st('يجي كل', gap ? `${gap} يوم` : '—');
     const wa = document.getElementById('lm-wa');
     wa.classList.toggle('hidden', !m.phone); if (m.phone) wa.href = `https://wa.me/${m.phone}`;
+    document.getElementById('lm-ask').classList.toggle('hidden', !m.in_wallet);
     document.getElementById('lm-stamp').disabled = m.stamps >= n;
     document.getElementById('lm-redeem').classList.toggle('hidden', m.stamps < n);
     document.getElementById('lm-events').innerHTML = r.events.length ? r.events.map(e => `
@@ -4235,6 +4237,15 @@
     const fbHtml = (r.feedback || []).length ? `<div class="rounded-xl border border-brick/20 bg-brick/[0.04] p-3 mb-3"><p class="text-xs font-bold text-brick mb-1"><i class="ph-bold ph-question"></i> ليش غاب؟ (جوابه)</p>${r.feedback.map(f => `<p class="text-[13px]"><b>${RSN[f.reason] || f.reason}</b>${f.note ? `: «${esc(f.note)}»` : ''} <span class="text-[11px] text-ink/50">${agoText(f.created_at)}</span></p>`).join('')}</div>` : '';
     document.getElementById('lm-msgs').innerHTML = fbHtml + (r.messages.length ? `<p class="text-xs font-bold text-ink/70 mb-1">رسائله</p><div class="text-sm divide-y divide-brand/10">${r.messages.map(x => `
       <div class="py-2"><p>${x.source === 'ai' ? '<span class="text-[10px] font-bold bg-violet-500/10 text-violet-700 rounded-full px-2 py-0.5 ml-1">المساعد</span>' : ''}${esc(x.body)}</p><p class="text-[11px] text-ink/50">${agoText(x.created_at)}</p></div>`).join('')}</div>` : '');
+  }
+  async function askLyAbsence() {
+    if (!ly.member) return;
+    const btn = document.getElementById('lm-ask'); btn.disabled = true;
+    try {
+      await api('loyalty-ask-absence', { card_id: ly.member.id });
+      showToast('وصله إشعار على بطاقته يسأله وش أخّره. جوابه يطلع هنا');
+    } catch (e) { showToast(e.message || 'تعذر الإرسال', true); }
+    btn.disabled = false;
   }
   function closeLyMember() { const box = document.getElementById('ly-member'); box.classList.add('hidden'); box.classList.remove('flex'); ly.member = null; }
   async function giveLyStamp() {
