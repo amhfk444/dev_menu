@@ -177,6 +177,9 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
 
   if (action === 'menu' && req.method === 'GET') {
     const data = await menuPayload(req.query.slug);
+    // المنيو يتخزن في شبكة Vercel القريبة من الزبون 15 ثانية (ويتجدد بالخلفية): يفتح فوراً بدل ما يروح للخادم كل مرة.
+    // التحديث اللحظي يطلب المنيو برقم نسخته (&v=) فيتجاوز المخزن
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=15, stale-while-revalidate=300');
     return { ...data, version: versionOf(data), live: data.store.id ? topic('menu', data.store.id) : null };
   }
 

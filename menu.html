@@ -761,7 +761,7 @@
       if (v === 'off') { clearInterval(liveTimer); return showUnavailable('المنيو غير متاح حالياً', 'هذا المنيو غير موجود أو متوقف مؤقتاً.'); }
       if (v && v !== menuVersion && v !== lastPolledVersion) {
         lastPolledVersion = v;
-        applyMenu(await DM.get(`/api/public?action=menu&slug=${encodeURIComponent(clientSlug)}`), false);
+        applyMenu(await DM.get(`/api/public?action=menu&slug=${encodeURIComponent(clientSlug)}&v=${encodeURIComponent(v)}`), false);
       }
     } catch (e) {
       if (e.status === 404) { clearInterval(liveTimer); showUnavailable('المنيو غير متاح حالياً', 'هذا المنيو غير موجود أو متوقف مؤقتاً.'); }
