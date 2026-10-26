@@ -1731,13 +1731,23 @@
       ${foot ? `<p class="text-[11px] text-ink/60">${foot}</p>` : ''}
       ${actions}
     </div>`;
-  // أدوات الولاء اليومية: تفتح شاشة الكاشير على الأداة مباشرة
-  const deskUrl = (open) => `pager-desk.html${location.search ? `${location.search}&` : '?'}open=${open}`;
+  // أدوات الولاء اليومية: تنفتح فوق لوحة التحكم نفسها (نفس أدوات شاشة الكاشير داخل إطار)، بدون ما تنتقل لصفحة ثانية
+  function openLyTool(open) {
+    closeLyTool();
+    const f = document.createElement('iframe');
+    f.id = 'ly-tool';
+    f.allow = 'camera; clipboard-write';
+    f.src = `pager-desk.html${location.search ? `${location.search}&` : '?'}open=${open}&embed=1`;
+    f.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:0;z-index:90;background:transparent';
+    document.body.appendChild(f);
+  }
+  function closeLyTool() { const f = document.getElementById('ly-tool'); if (f) { f.remove(); renderServiceSummary(); } }
+  window.addEventListener('message', (e) => { if (e.origin === location.origin && e.data && e.data.dm === 'desk-closed') closeLyTool(); });
   const lyActions = () => `
       <div class="grid grid-cols-2 gap-2 pt-1">
-        <a href="${deskUrl('scan')}" class="flex items-center gap-2 rounded-xl bg-brand text-cream px-3 py-3 text-[13px] font-bold"><i class="ph-bold ph-camera text-lg text-[#c9a227]"></i> امسح بطاقة زبون</a>
-        <a href="${deskUrl('stamp')}" class="flex items-center gap-2 rounded-xl bg-[#c9a227] text-[#15271b] px-3 py-3 text-[13px] font-bold"><i class="ph-bold ph-seal-check text-lg"></i> كود ختم</a>
-        <a href="${deskUrl('join')}" class="flex items-center gap-2 rounded-xl bg-white border border-brand/15 px-3 py-3 text-[13px] font-bold"><i class="ph-bold ph-user-plus text-lg"></i> QR تسجيل الولاء</a>
+        <button type="button" onclick="openLyTool('scan')" class="flex items-center gap-2 rounded-xl bg-brand text-cream px-3 py-3 text-[13px] font-bold text-right"><i class="ph-bold ph-camera text-lg text-[#c9a227]"></i> امسح بطاقة زبون</button>
+        <button type="button" onclick="openLyTool('stamp')" class="flex items-center gap-2 rounded-xl bg-[#c9a227] text-[#15271b] px-3 py-3 text-[13px] font-bold text-right"><i class="ph-bold ph-seal-check text-lg"></i> كود ختم</button>
+        <button type="button" onclick="openLyTool('join')" class="flex items-center gap-2 rounded-xl bg-white border border-brand/15 px-3 py-3 text-[13px] font-bold text-right"><i class="ph-bold ph-user-plus text-lg"></i> QR تسجيل الولاء</button>
         <a href="kiosk.html${location.search}" target="_blank" class="flex items-center gap-2 rounded-xl bg-white border border-brand/15 px-3 py-3 text-[13px] font-bold"><i class="ph-bold ph-device-tablet text-lg"></i> شاشة الختم</a>
       </div>`;
   async function renderServiceSummary() {

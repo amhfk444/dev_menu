@@ -28,6 +28,9 @@
   .tile .n { font-size: 46px; line-height: 1; }
   @keyframes rwp { 50% { box-shadow: 0 0 0 6px rgba(201,162,39,.25); } }
   .rw-pulse { animation: rwp 1.6s infinite; }
+  /* داخل لوحة التحكم (embed): نافذة الأداة بس، بدون الشاشة نفسها */
+  body.embed { background: rgba(0,0,0,.35); }
+  body.embed > header, body.embed > main { display: none; }
   .mini { font-size: 12px; font-weight: 800; border-radius: 12px; padding: 7px 10px; }
   /* ─── بطاقة الطاولة: تنطبع لحالها على ورقة A6 ─── */
   .qr-card { width: 340px; background: #fbf8f3; color: #1b3022; border-radius: 26px; overflow: hidden; box-shadow: 0 30px 70px -30px rgba(0,0,0,.55); }
@@ -213,6 +216,17 @@
   const extra = `${P.get('client') ? `&client=${encodeURIComponent(P.get('client'))}` : ''}${P.get('branch') ? `&branch=${encodeURIComponent(P.get('branch'))}` : ''}`;
   const O = (a) => `/api/owner?action=${a}${extra}`;
   const $ = (id) => document.getElementById(id);
+  // داخل لوحة التحكم: تنفتح الأداة فوق اللوحة، ولما تتسكر كل النوافذ نبلغ اللوحة تقفل الإطار
+  const EMBED = P.get('embed') === '1' && window.parent !== window;
+  if (EMBED) document.body.classList.add('embed');
+  function watchEmbed() {
+    let t = null;
+    const anyOpen = () => [...document.querySelectorAll('[id$="-modal"]')].some(m => !m.classList.contains('hidden'));
+    new MutationObserver(() => {
+      clearTimeout(t);
+      t = setTimeout(() => { if (!anyOpen()) window.parent.postMessage({ dm: 'desk-closed' }, location.origin); }, 350);
+    }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
+  }
   let slug = '', tickets = [], busy = new Set(), maxRings = 5, T = DMSectors.terms(null);
 
   function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.remove('hidden'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.add('hidden'), 2600); }
@@ -341,15 +355,18 @@
       if (!pager) $('desk-sub').textContent = r.loyalty ? 'بعد ما يدفع الزبون امسح بطاقته وانختم له' : 'شغّل بطاقة الولاء من لوحة التحكم';
       // جاي من أزرار الرئيسية في لوحة التحكم (?open=scan|stamp|join): نفتح الأداة مرة وحدة
       const open = { scan: 'scan-btn', stamp: 'stamp-btn', join: 'join-btn' }[P.get('open')];
-      if (open && r.loyalty && !load.opened) { load.opened = true; $(open).click(); }
+      if (open && r.loyalty && !load.opened) { load.opened = true; $(open).click(); if (EMBED) watchEmbed(); }
       // تحديث لحظي: رقم جديد أو عميل شاف التنبيه يظهر هنا على طول
-      if (r.live && !liveOn) { liveOn = true; DM.live(r.live, () => load()); }
+      if (r.live && !liveOn && !EMBED) { liveOn = true; DM.live(r.live, () => load()); }
       // ما نلمس الأرقام اللي جاري تحديثها
       tickets = r.tickets.map(t => busy.has(t.id) ? (tickets.find(x => x.id === t.id) || t) : t);
       if (invId) return void (timer = setTimeout(load, 4000));   // النافذة مفتوحة: لا نعيد الرسم
-      render(); ringDue();
-    } catch (e) { if (e.status !== 401) toast(e.message || 'تعذر التحديث'); }
-    timer = setTimeout(load, document.hidden ? 15000 : 4000);
+      render(); if (!EMBED) ringDue();
+    } catch (e) {
+      if (e.status !== 401) toast(e.message || 'تعذر التحديث');
+      if (EMBED && !load.opened) setTimeout(() => window.parent.postMessage({ dm: 'desk-closed' }, location.origin), 2500);
+    }
+    if (!EMBED) timer = setTimeout(load, document.hidden ? 15000 : 4000);
   }
 
   // ─── مسح بطاقة الزبون بالكاميرا ───
