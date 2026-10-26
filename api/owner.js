@@ -17,7 +17,7 @@ const { topic, storeTopics, poke } = require('./_lib/live');
 const { normalizeLoyalty, validPoint } = require('./_lib/loyalty');
 const PLANS = require('./_lib/plans');
 const wallet = require('./_lib/wallet');
-const { pushWalletCards, pushWalletBatch, runAssistant, pagerReadyNotice, walletNotice, askAbsence } = require('./_lib/loyalty-assistant');
+const { pushWalletCards, pushWalletBatch, runAssistant, pagerReadyNotice, walletNotice } = require('./_lib/loyalty-assistant');
 const { loyaltyMessages, loyaltyNearLines } = require('./_lib/ai');
 const { purchaseStamp, newStampCode, parseMemberQr, cooldownLeft, leftText } = require('./_lib/loyalty-stamp');
 
@@ -250,6 +250,14 @@ async function redeemMessage(store, settings, card, reward) {
   return `🎁 ${first ? `مبروك يا ${first}!` : 'مبروك!'} استلمت مكافأتك: ${reward}. شكراً لوفائك لـ ${store.name}، ننتظرك مرة ثانية`;
 }
 
+// "ليش ما رجعت؟" في شاشة الختم: غاب المدة المحددة وما جاوب خلال آخر شهرين
+const FEEDBACK_REASONS = ['wait', 'price', 'quality', 'far', 'busy', 'other'];
+async function absenceDue(storeId, card, settings) {
+  if (!card.last_stamp_at || Date.now() - Date.parse(card.last_stamp_at) < settings.feedback.days * 864e5) return false;
+  const last = await rest(`loyalty_feedback?client_id=eq.${storeId}&card_id=eq.${card.id}&created_at=gte.${q(new Date(Date.now() - 60 * 864e5).toISOString())}&select=id&limit=1`).catch(() => [1]);
+  return !last.length;
+}
+
 async function readyRewards(storeId, card, settings) {
   const out = [];
   if (card.stamps >= settings.needed) out.push({ type: 'stamps', label: settings.reward });
@@ -447,7 +455,7 @@ async function main(req) {
       rest(`loyalty_cards?client_id=eq.${store.id}&select=id,member_no,name,phone,stamps,visits,rewards,last_stamp_at,created_at&order=last_stamp_at.desc.nullslast&limit=500`),
       rest(`loyalty_events?client_id=eq.${store.id}&kind=eq.stamp&created_at=gte.${iso(7)}&select=id,card_id,created_at&order=id.desc&limit=5000`),
       rest(`loyalty_events?client_id=eq.${store.id}&kind=eq.redeem&select=id`),
-      rest(`loyalty_messages?client_id=eq.${store.id}&or=${q('(kind.is.null,kind.neq.pager)')}&select=id,card_id,body,wallet_sent,created_at,source,kind&order=id.desc&limit=15`).catch(() => []),
+      rest(`loyalty_messages?client_id=eq.${store.id}&or=${q('(kind.is.null,kind.not.in.(pager,away))')}&select=id,card_id,body,wallet_sent,created_at,source,kind&order=id.desc&limit=15`).catch(() => []),
       rest(`loyalty_feedback?client_id=eq.${store.id}&created_at=gte.${iso(90)}&select=reason,note,created_at,card_id&order=id.desc&limit=500`).catch(() => []),
       rest(`loyalty_gifts?client_id=eq.${store.id}&select=status,new_member,created_at&limit=5000`).catch(() => [])
     ]);
@@ -462,7 +470,7 @@ async function main(req) {
     return {
       enabled: extra.loyalty_enabled === true, settings: normalizeLoyalty(extra.loyalty_settings),
       location_set: validPoint(extra.loyalty_lat, extra.loyalty_lng), slug: store.client_slug,
-      stats: { members: cards.length, active30: active, stamps7: stamps7.length, redeemed: redeemed.length, returning7: returning }, week, recent,
+      stats: { members: cards.length, active30: active, away30: cards.filter(c => c.last_stamp_at && Date.parse(c.last_stamp_at) < Date.now() - 30 * day).length, stamps7: stamps7.length, redeemed: redeemed.length, returning7: returning }, week, recent,
       cards: cards.slice(0, 50), messages, wallet: wallet.configured(),
       entitled: PLANS.has(store, 'loyalty'),
       ai: extra.loyalty_ai === true, near_lines: Array.isArray(extra.loyalty_near_lines) ? extra.loyalty_near_lines : [],
@@ -550,7 +558,7 @@ async function main(req) {
   req._sid = sid;
   // المميزات حسب باقة المحل
   if (['pager-update', 'pager-invoice', 'pager-ring'].includes(action) && !PLANS.has(store, 'pager')) throw new ApiError(403, 'البيجر مو ضمن باقتك', 'ADDON_OFF');
-  if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-member-delete', 'loyalty-ask-absence', 'loyalty-redeem', 'loyalty-message', 'loyalty-message-push', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء مو ضمن باقتك، أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
+  if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-member-delete', 'loyalty-redeem', 'loyalty-message', 'loyalty-message-push', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء مو ضمن باقتك، أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
 
 
   // ─── ربط قوقل ماب ───
@@ -643,6 +651,16 @@ async function main(req) {
     const since = new Date(Date.now() - 60e3).toISOString();
     const dup = await rest(`loyalty_messages?client_id=eq.${sid}&created_at=gte.${q(since)}&body=eq.${q(body)}&select=id&limit=1`).catch(() => []);
     if (dup.length) throw new ApiError(429, 'انرسلت هالرسالة قبل شوي');
+    // رسالة جماعية للي غابوا أكثر من 30 يوم (بدون أسئلة): تنحفظ لكل واحد منهم وتوصل لبطاقته
+    if (b.audience === 'away') {
+      const away = await rest(`loyalty_cards?client_id=eq.${sid}&last_stamp_at=lt.${q(new Date(Date.now() - 30 * 864e5).toISOString())}&select=id&order=last_stamp_at.desc&limit=2000`);
+      if (!away.length) throw new ApiError(409, 'ما فيه أحد غايب أكثر من 30 يوم', 'NO_AWAY');
+      for (let i = 0; i < away.length; i += 500) {
+        await rest('loyalty_messages', { method: 'POST', body: away.slice(i, i + 500).map(c => ({ client_id: sid, card_id: c.id, body, source: 'owner', kind: 'away' })) });
+      }
+      const sent = await pushWalletCards(sid, { cardIds: away.map(c => c.id), notice: body });
+      return { message: { id: 0, body, card_id: null, audience: 'away', wallet_sent: sent, created_at: new Date().toISOString() }, progress: { done: true, sent, total: away.length } };
+    }
     let cardId = null;
     if (b.card_id != null && b.card_id !== '') {
       cardId = int(b.card_id);
@@ -693,9 +711,25 @@ async function main(req) {
     if (card.stamps >= settings.needed) return { stamped: false, rewards, who, reason: 'FULL', note: 'بطاقته مكتملة، يستخدم مكافأته أول', stamps: card.stamps, needed: settings.needed };
     const next = cooldownLeft(card, settings);
     if (next) return { stamped: false, who, reason: 'COOLDOWN', note: `انختم قبل شوي، الختم الجاي بعد ${leftText(next)}`, stamps: card.stamps, needed: settings.needed };
+    // شاشة الختم: اللي غاب المدة المحددة نسأله "وش أخّرك؟" قبل الختم، وجوابه يوصل للتاجر
+    let answered = false;
+    if (b.kiosk && settings.feedback.enabled) {
+      if (FEEDBACK_REASONS.includes(b.reason)) {
+        await rest('loyalty_feedback', { method: 'POST', body: { client_id: sid, card_id: card.id, reason: b.reason, note: null } }).catch(e => console.error('KIOSK_FEEDBACK', e.message));
+        answered = true;
+      } else if (!b.skip && await absenceDue(sid, card, settings)) {
+        return { ask: true, who, days: Math.floor((Date.now() - Date.parse(card.last_stamp_at)) / 864e5), gift: settings.feedback.gift, stamps: card.stamps, needed: settings.needed };
+      }
+    }
     const r = await purchaseStamp(sid, card.id, settings);
+    let count = r.count;
+    // ختم هدية على الجواب (لو صاحب المحل مفعّلها)
+    if (r.stamped && answered && settings.feedback.gift) {
+      const g = await rpc('server_loyalty_stamp', { p_card: card.id, p_cooldown_hours: 0, p_needed: settings.needed, p_distance: null, p_count: 1 }).catch(() => ({}));
+      if (g.ok) { count++; await pushWalletCards(sid, { cardIds: [card.id] }).catch(() => 0); }
+    }
     const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=stamps`))[0] || {};
-    return { stamped: r.stamped, count: r.count, who, reason: r.reason, stamps: fresh.stamps, needed: settings.needed, rewards: await readyRewards(sid, { ...card, stamps: fresh.stamps }, settings) };
+    return { stamped: r.stamped, count, answered, who, reason: r.reason, stamps: fresh.stamps, needed: settings.needed, rewards: await readyRewards(sid, { ...card, stamps: fresh.stamps }, settings) };
   }
 
   // ─── صرف المكافأة (أو هدية صديق) عند الموظف: من مسح كود العضو أو من رقم البيجر ───
@@ -742,16 +776,6 @@ async function main(req) {
   }
 
   // ─── حذف عضو من بطاقة الولاء (وأختامه ورسائله تنحذف معه) ───
-  // ─── "ليش ما رجعت؟" لعضو واحد من ملفه ───
-  if (action === 'loyalty-ask-absence') {
-    const card = (await rest(`loyalty_cards?id=eq.${int(b.card_id)}&client_id=eq.${sid}&select=id,name,wallet_serial`))[0];
-    if (!card) throw new ApiError(404, 'العضو غير موجود');
-    if (!card.wallet_serial) throw new ApiError(409, 'بطاقته مو في محفظة جواله، فما يوصله إشعار. تواصل معه بالواتساب', 'NO_WALLET');
-    const sent = await askAbsence(sid, card);
-    if (!sent) throw new ApiError(502, 'ما قدرنا نوصل الإشعار لبطاقته، حاول بعد شوي');
-    return { ok: true };
-  }
-
   if (action === 'loyalty-member-delete') {
     const id = int(b.card_id);
     const card = (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${sid}&select=id,wallet_serial`))[0];

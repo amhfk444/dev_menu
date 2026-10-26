@@ -110,18 +110,11 @@ async function stampCard(ctx, card, distance) {
 }
 
 const FEEDBACK = ['wait', 'price', 'quality', 'far', 'busy', 'other'];
-// "ليش ما رجعت؟" يطلع للي غاب المدة اللي حددها صاحب المحل (30 يوم افتراضياً)، ومرة وحدة كل شهرين
+// "ليش ما رجعت؟" للي غاب المدة اللي حددها صاحب المحل (30 يوم افتراضياً)، ومرة وحدة كل شهرين
 async function surveyDue(ctx, card) {
   if (!ctx.settings.feedback.enabled || !card.last_stamp_at) return false;
-  const since = (d) => q(new Date(Date.now() - d * 864e5).toISOString());
-  if (Date.now() - Date.parse(card.last_stamp_at) < ctx.settings.feedback.days * 864e5) {
-    // التاجر سأله بنفسه من ملفه خلال آخر أسبوعين؟
-    const asked = await rest(`loyalty_messages?card_id=eq.${card.id}&kind=eq.survey&created_at=gte.${since(14)}&select=created_at&order=id.desc&limit=1`).catch(() => []);
-    if (!asked.length) return false;
-    const after = await rest(`loyalty_feedback?card_id=eq.${card.id}&created_at=gte.${q(asked[0].created_at)}&select=id&limit=1`).catch(() => [1]);
-    return !after.length;
-  }
-  const last = await rest(`loyalty_feedback?card_id=eq.${card.id}&created_at=gte.${since(60)}&select=id&limit=1`).catch(() => [1]);
+  if (Date.now() - Date.parse(card.last_stamp_at) < ctx.settings.feedback.days * 864e5) return false;
+  const last = await rest(`loyalty_feedback?card_id=eq.${card.id}&created_at=gte.${q(new Date(Date.now() - 60 * 864e5).toISOString())}&select=id&limit=1`).catch(() => [1]);
   return !last.length;
 }
 // "نوف" ← "نـ**" (يتأكد إنه الشخص الصح بدون ما نكشف الاسم كامل)
@@ -181,8 +174,9 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       // رسالة المحل تطلع إذا عمرها أقل من 14 يوم
       const m = await latestMessage(ctx.store.id, card.id, ctx.settings);
       const message = m && Date.parse(m.created_at) > Date.now() - 14 * 864e5 ? { id: m.id, body: m.body, at: m.created_at } : null;
-      const [survey, gifts] = await Promise.all([surveyDue(ctx, card), giftsFor(ctx, card)]);
-      return { ...publicInfo(ctx), card: cardView(card), message, survey, gifts };
+      // "ليش ما رجعت؟" صار في شاشة الختم (kiosk) وقت ما يختم، مو في صفحة البطاقة
+      const gifts = await giftsFor(ctx, card);
+      return { ...publicInfo(ctx), card: cardView(card), message, survey: false, gifts };
     }
 
     // بطاقة جديدة (أو رجوع لبطاقته من جوال ثاني بنفس الرقم، وهو داخل المحل) + ختم أول زيارة

@@ -22,6 +22,7 @@
 .ph-bread:before { content: "\e81c"; }
 .ph-buildings:before { content: "\e102"; }
 .ph-cake:before { content: "\e780"; }
+.ph-calendar-x:before { content: "\e10c"; }
 .ph-camera:before { content: "\e10e"; }
 .ph-camera-slash:before { content: "\e110"; }
 .ph-car:before { content: "\e112"; }

@@ -1086,11 +1086,11 @@
                   <div class="flex flex-wrap items-center gap-2 text-[13px]">من <select id="ly-happy-from" class="input-pro !w-auto !min-h-0 !py-1.5"></select> إلى <select id="ly-happy-to" class="input-pro !w-auto !min-h-0 !py-1.5"></select></div>
                   <div id="ly-happy-days" class="flex flex-wrap gap-1.5"></div>
                 </div>
-                <label class="flex items-center justify-between gap-3"><span><b class="text-[13px] block"><i class="ph-bold ph-question"></i> "ليش ما رجعت؟"</b><span class="text-[11px] text-ink/60">اللي يغيب يجيه إشعار على بطاقته يسأله وش أخّره، وتشوف ردوده باسمه في "نظرة عامة"</span></span>
+                <label class="flex items-center justify-between gap-3"><span><b class="text-[13px] block"><i class="ph-bold ph-question"></i> "ليش ما رجعت؟"</b><span class="text-[11px] text-ink/60">اللي رجع بعد غياب ومسح كوده في شاشة الختم، يطلع له سؤال "وش أخّرك؟" قبل الختم، وتشوف جوابه باسمه في "نظرة عامة"</span></span>
                   <input type="checkbox" id="ly-fb" class="w-5 h-5 accent-[#384f3d]"></label>
                 <label class="flex items-center justify-between gap-3 ps-5"><span class="text-[12px] text-ink/70">نسأله إذا غاب</span>
                   <select id="ly-fb-days" class="input-pro !w-auto !min-h-0 !py-1.5"><option value="14">14 يوم</option><option value="21">21 يوم</option><option value="30">30 يوم</option><option value="45">45 يوم</option><option value="60">60 يوم</option></select></label>
-                <label class="flex items-center justify-between gap-3 ps-5"><span class="text-[12px] text-ink/70">أعطه ختم هدية على جوابه (يزيد الردود ويرجّعه)</span>
+                <label class="flex items-center justify-between gap-3 ps-5"><span class="text-[12px] text-ink/70">أعطه ختم هدية على جوابه (ختمين بدل ختم)</span>
                   <input type="checkbox" id="ly-fb-gift" class="w-4 h-4 accent-[#384f3d]"></label>
                 <label class="flex items-center justify-between gap-3"><span><b class="text-[13px] block"><i class="ph-bold ph-heart"></i> "أهدها لصديق"</b><span class="text-[11px] text-ink/60">اللي يكمّل بطاقته يهدي مكافأته برابط، وصديقه يجيك زبون جديد</span></span>
                   <input type="checkbox" id="ly-gifts" class="w-5 h-5 accent-[#384f3d]"></label>
@@ -1265,7 +1265,6 @@
               <button type="button" id="lm-stamp" onclick="giveLyStamp()" class="bg-brand hover:bg-brand-dark text-cream px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-seal-check"></i> أعطه ختم</button>
               <button type="button" id="lm-redeem" onclick="redeemLyMember()" class="hidden bg-[#c9a227] hover:bg-[#b8931f] text-[#15271b] px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-gift"></i> اصرف المكافأة</button>
               <button type="button" onclick="ly.member && deleteLyMember(ly.member.id)" class="bg-brick/10 hover:bg-brick/15 text-brick px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-trash"></i> حذف العضو</button>
-              <button type="button" id="lm-ask" onclick="askLyAbsence()" class="hidden bg-brick/10 hover:bg-brick/20 text-brick px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-question"></i> اسأله ليش غاب</button>
               <a id="lm-wa" target="_blank" rel="noopener" class="hidden bg-[#25d366]/10 hover:bg-[#25d366]/20 text-[#128c7e] px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-whatsapp-logo"></i> واتساب</a>
             </div>
             <div class="space-y-2">
@@ -4035,7 +4034,7 @@
   const lyCardLabel = (c) => `${c.name || `عضو #${c.member_no}`}${c.name ? ` #${c.member_no}` : ''}${c.phone ? ` (${c.phone})` : ''}`;
   function renderLyMessages() {
     const d = ly.data, sel = document.getElementById('ly-msg-to'), keep = sel.value;
-    sel.innerHTML = `<option value="">كل الأعضاء (${d.stats.members})</option>` + d.cards.map(c => `<option value="${c.id}">${esc(lyCardLabel(c))}</option>`).join('');
+    sel.innerHTML = `<option value="">كل الأعضاء (${d.stats.members})</option><option value="away">اللي ما جوا من أكثر من 30 يوم (${d.stats.away30 || 0})</option>` + d.cards.map(c => `<option value="${c.id}">${esc(lyCardLabel(c))}</option>`).join('');
     if ([...sel.options].some(o => o.value === keep)) sel.value = keep;
     const byId = Object.fromEntries(d.cards.map(c => [c.id, c]));
     const when = (iso) => new Date(iso).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
@@ -4059,11 +4058,11 @@
     const body = document.getElementById('ly-msg-body').value.trim();
     const to = document.getElementById('ly-msg-to').value;
     if (body.length < 2) return showToast('اكتب الرسالة', true);
-    const target = to ? lyCardLabel(ly.data.cards.find(c => String(c.id) === to)) : `كل الأعضاء (${ly.data.stats.members})`;
+    const target = to === 'away' ? `اللي ما جوا من أكثر من 30 يوم (${ly.data.stats.away30 || 0})` : to ? lyCardLabel(ly.data.cards.find(c => String(c.id) === to)) : `كل الأعضاء (${ly.data.stats.members})`;
     if (!(await DMDialog.confirm({ title: 'إرسال الرسالة', message: `لـ ${target}:\n${body}`, confirmText: 'أرسل', cancelText: 'تراجع' }))) return;
     const btn = document.getElementById('ly-msg-send'); btn.disabled = true;
     try {
-      const r = await api('loyalty-message', { body, card_id: to || null });
+      const r = await api('loyalty-message', to === 'away' ? { body, audience: 'away' } : { body, card_id: to || null });
       document.getElementById('ly-msg-body').value = ''; document.getElementById('ly-msg-count').textContent = '0/200';
       // للكل: نكمّل الإرسال على دفعات لين توصل لكل جوال
       let p = r.progress || { done: true }, sent = p.sent || 0;
@@ -4142,7 +4141,7 @@
             <span class="flex items-center justify-between gap-2 text-[12px]"><b>${esc(r.name || `عضو #${r.no || ''}`)}</b><span class="text-ink/50" dir="ltr">${new Date(r.created_at).toLocaleDateString('ar-SA-u-nu-latn', { day: 'numeric', month: 'short' })}</span></span>
             <span class="block text-[12px] text-brick font-semibold">${RS[r.reason] || r.reason}</span>
             ${r.note ? `<span class="block text-[12px] text-ink/70">«${esc(r.note)}»</span>` : ''}</button>`).join('')}</div></div>` : '')
-        : `<p class="text-xs text-ink/50">للحين ما فيه ردود. اللي يغيب ${(ly.data.settings.feedback && ly.data.settings.feedback.days) || 30} يوم يجيه إشعار على بطاقته يسأله وش أخّره.</p>`;
+        : `<p class="text-xs text-ink/50">للحين ما فيه ردود. اللي يرجع بعد غياب ${(ly.data.settings.feedback && ly.data.settings.feedback.days) || 30} يوم ويختم من شاشة الختم، ينسأل وش أخّره.</p>`;
       const gs = ly.data.gifts || {};
       const tile = (l, v) => `<div class="rounded-xl bg-brand/[0.04] border border-brand/10 p-2.5"><p class="text-[10px] text-ink/60">${l}</p><p class="text-lg font-bold">${v || 0}</p></div>`;
       document.getElementById('ly-gift-stats').innerHTML = tile('هدايا انرسلت', gs.sent) + tile('انستلمت', gs.claimed) + tile('انصرفت في المحل', gs.redeemed) + tile('زبائن جدد جوا بهدية', gs.new_members);
@@ -4220,7 +4219,6 @@
     document.getElementById('lm-stats').innerHTML = st('الأختام', `${Math.min(m.stamps, n)}/${n}`, true) + st('الزيارات', m.visits) + st('المكافآت', m.rewards) + st('يجي كل', gap ? `${gap} يوم` : '—');
     const wa = document.getElementById('lm-wa');
     wa.classList.toggle('hidden', !m.phone); if (m.phone) wa.href = `https://wa.me/${m.phone}`;
-    document.getElementById('lm-ask').classList.toggle('hidden', !m.in_wallet);
     document.getElementById('lm-stamp').disabled = m.stamps >= n;
     document.getElementById('lm-redeem').classList.toggle('hidden', m.stamps < n);
     document.getElementById('lm-events').innerHTML = r.events.length ? r.events.map(e => `
@@ -4237,15 +4235,6 @@
     const fbHtml = (r.feedback || []).length ? `<div class="rounded-xl border border-brick/20 bg-brick/[0.04] p-3 mb-3"><p class="text-xs font-bold text-brick mb-1"><i class="ph-bold ph-question"></i> ليش غاب؟ (جوابه)</p>${r.feedback.map(f => `<p class="text-[13px]"><b>${RSN[f.reason] || f.reason}</b>${f.note ? `: «${esc(f.note)}»` : ''} <span class="text-[11px] text-ink/50">${agoText(f.created_at)}</span></p>`).join('')}</div>` : '';
     document.getElementById('lm-msgs').innerHTML = fbHtml + (r.messages.length ? `<p class="text-xs font-bold text-ink/70 mb-1">رسائله</p><div class="text-sm divide-y divide-brand/10">${r.messages.map(x => `
       <div class="py-2"><p>${x.source === 'ai' ? '<span class="text-[10px] font-bold bg-violet-500/10 text-violet-700 rounded-full px-2 py-0.5 ml-1">المساعد</span>' : ''}${esc(x.body)}</p><p class="text-[11px] text-ink/50">${agoText(x.created_at)}</p></div>`).join('')}</div>` : '');
-  }
-  async function askLyAbsence() {
-    if (!ly.member) return;
-    const btn = document.getElementById('lm-ask'); btn.disabled = true;
-    try {
-      await api('loyalty-ask-absence', { card_id: ly.member.id });
-      showToast('وصله إشعار على بطاقته يسأله وش أخّره. جوابه يطلع هنا');
-    } catch (e) { showToast(e.message || 'تعذر الإرسال', true); }
-    btn.disabled = false;
   }
   function closeLyMember() { const box = document.getElementById('ly-member'); box.classList.add('hidden'); box.classList.remove('flex'); ly.member = null; }
   async function giveLyStamp() {

@@ -169,44 +169,4 @@ async function walletNotice(storeId, cardId, body, kind = 'pager') {
   } catch (e) { console.error('PAGER_WALLET', e.message); return 'error'; }
 }
 
-const absenceText = (store, settings, card) => {
-  const first = String(card.name || '').trim().split(/\s+/)[0];
-  return `وحشتنا${first ? ` يا ${first}` : ''}! وش اللي أخّرك عن ${store.name}؟ افتح بطاقتك وجاوب بضغطة${settings.feedback.gift ? ' وخذ ختم هدية' : ''}`;
-};
-
-// التاجر يسأل عضو واحد بنفسه من ملفه
-async function askAbsence(storeId, card) {
-  const store = (await rest(`clients?id=eq.${storeId}&select=${STORE_FIELDS}`))[0];
-  const settings = normalizeLoyalty(store.loyalty_settings);
-  const body = absenceText(store, settings, card);
-  await rest('loyalty_messages', { method: 'POST', body: { client_id: storeId, card_id: card.id, body, source: 'owner', kind: 'survey' } });
-  return pushWalletCards(storeId, { cardIds: [card.id], notices: { [card.id]: body } });
-}
-
-// "ليش ما رجعت؟": اللي غاب المدة المحددة يجيه إشعار على بطاقته، ولما يفتحها يطلع له السؤال.
-// مرة وحدة كل شهرين لكل عضو، وبحد 60 عضو باليوم لكل محل
-async function absenceNudges(storeId) {
-  const store = (await rest(`clients?id=eq.${storeId}&select=${STORE_FIELDS}`))[0];
-  if (!store || !store.loyalty_enabled) return { asked: 0 };
-  const settings = normalizeLoyalty(store.loyalty_settings);
-  if (!settings.feedback.enabled) return { asked: 0, off: true };
-  const day = 864e5, iso = (n) => q(new Date(Date.now() - n * day).toISOString());
-  const cards = await rest(`loyalty_cards?client_id=eq.${storeId}&wallet_serial=not.is.null&last_stamp_at=lt.${iso(settings.feedback.days)}&last_stamp_at=gt.${iso(180)}&select=id,name&order=last_stamp_at.desc&limit=300`);
-  if (!cards.length) return { asked: 0 };
-  const ids = cards.map(c => c.id).join(',');
-  const [asked, answered] = await Promise.all([
-    rest(`loyalty_messages?client_id=eq.${storeId}&kind=eq.survey&card_id=in.(${ids})&created_at=gte.${iso(60)}&select=card_id`).catch(() => null),
-    rest(`loyalty_feedback?client_id=eq.${storeId}&card_id=in.(${ids})&created_at=gte.${iso(60)}&select=card_id`).catch(() => null)
-  ]);
-  if (!asked || !answered) return { asked: 0, error: 'lookup' };
-  const skip = new Set([...asked, ...answered].map(r => r.card_id));
-  const pick = cards.filter(c => !skip.has(c.id)).slice(0, 60);
-  if (!pick.length) return { asked: 0 };
-  const notices = {};
-  for (const c of pick) notices[c.id] = absenceText(store, settings, c);
-  await rest('loyalty_messages', { method: 'POST', body: pick.map(c => ({ client_id: storeId, card_id: c.id, body: notices[c.id], source: 'system', kind: 'survey' })) });
-  const sent = await pushWalletCards(storeId, { cardIds: pick.map(c => c.id), notices });
-  return { asked: pick.length, sent };
-}
-
-module.exports = { pushWalletBatch, pushWalletCards, runAssistant, nearLineFor, STORE_FIELDS, pickGuests, pagerReadyNotice, walletNotice, absenceNudges, askAbsence };
+module.exports = { pushWalletBatch, pushWalletCards, runAssistant, nearLineFor, STORE_FIELDS, pickGuests, pagerReadyNotice, walletNotice };
