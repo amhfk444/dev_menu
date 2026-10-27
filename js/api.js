@@ -5,8 +5,24 @@
 // =====================================================================
 (function () {
   // مفتاح Supabase العام هنا لتسجيل الدخول فقط، وما يعطي أي صلاحية على البيانات
-  const AUTH_URL = 'https://czdoamcgxgkicrbufpcn.supabase.co/auth/v1';
-  const AUTH_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZG9hbWNneGdraWNyYnVmcGNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwMTA5MzAsImV4cCI6MjEwNTU4NjkzMH0.45zKx4ljXJ27SS-ukc62qiu52movhDgSoC9OEnK9NHk';
+  // نسخة التجربة (staging.devmenu.digital أو روابط فرع staging في Vercel) تشتغل على مشروع Supabase منفصل
+  const STAGING = /^staging\.devmenu\.digital$/.test(location.hostname) || /-git-staging-/.test(location.hostname);
+  const ENV = STAGING ? {
+    url: 'https://STAGING_REF.supabase.co',   // يتعبى من Supabase ← Settings ← API لمشروع التجربة
+    key: 'STAGING_ANON_KEY'
+  } : {
+    url: 'https://czdoamcgxgkicrbufpcn.supabase.co',
+    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZG9hbWNneGdraWNyYnVmcGNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwMTA5MzAsImV4cCI6MjEwNTU4NjkzMH0.45zKx4ljXJ27SS-ukc62qiu52movhDgSoC9OEnK9NHk'
+  };
+  const AUTH_URL = `${ENV.url}/auth/v1`;
+  // علامة واضحة إن هذي نسخة التجربة، عشان ما تنخلط بالحقيقية
+  if (STAGING) document.addEventListener('DOMContentLoaded', () => {
+    const b = document.createElement('div');
+    b.textContent = 'نسخة التجربة (staging)';
+    b.style.cssText = 'position:fixed;bottom:8px;left:8px;z-index:99999;background:#b45309;color:#fff;font:700 11px system-ui;padding:4px 10px;border-radius:999px;pointer-events:none;opacity:.9';
+    document.body.appendChild(b);
+  });
+  const AUTH_KEY = ENV.key;
   const STORE_KEY = 'dm_session';
 
   const loadSession = () => { try { return JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch { return null; } };
@@ -145,7 +161,7 @@
   // الصفحة تعرف المتجر من النطاق إذا ما فيه ?client= (middleware.js يوجّه النطاق للصفحة)
   function hostSlug() {
     const m = location.hostname.toLowerCase().match(/^([a-z0-9-]+)\.devmenu\.digital$/);
-    return m && m[1] !== 'app' && m[1] !== 'www' ? m[1] : '';
+    return m && !['app', 'www', 'staging'].includes(m[1]) ? m[1] : '';
   }
   // رابط صفحة من صفحات المتجر: مختصر على نطاق المتجر، وإلا بالصيغة العادية
   function storePage(page, slug) {
@@ -158,7 +174,7 @@
   function storeUrl(slug, page = 'menu', params = {}) {
     const s = String(slug || '').toLowerCase();
     const qs = new URLSearchParams(params).toString();
-    if (/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(s) && s !== 'app' && s !== 'www') {
+    if (!STAGING && /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(s) && s !== 'app' && s !== 'www') {
       const path = { menu: '/', links: '/links', waitlist: '/waitlist', pager: '/pager', loyalty: '/loyalty' }[page] || '/';
       return `https://${s}.devmenu.digital${path}${qs ? `?${qs}` : ''}`;
     }

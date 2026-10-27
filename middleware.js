@@ -11,7 +11,7 @@
 import { rewrite } from '@vercel/functions/middleware';
 
 const HOST_RE = /^([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\.devmenu\.digital$/;
-const NOT_STORES = new Set(['app', 'www']);
+const NOT_STORES = new Set(['app', 'www', 'staging']);
 const PAGES = {
   '/': 'menu.html', '/menu': 'menu.html',
   '/links': 'links.html',
