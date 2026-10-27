@@ -5,7 +5,7 @@
 const crypto = require('crypto');
 const {
   handler, rest, rpc, q, storage, storagePathFromUrl, BUCKET,
-  ApiError, getUser, isSuperAdmin, str, int, readBody, waNumber, SLUG_RE, RESERVED_SLUGS
+  ApiError, getUser, isSuperAdmin, str, int, readBody, waNumber, SLUG_RE, RESERVED_SLUGS, SITE, storeLink
 } = require('./_lib/core');
 
 const { sendMail, mailConfigured } = require('./_lib/mail');
@@ -158,15 +158,15 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const out = await patch(body);
     let mailed = false;
     if (mailConfigured()) {
-      const url = `https://${target.client_slug}.devmenu.digital/`;
+      const url = storeLink(target.client_slug, 'menu');
       mailed = await sendMail({
         to: email, fromName: 'DEV MENU',
         subject: `منيو ${target.name} جاهز على DEV MENU`,
-        text: `مرحباً،\n\nجهّزنا منيو "${target.name}" الرقمي على DEV MENU:\n${url}\n\nلإدارته (تعديل الأسعار والأطباق): ادخل على https://www.devmenu.digital/login.html بهذا البريد (${email}).\nتجربتك المجانية 7 أيام.\n\nفريق DEV MENU`,
+        text: `مرحباً،\n\nجهّزنا منيو "${target.name}" الرقمي على DEV MENU:\n${url}\n\nلإدارته (تعديل الأسعار والأطباق): ادخل على ${SITE}/login.html بهذا البريد (${email}).\nتجربتك المجانية 7 أيام.\n\nفريق DEV MENU`,
         html: `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;line-height:1.9;color:#1b3022">
           <h2 style="margin:0 0 10px">منيو ${escHtml(target.name)} جاهز</h2>
           <p>جهّزنا منيو منشأتك الرقمي على DEV MENU: <a href="${url}">${url}</a></p>
-          <p>لإدارته (تعديل الأسعار والأطباق والصور) ادخل على <a href="https://www.devmenu.digital/login.html">صفحة الدخول</a> بهذا البريد: <b dir="ltr">${escHtml(email)}</b></p>
+          <p>لإدارته (تعديل الأسعار والأطباق والصور) ادخل على <a href="${SITE}/login.html">صفحة الدخول</a> بهذا البريد: <b dir="ltr">${escHtml(email)}</b></p>
           <p>تجربتك المجانية 7 أيام.</p><p style="color:#6b7280">فريق DEV MENU</p></div>`
       }).catch(() => false);
     }

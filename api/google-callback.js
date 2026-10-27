@@ -11,7 +11,7 @@ module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const back = (r, status) => {
     res.statusCode = 302;
-    res.setHeader('Location', `https://www.devmenu.digital/admin.html${r || ''}${r ? '&' : '?'}google=${status}#reviews`);
+    res.setHeader('Location', `${require('./_lib/core').SITE}/admin.html${r || ''}${r ? '&' : '?'}google=${status}#reviews`);
     res.end();
   };
   const url = new URL(req.url, 'https://www.devmenu.digital');

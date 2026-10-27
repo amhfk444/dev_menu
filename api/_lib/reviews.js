@@ -13,7 +13,7 @@ const MAX_PER_RUN = 5;          // حد الردود الجديدة لكل مت�
 const FIRST_SYNC_DAYS = 30;     // أول ربط: التعليقات بدون رد من آخر 30 يوم بس، مو كل التاريخ
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const stars = (n) => '★'.repeat(n) + '☆'.repeat(5 - n);
-const dashboardUrl = (store) => `https://www.devmenu.digital/admin.html${store.parent_id ? `?branch=${store.id}` : ''}#reviews`;
+const dashboardUrl = (store) => `${require('./core').SITE}/admin.html${store.parent_id ? `?branch=${store.id}` : ''}#reviews`;
 
 // ─── مزامنة متجر واحد ───
 async function syncStore(store, conn) {

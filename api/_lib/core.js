@@ -139,6 +139,18 @@ async function storeFeatures(storeId) {
   return Object.fromEntries(['menu', 'pager', 'waitlist', 'loyalty'].map(k => [k, !!s && PLANS.has(s, k)]));
 }
 
+// عنوان الموقع: الإنتاج www.devmenu.digital، ونسخة التجربة تحط SITE_URL حقها (روابط الإيميلات والمحفظة والإشعارات)
+const SITE = (process.env.SITE_URL || 'https://www.devmenu.digital').replace(/\/+$/, '');
+const SUBDOMAINS = !process.env.SITE_URL;   // روابط المتاجر المختصرة (duja.devmenu.digital) للإنتاج بس
+// رابط صفحة متجر: المختصر في الإنتاج، والعادي (page.html?client=) في التجربة أو لو الاسم ما يصلح نطاق
+function storeLink(slug, page = 'menu') {
+  const s = String(slug || '').toLowerCase();
+  if (SUBDOMAINS && /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(s) && !['app', 'www'].includes(s)) {
+    return `https://${s}.devmenu.digital${{ menu: '/', links: '/links', waitlist: '/waitlist', pager: '/pager', loyalty: '/loyalty' }[page] || '/'}`;
+  }
+  return `${SITE}/${page}.html?client=${encodeURIComponent(s)}`;
+}
+
 // الميزة ضمن باقة المحل؟ (التجربة فيها كل شي). الفرع ياخذ مميزات المتجر الرئيسي
 async function storeHasFeature(storeId, key) {
   const PLANS = require('./plans');
@@ -183,5 +195,5 @@ function handler(methods, fn) {
 module.exports = {
   SUPABASE_URL, BUCKET, ApiError, rest, rpc, q, storage, publicUrl, ownsMediaUrl, storagePathFromUrl,
   getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody, handler,
-  SLUG_RE, RESERVED_SLUGS, findPublicStore, CURRENCIES, storeHasFeature, storeFeatures
+  SLUG_RE, RESERVED_SLUGS, findPublicStore, CURRENCIES, storeHasFeature, storeFeatures, SITE, storeLink
 };

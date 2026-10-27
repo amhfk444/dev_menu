@@ -6,7 +6,7 @@
 const crypto = require('crypto');
 const {
   handler, rest, rpc, q, storage, publicUrl, ownsMediaUrl, SUPABASE_URL, BUCKET,
-  ApiError, getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody, SLUG_RE, RESERVED_SLUGS, CURRENCIES
+  ApiError, getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody, SLUG_RE, RESERVED_SLUGS, CURRENCIES, SITE, storeLink
 } = require('./_lib/core');
 const { FIELDS, normalizeSettings, riyadhDayStart, positionOf, emailTemplate, statusUrlFor } = require('./_lib/waitlist');
 const { sendMail, mailConfigured } = require('./_lib/mail');
@@ -221,7 +221,7 @@ const PAGER_MAX_RINGS = 5;
 async function ringTicket(store, t) {
   if (!t.push_sub) return 'off';
   const n = (t.ring_count || 0) + 1;
-  const url = `https://${store.client_slug}.devmenu.digital/pager`;
+  const url = storeLink(store.client_slug, 'pager');
   const payload = n === 1
     ? { title: `🔔 ${SECTORS.terms(store).ready} رقم ${t.number}`, body: `${SECTORS.terms(store).readyBody} من ${store.name}` }
     : { title: `🔔 تذكير: ${SECTORS.terms(store).ready} رقم ${t.number}`, body: `الموظف بانتظارك في ${store.name} (${n}/${PAGER_MAX_RINGS})` };
@@ -304,7 +304,7 @@ async function main(req) {
           await sendMail({
             to: process.env.ADMIN_EMAIL || 'dmenu950@gmail.com', fromName: 'DEV MENU',
             subject: `متجر جديد مع طلب اشتراك: ${main.name}`,
-            text: `${main.name} (${main.client_slug}) سجّل وبدأ التجربة المجانية.\nاختار ${plan === 'month' ? 'الشهري' : 'السنوي'}: ${features.map(k => PLANS.FEATURES[k].name).join('، ')} = ${PLANS.price(features, plan).total} ر.س.\nجوال: ${main.phone || '-'}\nبريد: ${main.email || '-'}\nلوحة المشتركين: https://www.devmenu.digital/super-admin.html`
+            text: `${main.name} (${main.client_slug}) سجّل وبدأ التجربة المجانية.\nاختار ${plan === 'month' ? 'الشهري' : 'السنوي'}: ${features.map(k => PLANS.FEATURES[k].name).join('، ')} = ${PLANS.price(features, plan).total} ر.س.\nجوال: ${main.phone || '-'}\nبريد: ${main.email || '-'}\nلوحة المشتركين: ${SITE}/super-admin.html`
           }).catch(e => console.error('REGISTER_PLAN_MAIL', e.message));
         }
       }
@@ -353,7 +353,7 @@ async function main(req) {
       await sendMail({
         to: process.env.ADMIN_EMAIL || 'dmenu950@gmail.com', fromName: 'DEV MENU',
         subject: `طلب ${KIND[kind]}: ${store.name}`,
-        text: `${store.name} (${store.client_slug})\n\n${body}\n\nرد عليه من لوحة المشتركين: https://www.devmenu.digital/super-admin.html`
+        text: `${store.name} (${store.client_slug})\n\n${body}\n\nرد عليه من لوحة المشتركين: ${SITE}/super-admin.html`
       }).catch(e => console.error('SUPPORT_MAIL', e.message));
     }
     return { request: row };
@@ -921,7 +921,7 @@ async function main(req) {
       await sendMail({
         to, fromName: 'DEV MENU',
         subject: `طلب اشتراك: ${main.name} (الباقة ${label})`,
-        text: `${main.name} (${main.client_slug}) اختار الباقة ${label}: ${features.map(k => PLANS.FEATURES[k].name).join('، ')} = ${PLANS.price(features, plan).total} ر.س.\nجوال: ${main.phone || '-'}\nبريد: ${main.email || '-'}\nفعّلها من لوحة المشتركين: https://www.devmenu.digital/super-admin.html`
+        text: `${main.name} (${main.client_slug}) اختار الباقة ${label}: ${features.map(k => PLANS.FEATURES[k].name).join('، ')} = ${PLANS.price(features, plan).total} ر.س.\nجوال: ${main.phone || '-'}\nبريد: ${main.email || '-'}\nفعّلها من لوحة المشتركين: ${SITE}/super-admin.html`
       }).catch(e => console.error('PLAN_MAIL', e.message));
     }
     return { requested_plan: plan, requested_features: features, plan_requested_at: main.plan_requested_at };

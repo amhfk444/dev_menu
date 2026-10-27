@@ -14,7 +14,7 @@ const PLANS = require('./_lib/plans');
 
 const DAY = 864e5;
 const GRACE_DAYS = 3;
-const DASHBOARD = 'https://www.devmenu.digital/admin.html#dashboard';
+const DASHBOARD = `${require('./_lib/core').SITE}/admin.html#dashboard`;
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const dateText = (d) => new Date(d).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', day: 'numeric', month: 'long' });
 

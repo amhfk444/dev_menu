@@ -94,8 +94,7 @@ async function updatePass(serial, ctx) {
 }
 
 // رابط صفحة البطاقة، ورابط الاسترجاع (فيه رقم البطاقة السري، يطلع على ظهر بطاقة المحفظة بس)
-const cardUrl = (slug) => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(slug) && !['app', 'www'].includes(slug)
-  ? `https://${slug}.devmenu.digital/loyalty` : `https://www.devmenu.digital/loyalty.html?client=${encodeURIComponent(slug)}`;
+const cardUrl = (slug) => require('./core').storeLink(slug, 'loyalty');
 function buildCtx({ store, settings, card, lat, lng, notice, nearText }) {
   const url = cardUrl(store.client_slug);
   return { store, settings, card, url, restoreUrl: `${url}${url.includes('?') ? '&' : '?'}t=${encodeURIComponent(card.token)}`, lat, lng, notice, nearText };

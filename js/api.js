@@ -6,7 +6,7 @@
 (function () {
   // مفتاح Supabase العام هنا لتسجيل الدخول فقط، وما يعطي أي صلاحية على البيانات
   // نسخة التجربة (staging.devmenu.digital أو روابط فرع staging في Vercel) تشتغل على مشروع Supabase منفصل
-  const STAGING = /^staging\.devmenu\.digital$/.test(location.hostname) || /-git-staging-/.test(location.hostname);
+  const STAGING = /^staging\.devmenu\.digital$/.test(location.hostname) || /-git-staging-|^dev-menu-staging[.-]|^devmenu-staging\./.test(location.hostname);
   const ENV = STAGING ? {
     url: 'https://mftyikgclynjmcufnamw.supabase.co',
     key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1mdHlpa2djbHluam1jdWZuYW13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMwNzY3ODUsImV4cCI6MjEwODY1Mjc4NX0.G5V-Ku02VwdFtQUp5fGpEog9O0LpIAVvB6ASCD52oH4'

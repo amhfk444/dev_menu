@@ -9,7 +9,7 @@ const { ApiError } = require('./core');
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
-const REDIRECT_URI = 'https://www.devmenu.digital/api/google-callback';
+const REDIRECT_URI = `${(process.env.SITE_URL || 'https://www.devmenu.digital').replace(/\/+$/, '')}/api/google-callback`;
 const SCOPES = 'https://www.googleapis.com/auth/business.manage openid email';
 const configured = () => !!(CLIENT_ID && CLIENT_SECRET);
 
