@@ -8,6 +8,13 @@
   box-shadow: 0 34px 60px -30px color-mix(in srgb, var(--c) 70%, #000); }
 .lcard::after { content: ''; position: absolute; inset: 0; pointer-events: none;
   background: radial-gradient(circle at 18% 120%, color-mix(in srgb, var(--stamp) 28%, transparent), transparent 55%); }
+/* متدرج بلونين يختارهم صاحب المحل */
+.lcard.st-gradient.two { background: linear-gradient(135deg, var(--c) 0%, var(--c2) 100%); }
+/* لون خط يختاره صاحب المحل (حتى فوق الصورة) */
+.lcard.ink-set, .lcard.ink-set.has-media { color: var(--ink); }
+/* شعار البطاقة */
+.lcard > .lcard-logo { display: block; width: 46px; height: 46px; margin-bottom: 12px; border-radius: 12px; object-fit: cover; background: #fff; box-shadow: 0 6px 14px -8px rgba(0,0,0,.5); }
+.stamp img.reward { opacity: 1; filter: none; }
 .lcard.st-solid { background: var(--c); }
 .lcard.st-solid::after { display: none; }
 .lcard.st-paper { background: #fbf8f3; color: var(--c); border: 2px dashed color-mix(in srgb, var(--c) 45%, transparent); box-shadow: 0 24px 50px -32px rgba(0,0,0,.35); }

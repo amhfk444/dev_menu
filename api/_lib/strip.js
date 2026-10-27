@@ -17,10 +17,14 @@ const icon = (name, x, y, size, color, opacity = 1) =>
   `<svg x="${x}" y="${y}" width="${size}" height="${size}" viewBox="0 0 256 256" fill="${color}" fill-opacity="${opacity}">${ICONS[name] || ICONS.coffee}</svg>`;
 
 // الخلفية بنفس لون بطاقة المحفظة عشان الصورة تندمج معها، مع وهج خفيف بلون الختم
+// متدرج بلونين: اللون الثاني في النص ويذوب للون البطاقة على الأطراف، عشان يندمج مع خلفية المحفظة (لون واحد) بدون حواف
 function background(d) {
+  const two = d.style === 'gradient' && d.color2;
   return {
-    fill: d.color, ink: inkFor(d.color),
-    glow: `<radialGradient id="g" cx="50%" cy="50%" r="60%"><stop offset="0" stop-color="${d.stamp_color}" stop-opacity=".16"/><stop offset="1" stop-color="${d.stamp_color}" stop-opacity="0"/></radialGradient>`
+    fill: d.color, ink: inkFor(two ? d.color2 : d.color),
+    glow: two
+      ? `<radialGradient id="g" cx="50%" cy="50%" r="75%"><stop offset="0" stop-color="${d.color2}"/><stop offset="1" stop-color="${d.color2}" stop-opacity="0"/></radialGradient>`
+      : `<radialGradient id="g" cx="50%" cy="50%" r="60%"><stop offset="0" stop-color="${d.stamp_color}" stop-opacity=".16"/><stop offset="1" stop-color="${d.stamp_color}" stop-opacity="0"/></radialGradient>`
   };
 }
 
@@ -60,7 +64,7 @@ async function stampStrip(settings, card) {
       if (on) shapes += `<circle cx="${cx}" cy="${cy}" r="${D / 2}" fill="${d.stamp_color}"/><circle cx="${cx}" cy="${cy + 4}" r="${D / 2}" fill="none"/>`;
       else shapes += `<circle cx="${cx}" cy="${cy}" r="${D / 2 - 3}" fill="none" stroke="${last ? d.stamp_color : bg.ink}" stroke-opacity="${last ? .85 : .35}" stroke-width="5" stroke-dasharray="14 11"/>`;
       const s = D * .46;
-      if (last && !on) shapes += icon('gift', cx - s / 2, cy - s / 2, s, d.stamp_color, .95);
+      if (last && !on) { if (!d.reward_image) shapes += icon('gift', cx - s / 2, cy - s / 2, s, d.stamp_color, .95); }
       else if (!d.stamp_image) shapes += icon(d.icon, cx - s / 2, cy - s / 2, s, on ? stampInk : bg.ink, on ? 1 : .35);
     }
     const svg = photo
@@ -83,6 +87,16 @@ async function stampStrip(settings, card) {
           layers.push({ input: on ? full : faint, left: Math.round(x + off), top: Math.round(y + off) });
         }
         base = sharp(await base.toBuffer()).composite(layers).png();
+      }
+    }
+    // صورة المكافأة في الخانة الأخيرة (بدل الهدية)
+    if (d.reward_image && done < n) {
+      const res = await fetch(d.reward_image, { signal: AbortSignal.timeout(8000) }).catch(() => null);
+      if (res && res.ok) {
+        const inner = Math.round(D * .86), off = Math.round((D - inner) / 2);
+        const img = await circleImage(Buffer.from(await res.arrayBuffer()), inner, 1, false);
+        const [x, y] = pos[n - 1];
+        base = sharp(await base.toBuffer()).composite([{ input: img, left: Math.round(x + off), top: Math.round(y + off) }]).png();
       }
     }
     const png = await base.png({ compressionLevel: 9, palette: true, quality: photo ? 95 : 90, dither: photo ? 1 : 0 }).toBuffer();

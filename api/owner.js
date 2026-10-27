@@ -652,6 +652,7 @@ async function main(req) {
     const current = normalizeLoyalty(extra.loyalty_settings);
     const design = { ...current.design, ...((b.settings && b.settings.design) || {}) };
     if (design.stamp_image && !ownsMediaUrl(design.stamp_image, sid)) throw new ApiError(400, 'صورة الختم غير تابعة لمتجرك');
+    for (const k of ['logo', 'reward_image']) if (design[k] && !ownsMediaUrl(design[k], sid)) throw new ApiError(400, 'الصورة غير تابعة لمتجرك');
     const settings = normalizeLoyalty({ ...current, ...(b.settings || {}), design });
     const body = { loyalty_settings: settings };
     // الشروط تغيّرت: رسائل الذكاء القديمة (مثلاً "باقي لك 5 من 8") تختفي، وجمل القرب تنكتب من جديد

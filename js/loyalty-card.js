@@ -18,11 +18,25 @@
     el.classList.remove('st-gradient', 'st-solid', 'st-paper', 'st-dark');
     el.classList.add(`st-${d.style || 'gradient'}`);
     el.style.setProperty('--c', d.color || '#233d2c');
+    // متدرج بلونين لو اختار لون ثاني
+    el.classList.toggle('two', d.style === 'gradient' && !!d.color2);
+    el.style.setProperty('--c2', d.color2 || d.color || '#233d2c');
     el.style.setProperty('--stamp', d.stamp_color || '#c9a227');
     el.style.setProperty('--stamp-ink', inkFor(d.stamp_color || '#c9a227'));
     const solidInk = inkFor(d.color || '#233d2c');
-    el.style.setProperty('--ink', d.style === 'paper' ? (d.color || '#233d2c') : d.style === 'dark' ? '#f5f5f5' : solidInk);
+    const auto = d.style === 'paper' ? (d.color || '#233d2c') : d.style === 'dark' ? '#f5f5f5' : solidInk;
+    // لون الخط: اختيار صاحب المحل، وإلا تلقائي حسب لون البطاقة
+    el.style.setProperty('--ink', d.text_color || auto);
+    el.classList.toggle('ink-set', !!d.text_color);
     media(el, d);
+    logo(el, d);
+  }
+  // شعار البطاقة الخاص (غير شعار المنيو) في زاوية البطاقة
+  function logo(el, d) {
+    let img = el.querySelector(':scope > .lcard-logo');
+    if (!d.logo) { if (img) img.remove(); return; }
+    if (!img) { img = document.createElement('img'); img.className = 'lcard-logo'; img.alt = ''; const m = el.querySelector(':scope > .lcard-media'); m ? m.after(img) : el.prepend(img); }
+    if (img.getAttribute('src') !== d.logo) img.src = d.logo;
   }
   // خلفية صورة تغطي البطاقة كلها، وفوقها طبقة غامقة عشان الكلام والأختام تبان
   function media(el, d) {
@@ -45,7 +59,8 @@
     let h = '';
     for (let i = 0; i < needed; i++) {
       const on = i < count, last = i === needed - 1;
-      const inner = last && !on ? '<i class="ph-bold ph-gift"></i>' : img || `<i class="ph-bold ${icon}"></i>`;
+      const gift = d.reward_image ? `<img class="reward" src="${esc(d.reward_image)}" alt="" loading="lazy">` : '<i class="ph-bold ph-gift"></i>';
+      const inner = last && !on ? gift : img || `<i class="ph-bold ${icon}"></i>`;
       h += `<span class="stamp ${on ? 'on' : last ? 'gift' : ''} ${i === fresh ? 'new' : ''}">${inner}</span>`;
     }
     return h;

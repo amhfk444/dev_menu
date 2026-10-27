@@ -35,7 +35,8 @@ function passBody({ store, settings, card, url, restoreUrl, lat, lng, notice, st
     colorPreset: 'green',
     // العدد فوق (يبان حتى والبطاقة بين البطاقات)، والأختام نفسها في الصورة العريضة
     headerFields: [{ label: 'الأختام', value: `${s} / ${n}`, changeMessage: 'صار عندك %@ ختم' }],
-    secondaryFields: [...(card.name ? [{ label: 'صاحب البطاقة', value: String(card.name).slice(0, 40) }] : []), { label: 'المكافأة', value: settings.reward }, { label: s >= n ? 'جاهزة' : 'باقي', value: s >= n ? 'استخدمها الحين' : `${n - s} أختام` }],
+    // المكافأة وحامل البطاقة بس (عدد الأختام فوق، والأختام نفسها في الصورة)
+    secondaryFields: [{ label: s >= n ? 'مكافأتك جاهزة' : 'المكافأة', value: settings.reward }, ...(card.name ? [{ label: 'صاحب البطاقة', value: String(card.name).slice(0, 40) }] : [])],
     backFields: [
       { label: 'رقم العضوية', value: `#${card.member_no || ''}` },
       { label: 'زياراتك', value: String(card.visits || 0) },
@@ -51,7 +52,9 @@ function passBody({ store, settings, card, url, restoreUrl, lat, lng, notice, st
   if (full) {
     // لون المحل بدل اللون الجاهز (ما نرسل الاثنين، عشان الجاهز ما يغطي عليه)
     if (settings.design && settings.design.color) { body.color = settings.design.color; delete body.colorPreset; }
-    if (store.logo_url && /^https:\/\//.test(store.logo_url)) body.logoURL = store.logo_url;
+    // شعار البطاقة الخاص لو حطه صاحب المحل، وإلا شعار المنيو
+    const logo = (settings.design && settings.design.logo) || store.logo_url;
+    if (logo && /^https:\/\//.test(logo)) body.logoURL = logo;
     // صورة الأختام بنفس شكل بطاقة DEV MENU
     if (strip) body.stripURL = strip;
     if (Number.isFinite(lat) && Number.isFinite(lng)) body.locations = [{ latitude: lat, longitude: lng, relevantText: String(nearText || `أنت قريب من ${store.name}، خذ ختمك`).slice(0, 80) }];

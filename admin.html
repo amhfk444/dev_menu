@@ -1133,6 +1133,36 @@
                   <p class="text-xs font-semibold text-ink/70">لون الختم</p>
                   <div id="ly-stamp-colors" class="flex flex-wrap items-center gap-2"></div>
                 </div>
+                <div class="space-y-2" id="ly-color2-box">
+                  <p class="text-xs font-semibold text-ink/70">اللون الثاني للتدرج</p>
+                  <div id="ly-colors2" class="flex flex-wrap items-center gap-2"></div>
+                </div>
+                <div class="space-y-2">
+                  <p class="text-xs font-semibold text-ink/70">لون الخط</p>
+                  <div id="ly-text-colors" class="flex flex-wrap items-center gap-2"></div>
+                </div>
+              </div>
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <p class="text-xs font-semibold text-ink/70">شعار البطاقة</p>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <img id="ly-logo-pv" alt="" class="w-11 h-11 rounded-xl object-cover border border-brand/15 hidden">
+                    <label class="cursor-pointer bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-3.5 py-2 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-upload-simple"></i> ارفع شعار
+                      <input type="file" accept="image/png,image/jpeg,image/webp" class="hidden" onchange="uploadLyImage(this, 'logo')"></label>
+                    <button type="button" id="ly-logo-clear" onclick="setLyDesign({ logo: null })" class="hidden text-[13px] font-bold text-brick px-2 py-2"><i class="ph-bold ph-trash"></i> شيله</button>
+                  </div>
+                  <p class="text-[11px] text-ink/55">يطلع على البطاقة وفي المحفظة بدل شعار المنيو. الأفضل مربع.</p>
+                </div>
+                <div class="space-y-2">
+                  <p class="text-xs font-semibold text-ink/70">صورة المكافأة (آخر خانة)</p>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <img id="ly-reward-pv" alt="" class="w-11 h-11 rounded-full object-cover border border-brand/15 hidden">
+                    <label class="cursor-pointer bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-3.5 py-2 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-gift"></i> ارفع صورة
+                      <input type="file" accept="image/png,image/jpeg,image/webp" class="hidden" onchange="uploadLyImage(this, 'reward_image')"></label>
+                    <button type="button" id="ly-reward-clear" onclick="setLyDesign({ reward_image: null })" class="hidden text-[13px] font-bold text-brick px-2 py-2"><i class="ph-bold ph-trash"></i> شيلها</button>
+                  </div>
+                  <p class="text-[11px] text-ink/55">صورة المشروب أو المنتج المجاني بدل أيقونة الهدية.</p>
+                </div>
               </div>
               <div class="space-y-2">
                 <p class="text-xs font-semibold text-ink/70">صورة الختم</p>
@@ -4049,6 +4079,12 @@
   const LY_CARD_COLORS = ['#233d2c', '#1f2937', '#7c2d12', '#1e3a8a', '#831843', '#0f766e', '#b45309'];
   const LY_STAMP_COLORS = ['#c9a227', '#ffffff', '#f97316', '#ef4444', '#22c55e', '#38bdf8', '#1b1b1b'];
   function setLyDesign(patch) { ly.design = { ...ly.design, ...patch }; ly.dirty = true; renderDesign(); }
+  // وهو يسحب في منتقي اللون: نحدّث المعاينة بس، بدون ما نعيد رسم الأزرار (إعادة الرسم تقفل المنتقي)
+  function pickLyColor(key, value) {
+    ly.design = { ...ly.design, [key]: value }; ly.dirty = true;
+    DMLoyaltyCard.apply(document.getElementById('ly-preview'), ly.design);
+    document.getElementById('ly-design-save').textContent = 'حفظ الشكل';
+  }
   function renderDesign() {
     const d = ly.design, st = ly.data.settings;
     DMLoyaltyCard.apply(document.getElementById('ly-preview'), d);
@@ -4067,9 +4103,17 @@
     const swatches = (list, key, cur) => list.map(c => `
       <button type="button" aria-label="${c}" onclick="setLyDesign({ ${key}: '${c}' })" class="w-8 h-8 rounded-full border ${cur === c ? 'ring-2 ring-offset-2 ring-brand' : 'border-black/10'}" style="background:${c}"></button>`).join('') + `
       <label class="relative w-8 h-8 rounded-full border border-dashed border-ink/30 grid place-items-center cursor-pointer text-ink/60" title="لون آخر"><i class="ph-bold ph-paint-brush"></i>
-        <input type="color" value="${cur}" class="absolute inset-0 opacity-0 cursor-pointer" oninput="setLyDesign({ ${key}: this.value })"></label>`;
+        <input type="color" value="${cur || '#ffffff'}" class="absolute inset-0 opacity-0 cursor-pointer" oninput="pickLyColor('${key}', this.value)" onchange="setLyDesign({ ${key}: this.value })"></label>`;
     document.getElementById('ly-colors').innerHTML = swatches(LY_CARD_COLORS, 'color', d.color);
     document.getElementById('ly-stamp-colors').innerHTML = swatches(LY_STAMP_COLORS, 'stamp_color', d.stamp_color);
+    // "بدون" = يرجع للتلقائي (null)
+    const none = (key, cur, label) => `<button type="button" onclick="setLyDesign({ ${key}: null })" class="h-8 px-3 rounded-full border text-[12px] font-bold ${!cur ? 'border-brand bg-brand text-cream' : 'border-brand/20 bg-white'}">${label}</button>`;
+    document.getElementById('ly-color2-box').classList.toggle('hidden', bg !== 'color' || d.style !== 'gradient');
+    document.getElementById('ly-colors2').innerHTML = none('color2', d.color2, 'بدون') + swatches(['#4a6650', '#c9a227', '#0f172a', '#be185d', '#0ea5e9', '#f97316'], 'color2', d.color2 || '');
+    document.getElementById('ly-text-colors').innerHTML = none('text_color', d.text_color, 'تلقائي') + swatches(['#ffffff', '#1b1b1b', '#c9a227', '#f5f2eb'], 'text_color', d.text_color || '');
+    const pic = (id, clear, url) => { const el = document.getElementById(id); el.classList.toggle('hidden', !url); if (url) el.src = url; document.getElementById(clear).classList.toggle('hidden', !url); };
+    pic('ly-logo-pv', 'ly-logo-clear', d.logo);
+    pic('ly-reward-pv', 'ly-reward-clear', d.reward_image);
     document.getElementById('ly-icons').innerHTML = Object.entries(DMLoyaltyCard.ICONS).map(([k, cls]) => `
       <button type="button" aria-label="${k}" onclick="setLyDesign({ icon: '${k}', stamp_image: null })" class="w-11 h-11 rounded-xl border grid place-items-center text-lg transition ${!d.stamp_image && d.icon === k ? 'border-brand bg-brand text-cream' : 'border-brand/20 bg-white hover:border-brand/40'}"><i class="ph-bold ${cls}"></i></button>`).join('');
     document.getElementById('ly-stamp-clear').classList.toggle('hidden', !d.stamp_image);
@@ -4094,6 +4138,15 @@
     const url = await uploadFile(file, 'stamp', 500);
     if (!url) return showToast(lastUploadError || 'تعذر رفع الصورة', true);
     setLyDesign({ stamp_image: url });
+    showToast('انرفعت الصورة، اضغط "حفظ الشكل"');
+  }
+  // شعار البطاقة أو صورة المكافأة
+  async function uploadLyImage(input, key) {
+    const file = input.files && input.files[0]; input.value = '';
+    if (!file) return;
+    const url = await uploadFile(file, 'stamp', 500);
+    if (!url) return showToast(lastUploadError || 'تعذر رفع الصورة', true);
+    setLyDesign({ [key]: url });
     showToast('انرفعت الصورة، اضغط "حفظ الشكل"');
   }
   async function saveLyDesign() {

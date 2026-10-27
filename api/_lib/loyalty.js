@@ -19,7 +19,14 @@ function normalizeDesign(raw) {
     stamp_image: okUrl(d.stamp_image),
     // خلفية البطاقة: لون (حسب الشكل) أو صورة. (الفيديو انشال: المحفظة ما تشغّله، واللي اختاره قبل تبقى صورته)
     bg: (d.bg === 'image' || d.bg === 'video') && okUrl(d.bg_image) ? 'image' : 'color',
-    bg_image: okUrl(d.bg_image)
+    bg_image: okUrl(d.bg_image),
+    // اللون الثاني للتدرج (لو فاضي: التدرج من نفس اللون)
+    color2: HEX.test(d.color2) ? d.color2.toLowerCase() : null,
+    // لون الخط في صفحة البطاقة (فاضي = تلقائي حسب لون البطاقة)
+    text_color: HEX.test(d.text_color) ? d.text_color.toLowerCase() : null,
+    // شعار خاص بالبطاقة (غير شعار المنيو)، وصورة خاصة لخانة المكافأة الأخيرة
+    logo: okUrl(d.logo),
+    reward_image: okUrl(d.reward_image)
   };
 }
 
