@@ -268,6 +268,16 @@
     session: loadSession,
     signedIn: () => !!loadSession(),
     sendOtp: (email) => auth('otp', { email, create_user: true }),
+    // نسخة التجربة فقط: دخول بكلمة سر لحسابات تجريبية جاهزة (بدون رمز بالبريد)
+    staging: STAGING,
+    async passwordLogin(email, password) {
+      if (!STAGING) throw fail('غير متاح', 403);
+      const d = await auth('token?grant_type=password', { email, password });
+      const s = toSession(d);
+      if (!s.email) s.email = email;
+      saveSession(s);
+      return s;
+    },
     async verifyOtp(email, token) {
       const d = await auth('verify', { type: 'email', email, token });
       if (!d || !d.access_token) throw fail('رمز التحقق غير صحيح أو منتهي الصلاحية', 400);

@@ -235,6 +235,21 @@
     if (DM.signedIn()) goToDashboard();
   })();
 
+  // نسخة التجربة: كلمة سر بدل رمز البريد (الحسابات التجريبية في .env.staging-login)
+  if (DM.staging) {
+    document.getElementById('identifier-input').closest('div').parentElement.insertAdjacentHTML('afterend', `
+      <div><label class="lbl">كلمة السر (نسخة التجربة)</label>
+      <input type="password" id="staging-password" required class="input-pro" dir="ltr" autocomplete="current-password"></div>`);
+    document.getElementById('btn-text').textContent = 'دخول';
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault(); e.stopImmediatePropagation();
+      setBusy('send-otp-btn', 'btn-spinner', true);
+      try { await DM.passwordLogin(document.getElementById('identifier-input').value.trim().toLowerCase(), document.getElementById('staging-password').value); goToDashboard(); }
+      catch (err) { showToast(err.message || 'البريد أو كلمة السر غلط', 'error'); }
+      setBusy('send-otp-btn', 'btn-spinner', false);
+    }, true);
+  }
+
   // 1. إرسال الرمز
   // shouldCreateUser: true حتى تقدر المتاجر القديمة تدخل بدون إضافتها يدوياً.
   // هذا آمن: الدخول وحده لا يعطي أي صلاحية، الصلاحية مربوطة ببريد المتجر في جدول clients
