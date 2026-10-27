@@ -1174,7 +1174,7 @@
                   <span class="text-[11px] text-ink/55">مثل شعارك أو صورة منتجك. الأفضل صورة مربعة.</span>
                 </div>
               </div>
-              <p id="ly-design-save" class="text-[12px] font-bold text-ink/55" aria-live="polite"><i class="ph-bold ph-floppy-disk"></i> أي تغيير ينحفظ تلقائياً</p>
+              <button type="button" id="ly-design-save" onclick="saveLyDesign()" class="bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition">حفظ الشكل</button>
             </div>
 
             <!-- المساعد الذكي -->
@@ -4078,15 +4078,12 @@
   const LY_STYLES = [['gradient', 'متدرج'], ['solid', 'لون سادة'], ['paper', 'ورقي'], ['dark', 'داكن']];
   const LY_CARD_COLORS = ['#233d2c', '#1f2937', '#7c2d12', '#1e3a8a', '#831843', '#0f766e', '#b45309'];
   const LY_STAMP_COLORS = ['#c9a227', '#ffffff', '#f97316', '#ef4444', '#22c55e', '#38bdf8', '#1b1b1b'];
-  // أي تغيير في الشكل ينحفظ تلقائياً (بعد ثانية من آخر تعديل، عشان الضغطات المتتالية تنحفظ مرة وحدة)
-  function setLyDesign(patch) {
-    ly.design = { ...ly.design, ...patch }; ly.dirty = true; renderDesign();
-    clearTimeout(setLyDesign.t); setLyDesign.t = setTimeout(saveLyDesign, 1000);
-  }
+  function setLyDesign(patch) { ly.design = { ...ly.design, ...patch }; ly.dirty = true; renderDesign(); }
   // وهو يسحب في منتقي اللون: نحدّث المعاينة بس، بدون ما نعيد رسم الأزرار (إعادة الرسم تقفل المنتقي)
   function pickLyColor(key, value) {
     ly.design = { ...ly.design, [key]: value }; ly.dirty = true;
     DMLoyaltyCard.apply(document.getElementById('ly-preview'), ly.design);
+    document.getElementById('ly-design-save').textContent = 'حفظ الشكل';
   }
   function renderDesign() {
     const d = ly.design, st = ly.data.settings;
@@ -4120,6 +4117,7 @@
     document.getElementById('ly-icons').innerHTML = Object.entries(DMLoyaltyCard.ICONS).map(([k, cls]) => `
       <button type="button" aria-label="${k}" onclick="setLyDesign({ icon: '${k}', stamp_image: null })" class="w-11 h-11 rounded-xl border grid place-items-center text-lg transition ${!d.stamp_image && d.icon === k ? 'border-brand bg-brand text-cream' : 'border-brand/20 bg-white hover:border-brand/40'}"><i class="ph-bold ${cls}"></i></button>`).join('');
     document.getElementById('ly-stamp-clear').classList.toggle('hidden', !d.stamp_image);
+    document.getElementById('ly-design-save').textContent = ly.dirty ? 'حفظ الشكل' : 'محفوظ';
   }
   // خلفية البطاقة: صورة تغطي البطاقة، وفي المحفظة تطلع ورا الأختام
   function pickCardBg(k) {
@@ -4132,6 +4130,7 @@
     const url = await uploadFile(file, 'card_bg', 1280);
     if (!url) return showToast(lastUploadError || 'تعذر رفع الصورة', true);
     setLyDesign({ bg: 'image', bg_image: url });
+    showToast('انرفعت الصورة، اضغط "حفظ الشكل"');
   }
   async function uploadStampImage(input) {
     const file = input.files && input.files[0]; input.value = '';
@@ -4139,6 +4138,7 @@
     const url = await uploadFile(file, 'stamp', 500);
     if (!url) return showToast(lastUploadError || 'تعذر رفع الصورة', true);
     setLyDesign({ stamp_image: url });
+    showToast('انرفعت الصورة، اضغط "حفظ الشكل"');
   }
   // شعار البطاقة أو صورة المكافأة
   async function uploadLyImage(input, key) {
@@ -4147,20 +4147,16 @@
     const url = await uploadFile(file, 'stamp', 500);
     if (!url) return showToast(lastUploadError || 'تعذر رفع الصورة', true);
     setLyDesign({ [key]: url });
+    showToast('انرفعت الصورة، اضغط "حفظ الشكل"');
   }
   async function saveLyDesign() {
-    const st = document.getElementById('ly-design-save');
-    const seq = (saveLyDesign.seq = (saveLyDesign.seq || 0) + 1);
-    st.innerHTML = '<i class="ph-bold ph-spinner-gap ph-spin"></i> جاري الحفظ';
+    const btn = document.getElementById('ly-design-save'); btn.disabled = true;
     try {
       const r = await api('loyalty-settings', { settings: { design: ly.design } });
-      ly.data.settings = r.settings;
-      // لو عدّل شي ثاني وهو يحفظ، نخلي تعديله الجديد (ينحفظ بعدها)
-      if (seq !== saveLyDesign.seq) return;
-      ly.design = { ...r.settings.design }; ly.dirty = false;
-      renderDesign();
-      st.innerHTML = `<i class="ph-bold ph-check-circle"></i> انحفظ${r.wallet_updated ? `، وتحدّثت ${r.wallet_updated} بطاقة في المحفظة` : ''}`;
-    } catch (e) { st.innerHTML = '<i class="ph-bold ph-warning-circle"></i> ما انحفظ'; showToast(e.message || 'تعذر الحفظ', true); }
+      ly.data.settings = r.settings; ly.design = { ...r.settings.design }; ly.dirty = false;
+      renderDesign(); showToast(r.wallet_updated ? `تم حفظ الشكل، وتحدّثت ${r.wallet_updated} بطاقة في المحفظة` : 'تم حفظ شكل البطاقة، ويطلع للزبائن على طول');
+    } catch (e) { showToast(e.message || 'تعذر الحفظ', true); }
+    btn.disabled = false;
   }
 
   // ─── رسائل الأعضاء ───
