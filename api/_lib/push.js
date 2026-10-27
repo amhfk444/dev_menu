@@ -7,8 +7,9 @@ const webpush = require('web-push');
 
 const PUBLIC = process.env.VAPID_PUBLIC_KEY || '';
 const PRIVATE = process.env.VAPID_PRIVATE_KEY || '';
-const ready = !!(PUBLIC && PRIVATE);
-if (ready) webpush.setVapidDetails('mailto:dmenu950@gmail.com', PUBLIC, PRIVATE);
+let ready = !!(PUBLIC && PRIVATE);
+// مفتاح خربان ما يوقف الخادم كله: الإشعارات بس تتوقف
+if (ready) { try { webpush.setVapidDetails('mailto:dmenu950@gmail.com', PUBLIC, PRIVATE); } catch (e) { ready = false; console.error('VAPID', e.message); } }
 
 const pushPublicKey = () => (ready ? PUBLIC : '');
 

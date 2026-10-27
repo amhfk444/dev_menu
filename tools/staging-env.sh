@@ -27,7 +27,8 @@ while IFS= read -r line; do
   [[ "$line" =~ ^([A-Z0-9_]+)=\"?(.*)\"?$ ]] || continue
   name="${BASH_REMATCH[1]}"; val="${line#*=}"; val="${val#\"}"; val="${val%\"}"
   case "$name" in VERCEL*|TURBO*|NX_*|SUPABASE_*) continue ;; esac
-  if [ -z "$val" ]; then empty+=("$name"); continue; fi
+  # المتغيرات السرية (Sensitive) ما تنقرأ: Vercel يرجع "[SENSITIVE]" بدل القيمة، فتنضاف يدوي
+  if [ -z "$val" ] || [ "$val" = "[SENSITIVE]" ]; then empty+=("$name"); continue; fi
   set_var "$name" "$val"
 done < "$tmp"
 
