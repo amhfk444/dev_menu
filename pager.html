@@ -76,6 +76,50 @@
   .tips li i { margin-left: 6px; }
   body.ringing #got-btn { background: #fff; color: #15271b; }
   body.ringing #r-review { background: rgba(255,255,255,.9); }
+
+  /* ═══ البيجر بهوية المحل: خلفية بلون المحل، جهاز بيجر فيه شعاره وحالته، وتذكرة بيضاء فيها الرقم ═══ */
+  body { color: #fff; background:
+      radial-gradient(90% 55% at 50% 0%, color-mix(in srgb, var(--brand) 78%, #fff 6%) 0%, transparent 70%),
+      linear-gradient(180deg, color-mix(in srgb, var(--brand) 82%, #000) 0%, color-mix(in srgb, var(--brand) 48%, #000) 100%);
+    background-attachment: fixed; }
+  body > header h1 { color: #fff; }
+  .card, .tips, .steps li { color: #1b3022; }
+  .pdev { width: 168px; margin: 6px auto 0; background: linear-gradient(170deg, #26282b, #121315); border-radius: 26px; padding: 12px 14px 12px;
+    box-shadow: 0 26px 50px -24px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.12); }
+  .pdev-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+  .pdev-top i { width: 8px; height: 8px; border-radius: 50%; background: #3a3d41; box-shadow: inset 0 1px 1px rgba(0,0,0,.6); }
+  .pdev-brand { font-size: 10px; font-weight: 700; letter-spacing: .18em; color: rgba(255,255,255,.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
+  .pdev-screen { margin-top: 10px; background: linear-gradient(170deg, #f7f5f0, #e6e2d8); border-radius: 12px; padding: 12px 8px 10px; text-align: center; color: #3a3a3a;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,.18); }
+  .pdev-logo { width: 46px; height: 46px; border-radius: 10px; object-fit: cover; margin: 0 auto 8px; display: block; }
+  .pdev-screen b { display: block; font-size: 10px; letter-spacing: .22em; font-weight: 700; color: #6b6b6b; font-family: Georgia, serif; }
+  .pdev-screen span { display: block; font-size: 12px; font-weight: 700; color: #555; margin-top: 2px; }
+  .pdev-dots { display: flex; justify-content: center; gap: 6px; margin-top: 10px; }
+  .pdev-dots i { width: 5px; height: 5px; border-radius: 50%; background: #3a3d41; }
+  .pdev .pdev-top i:first-child { background: #22c55e; box-shadow: 0 0 8px #22c55e; animation: led 2s infinite; }
+  @keyframes led { 50% { opacity: .35; } }
+  .pdev.ready .pdev-screen { background: linear-gradient(170deg, #fbe7a1, #e2bd3f); box-shadow: inset 0 2px 6px rgba(0,0,0,.15), 0 0 26px rgba(233,201,90,.55); }
+  .pdev.ready .pdev-screen b, .pdev.ready .pdev-screen span { color: #3d2f05; }
+  .pdev.ready .pdev-top i { background: #e9c95a; box-shadow: 0 0 10px #e9c95a; animation: led .5s infinite; }
+  .bill { position: relative; background: #fbfaf7; color: #1b1b1b; border-radius: 18px; padding: 16px 20px 18px; text-align: center; box-shadow: 0 22px 44px -26px rgba(0,0,0,.7); }
+  .bill::before, .bill::after { content: ''; position: absolute; top: 50%; width: 18px; height: 18px; margin-top: -9px; border-radius: 50%; background: color-mix(in srgb, var(--brand) 70%, #000); }
+  .bill::before { left: -9px; } .bill::after { right: -9px; }
+  .bill-h { display: flex; justify-content: space-between; font-size: 10.5px; font-weight: 700; letter-spacing: .14em; color: #777; }
+  .bill-num { font-family: Georgia, 'Times New Roman', serif; font-size: 78px; line-height: 1.05; font-weight: 400; color: #1b1b1b; margin: 6px 0 2px; direction: ltr; }
+  .bill-num::before { content: '#'; }
+  .status-pill { display: flex; width: fit-content; margin: 0 auto; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 999px; font-size: 13.5px; font-weight: 700;
+    background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22); color: #fff; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+  .btn-ghost { background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.28); }
+  .btn-brand { background: #fff; color: color-mix(in srgb, var(--brand) 85%, #000); }
+  .chip { background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.25); color: #fff; }
+  .chip.ok { background: rgba(16,185,129,.18); border-color: rgba(16,185,129,.4); color: #d1fae5; }
+  .foot { display: flex; align-items: center; gap: 12px; margin-top: 28px; font-size: 11px; letter-spacing: .25em; font-weight: 700; color: rgba(255,255,255,.55); }
+  .foot i { width: 50px; height: 1px; background: rgba(255,255,255,.3); position: relative; }
+  .foot i::after { content: ''; position: absolute; top: -3px; width: 6px; height: 6px; background: rgba(255,255,255,.55); transform: rotate(45deg); }
+  .foot i:first-child::after { left: -3px; } .foot i:last-child::after { right: -3px; }
+  body.ringing { animation: flash2 1s infinite; }
+  @keyframes flash2 { 0%, 100% { background: color-mix(in srgb, var(--brand) 60%, #000); } 50% { background: #b08a1e; } }
+  .ticket.plain { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.22); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: 0 24px 50px -30px rgba(0,0,0,.7); }
   .hidden { display: none !important; }
 </style>
 <link rel="stylesheet" href="/css/tw/pager.css">
@@ -119,14 +163,18 @@
   <!-- ينتظر -->
   <section id="v-waiting" class="hidden space-y-3.5">
     <p id="w-demo" class="hidden text-[13px] font-black text-[#15271b] bg-[#c9a227]/25 border border-[#c9a227]/50 rounded-2xl py-3 px-3 text-center">هذي تجربة: خلال ثواني يرن جوالك 🔔</p>
-    <div class="ticket text-center">
-      <p class="text-[13px] font-bold opacity-70">رقمك</p>
-      <div id="w-number" class="num">—</div>
-      <p id="w-tell" class="text-[14px] font-bold opacity-85"></p>
-      <button type="button" id="w-invoice" class="hidden text-[14px] font-black mt-3 bg-white/10 rounded-xl py-2 px-4 mx-auto">🧾 فاتورتك: <span dir="ltr"></span> <i class="ph-bold ph-pencil-simple text-xs opacity-70"></i></button>
-      <div class="tear"></div>
-      <p class="text-[13px] font-bold flex items-center justify-center gap-2"><span class="pulse-dot"></span> <span id="t-waiting"></span></p>
+    <div class="pdev">
+      <div class="pdev-top"><i></i><span class="pdev-brand"></span><i></i></div>
+      <div class="pdev-screen"><img class="pdev-logo hidden" alt=""><b>PREPARING</b><span id="d-wait"></span></div>
+      <div class="pdev-dots"><i></i><i></i><i></i></div>
     </div>
+    <div class="bill">
+      <div class="bill-h"><span dir="ltr">YOUR NUMBER</span><span>رقمك</span></div>
+      <div id="w-number" class="bill-num">—</div>
+      <p id="w-tell" class="text-[13.5px] font-bold opacity-70"></p>
+      <button type="button" id="w-invoice" class="hidden text-[13.5px] font-black mt-2 bg-black/[0.05] rounded-xl py-2 px-4 mx-auto">🧾 فاتورتك: <span dir="ltr"></span> <i class="ph-bold ph-pencil-simple text-xs opacity-70"></i></button>
+    </div>
+    <p class="status-pill"><span class="pulse-dot"></span> <span id="t-waiting"></span></p>
     <div class="flex flex-wrap gap-2 justify-center">
       <span id="push-on" class="chip ok hidden"><i class="ph-bold ph-bell"></i> الإشعارات مفعّلة</span>
       <span id="keep-on" class="chip ok hidden"><i class="ph-bold ph-speaker-high"></i> الرنين شغّال حتى على الصامت</span>
@@ -205,12 +253,17 @@
 
   <!-- جاهز -->
   <section id="v-ready" class="hidden space-y-3.5">
-    <div class="ticket ready text-center">
-      <div class="ring-ic mx-auto ringing-ic"><i class="ph-bold ph-bell-ringing"></i></div>
-      <h2 id="t-ready" class="text-[30px] font-black mt-3"></h2>
-      <div id="r-number" class="num">—</div>
+    <div class="pdev ready">
+      <div class="pdev-top"><i></i><span class="pdev-brand"></span><i></i></div>
+      <div class="pdev-screen"><img class="pdev-logo hidden" alt=""><b>READY</b><span id="d-ready"></span></div>
+      <div class="pdev-dots"><i></i><i></i><i></i></div>
+    </div>
+    <div class="bill">
+      <div class="bill-h"><span dir="ltr">YOUR NUMBER</span><span>رقمك</span></div>
+      <h2 id="t-ready" class="text-[26px] font-black mt-1"></h2>
+      <div id="r-number" class="bill-num">—</div>
       <p id="r-invoice" class="hidden text-[14px] font-black">🧾 فاتورة <span dir="ltr"></span></p>
-      <p id="r-body" class="text-[15px] font-bold opacity-85"></p>
+      <p id="r-body" class="text-[15px] font-bold opacity-75"></p>
     </div>
     <button id="got-btn" class="btn btn-brand"><i class="ph-bold ph-check"></i> <span id="t-got"></span></button>
     <a id="r-loyalty" class="hidden block text-[13px] font-black rounded-2xl py-3 px-3"></a>
@@ -236,7 +289,7 @@
   </section>
 </main>
 
-<p class="text-xs font-bold opacity-40 mt-8">DEV MENU</p>
+<p class="foot"><i></i><span id="foot-name">DEV MENU</span><i></i></p>
 
 <!-- موافقة الإشعارات والصوت: تطلع أول ما ياخذ رقمه -->
 <div id="perm" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-black/55 p-4" role="dialog" aria-modal="true" aria-labelledby="perm-title">
@@ -275,18 +328,19 @@
     $('unlock-btn').classList.add('hidden');
   }
   const audioReady = () => ctx && ctx.state === 'running';
-  // نغمة الرنين: جرس ناعم بثلاث نغمات صاعدة (دو، مي، صول) تتكرر مرتين، بدل صفارة الطنين
-  const CHIME = [[0, 1046.5], [0.2, 1318.5], [0.4, 1568], [0.95, 1046.5], [1.15, 1318.5], [1.35, 1568]];
-  const RING_SEC = 2.4;
+  // نغمة الرنين: رنّة بيجر راقية، نغمتين ناعمتين (عالية ثم أوطى) تتكرر 3 مرات ثم سكتة، بموجة ناعمة بدل الطنين
+  const CHIME = [];
+  [0, 0.42, 0.84].forEach(g => { CHIME.push([g, 1567.98], [g + 0.15, 1174.66]); });
+  const RING_SEC = 2.0;
   const ringWave = (t) => {
     let v = 0;
     for (const [d, f] of CHIME) {
       const x = t - d;
-      if (x < 0 || x > 1) continue;
-      const env = Math.exp(-x * 4.2) * Math.min(1, x / 0.004);   // ضربة جرس تخفت بنعومة
-      v += env * (0.62 * Math.sin(2 * Math.PI * f * x) + 0.22 * Math.sin(2 * Math.PI * 2 * f * x) + 0.08 * Math.sin(2 * Math.PI * 3.01 * f * x));
+      if (x < 0 || x > 0.34) continue;
+      const env = Math.min(1, x / 0.006) * Math.exp(-x * 9);   // نقرة ناعمة تخفت بسرعة
+      v += env * (0.7 * Math.sin(2 * Math.PI * f * x) + 0.18 * Math.sin(2 * Math.PI * 2 * f * x) + 0.06 * Math.sin(2 * Math.PI * 3 * f * x));
     }
-    return Math.max(-1, Math.min(1, v * 0.6));
+    return Math.max(-1, Math.min(1, v * 0.75));
   };
   let chimeBuf = null;
   function ringOnce(sound = true) {
@@ -426,6 +480,8 @@
     $('t-waiting').textContent = `${T.waiting} بنرن جوالك ${T.ringWhen}`;
     $('mm-title').textContent = T.game;
     $('t-ready').textContent = T.ready;
+    $('d-wait').textContent = String(T.waiting).replace(/[….]+$/, '');
+    $('d-ready').textContent = String(T.ready).replace(/!$/, '');
     $('r-body').textContent = `${T.readyBody} من ${storeInfo.name || 'الموظف'}`;
     $('t-step3').textContent = `يرن جوالك ${T.ringWhen}`;
     $('t-got').textContent = T.got;
@@ -439,6 +495,14 @@
     applyTerms();
     $('store-name').textContent = s.name || '';
     if (s.logo_url) { $('logo').src = s.logo_url; $('logo').classList.remove('hidden'); }
+    // هوية المحل: اسمه وشعاره على جهاز البيجر، ولونه على الصفحة كلها
+    document.querySelectorAll('.pdev-brand').forEach(el => { el.textContent = s.name || ''; });
+    document.querySelectorAll('.pdev-logo').forEach(el => { if (s.logo_url) { el.src = s.logo_url; el.classList.remove('hidden'); } });
+    $('foot-name').textContent = s.name || 'DEV MENU';
+    if (/^#[0-9a-f]{6}$/i.test(s.accent_color || '')) {
+      document.documentElement.style.setProperty('--brand', s.accent_color);
+      document.querySelector('meta[name="theme-color"]').content = s.accent_color;
+    }
   }
   function unavailable(title, sub) { $('u-title').textContent = title; $('u-sub').textContent = sub; show('unavailable'); }
 

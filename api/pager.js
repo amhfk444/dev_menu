@@ -56,7 +56,7 @@ async function demoRing(store, token) {
 }
 
 async function loadStore(slug) {
-  const { store, bad } = await findPublicStore(slug, 'id,name,client_slug,logo_url,business_type');
+  const { store, bad } = await findPublicStore(slug, 'id,name,client_slug,logo_url,business_type,accent_color');
   if (bad) throw new ApiError(400, 'الرابط غير صحيح');
   if (!store) throw new ApiError(404, 'البيجر غير متاح حالياً', 'NOT_AVAILABLE');
   if (!(await storeHasFeature(store.id, 'pager'))) throw new ApiError(404, 'البيجر غير متاح حالياً', 'NOT_AVAILABLE');
@@ -70,7 +70,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
   if (action === 'info' && req.method === 'GET') {
     const store = await loadStore(req.query.slug);
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=300');   // بيانات المحل العامة: تتخزن 30 ثانية في CDN
-    return { store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type }, push_key: pushPublicKey() };
+    return { store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, push_key: pushPublicKey() };
   }
 
   if (action === 'take' && req.method === 'POST') {
@@ -84,7 +84,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
         if (card) await rest(`pager_tickets?token=eq.${q(res.token)}&client_id=eq.${store.id}`, { method: 'PATCH', body: { loyalty_card_id: card.id } }).catch(() => {});
       }
       await poke(topic('pager', store.id));
-      return { token: res.token, number: res.number, store: { name: store.name, logo_url: store.logo_url } };
+      return { token: res.token, number: res.number, store: { name: store.name, logo_url: store.logo_url, accent_color: store.accent_color || null } };
     } catch (e) {
       if (String(e.dbMessage || e.message).includes('PAGER_FULL')) throw new ApiError(409, 'وصلنا الحد اليومي للأرقام', 'FULL');
       throw e;
@@ -105,7 +105,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     // رقم من يوم سابق ما زال ينتظر = منتهي
     const stale = t.status === 'waiting' && Date.now() - Date.parse(t.created_at) > 18 * 3600e3;
     const review = ['ready', 'done'].includes(t.status) ? await reviewUrl(store.id) : null;
-    return { demo: DEMO.has(store.client_slug), review_url: review, store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
+    return { demo: DEMO.has(store.client_slug), review_url: review, store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
       loyalty: { ...(await loyaltyOf(store.id)), linked: !!t.loyalty_card_id, stamped: !!t.loyalty_stamped,
         ...(await linkedCard(store.id, t.loyalty_card_id)) } };
   }
