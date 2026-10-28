@@ -310,10 +310,10 @@
 <!-- موافقة الإشعارات والصوت: تطلع أول ما ياخذ رقمه -->
 <div id="perm" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-black/55 p-4" role="dialog" aria-modal="true" aria-labelledby="perm-title">
   <div class="card w-full max-w-sm p-6 text-center space-y-4" style="animation: pop .35s cubic-bezier(.3,1.4,.5,1)">
-    <div class="w-16 h-16 rounded-2xl bg-[#233d2c] text-[#c9a227] grid place-items-center mx-auto text-3xl"><i class="ph-bold ph-bell-ringing"></i></div>
+    <div class="w-16 h-16 rounded-2xl bg-white/15 text-[#e9c95a] grid place-items-center mx-auto text-3xl"><i class="ph-bold ph-bell-ringing"></i></div>
     <h2 id="perm-title" class="text-xl font-black">رقمك <span id="perm-num"></span>. نفعّل لك التنبيه؟</h2>
     <p id="perm-sub" class="text-sm font-bold opacity-70 leading-relaxed">عشان يرن جوالك ويوصلك إشعار <span class="t-when"></span>، حتى لو كان على الصامت أو قفلت الشاشة.</p>
-    <ul class="text-[13px] font-bold text-right space-y-2 bg-[#f5f2eb] rounded-2xl p-4">
+    <ul class="text-[13px] font-bold text-right space-y-2 bg-white/10 border border-white/20 rounded-2xl p-4 text-white">
       <li id="perm-n"><i class="ph-bold ph-bell ml-1"></i> الإشعارات: <span></span></li>
       <li id="perm-s"><i class="ph-bold ph-speaker-high ml-1"></i> الصوت: <span></span></li>
     </ul>
@@ -767,7 +767,7 @@
     try { if (pushSupported() && Notification.permission === 'default') await Notification.requestPermission(); } catch {}
     await subscribePush(); renderPush(); permState();
     // رنّة قصيرة عشان يتأكد إن الصوت يوصله
-    if (audioReady()) { const t = ctx.currentTime; [0, 0.18].forEach((d, i) => beep(t + d, i ? 1320 : 990, 0.12)); }
+    ringOnce();
     setTimeout(() => $('perm').classList.replace('flex', 'hidden'), 900);
   };
   $('perm-no').onclick = () => $('perm').classList.replace('flex', 'hidden');
