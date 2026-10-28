@@ -6,7 +6,7 @@ const AR = /[؀-ۿ]/;
 const norm = (s) => String(s).replace(/\s+/g, ' ').trim();
 const exact = new Map(), patterns = [];
 const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-for (const d of ['common', dictName]) {
+for (const d of ['common', ...dictName.split(',')]) {
   const dict = JSON.parse(fs.readFileSync(`js/i18n/${d}.json`, 'utf8'));
   for (const [ar, en] of Object.entries(dict)) {
     const k = norm(ar);
