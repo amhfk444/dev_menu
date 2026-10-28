@@ -1189,7 +1189,7 @@
                   <label class="cursor-pointer bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-3.5 py-2 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-image"></i> ارفع صورة للختم
                     <input type="file" id="ly-stamp-file" accept="image/png,image/jpeg,image/webp" class="hidden" onchange="uploadStampImage(this)"></label>
                   <button type="button" id="ly-stamp-clear" onclick="setLyDesign({ stamp_image: null })" class="hidden text-[13px] font-bold text-brick px-2 py-2"><i class="ph-bold ph-trash"></i> شيل الصورة</button>
-                  <span class="text-[11px] text-ink/55">مثل شعارك أو صورة منتجك. الأفضل صورة مربعة.</span>
+                  <span class="text-[11px] text-ink/55">مثل شعارك أو صورة منتجك. ولو رفعت صورة مفرغة (PNG بدون خلفية، مثل برقر أو كوب) تطلع داخل الختم بلونه.</span>
                 </div>
               </div>
               <button type="button" id="ly-design-save" onclick="saveLyDesign()" class="bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition">حفظ الشكل</button>
@@ -4178,12 +4178,28 @@
     setLyDesign({ bg: 'image', bg_image: url });
     showToast('انرفعت الصورة، اضغط "حفظ الشكل"');
   }
+  // الصورة فيها بكسلات شفافة؟ (نفحص نسخة صغيرة منها)
+  async function hasTransparency(file) {
+    if (!/^image\/(png|webp|gif)$/i.test(file.type)) return false;
+    try {
+      const bmp = await createImageBitmap(file);
+      const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+      const ctx = c.getContext('2d'); ctx.drawImage(bmp, 0, 0, 64, 64);
+      const px = ctx.getImageData(0, 0, 64, 64).data;
+      let clear = 0;
+      for (let i = 3; i < px.length; i += 4) if (px[i] < 200) clear++;
+      return clear > 64 * 64 * 0.08;   // أكثر من 8% شفاف = مفرغة
+    } catch { return false; }
+  }
   async function uploadStampImage(input) {
     const file = input.files && input.files[0]; input.value = '';
     if (!file) return;
+    // صورة مفرغة (فيها شفافية مثل برقر أو كوب بدون خلفية)؟ تنحط كاملة داخل الختم بدل ما تغطيه
+    const cutout = await hasTransparency(file);
     const url = await uploadFile(file, 'stamp', 500);
     if (!url) return showToast(lastUploadError || 'تعذر رفع الصورة', true);
-    setLyDesign({ stamp_image: url });
+    setLyDesign({ stamp_image: url, stamp_cutout: cutout });
+    if (cutout) showToast('صورة مفرغة: تطلع داخل الختم بلونه');
     showToast('انرفعت الصورة، اضغط "حفظ الشكل"');
   }
   // شعار البطاقة أو صورة المكافأة

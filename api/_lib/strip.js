@@ -35,6 +35,18 @@ async function circleImage(buf, size, opacity, gray) {
   return img.ensureAlpha().composite([{ input: mask, blend: 'dest-in' }]).png().toBuffer();
 }
 
+// صورة مفرغة: تنحط كاملة (بدون قص) في نص الخانة، والباهتة رمادية بشفافية
+async function cutImage(buf, size, opacity, gray) {
+  let img = sharp(buf).resize(size, size, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } });
+  if (gray) img = img.grayscale();
+  let out = await img.ensureAlpha().png().toBuffer();
+  if (opacity < 1) {
+    const mask = Buffer.from(`<svg width="${size}" height="${size}"><rect width="${size}" height="${size}" fill="#fff" fill-opacity="${opacity}"/></svg>`);
+    out = await sharp(out).composite([{ input: mask, blend: 'dest-in' }]).png().toBuffer();
+  }
+  return out;
+}
+
 // يرجّع صورة PNG بصيغة data URI، أو null لو صار خطأ (البطاقة تكمل بدونها)
 async function stampStrip(settings, card) {
   try {
@@ -77,8 +89,10 @@ async function stampStrip(settings, card) {
       const res = await fetch(d.stamp_image, { signal: AbortSignal.timeout(8000) });
       if (res.ok) {
         const buf = Buffer.from(await res.arrayBuffer());
-        const inner = Math.round(D * .86);
-        const [full, faint] = await Promise.all([circleImage(buf, inner, 1, false), circleImage(buf, inner, .25, true)]);
+        const inner = Math.round(D * (d.stamp_cutout ? .66 : .86));
+        const [full, faint] = d.stamp_cutout
+          ? await Promise.all([cutImage(buf, inner, 1, false), cutImage(buf, inner, .3, true)])
+          : await Promise.all([circleImage(buf, inner, 1, false), circleImage(buf, inner, .25, true)]);
         const layers = [];
         for (let i = 0; i < n; i++) {
           const on = i < done, last = i === n - 1;

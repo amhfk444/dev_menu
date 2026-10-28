@@ -55,7 +55,7 @@
   function stamps(count, needed, d, fresh = -1) {
     d = d || {};
     const icon = ICONS[d.icon] || ICONS.coffee;
-    const img = d.stamp_image ? `<img src="${esc(d.stamp_image)}" alt="" loading="lazy">` : '';
+    const img = d.stamp_image ? `<img src="${esc(d.stamp_image)}" alt="" loading="lazy"${d.stamp_cutout ? ' class="cut"' : ''}>` : '';
     let h = '';
     for (let i = 0; i < needed; i++) {
       const on = i < count, last = i === needed - 1;
