@@ -249,12 +249,13 @@
       <button data-nav="waitlist" class="nav-item"><i class="ph-bold ph-hourglass-medium"></i> قائمة الانتظار <span id="nav-waitlist" class="mr-auto hidden text-[10px] bg-amber-400 text-black px-2 py-0.5 rounded-full font-black">0</span></button>
       <button data-nav="loyalty" class="nav-item"><i class="ph-bold ph-seal-check"></i> بطاقة الولاء</button>
       <button data-nav="reviews" class="nav-item"><i class="ph-bold ph-star-half"></i> ردود التقييمات</button>
-      <a href="pager-desk.html" data-feature="pager" onclick="return openPagerDesk(this)" class="nav-item"><i class="ph-bold ph-bell"></i> شاشة البيجر <span class="mr-auto text-[9px] bg-[#c9a227] text-[#15271b] font-black px-1.5 py-0.5 rounded-md">جديد</span></a>
+      <a href="pager-desk.html" data-feature="pager" onclick="return openPagerDesk(this)" class="nav-item"><i class="ph-bold ph-bell"></i> <span id="nav-desk-label">شاشة البيجر</span> <span class="mr-auto text-[9px] bg-[#c9a227] text-[#15271b] font-black px-1.5 py-0.5 rounded-md">جديد</span></a>
       <button data-nav="settings" class="nav-item"><i class="ph-bold ph-palette"></i> هوية المنشأة</button>
       <p class="px-3 pt-5 pb-1 text-[10px] text-cream/45 font-bold">اختصارات</p>
       <a id="sidebar-preview" data-needs="menu" href="#" target="_blank" rel="noopener" class="nav-item"><i class="ph-bold ph-arrow-square-out"></i> معاينة المنيو</a>
       <button onclick="copyMenuLink()" data-needs="menu" class="nav-item"><i class="ph-bold ph-link-simple"></i> نسخ رابط المنيو</button>
       <button onclick="downloadQrCard()" data-needs="menu" class="nav-item"><i class="ph-bold ph-printer"></i> بطاقة QR</button>
+      <a href="kiosk.html" data-needs="loyalty" onclick="this.href='kiosk.html'+location.search" target="_blank" class="nav-item"><i class="ph-bold ph-device-tablet"></i> شاشة الختم للزبون</a>
       <a id="sa-link" href="super-admin.html" class="nav-item hidden"><i class="ph-bold ph-crown text-amber-300"></i> لوحة المشتركين</a>
     </nav>
 
@@ -1034,7 +1035,7 @@
         <div class="pro-card p-5 md:p-6 flex flex-wrap items-center justify-between gap-4">
           <div class="space-y-1 max-w-xl">
             <h2 class="text-base font-bold">بطاقة الولاء بالأختام</h2>
-            <p class="text-[13px] text-ink/65 leading-relaxed">الزبون يمسح كرت التسجيل ويسجل مرة وحدة. بعد كل شراء يعرض كود بطاقته للكاشير، والكاشير يمسحه من شاشة البيجر ويختم له.</p>
+            <p class="text-[13px] text-ink/65 leading-relaxed">الزبون يمسح كرت التسجيل ويسجل مرة وحدة. بعد كل شراء يعرض كود بطاقته للكاشير، والكاشير يمسحه من شاشة الكاشير ويختم له.</p>
           </div>
           <div class="flex flex-wrap items-center gap-3">
           <a href="kiosk.html" onclick="this.href='kiosk.html'+location.search" target="_blank" class="inline-flex items-center gap-2 bg-white text-[13px] font-bold rounded-xl border border-brand/20 px-3.5 py-2 text-brand"><i class="ph-bold ph-device-tablet"></i> شاشة الختم للزبون</a>
@@ -1071,7 +1072,7 @@
               </div>
               <div class="space-y-2 pt-1">
                 <p class="text-xs font-semibold text-ink/70">الختم مع الشراء بس</p>
-                <p class="text-[12px] text-ink/65 leading-relaxed">الكاشير يضغط <b>"كود ختم"</b> في شاشة البيجر بعد الدفع، والزبون يمسحه. والختم يلتزم بإعداد "ختم واحد كل" فوق.</p>
+                <p class="text-[12px] text-ink/65 leading-relaxed">الكاشير يضغط <b>"كود ختم"</b> في شاشة الكاشير بعد الدفع، والزبون يمسحه. والختم يلتزم بإعداد "ختم واحد كل" فوق.</p>
                 <label class="flex items-center justify-between gap-3 pt-1"><span class="text-[12px] text-ink/75"><i class="ph-bold ph-bell"></i> اللي ياخذ رقم بيجر ينختم له تلقائياً لما يجهز طلبه</span>
                   <input type="checkbox" id="ly-pager-stamp" class="w-4 h-4 accent-[#384f3d]"></label>
                 <a href="pager-desk.html" onclick="this.href='pager-desk.html'+location.search" class="inline-block text-[12px] font-bold text-brand underline underline-offset-4">افتح شاشة الكاشير (فيها زر "كود ختم")</a>
@@ -1672,7 +1673,7 @@
     <button data-nav="menu" class="bnav"><i class="ph-bold ph-fork-knife"></i><span>المنيو</span></button>
     <button data-nav="waitlist" class="bnav relative"><i class="ph-bold ph-hourglass-medium"></i><span>الانتظار</span><span id="bnav-waitlist" class="hidden absolute top-1.5 left-1/2 ml-2 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-400 text-black text-[10px] font-black leading-[18px]">0</span></button>
     <button data-nav="loyalty" class="bnav"><i class="ph-bold ph-seal-check"></i><span>الولاء</span></button>
-    <a href="pager-desk.html" data-feature="pager" onclick="return openPagerDesk(this)" class="bnav"><i class="ph-bold ph-bell"></i><span>البيجر</span></a>
+    <a href="pager-desk.html" data-feature="pager" onclick="return openPagerDesk(this)" class="bnav"><i class="ph-bold ph-bell"></i><span id="bnav-desk-label">البيجر</span></a>
     <button data-nav="settings" class="bnav"><i class="ph-bold ph-palette"></i><span>الهوية</span></button>
   </nav>
 </div>
@@ -1877,6 +1878,11 @@
     box.classList.toggle('hidden', !cards.length);
   }
   function applyFeatureLocks() {
+    // مشترك الولاء بدون البيجر: نفس الشاشة اسمها "شاشة الكاشير" (مسح البطاقات وكود الختم)
+    const deskLabel = document.getElementById('nav-desk-label');
+    if (deskLabel) deskLabel.textContent = featureLocked('pager') ? 'شاشة الكاشير' : 'شاشة البيجر';
+    const bLabel = document.getElementById('bnav-desk-label');
+    if (bLabel) bLabel.textContent = featureLocked('pager') ? 'الكاشير' : 'البيجر';
     renderServiceLinks();
     renderServiceSummary();
     document.querySelectorAll('[data-nav], [data-feature]').forEach(el => {
