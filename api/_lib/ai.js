@@ -8,6 +8,8 @@ const Anthropic = AnthropicModule.default || AnthropicModule;
 const { ApiError } = require('./core');
 
 const MODEL = 'claude-opus-5-5';
+// رسائل الولاء قصيرة وكثيرة: Haiku يكفيها وتكلفته أقل بكثير (ردود التقييمات تبقى على Opus)
+const LOYALTY_MODEL = 'claude-haiku-5-5';
 let client = null;
 const ai = () => {
   if (!process.env.ANTHROPIC_API_KEY) throw new ApiError(503, 'الرد بالذكاء الاصطناعي غير مفعّل في الخادم بعد', 'AI_OFF');
@@ -118,9 +120,8 @@ const MSG_RE = /[\{\[][\s\S]*[\}\]]/;
 async function loyaltyCall(prompt, maxTokens = 4000) {
   let response;
   try {
-    response = await ai().beta.messages.create({
-      model: MODEL, max_tokens: maxTokens, output_config: { effort: 'low' },
-      betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default',
+    response = await ai().messages.create({
+      model: LOYALTY_MODEL, max_tokens: maxTokens, output_config: { effort: 'low' },
       system: [{ type: 'text', text: LOYALTY_SYSTEM, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: prompt }]
     });
@@ -131,6 +132,7 @@ async function loyaltyCall(prompt, maxTokens = 4000) {
     if (e instanceof Anthropic.APIError) { console.error('AI_ERROR', e.status, e.message); throw new ApiError(502, 'تعذر كتابة الرسائل، جرّب مرة ثانية'); }
     throw e;
   }
+  if (response.stop_reason === 'refusal') throw new ApiError(502, 'تعذر كتابة الرسائل، جرّب مرة ثانية');
   const text = response.content.filter(b => b.type === 'text').map(b => b.text).join('');
   const m = text.match(MSG_RE);
   if (!m) throw new ApiError(502, 'تعذر كتابة الرسائل، جرّب مرة ثانية');
