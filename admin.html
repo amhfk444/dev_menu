@@ -43,6 +43,8 @@
   .pro-card { background: var(--paper); border: 1px solid rgba(56, 79, 61, .08); border-radius: 18px; box-shadow: 0 1px 2px rgba(34, 54, 42, .04), 0 12px 30px -22px rgba(34, 54, 42, .3); }
   /* عناوين بطاقات الرئيسية أوضح */
   [data-page="dashboard"] .pro-card h3 { font-size: 14.5px; }
+  /* بطاقة خدمة لوحدها في آخر صف تاخذ العرض كامل بدل ما تترك فراغ */
+  @media (min-width: 640px) { #svc-summary > :last-child:nth-child(odd) { grid-column: 1 / -1; } }
   /* بلاطات الأرقام: أيقونة في مربع ملوّن + رقم كبير + وصف (مثل لوحات المتابعة) */
   .kpi { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 16px; border: 1.5px solid rgba(56, 79, 61, .13); background: #fff; text-align: right; transition: border-color .15s, box-shadow .15s; }
   .kpi:hover { border-color: rgba(56, 79, 61, .35); box-shadow: 0 10px 22px -18px rgba(34, 54, 42, .5); }
@@ -1792,16 +1794,33 @@
   }
   // ─── ملخص الخدمات في الرئيسية ───
   const tile = (v, l) => `<div class="rounded-2xl bg-white border border-brand/[0.13] px-3 py-3"><p class="text-2xl font-bold tnum leading-none">${v}</p><p class="text-[11.5px] text-ink/60 mt-1.5">${l}</p></div>`;
-  const svcCard = (icon, title, href, tiles, foot, actions = '') => `
-    <div class="pro-card p-5 space-y-3.5">
+  const svcCard = (icon, title, href, tiles, foot, actions = '', chart = '') => `
+    <div class="pro-card p-5 flex flex-col gap-3.5 h-full">
       <div class="flex items-center justify-between gap-2">
-        <h3 class="text-[13px] font-bold flex items-center gap-2"><i class="ph-bold ${icon} text-brand"></i> ${title}</h3>
+        <h3 class="text-[13px] font-bold flex items-center gap-2"><span class="w-8 h-8 rounded-xl bg-brand/10 grid place-items-center"><i class="ph-bold ${icon} text-brand"></i></span> ${title}</h3>
         <a href="${href}" class="text-[11px] font-bold text-brand underline underline-offset-4">${href.startsWith('#') ? 'افتح' : 'افتح الشاشة'}</a>
       </div>
       <div class="grid grid-cols-3 gap-2">${tiles}</div>
-      ${foot ? `<p class="text-[11px] text-ink/60">${foot}</p>` : ''}
+      ${chart}
+      ${foot ? `<p class="text-[11px] text-ink/60 mt-auto">${foot}</p>` : ''}
       ${actions}
     </div>`;
+  // رسم أعمدة لآخر 7 أيام (بتوقيت الرياض): اليوم بالذهبي، والرقم فوق كل عمود
+  const riyadhDay = (t) => new Date(t + 3 * 3600e3).toISOString().slice(0, 10);
+  function miniBars(byDay, label) {
+    const days = Array.from({ length: 7 }, (_, i) => riyadhDay(Date.now() - (6 - i) * DAYMS));
+    const vals = days.map(d => byDay[d] || 0), max = Math.max(1, ...vals);
+    const wd = (d) => new Date(`${d}T12:00:00Z`).toLocaleDateString('ar-SA-u-nu-latn', { weekday: 'short' });
+    return `<div class="rounded-2xl bg-white border border-brand/[0.13] p-3">
+      <p class="text-[11px] font-bold text-ink/60 mb-2">${label}</p>
+      <div class="flex items-end gap-1.5 h-24">${days.map((d, i) => `
+        <div class="flex-1 h-full flex flex-col items-center justify-end gap-1">
+          <span class="text-[10px] font-bold tnum ${vals[i] ? 'text-ink/70' : 'text-ink/30'}">${vals[i]}</span>
+          <span class="w-full rounded-md ${i === 6 ? 'bg-[#c9a227]' : 'bg-brand/70'}" style="height:${vals[i] ? Math.max(6, vals[i] / max * 64) : 3}px;${vals[i] ? '' : 'opacity:.25'}"></span>
+          <span class="text-[10px] text-ink/45">${i === 6 ? 'اليوم' : wd(d)}</span>
+        </div>`).join('')}</div>
+    </div>`;
+  }
   // أدوات الولاء اليومية: تنفتح فوق لوحة التحكم نفسها (نفس أدوات شاشة الكاشير داخل إطار)، بدون ما تنتقل لصفحة ثانية
   function openLyTool(open) {
     closeLyTool();
@@ -1830,19 +1849,28 @@
       const tk = (d && d.tickets) || [];
       return svcCard('ph-bell', 'البيجر اليوم', 'pager-desk.html' + location.search,
         tile(tk.filter(t => t.status === 'waiting').length, 'بالانتظار') + tile(tk.filter(t => t.status === 'ready').length, 'تم النداء') + tile(tk.length, 'أرقام اليوم'),
-        st && st.total ? `آخر 7 أيام: متوسط الانتظار ${mins(st.wait.avg)}${st.rating && st.rating.n ? `، والتقييم ${st.rating.avg} ★ من ${st.rating.n}` : ''}` : 'أول ما ياخذون أرقام تطلع الأرقام هنا');
+        st && st.total ? `آخر 7 أيام: متوسط الانتظار ${mins(st.wait.avg)}${st.rating && st.rating.n ? `، والتقييم ${st.rating.avg} ★ من ${st.rating.n}` : ''}` : 'أول ما ياخذون أرقام تطلع الأرقام هنا', '',
+        miniBars(Object.fromEntries(((st && st.daily) || []).map(x => [x.d, x.n])), 'أرقام البيجر آخر 7 أيام'));
     }));
     if (!featureLocked('loyalty')) jobs.push(api('loyalty').catch(() => null).then(d => {
       const st = (d && d.stats) || {};
       return svcCard('ph-seal-check', 'بطاقة الولاء', '#loyalty',
         tile(st.members || 0, 'عضو') + tile(st.stamps7 || 0, 'ختم هالأسبوع') + tile(st.redeemed || 0, 'مكافأة'),
         d && !d.enabled ? 'البطاقة متوقفة، شغّلها من صفحة الولاء' : `${st.active30 || 0} عضو زاروك آخر 30 يوم`,
-        d && d.enabled ? lyActions() : '');
+        d && d.enabled ? lyActions() : '',
+        miniBars(Object.fromEntries(((d && d.week) || []).map(x => [x.d, x.n])), 'الأختام آخر 7 أيام'));
     }));
     if (!featureLocked('waitlist') && client.waitlist_enabled) jobs.push(api('waitlist').catch(() => null).then(d => {
       const en = (d && d.entries) || [];
       return svcCard('ph-hourglass-medium', 'قائمة الانتظار اليوم', '#waitlist',
-        tile(en.filter(e => e.status === 'waiting').length, 'ينتظرون') + tile(en.filter(e => e.status === 'notified').length, 'تم نداؤهم') + tile(en.filter(e => e.status === 'seated').length, 'حضروا'), '');
+        tile(en.filter(e => e.status === 'waiting').length, 'ينتظرون') + tile(en.filter(e => e.status === 'notified').length, 'تم نداؤهم') + tile(en.filter(e => e.status === 'seated').length, 'حضروا'), '', '',
+        // أول المنتظرين بالترتيب
+        (() => { const w = en.filter(e => e.status === 'waiting' || e.status === 'notified').slice(0, 4);
+          return `<div class="rounded-2xl bg-white border border-brand/[0.13] p-3"><p class="text-[11px] font-bold text-ink/60 mb-2">الدور الحين</p>${w.length ? w.map(e => `
+            <div class="flex items-center justify-between gap-2 py-1.5 border-b border-brand/[0.07] last:border-0 text-[12.5px]">
+              <span class="font-bold truncate">${esc(e.name || 'زبون')}</span>
+              <span class="shrink-0 text-ink/55">${e.party_size ? `${e.party_size} أشخاص` : ''}${e.status === 'notified' ? ' <b class="text-[#8a6d0f]">تم النداء</b>' : ''}</span>
+            </div>`).join('') : '<p class="text-[12px] text-ink/45 py-3 text-center">ما فيه أحد ينتظر الحين</p>'}</div>`; })());
     }));
     const cards = await Promise.all(jobs);
     box.innerHTML = cards.join('');
