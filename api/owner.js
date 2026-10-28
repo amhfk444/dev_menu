@@ -843,8 +843,10 @@ async function main(req) {
     const id = int(b.card_id);
     const card = (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${sid}&select=id,wallet_serial`))[0];
     if (!card) throw new ApiError(404, 'العضو غير موجود');
+    // بطاقته في محفظة جواله تنلغي بعد (ما تبقى شغالة بأختامها)
+    const wallet_revoked = card.wallet_serial ? await wallet.revokePass(card.wallet_serial) : 'none';
     await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${sid}`, { method: 'DELETE' });
-    return { ok: true };
+    return { ok: true, wallet: wallet_revoked };
   }
 
   // ─── بطاقة الولاء: صاحب المحل يعطي ختم لعضو بنفسه ───

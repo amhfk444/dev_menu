@@ -103,4 +103,11 @@ function buildCtx({ store, settings, card, lat, lng, notice, nearText }) {
   return { store, settings, card, url, restoreUrl: `${url}${url.includes('?') ? '&' : '?'}t=${encodeURIComponent(card.token)}`, lat, lng, notice, nearText };
 }
 
-module.exports = { configured, createPass, updatePass, buildCtx, cardUrl };
+// إلغاء البطاقة من المحفظة (لما يُحذف العضو): آبل تطفيها وتشيل كودها وتنقلها للبطاقات المنتهية، وقوقل تنهيها
+async function revokePass(serial) {
+  if (!configured() || !serial) return 'off';
+  try { const r = await call('DELETE', `/${encodeURIComponent(serial)}`); return r.deleted ? 'revoked' : 'unknown'; }
+  catch (e) { return e.status === 404 ? 'gone' : `error ${e.status || ''}`.trim(); }
+}
+
+module.exports = { configured, createPass, updatePass, revokePass, buildCtx, cardUrl };

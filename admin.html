@@ -4436,13 +4436,13 @@
   // ─── حذف عضو ───
   async function deleteLyMember(id) {
     const c = (ly.members || []).find(x => x.id === id) || ly.member || { id };
-    const ok = await DMDialog.confirm({ title: 'حذف العضو', message: `يتحذف ${memberName(c)} وكل أختامه وزياراته ورسائله. ما تقدر ترجعه بعدين.`, confirmText: 'احذف العضو', cancelText: 'تراجع', tone: 'danger' });
+    const ok = await DMDialog.confirm({ title: 'حذف العضو', message: `يتحذف ${memberName(c)} وكل أختامه وزياراته ورسائله، وتنلغي بطاقته في محفظة جواله. ما تقدر ترجعه بعدين.`, confirmText: 'احذف العضو', cancelText: 'تراجع', tone: 'danger' });
     if (!ok) return;
     try {
-      await api('loyalty-member-delete', { card_id: id });
+      const r = await api('loyalty-member-delete', { card_id: id });
       ly.members = (ly.members || []).filter(x => x.id !== id);
       if (ly.member && ly.member.id === id) closeLyMember();
-      renderLyMembers(); showToast('تم حذف العضو');
+      renderLyMembers(); showToast(r.wallet === 'revoked' ? 'تم حذف العضو، وانلغت بطاقته في المحفظة' : 'تم حذف العضو');
     } catch (e) { showToast(e.message || 'تعذر الحذف', true); }
   }
 
