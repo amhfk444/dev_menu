@@ -72,8 +72,9 @@
   .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--sand); padding: 4px; border-radius: 16px; }
   .tabs button { padding: 10px 6px; border-radius: 12px; font-size: 13.5px; font-weight: 700; color: var(--muted); transition: background .15s, color .15s; }
   .tabs button[aria-selected="true"] { background: #fff; color: var(--ink); box-shadow: 0 6px 14px -10px rgba(21,39,27,.5); }
-  .phone { width: 250px; aspect-ratio: 9 / 18.6; border-radius: 40px; background: #0d1a11; padding: 8px; margin: 0 auto; box-shadow: 0 34px 60px -30px rgba(21,39,27,.7); }
-  .phone video { width: 100%; height: 100%; object-fit: cover; border-radius: 32px; display: block; background: var(--sand); }
+  /* الفيديو بمقاس الإعلان (9:16)، والجوال موجود داخل الإعلان نفسه */
+  .phone { width: 270px; aspect-ratio: 9 / 16; border-radius: 30px; overflow: hidden; background: #efe6d8; margin: 0 auto; box-shadow: 0 34px 60px -30px rgba(21,39,27,.55); }
+  .phone video { width: 100%; height: 100%; object-fit: cover; display: block; background: #efe6d8; }
   .ring-card { display: flex; align-items: center; gap: 12px; background: var(--sand); border-radius: 20px; padding: 12px 14px; }
   .ring-ic { width: 44px; height: 44px; border-radius: 14px; background: var(--brand); color: var(--gold); display: grid; place-items: center; font-size: 20px; flex-shrink: 0; }
   .ring-ic.on { animation: wob .5s ease-in-out 3; }
@@ -239,7 +240,7 @@
         <button role="tab" aria-selected="false" data-tab="pager"><i class="ph-bold ph-bell"></i> البيجر</button>
         <button role="tab" aria-selected="false" data-tab="loyalty"><i class="ph-bold ph-seal-check"></i> الولاء</button>
       </div>
-      <div class="py-6"><div class="phone"><video id="demo-video" src="videos/devmenu-ad.mp4" poster="videos/devmenu-ad.jpg" autoplay muted loop playsinline preload="metadata" aria-label="لقطات حقيقية من DEV MENU"></video></div></div>
+      <div class="py-6"><div class="phone"><video id="demo-video" src="videos/devmenu-ad-v2.mp4" poster="videos/devmenu-ad-v2.jpg" autoplay muted loop playsinline preload="metadata" aria-label="لقطات حقيقية من DEV MENU"></video></div></div>
       <div class="ring-card">
         <span class="ring-ic" id="ring-ic"><i class="ph-bold ph-bell-ringing"></i></span>
         <div class="flex-1 min-w-0">
@@ -318,8 +319,8 @@
   <div class="wrap grid lg:grid-cols-[.95fr_1.05fr] gap-12 items-center">
     <div class="reveal order-last lg:order-first">
       <div class="flex justify-center gap-4">
-        <div class="phone !w-[220px] !m-0" style="margin-top:40px !important"><video src="videos/pager-ad.mp4" poster="videos/pager-ad.jpg" autoplay muted loop playsinline preload="none" aria-label="البيجر يرن في جوال الزبون"></video></div>
-        <div class="phone !w-[220px] !m-0 hidden sm:block"><video src="videos/loyalty-ad.mp4" poster="videos/loyalty-ad.jpg" autoplay muted loop playsinline preload="none" aria-label="بطاقة الولاء من DEV MENU"></video></div>
+        <div class="phone !w-[220px] !m-0" style="margin-top:40px !important"><video src="videos/pager-ad-v2.mp4" poster="videos/pager-ad-v2.jpg" autoplay muted loop playsinline preload="none" aria-label="البيجر يرن في جوال الزبون"></video></div>
+        <div class="phone !w-[220px] !m-0 hidden sm:block"><video src="videos/loyalty-ad-v2.mp4" poster="videos/loyalty-ad-v2.jpg" autoplay muted loop playsinline preload="none" aria-label="بطاقة الولاء من DEV MENU"></video></div>
       </div>
     </div>
     <div class="reveal">
@@ -556,7 +557,7 @@
   }
 
   // ─── بطاقة التجربة: فيديو لكل ميزة، وصوت التنبيه ───
-  const DEMOS = { menu: ['videos/devmenu-ad.mp4', 'videos/devmenu-ad.jpg', 0], pager: ['videos/pager-ad.mp4', 'videos/pager-ad.jpg', 0], loyalty: ['videos/loyalty-ad.mp4', 'videos/loyalty-ad.jpg', 0] };
+  const DEMOS = { menu: ['videos/devmenu-ad-v2.mp4', 'videos/devmenu-ad-v2.jpg', 0], pager: ['videos/pager-ad-v2.mp4', 'videos/pager-ad-v2.jpg', 0], loyalty: ['videos/loyalty-ad-v2.mp4', 'videos/loyalty-ad-v2.jpg', 0] };
   document.querySelector('.tabs').addEventListener('click', (e) => {
     const b = e.target.closest('[data-tab]'); if (!b) return;
     document.querySelectorAll('.tabs [data-tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
