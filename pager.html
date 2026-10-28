@@ -119,6 +119,8 @@
   .foot i:first-child::after { left: -3px; } .foot i:last-child::after { right: -3px; }
   body.ringing { animation: flash2 1s infinite; }
   @keyframes flash2 { 0%, 100% { background: color-mix(in srgb, var(--brand) 60%, #000); } 50% { background: #b08a1e; } }
+  .card .btn-brand { background: color-mix(in srgb, var(--brand) 88%, #000); color: #fff; }
+  .card .btn-ghost { background: #fff; color: color-mix(in srgb, var(--brand) 85%, #000); border-color: rgba(0,0,0,.15); }
   .ticket.plain { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.22); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: 0 24px 50px -30px rgba(0,0,0,.7); }
   .hidden { display: none !important; }
 </style>
