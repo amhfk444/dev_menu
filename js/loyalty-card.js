@@ -15,16 +15,16 @@
   }
   function apply(el, d) {
     d = d || {};
-    el.classList.remove('st-gradient', 'st-solid', 'st-paper', 'st-dark');
+    el.classList.remove('st-gradient', 'st-solid', 'st-paper', 'st-dark', 'st-glass');
     el.classList.add(`st-${d.style || 'gradient'}`);
     el.style.setProperty('--c', d.color || '#233d2c');
     // متدرج بلونين لو اختار لون ثاني
-    el.classList.toggle('two', d.style === 'gradient' && !!d.color2);
+    el.classList.toggle('two', (d.style === 'gradient' || d.style === 'glass') && !!d.color2);
     el.style.setProperty('--c2', d.color2 || d.color || '#233d2c');
     el.style.setProperty('--stamp', d.stamp_color || '#c9a227');
     el.style.setProperty('--stamp-ink', inkFor(d.stamp_color || '#c9a227'));
     const solidInk = inkFor(d.color || '#233d2c');
-    const auto = d.style === 'paper' ? (d.color || '#233d2c') : d.style === 'dark' ? '#f5f5f5' : solidInk;
+    const auto = d.style === 'paper' ? (d.color || '#233d2c') : d.style === 'dark' || d.style === 'glass' ? '#ffffff' : solidInk;
     // لون الخط: اختيار صاحب المحل، وإلا تلقائي حسب لون البطاقة
     el.style.setProperty('--ink', d.text_color || auto);
     el.classList.toggle('ink-set', !!d.text_color);

@@ -1164,7 +1164,7 @@
               </div>
               <div class="space-y-2" id="ly-style-box">
                 <p class="text-xs font-semibold text-ink/70">الشكل</p>
-                <div id="ly-styles" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+                <div id="ly-styles" class="grid grid-cols-3 sm:grid-cols-5 gap-2"></div>
               </div>
               <div class="grid sm:grid-cols-2 gap-4">
                 <div class="space-y-2">
@@ -4162,7 +4162,7 @@
     document.getElementById('ly-ai-run').classList.toggle('hidden', !d.ai);
   }
   // ─── شكل البطاقة: معاينة حيّة ───
-  const LY_STYLES = [['gradient', 'متدرج'], ['solid', 'لون سادة'], ['paper', 'ورقي'], ['dark', 'داكن']];
+  const LY_STYLES = [['gradient', 'متدرج'], ['glass', 'زجاجي'], ['solid', 'لون سادة'], ['paper', 'ورقي'], ['dark', 'داكن']];
   const LY_CARD_COLORS = ['#233d2c', '#1f2937', '#7c2d12', '#1e3a8a', '#831843', '#0f766e', '#b45309'];
   const LY_STAMP_COLORS = ['#c9a227', '#ffffff', '#f97316', '#ef4444', '#22c55e', '#38bdf8', '#1b1b1b'];
   function setLyDesign(patch) { ly.design = { ...ly.design, ...patch }; ly.dirty = true; renderDesign(); }
@@ -4195,7 +4195,7 @@
     document.getElementById('ly-stamp-colors').innerHTML = swatches(LY_STAMP_COLORS, 'stamp_color', d.stamp_color);
     // "بدون" = يرجع للتلقائي (null)
     const none = (key, cur, label) => `<button type="button" onclick="setLyDesign({ ${key}: null })" class="h-8 px-3 rounded-full border text-[12px] font-bold ${!cur ? 'border-brand bg-brand text-cream' : 'border-brand/20 bg-white'}">${label}</button>`;
-    document.getElementById('ly-color2-box').classList.toggle('hidden', bg !== 'color' || d.style !== 'gradient');
+    document.getElementById('ly-color2-box').classList.toggle('hidden', bg !== 'color' || !['gradient', 'glass'].includes(d.style));
     document.getElementById('ly-colors2').innerHTML = none('color2', d.color2, 'بدون') + swatches(['#4a6650', '#c9a227', '#0f172a', '#be185d', '#0ea5e9', '#f97316'], 'color2', d.color2 || '');
     document.getElementById('ly-text-colors').innerHTML = none('text_color', d.text_color, 'تلقائي') + swatches(['#ffffff', '#1b1b1b', '#c9a227', '#f5f2eb'], 'text_color', d.text_color || '');
     const pic = (id, clear, url) => { const el = document.getElementById(id); el.classList.toggle('hidden', !url); if (url) el.src = url; document.getElementById(clear).classList.toggle('hidden', !url); };

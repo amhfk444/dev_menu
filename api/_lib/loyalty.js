@@ -5,7 +5,7 @@
 const COOLDOWNS = [1, 2, 3, 4, 6, 12, 24];
 
 // شكل البطاقة
-const STYLES = ['gradient', 'solid', 'paper', 'dark'];
+const STYLES = ['gradient', 'solid', 'paper', 'dark', 'glass'];
 const ICONS = ['coffee', 'fork-knife', 'hamburger', 'pizza', 'ice-cream', 'bread', 'cookie', 'cake', 'bowl-food', 'popcorn', 'heart', 'star'];
 const HEX = /^#[0-9a-f]{6}$/i;
 const okUrl = (u) => typeof u === 'string' && /^https:\/\/[^\s"'<>]{8,500}$/.test(u) ? u : null;

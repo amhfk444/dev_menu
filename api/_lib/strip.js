@@ -19,7 +19,7 @@ const icon = (name, x, y, size, color, opacity = 1) =>
 // الخلفية بنفس لون بطاقة المحفظة عشان الصورة تندمج معها، مع وهج خفيف بلون الختم
 // متدرج بلونين: اللون الثاني في النص ويذوب للون البطاقة على الأطراف، عشان يندمج مع خلفية المحفظة (لون واحد) بدون حواف
 function background(d) {
-  const two = d.style === 'gradient' && d.color2;
+  const two = (d.style === 'gradient' || d.style === 'glass') && d.color2;
   return {
     fill: d.color, ink: inkFor(two ? d.color2 : d.color),
     glow: two
@@ -53,6 +53,8 @@ async function stampStrip(settings, card) {
     }
     const bg = photo ? { fill: 'none', ink: '#ffffff', glow: '' } : background(d);
     const stampInk = inkFor(d.stamp_color || '#c9a227');
+    const glass = !photo && d.style === 'glass';
+    if (glass) bg.ink = '#ffffff';
     let shapes = '';
     const pos = [];
     for (let i = 0; i < n; i++) {
@@ -62,6 +64,8 @@ async function stampStrip(settings, card) {
       const on = i < done, last = i === n - 1;
       const cx = x + D / 2, cy = y + D / 2;
       if (on) shapes += `<circle cx="${cx}" cy="${cy}" r="${D / 2}" fill="${d.stamp_color}"/><circle cx="${cx}" cy="${cy + 4}" r="${D / 2}" fill="none"/>`;
+      // زجاجي: الخانة الفاضية دائرة زجاج شفافة بحافة لامعة بدل الخط المنقط
+      else if (glass) shapes += `<circle cx="${cx}" cy="${cy}" r="${D / 2 - 2}" fill="#fff" fill-opacity=".13" stroke="${last ? d.stamp_color : '#fff'}" stroke-opacity="${last ? .9 : .5}" stroke-width="3"/><path d="M${cx - D * .3} ${cy - D * .18} A${D * .36} ${D * .36} 0 0 1 ${cx + D * .12} ${cy - D * .36}" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="4" stroke-linecap="round"/>`;
       else shapes += `<circle cx="${cx}" cy="${cy}" r="${D / 2 - 3}" fill="none" stroke="${last ? d.stamp_color : bg.ink}" stroke-opacity="${last ? .85 : .35}" stroke-width="5" stroke-dasharray="14 11"/>`;
       const s = D * .46;
       if (last && !on) { if (!d.reward_image) shapes += icon('gift', cx - s / 2, cy - s / 2, s, d.stamp_color, .95); }
@@ -69,7 +73,7 @@ async function stampStrip(settings, card) {
     }
     const svg = photo
       ? `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="#000" fill-opacity=".5"/>${shapes}</svg>`
-      : `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}"><defs>${bg.glow}</defs><rect width="${W}" height="${H}" fill="${bg.fill}"/><rect width="${W}" height="${H}" fill="url(#g)"/>${shapes}</svg>`;
+      : `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}"><defs>${bg.glow}${glass ? `<radialGradient id="gl" cx="20%" cy="85%" r="45%"><stop offset="0" stop-color="${d.stamp_color}" stop-opacity=".35"/><stop offset="1" stop-color="${d.stamp_color}" stop-opacity="0"/></radialGradient>` : ''}</defs><rect width="${W}" height="${H}" fill="${bg.fill}"/><rect width="${W}" height="${H}" fill="url(#g)"/>${glass ? `<rect width="${W}" height="${H}" fill="url(#gl)"/><rect x="24" y="18" width="${W - 48}" height="${H - 36}" rx="34" fill="#fff" fill-opacity=".09" stroke="#fff" stroke-opacity=".3" stroke-width="2"/>` : ''}${shapes}</svg>`;
     let base = photo ? sharp(photo).composite([{ input: Buffer.from(svg) }]).png() : sharp(Buffer.from(svg)).png();
 
     // صورة الختم الخاصة بالمحل
