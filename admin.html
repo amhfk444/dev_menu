@@ -55,6 +55,17 @@
   .kpi.warn { border-color: rgba(168, 67, 46, .35); background: #fdf4ef; }
   .kpi.warn .kpi-ic { background: rgba(168, 67, 46, .12); color: var(--brick); }
   .kpi.warn b { color: var(--brick); }
+  /* نموذج الطبق: مجموعات واضحة بعناوين، وحقول بتسميات أكبر */
+  #add-product-form label.block, #add-product-form .f-label { font-size: 12.5px !important; font-weight: 600; color: var(--ink-2) !important; margin-bottom: 6px !important; }
+  .f-sec { display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 700; color: var(--ink-3); padding-top: 6px; }
+  .f-sec::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+  .f-sec i { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; background: rgba(56, 79, 61, .09); color: var(--brand); font-size: 12px; }
+  .img-drop { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1.5px dashed var(--line-2); border-radius: 14px; background: #fff; cursor: pointer; transition: border-color .15s, background .15s; }
+  .img-drop:hover { border-color: var(--brand); background: rgba(56, 79, 61, .03); }
+  .img-drop .ph { width: 52px; height: 52px; border-radius: 12px; background: rgba(56, 79, 61, .08); display: grid; place-items: center; color: var(--brand); font-size: 20px; flex-shrink: 0; overflow: hidden; }
+  .img-drop .ph img { width: 100%; height: 100%; object-fit: cover; }
+  #add-product-form details { background: #fff !important; border-color: var(--line) !important; }
+  .form-actions { position: sticky; bottom: -20px; margin: 0 -20px -20px; padding: 14px 20px 20px; background: linear-gradient(180deg, rgba(251, 248, 243, 0), var(--paper) 30%); }
   .input-pro {
     width: 100%; min-height: 44px; background-color: #ffffff;
     border: 1px solid var(--line-2); border-radius: 10px;
@@ -436,15 +447,15 @@
         <button onclick="goAddDish()" aria-label="أضف طبق" class="lg:hidden fixed bottom-24 left-4 z-30 bg-brand text-cream w-14 h-14 rounded-2xl shadow-xl flex items-center justify-center text-lg active:scale-95 transition"
                 style="margin-bottom: env(safe-area-inset-bottom)"><i class="ph-bold ph-plus"></i></button>
   <!-- التبويبات -->
-  <div class="inline-flex gap-1 p-1 rounded-xl bg-brand/[0.07] max-w-full" role="tablist">
-    <button onclick="switchTab('products')" id="tab-products" class="tab-btn active px-4 py-2 rounded-lg border text-[13px] font-medium transition flex items-center gap-2">
-      <i class="ph-bold ph-fork-knife text-[11px]"></i> الأطباق
+  <div class="inline-flex gap-1 p-1.5 rounded-2xl bg-brand/[0.07] max-w-full" role="tablist">
+    <button onclick="switchTab('products')" id="tab-products" class="tab-btn active px-5 py-2.5 rounded-xl border text-[14px] font-medium transition flex items-center gap-2">
+      <i class="ph-bold ph-fork-knife"></i> الأطباق
     </button>
-    <button onclick="switchTab('categories')" id="tab-categories" class="tab-btn px-4 py-2 rounded-lg border text-[13px] font-medium transition flex items-center gap-2">
-      <i class="ph-bold ph-stack text-[11px]"></i> الأقسام
+    <button onclick="switchTab('categories')" id="tab-categories" class="tab-btn px-5 py-2.5 rounded-xl border text-[14px] font-medium transition flex items-center gap-2">
+      <i class="ph-bold ph-stack"></i> الأقسام
     </button>
-    <button onclick="switchTab('coupons')" id="tab-coupons" class="tab-btn px-4 py-2 rounded-lg border text-[13px] font-medium transition flex items-center gap-2">
-      <i class="ph-bold ph-ticket text-[11px]"></i> الخصومات
+    <button onclick="switchTab('coupons')" id="tab-coupons" class="tab-btn px-5 py-2.5 rounded-xl border text-[14px] font-medium transition flex items-center gap-2">
+      <i class="ph-bold ph-ticket"></i> الخصومات
     </button>
   </div>
 
@@ -452,10 +463,13 @@
   <div id="section-products" class="space-y-4">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
       <div id="product-form-col" class="order-2 lg:order-none lg:col-span-5 xl:col-span-4">
-        <form id="add-product-form" class="pro-card p-5 space-y-3.5 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
-          <h3 class="text-xs font-bold text-ink border-b border-brand/20 pb-2 flex items-center gap-2">
-            <i id="form-icon" class="ph-bold ph-plus text-ink"></i> <span id="form-title">إضافة طبق أو منتج جديد</span>
-          </h3>
+        <form id="add-product-form" class="pro-card p-5 space-y-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+          <div class="flex items-center gap-3">
+            <span class="w-10 h-10 rounded-xl bg-brand text-cream grid place-items-center shrink-0"><i id="form-icon" class="ph-bold ph-plus"></i></span>
+            <div><h3 class="text-[15px] font-bold text-ink"><span id="form-title">إضافة طبق أو منتج جديد</span></h3>
+              <p class="text-[11.5px] text-ink/55">الحقول المعلّمة بـ * مطلوبة، والباقي اختياري.</p></div>
+          </div>
+          <p class="f-sec"><i class="ph-bold ph-tag"></i> الأساسيات</p>
           <div>
             <label class="text-[11px] text-ink/75 block mb-1">اسم الطبق / المنتج *</label>
             <input type="text" id="prod-name" placeholder="مثال: ستيك لحم فاخر" required class="input-pro">
@@ -479,10 +493,16 @@
             <div id="sizes-list" class="space-y-1.5"></div>
             <p id="sizes-hint" class="hidden text-[10px] text-ink/60">مع الأحجام يتحدد السعر من كل حجم، ويظهر في المنيو "من" أقل سعر.</p>
           </div>
+          <p class="f-sec"><i class="ph-bold ph-image"></i> الصورة</p>
           <div>
-            <label class="text-[11px] text-ink/75 block mb-1">صورة الطبق <span id="image-hint" class="text-ink/50"></span></label>
-            <input type="file" id="prod-image-file" accept="image/*" class="input-pro text-xs">
+            <label for="prod-image-file" class="img-drop">
+              <span class="ph" id="img-drop-ph"><i class="ph-bold ph-camera"></i></span>
+              <span class="min-w-0"><b class="block text-[13px] text-ink" id="img-drop-name">اختر صورة الطبق</b>
+                <span class="block text-[11.5px] text-ink/55">صورة واضحة للطبق تزيد الطلب عليه <span id="image-hint" class="text-ink/50"></span></span></span>
+            </label>
+            <input type="file" id="prod-image-file" accept="image/*" class="sr-only" onchange="previewDishImage(this)">
           </div>
+          <p class="f-sec"><i class="ph-bold ph-note-pencil"></i> التفاصيل</p>
           <div>
             <label class="text-[11px] text-ink/75 block mb-1">وصف المكونات</label>
             <textarea id="prod-desc" placeholder="وصف موجز للمكونات..." class="input-pro h-16 resize-none"></textarea>
@@ -502,6 +522,7 @@
               <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-ink/50">سعرة</span>
             </div>
           </div>
+          <p class="f-sec"><i class="ph-bold ph-plus-circle"></i> إضافات اختيارية</p>
           <details id="coffee-details" class="bg-amber-100/60 rounded-xl border border-amber-700/25 group">
             <summary class="cursor-pointer select-none p-2.5 text-[11px] font-bold text-amber-900 flex items-center justify-between">
               <span><i class="ph-bold ph-coffee text-amber-600"></i> تفاصيل القهوة المختصة <span class="text-amber-800/60 font-normal">(للمقاهي، اختياري)</span></span>
@@ -589,18 +610,20 @@
             <i class="ph-bold ph-link-simple"></i> الطبق مربوط بكل الفروع: الاسم والوصف والصورة والقسم والسعرات تتعدل في الكل.
             <b>السعر والإخفاء والحذف والتوفر لكل فرع لحاله.</b>
           </p>
-          <button type="submit" id="submit-btn" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition shadow-lg">حفظ وإضافة الطبق</button>
-          <button type="button" id="cancel-edit-btn" onclick="cancelEdit()" class="hidden w-full bg-brand/5 hover:bg-brand/10 text-ink/75 font-bold py-2.5 rounded-xl text-xs transition border border-brand/20">إلغاء التعديل</button>
+          <div class="form-actions space-y-2">
+            <button type="submit" id="submit-btn" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-3.5 rounded-xl text-[13.5px] transition shadow-lg">حفظ وإضافة الطبق</button>
+            <button type="button" id="cancel-edit-btn" onclick="cancelEdit()" class="hidden w-full bg-white hover:bg-brand/5 text-ink/75 font-bold py-3 rounded-xl text-[13px] transition border border-brand/20">إلغاء التعديل</button>
+          </div>
         </form>
       </div>
 
       <div class="order-1 lg:order-none lg:col-span-7 xl:col-span-8 space-y-3.5">
-        <div class="pro-card p-3.5 flex flex-wrap items-center justify-between gap-3">
+        <div class="pro-card p-3 flex flex-wrap items-center justify-between gap-2.5">
           <div class="relative flex-1 min-w-[180px]">
-            <i class="ph-bold ph-magnifying-glass absolute right-3.5 top-3 text-ink/60 text-xs"></i>
-            <input type="text" id="search-input" oninput="filterProducts()" placeholder="بحث في الأطباق..." class="input-pro pr-9 text-xs">
+            <i class="ph-bold ph-magnifying-glass absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/45 text-sm"></i>
+            <input type="text" id="search-input" oninput="filterProducts()" placeholder="ابحث عن طبق بالاسم" class="input-pro pr-10 !rounded-xl">
           </div>
-          <select id="filter-category" onchange="filterProducts()" class="input-pro bg-cream w-auto text-xs">
+          <select id="filter-category" onchange="filterProducts()" class="input-pro bg-white w-auto !rounded-xl">
             <option value="all">جميع الأقسام</option>
           </select>
         </div>
@@ -2449,6 +2472,18 @@
   }
 
   // تصغير الصورة وتحويلها WebP: أخف بكثير وأسرع في الفتح على جوال الزبون
+  // معاينة صورة الطبق في خانة الرفع
+  function setDishImagePreview(src, label) {
+    const ph = document.getElementById('img-drop-ph'), name = document.getElementById('img-drop-name');
+    if (!ph) return;
+    ph.innerHTML = src ? `<img src="${esc(src)}" alt="">` : '<i class="ph-bold ph-camera"></i>';
+    name.textContent = label || (src ? 'تم اختيار الصورة (اضغط لتغييرها)' : 'اختر صورة الطبق');
+  }
+  function previewDishImage(input) {
+    const f = input.files && input.files[0];
+    if (!f) return setDishImagePreview(null);
+    setDishImagePreview(URL.createObjectURL(f), f.name.length > 28 ? f.name.slice(0, 25) + '…' : f.name);
+  }
   async function compressImage(file, maxDim = 1600, quality = 0.82) {
     if (!/^image\/(jpeg|png|webp|heic|heif)$/i.test(file.type)) return file;
     try {
@@ -5211,7 +5246,15 @@
     closeDishMenu();
 
     if (products.length === 0) {
-      list.innerHTML = `<p class="text-sm text-ink/60 text-center py-8">${loadedProducts.length ? 'ما فيه طبق بهذا الاسم أو في هذا القسم.' : 'ما أضفت أطباق للحين. أضف أول طبق من النموذج.'}</p>`;
+      list.innerHTML = loadedProducts.length
+        ? '<p class="text-sm text-ink/60 text-center py-8">ما فيه طبق بهذا الاسم أو في هذا القسم.</p>'
+        : `<div class="text-center py-10 space-y-3">
+            <span class="w-14 h-14 mx-auto rounded-2xl bg-brand/10 text-brand grid place-items-center text-2xl"><i class="ph-bold ph-fork-knife"></i></span>
+            <p class="text-[15px] font-bold text-ink">منيوك فاضي للحين</p>
+            <p class="text-[12.5px] text-ink/60 max-w-xs mx-auto leading-relaxed">${loadedCategories.length ? 'أضف أول طبق من النموذج: الاسم والسعر والقسم يكفون، والباقي تضيفه بعدين.' : 'ابدأ بإضافة قسم (مثل: المشروبات الحارة)، بعدها أضف أطباقك فيه.'}</p>
+            ${loadedCategories.length ? '<button type="button" onclick="goAddDish()" class="bg-brand text-cream px-5 py-2.5 rounded-xl text-[13px] font-bold"><i class="ph-bold ph-plus"></i> أضف أول طبق</button>'
+              : '<button type="button" onclick="switchTab(\'categories\')" class="bg-brand text-cream px-5 py-2.5 rounded-xl text-[13px] font-bold"><i class="ph-bold ph-stack"></i> أضف قسم</button>'}
+          </div>`;
       return;
     }
 
@@ -5521,6 +5564,7 @@
     if (cat) document.getElementById('prod-category').value = cat.key;
     document.getElementById('prod-image-file').value = '';
     document.getElementById('image-hint').textContent = p.image_url ? '(اتركها فارغة للإبقاء على الصورة الحالية)' : '';
+    setDishImagePreview(p.image_url || null, p.image_url ? 'الصورة الحالية (اضغط لتغييرها)' : null);
     document.getElementById('form-title').textContent = `تعديل: ${p.name}`;
     document.getElementById('form-icon').className = 'ph-bold ph-pencil-simple text-amber-600';
     document.getElementById('submit-btn').textContent = 'حفظ التعديلات';
@@ -5545,6 +5589,7 @@
   function cancelEdit() {
     editingProductId = null;
     document.getElementById('add-product-form').reset();
+    setDishImagePreview(null);
     setCoffee(null);
     formSizes = [];
     renderSizes();

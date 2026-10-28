@@ -97,6 +97,7 @@
 .ph-moped:before { content: "\e824"; }
 .ph-music-notes:before { content: "\e340"; }
 .ph-note:before { content: "\e348"; }
+.ph-note-pencil:before { content: "\e34c"; }
 .ph-orange-slice:before { content: "\ed36"; }
 .ph-paint-brush:before { content: "\e6f0"; }
 .ph-palette:before { content: "\e6c8"; }
@@ -111,6 +112,7 @@
 .ph-play:before { content: "\e3d0"; }
 .ph-play-circle:before { content: "\e3d2"; }
 .ph-plus:before { content: "\e3d4"; }
+.ph-plus-circle:before { content: "\e3d6"; }
 .ph-popcorn:before { content: "\eb4e"; }
 .ph-power:before { content: "\e3da"; }
 .ph-printer:before { content: "\e3dc"; }
