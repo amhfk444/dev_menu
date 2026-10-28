@@ -2,6 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<script src="/js/i18n.js?v=3" data-dict="admin" data-toggle="none"></script>
 <link rel="stylesheet" href="/css/base.css">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
@@ -352,6 +353,7 @@
         <div class="flex items-center gap-2 shrink-0">
           <select id="branch-switch" onchange="switchBranch(this.value)" aria-label="الفرع" class="hidden max-w-[150px] sm:max-w-[220px] text-xs font-bold bg-cream border border-brand/25 rounded-xl px-2.5 py-2 text-ink"></select>
           <span id="admin-mode-badge" class="hidden text-[10px] font-bold bg-amber-400/15 text-amber-700 border border-amber-400/30 px-2.5 py-1 rounded-full"><i class="ph-bold ph-crown"></i> وضع المدير العام</span>
+          <button type="button" data-lang-toggle class="text-xs bg-cream border border-brand/25 text-ink font-bold px-3 py-2 rounded-xl"></button>
           <a id="preview-menu-btn" data-needs="menu" href="#" target="_blank" rel="noopener" class="text-xs bg-brand text-cream font-bold px-3.5 py-2 rounded-xl transition hover:bg-brand-dark flex items-center gap-1.5">
             <i class="ph-bold ph-eye text-[10px]"></i> <span class="hidden sm:inline">معاينة المنيو</span>
           </a>
