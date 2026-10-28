@@ -230,13 +230,13 @@
   const currencyOptions = (selected = 'SAR') =>
     CURRENCIES.map(([c, name, ab]) => `<option value="${c}"${c === selected ? ' selected' : ''}>${name} (${ab})</option>`).join('');
   // السعر للعرض: "⃁ 25" أو "$ 25" (الرمز يسار)، أو "25 د.إ" بالعربي و "AED 25" بالإنجليزي
-  function money(n, code = 'SAR', lang = 'ar') {
+  function money(n, code = 'SAR', lang = (window.DMi18n && window.DMi18n.lang) || 'ar') {
     const [c, , ab, sym] = currency(code);
     if (sym) return `⁦${sym} ${n}⁩`;
     return lang === 'ar' ? `⁧${n} ${ab}⁩` : `⁦${c} ${n}⁩`;
   }
   // اختصار العملة كنص عادي (رسائل واتساب والعناوين): ر.س / SAR
-  const currencyText = (code = 'SAR', lang = 'ar') => { const [c, , ab] = currency(code); return lang === 'ar' ? ab : c; };
+  const currencyText = (code = 'SAR', lang = (window.DMi18n && window.DMi18n.lang) || 'ar') => { const [c, , ab] = currency(code); return lang === 'ar' ? ab : c; };
   // للخانات (السعر، المبلغ): الرمز إن وُجد وإلا الاختصار
   const currencySign = (code = 'SAR') => { const [, , ab, sym] = currency(code); return sym || ab; };
 
