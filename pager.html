@@ -498,13 +498,47 @@
     applyTerms();
     $('store-name').textContent = s.name || '';
     if (s.logo_url) { $('logo').src = s.logo_url; $('logo').classList.remove('hidden'); }
-    // هوية المحل: اسمه وشعاره على جهاز البيجر، ولونه على الصفحة كلها
+    // هوية المحل: شعاره واسمه، والصفحة كلها بألوان شعاره (أو اللون اللي اختاره لو الشعار بدون ألوان)
     if (s.logo_url) { $('foot-logo').src = s.logo_url; $('foot-logo').classList.remove('hidden'); }
     $('foot-name').textContent = s.name || 'DEV MENU';
-    if (/^#[0-9a-f]{6}$/i.test(s.accent_color || '')) {
-      document.documentElement.style.setProperty('--brand', s.accent_color);
-      document.querySelector('meta[name="theme-color"]').content = s.accent_color;
-    }
+    if (/^#[0-9a-f]{6}$/i.test(s.accent_color || '')) setBrand(s.accent_color);
+    if (s.logo_url && s.logo_url !== setStore.logo) { setStore.logo = s.logo_url; logoColor(s.logo_url).then(c => { if (c) setBrand(c); }); }
+  }
+  function setBrand(hex) {
+    document.documentElement.style.setProperty('--brand', hex);
+    document.querySelector('meta[name="theme-color"]').content = hex;
+  }
+  // اللون الغالب في الشعار: نتجاهل الأبيض والشفاف والرمادي، ونغمّق اللون لو كان فاتح عشان الكتابة البيضاء تبان
+  function logoColor(url) {
+    return new Promise((done) => {
+      const img = new Image(); img.crossOrigin = 'anonymous';
+      img.onerror = () => done(null);
+      img.onload = () => {
+        try {
+          const S = 48, c = document.createElement('canvas'); c.width = S; c.height = S;
+          const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0, S, S);
+          const px = g.getImageData(0, 0, S, S).data, buckets = {};
+          let dark = 0, darkSum = [0, 0, 0];
+          for (let i = 0; i < px.length; i += 4) {
+            const [r, gg, b, a] = [px[i], px[i + 1], px[i + 2], px[i + 3]];
+            if (a < 200) continue;
+            const max = Math.max(r, gg, b), min = Math.min(r, gg, b), l = (max + min) / 510, sat = max === min ? 0 : (max - min) / (255 - Math.abs(max + min - 255));
+            if (l > .9) continue;                                         // أبيض
+            if (sat < .22) { if (l < .3) { dark++; darkSum[0] += r; darkSum[1] += gg; darkSum[2] += b; } continue; }   // رمادي/أسود
+            const h = Math.round(((max === r ? (gg - b) / (max - min) : max === gg ? 2 + (b - r) / (max - min) : 4 + (r - gg) / (max - min)) * 60 + 360) % 360 / 24);
+            const k = buckets[h] || (buckets[h] = { n: 0, r: 0, g: 0, b: 0 }); k.n++; k.r += r; k.g += gg; k.b += b;
+          }
+          let best = Object.values(buckets).sort((a, b) => b.n - a.n)[0];
+          let rgb = best && best.n > 20 ? [best.r / best.n, best.g / best.n, best.b / best.n] : dark > 40 ? darkSum.map(v => v / dark) : null;
+          if (!rgb) return done(null);
+          // نخلي الإضاءة 32% كحد أعلى (خلفية غامقة فخمة والكلام أبيض واضح)
+          const lum = (0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) / 255;
+          if (lum > .32) rgb = rgb.map(v => v * (.32 / lum));
+          done('#' + rgb.map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join(''));
+        } catch { done(null); }   // الشعار من موقع ما يسمح بالقراءة
+      };
+      img.src = url;
+    });
   }
   function unavailable(title, sub) { $('u-title').textContent = title; $('u-sub').textContent = sub; show('unavailable'); }
 
