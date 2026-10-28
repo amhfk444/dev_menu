@@ -30,6 +30,23 @@
   .menu-pop button:hover, .menu-pop a:hover { background: rgba(56,79,61,.07); }
   .menu-pop i { width: 16px; text-align: center; color: rgba(34,54,42,.55); }
   .no-scrollbar::-webkit-scrollbar { display: none; }
+  /* ═══ نفس هوية لوحة التاجر: زجاج فوق خلفية رملية فيها توهج أخضر وذهبي ═══ */
+  body { background:
+      radial-gradient(42% 38% at 88% 4%, rgba(56,79,61,.22) 0%, transparent 70%),
+      radial-gradient(38% 34% at 10% 20%, rgba(201,162,39,.18) 0%, transparent 70%),
+      radial-gradient(45% 40% at 70% 95%, rgba(74,102,80,.2) 0%, transparent 72%),
+      linear-gradient(160deg, #f1ebe1 0%, #e9e0d2 100%);
+    background-attachment: fixed; }
+  .card { background: rgba(255,253,249,.6); border: 1px solid rgba(255,255,255,.78); -webkit-backdrop-filter: blur(18px) saturate(150%); backdrop-filter: blur(18px) saturate(150%);
+    box-shadow: 0 1px 0 rgba(255,255,255,.8) inset, 0 18px 40px -26px rgba(34,54,42,.35); }
+  .field { background: rgba(255,255,255,.75); }
+  .chip { background: rgba(255,255,255,.55); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+  header.bg-brand { background: linear-gradient(170deg, rgba(56,79,61,.95), rgba(38,58,44,.97)) !important; box-shadow: 0 10px 30px -20px rgba(0,0,0,.5); }
+  /* بلاطات الأرقام: أيقونة في مربع ملوّن + رقم كبير */
+  .kpi { display: flex; align-items: center; gap: 12px; padding: 14px; text-align: right; }
+  .kpi .ic { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; font-size: 18px; background: rgba(56,79,61,.09); flex-shrink: 0; }
+  .kpi b { display: block; font-size: 24px; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .kpi small { display: block; font-size: 11.5px; color: rgba(34,54,42,.6); margin-top: 5px; }
 </style>
 <link rel="stylesheet" href="/css/tw/super-admin.css">
 </head>
@@ -386,9 +403,9 @@
   function renderKpis() {
     const n = counts();
     const tile = (label, value, icon, color, f) => `
-      <button onclick="setFilter('${f}')" class="card p-4 text-right hover:border-brand/40 transition ${filter === f ? 'ring-2 ring-brand/40' : ''}">
-        <p class="text-[11px] text-ink/60 flex items-center gap-1.5"><i class="ph-bold ${icon} ${color}"></i> ${label}</p>
-        <p class="text-2xl font-black mt-1">${value}</p>
+      <button onclick="setFilter('${f}')" class="card kpi hover:border-brand/40 transition ${filter === f ? 'ring-2 ring-brand/50' : ''}">
+        <span class="ic"><i class="ph-bold ${icon} ${color}"></i></span>
+        <span class="min-w-0"><b>${value}</b><small>${label}</small></span>
       </button>`;
     document.getElementById('kpis').innerHTML =
       tile('كل المتاجر', n.all, 'ph-storefront', 'text-ink/60', 'all') +
