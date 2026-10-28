@@ -176,5 +176,12 @@
   "لمتجر \"{s}\".": "for store \"{s}\".",
   "{a} طبق و {b} قسم": "{a} dishes and {b} categories",
   "حساب الدخول: {e}": "Sign-in account: {e}",
-  "حذف \"{s}\" نهائياً": "Delete \"{s}\" permanently"
+  "حذف \"{s}\" نهائياً": "Delete \"{s}\" permanently",
+  "~{t} ({n})": "{t} ({n})",
+  "~{t} ·": "{t} ·",
+  "الولاء شغّال": "Loyalty on",
+  "البيجر شغّال": "Pager on",
+  "الانتظار شغّال": "Waitlist on",
+  "المنيو شغّال": "Menu on",
+  "{d} · باقي {n}": "{d} · {n} left"
 }
