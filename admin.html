@@ -39,8 +39,20 @@
   .font-black, .font-extrabold { font-weight: 700; }
   .tnum { font-variant-numeric: tabular-nums; }
   ::selection { background: #384f3d; color: #faf6f1; }
-  /* البطاقة: ورقة مسطحة بخط رفيع، بدون ظل منتشر */
-  .pro-card { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 1px 0 rgba(34, 54, 42, .04); }
+  /* البطاقة: ورقة بيضاء دافية، حواف أنعم وظل خفيف يفصلها عن الخلفية الرملية */
+  .pro-card { background: var(--paper); border: 1px solid rgba(56, 79, 61, .08); border-radius: 18px; box-shadow: 0 1px 2px rgba(34, 54, 42, .04), 0 12px 30px -22px rgba(34, 54, 42, .3); }
+  /* عناوين بطاقات الرئيسية أوضح */
+  [data-page="dashboard"] .pro-card h3 { font-size: 14.5px; }
+  /* بلاطات الأرقام: أيقونة في مربع ملوّن + رقم كبير + وصف (مثل لوحات المتابعة) */
+  .kpi { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 16px; border: 1.5px solid rgba(56, 79, 61, .13); background: #fff; text-align: right; transition: border-color .15s, box-shadow .15s; }
+  .kpi:hover { border-color: rgba(56, 79, 61, .35); box-shadow: 0 10px 22px -18px rgba(34, 54, 42, .5); }
+  .kpi-ic { width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center; font-size: 20px; background: rgba(56, 79, 61, .1); color: var(--brand); flex-shrink: 0; }
+  .kpi b { display: block; font-size: 24px; line-height: 1; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .kpi small { display: block; font-size: 12.5px; color: var(--ink-3); margin-top: 6px; }
+  .kpi.gold .kpi-ic { background: rgba(201, 162, 39, .16); color: #8a6d0f; }
+  .kpi.warn { border-color: rgba(168, 67, 46, .35); background: #fdf4ef; }
+  .kpi.warn .kpi-ic { background: rgba(168, 67, 46, .12); color: var(--brick); }
+  .kpi.warn b { color: var(--brick); }
   .input-pro {
     width: 100%; min-height: 44px; background-color: #ffffff;
     border: 1px solid var(--line-2); border-radius: 10px;
@@ -92,9 +104,13 @@
   }
   .nav-item i { width: 1.1rem; text-align: center; font-size: .85rem; opacity: .85; }
   .nav-item:hover { background: rgba(251, 248, 243, 0.07); color: #fbf8f3; }
-  .nav-item.nav-active { background: rgba(251, 248, 243, 0.11); color: #fbf8f3; font-weight: 700; }
-  .nav-item.nav-active::before { content: ''; position: absolute; inset-inline-start: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 3px; background: var(--saffron); }
-  .nav-item.nav-active i { opacity: 1; color: var(--saffron); }
+  /* الصفحة الحالية: كبسولة بلون الصفحة تطلع من القائمة وتتصل بالمحتوى (حواف مقعرة فوق وتحت) */
+  .nav-item.nav-active { background: var(--page); color: var(--brand); font-weight: 700; border-radius: 0 999px 999px 0; margin-left: -12px; padding-left: calc(.85rem + 12px); width: calc(100% + 12px); }
+  .nav-item.nav-active::before, .nav-item.nav-active::after { content: ''; position: absolute; left: 0; width: 18px; height: 18px; pointer-events: none; }
+  .nav-item.nav-active::before { top: -18px; border-bottom-left-radius: 18px; box-shadow: -6px 6px 0 6px var(--page); }
+  .nav-item.nav-active::after { bottom: -18px; border-top-left-radius: 18px; box-shadow: -6px -6px 0 6px var(--page); }
+  .nav-item.nav-active i { opacity: 1; color: var(--brand); }
+  .nav-item.nav-active #nav-count { background: rgba(56, 79, 61, .12); }
   #nav-count { background: rgba(251, 248, 243, 0.13); font-variant-numeric: tabular-nums; }
 
   /* شريط الجوال السفلي */
@@ -300,7 +316,7 @@
 
         <div id="renew-banner" class="hidden rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 border"></div>
 
-        <div id="quick-counts" data-needs="menu" class="pro-card grid grid-cols-2 lg:grid-cols-4 overflow-hidden"></div>
+        <div id="quick-counts" data-needs="menu" class="pro-card p-5"></div>
         <button type="button" data-needs="loyalty" onclick="location.hash='loyalty'" class="lg:hidden pro-card w-full flex items-center gap-3 p-4 text-right hover:bg-brand/[0.03] transition">
           <span class="w-10 h-10 rounded-xl bg-brand/10 text-brand grid place-items-center shrink-0"><i class="ph-bold ph-seal-check"></i></span>
           <span class="flex-1 min-w-0"><span class="block text-sm font-semibold">بطاقة الولاء</span><span class="block text-xs text-ink/60">زبونك يجمع أختامه بنفسه ويرجع لك</span></span>
@@ -1775,7 +1791,7 @@
       </div>`).join('');
   }
   // ─── ملخص الخدمات في الرئيسية ───
-  const tile = (v, l) => `<div class="rounded-xl bg-brand/[0.04] border border-brand/10 py-2.5 text-center"><p class="text-xl font-bold tnum">${v}</p><p class="text-[10.5px] text-ink/60">${l}</p></div>`;
+  const tile = (v, l) => `<div class="rounded-2xl bg-white border border-brand/[0.13] px-3 py-3"><p class="text-2xl font-bold tnum leading-none">${v}</p><p class="text-[11.5px] text-ink/60 mt-1.5">${l}</p></div>`;
   const svcCard = (icon, title, href, tiles, foot, actions = '') => `
     <div class="pro-card p-5 space-y-3.5">
       <div class="flex items-center justify-between gap-2">
@@ -1903,16 +1919,18 @@
 
     // شريط واحد بأرقام المنيو؛ "نفدت الكمية" يتلون بس لما فيه أطباق نافدة
     const soldOut = total - available;
-    const cell = (label, value, page, warn = false) => `
-      <button onclick="location.hash='${page}'" class="text-right px-4 py-3.5 sm:px-5 sm:py-4 border-brand/10 [&:nth-child(odd)]:border-l lg:border-l lg:last:border-l-0 [&:nth-child(-n+2)]:border-b lg:[&:nth-child(-n+2)]:border-b-0 hover:bg-brand/[0.04] transition ${warn ? 'bg-brick/[0.06]' : ''}">
-        <span class="block text-[26px] leading-none font-bold tnum ${warn ? 'text-brick' : 'text-ink'}">${value}</span>
-        <span class="block text-[13px] mt-1.5 ${warn ? 'text-brick font-semibold' : 'text-ink/60'}">${label}</span>
+    const cell = (label, value, page, icon, tone = '') => `
+      <button onclick="location.hash='${page}'" class="kpi ${tone}">
+        <span class="kpi-ic"><i class="ph-bold ${icon}"></i></span>
+        <span class="min-w-0"><b>${value}</b><small>${label}</small></span>
       </button>`;
-    document.getElementById('quick-counts').innerHTML =
-      cell(total === 1 ? 'طبق في المنيو' : 'أطباق في المنيو', total, 'menu') +
-      cell('أقسام', loadedCategories.length, 'menu') +
-      cell('متوفر الآن', available, 'menu') +
-      cell('نفدت الكمية', soldOut, 'menu', soldOut > 0);
+    document.getElementById('quick-counts').innerHTML = `
+      <h3 class="text-sm font-bold mb-3">نظرة عامة على المنيو</h3>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">` +
+      cell(total === 1 ? 'طبق في المنيو' : 'أطباق في المنيو', total, 'menu', 'ph-fork-knife') +
+      cell('أقسام', loadedCategories.length, 'menu', 'ph-squares-four') +
+      cell('متوفر الآن', available, 'menu', 'ph-check-circle', 'gold') +
+      cell('نفدت الكمية', soldOut, 'menu', 'ph-warning-circle', soldOut > 0 ? 'warn' : '') + '</div>';
 
     const items = [
       ['شعار المنشأة', !!client.logo_url, 'settings'],
