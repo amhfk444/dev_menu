@@ -189,6 +189,9 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       const ticket = !b.code && b.pt ? await pagerTicket(ctx.store.id, b.pt) : null;
       if (b.pt && !b.code && (!ticket || Date.now() - Date.parse(ticket.created_at) > 18 * 3600e3)) throw new ApiError(409, 'رقم البيجر منتهي، اطلب كود الختم من الكاشير', 'BAD_TICKET');
       let card = (await rest(`loyalty_cards?client_id=eq.${ctx.store.id}&phone=eq.${q(profile.phone)}&select=*`))[0];
+      // الحماية: بطاقة مسجلة باسم شخص (اكتمل تسجيلها) ما تنعطى لأي أحد يكتب نفس الجوال.
+      // المسموح بس البطاقة اللي ما أحد استلمها (مستوردة من نظام سابق أو قديمة بدون بيانات)
+      if (card && card.gender) throw new ApiError(409, 'هذا الجوال مسجل ببطاقة من قبل. افتح بطاقتك من محفظة جوالك أو من الجوال اللي سجلت منه، أو اطلب رابطها من الكاشير', 'PHONE_TAKEN');
       const isNew = !card;
       if (!card) {
         card = (await rest('loyalty_cards', {
@@ -234,12 +237,14 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       const profile = readProfile(b);
       const phone = profile.phone;
       const owner = (await rest(`loyalty_cards?client_id=eq.${ctx.store.id}&phone=eq.${q(phone)}&select=*`))[0];
+      // نفس الحماية: ما ندمج مع بطاقة شخص ثاني استلمها
+      if (owner && owner.id !== card.id && owner.gender) throw new ApiError(409, 'هذا الجوال مسجل ببطاقة ثانية. افتحها من محفظة جوالك أو اطلب رابطها من الكاشير', 'PHONE_TAKEN');
       if (!owner || owner.id === card.id) {
         await rest(`loyalty_cards?id=eq.${card.id}`, { method: 'PATCH', body: profile });
         const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
         return { ...publicInfo(ctx), token: card.token, merged: false, card: cardView(fresh) };
       }
-      checkPresence(ctx, b);
+      // بطاقة ما أحد استلمها (مستوردة): تندمج مع بطاقته الحالية
       const body = {
         stamps: Math.min(ctx.settings.needed, owner.stamps + card.stamps), visits: owner.visits + card.visits,
         rewards: owner.rewards + card.rewards, last_stamp_at: [owner.last_stamp_at, card.last_stamp_at].filter(Boolean).sort().pop() || null,

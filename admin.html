@@ -1394,6 +1394,7 @@
               <button type="button" id="lm-stamp" onclick="giveLyStamp()" class="bg-brand hover:bg-brand-dark text-cream px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-seal-check"></i> أعطه ختم</button>
               <button type="button" id="lm-redeem" onclick="redeemLyMember()" class="hidden bg-[#c9a227] hover:bg-[#b8931f] text-[#15271b] px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-gift"></i> اصرف المكافأة</button>
               <button type="button" onclick="ly.member && deleteLyMember(ly.member.id)" class="bg-brick/10 hover:bg-brick/15 text-brick px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-trash"></i> حذف العضو</button>
+              <button type="button" id="lm-restore" class="bg-brand/10 hover:bg-brand/15 text-brand px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-link-simple"></i> رابط بطاقته</button>
               <a id="lm-wa" target="_blank" rel="noopener" class="hidden bg-[#25d366]/10 hover:bg-[#25d366]/20 text-[#128c7e] px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-whatsapp-logo"></i> واتساب</a>
             </div>
             <div class="space-y-2">
@@ -4467,6 +4468,11 @@
     document.getElementById('lm-stats').innerHTML = st('الأختام', `${Math.min(m.stamps, n)}/${n}`, true) + st('الزيارات', m.visits) + st('المكافآت', m.rewards) + st('يجي كل', gap ? `${gap} يوم` : '—');
     const wa = document.getElementById('lm-wa');
     wa.classList.toggle('hidden', !m.phone); if (m.phone) wa.href = `https://wa.me/${m.phone}`;
+    const rs = document.getElementById('lm-restore');
+    if (rs) rs.onclick = async () => {
+      if (!(await DMDialog.confirm({ title: 'رابط بطاقة العضو', message: 'هذا الرابط يفتح بطاقته بأختامها. أرسله بس للعضو نفسه بعد ما تتأكد منه (مثلاً من رقم جواله أو قدامك في المحل).', confirmText: 'انسخ الرابط', cancelText: 'تراجع', tone: '' }))) return;
+      navigator.clipboard.writeText(m.restore_url).then(() => showToast('انتسخ رابط بطاقته'));
+    };
     document.getElementById('lm-stamp').disabled = m.stamps >= n;
     document.getElementById('lm-redeem').classList.toggle('hidden', m.stamps < n);
     document.getElementById('lm-events').innerHTML = r.events.length ? r.events.map(e => `
