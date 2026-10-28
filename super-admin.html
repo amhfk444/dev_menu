@@ -29,6 +29,8 @@
   .menu-pop button, .menu-pop a { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border-radius: 10px; font-size: 12px; font-weight: 700; color: #22362a; text-align: right; }
   .menu-pop button:hover, .menu-pop a:hover { background: rgba(56,79,61,.07); }
   .menu-pop i { width: 16px; text-align: center; color: rgba(34,54,42,.55); }
+  /* البطاقة اللي قائمتها مفتوحة تطلع فوق باقي البطاقات (تأثير الزجاج يخلي كل بطاقة طبقة لحالها) */
+  .card:has(.menu-pop) { position: relative; z-index: 40; }
   .no-scrollbar::-webkit-scrollbar { display: none; }
   /* ═══ نفس هوية لوحة التاجر: زجاج فوق خلفية رملية فيها توهج أخضر وذهبي ═══ */
   body { background:
