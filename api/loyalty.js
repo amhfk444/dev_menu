@@ -10,10 +10,11 @@
 // كل ختم يحتاج الزبون يكون داخل نطاق المحل (50 متر افتراضياً). ما نخزن موقعه، بس المسافة.
 // =====================================================================
 const crypto = require('crypto');
-const { handler, rest, rpc, q, ApiError, readBody, findPublicStore, waNumber, storeHasFeature } = require('./_lib/core');
+const { reqLang, handler, rest, rpc, q, ApiError, readBody, findPublicStore, waNumber, storeHasFeature } = require('./_lib/core');
 const { normalizeLoyalty, distanceM, validPoint, isHappyNow, staleAi } = require('./_lib/loyalty');
 const wallet = require('./_lib/wallet');
-const { nearLineFor } = require('./_lib/loyalty-assistant');
+const { nearLineFor, pushWalletCards } = require('./_lib/loyalty-assistant');
+const { tr } = require('./_lib/i18n');
 const { loyaltyMessages } = require('./_lib/ai');
 const { purchaseStamp, consumeStampCode, pagerTicket, cooldownLeft, leftText, memberQr } = require('./_lib/loyalty-stamp');
 
@@ -66,7 +67,7 @@ async function welcomeMessage(ctx, card) {
     try {
       const out = await Promise.race([
         loyaltyMessages({ storeName: ctx.store.name, businessType: '', reward: ctx.settings.reward, needed: ctx.settings.needed,
-          guests: [{ ref: 'w', kind: 'welcome', name: card.name, gender: card.gender, visits: 1, stamps: 1, days_since: 0 }] }),
+          guests: [{ ref: 'w', kind: 'welcome', name: card.name, gender: card.gender, lang: card.lang, visits: 1, stamps: 1, days_since: 0 }] }),
         new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 9000))
       ]);
       body = out.w; source = 'ai';
@@ -94,7 +95,7 @@ const syncWallet = async (ctx, card) => {
 };
 const publicInfo = (ctx) => ({
   store: { name: ctx.store.name, logo_url: ctx.store.logo_url },
-  settings: { needed: ctx.settings.needed, reward: ctx.settings.reward, cooldown_hours: ctx.settings.cooldown_hours, design: ctx.settings.design,
+  settings: { needed: ctx.settings.needed, reward: ctx.settings.reward, reward_en: ctx.settings.reward_en, cooldown_hours: ctx.settings.cooldown_hours, design: ctx.settings.design,
               happy: ctx.settings.happy, gifts: ctx.settings.gifts.enabled, stamp_mode: ctx.settings.stamp_mode, pager_stamp: ctx.settings.pager_stamp },
   happy_now: isHappyNow(ctx.settings),
   wallet: wallet.configured()
@@ -173,6 +174,13 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (action === 'card' && req.method === 'GET') {
       const ctx = await loadStore(req.query.slug);
       const card = await cardByToken(ctx, req.query.t);
+      // لغة الزبون تمشي على آخر لغة فتح فيها بطاقته (المحفظة والإشعارات تتبعها)
+      const lang = reqLang(req);
+      if ((card.lang || 'ar') !== lang) {
+        await rest(`loyalty_cards?id=eq.${card.id}`, { method: 'PATCH', body: { lang } }).catch(() => {});
+        card.lang = lang;
+        if (card.wallet_serial) pushWalletCards(ctx.store.id, { cardIds: [card.id] }).catch(() => {});
+      }
       // رسالة المحل تطلع إذا عمرها أقل من 14 يوم
       const m = await latestMessage(ctx.store.id, card.id, ctx.settings);
       const message = m && Date.parse(m.created_at) > Date.now() - 14 * 864e5 ? { id: m.id, body: m.body, at: m.created_at } : null;
@@ -198,7 +206,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       if (!card) {
         card = (await rest('loyalty_cards', {
           method: 'POST', prefer: 'return=representation',
-          body: { client_id: ctx.store.id, token: crypto.randomBytes(18).toString('base64url'), ...profile }
+          body: { client_id: ctx.store.id, token: crypto.randomBytes(18).toString('base64url'), lang: reqLang(req), ...profile }
         }))[0];
       } else if (!card.name || card.name === 'عضو' || !card.gender) {
         // بطاقة مستوردة من نظام سابق (أو قديمة بدون بيانات): نكمّلها باسمه وجنسه
@@ -351,8 +359,9 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       const now = new Date().toISOString();
       await rest('loyalty_gifts', { method: 'POST', body: { client_id: ctx.store.id, code: crypto.randomBytes(9).toString('base64url'), from_card: card.id, to_card: friend.id, reward: ctx.settings.reward, status: 'claimed', claimed_at: now } });
       // رسالة لصديقه: تطلع في بطاقته وإشعار في محفظته
-      const who = card.name ? card.name.split(' ')[0] : 'صديقك';
-      await rest('loyalty_messages', { method: 'POST', body: { client_id: ctx.store.id, card_id: friend.id, body: `${who} أهداك ${ctx.settings.reward} 🎁 استخدمها من ${ctx.store.name} خلال 30 يوم`, source: 'owner', kind: 'gift' } }).catch(() => {});
+      const who = card.name ? card.name.split(' ')[0] : tr(friend.lang, 'صديقك');
+      const giftText = tr(friend.lang, `${who} أهداك ${ctx.settings.reward} 🎁 استخدمها من ${ctx.store.name} خلال 30 يوم`);
+      await rest('loyalty_messages', { method: 'POST', body: { client_id: ctx.store.id, card_id: friend.id, body: giftText, source: 'owner', kind: 'gift' } }).catch(() => {});
       const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
       await syncWallet(ctx, fresh);
       await syncWallet(ctx, friend);

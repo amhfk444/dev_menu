@@ -12,6 +12,7 @@ const { loyaltyMessages, loyaltyNearLines } = require('./ai');
 const DAY = 864e5;
 const STORE_FIELDS = 'id,name,client_slug,logo_url,business_type,business_label,loyalty_enabled,loyalty_ai,loyalty_settings,loyalty_lat,loyalty_lng,loyalty_near_lines,loyalty_near_at';
 const SECTORS = require('./sectors');
+const { tr } = require('./i18n');
 
 // جملة "أنت قريب" لهالبطاقة: تتغير كل أسبوع وتختلف بين الزبائن
 // جملة شاشة القفل لما يقرب الزبون من المحل: تتغير مع كل زيارة (البطاقة تتحدث بعد كل ختم)،
@@ -19,6 +20,7 @@ const SECTORS = require('./sectors');
 function nearLineFor(store, card, settings) {
   const ai = Array.isArray(store.loyalty_near_lines) ? store.loyalty_near_lines : [];
   const turn = Number(card.id || 0) + Number(card.visits || 0);
+  if (card.lang === 'en') return settings ? nearLineEn(store, card, settings, turn) : null;   // جمل المساعد بالعربي
   if (ai.length) return ai[turn % ai.length];
   if (!settings) return null;
   const name = String(store.name || '').trim(), reward = settings.reward, n = settings.needed;
@@ -32,6 +34,22 @@ function nearLineFor(store, card, settings) {
     first ? `يا ${first}، ${name} قريب منك` : `وحشتنا! ${name} قريب منك`,
     `كل زيارة تقرّبك من ${reward}`,
     `مرّ على ${name} وكمّل بطاقتك`
+  ];
+  return lines[turn % lines.length].slice(0, 80);
+}
+// نفس الجمل للزبون اللي يستخدم البطاقة بالإنجليزي
+function nearLineEn(store, card, settings, turn) {
+  const name = String(store.name || '').trim(), reward = settings.reward_en || settings.reward, n = settings.needed;
+  const s = Math.min(Number(card.stamps || 0), n), left = n - s;
+  const first = String(card.name || '').trim().split(/\s+/)[0];
+  if (s >= n) return [`Your reward (${reward}) is ready at ${name}. Come get it`, `Your reward is waiting. ${name} is close by`][turn % 2].slice(0, 80);
+  const lines = [
+    `${name} is steps away. Your next stamp is waiting`,
+    left === 1 ? `Just one more stamp for ${reward}` : `${left} more for ${reward}. Drop by`,
+    `Near ${name}? Get your stamp today`,
+    first ? `${first}, ${name} is close by` : `We miss you! ${name} is close by`,
+    `Every visit gets you closer to ${reward}`,
+    `Stop by ${name} and fill your card`
   ];
   return lines[turn % lines.length].slice(0, 80);
 }
@@ -142,7 +160,7 @@ async function runAssistant(storeId, { maxGuests = 80 } = {}) {
     }
   }
 
-  const cards = await rest(`loyalty_cards?client_id=eq.${storeId}&select=id,name,gender,stamps,visits,rewards,last_stamp_at,created_at,ai_last_at,wallet_serial&limit=2000`);
+  const cards = await rest(`loyalty_cards?client_id=eq.${storeId}&select=id,name,gender,lang,stamps,visits,rewards,last_stamp_at,created_at,ai_last_at,wallet_serial&limit=2000`);
   const picked = pickGuests(cards, settings).slice(0, maxGuests);
   if (picked.length) {
     const prev = await rest(`loyalty_messages?client_id=eq.${storeId}&source=eq.ai&card_id=in.(${picked.map(p => p.card.id).join(',')})&select=card_id,body&order=id.desc&limit=200`).catch(() => []);
@@ -150,7 +168,7 @@ async function runAssistant(storeId, { maxGuests = 80 } = {}) {
     for (const m of prev) (previous[m.card_id] = previous[m.card_id] || []).length < 3 && previous[m.card_id].push(m.body);
     const texts = await loyaltyMessages({
       storeName: store.name, businessType: type, reward: settings.reward, needed: settings.needed, offer: happyText(settings),
-      guests: picked.map(p => ({ ref: String(p.card.id), kind: p.kind, name: p.card.name, gender: p.card.gender, visits: p.card.visits, stamps: Math.min(p.card.stamps, settings.needed), days_since: p.days, usual_gap: p.gap, previous: previous[p.card.id] || [] }))
+      guests: picked.map(p => ({ ref: String(p.card.id), kind: p.kind, name: p.card.name, gender: p.card.gender, lang: p.card.lang, visits: p.card.visits, stamps: Math.min(p.card.stamps, settings.needed), days_since: p.days, usual_gap: p.gap, previous: previous[p.card.id] || [] }))
     });
     const now = new Date().toISOString();
     const rows = picked.filter(p => texts[p.card.id]).map(p => ({ client_id: storeId, card_id: p.card.id, body: texts[p.card.id], source: 'ai', kind: p.kind }));
@@ -178,8 +196,9 @@ async function walletNotice(storeId, cardId, body, kind = 'pager') {
   const time = new Date(Date.now() + 3 * 3600e3).toISOString().slice(11, 16);
   body = `${body} (${time})`;
   try {
-    const card = (await rest(`loyalty_cards?id=eq.${Number(cardId)}&client_id=eq.${storeId}&select=id,wallet_serial`))[0];
+    const card = (await rest(`loyalty_cards?id=eq.${Number(cardId)}&client_id=eq.${storeId}&select=id,wallet_serial,lang`))[0];
     if (!card || !card.wallet_serial) return 'no-wallet';
+    if (card.lang === 'en') body = tr('en', body.slice(0, body.lastIndexOf(' ('))) + body.slice(body.lastIndexOf(' ('));
     await rest('loyalty_messages', { method: 'POST', body: { client_id: storeId, card_id: card.id, body, source: 'system', kind } }).catch(() => {});
     const sent = await pushWalletCards(storeId, { cardIds: [card.id], notice: body });
     return sent ? 'sent' : 'failed';

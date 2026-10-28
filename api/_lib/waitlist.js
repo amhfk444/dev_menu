@@ -58,20 +58,29 @@ function positionOf(entry, todayEntries, settings) {
 
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-// قالب البريد (عربي + سطر إنجليزي مختصر)
+// قالب البريد بلغة الضيف (entry.lang): عربي، أو English لو سجّل من الصفحة بالإنجليزي
 function emailTemplate(kind, { store, entry, statusUrl, eta, hold }) {
   const T = require('./sectors').terms(store);
+  const { tr } = require('./i18n');
+  const en = entry.lang === 'en', L = (s) => tr(en ? 'en' : 'ar', s);
   const logo = store.logo_url ? `<img src="${esc(store.logo_url)}" alt="" width="64" height="64" style="border-radius:16px;object-fit:cover;display:block;margin:0 auto 10px">` : '';
   const isReady = kind === 'ready';
-  const title = isReady ? `${T.wlReady} 🎉` : 'تم تأكيد تسجيلك في قائمة الانتظار ✅';
+  const name = esc(entry.name || ''), shop = `<b>${esc(store.name)}</b>`;
+  const title = isReady ? `${L(T.wlReady)} 🎉` : en ? "You're on the waitlist ✅" : 'تم تأكيد تسجيلك في قائمة الانتظار ✅';
   const lines = isReady
-    ? `<p style="margin:0 0 8px">أهلاً ${esc(entry.name || '')}، ${T.wlReadyLine} في <b>${esc(store.name)}</b>.</p>
-       <p style="margin:0">توجّه للاستقبال خلال <b>${hold} دقائق</b> وأخبرهم برقم دورك.</p>`
-    : `<p style="margin:0 0 8px">أهلاً ${esc(entry.name || '')}، سجّلناك في قائمة الانتظار لدى <b>${esc(store.name)}</b>.</p>
-       <p style="margin:0">وقت الانتظار التقريبي: <b>${eta} دقيقة</b>. راح يوصلك بريد ثاني ${T.wlWhen}.</p>`;
+    ? (en
+      ? `<p style="margin:0 0 8px">Hi ${name}, ${L(T.wlReadyLine).replace(/^./, c => c.toLowerCase())} at ${shop}.</p>
+       <p style="margin:0">Please go to reception within <b>${hold} minutes</b> and tell them your number.</p>`
+      : `<p style="margin:0 0 8px">أهلاً ${name}، ${T.wlReadyLine} في ${shop}.</p>
+       <p style="margin:0">توجّه للاستقبال خلال <b>${hold} دقائق</b> وأخبرهم برقم دورك.</p>`)
+    : (en
+      ? `<p style="margin:0 0 8px">Hi ${name}, you're on the waitlist at ${shop}.</p>
+       <p style="margin:0">Estimated wait: <b>${eta} min</b>. We'll email you again ${L(T.wlWhen)}.</p>`
+      : `<p style="margin:0 0 8px">أهلاً ${name}، سجّلناك في قائمة الانتظار لدى ${shop}.</p>
+       <p style="margin:0">وقت الانتظار التقريبي: <b>${eta} دقيقة</b>. راح يوصلك بريد ثاني ${T.wlWhen}.</p>`);
   const color = isReady ? '#15803d' : '#384f3d';
   const html = `
-<div dir="rtl" style="background:#efe5dc;padding:28px 12px;font-family:Tahoma,Arial,sans-serif;color:#22362a">
+<div dir="${en ? 'ltr' : 'rtl'}" style="background:#efe5dc;padding:28px 12px;font-family:Tahoma,Arial,sans-serif;color:#22362a">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:460px;margin:0 auto;background:#faf6f1;border-radius:20px;border:1px solid #e0d6c8">
     <tr><td style="padding:26px 26px 8px;text-align:center">
       ${logo}
@@ -80,25 +89,30 @@ function emailTemplate(kind, { store, entry, statusUrl, eta, hold }) {
     <tr><td style="padding:8px 26px;text-align:center">
       <div style="font-size:19px;font-weight:bold;color:${color};margin-bottom:14px">${title}</div>
       <div style="display:inline-block;background:${color};color:#faf6f1;border-radius:16px;padding:12px 26px;margin-bottom:16px">
-        <div style="font-size:11px;opacity:.8">رقم دورك</div>
+        <div style="font-size:11px;opacity:.8">${en ? 'Your number' : 'رقم دورك'}</div>
         <div style="font-size:34px;font-weight:bold;line-height:1.1">#${entry.ticket}</div>
       </div>
-      <div style="font-size:14px;line-height:1.9;text-align:right">${lines}</div>
-      ${entry.party_size ? `<p style="font-size:12px;color:#5b6b60;margin:12px 0 0">عدد الأشخاص: ${esc(entry.party_size)}</p>` : ''}
+      <div style="font-size:14px;line-height:1.9;text-align:${en ? 'left' : 'right'}">${lines}</div>
+      ${entry.party_size ? `<p style="font-size:12px;color:#5b6b60;margin:12px 0 0">${en ? 'Party size' : 'عدد الأشخاص'}: ${esc(entry.party_size)}</p>` : ''}
     </td></tr>
     ${statusUrl ? `<tr><td style="padding:16px 26px;text-align:center">
-      <a href="${esc(statusUrl)}" style="display:inline-block;background:#22362a;color:#faf6f1;text-decoration:none;font-weight:bold;font-size:13px;padding:12px 22px;border-radius:12px">${isReady ? 'عرض التفاصيل' : 'تابع دورك مباشرة'}</a>
+      <a href="${esc(statusUrl)}" style="display:inline-block;background:#22362a;color:#faf6f1;text-decoration:none;font-weight:bold;font-size:13px;padding:12px 22px;border-radius:12px">${isReady ? (en ? 'View details' : 'عرض التفاصيل') : (en ? 'Track your turn live' : 'تابع دورك مباشرة')}</a>
     </td></tr>` : ''}
     <tr><td style="padding:10px 26px 22px;text-align:center;font-size:11px;color:#8a8f86;line-height:1.8">
-      <span dir="ltr">${isReady ? 'Your table is ready — please come to the host stand.' : "You're on the waitlist. We'll email you when your table is ready."}</span><br>
-      إذا غيّرت رأيك، تقدر تلغي تسجيلك من رابط المتابعة.<br>DEV MENU
+      ${en ? 'Changed your mind? You can cancel from the tracking link.' : 'إذا غيّرت رأيك، تقدر تلغي تسجيلك من رابط المتابعة.'}<br>DEV MENU
     </td></tr>
   </table>
 </div>`;
-  const subject = isReady ? `${T.wlReady} ${store.name}، دور #${entry.ticket}` : `تم تسجيلك في قائمة انتظار ${store.name} — دور #${entry.ticket}`;
-  const text = isReady
-    ? `${T.wlReadyLine} في ${store.name}. رقم دورك #${entry.ticket}. توجّه للاستقبال خلال ${hold} دقائق.${statusUrl ? `\n${statusUrl}` : ''}`
-    : `تم تسجيلك في قائمة انتظار ${store.name}. رقم دورك #${entry.ticket}. الوقت التقريبي ${eta} دقيقة.${statusUrl ? `\nتابع دورك: ${statusUrl}` : ''}`;
+  const subject = en
+    ? (isReady ? `${L(T.wlReady)} ${store.name}, #${entry.ticket}` : `You're on the waitlist at ${store.name} — #${entry.ticket}`)
+    : (isReady ? `${T.wlReady} ${store.name}، دور #${entry.ticket}` : `تم تسجيلك في قائمة انتظار ${store.name} — دور #${entry.ticket}`);
+  const text = en
+    ? (isReady
+      ? `${L(T.wlReadyLine)} at ${store.name}. Your number is #${entry.ticket}. Please go to reception within ${hold} minutes.${statusUrl ? `\n${statusUrl}` : ''}`
+      : `You're on the waitlist at ${store.name}. Your number is #${entry.ticket}. Estimated wait ${eta} min.${statusUrl ? `\nTrack your turn: ${statusUrl}` : ''}`)
+    : (isReady
+      ? `${T.wlReadyLine} في ${store.name}. رقم دورك #${entry.ticket}. توجّه للاستقبال خلال ${hold} دقائق.${statusUrl ? `\n${statusUrl}` : ''}`
+      : `تم تسجيلك في قائمة انتظار ${store.name}. رقم دورك #${entry.ticket}. الوقت التقريبي ${eta} دقيقة.${statusUrl ? `\nتابع دورك: ${statusUrl}` : ''}`);
   return { subject, html, text };
 }
 

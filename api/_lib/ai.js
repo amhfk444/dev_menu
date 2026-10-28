@@ -29,6 +29,7 @@ Every message must feel written fresh for this guest:
 - 50 to 120 characters. One or two short sentences.
 - Do not invent offers, discounts, events or menu items. Only mention the reward that is given, and the <offer> if one is given (use it in some messages, not all).
 - Never mention AI, automation, data or tracking (don't say "لاحظنا إنك غبت 23 يوم"; say it the way a friend would feel it).
+- If a guest has lang="en", write that guest's message in natural, warm, casual English instead of Arabic (same rules, no Arabic words).
 - If the guest's first name and gender are given, write with correct Arabic gender agreement (masculine for m, feminine for f) and use the first name naturally in some messages, not all. If they are missing, keep the wording neutral so it fits anyone.
 
 Message kinds:
@@ -86,7 +87,7 @@ async function loyaltyMessages({ storeName, businessType, reward, needed, guests
     `<reward>${reward} بعد ${needed} أختام</reward>`,
     offer ? `<offer>${offer}</offer>` : '',
     `<guests>`,
-    ...guests.map(g => `<guest ref="${g.ref}" kind="${g.kind}"${g.name ? ` first_name="${String(g.name).replace(/["<>]/g, '').split(/\s+/)[0].slice(0, 20)}"` : ''}${g.gender ? ` gender="${g.gender}"` : ''} visits="${g.visits}" stamps="${g.stamps}/${needed}" days_since_last_visit="${g.days_since}"${g.usual_gap ? ` usually_comes_every_days="${g.usual_gap}"` : ''}>${(g.previous || []).length ? `previous messages (don't repeat): ${g.previous.map(p => `«${p}»`).join(' ')}` : ''}</guest>`),
+    ...guests.map(g => `<guest ref="${g.ref}" kind="${g.kind}"${g.name ? ` first_name="${String(g.name).replace(/["<>]/g, '').split(/\s+/)[0].slice(0, 20)}"` : ''}${g.gender ? ` gender="${g.gender}"` : ''}${g.lang === 'en' ? ' lang="en"' : ''} visits="${g.visits}" stamps="${g.stamps}/${needed}" days_since_last_visit="${g.days_since}"${g.usual_gap ? ` usually_comes_every_days="${g.usual_gap}"` : ''}>${(g.previous || []).length ? `previous messages (don't repeat): ${g.previous.map(p => `«${p}»`).join(' ')}` : ''}</guest>`),
     `</guests>`,
     `Write one message per guest. JSON: {"messages":[{"ref":"...","text":"..."}]}`
   ].join('\n');

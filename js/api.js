@@ -77,6 +77,8 @@
     const headers = {};
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (token) headers.Authorization = `Bearer ${token}`;
+    // لغة الزائر: الخادم يكتب له إشعاراته وبطاقته ورسائله بنفس اللغة
+    if (window.DMi18n && window.DMi18n.lang === 'en') headers['x-dm-lang'] = 'en';
     let res;
     try { res = await fetch(path, { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined }); }
     catch { throw fail('ما قدرنا نوصل للخادم. تأكد من الإنترنت وحاول مرة ثانية', 0, 'OFFLINE'); }

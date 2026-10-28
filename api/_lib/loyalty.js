@@ -64,6 +64,7 @@ function normalizeLoyalty(raw) {
   return {
     needed: Math.min(12, Math.max(4, int(s.needed, 8))),
     reward: String(s.reward || 'مشروب مجاني').trim().slice(0, 60) || 'مشروب مجاني',
+    reward_en: String(s.reward_en || '').trim().slice(0, 60) || null,   // اسم المكافأة للزبون اللي يستخدم البطاقة بالإنجليزي
     cooldown_hours: COOLDOWNS.includes(int(s.cooldown_hours, 12)) ? int(s.cooldown_hours, 12) : 12,
     radius_m: Math.min(200, Math.max(25, int(s.radius_m, 50))),
     design: normalizeDesign(s.design),

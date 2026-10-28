@@ -192,8 +192,11 @@ function handler(methods, fn) {
   };
 }
 
+// لغة الزائر من المتصفح (js/api.js يرسلها): عربي افتراضياً
+const reqLang = (req) => String((req && req.headers && req.headers['x-dm-lang']) || '').toLowerCase() === 'en' ? 'en' : 'ar';
+
 module.exports = {
-  SUPABASE_URL, BUCKET, ApiError, rest, rpc, q, storage, publicUrl, ownsMediaUrl, storagePathFromUrl,
+  reqLang, SUPABASE_URL, BUCKET, ApiError, rest, rpc, q, storage, publicUrl, ownsMediaUrl, storagePathFromUrl,
   getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody, handler,
   SLUG_RE, RESERVED_SLUGS, findPublicStore, CURRENCIES, storeHasFeature, storeFeatures, SITE, storeLink
 };

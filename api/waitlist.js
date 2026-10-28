@@ -6,7 +6,7 @@
 //   POST /api/waitlist?action=cancel          إلغاء التسجيل
 // =====================================================================
 const crypto = require('crypto');
-const { handler, rest, rpc, q, ApiError, readBody, str, int, findPublicStore, storeHasFeature } = require('./_lib/core');
+const { reqLang, handler, rest, rpc, q, ApiError, readBody, str, int, findPublicStore, storeHasFeature } = require('./_lib/core');
 const { topic, poke } = require('./_lib/live');
 const { SEATING, normalizeSettings, riyadhDayStart, positionOf, emailTemplate, statusUrlFor } = require('./_lib/waitlist');
 const { sendMail } = require('./_lib/mail');
@@ -87,6 +87,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       throw e;
     }
     if (res.duplicate) return { token: res.token, ticket: res.ticket, duplicate: true };
+    if (reqLang(req) === 'en') await rest(`waitlist_entries?token=eq.${q(res.token)}`, { method: 'PATCH', body: { lang: 'en' } }).catch(() => {});
     await linkLoyalty(store.id, res.token, b.lt, val.phone).catch(e => console.error('WL_LOYALTY', e.message));
     await poke(topic('wl', store.id));
 

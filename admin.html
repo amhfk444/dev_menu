@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<script src="/js/i18n.js?v=3" data-dict="admin" data-toggle="none"></script>
+<script src="/js/i18n.js?v=4" data-dict="admin" data-toggle="none"></script>
 <link rel="stylesheet" href="/css/base.css">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
@@ -1036,6 +1036,8 @@
                   <select id="ly-needed" class="input-pro"></select></label>
                 <label class="block"><span class="text-xs font-semibold text-ink/70 block mb-1.5">المكافأة</span>
                   <input id="ly-reward" class="input-pro" maxlength="60" placeholder="مثلاً: مشروب مجاني"></label>
+                <label class="block"><span class="text-xs font-semibold text-ink/70 block mb-1.5">المكافأة بالإنجليزي <span class="font-normal text-ink/50">(اختياري)</span></span>
+                  <input id="ly-reward-en" class="input-pro" maxlength="60" dir="ltr" placeholder="Free drink"></label>
                 <label class="block"><span class="text-xs font-semibold text-ink/70 block mb-1.5">ختم وحد كل</span>
                   <select id="ly-cooldown" class="input-pro">
                     <option value="1">ساعة</option><option value="2">ساعتين</option><option value="3">3 ساعات</option><option value="4">4 ساعات</option><option value="6">6 ساعات</option><option value="12">12 ساعة</option><option value="24">يوم كامل</option>
@@ -4135,6 +4137,7 @@
     sw.querySelector('.avail-label').textContent = d.enabled ? 'شغّالة' : 'متوقفة';
     document.getElementById('ly-needed').innerHTML = Array.from({ length: 9 }, (_, i) => i + 4).map(n => `<option value="${n}" ${n === st.needed ? 'selected' : ''}>${n} أختام</option>`).join('');
     document.getElementById('ly-reward').value = st.reward;
+    document.getElementById('ly-reward-en').value = st.reward_en || '';
     document.getElementById('ly-cooldown').value = String(st.cooldown_hours);
     document.getElementById('ly-radius').value = String(st.radius_m);
     document.getElementById('ly-pager-stamp').checked = st.pager_stamp !== false;
@@ -4662,7 +4665,7 @@
     const btn = document.getElementById('ly-save'); btn.disabled = true;
     try {
       const r = await api('loyalty-settings', { settings: {
-        needed: +document.getElementById('ly-needed').value, reward: document.getElementById('ly-reward').value.trim(),
+        needed: +document.getElementById('ly-needed').value, reward: document.getElementById('ly-reward').value.trim(), reward_en: document.getElementById('ly-reward-en').value.trim(),
         cooldown_hours: +document.getElementById('ly-cooldown').value, radius_m: +document.getElementById('ly-radius').value,
         welcome: { mode: (document.querySelector('[name="ly-welcome"]:checked') || {}).value || 'ai', text: document.getElementById('ly-welcome-text').value.trim() },
         redeem_msg: { mode: (document.querySelector('[name="ly-redeem"]:checked') || {}).value || 'ai', text: document.getElementById('ly-redeem-text').value.trim() },

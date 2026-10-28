@@ -10,7 +10,7 @@
 // الكاشير يغيّر الحالة من /api/owner?action=pager-update
 // =====================================================================
 const crypto = require('crypto');
-const { handler, rest, rpc, q, ApiError, readBody, findPublicStore, storeHasFeature } = require('./_lib/core');
+const { reqLang, handler, rest, rpc, q, ApiError, readBody, findPublicStore, storeHasFeature } = require('./_lib/core');
 const { pushPublicKey, cleanSubscription, sendPush } = require('./_lib/push');
 const { topic, poke } = require('./_lib/live');
 const { normalizeLoyalty } = require('./_lib/loyalty');
@@ -23,7 +23,7 @@ async function loyaltyOf(storeId) {
   const x = (await rest(`clients?id=eq.${storeId}&select=loyalty_enabled,loyalty_settings`).catch(() => []))[0] || {};
   const st = normalizeLoyalty(x.loyalty_settings);
   const entitled = await storeHasFeature(storeId, 'loyalty');
-  return { enabled: entitled && x.loyalty_enabled === true && st.pager_stamp, reward: st.reward, needed: st.needed };
+  return { enabled: entitled && x.loyalty_enabled === true && st.pager_stamp, reward: st.reward, reward_en: st.reward_en, needed: st.needed };
 }
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{10,64}$/;
@@ -78,6 +78,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const token = crypto.randomBytes(18).toString('base64url');
     try {
       const res = await rpc('server_pager_take', { p_client_id: store.id, p_token: token });
+      if (reqLang(req) === 'en') await rest(`pager_tickets?token=eq.${q(res.token)}&client_id=eq.${store.id}`, { method: 'PATCH', body: { lang: 'en' } }).catch(() => {});
       // عنده بطاقة ولاء في نفس الجوال: نربطها برقم البيجر، وينختم لما يجهز الطلب
       if (/^[A-Za-z0-9_-]{10,64}$/.test(String(b.lt || ''))) {
         const card = (await rest(`loyalty_cards?token=eq.${q(b.lt)}&client_id=eq.${store.id}&select=id`).catch(() => []))[0];

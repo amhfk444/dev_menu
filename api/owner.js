@@ -14,6 +14,7 @@ const { sendPush, pushPublicKey, cleanSubscription } = require('./_lib/push');
 const { topic, storeTopics, poke } = require('./_lib/live');
 const { normalizeLoyalty, validPoint } = require('./_lib/loyalty');
 const PLANS = require('./_lib/plans');
+const { tr } = require('./_lib/i18n');
 const wallet = require('./_lib/wallet');
 const { pushWalletCards, pushWalletBatch, runAssistant, pagerReadyNotice, walletNotice } = require('./_lib/loyalty-assistant');
 const { loyaltyMessages, loyaltyNearLines } = require('./_lib/ai');
@@ -219,9 +220,10 @@ async function ringTicket(store, t) {
   if (!t.push_sub) return 'off';
   const n = (t.ring_count || 0) + 1;
   const url = storeLink(store.client_slug, 'pager');
+  const L = (s) => tr(t.lang, s);   // لغة الزبون اللي أخذ الرقم
   const payload = n === 1
-    ? { title: `🔔 ${SECTORS.terms(store).ready} رقم ${t.number}`, body: `${SECTORS.terms(store).readyBody} من ${store.name}` }
-    : { title: `🔔 تذكير: ${SECTORS.terms(store).ready} رقم ${t.number}`, body: `الموظف بانتظارك في ${store.name} (${n}/${PAGER_MAX_RINGS})` };
+    ? { title: L(`🔔 ${SECTORS.terms(store).ready} رقم ${t.number}`), body: L(`${SECTORS.terms(store).readyBody} من ${store.name}`) }
+    : { title: L(`🔔 تذكير: ${SECTORS.terms(store).ready} رقم ${t.number}`), body: L(`الموظف بانتظارك في ${store.name} (${n}/${PAGER_MAX_RINGS})`) };
   // وسم مختلف لكل رنّة عشان الجوال يرن كل مرة (الآيفون ما يعيد التنبيه لنفس الوسم)
   const result = await sendPush(t.push_sub, { ...payload, url, tag: `pager-${t.id}-${n}` });
   console.log('PAGER_RING', store.id, t.id, n, result);
@@ -240,7 +242,7 @@ async function redeemMessage(store, settings, card, reward) {
   try {
     const out = await Promise.race([
       loyaltyMessages({ storeName: store.name, businessType: SECTORS.label(store), reward, needed: settings.needed,
-        guests: [{ ref: 'r', kind: 'redeemed', name: card.name, gender: card.gender, visits: card.visits || 0, stamps: 0, days_since: 0 }] }),
+        guests: [{ ref: 'r', kind: 'redeemed', name: card.name, gender: card.gender, lang: card.lang, visits: card.visits || 0, stamps: 0, days_since: 0 }] }),
       new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000))
     ]);
     if (out.r) return `🎁 ${out.r}`;
@@ -418,7 +420,7 @@ async function main(req) {
     const x = (await rest(`clients?id=eq.${store.id}&select=loyalty_enabled,loyalty_settings`))[0] || {};
     const settings = normalizeLoyalty(x.loyalty_settings);
     const services = ['menu', 'pager', 'waitlist', 'loyalty'].filter(k => PLANS.has(store, k) && (k !== 'waitlist' || store.waitlist_enabled) && (k !== 'loyalty' || x.loyalty_enabled));
-    return { name: store.name, logo_url: store.logo_url || '', slug: store.client_slug, business_type: store.business_type, business_label: store.business_label, services, enabled: services.includes('loyalty'), needed: settings.needed, reward: settings.reward };
+    return { name: store.name, logo_url: store.logo_url || '', slug: store.client_slug, business_type: store.business_type, business_label: store.business_label, services, enabled: services.includes('loyalty'), needed: settings.needed, reward: settings.reward, reward_en: settings.reward_en };
   }
   if (action === 'pager' && req.method === 'GET') {
     const { store } = await context(req);

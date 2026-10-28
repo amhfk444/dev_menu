@@ -1,0 +1,23 @@
+{
+  "الأختام": "Stamps",
+  "صار عندك %@ ختم": "You now have %@ stamps",
+  "مكافأتك جاهزة": "Your reward is ready",
+  "المكافأة": "Reward",
+  "صاحب البطاقة": "Card holder",
+  "رقم العضوية": "Member no.",
+  "زياراتك": "Your visits",
+  "طريقة الختم": "How to get stamps",
+  "بعد ما تدفع، اعرض الكود اللي في البطاقة للكاشير، أو امسح كود الختم اللي يطلعه لك.": "After you pay, show the code on this card to the cashier, or scan the stamp code they show you.",
+  "افتح بطاقتك": "Open your card",
+  "رقم العضوية #{n}": "Member no. #{n}",
+  "بطاقة الولاء: {s}": "Loyalty card: {s}",
+  "أنت قريب من {s}، خذ ختمك": "You're near {s}. Get your stamp",
+  "🔔 {r} رقم {n}": "🔔 {r} Number {n}",
+  "🔔 تذكير: {r} رقم {n}": "🔔 Reminder: {r} Number {n}",
+  "{b} من {s}": "{b} at {s}",
+  "الموظف بانتظارك في {s} ({n})": "The staff is waiting for you at {s} ({n})",
+  "🔔 {r} رقم {n}. {b} من {s}": "🔔 {r} Number {n}. {b} at {s}",
+  "🔔 {r} رقم {n}. {b}": "🔔 {r} Number {n}. {b}",
+  "{a} أهداك {r} 🎁 استخدمها من {s} خلال 30 يوم": "{a} gave you {r} 🎁 Use it at {s} within 30 days",
+  "صديقك": "Your friend"
+}

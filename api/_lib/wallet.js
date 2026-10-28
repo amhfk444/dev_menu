@@ -4,6 +4,7 @@
 //   المتغير في Vercel: WALLET_API_KEY
 // نرسل أقل بيانات ممكنة: اسم المحل وعدد الأختام (بدون أي بيانات عن الزبون)
 // =====================================================================
+const { tr } = require('./i18n');
 const { ApiError } = require('./core');
 const { stampStrip } = require('./strip');
 
@@ -28,23 +29,24 @@ async function call(method, path, body) {
 // محتوى البطاقة. full = مزايا الباقة المدفوعة (الشعار، الموقع على شاشة القفل)
 function passBody({ store, settings, card, url, restoreUrl, lat, lng, notice, strip, nearText }, full = true) {
   const n = settings.needed, s = Math.min(card.stamps, n);
+  const L = (t) => tr(card.lang, t);   // لغة الزبون (آخر لغة فتح فيها بطاقته)
   const body = {
     logoText: String(store.name || 'DEV MENU').slice(0, 40),
     organizationName: String(store.name || 'DEV MENU').slice(0, 64),
-    description: `بطاقة الولاء: ${store.name || ''}`.slice(0, 120),
+    description: L(`بطاقة الولاء: ${store.name || ''}`).slice(0, 120),
     colorPreset: 'green',
     // العدد فوق (يبان حتى والبطاقة بين البطاقات)، والأختام نفسها في الصورة العريضة
-    headerFields: [{ label: 'الأختام', value: `${s} / ${n}`, changeMessage: 'صار عندك %@ ختم' }],
+    headerFields: [{ label: L('الأختام'), value: `${s} / ${n}`, changeMessage: L('صار عندك %@ ختم') }],
     // المكافأة وحامل البطاقة بس (عدد الأختام فوق، والأختام نفسها في الصورة)
-    secondaryFields: [{ label: s >= n ? 'مكافأتك جاهزة' : 'المكافأة', value: settings.reward }, ...(card.name ? [{ label: 'صاحب البطاقة', value: String(card.name).slice(0, 40) }] : [])],
+    secondaryFields: [{ label: L(s >= n ? 'مكافأتك جاهزة' : 'المكافأة'), value: (card.lang === 'en' && settings.reward_en) || settings.reward }, ...(card.name ? [{ label: L('صاحب البطاقة'), value: String(card.name).slice(0, 40) }] : [])],
     backFields: [
-      { label: 'رقم العضوية', value: `#${card.member_no || ''}` },
-      { label: 'زياراتك', value: String(card.visits || 0) },
-      { label: 'طريقة الختم', value: 'بعد ما تدفع، اعرض الكود اللي في البطاقة للكاشير، أو امسح كود الختم اللي يطلعه لك.' },
-      { label: 'افتح بطاقتك', value: restoreUrl || url }
+      { label: L('رقم العضوية'), value: `#${card.member_no || ''}` },
+      { label: L('زياراتك'), value: String(card.visits || 0) },
+      { label: L('طريقة الختم'), value: L('بعد ما تدفع، اعرض الكود اللي في البطاقة للكاشير، أو امسح كود الختم اللي يطلعه لك.') },
+      { label: L('افتح بطاقتك'), value: restoreUrl || url }
     ],
     // كود العضوية: الكاشير يصوّره من المحفظة ويختم
-    ...(card.client_id ? { barcodeValue: require('./loyalty-stamp').memberQr(card), barcodeFormat: 'QR', barcodeAltText: `رقم العضوية #${card.member_no || ''}` } : {}),
+    ...(card.client_id ? { barcodeValue: require('./loyalty-stamp').memberQr(card), barcodeFormat: 'QR', barcodeAltText: L(`رقم العضوية #${card.member_no || ''}`) } : {}),
     sharingProhibited: true,
     // رسالة المحل: لما تتغير تطلع إشعار على الجوال (لازم تكون موجودة من أول مرة، عشان كذا مسافة لو ما فيه رسالة)
     notification: String(notice || ' ').slice(0, 250)
@@ -57,7 +59,7 @@ function passBody({ store, settings, card, url, restoreUrl, lat, lng, notice, st
     if (logo && /^https:\/\//.test(logo)) body.logoURL = logo;
     // صورة الأختام بنفس شكل بطاقة DEV MENU
     if (strip) body.stripURL = strip;
-    if (Number.isFinite(lat) && Number.isFinite(lng)) body.locations = [{ latitude: lat, longitude: lng, relevantText: String(nearText || `أنت قريب من ${store.name}، خذ ختمك`).slice(0, 80) }];
+    if (Number.isFinite(lat) && Number.isFinite(lng)) body.locations = [{ latitude: lat, longitude: lng, relevantText: String(nearText || L(`أنت قريب من ${store.name}، خذ ختمك`)).slice(0, 80) }];
   }
   return body;
 }
