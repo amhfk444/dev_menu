@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<script src="/js/i18n.js?v=4" data-dict="pager"></script>
+<script src="/js/i18n.js?v=5" data-dict="pager"></script>
 <link rel="stylesheet" href="/css/base.css">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
@@ -566,7 +566,7 @@
   }
   // ─── بطاقة الولاء: ختم مع الطلب ───
   function renderLoyalty(l, st, token) {
-    if (l && window.DMi18n && DMi18n.lang === 'en' && l.reward_en) l = { ...l, reward: l.reward_en };
+    if (l && l.reward_en && window.DMi18n) DMi18n.add({ [l.reward]: l.reward_en });
     const show = (id, html, cls, href) => { const el = $(id); el.classList.toggle('hidden', !html); if (!html) return; el.innerHTML = html; el.className = `block text-[13px] font-black rounded-2xl py-3 px-3 ${cls}`; if (href) el.href = href; else el.removeAttribute('href'); };
     lastLoyalty = l || null;
     const showJoin = !!(l && l.enabled && !l.linked && st === 'waiting' && !joined);

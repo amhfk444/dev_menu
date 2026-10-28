@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<script src="/js/i18n.js?v=4" data-dict="loyalty"></script>
+<script src="/js/i18n.js?v=5" data-dict="loyalty"></script>
 <link rel="stylesheet" href="/css/base.css">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
@@ -250,8 +250,8 @@
   const show = (v) => VIEWS.forEach(x => $(`v-${x}`).classList.toggle('hidden', x !== v));
   const loadToken = () => { try { return localStorage.getItem(KEY) || ''; } catch { return ''; } };
   const saveToken = (t) => { try { t ? localStorage.setItem(KEY, t) : localStorage.removeItem(KEY); } catch {} };
-  // الزائر بالإنجليزي: اسم المكافأة بالإنجليزي لو كتبه صاحب المحل
-  const enReward = (st) => { if (st && window.DMi18n && DMi18n.lang === 'en' && st.reward_en) st.reward = st.reward_en; return st; };
+  // اسم المكافأة بالإنجليزي (لو كتبه صاحب المحل) ينضاف للقاموس، فيتبدل مع اللغة في كل مكان
+  const enReward = (st) => { if (st && st.reward_en && window.DMi18n) DMi18n.add({ [st.reward]: st.reward_en }); return st; };
   let settings = null, card = null, busy = false, walletOn = false, justJoined = false, happyNow = false, gifts = [], survey = false;
   const giftCode = (params.get('gift') || '').trim();
   const stampCodeParam = (params.get('c') || '').trim(), ptParam = (params.get('pt') || '').trim();
