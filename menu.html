@@ -653,6 +653,7 @@
     handleSearch();
     if (window.DMOccasions && project && project.occasion) DMOccasions.setGreeting(project.occasion, document.getElementById('occasion-greeting'), currentLang);
     btnText.textContent = currentLang === 'ar' ? 'English' : 'عربي';
+    try { localStorage.setItem('dm_lang', currentLang); } catch {}
   }
 
   // ─── تحميل المنيو ───
@@ -732,6 +733,9 @@
     renderCartBar();
     renderCalorieNote();
     if (!first && coupon && cart.length) applyCoupon(true);
+    // نفس اللغة اللي اختارها الزائر في باقي صفحات DEV MENU
+    let saved = ''; try { saved = localStorage.getItem('dm_lang'); } catch {}
+    if (first && saved === 'en' && currentLang === 'ar') toggleLanguage();
   }
 
   function setBackground(p) {

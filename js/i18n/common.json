@@ -204,7 +204,6 @@
   "الملاحظة": "Note",
   "رقم الجوال": "Phone number",
   "اسم الحجم بالإنجليزي": "Size name in English",
-
   "إلغاء": "Cancel",
   "تأكيد": "Confirm",
   "تراجع": "Undo",
@@ -219,7 +218,6 @@
   "لا": "No",
   "حسناً": "OK",
   "جاري التحميل…": "Loading…",
-
   "ريال سعودي": "Saudi riyal",
   "درهم إماراتي": "UAE dirham",
   "دينار كويتي": "Kuwaiti dinar",
@@ -243,7 +241,6 @@
   "جنيه إسترليني": "British pound",
   "دولار أمريكي": "US dollar",
   "يورو": "Euro",
-
   "المنيو الرقمي": "Digital menu",
   "المنيو بصوره وأسعاره، كود QR للطاولات، الطلب على الواتساب، الثيمات والإحصائيات": "Your menu with photos and prices, table QR codes, WhatsApp ordering, themes and stats",
   "البيجر": "Pager",
@@ -258,7 +255,6 @@
   "{n} فرع إضافي": "{n} extra branch",
   "{n} فرعين إضافيين": "{n} extra branches",
   "{n} فروع إضافية": "{n} extra branches",
-
   "مطعم": "Restaurant",
   "مقهى": "Café",
   "مطعم ومقهى": "Restaurant & café",
@@ -305,5 +301,14 @@
   "تم النداء، بانتظار الحضور": "Called, waiting for them to arrive",
   "حضر": "Arrived",
   "استلم": "Picked up",
-  "نادِ": "Call"
+  "نادِ": "Call",
+  "{h} ساعة و {m} دقيقة": "{h} h {m} min",
+  "{h} ساعة": "{h} h",
+  "{m} دقيقة": "{m} min",
+  "ختمت قبل شوي، الختم الجاي بعد {t}": "You were stamped recently. Your next stamp is in {t}",
+  "انختم قبل شوي، الختم الجاي بعد {t}": "Stamped recently. The next stamp is in {t}",
+  "بطاقته مكتملة، يستخدم مكافأته أول": "Their card is full. They need to use their reward first",
+  "{r} (هدية)": "{r} (gift)",
+  "عنوان الرقم": "Number label",
+  "~{a} + {b}": "{a} + {b}"
 }

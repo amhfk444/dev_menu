@@ -31,8 +31,10 @@
       const strict = k.startsWith('~'), body = strict ? k.slice(1) : k;
       const names = [];
       const re = new RegExp('^' + escRe(body).replace(/\\\{(\w+)\\\}/g, (_, n) => { names.push(n); return '(.+?)'; }) + '$');
-      patterns.push({ re, names, en, strict });
+      patterns.push({ re, names, en, strict, lit: body.replace(/\{\w+\}/g, '').length });
     }
+    // الأطول نصاً أول: "ختم دبل {d} من {a} إلى {b}" قبل "{h} بالليل" عشان القصير ما يبلع الجملة كلها
+    patterns.sort((a, b) => b.lit - a.lit);
   }
   // الترجمة: نفس النص بالضبط، وإلا قالب فيه متغيرات (والمتغيرات نفسها تترجم لو لها ترجمة)
   function tr(s) {
@@ -66,7 +68,7 @@
     }
   }
   function element(el) {
-    if (skip(el)) return;
+    if (el.closest('[data-no-i18n]')) return;   // خانات الكتابة: نترجم التلميح (placeholder) بس، مو اللي كتبه الزائر
     for (const a of ATTRS) { const v = el.getAttribute(a); if (v && AR.test(v)) { const o = tr(v); if (o !== v) el.setAttribute(a, o); } }
     if ((el.tagName === 'INPUT' && /^(button|submit)$/i.test(el.type)) && AR.test(el.value)) el.value = tr(el.value);
   }
