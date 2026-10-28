@@ -14,11 +14,26 @@ const STORE_FIELDS = 'id,name,client_slug,logo_url,business_type,business_label,
 const SECTORS = require('./sectors');
 
 // جملة "أنت قريب" لهالبطاقة: تتغير كل أسبوع وتختلف بين الزبائن
-function nearLineFor(store, card) {
-  const lines = Array.isArray(store.loyalty_near_lines) ? store.loyalty_near_lines : [];
-  if (!lines.length) return null;
-  const week = Math.floor(Date.now() / (7 * DAY));
-  return lines[(Number(card.id) + week) % lines.length];
+// جملة شاشة القفل لما يقرب الزبون من المحل: تتغير مع كل زيارة (البطاقة تتحدث بعد كل ختم)،
+// من جمل المساعد الذكي لو مفعّل، وإلا من جمل جاهزة حسب حالة بطاقته
+function nearLineFor(store, card, settings) {
+  const ai = Array.isArray(store.loyalty_near_lines) ? store.loyalty_near_lines : [];
+  const turn = Number(card.id || 0) + Number(card.visits || 0);
+  if (ai.length) return ai[turn % ai.length];
+  if (!settings) return null;
+  const name = String(store.name || '').trim(), reward = settings.reward, n = settings.needed;
+  const s = Math.min(Number(card.stamps || 0), n), left = n - s;
+  const first = String(card.name || '').trim().split(/\s+/)[0];
+  if (s >= n) return [`مكافأتك (${reward}) جاهزة في ${name}، تعال خذها`, `مكافأتك تنتظرك، ${name} قريب منك`][turn % 2].slice(0, 80);
+  const lines = [
+    `${name} على بعد خطوات، ختمك الجاي ينتظرك`,
+    left === 1 ? `ختم واحد بس ويصير لك ${reward}` : `باقي لك ${left} على ${reward}، مرّ علينا`,
+    `قريب من ${name}؟ خذ ختمك اليوم`,
+    first ? `يا ${first}، ${name} قريب منك` : `وحشتنا! ${name} قريب منك`,
+    `كل زيارة تقرّبك من ${reward}`,
+    `مرّ على ${name} وكمّل بطاقتك`
+  ];
+  return lines[turn % lines.length].slice(0, 80);
 }
 
 // آخر رسالة لكل بطاقة (للكل أو لها)، عشان التحديث ما يطلع إشعار قديم من جديد
@@ -32,7 +47,7 @@ async function latestNotices(storeId, settings) {
 
 const ctxFor = (store, settings, card, notice) => wallet.buildCtx({
   store: { name: store.name, client_slug: store.client_slug, logo_url: store.logo_url }, settings, card,
-  lat: store.loyalty_lat, lng: store.loyalty_lng, notice, nearText: nearLineFor(store, card)
+  lat: store.loyalty_lat, lng: store.loyalty_lng, notice, nearText: nearLineFor(store, card, settings)
 });
 
 // تحديث بطاقات المحفظة (كلها أو اللي نحددها). notices: card.id → نص الرسالة الجديدة

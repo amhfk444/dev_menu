@@ -85,7 +85,7 @@ const latestMessage = async (storeId, cardId, settings, forWallet = false) => {
   const m = ((await rest(`loyalty_messages?client_id=eq.${storeId}&or=${q(`(card_id.is.null,card_id.eq.${cardId})`)}&select=id,body,created_at,source,kind&order=id.desc&limit=4`).catch(() => [])).find(x => forWallet || x.kind !== 'pager')) || null;
   return settings && staleAi(m, settings) ? null : m;
 };
-const walletCtx = async (ctx, card) => wallet.buildCtx({ store: ctx.store, settings: ctx.settings, card, lat: ctx.lat, lng: ctx.lng, notice: ((await latestMessage(ctx.store.id, card.id, ctx.settings, true)) || {}).body, nearText: nearLineFor({ loyalty_near_lines: ctx.nearLines }, card) });
+const walletCtx = async (ctx, card) => wallet.buildCtx({ store: ctx.store, settings: ctx.settings, card, lat: ctx.lat, lng: ctx.lng, notice: ((await latestMessage(ctx.store.id, card.id, ctx.settings, true)) || {}).body, nearText: nearLineFor({ loyalty_near_lines: ctx.nearLines, name: ctx.store.name }, card, ctx.settings) });
 // البطاقة في المحفظة تتحدث مع كل ختم (لو الزبون ضافها)
 const syncWallet = async (ctx, card) => {
   if (!card.wallet_serial) return;
