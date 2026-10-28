@@ -189,7 +189,6 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     return out;
   }
   // إضافة ردود التقييمات بالذكاء الاصطناعي
-  if (action === 'reviews-addon') return patch({ reviews_enabled: b.enabled === true });
 
   // ─── إضافة فرع: نسخة من المنيو يديرها صاحب المتجر الرئيسي من لوحته ───
   if (action === 'branch-create') {
