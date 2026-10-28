@@ -181,7 +181,6 @@
   "لقطات حقيقية من DEV MENU": "Real screenshots from DEV MENU",
   "البيجر يرن في جوال الزبون": "The pager ringing on a customer's phone",
   "بطاقة الولاء من DEV MENU": "The DEV MENU loyalty card",
-  "مثال: جولت كوفي": "e.g. Jolt Coffee",
   "اكتب نشاطك، مثلاً: مركز تدريب": "Type your business, e.g. training center",
   "رمز الدولة": "Country code",
   "الرقم {n}": "Digit {n}",
@@ -200,5 +199,6 @@
   "هذا البريد له حساب من قبل، جاري تحويلك للوحة التحكم...": "This email already has an account. Taking you to the dashboard...",
   "تعذر إنشاء الحساب، حاول مرة ثانية": "Couldn't create the account. Try again",
   "حسابك جاهز! تجربتك المجانية بدأت": "Your account is ready! Your free trial has started",
-  "هذا الحساب له متجر من قبل، جاري تحويلك...": "This account already has a store. Redirecting..."
+  "هذا الحساب له متجر من قبل، جاري تحويلك...": "This account already has a store. Redirecting...",
+  "اسم مطعمك أو محلك": "Your restaurant or shop name"
 }

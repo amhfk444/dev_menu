@@ -21,7 +21,7 @@
   "تسجيل الخروج": "Sign out",
   "وضع المدير العام": "Admin mode",
   "أضفها لباقتك": "Add it to your plan",
-  "أهلاً بك": "Welcome",
+  "أهلاً بك": "Hi there",
   "هذا ملخص منشأتك وخدماتك.": "Here's a summary of your business and services.",
   "أضف طبق": "Add dish",
   "زبونك يجمع أختامه بنفسه ويرجع لك": "Your customers collect stamps and come back",
@@ -300,9 +300,7 @@
   "صفحة البطاقة": "Card page",
   "المحفظة": "Wallet",
   "الإشعار": "Notification",
-  "أهلاً سارة": "Hi Sarah",
   "صاحب البطاقة": "Card holder",
-  "سارة": "Sarah",
   "رقم العضوية": "Member no.",
   "بعد ما تدفع، اعرض الكود للكاشير": "After you pay, show the code to the cashier",
   "المحفظة تاخذ لون البطاقة والشعار والأختام. لون الخط فيها يختاره الجوال تلقائياً.": "The wallet uses the card color, logo and stamps. Its text color is chosen by the phone.",
@@ -629,7 +627,6 @@
   "تعديل اسم الفرع": "Edit branch name",
   "يظهر هذا الاسم أعلى المنيو ولوحة التحكم.": "This name appears at the top of the menu and dashboard.",
   "اسم الفرع": "Branch name",
-  "مثال: دجئ - فرع النخيل": "e.g. Store - Al Nakheel branch",
   "تم تعديل اسم الفرع": "Branch name updated",
   "تعذر تعديل الاسم": "Couldn't update the name",
   "موقوفة": "Paused",
@@ -1315,5 +1312,7 @@
   "نقل {n} {s} من بطاقته القديمة": "Transferred {n} stamps from their old card",
   "ختم": "stamp",
   "~{n} من {m}": "{n} of {m}",
-  "المكافأة بالإنجليزي": "Reward in English"
+  "المكافأة بالإنجليزي": "Reward in English",
+  "اسم الزبون": "Customer name",
+  "مثال: فرع حي النخيل": "e.g. Al Nakheel branch"
 }

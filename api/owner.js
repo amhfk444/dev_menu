@@ -796,8 +796,8 @@ async function main(req) {
     const settings = normalizeLoyalty(extra.loyalty_settings);
     const n = settings.needed;
     const guests = [
-      { ref: 'welcome', kind: 'welcome', name: 'سارة', gender: 'f', visits: 1, stamps: 1, days_since: 0 },
-      { ref: 'miss', kind: 'miss', name: 'فهد', gender: 'm', visits: 6, stamps: Math.min(3, n - 2), days_since: 19, usual_gap: 5 },
+      { ref: 'welcome', kind: 'welcome', visits: 1, stamps: 1, days_since: 0 },
+      { ref: 'miss', kind: 'miss', visits: 6, stamps: Math.min(3, n - 2), days_since: 19, usual_gap: 5 },
       { ref: 'second', kind: 'second', visits: 1, stamps: 1, days_since: 8 },
       { ref: 'almost', kind: 'almost', visits: n - 1, stamps: n - 1, days_since: 6, usual_gap: 4 },
       { ref: 'ready', kind: 'ready', visits: n, stamps: n, days_since: 4, usual_gap: 6 },

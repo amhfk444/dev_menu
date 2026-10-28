@@ -52,7 +52,6 @@
   "افتح البطاقة في المحفظة": "Open the card in your wallet",
   "كمّل بياناتك": "Complete your details",
   "عشان ترجع لبطاقتك لو غيّرت جوالك، ويعرفك المحل.": "So you can get your card back if you change phones, and the store knows you.",
-  "مثلاً: سارة": "e.g. Sarah",
   "رمز الدولة": "Country code",
   "النوع": "Gender",
   "حفظ بياناتي": "Save my details",
@@ -138,5 +137,6 @@
   "تعذر إضافة الختم": "Couldn't add the stamp",
   "وصلتك الهدية! استخدمها من المحل": "You got the gift! Use it at the store",
   "تعذر استلام الهدية": "Couldn't claim the gift",
-  "مكافأتك جاهزة": "Your reward is ready"
+  "مكافأتك جاهزة": "Your reward is ready",
+  "اكتب اسمك": "Your name"
 }

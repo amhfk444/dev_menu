@@ -83,7 +83,6 @@
   "منيو جاهز لعميل محتمل": "A ready menu for a prospect",
   "متجر بدون صاحب، تجهّزه أنت وترسل رابطه": "A store without an owner. You set it up and send the link",
   "إنشاء": "Create",
-  "مثال: مطعم أوسلو برجر": "e.g. Oslo Burger",
   "الرابط": "Link",
   "جوال المنشأة (اختياري، لإرسال الرابط واتساب)": "Business phone (optional, to send the link on WhatsApp)",
   "05xxxxxxxx أو +971...": "05xxxxxxxx or +971...",
@@ -184,5 +183,6 @@
   "الانتظار شغّال": "Waitlist on",
   "المنيو شغّال": "Menu on",
   "{d} · باقي {n}": "{d} · {n} left",
-  "· طلب: {f} ({p})": "· Request: {f} ({p})"
+  "· طلب: {f} ({p})": "· Request: {f} ({p})",
+  "اسم المطعم أو المحل": "Restaurant or shop name"
 }
