@@ -106,7 +106,7 @@
   .ly-phone { width: 100%; max-width: 320px; margin-inline: auto; padding: 10px; border-radius: 48px; background: #1c1c1e;
     box-shadow: 0 0 0 2px #3a3a3c inset, 0 40px 70px -40px rgba(0,0,0,.55); transition: box-shadow .35s; }
   .ly-phone.flash { box-shadow: 0 0 0 2px #3a3a3c inset, 0 0 0 5px rgba(201,162,39,.55), 0 40px 70px -40px rgba(0,0,0,.55); }
-  .ly-phone-screen { position: relative; height: 600px; border-radius: 38px; overflow: hidden auto; scrollbar-width: none; }
+  .ly-phone-screen { position: relative; height: 480px; border-radius: 38px; overflow: hidden auto; scrollbar-width: none; }
   .ly-phone-screen::-webkit-scrollbar { display: none; }
   .ly-island { position: absolute; top: 10px; left: 50%; translate: -50% 0; width: 92px; height: 26px; border-radius: 20px; background: #000; z-index: 5; }
   .pv-page { min-height: 100%; background: #f5f2eb; color: #1b3022; padding: 0 14px 18px; }
@@ -133,6 +133,8 @@
   .pv-notice img, .pv-n-icon { width: 30px; height: 30px; border-radius: 7px; object-fit: cover; flex-shrink: 0; }
   .pv-n-icon { display: grid; place-items: center; background: #000; color: #fff; font-size: 15px; }
   .ly-chip { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: rgba(201,162,39,.16); color: #6b520a; }
+  @media (min-width: 1024px) { .ly-phone-screen { height: 600px; } }
+  @media (max-width: 1023px) { .ly-phone { max-width: 290px; } }
   @media (prefers-reduced-motion: reduce) { .ly-phone { transition: none; } }
   .ly-kpi { background: #fff; border: 1px solid rgba(56,79,61,.12); border-radius: 18px; padding: 16px; }
   .ly-kpi .k-ic { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: rgba(56,79,61,.08); color: #384f3d; }
