@@ -165,7 +165,9 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
   const b = req.method === 'POST' ? readBody(req) : {};
   try {
     if (action === 'info' && req.method === 'GET') {
-      return publicInfo(await loadStore(req.query.slug));
+      const info = publicInfo(await loadStore(req.query.slug));
+      res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=300');   // بيانات المحل العامة: تتخزن 30 ثانية في CDN
+      return info;
     }
 
     if (action === 'card' && req.method === 'GET') {

@@ -20,9 +20,9 @@
 <script src="js/theme.js"></script>
 <script src="js/occasions.js"></script>
 <!-- مكتبة توليد الـ QR Code -->
-<script src="/js/vendor/qrcode.min.js"></script>
+<script src="/js/vendor/qrcode.min.js" defer></script>
 <!-- سحب وإفلات لترتيب الأقسام (يشتغل باللمس) -->
-<script src="/js/vendor/sortable.min.js"></script>
+<script src="/js/vendor/sortable.min.js" defer></script>
 
 <style>
   /* ─── نظام التصميم: ألوان الشعار (أخضر + رملي)، والزعفراني للي يحتاج انتباه، والطوبي لـ"نفدت" ─── */
@@ -2113,7 +2113,7 @@
 
     const qr = document.getElementById('qrcode');
     qr.innerHTML = '';
-    new QRCode(qr, { text: qrUrl(), width: 80, height: 80 });
+    if (window.QRCode) new QRCode(qr, { text: qrUrl(), width: 80, height: 80 });
 
     document.getElementById('social-web').value = client.website_url || '';
     document.getElementById('social-tiktok').value = client.tiktok_url || '';
@@ -3063,8 +3063,17 @@
   function watchLive(L) {
     if (!L || liveWired) return;
     liveWired = true;
-    DM.live(L.waitlist, () => { if (client && client.waitlist_enabled) loadWaitlist(); });
+    // ملخص الرئيسية يتحدث لحظياً مع أي حركة (رقم بيجر، ختم، تسجيل انتظار)، بعد ثانية من آخر حركة
+    const refreshHome = () => { clearTimeout(refreshHome.t); refreshHome.t = setTimeout(() => {
+      if (document.hidden) return;
+      const page = (location.hash || '#dashboard').slice(1);
+      if (page === 'dashboard') renderServiceSummary();
+      if (page === 'loyalty' && typeof onLoyaltyPage === 'function') onLoyaltyPage();
+    }, 1000); };
+    DM.live(L.waitlist, () => { if (client && client.waitlist_enabled) loadWaitlist(); refreshHome(); });
+    if (L.pager) DM.live(L.pager, refreshHome);
     DM.live(L.owner, (ev) => {
+      if (ev === 'loyalty') return refreshHome();
       if (!REVIEWS_LIVE || !client || !(client.reviews_enabled || isSuperAdmin)) return;
       if (ev === 'reviews') showToast('وصلك تقييم جديد في قوقل ماب، الرد جاهز');
       loadRvHistory();

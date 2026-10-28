@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const { rest, rpc, q, ApiError } = require('./core');
 const { normalizeLoyalty, isHappyNow } = require('./loyalty');
 const { pushWalletCards } = require('./loyalty-assistant');
+const { topic, poke } = require('./live');
 
 // ختم مع الشراء: يلتزم بإعداد "ختم واحد كل" عشان ما يتكرر مع كل رقم بيجر أو كود
 async function purchaseStamp(storeId, cardId, settings = null) {
@@ -15,7 +16,11 @@ async function purchaseStamp(storeId, cardId, settings = null) {
   }
   const count = isHappyNow(settings) ? 2 : 1;
   const r = await rpc('server_loyalty_stamp', { p_card: cardId, p_cooldown_hours: settings.cooldown_hours, p_needed: settings.needed, p_distance: null, p_count: count });
-  if (r.ok) await pushWalletCards(storeId, { cardIds: [cardId] }).catch(e => console.error('WALLET_SYNC', e.message));
+  if (r.ok) {
+    await pushWalletCards(storeId, { cardIds: [cardId] }).catch(e => console.error('WALLET_SYNC', e.message));
+    // لوحة التاجر المفتوحة تتحدث على طول (أرقام الولاء والرسم)
+    poke(topic('owner', storeId), 'loyalty').catch(() => {});
+  }
   return { stamped: !!r.ok, count: r.ok ? count : 0, reason: r.ok ? null : r.reason, next_at: r.next_at || null };
 }
 

@@ -196,6 +196,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
   // صفحة الروابط السريعة: نفس بيانات المتجر بدون الأقسام والأطباق
   if (action === 'links' && req.method === 'GET') {
     const store = await findStore(req.query.slug);
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=300');   // بيانات عامة: تتخزن 30 ثانية في CDN
     // صفحة الروابط لكل المشتركين (مو بس المنيو)، وتعرف وش الخدمات اللي عنده
     const services = {};
     Object.assign(services, await storeFeatures(store.id));

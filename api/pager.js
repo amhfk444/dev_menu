@@ -63,12 +63,13 @@ async function loadStore(slug) {
   return store;
 }
 
-module.exports = handler(['GET', 'POST'], async (req) => {
+module.exports = handler(['GET', 'POST'], async (req, res) => {
   const action = req.query.action;
   const b = req.method === 'POST' ? readBody(req) : {};
 
   if (action === 'info' && req.method === 'GET') {
     const store = await loadStore(req.query.slug);
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=300');   // بيانات المحل العامة: تتخزن 30 ثانية في CDN
     return { store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type }, push_key: pushPublicKey() };
   }
 
