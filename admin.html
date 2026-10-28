@@ -2185,7 +2185,7 @@
       await api('support-send', { kind, body: v.body });
       showToast('وصل طلبك للإدارة، والرد يطلع لك تحت "اشتراكك"');
       loadSupport();
-    } catch (e) { showToast(e.message || 'تعذر الإرسال', true); }
+    } catch (e) { showToast(e.message || 'ما انرسل. تأكد من الإنترنت وحاول مرة ثانية', true); }
   }
   async function loadSupport() {
     const box = document.getElementById('support-box');
@@ -3130,7 +3130,7 @@
       const res = await api('waitlist-settings', { show_in_menu: show });
       wl.settings = res.settings; renderWaitlistOpen();
       showToast(show ? 'زر قائمة الانتظار ظاهر في المنيو' : 'تم إخفاء زر قائمة الانتظار من المنيو');
-    } catch { showToast('تعذر التحديث', true); }
+    } catch { showToast('ما قدرنا نحدّث البيانات. تأكد من الإنترنت', true); }
   }
 
   async function toggleWaitlistOpen() {
@@ -3139,7 +3139,7 @@
       const res = await api('waitlist-settings', { open });
       wl.settings = res.settings; renderWaitlistOpen();
       showToast(open ? 'قائمة الانتظار مفتوحة' : 'تم إغلاق قائمة الانتظار');
-    } catch { showToast('تعذر التحديث', true); }
+    } catch { showToast('ما قدرنا نحدّث البيانات. تأكد من الإنترنت', true); }
   }
 
   function renderWaitlistStats() {
@@ -3265,7 +3265,7 @@
       } else {
         showToast({ seated: 'تم تجليس الضيف', no_show: 'سُجّل كـ "لم يحضر"', cancelled: 'تم الإلغاء', waiting: 'رجع للقائمة' }[status]);
       }
-    } catch { showToast('تعذر التحديث', true); }
+    } catch { showToast('ما قدرنا نحدّث البيانات. تأكد من الإنترنت', true); }
   }
 
   function renderWaitlistSettings() {
@@ -4257,7 +4257,7 @@
     const file = input.files && input.files[0]; input.value = '';
     if (!file) return;
     const url = await uploadFile(file, 'card_bg', 1280);
-    if (!url) return showToast(lastUploadError || 'تعذر رفع الصورة', true);
+    if (!url) return showToast(lastUploadError || 'ما انرفعت الصورة. جرّب صورة أصغر أو تأكد من الإنترنت', true);
     setLyDesign({ bg: 'image', bg_image: url });
     showToast('انرفعت الصورة، اضغط "حفظ الشكل"');
   }
@@ -4265,7 +4265,7 @@
     const file = input.files && input.files[0]; input.value = '';
     if (!file) return;
     const url = await uploadFile(file, 'stamp', 500);
-    if (!url) return showToast(lastUploadError || 'تعذر رفع الصورة', true);
+    if (!url) return showToast(lastUploadError || 'ما انرفعت الصورة. جرّب صورة أصغر أو تأكد من الإنترنت', true);
     setLyDesign({ stamp_image: url });
     showToast('انرفعت الصورة، اضغط "حفظ الشكل"');
   }
@@ -4274,7 +4274,7 @@
     const file = input.files && input.files[0]; input.value = '';
     if (!file) return;
     const url = await uploadFile(file, 'stamp', 500);
-    if (!url) return showToast(lastUploadError || 'تعذر رفع الصورة', true);
+    if (!url) return showToast(lastUploadError || 'ما انرفعت الصورة. جرّب صورة أصغر أو تأكد من الإنترنت', true);
     setLyDesign({ [key]: url });
     showToast('انرفعت الصورة، اضغط "حفظ الشكل"');
   }
@@ -4284,7 +4284,7 @@
       const r = await api('loyalty-settings', { settings: { design: ly.design } });
       ly.data.settings = r.settings; ly.design = { ...r.settings.design }; ly.dirty = false;
       renderDesign(); showToast(r.wallet_updated ? `تم حفظ الشكل، وتحدّثت ${r.wallet_updated} بطاقة في المحفظة` : 'تم حفظ شكل البطاقة، ويطلع للزبائن على طول');
-    } catch (e) { showToast(e.message || 'تعذر الحفظ', true); }
+    } catch (e) { showToast(e.message || 'ما انحفظ التعديل. تأكد من الإنترنت وحاول مرة ثانية', true); }
     btn.disabled = false;
   }
 
@@ -4333,7 +4333,7 @@
       btn.innerHTML = '<i class="ph-bold ph-paper-plane-tilt"></i> أرسل';
       showToast(sent ? `انرسلت، ووصلت إشعار لـ ${sent} جوال` : 'انرسلت، وتطلع لهم في صفحة البطاقة');
       await onLoyaltyPage();
-    } catch (e) { showToast(e.message || 'تعذر الإرسال', true); }
+    } catch (e) { showToast(e.message || 'ما انرسل. تأكد من الإنترنت وحاول مرة ثانية', true); }
     btn.disabled = false;
   }
 
@@ -4441,7 +4441,7 @@
     if (!ly.member) return;
     if (!(await DMDialog.confirm({ title: 'صرف المكافأة', message: `تصرف ${ly.data.settings.reward} لـ ${memberName(ly.member)} الحين؟`, confirmText: 'اصرفها', cancelText: 'تراجع' }))) return;
     try { const r = await api('loyalty-redeem', { card_id: ly.member.id }); showToast(`تم صرف ${r.reward}`); const id = ly.member.id; await onLoyaltyPage(); openLyMember(id); }
-    catch (e) { showToast(e.message || 'تعذر الصرف', true); }
+    catch (e) { showToast(e.message || 'ما انصرفت المكافأة. حاول مرة ثانية', true); }
   }
   // ─── حذف عضو ───
   async function deleteLyMember(id) {
@@ -4453,7 +4453,7 @@
       ly.members = (ly.members || []).filter(x => x.id !== id);
       if (ly.member && ly.member.id === id) closeLyMember();
       renderLyMembers(); showToast(r.wallet === 'revoked' ? 'تم حذف العضو، وانلغت بطاقته في المحفظة' : 'تم حذف العضو');
-    } catch (e) { showToast(e.message || 'تعذر الحذف', true); }
+    } catch (e) { showToast(e.message || 'ما انحذف. حاول مرة ثانية', true); }
   }
 
   // ─── ملف العضو ───
@@ -4589,7 +4589,7 @@
       document.getElementById('lm-msg').value = '';
       showToast(r.message.wallet_sent ? 'انرسلت ووصلته إشعار' : 'انرسلت، وتطلع له في صفحة بطاقته');
       openLyMember(ly.member.id);
-    } catch (e) { showToast(e.message || 'تعذر الإرسال', true); }
+    } catch (e) { showToast(e.message || 'ما انرسل. تأكد من الإنترنت وحاول مرة ثانية', true); }
     btn.disabled = false;
   }
 
@@ -4597,7 +4597,7 @@
   const AI_KINDS = { welcome: 'ترحيب', miss: 'لما يغيب', second: 'بعد أول زيارة', almost: 'باقي له ختم', ready: 'مكافأته جاهزة', near: 'لما يقرب من المحل' };
   async function toggleLyAi() {
     try { const r = await api('loyalty-ai', { enabled: !ly.data.ai }); ly.data.ai = r.ai; renderLoyalty(); showToast(r.ai ? 'المساعد الذكي شغّال، يبدأ يكتب لزبائنك كل يوم' : 'المساعد الذكي متوقف'); }
-    catch (e) { showToast(e.message || 'تعذر الحفظ', true); }
+    catch (e) { showToast(e.message || 'ما انحفظ التعديل. تأكد من الإنترنت وحاول مرة ثانية', true); }
   }
   async function previewLyAi() {
     const btn = document.getElementById('ly-ai-preview'), html = btn.innerHTML;
@@ -4623,7 +4623,7 @@
   async function toggleLoyalty() {
     const next = !(ly.data && ly.data.enabled);
     try { const r = await api('loyalty-settings', { enabled: next }); ly.data.enabled = r.enabled; renderLoyalty(); showToast(r.enabled ? 'بطاقة الولاء شغّالة' : 'بطاقة الولاء متوقفة'); }
-    catch (e) { showToast(e.message || 'تعذر الحفظ', true); }
+    catch (e) { showToast(e.message || 'ما انحفظ التعديل. تأكد من الإنترنت وحاول مرة ثانية', true); }
   }
   async function saveLoyalty(ev) {
     ev.preventDefault();
@@ -4640,7 +4640,7 @@
         pager_stamp: document.getElementById('ly-pager-stamp').checked
       } });
       ly.data.settings = r.settings; renderLoyalty(); showToast('تم حفظ إعدادات البطاقة');
-    } catch (e) { showToast(e.message || 'تعذر الحفظ', true); }
+    } catch (e) { showToast(e.message || 'ما انحفظ التعديل. تأكد من الإنترنت وحاول مرة ثانية', true); }
     btn.disabled = false;
   }
   // موقع المحل: نجمع قراءات لثواني ونختار الأدق
@@ -4754,7 +4754,7 @@
       box.querySelectorAll('[data-loc]').forEach(b => b.onclick = async () => {
         const l = locations[Number(b.dataset.loc)];
         try { await api('google-select', { account: l.account, location: l.location }); showToast(`انربط فرع "${l.title}"`); loadGoogle(); }
-        catch (e) { showToast(e.message || 'تعذر الحفظ', true); }
+        catch (e) { showToast(e.message || 'ما انحفظ التعديل. تأكد من الإنترنت وحاول مرة ثانية', true); }
       });
     } catch (e) { box.innerHTML = `<p class="text-brick font-semibold">${esc(e.message || 'تعذر جلب الفروع من قوقل')}</p>`; }
   }
@@ -4972,7 +4972,7 @@
   async function saveBizLabel() {
     const label = document.getElementById('biz-label').value.trim();
     if (await updateClient({ business_type: 'other', business_label: label })) showToast('تم حفظ نوع النشاط');
-    else showToast('تعذر الحفظ', true);
+    else showToast('ما انحفظ التعديل. تأكد من الإنترنت وحاول مرة ثانية', true);
   }
   async function setBusinessType(type) {
     if (!BUSINESS_TYPES[type] || type === client.business_type) return;
@@ -5188,7 +5188,7 @@
       c.group_name = res.category.group_name;
       renderCategories();
       showToast(c.group_name ? `صار القسم تحت "${c.group_name}"` : 'تمت إزالة الفئة الرئيسية');
-    } catch { showToast('تعذر الحفظ', true); }
+    } catch { showToast('ما انحفظ التعديل. تأكد من الإنترنت وحاول مرة ثانية', true); }
   }
 
   function renderCategories() {
@@ -5381,7 +5381,7 @@
 
   async function toggleField(id, field, current) {
     try { await api('product-toggle', { id, field, value: !current }); }
-    catch { return showToast('تعذر التحديث', true); }
+    catch { return showToast('ما قدرنا نحدّث البيانات. تأكد من الإنترنت', true); }
     if (field === 'is_available') showToast(current ? 'صار الطبق: نفدت الكمية' : 'صار الطبق: متوفر');
     else if (field === 'is_hidden') showToast(current ? 'الطبق ظاهر في المنيو' : 'تم إخفاء الطبق من المنيو');
     else showToast(current ? 'تمت إزالة التمييز' : 'تم تمييز الطبق');

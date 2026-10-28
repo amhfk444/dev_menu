@@ -584,7 +584,7 @@ async function main(req) {
     return { locations: await google.listLocations(await google.accessToken(conn.refresh_token_enc)) };
   }
 
-  if (req.method !== 'POST') throw new ApiError(404, 'Unknown action');
+  if (req.method !== 'POST') throw new ApiError(404, 'هذا الطلب غير معروف، حدّث الصفحة وحاول مرة ثانية', 'UNKNOWN');
   const { store, admin } = await context(req);
   const sid = store.id;
   req._sid = sid;
@@ -1492,7 +1492,7 @@ async function main(req) {
     return { ok: true };
   }
 
-  throw new ApiError(404, 'Unknown action');
+  throw new ApiError(404, 'هذا الطلب غير معروف، حدّث الصفحة وحاول مرة ثانية', 'UNKNOWN');
 }
 
 // أي تعديل يغيّر اللي يشوفه الزبون في المنيو ← تنبيه لحظي للمنيوهات المفتوحة

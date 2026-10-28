@@ -402,6 +402,6 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (e.extra && !res.headersSent) return res.status(e.status).json({ error: e.message, code: e.code, ...e.extra });
     throw e;
   }
-  throw new ApiError(404, 'Unknown action');
+  throw new ApiError(404, 'هذا الطلب غير معروف، حدّث الصفحة وحاول مرة ثانية', 'UNKNOWN');
 });
 module.exports.config = { maxDuration: 30 };

@@ -302,7 +302,7 @@
   });
 
   if (!DM.signedIn()) location.replace('login.html');
-  else load().catch(e => { $('start-err').textContent = e.message || 'تعذر التحميل'; });
+  else load().catch(e => { $('start-err').textContent = e.message || 'ما قدرنا نحمّل الصفحة. تأكد من الإنترنت وحدّثها'; });
 </script>
 </body>
 </html>

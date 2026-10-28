@@ -368,7 +368,7 @@
   }
   async function setSupport(id, status, reply) {
     try { await DM.post(A('support-update'), { id, status, ...(reply !== undefined ? { reply } : {}) }, true); await loadSupport(); }
-    catch (e) { showToast(e.message || 'تعذر الحفظ', true); }
+    catch (e) { showToast(e.message || 'ما انحفظ التعديل. تأكد من الإنترنت وحاول مرة ثانية', true); }
   }
   async function replySupport(id) {
     const x = supRows.find(r => r.id === id); if (!x) return;
@@ -825,14 +825,14 @@
       : { title: 'إيقاف المتجر', message: `يختفي منيو "${name}" عن الزبائن فوراً.`, items: ['لا تُحذف أي بيانات', 'تقدر تعيد تشغيله في أي وقت'], confirmText: 'إيقاف', tone: 'warning' });
     if (!ok) return renderStores();
     const error = await post('set-active', { id, active });
-    if (error) return showToast('تعذر تنفيذ العملية', true);
+    if (error) return showToast('ما اكتملت العملية. حاول مرة ثانية', true);
     showToast(active ? 'تمت إعادة تشغيل المتجر' : 'تم إيقاف المتجر'); loadClients();
   }
 
   async function setFeatured(id, featured) {
     openMenu = null;
     const error = await post('featured', { id, featured });
-    if (error) return showToast('تعذر التحديث', true);
+    if (error) return showToast('ما قدرنا نحدّث البيانات. تأكد من الإنترنت', true);
     const c = find(id);
     showToast(featured && c && !statusOf(c).live ? 'تم، ويظهر في الرئيسية لما يكون اشتراكه سارياً' : featured ? 'يظهر الآن في أمثلة الرئيسية' : 'تمت إزالته من الأمثلة');
     loadClients();

@@ -260,7 +260,7 @@
       tickets = tickets.map(t => t.id === r.ticket.id ? { ...t, invoice_no: r.ticket.invoice_no } : t);
       toast(invoice ? `🧾 الفاتورة ${invoice} ← بيجر ${r.ticket.number}` : 'انشال رقم الفاتورة');
       closeInvoice(); render();
-    } catch (err) { $('inv-err').textContent = err.message || 'حدث خطأ'; $('inv-err').classList.remove('hidden'); }
+    } catch (err) { $('inv-err').textContent = err.message || 'صار خلل وما اكتمل الطلب، حاول مرة ثانية'; $('inv-err').classList.remove('hidden'); }
     $('inv-save').disabled = false;
   };
   $('search').addEventListener('input', () => render());
@@ -322,7 +322,7 @@
       const r = await call('pager-update', { id, status });
       tickets = tickets.map(t => t.id === id ? { ...t, ...r.ticket } : t);
       if (msg) toast(msg.replace('#', r.ticket.number) + (status === 'ready' && r.push === 'sent' ? ' 📲 وانرسل له إشعار' : ''));
-    } catch (e) { toast(e.message || 'حدث خطأ'); }
+    } catch (e) { toast(e.message || 'صار خلل وما اكتمل الطلب، حاول مرة ثانية'); }
     busy.delete(id); render();
   }
 
@@ -364,7 +364,7 @@
       if (invId) return void (timer = setTimeout(load, 4000));   // النافذة مفتوحة: لا نعيد الرسم
       render(); if (!EMBED) ringDue();
     } catch (e) {
-      if (e.status !== 401) toast(e.message || 'تعذر التحديث');
+      if (e.status !== 401) toast(e.message || 'ما قدرنا نحدّث البيانات. تأكد من الإنترنت');
       if (EMBED && !load.opened) setTimeout(() => window.parent.postMessage({ dm: 'desk-closed' }, location.origin), 2500);
     }
     if (!EMBED) timer = setTimeout(load, document.hidden ? 15000 : 4000);
@@ -393,7 +393,7 @@
         scanShow(true, `<i class="ph-bold ph-check-circle text-7xl"></i><b class="text-2xl">تم ${r.count > 1 ? 'الختم دبل' : 'الختم'}</b><b class="text-lg">${who}</b>${no}${dots}<span class="font-bold">${n} من ${r.needed}${n >= r.needed ? ' · المكافأة جاهزة' : ''}</span>`);
         if (navigator.vibrate) navigator.vibrate(80);
       } else scanShow(false, `<i class="ph-bold ${r.reason === 'FULL' ? 'ph-gift' : 'ph-clock'} text-7xl"></i><b class="text-2xl">ما انضاف ختم</b><b class="text-lg">${who}</b>${no}<span class="font-bold">${esc(r.note || '')}</span>`);
-    } catch (e) { scanShow(false, `<i class="ph-bold ph-warning-circle text-6xl"></i><b>${esc(e.message || 'تعذر الختم')}</b>`); }
+    } catch (e) { scanShow(false, `<i class="ph-bold ph-warning-circle text-6xl"></i><b>${esc(e.message || 'ما انختم. حاول مرة ثانية أو اكتب رقم العضوية')}</b>`); }
     if (lastScan && lastScan.rewards && lastScan.rewards.length) setTimeout(() => openReward(lastScan.who, lastScan.rewards), 900);
     lastScan = null;
     setTimeout(() => { scanBusy = false; }, 1500);
@@ -448,7 +448,7 @@
       toast(`🎁 تم صرف ${r.reward} لـ ${r.who.name}`);
       if (r.rewards && r.rewards.length) setTimeout(() => openReward(r.who, r.rewards), 600);
       load();
-    } catch (err) { toast(err.message || 'تعذر الصرف'); b.disabled = false; b.textContent = 'اصرف الحين'; }
+    } catch (err) { toast(err.message || 'ما انصرفت المكافأة. حاول مرة ثانية'); b.disabled = false; b.textContent = 'اصرف الحين'; }
   };
 
   // ─── نقل رصيد بطاقة قديمة (منصة ثانية أو ورق) ───
@@ -477,7 +477,7 @@
       const r = await call('loyalty-transfer', { member_no: trMember.no, count });
       scanShow(true, `<i class="ph-bold ph-arrows-left-right text-7xl"></i><b class="text-2xl">انتقل الرصيد</b><b class="text-lg">${esc(r.who.name)}</b><span class="font-bold">صار عنده ${Math.min(r.stamps, r.needed)} من ${r.needed}${r.stamps >= r.needed ? ' · المكافأة جاهزة' : ''}</span>`);
       trMember.done = true; setTransfer({ who: { ...r.who, transferred: count }, needed: r.needed });
-    } catch (err) { scanShow(false, `<i class="ph-bold ph-warning-circle text-6xl"></i><b>${esc(err.message || 'تعذر النقل')}</b>`); }
+    } catch (err) { scanShow(false, `<i class="ph-bold ph-warning-circle text-6xl"></i><b>${esc(err.message || 'ما انتقل الرصيد. حاول مرة ثانية')}</b>`); }
   };
   $('scan-btn').onclick = openScanner;
   $('scan-close').onclick = closeScanner;
@@ -531,7 +531,7 @@
     $('st-range').innerHTML = [7, 30, 90].map(d => `<button data-d="${d}" class="px-3 py-1.5 rounded-xl text-xs font-black ${d === stDays ? 'bg-[#233d2c] text-white' : 'bg-white border border-[#233d2c]/15'}">${d} يوم</button>`).join('');
     $('st-body').innerHTML = '<p class="text-center opacity-60 font-bold py-10"><i class="ph-bold ph-spinner-gap ph-spin"></i></p>';
     let r;
-    try { r = await call(`pager-stats&days=${stDays}`); } catch (e) { $('st-body').innerHTML = `<p class="text-center font-bold text-rose-700 py-8">${esc(e.message || 'تعذر التحميل')}</p>`; return; }
+    try { r = await call(`pager-stats&days=${stDays}`); } catch (e) { $('st-body').innerHTML = `<p class="text-center font-bold text-rose-700 py-8">${esc(e.message || 'ما قدرنا نحمّل الصفحة. تأكد من الإنترنت وحدّثها')}</p>`; return; }
     if (!r.total) { $('st-body').innerHTML = '<p class="text-center opacity-60 font-bold py-10">ما فيه أرقام في هالفترة للحين.</p>'; return; }
     const tile = (v, l, sub = '') => `<div class="bg-white rounded-2xl border border-[#233d2c]/10 p-4"><p class="text-2xl font-black">${v}</p><p class="text-xs font-bold opacity-60 mt-1">${l}</p>${sub ? `<p class="text-[11px] font-bold opacity-45 mt-0.5">${sub}</p>` : ''}</div>`;
     const rate = Math.round(r.done / r.total * 100);

@@ -127,5 +127,5 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     return { ok: true };
   }
 
-  throw new ApiError(404, 'Unknown action');
+  throw new ApiError(404, 'هذا الطلب غير معروف، حدّث الصفحة وحاول مرة ثانية', 'UNKNOWN');
 });

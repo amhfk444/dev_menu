@@ -170,5 +170,5 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     return { ok: true, google: rating >= 4 ? await reviewUrl(store.id) : null };
   }
 
-  throw new ApiError(404, 'Unknown action');
+  throw new ApiError(404, 'هذا الطلب غير معروف، حدّث الصفحة وحاول مرة ثانية', 'UNKNOWN');
 });

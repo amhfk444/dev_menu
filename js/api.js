@@ -41,13 +41,13 @@
     if (token) headers.Authorization = `Bearer ${token}`;
     let res;
     try { res = await fetch(`${AUTH_URL}/${path}`, { method: 'POST', headers, body: JSON.stringify(body || {}) }); }
-    catch { throw fail('تعذر الاتصال، تحقق من الإنترنت', 0); }
+    catch { throw fail('ما فيه اتصال بالإنترنت. تأكد من الشبكة وحاول مرة ثانية', 0, 'OFFLINE'); }
     let data = null;
     try { data = await res.json(); } catch {}
     if (!res.ok) {
       const raw = (data && (data.msg || data.error_description || data.message || data.error)) || '';
       if (res.status === 429 || /rate limit|security purposes/i.test(raw)) throw fail('طلبت رموزاً كثيرة، انتظر دقيقة ثم حاول مرة أخرى', 429, 'RATE_LIMIT');
-      throw fail(raw || 'تعذر إكمال العملية', res.status);
+      throw fail(raw || 'ما اكتملت العملية، حاول مرة ثانية', res.status);
     }
     return data;
   }
@@ -79,10 +79,10 @@
     if (token) headers.Authorization = `Bearer ${token}`;
     let res;
     try { res = await fetch(path, { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined }); }
-    catch { throw fail('تعذر الاتصال بالخادم، تحقق من الإنترنت', 0); }
+    catch { throw fail('ما قدرنا نوصل للخادم. تأكد من الإنترنت وحاول مرة ثانية', 0, 'OFFLINE'); }
     let data = null;
     try { data = await res.json(); } catch {}
-    if (!res.ok) throw fail((data && data.error) || 'حدث خطأ في الخادم', res.status, data && data.code);
+    if (!res.ok) throw fail((data && data.error) || 'صار خلل عندنا وما اكتمل طلبك. حاول بعد دقيقة', res.status, data && data.code);
     return data;
   }
 

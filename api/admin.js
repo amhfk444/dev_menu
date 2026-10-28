@@ -58,7 +58,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     return { requests: rows || [], ready: !!rows };
   }
 
-  if (req.method !== 'POST') throw new ApiError(404, 'Unknown action');
+  if (req.method !== 'POST') throw new ApiError(404, 'هذا الطلب غير معروف، حدّث الصفحة وحاول مرة ثانية', 'UNKNOWN');
   const b = readBody(req);
 
   if (action === 'support-update') {
@@ -265,5 +265,5 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     return { ok: true, files: paths.size };
   }
 
-  throw new ApiError(404, 'Unknown action');
+  throw new ApiError(404, 'هذا الطلب غير معروف، حدّث الصفحة وحاول مرة ثانية', 'UNKNOWN');
 });

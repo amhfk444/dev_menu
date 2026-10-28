@@ -173,7 +173,7 @@
   async function loadForm() {
     let info;
     try { info = await DM.get(`/api/waitlist?action=info&slug=${encodeURIComponent(slug)}`); }
-    catch (e) { return unavailable(e.status === 404 || e.status === 400 ? 'قائمة الانتظار غير متاحة حالياً' : 'تعذر التحميل', e.status === 0 ? 'تحقق من اتصالك بالإنترنت.' : 'جرّب لاحقاً أو اسأل الاستقبال.'); }
+    catch (e) { return unavailable(e.status === 404 || e.status === 400 ? 'قائمة الانتظار غير متاحة حالياً' : 'ما قدرنا نحمّل الصفحة. تأكد من الإنترنت وحدّثها', e.status === 0 ? 'تحقق من اتصالك بالإنترنت.' : 'جرّب لاحقاً أو اسأل الاستقبال.'); }
     setStore(info.store);
     settings = info.settings;
     if (!settings.open) return show('closed');

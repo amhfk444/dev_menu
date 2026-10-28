@@ -180,14 +180,14 @@ function handler(methods, fn) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     try {
       assertConfig();
-      if (!methods.includes(req.method)) throw new ApiError(405, 'Method not allowed');
+      if (!methods.includes(req.method)) throw new ApiError(405, 'هذا الطلب غير مدعوم', 'METHOD');
       const out = await fn(req, res);
       if (!res.headersSent) res.status(200).json(out === undefined ? { ok: true } : out);
     } catch (e) {
       const known = e instanceof ApiError;
       const status = known ? e.status : 500;
       if (!known || status >= 500) console.error('[api]', req.method, req.url, e);
-      if (!res.headersSent) res.status(status).json({ error: known ? e.message : 'حدث خطأ في الخادم', code: known ? e.code : undefined });
+      if (!res.headersSent) res.status(status).json({ error: known ? e.message : 'صار خلل عندنا وما اكتمل طلبك. حاول بعد دقيقة، ولو تكرر راسل الإدارة من "اشتراكك"', code: known ? e.code : 'SERVER' });
     }
   };
 }
