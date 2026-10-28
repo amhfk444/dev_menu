@@ -15,9 +15,6 @@
 /* شعار البطاقة */
 .lcard > .lcard-logo { display: block; width: 46px; height: 46px; margin-bottom: 12px; border-radius: 12px; object-fit: cover; background: #fff; box-shadow: 0 6px 14px -8px rgba(0,0,0,.5); }
 .stamp img.reward { opacity: 1; filter: none; }
-/* صورة ختم مفرغة: كاملة في نص الدائرة فوق لون الختم */
-.stamp img.cut { width: 66%; height: 66%; object-fit: contain; opacity: .3; }
-.stamp.on img.cut { opacity: 1; filter: drop-shadow(0 2px 2px rgba(0,0,0,.18)); }
 .lcard.st-solid { background: var(--c); }
 .lcard.st-solid::after { display: none; }
 .lcard.st-paper { background: #fbf8f3; color: var(--c); border: 2px dashed color-mix(in srgb, var(--c) 45%, transparent); box-shadow: 0 24px 50px -32px rgba(0,0,0,.35); }
