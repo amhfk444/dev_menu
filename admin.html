@@ -99,43 +99,6 @@
   .ly-tabs button { flex: 1 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 14px; border-radius: 12px; font-size: 13px; font-weight: 700; color: rgba(34,54,42,.6); white-space: nowrap; }
   .ly-tabs button[aria-selected="true"] { background: #fff; color: #22362a; box-shadow: 0 6px 16px -10px rgba(34,54,42,.45); }
   .lyt-badge { font-size: 10px; background: rgba(56,79,61,.1); padding: 1px 7px; border-radius: 999px; }
-  /* تصميم البطاقة: جوال يعرض النتيجة */
-  .ly-views { display: flex; gap: 4px; background: rgba(56,79,61,.06); padding: 4px; border-radius: 14px; }
-  .ly-views button { flex: 1; padding: 8px 10px; border-radius: 10px; font-size: 12px; font-weight: 700; color: rgba(34,54,42,.6); }
-  .ly-views button[aria-selected="true"] { background: #fff; color: #22362a; box-shadow: 0 6px 16px -10px rgba(34,54,42,.45); }
-  .ly-phone { width: 100%; max-width: 320px; margin-inline: auto; padding: 10px; border-radius: 48px; background: #1c1c1e;
-    box-shadow: 0 0 0 2px #3a3a3c inset, 0 40px 70px -40px rgba(0,0,0,.55); transition: box-shadow .35s; }
-  .ly-phone.flash { box-shadow: 0 0 0 2px #3a3a3c inset, 0 0 0 5px rgba(201,162,39,.55), 0 40px 70px -40px rgba(0,0,0,.55); }
-  .ly-phone-screen { position: relative; height: 480px; border-radius: 38px; overflow: hidden auto; scrollbar-width: none; }
-  .ly-phone-screen::-webkit-scrollbar { display: none; }
-  .ly-island { position: absolute; top: 10px; left: 50%; translate: -50% 0; width: 92px; height: 26px; border-radius: 20px; background: #000; z-index: 5; }
-  .pv-page { min-height: 100%; background: #f5f2eb; color: #1b3022; padding: 0 14px 18px; }
-  .pv-page .lcard { padding: 20px 18px 18px; border-radius: 22px; }
-  .pv-page .stamps { gap: 9px; margin-top: 16px; }
-  .pv-page .stamp { font-size: 18px; }
-  .pv-page .lcard-holder b { font-size: 15px; }
-  .pv-page .lcard > .lcard-logo { width: 38px; height: 38px; margin-bottom: 10px; }
-  .pv-box { background: #fff; border: 1.5px solid rgba(35,61,44,.12); border-radius: 18px; padding: 14px; font-size: 12px; font-weight: 700; text-align: center; }
-  .pv-wallet { min-height: 100%; background: #f2f2f7; padding: 46px 12px 16px; }
-  .pv-pass { border-radius: 14px; padding: 12px; display: grid; gap: 10px; box-shadow: 0 18px 30px -20px rgba(0,0,0,.6); }
-  .pv-pass small { display: block; font-size: 9px; font-weight: 700; opacity: .75; }
-  .pv-pass b { display: block; font-size: 13px; }
-  .pv-strip { margin-inline: -12px; padding: 14px 12px; display: grid; gap: 7px; }
-  .pv-strip .stamp { font-size: 15px; border-width: 1.5px; }
-  .pv-qr { width: 92px; height: 92px; margin: 2px auto 0; background: #fff; border-radius: 8px; display: grid; place-items: center; font-size: 64px; color: #111; }
-  .pv-note { font-size: 11px; color: #636366; text-align: center; margin-top: 12px; line-height: 1.6; }
-  .pv-lock { min-height: 100%; padding: 70px 10px 16px; color: #fff; display: flex; flex-direction: column; gap: 8px; }
-  .pv-time { text-align: center; font-size: 64px; font-weight: 300; line-height: 1; margin-bottom: 26px; }
-  .pv-notice { display: flex; gap: 9px; align-items: flex-start; padding: 10px 11px; border-radius: 18px; background: rgba(255,255,255,.72); color: #111;
-    -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); font-size: 12px; line-height: 1.45; }
-  .pv-notice span:not(.pv-n-icon) { font-size: 10px; color: #6b6b6b; flex-shrink: 0; }
-  .pv-notice > div { flex: 1; }
-  .pv-notice img, .pv-n-icon { width: 30px; height: 30px; border-radius: 7px; object-fit: cover; flex-shrink: 0; }
-  .pv-n-icon { display: grid; place-items: center; background: #000; color: #fff; font-size: 15px; }
-  .ly-chip { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: rgba(201,162,39,.16); color: #6b520a; }
-  @media (min-width: 1024px) { .ly-phone-screen { height: 600px; } }
-  @media (max-width: 1023px) { .ly-phone { max-width: 290px; } }
-  @media (prefers-reduced-motion: reduce) { .ly-phone { transition: none; } }
   .ly-kpi { background: #fff; border: 1px solid rgba(56,79,61,.12); border-radius: 18px; padding: 16px; }
   .ly-kpi .k-ic { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: rgba(56,79,61,.08); color: #384f3d; }
   .ly-table th { text-align: right; font-size: 11px; font-weight: 700; color: rgba(34,54,42,.5); padding: 10px 12px; border-bottom: 1px solid rgba(56,79,61,.1); }
@@ -1020,9 +983,8 @@
         <div class="ly-tabs" role="tablist" aria-label="أقسام الولاء">
           <button type="button" role="tab" data-lyt="overview"><i class="ph-bold ph-chart-bar"></i> نظرة عامة</button>
           <button type="button" role="tab" data-lyt="members"><i class="ph-bold ph-users-three"></i> الأعضاء <span id="lyt-count" class="lyt-badge"></span></button>
-          <button type="button" role="tab" data-lyt="design"><i class="ph-bold ph-palette"></i> تصميم البطاقة</button>
           <button type="button" role="tab" data-lyt="messages"><i class="ph-bold ph-paper-plane-tilt"></i> الرسائل والمساعد</button>
-          <button type="button" role="tab" data-lyt="settings"><i class="ph-bold ph-sliders-horizontal"></i> الإعدادات</button>
+          <button type="button" role="tab" data-lyt="settings"><i class="ph-bold ph-sliders-horizontal"></i> الإعدادات والتصميم</button>
         </div>
         <div id="ly-grid" class="grid lg:grid-cols-[1.1fr_.9fr] gap-5 items-start">
           <div class="space-y-5">
@@ -1092,6 +1054,83 @@
               <button type="submit" id="ly-save" class="bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition">حفظ</button>
             </form>
 
+            <!-- شكل البطاقة -->
+            <div data-lytab="settings" class="pro-card p-5 md:p-6 space-y-5">
+              <h3 class="text-sm font-bold flex items-center gap-2"><i class="ph-bold ph-palette"></i> شكل البطاقة</h3>
+              <div class="max-w-sm mx-auto w-full">
+                <div class="lcard" id="ly-preview">
+                  <p class="text-sm opacity-75">اجمع <b id="ly-pv-needed"></b> أختام وخذ</p>
+                  <p id="ly-pv-reward" class="text-xl font-bold mt-0.5"></p>
+                  <div id="ly-pv-stamps" class="stamps"></div>
+                  <div class="lcard-holder"><div><small>صاحب البطاقة</small><b>اسم الزبون</b></div><div class="text-left"><small>رقم العضوية</small><b dir="ltr">#482913</b></div></div>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <p class="text-xs font-semibold text-ink/70">خلفية البطاقة</p>
+                <div id="ly-bg" class="grid grid-cols-2 gap-2"></div>
+                <input type="file" id="ly-bg-file" accept="image/png,image/jpeg,image/webp" class="hidden" onchange="uploadCardBg(this)">
+                <div id="ly-bg-up" class="flex flex-wrap items-center gap-2 pt-1 hidden">
+                  <label for="ly-bg-file" class="cursor-pointer bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-3.5 py-2 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-upload-simple"></i> غيّر الصورة</label>
+                  <span class="text-[11px] text-ink/55">تغطي البطاقة كلها، وفي المحفظة تطلع ورا الأختام.</span>
+                </div>
+              </div>
+              <div class="space-y-2" id="ly-style-box">
+                <p class="text-xs font-semibold text-ink/70">الشكل</p>
+                <div id="ly-styles" class="grid grid-cols-3 sm:grid-cols-5 gap-2"></div>
+              </div>
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <p class="text-xs font-semibold text-ink/70">لون البطاقة</p>
+                  <div id="ly-colors" class="flex flex-wrap items-center gap-2"></div>
+                </div>
+                <div class="space-y-2">
+                  <p class="text-xs font-semibold text-ink/70">لون الختم</p>
+                  <div id="ly-stamp-colors" class="flex flex-wrap items-center gap-2"></div>
+                </div>
+                <div class="space-y-2" id="ly-color2-box">
+                  <p class="text-xs font-semibold text-ink/70">اللون الثاني للتدرج</p>
+                  <div id="ly-colors2" class="flex flex-wrap items-center gap-2"></div>
+                </div>
+                <div class="space-y-2">
+                  <p class="text-xs font-semibold text-ink/70">لون الخط</p>
+                  <div id="ly-text-colors" class="flex flex-wrap items-center gap-2"></div>
+                </div>
+              </div>
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <p class="text-xs font-semibold text-ink/70">شعار البطاقة</p>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <img id="ly-logo-pv" alt="" class="w-11 h-11 rounded-xl object-cover border border-brand/15 hidden">
+                    <label class="cursor-pointer bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-3.5 py-2 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-upload-simple"></i> ارفع شعار
+                      <input type="file" accept="image/png,image/jpeg,image/webp" class="hidden" onchange="uploadLyImage(this, 'logo')"></label>
+                    <button type="button" id="ly-logo-clear" onclick="setLyDesign({ logo: null })" class="hidden text-[13px] font-bold text-brick px-2 py-2"><i class="ph-bold ph-trash"></i> شيله</button>
+                  </div>
+                  <p class="text-[11px] text-ink/55">يطلع على البطاقة وفي المحفظة بدل شعار المنيو. الأفضل مربع.</p>
+                </div>
+                <div class="space-y-2">
+                  <p class="text-xs font-semibold text-ink/70">صورة المكافأة (آخر خانة)</p>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <img id="ly-reward-pv" alt="" class="w-11 h-11 rounded-full object-cover border border-brand/15 hidden">
+                    <label class="cursor-pointer bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-3.5 py-2 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-gift"></i> ارفع صورة
+                      <input type="file" accept="image/png,image/jpeg,image/webp" class="hidden" onchange="uploadLyImage(this, 'reward_image')"></label>
+                    <button type="button" id="ly-reward-clear" onclick="setLyDesign({ reward_image: null })" class="hidden text-[13px] font-bold text-brick px-2 py-2"><i class="ph-bold ph-trash"></i> شيلها</button>
+                  </div>
+                  <p class="text-[11px] text-ink/55">صورة المشروب أو المنتج المجاني بدل أيقونة الهدية.</p>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <p class="text-xs font-semibold text-ink/70">صورة الختم</p>
+                <div id="ly-icons" class="flex flex-wrap gap-2"></div>
+                <div class="flex flex-wrap items-center gap-2 pt-1">
+                  <label class="cursor-pointer bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-3.5 py-2 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-image"></i> ارفع صورة للختم
+                    <input type="file" id="ly-stamp-file" accept="image/png,image/jpeg,image/webp" class="hidden" onchange="uploadStampImage(this)"></label>
+                  <button type="button" id="ly-stamp-clear" onclick="setLyDesign({ stamp_image: null })" class="hidden text-[13px] font-bold text-brick px-2 py-2"><i class="ph-bold ph-trash"></i> شيل الصورة</button>
+                  <span class="text-[11px] text-ink/55">مثل شعارك أو صورة منتجك. الأفضل صورة مربعة.</span>
+                </div>
+              </div>
+              <button type="button" id="ly-design-save" onclick="saveLyDesign()" class="bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition">حفظ الشكل</button>
+            </div>
+
             <!-- المساعد الذكي -->
             <div data-lytab="messages" class="pro-card p-5 md:p-6 space-y-4">
               <div class="flex flex-wrap items-start justify-between gap-3">
@@ -1151,150 +1190,6 @@
             <div class="flex gap-2 justify-center">
               <button type="button" onclick="downloadLoyaltyCard()" class="bg-brand hover:bg-brand-dark text-cream px-4 py-2.5 rounded-xl text-sm font-bold transition"><i class="ph-bold ph-download-simple"></i> تحميل للطباعة</button>
               <a id="ly-open" target="_blank" rel="noopener" class="bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-4 py-2.5 rounded-xl text-sm font-bold transition">معاينة</a>
-            </div>
-          </div>
-        </div>
-
-        <!-- تصميم البطاقة: التعديل على اليمين، وجوال يعرض النتيجة على طول -->
-        <div data-lytab="design" class="grid lg:grid-cols-[1fr_minmax(300px,360px)] gap-5 items-start">
-          <div class="space-y-5 order-2 lg:order-1">
-            <div class="pro-card p-5 md:p-6 space-y-4">
-              <div><h3 class="text-sm font-bold flex items-center gap-2"><i class="ph-bold ph-palette"></i> الخلفية والألوان</h3><p class="text-[12px] text-ink/60 mt-1">أول شي يشوفه الزبون. اختر لون محلك أو صورة.</p></div>
-              <div class="space-y-2">
-                <p class="text-xs font-semibold text-ink/70">خلفية البطاقة</p>
-                <div id="ly-bg" class="grid grid-cols-2 gap-2"></div>
-                <input type="file" id="ly-bg-file" accept="image/png,image/jpeg,image/webp" class="hidden" onchange="uploadCardBg(this)">
-                <div id="ly-bg-up" class="flex flex-wrap items-center gap-2 pt-1 hidden">
-                  <label for="ly-bg-file" class="cursor-pointer bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-3.5 py-2 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-upload-simple"></i> غيّر الصورة</label>
-                  <span class="text-[11px] text-ink/55">تغطي البطاقة كلها، وفي المحفظة تطلع ورا الأختام.</span>
-                </div>
-              </div>
-              <div class="space-y-2" id="ly-style-box">
-                <p class="text-xs font-semibold text-ink/70">الشكل</p>
-                <div id="ly-styles" class="grid grid-cols-3 sm:grid-cols-5 gap-2"></div>
-              </div>
-              <div class="grid sm:grid-cols-2 gap-4">
-                <div class="space-y-2">
-                  <p class="text-xs font-semibold text-ink/70">لون البطاقة</p>
-                  <div id="ly-colors" class="flex flex-wrap items-center gap-2"></div>
-                </div>
-                <div class="space-y-2">
-                  <p class="text-xs font-semibold text-ink/70">لون الختم</p>
-                  <div id="ly-stamp-colors" class="flex flex-wrap items-center gap-2"></div>
-                </div>
-                <div class="space-y-2" id="ly-color2-box">
-                  <p class="text-xs font-semibold text-ink/70">اللون الثاني للتدرج</p>
-                  <div id="ly-colors2" class="flex flex-wrap items-center gap-2"></div>
-                </div>
-                <div class="space-y-2">
-                  <p class="text-xs font-semibold text-ink/70">لون الخط</p>
-                  <div id="ly-text-colors" class="flex flex-wrap items-center gap-2"></div>
-                </div>
-              </div>
-            </div>
-            <div class="pro-card p-5 md:p-6 space-y-4">
-              <div><h3 class="text-sm font-bold flex items-center gap-2"><i class="ph-bold ph-seal-check"></i> الأختام</h3><p class="text-[12px] text-ink/60 mt-1">شكل الختم اللي ينضاف للزبون مع كل زيارة.</p></div>
-              <div class="space-y-2">
-                <p class="text-xs font-semibold text-ink/70">صورة الختم</p>
-                <div id="ly-icons" class="flex flex-wrap gap-2"></div>
-                <div class="flex flex-wrap items-center gap-2 pt-1">
-                  <label class="cursor-pointer bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-3.5 py-2 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-image"></i> ارفع صورة للختم
-                    <input type="file" id="ly-stamp-file" accept="image/png,image/jpeg,image/webp" class="hidden" onchange="uploadStampImage(this)"></label>
-                  <button type="button" id="ly-stamp-clear" onclick="setLyDesign({ stamp_image: null })" class="hidden text-[13px] font-bold text-brick px-2 py-2"><i class="ph-bold ph-trash"></i> شيل الصورة</button>
-                  <span class="text-[11px] text-ink/55">مثل شعارك أو صورة منتجك. الأفضل صورة مربعة.</span>
-                </div>
-              </div>
-            </div>
-            <div class="pro-card p-5 md:p-6 space-y-4">
-              <div><h3 class="text-sm font-bold flex items-center gap-2"><i class="ph-bold ph-image"></i> الشعار وصورة المكافأة</h3><p class="text-[12px] text-ink/60 mt-1">اختياري. لو ما رفعت شعار نستخدم شعار المنيو.</p></div>
-              <div class="grid sm:grid-cols-2 gap-4">
-                <div class="space-y-2">
-                  <p class="text-xs font-semibold text-ink/70">شعار البطاقة</p>
-                  <div class="flex flex-wrap items-center gap-2">
-                    <img id="ly-logo-pv" alt="" class="w-11 h-11 rounded-xl object-cover border border-brand/15 hidden">
-                    <label class="cursor-pointer bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-3.5 py-2 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-upload-simple"></i> ارفع شعار
-                      <input type="file" accept="image/png,image/jpeg,image/webp" class="hidden" onchange="uploadLyImage(this, 'logo')"></label>
-                    <button type="button" id="ly-logo-clear" onclick="setLyDesign({ logo: null })" class="hidden text-[13px] font-bold text-brick px-2 py-2"><i class="ph-bold ph-trash"></i> شيله</button>
-                  </div>
-                  <p class="text-[11px] text-ink/55">يطلع على البطاقة وفي المحفظة بدل شعار المنيو. الأفضل مربع.</p>
-                </div>
-                <div class="space-y-2">
-                  <p class="text-xs font-semibold text-ink/70">صورة المكافأة (آخر خانة)</p>
-                  <div class="flex flex-wrap items-center gap-2">
-                    <img id="ly-reward-pv" alt="" class="w-11 h-11 rounded-full object-cover border border-brand/15 hidden">
-                    <label class="cursor-pointer bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-3.5 py-2 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-gift"></i> ارفع صورة
-                      <input type="file" accept="image/png,image/jpeg,image/webp" class="hidden" onchange="uploadLyImage(this, 'reward_image')"></label>
-                    <button type="button" id="ly-reward-clear" onclick="setLyDesign({ reward_image: null })" class="hidden text-[13px] font-bold text-brick px-2 py-2"><i class="ph-bold ph-trash"></i> شيلها</button>
-                  </div>
-                  <p class="text-[11px] text-ink/55">صورة المشروب أو المنتج المجاني بدل أيقونة الهدية.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="order-1 lg:order-2 lg:sticky lg:top-24 space-y-3">
-            <div class="ly-views" role="tablist" aria-label="وين يشوفها الزبون">
-              <button type="button" role="tab" data-lyv="page" aria-selected="true">صفحة البطاقة</button>
-              <button type="button" role="tab" data-lyv="wallet" aria-selected="false">المحفظة</button>
-              <button type="button" role="tab" data-lyv="lock" aria-selected="false">الإشعار</button>
-            </div>
-            <div class="ly-phone" id="ly-phone">
-              <div class="ly-phone-screen">
-                <div class="ly-island"></div>
-                <!-- صفحة البطاقة في المتصفح -->
-                <div data-lyv-pane="page" class="pv-page">
-                  <div class="text-center pt-9 pb-4">
-                    <img id="pv-logo" alt="" class="w-11 h-11 rounded-xl object-cover mx-auto mb-2 bg-white border border-black/5 hidden">
-                    <p id="pv-store" class="text-[15px] font-bold"></p>
-                    <p class="text-[11px] opacity-60"><i class="ph-bold ph-seal-check"></i> بطاقة الولاء</p>
-                  </div>
-                  <div class="lcard" id="ly-preview">
-                    <div class="flex items-start justify-between gap-3">
-                      <div><p class="text-[12px] opacity-75">أهلاً سارة</p><p id="ly-pv-reward" class="text-[16px] font-bold mt-0.5 leading-snug"></p></div>
-                      <p class="opacity-75 shrink-0" dir="ltr"><b id="ly-pv-needed" class="text-xl"></b></p>
-                    </div>
-                    <div id="ly-pv-stamps" class="stamps"></div>
-                    <div class="lcard-holder"><div><small>صاحب البطاقة</small><b>سارة</b></div><div class="text-left"><small>رقم العضوية</small><b dir="ltr">#482913</b></div></div>
-                  </div>
-                  <div class="pv-box mt-3"><i class="ph-bold ph-qr-code"></i> بعد ما تدفع، اعرض الكود للكاشير</div>
-                </div>
-                <!-- بطاقة المحفظة -->
-                <div data-lyv-pane="wallet" class="pv-wallet hidden">
-                  <div id="pv-pass" class="pv-pass">
-                    <div class="flex items-center justify-between gap-2">
-                      <div class="flex items-center gap-2 min-w-0"><img id="pv-pass-logo" alt="" class="w-7 h-7 rounded-md object-cover bg-white hidden"><b id="pv-pass-name" class="text-[13px] truncate"></b></div>
-                      <div class="text-left shrink-0"><small>الأختام</small><b id="pv-pass-count" dir="ltr"></b></div>
-                    </div>
-                    <div id="pv-pass-strip" class="pv-strip"></div>
-                    <div class="flex justify-between gap-3">
-                      <div class="min-w-0"><small id="pv-pass-rlabel">المكافأة</small><b id="pv-pass-reward" class="truncate"></b></div>
-                      <div class="text-left"><small>صاحب البطاقة</small><b>سارة</b></div>
-                    </div>
-                    <div class="pv-qr"><i class="ph-bold ph-qr-code"></i></div>
-                  </div>
-                  <p class="pv-note">المحفظة تاخذ لون البطاقة والشعار والأختام. لون الخط فيها يختاره الجوال تلقائياً.</p>
-                </div>
-                <!-- شاشة القفل -->
-                <div data-lyv-pane="lock" class="pv-lock hidden">
-                  <p class="pv-time" dir="ltr">9:41</p>
-                  <div class="pv-notice"><img id="pv-n-logo" alt="" class="hidden"><span id="pv-n-icon" class="pv-n-icon"><i class="ph-bold ph-wallet"></i></span>
-                    <div class="min-w-0"><p class="flex justify-between gap-2"><b id="pv-n-name" class="truncate"></b><span>الحين</span></p><p id="pv-n-stamp"></p></div></div>
-                  <div class="pv-notice"><span class="pv-n-icon"><i class="ph-bold ph-wallet"></i></span>
-                    <div class="min-w-0"><p class="flex justify-between gap-2"><b id="pv-n-name2" class="truncate"></b><span>أمس</span></p><p>اليوم الختم دبل، نشوفك؟</p></div></div>
-                </div>
-              </div>
-            </div>
-            <label class="pro-card px-4 py-3 flex items-center gap-3 text-[12px] font-semibold text-ink/70">
-              <span class="shrink-0">جرّب عدد الأختام</span>
-              <input type="range" id="ly-pv-count" min="0" value="3" class="flex-1 accent-[#384f3d]" oninput="ly.pvCount = +this.value; renderDesign()">
-              <b id="ly-pv-count-label" class="tnum text-ink w-10 text-left" dir="ltr"></b>
-            </label>
-            <div id="ly-changes" class="pro-card p-4 space-y-3">
-              <p id="ly-changes-text" class="text-[12px] text-ink/65"></p>
-              <div id="ly-changes-list" class="flex flex-wrap gap-1.5"></div>
-              <div class="flex gap-2">
-                <button type="button" id="ly-design-save" onclick="saveLyDesign()" class="flex-1 bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition">حفظ الشكل</button>
-                <button type="button" id="ly-design-undo" onclick="undoLyDesign()" class="hidden bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-4 py-2.5 rounded-xl text-sm font-bold transition">تراجع</button>
-              </div>
             </div>
           </div>
         </div>
@@ -4178,81 +4073,21 @@
   const LY_STYLES = [['gradient', 'متدرج'], ['glass', 'زجاجي'], ['solid', 'لون سادة'], ['paper', 'ورقي'], ['dark', 'داكن']];
   const LY_CARD_COLORS = ['#233d2c', '#1f2937', '#7c2d12', '#1e3a8a', '#831843', '#0f766e', '#b45309'];
   const LY_STAMP_COLORS = ['#c9a227', '#ffffff', '#f97316', '#ef4444', '#22c55e', '#38bdf8', '#1b1b1b'];
-  function setLyDesign(patch) { ly.design = { ...ly.design, ...patch }; ly.dirty = true; flashPhone(); renderDesign(); }
-  // وهو يسحب في منتقي اللون: نحدّث الجوال بس، بدون ما نعيد رسم الأزرار (إعادة الرسم تقفل المنتقي)
+  function setLyDesign(patch) { ly.design = { ...ly.design, ...patch }; ly.dirty = true; renderDesign(); }
+  // وهو يسحب في منتقي اللون: نحدّث المعاينة بس، بدون ما نعيد رسم الأزرار (إعادة الرسم تقفل المنتقي)
   function pickLyColor(key, value) {
     ly.design = { ...ly.design, [key]: value }; ly.dirty = true;
-    renderPhone();
-  }
-  function undoLyDesign() { ly.design = { ...ly.data.settings.design }; ly.dirty = false; flashPhone(); renderDesign(); }
-  function flashPhone() {
-    const ph = document.getElementById('ly-phone'); ph.classList.add('flash');
-    clearTimeout(flashPhone.t); flashPhone.t = setTimeout(() => ph.classList.remove('flash'), 600);
-  }
-  // وين يشوفها الزبون: صفحة البطاقة، المحفظة، شاشة القفل
-  document.querySelectorAll('[data-lyv]').forEach(b => b.addEventListener('click', () => {
-    document.querySelectorAll('[data-lyv]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
-    document.querySelectorAll('[data-lyv-pane]').forEach(el => el.classList.toggle('hidden', el.dataset.lyvPane !== b.dataset.lyv));
-  }));
-  // التعديلات اللي ما انحفظت (بأسماء يفهمها صاحب المحل)
-  const LY_CHANGE_LABELS = [[['color'], 'لون البطاقة'], [['color2'], 'اللون الثاني'], [['text_color'], 'لون الخط'], [['style'], 'الشكل'], [['bg', 'bg_image'], 'الخلفية'],
-    [['stamp_color'], 'لون الختم'], [['icon', 'stamp_image'], 'صورة الختم'], [['logo'], 'الشعار'], [['reward_image'], 'صورة المكافأة']];
-  function lyChanges() {
-    const a = ly.design || {}, b = (ly.data && ly.data.settings.design) || {};
-    return LY_CHANGE_LABELS.filter(([keys]) => keys.some(k => (a[k] ?? null) !== (b[k] ?? null))).map(([, label]) => label);
-  }
-  // الجوال: يرسم البطاقة كما يشوفها الزبون بالضبط
-  function renderPhone() {
-    const d = ly.design, st = ly.data.settings, n = st.needed;
-    if (!Number.isInteger(ly.pvCount)) ly.pvCount = Math.min(3, n - 1);
-    const s = ly.pvCount = Math.max(0, Math.min(n, ly.pvCount));
-    const range = document.getElementById('ly-pv-count'); range.max = n; range.value = s;
-    document.getElementById('ly-pv-count-label').textContent = `${s}/${n}`;
-    const name = client.name || 'محلك', logo = d.logo || client.logo_url || '';
-    const pic = (id, url) => { const el = document.getElementById(id); el.classList.toggle('hidden', !url); if (url && el.getAttribute('src') !== url) el.src = url; };
-    // صفحة البطاقة
-    document.getElementById('pv-store').textContent = name;
-    pic('pv-logo', client.logo_url || '');
-    DMLoyaltyCard.apply(document.getElementById('ly-preview'), d);
-    document.getElementById('ly-pv-needed').textContent = `${s}/${n}`;
-    document.getElementById('ly-pv-reward').textContent = s >= n ? 'كمّلت الأختام!' : `باقي ${n - s} على ${st.reward}`;
-    const pv = document.getElementById('ly-pv-stamps');
-    pv.className = `stamps ${n === 5 || n === 10 ? 'c5' : ''}`;
-    pv.innerHTML = DMLoyaltyCard.stamps(s, n, d);
-    // المحفظة: لون واحد للبطاقة، والأختام في الشريط (مع اللون الثاني لو فيه)
-    const pass = document.getElementById('pv-pass'), color = d.color || '#233d2c', stampC = d.stamp_color || '#c9a227';
-    const ink = DMLoyaltyCard.inkFor(color);
-    pass.style.background = color; pass.style.color = ink;
-    document.getElementById('pv-pass-name').textContent = name;
-    pic('pv-pass-logo', logo);
-    document.getElementById('pv-pass-count').textContent = `${s} / ${n}`;
-    document.getElementById('pv-pass-rlabel').textContent = s >= n ? 'مكافأتك جاهزة' : 'المكافأة';
-    document.getElementById('pv-pass-reward').textContent = st.reward;
-    const strip = document.getElementById('pv-pass-strip'), two = ['gradient', 'glass'].includes(d.style) && d.color2;
-    strip.style.background = d.bg === 'image' && d.bg_image ? `linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.35)), center / cover url("${d.bg_image}")`
-      : two ? `radial-gradient(75% 120% at 50% 50%, ${d.color2}, ${color})` : `radial-gradient(60% 120% at 50% 50%, color-mix(in srgb, ${stampC} 16%, ${color}), ${color})`;
-    strip.style.color = DMLoyaltyCard.inkFor(two ? d.color2 : color);
-    strip.style.setProperty('--stamp', stampC); strip.style.setProperty('--stamp-ink', DMLoyaltyCard.inkFor(stampC));
-    strip.style.gridTemplateColumns = `repeat(${n <= 6 ? n : Math.ceil(n / 2)}, 1fr)`;
-    strip.innerHTML = DMLoyaltyCard.stamps(s, n, d);
-    // شاشة القفل: خلفية من لون البطاقة، وإشعار المحفظة
-    const lock = document.querySelector('.pv-lock');
-    lock.style.background = `linear-gradient(165deg, ${d.color2 || color} 0%, color-mix(in srgb, ${color} 55%, #000) 100%)`;
-    ['pv-n-name', 'pv-n-name2'].forEach(id => { document.getElementById(id).textContent = name; });
-    document.getElementById('pv-n-stamp').textContent = s >= n ? `مكافأتك جاهزة: ${st.reward}` : `صار عندك ${s} ختم`;
-    // ملخص التعديلات
-    const ch = lyChanges();
-    document.getElementById('ly-changes-text').textContent = ch.length ? 'عدّلت هذي، والجوال فوق يعرضها. احفظ عشان توصل لزبائنك:' : 'كل شي محفوظ. أي تعديل تسويه يطلع في الجوال على طول.';
-    document.getElementById('ly-changes-list').innerHTML = ch.map(c => `<span class="ly-chip">${c}</span>`).join('');
-    document.getElementById('ly-design-undo').classList.toggle('hidden', !ch.length);
-    ly.dirty = ch.length > 0;
-    const btn = document.getElementById('ly-design-save');
-    btn.textContent = ly.dirty ? 'حفظ الشكل' : 'محفوظ'; btn.disabled = !ly.dirty;
-    btn.classList.toggle('opacity-60', !ly.dirty);
+    DMLoyaltyCard.apply(document.getElementById('ly-preview'), ly.design);
+    document.getElementById('ly-design-save').textContent = 'حفظ الشكل';
   }
   function renderDesign() {
-    const d = ly.design;
-    renderPhone();
+    const d = ly.design, st = ly.data.settings;
+    DMLoyaltyCard.apply(document.getElementById('ly-preview'), d);
+    document.getElementById('ly-pv-needed').textContent = st.needed;
+    document.getElementById('ly-pv-reward').textContent = st.reward;
+    const pv = document.getElementById('ly-pv-stamps');
+    pv.className = `stamps ${st.needed === 5 || st.needed === 10 ? 'c5' : ''}`;
+    pv.innerHTML = DMLoyaltyCard.stamps(Math.min(3, st.needed - 1), st.needed, d);
     const bg = d.bg === 'image' && d.bg_image ? 'image' : 'color';
     document.getElementById('ly-bg').innerHTML = [['color', 'لون', 'ph-palette'], ['image', 'صورة', 'ph-image']].map(([k, label, ic]) => `
       <button type="button" onclick="pickCardBg('${k}')" class="rounded-xl border px-3 py-2.5 text-[13px] font-bold transition ${bg === k ? 'border-brand bg-brand text-cream' : 'border-brand/20 bg-white hover:border-brand/40'}"><i class="ph-bold ${ic}"></i> ${label}</button>`).join('');
@@ -4277,6 +4112,7 @@
     document.getElementById('ly-icons').innerHTML = Object.entries(DMLoyaltyCard.ICONS).map(([k, cls]) => `
       <button type="button" aria-label="${k}" onclick="setLyDesign({ icon: '${k}', stamp_image: null })" class="w-11 h-11 rounded-xl border grid place-items-center text-lg transition ${!d.stamp_image && d.icon === k ? 'border-brand bg-brand text-cream' : 'border-brand/20 bg-white hover:border-brand/40'}"><i class="ph-bold ${cls}"></i></button>`).join('');
     document.getElementById('ly-stamp-clear').classList.toggle('hidden', !d.stamp_image);
+    document.getElementById('ly-design-save').textContent = ly.dirty ? 'حفظ الشكل' : 'محفوظ';
   }
   // خلفية البطاقة: صورة تغطي البطاقة، وفي المحفظة تطلع ورا الأختام
   function pickCardBg(k) {
@@ -4289,7 +4125,7 @@
     const url = await uploadFile(file, 'card_bg', 1280);
     if (!url) return showToast(lastUploadError || 'ما انرفعت الصورة. جرّب صورة أصغر أو تأكد من الإنترنت', true);
     setLyDesign({ bg: 'image', bg_image: url });
-    showToast('انرفعت الصورة، شوفها في الجوال واضغط "حفظ الشكل"');
+    showToast('انرفعت الصورة، اضغط "حفظ الشكل"');
   }
   async function uploadStampImage(input) {
     const file = input.files && input.files[0]; input.value = '';
@@ -4297,7 +4133,7 @@
     const url = await uploadFile(file, 'stamp', 500);
     if (!url) return showToast(lastUploadError || 'ما انرفعت الصورة. جرّب صورة أصغر أو تأكد من الإنترنت', true);
     setLyDesign({ stamp_image: url });
-    showToast('انرفعت الصورة، شوفها في الجوال واضغط "حفظ الشكل"');
+    showToast('انرفعت الصورة، اضغط "حفظ الشكل"');
   }
   // شعار البطاقة أو صورة المكافأة
   async function uploadLyImage(input, key) {
@@ -4306,16 +4142,16 @@
     const url = await uploadFile(file, 'stamp', 500);
     if (!url) return showToast(lastUploadError || 'ما انرفعت الصورة. جرّب صورة أصغر أو تأكد من الإنترنت', true);
     setLyDesign({ [key]: url });
-    showToast('انرفعت الصورة، شوفها في الجوال واضغط "حفظ الشكل"');
+    showToast('انرفعت الصورة، اضغط "حفظ الشكل"');
   }
   async function saveLyDesign() {
     const btn = document.getElementById('ly-design-save'); btn.disabled = true;
     try {
       const r = await api('loyalty-settings', { settings: { design: ly.design } });
       ly.data.settings = r.settings; ly.design = { ...r.settings.design }; ly.dirty = false;
-      showToast(r.wallet_updated ? `تم حفظ الشكل، وتحدّثت ${r.wallet_updated} بطاقة في المحفظة` : 'تم حفظ شكل البطاقة، ويطلع للزبائن على طول');
+      renderDesign(); showToast(r.wallet_updated ? `تم حفظ الشكل، وتحدّثت ${r.wallet_updated} بطاقة في المحفظة` : 'تم حفظ شكل البطاقة، ويطلع للزبائن على طول');
     } catch (e) { showToast(e.message || 'ما انحفظ التعديل. تأكد من الإنترنت وحاول مرة ثانية', true); }
-    renderDesign();
+    btn.disabled = false;
   }
 
   // ─── رسائل الأعضاء ───
