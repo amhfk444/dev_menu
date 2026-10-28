@@ -1806,9 +1806,9 @@
       ${actions}
     </div>`;
   // رسم أعمدة لآخر 7 أيام (بتوقيت الرياض): اليوم بالذهبي، والرقم فوق كل عمود
-  const riyadhDay = (t) => new Date(t + 3 * 3600e3).toISOString().slice(0, 10);
+  const dayKeyRiyadh = (t) => new Date(t + 3 * 3600e3).toISOString().slice(0, 10);
   function miniBars(byDay, label) {
-    const days = Array.from({ length: 7 }, (_, i) => riyadhDay(Date.now() - (6 - i) * DAYMS));
+    const days = Array.from({ length: 7 }, (_, i) => dayKeyRiyadh(Date.now() - (6 - i) * DAYMS));
     const vals = days.map(d => byDay[d] || 0), max = Math.max(1, ...vals);
     const wd = (d) => new Date(`${d}T12:00:00Z`).toLocaleDateString('ar-SA-u-nu-latn', { weekday: 'short' });
     return `<div class="rounded-2xl bg-white border border-brand/[0.13] p-3">
