@@ -116,9 +116,22 @@
   .foot img { width: 22px; height: 22px; border-radius: 6px; object-fit: cover; }
   body.ringing { animation: flash2 1s infinite; }
   @keyframes flash2 { 0%, 100% { background: color-mix(in srgb, var(--brand) 60%, #000); } 50% { background: #b08a1e; } }
-  .card .btn-brand { background: color-mix(in srgb, var(--brand) 88%, #000); color: #fff; }
-  .card .btn-ghost { background: #fff; color: color-mix(in srgb, var(--brand) 85%, #000); border-color: rgba(0,0,0,.15); }
   .ticket.plain { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.22); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: 0 24px 50px -30px rgba(0,0,0,.7); }
+  /* كل الكتابة بيضاء: البطاقات والخطوات والحقول زجاج شفاف فوق لون المحل بدل الأبيض */
+  .card, .tips, .steps li { background: rgba(255,255,255,.1) !important; border: 1px solid rgba(255,255,255,.2) !important; color: #fff !important;
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 24px 50px -30px rgba(0,0,0,.6); }
+  #perm .card { background: color-mix(in srgb, var(--brand) 75%, #000) !important; }
+  .field, .card textarea, .card input, .card select { background: rgba(255,255,255,.12) !important; color: #fff !important; border-color: rgba(255,255,255,.28) !important; }
+  .field::placeholder, .card textarea::placeholder, .card input::placeholder { color: rgba(255,255,255,.5); }
+  .field:focus { background: rgba(255,255,255,.2) !important; border-color: #fff !important; }
+  select.field option { color: #111; }
+  .jn-g[aria-checked="true"] { background: #fff !important; color: color-mix(in srgb, var(--brand) 85%, #000) !important; }
+  .steps b { background: rgba(255,255,255,.18); color: #fff; }
+  .card .text-emerald-800, .text-emerald-800 { color: #a7f3d0 !important; }
+  .card .text-rose-700 { color: #fecdd3 !important; }
+  #rate-box, #v-game .rounded-full { background: rgba(255,255,255,.12) !important; color: #fff; }
+  .star { color: rgba(255,255,255,.3); }
+  .mm-front { color: #233d2c; }
   .hidden { display: none !important; }
 </style>
 <link rel="stylesheet" href="/css/tw/pager.css">
