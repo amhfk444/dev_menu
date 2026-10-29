@@ -200,5 +200,9 @@
   "تعذر إنشاء الحساب، حاول مرة ثانية": "Couldn't create the account. Try again",
   "حسابك جاهز! تجربتك المجانية بدأت": "Your account is ready! Your free trial has started",
   "هذا الحساب له متجر من قبل، جاري تحويلك...": "This account already has a store. Redirecting...",
-  "مثال: جولت كوفي": "e.g. Jolt Coffee"
+  "مثال: جولت كوفي": "e.g. Jolt Coffee",
+  "DEV MENU ديف منيو | أكثر من منيو: منيو رقمي وبيجر وانتظار وبطاقة ولاء": "DEV MENU | More than a menu: digital menu, pager, waitlist and loyalty card",
+  "DEV MENU ديف منيو | أكثر من منيو": "DEV MENU | More than a menu",
+  "أكثر من منيو": "More than a menu",
+  "، لكل منشأة تخدم عملاء: مطعم، مقهى، عيادة، صالون، متجر": ", for any business that serves customers: restaurant, café, clinic, salon, shop"
 }
