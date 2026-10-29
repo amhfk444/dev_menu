@@ -19,5 +19,12 @@
   "🔔 {r} رقم {n}. {b} من {s}": "🔔 {r} Number {n}. {b} at {s}",
   "🔔 {r} رقم {n}. {b}": "🔔 {r} Number {n}. {b}",
   "{a} أهداك {r} 🎁 استخدمها من {s} خلال 30 يوم": "{a} gave you {r} 🎁 Use it at {s} within 30 days",
-  "صديقك": "Your friend"
+  "صديقك": "Your friend",
+  "الحالة": "Status",
+  "رقمك": "Your number",
+  "صفحة رقمك": "Your number's page",
+  "رقمك في {s}": "Your number at {s}",
+  "جاري تجهيز طلبك": "Preparing your order",
+  "المحفظة مو متاحة حالياً": "Wallet isn't available right now",
+  "تعذر تجهيز رقمك للمحفظة، جرّب بعد شوي": "Couldn't prepare your number for the wallet, try again shortly"
 }

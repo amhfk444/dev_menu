@@ -97,5 +97,13 @@
   "امسح رمز QR من عند الموظف.": "Scan the QR code at the counter.",
   "بالانتظار": "Waiting",
   "قيد التحضير": "Preparing",
-  "مطابقة": "Matched"
+  "مطابقة": "Matched",
+  "تبي تشوف فيديو وانت تنتظر؟": "Want to watch videos while you wait?",
+  "أضف رقمي للمحفظة": "Add my number to Wallet",
+  "رقمك في المحفظة، افتحه": "Your number is in Wallet, open it",
+  "جاري التجهيز…": "Preparing…",
+  "تبي تشوف فيديو؟ أضف رقمك للمحفظة عشان يوصلك التنبيه": "Watching videos? Add your number to your wallet so the alert reaches you",
+  "تعذر الإضافة للمحفظة": "Couldn't add to wallet",
+  "أضف رقمك للمحفظة، ويوصلك إشعار من الجوال": "Add your number to your wallet and your phone notifies you",
+  "حتى لو تشوف تيك توك أو سكّرت المتصفح.": "even while on TikTok or with the browser closed."
 }
