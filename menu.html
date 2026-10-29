@@ -201,10 +201,17 @@
   </div>
 
   <!-- البحث السريع -->
-  <div class="relative">
-    <i class="fa-solid fa-magnifying-glass absolute right-3.5 top-3.5 text-gray-400 text-xs"></i>
-    <input type="text" id="search-input" oninput="handleSearch()" placeholder="ابحث عن طبقك المفضل..." 
-      class="w-full bg-black/60 border border-white/20 rounded-2xl pr-10 pl-4 py-2.5 text-xs text-white placeholder-gray-400 focus:outline-none focus:border-white backdrop-blur-md shadow-lg">
+  <div class="flex gap-2">
+    <div class="relative flex-1 min-w-0">
+      <i class="fa-solid fa-magnifying-glass absolute right-3.5 top-3.5 text-gray-400 text-xs"></i>
+      <input type="text" id="search-input" oninput="handleSearch()" placeholder="ابحث عن طبقك المفضل..." 
+        class="w-full bg-black/60 border border-white/20 rounded-2xl pr-10 pl-4 py-2.5 text-xs text-white placeholder-gray-400 focus:outline-none focus:border-white backdrop-blur-md shadow-lg">
+    </div>
+    <!-- شكل الأطباق: الزبون يختار (قائمة أو صور كبيرة) -->
+    <div id="layout-toggle" role="radiogroup" class="flex shrink-0 bg-black/60 border border-white/20 rounded-2xl p-1 gap-1 backdrop-blur-md shadow-lg">
+      <button type="button" data-layout="list" role="radio" onclick="setMenuView('list')" class="w-9 rounded-xl text-xs text-white/70 transition"><i class="fa-solid fa-list"></i></button>
+      <button type="button" data-layout="photos" role="radio" onclick="setMenuView('photos')" class="w-9 rounded-xl text-xs text-white/70 transition"><i class="fa-solid fa-table-cells-large"></i></button>
+    </div>
   </div>
 
   <!-- شريط الأقسام السريع -->
@@ -728,6 +735,7 @@
     renderDeliveryBar();
     renderPromoCodes();
     renderFilterBar();
+    renderLayoutToggle();
     loadCart();   // يشيل من السلة أي صنف انحذف أو صار غير متوفر
     if (first) renderMenu(allProducts, false); else handleSearch();
     renderCartBar();
@@ -896,7 +904,24 @@
       </article>`;
   }
 
-  const photoLayout = () => project && project.menu_layout === 'photos';
+  // شكل الأطباق يختاره الزبون وينحفظ في جواله (وإلا الشكل القديم اللي كان مختار للمحل)
+  let menuView = ''; try { menuView = localStorage.getItem('dm_menu_view') || ''; } catch {}
+  const photoLayout = () => (menuView || (project && project.menu_layout === 'photos' ? 'photos' : 'list')) === 'photos';
+  function renderLayoutToggle() {
+    const cur = photoLayout() ? 'photos' : 'list';
+    document.querySelectorAll('#layout-toggle [data-layout]').forEach(b => {
+      const on = b.dataset.layout === cur;
+      b.setAttribute('aria-checked', String(on));
+      b.setAttribute('aria-label', b.dataset.layout === 'photos' ? (currentLang === 'ar' ? 'صور كبيرة' : 'Large photos') : (currentLang === 'ar' ? 'قائمة' : 'List'));
+      b.classList.toggle('bg-white', on); b.classList.toggle('text-black', on); b.classList.toggle('text-white/70', !on);
+    });
+  }
+  function setMenuView(k) {
+    menuView = k === 'photos' ? 'photos' : 'list';
+    try { localStorage.setItem('dm_menu_view', menuView); } catch {}
+    renderLayoutToggle();
+    handleSearch();
+  }
   function photoCard(p) {
     const img = safeUrl(p.image_url);
     if (!img) return productCard(p);   // الطبق بدون صورة يطلع بالشكل العادي

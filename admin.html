@@ -1601,11 +1601,6 @@
           <span class="block text-[10px] text-ink/60 mt-0.5">عند الإيقاف: يختفي حقل السعرات من نموذج الأطباق، ولا تظهر السعرات للزبائن. السعرات المحفوظة تبقى ولا تنحذف.</span>
         </span>
       </label>
-      <div data-needs="menu" class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2">
-        <p class="text-xs font-bold text-ink"><i class="ph-bold ph-squares-four text-amber-600"></i> شكل الأطباق في المنيو</p>
-        <div id="menu-layout" class="grid grid-cols-2 gap-2" role="radiogroup" aria-label="شكل الأطباق"></div>
-        <p class="text-[10px] text-ink/60">في الحالتين: الزبون يضغط على الطبق وتفتح صورته كاملة مع التفاصيل.</p>
-      </div>
       <div data-needs="menu" class="bg-brand/5 p-3 rounded-xl border border-brand/15">
         <label for="info-currency" class="text-xs font-bold text-ink block mb-1.5"><i class="ph-bold ph-coins text-amber-600"></i> عملة المنيو</label>
         <select id="info-currency" onchange="changeCurrency(this.value)" class="input-pro text-xs cursor-pointer"></select>
@@ -4071,6 +4066,7 @@
 
   // ─── شكل الأطباق في المنيو ───
   function renderMenuLayout() {
+    if (!document.getElementById('menu-layout')) return;   // صار الزبون يختار الشكل من المنيو
     const cur = client.menu_layout === 'photos' ? 'photos' : 'list';
     const opt = (k, label, sub, art) => `
       <button type="button" role="radio" aria-checked="${cur === k}" onclick="setMenuLayout('${k}')" class="rounded-xl border-2 p-2.5 text-right transition ${cur === k ? 'border-brand bg-white' : 'border-brand/15 bg-white/60 hover:border-brand/35'}">
