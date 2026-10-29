@@ -107,7 +107,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const token = String(req.query.t || '');
     if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
     const sel = `pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&select=number,status,created_at,ready_at`;
-    const t = (await rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url`).catch(() => rest(`${sel},invoice_no`)).catch(() => rest(sel)))[0];
+    const t = (await rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped`).catch(() => rest(`${sel},invoice_no`)).catch(() => rest(sel)))[0];
     if (!t) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
     if (DEMO.has(store.client_slug) && t.status === 'waiting' && Date.now() - Date.parse(t.created_at) > DEMO_AFTER) {
       await demoRing(store, token);
