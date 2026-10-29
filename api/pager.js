@@ -10,22 +10,13 @@
 // الكاشير يغيّر الحالة من /api/owner?action=pager-update
 // =====================================================================
 const crypto = require('crypto');
-const { reqLang, handler, rest, rpc, q, ApiError, readBody, findPublicStore, storeHasFeature, storeLink } = require('./_lib/core');
+const { reqLang, handler, rest, rpc, q, ApiError, readBody, findPublicStore, storeHasFeature } = require('./_lib/core');
 const { pushPublicKey, cleanSubscription, sendPush } = require('./_lib/push');
 const { topic, poke } = require('./_lib/live');
 const { normalizeLoyalty } = require('./_lib/loyalty');
 const { pagerReadyNotice } = require('./_lib/loyalty-assistant');
 const SECTORS = require('./_lib/sectors');
 const { riyadhDayStart } = require('./_lib/waitlist');
-const wallet = require('./_lib/wallet');
-const pagerUrl = (slug) => storeLink(slug, 'pager');
-// تحديث رقم المحفظة لما يجي دوره (يطلع إشعار من النظام)
-async function walletReady(store, t) {
-  if (!t.wallet_serial) return;
-  const T = SECTORS.terms(store);
-  const r = await wallet.updatePagerPass(t.wallet_serial, { store, number: t.number, status: T.ready, notice: `🔔 ${T.ready} رقم ${t.number}. ${T.readyBody}`, url: pagerUrl(store.client_slug), color: store.accent_color, lang: t.lang });
-  console.log('PAGER_PASS', store.id, t.id, r);
-}
 
 // بطاقة الولاء في المحل: شغالة؟ وتختم مع البيجر؟
 async function loyaltyOf(storeId) {
@@ -60,7 +51,6 @@ async function demoRing(store, token) {
   if (!t) return;
   const T = SECTORS.terms(store);
   if (t.loyalty_card_id) await pagerReadyNotice(store.id, t.loyalty_card_id, t.number, store.name, T);
-  await walletReady(store, t).catch(() => {});
   if (t.push_sub) await sendPush(t.push_sub, { title: `🔔 ${T.ready} رقم ${t.number}`, body: `هذي تجربة من DEV MENU، كذا يوصل التنبيه لزبونك`, url: `https://${store.client_slug}.devmenu.digital/pager`, tag: `pager-${t.id}-1` }).catch(() => {});
   await poke([topic('pager', store.id), topic('ticket', token)]);
 }
@@ -116,7 +106,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     // رقم من يوم سابق ما زال ينتظر = منتهي
     const stale = t.status === 'waiting' && Date.now() - Date.parse(t.created_at) > 18 * 3600e3;
     const review = ['ready', 'done'].includes(t.status) ? await reviewUrl(store.id) : null;
-    return { demo: DEMO.has(store.client_slug), wallet: wallet.configured(), in_wallet: !!t.wallet_url, review_url: review, store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
+    return { demo: DEMO.has(store.client_slug), review_url: review, store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
       loyalty: { ...(await loyaltyOf(store.id)), linked: !!t.loyalty_card_id, stamped: !!t.loyalty_stamped,
         ...(await linkedCard(store.id, t.loyalty_card_id)) } };
   }
@@ -143,20 +133,6 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       { method: 'PATCH', body: { acked_at: new Date().toISOString() } }).catch(() => {});
     await poke(topic('pager', store.id));
     return { ok: true };
-  }
-
-  // ─── رقم البيجر في المحفظة ───
-  if (action === 'wallet' && req.method === 'POST') {
-    const store = await loadStore(b.slug);
-    const token = String(b.t || '');
-    if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
-    const t = (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=in.(waiting,ready)&select=id,number,status,wallet_url,lang`))[0];
-    if (!t) throw new ApiError(404, 'الرقم غير موجود أو انتهى', 'NOT_FOUND');
-    if (t.wallet_url) return { url: t.wallet_url };
-    const T = SECTORS.terms(store);
-    const pass = await wallet.createPagerPass({ store, number: t.number, status: t.status === 'ready' ? T.ready : T.waiting.replace('…', ''), notice: ' ', url: pagerUrl(store.client_slug), color: store.accent_color, lang: t.lang });
-    await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl } });
-    return { url: pass.shareUrl };
   }
 
   // ─── العميل يكتب رقم فاتورته (الموظف يشوفه على شاشته على طول) ───
@@ -191,7 +167,6 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (!rows.length) return { ok: false };
     // لو الزبون ضغط "استلمت" قبل الكاشير، نقفل الرقم
     await rest(`pager_tickets?id=eq.${rows[0].id}&status=eq.ready`, { method: 'PATCH', body: { status: 'done', closed_at: new Date().toISOString(), push_sub: null } }).catch(() => {});
-    if (rows[0].wallet_serial && rows[0].status === 'ready') await wallet.revokePass(rows[0].wallet_serial).catch(() => {});
     await poke(topic('pager', store.id));
     return { ok: true, google: rating >= 4 ? await reviewUrl(store.id) : null };
   }
