@@ -240,7 +240,7 @@
         <button role="tab" aria-selected="false" data-tab="pager"><i class="ph-bold ph-bell"></i> البيجر</button>
         <button role="tab" aria-selected="false" data-tab="loyalty"><i class="ph-bold ph-seal-check"></i> الولاء</button>
       </div>
-      <div class="py-6"><div class="phone"><video id="demo-video" src="videos/devmenu-ad-v2.mp4" poster="videos/devmenu-ad-v2.jpg" autoplay muted loop playsinline preload="metadata" aria-label="لقطات حقيقية من DEV MENU"></video></div></div>
+      <div class="py-6"><div class="phone"><video id="demo-video" src="videos/devmenu-ad-v3.mp4" poster="videos/devmenu-ad-v3.jpg" autoplay muted loop playsinline preload="metadata" aria-label="لقطات حقيقية من DEV MENU"></video></div></div>
       <div class="ring-card">
         <span class="ring-ic" id="ring-ic"><i class="ph-bold ph-bell-ringing"></i></span>
         <div class="flex-1 min-w-0">
@@ -319,8 +319,8 @@
   <div class="wrap grid lg:grid-cols-[.95fr_1.05fr] gap-12 items-center">
     <div class="reveal order-last lg:order-first">
       <div class="flex justify-center gap-4">
-        <div class="phone !w-[220px] !m-0" style="margin-top:40px !important"><video src="videos/pager-ad-v2.mp4" poster="videos/pager-ad-v2.jpg" autoplay muted loop playsinline preload="none" aria-label="البيجر يرن في جوال الزبون"></video></div>
-        <div class="phone !w-[220px] !m-0 hidden sm:block"><video src="videos/loyalty-ad-v2.mp4" poster="videos/loyalty-ad-v2.jpg" autoplay muted loop playsinline preload="none" aria-label="بطاقة الولاء من DEV MENU"></video></div>
+        <div class="phone !w-[220px] !m-0" style="margin-top:40px !important"><video src="videos/pager-ad-v3.mp4" poster="videos/pager-ad-v3.jpg" autoplay muted loop playsinline preload="none" aria-label="البيجر يرن في جوال الزبون"></video></div>
+        <div class="phone !w-[220px] !m-0 hidden sm:block"><video src="videos/loyalty-ad-v3.mp4" poster="videos/loyalty-ad-v3.jpg" autoplay muted loop playsinline preload="none" aria-label="بطاقة الولاء من DEV MENU"></video></div>
       </div>
     </div>
     <div class="reveal">
@@ -559,7 +559,7 @@
   }
 
   // ─── بطاقة التجربة: فيديو لكل ميزة، وصوت التنبيه ───
-  const DEMOS = { menu: ['videos/devmenu-ad-v2.mp4', 'videos/devmenu-ad-v2.jpg', 0], pager: ['videos/pager-ad-v2.mp4', 'videos/pager-ad-v2.jpg', 0], loyalty: ['videos/loyalty-ad-v2.mp4', 'videos/loyalty-ad-v2.jpg', 0] };
+  const DEMOS = { menu: ['videos/devmenu-ad-v3.mp4', 'videos/devmenu-ad-v3.jpg', 0], pager: ['videos/pager-ad-v3.mp4', 'videos/pager-ad-v3.jpg', 0], loyalty: ['videos/loyalty-ad-v3.mp4', 'videos/loyalty-ad-v3.jpg', 0] };
   document.querySelector('.tabs').addEventListener('click', (e) => {
     const b = e.target.closest('[data-tab]'); if (!b) return;
     document.querySelectorAll('.tabs [data-tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
