@@ -184,7 +184,9 @@ module.exports = handler(['GET', 'POST'], async (req) => {
   // مميزات المحل (المدير العام يتحكم فيها مباشرة)
   if (action === 'features') {
     const features = PLANS.clean(b.features);
-    const out = await patch({ plan_features: features, waitlist_enabled: features.includes('waitlist') });
+    // نوع الاشتراك (شهري / سنوي) يتغيّر هنا بدون تجديد ولا تغيير تاريخ الانتهاء
+    const plan = ['month', 'year'].includes(b.period) ? { subscription_plan: b.period } : {};
+    const out = await patch({ plan_features: features, waitlist_enabled: features.includes('waitlist'), ...plan });
     try { await rest(`clients?parent_id=eq.${id}`, { method: 'PATCH', body: { plan_features: features, waitlist_enabled: features.includes('waitlist') } }); } catch {}
     return out;
   }

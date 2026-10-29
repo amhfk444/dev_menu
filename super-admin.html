@@ -785,7 +785,7 @@
         <span class="text-[11px] text-ink/60">${money(f[fd.period])}</span></label>`;
     }).join('');
     const per = document.getElementById('feat-period');
-    per.classList.toggle('hidden', fd.mode !== 'activate');
+    // نوع الاشتراك (شهري / سنوي): في التفعيل يحدد مدة التجديد، وفي المميزات يغيّر النوع بدون ما يتغير التاريخ
     per.innerHTML = [['year', 'سنة'], ['month', 'شهر']].map(([p, l]) => `<button type="button" onclick="setFeatPeriod('${p}')" class="rounded-xl py-2 text-[12px] font-black border ${fd.period === p ? 'bg-brand text-cream border-brand' : 'bg-white border-brand/15'}">${l} · ${money(DMPlans.price(feats, p, branchesOf(c).length).total)}</button>`).join('');
     document.getElementById('feat-sum').innerHTML = !feats.length ? '<p class="text-red-700 font-bold">اختر ميزة وحدة على الأقل</p>' : `
       ${pr.lines.map(l => `<p class="flex justify-between"><span>${l.label}</span><span>${money(l.amount)}</span></p>`).join('')}
@@ -793,7 +793,7 @@
       <p class="flex justify-between border-t border-brand/10 pt-1.5 font-black"><span>المجموع ${fd.period === 'month' ? 'بالشهر' : 'بالسنة'}</span><span>${money(pr.total)}</span></p>`;
     document.getElementById('feat-note').textContent = fd.mode === 'activate'
       ? `إذا كان الاشتراك سارياً تنضاف المدة على تاريخ انتهائه، ويتجدد المتجر وفروعه بنفس التاريخ. ${c.email ? `تنرسل فاتورة مدفوعة لبريد ${c.email}.` : 'ما عنده بريد، فما بتنرسل فاتورة.'}`
-      : 'يتغيّر اللي يشوفه صاحب المحل على طول، بدون ما يتغير تاريخ الاشتراك وبدون فاتورة.';
+      : 'يتغيّر اللي يشوفه صاحب المحل ونوع اشتراكه (شهري أو سنوي) على طول، بدون ما يتغير تاريخ الاشتراك وبدون فاتورة.';
     const btn = document.getElementById('feat-save');
     btn.disabled = !feats.length;
     btn.textContent = fd.mode === 'activate' ? `تفعيل ${fd.period === 'month' ? 'شهر' : 'سنة'} · ${money(pr.total)}` : 'حفظ المميزات';
@@ -807,7 +807,7 @@
         const res = await DM.post(A('activate'), { id: fd.id, period: fd.period, features }, true);
         showToast(`تم تفعيل ${fd.period === 'month' ? 'شهر' : 'سنة'}${invoiceNote(res.invoice)}`, res.invoice && !res.invoice.sent && res.invoice.reason !== 'NO_EMAIL');
       } else {
-        const error = await post('features', { id: fd.id, features });
+        const error = await post('features', { id: fd.id, features, period: fd.period });
         if (error) throw error;
         showToast('تم تحديث مميزات الباقة');
       }

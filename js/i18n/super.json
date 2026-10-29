@@ -184,5 +184,6 @@
   "المنيو شغّال": "Menu on",
   "{d} · باقي {n}": "{d} · {n} left",
   "· طلب: {f} ({p})": "· Request: {f} ({p})",
-  "مثال: مطعم أوسلو برجر": "e.g. Oslo Burger"
+  "مثال: مطعم أوسلو برجر": "e.g. Oslo Burger",
+  "يتغيّر اللي يشوفه صاحب المحل ونوع اشتراكه (شهري أو سنوي) على طول، بدون ما يتغير تاريخ الاشتراك وبدون فاتورة.": "What the owner sees and their plan type (monthly or yearly) change right away, without changing the subscription date or sending an invoice."
 }
