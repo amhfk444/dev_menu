@@ -337,8 +337,12 @@
   let ctx = null;
   function unlockAudio() {
     try {
-      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
-      if (ctx.state === 'suspended') ctx.resume();
+      if (!ctx) {
+        ctx = new (window.AudioContext || window.webkitAudioContext)();
+        // مكالمة أو صوت تطبيق ثاني يوقفه (interrupted): نرجّعه أول ما يسمح الجوال
+        ctx.onstatechange = () => { if (ctx.state !== 'running' && keeperMode) setTimeout(() => ctx.resume().catch(() => {}), 1000); };
+      }
+      if (ctx.state !== 'running') ctx.resume();
       const o = ctx.createOscillator(), g = ctx.createGain(); g.gain.value = 0.0001;
       o.connect(g).connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.02);
     } catch {}
@@ -405,12 +409,17 @@
       if (keeper.paused) keeper.play().catch(() => {});
     }, 2000);
   });
+  // إيقاف الصوت من شاشة القفل أو مركز التحكم: يرجع يشتغل، عشان ما يفوته الرنين
+  const WANT_KEY = `${KEY}_keep`;
+  const wantKeeper = () => { try { return localStorage.getItem(WANT_KEY) === '1'; } catch { return false; } };
+  if ('mediaSession' in navigator) ['pause', 'stop'].forEach(a => { try { navigator.mediaSession.setActionHandler(a, () => { if (keeperMode) keeper.play().catch(() => {}); }); } catch {} });
   function setMedia(title) {
     if (!('mediaSession' in navigator)) return;
     try { navigator.mediaSession.metadata = title ? new MediaMetadata({ title, artist: storeInfo.name || 'البيجر الرقمي', album: 'DEV MENU', artwork: storeInfo.logo_url ? [{ src: storeInfo.logo_url, sizes: '512x512' }] : [] }) : null; } catch {}
   }
   // لازم تنادى من ضغطة العميل نفسها
   function startKeeper() {
+    try { localStorage.setItem(WANT_KEY, '1'); } catch {}
     if (keeperOn()) return;
     silentUrl = silentUrl || wavUrl(3, () => (Math.random() - 0.5) * 0.0002);
     if (keeperMode !== 'ring') { keeper.src = silentUrl; keeperMode = 'silent'; }
@@ -634,8 +643,9 @@
   };
 
 
+  let lastPoll = 0;
   async function poll() {
-    clearTimeout(pollTimer);
+    clearTimeout(pollTimer); lastPoll = Date.now();
     const token = loadToken();
     if (!token) return $('v-done').classList.contains('hidden') ? show('start') : undefined;   // شاشة "بالعافية" والتقييم تبقى
     let r;
@@ -817,7 +827,26 @@
     $('rate-thanks').classList.remove('hidden');
   };
   $('new-btn').onclick = () => { saveToken(''); hideRating(); show('start'); };
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) { keepAwake(); if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {}); if (keeperMode && keeper.paused) keeper.play().catch(() => {}); if (loadToken()) poll(); } });
+  // ─── يرجع يشتغل لوحده: رجع للصفحة، رجع النت، أو المتصفح جمّد الصفحة وهو بتطبيق ثاني ───
+  function revive() {
+    if (document.hidden || !loadToken()) return;
+    keepAwake();
+    if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {});
+    if (keeperMode && keeper.paused) keeper.play().catch(() => {});
+    poll();
+  }
+  document.addEventListener('visibilitychange', revive);
+  window.addEventListener('pageshow', (e) => { if (e.persisted) revive(); });
+  window.addEventListener('focus', revive);
+  window.addEventListener('online', revive);
+  // احتياط: لو وقف التحديث (مؤقت المتصفح تجمّد) نسأل عن الحالة من جديد
+  setInterval(() => { if (!document.hidden && loadToken() && Date.now() - lastPoll > 12e3) poll(); }, 4e3);
+  // الجوال وقف الصوت نهائياً (يحتاج ضغطة): أول لمسة في أي مكان ترجّعه بدون ما يدوّر على الزر
+  document.addEventListener('pointerdown', () => {
+    if (!loadToken() || !wantKeeper()) return;
+    if (!audioReady()) unlockAudio();
+    if (!keeperOn()) { startKeeper(); if (ringTimer) keeperRing(); }
+  }, { capture: true });
 
   (async function init() {
     if (!slug) return unavailable('الرابط غير صحيح', 'امسح رمز QR من عند الموظف.');
