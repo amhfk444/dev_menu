@@ -219,8 +219,8 @@
       <h1 class="hero-h">منيو، بيجر،<br>وبطاقة ولاء.<br><em>كلها في جوال زبونك.</em></h1>
       <p class="lead max-w-xl">زبونك يمسح الكود ويشوف منيوك بالصور، ياخذ رقمه ويرن جواله لما يجهز طلبه، ويجمع أختامه في محفظة جواله ويرجع لك. بدون تطبيق وبدون أجهزة.</p>
       <div class="grid grid-cols-2 gap-3 max-w-md">
-        <div class="price-chip"><small>الباقة الكاملة</small><b dir="ltr">&#x20C1; 59</b> <span class="text-[12px] font-semibold text-[color:var(--muted)]">بالشهر</span></div>
-        <div class="price-chip"><small>بطاقة الولاء</small><b dir="ltr">&#x20C1; 49</b> <span class="text-[12px] font-semibold text-[color:var(--muted)]">بالشهر</span></div>
+        <div class="price-chip"><small>الباقة الكاملة</small><b dir="ltr" id="chip-full">&#x20C1; 151</b> <span class="text-[12px] font-semibold text-[color:var(--muted)]">بالشهر</span></div>
+        <div class="price-chip"><small>بطاقة الولاء</small><b dir="ltr" id="chip-loyalty">&#x20C1; 69</b> <span class="text-[12px] font-semibold text-[color:var(--muted)]">بالشهر</span></div>
       </div>
       <div class="flex flex-wrap gap-3">
         <a href="#pricing" class="btn btn-main px-7 py-4 text-[15px]">اختر باقتك وابدأ مجاناً</a>
@@ -558,6 +558,12 @@
     setTimeout(() => el.remove(), 4000);
   }
 
+  // ─── أسعار أعلى الصفحة: من نفس ملف الأسعار (js/plans.js) ───
+  if (window.DMPlans) {
+    const full = DMPlans.price(DMPlans.ORDER, 'month').total, ly = DMPlans.FEATURES.loyalty.month;
+    if (full) document.getElementById('chip-full').innerHTML = `&#x20C1; ${full}`;
+    if (ly) document.getElementById('chip-loyalty').innerHTML = `&#x20C1; ${ly}`;
+  }
   // ─── بطاقة التجربة: فيديو لكل ميزة، وصوت التنبيه ───
   const DEMOS = { menu: ['videos/devmenu-ad-v3.mp4', 'videos/devmenu-ad-v3.jpg', 0], pager: ['videos/pager-ad-v3.mp4', 'videos/pager-ad-v3.jpg', 0], loyalty: ['videos/loyalty-ad-v3.mp4', 'videos/loyalty-ad-v3.jpg', 0] };
   document.querySelector('.tabs').addEventListener('click', (e) => {
