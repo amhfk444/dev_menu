@@ -123,5 +123,6 @@
   "قل رقمك": "Tell your number",
   "يرن جوالك": "Your phone rings",
   "~{n} من {m}": "{n} of {m}",
-  "~{w}: {n}": "{w}: {n}"
+  "~{w}: {n}": "{w}: {n}",
+  "شاشة الزبون": "Customer screen"
 }

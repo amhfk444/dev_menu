@@ -285,7 +285,7 @@
     $('cam').hidden = !info.enabled;
     $('wrap').classList.toggle('no-cam', !info.enabled);
     if (info.enabled) $('cam-sub').textContent = `قرّب كود بطاقتك من الكاميرا وينضاف ختمك. ${info.needed} أختام = ${info.reward}`;
-    else $('start-desc').textContent = 'بعد التشغيل تصير الشاشة ثابتة وتعرض أكواد خدماتك للزبائن.';
+    else $('start-desc').textContent = 'بعد التشغيل تصير الشاشة ثابتة وتعرض أكواد خدماتك للزبائن: يمسحها الزبون بكاميرا جواله ويفتح المنيو أو ياخذ رقمه.';
     renderCodes();
   }
 

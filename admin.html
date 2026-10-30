@@ -327,7 +327,7 @@
       <a id="sidebar-preview" data-needs="menu" href="#" target="_blank" rel="noopener" class="nav-item"><i class="ph-bold ph-arrow-square-out"></i> معاينة المنيو</a>
       <button onclick="copyMenuLink()" data-needs="menu" class="nav-item"><i class="ph-bold ph-link-simple"></i> نسخ رابط المنيو</button>
       <button onclick="downloadQrCard()" data-needs="menu" class="nav-item"><i class="ph-bold ph-printer"></i> بطاقة QR</button>
-      <a href="kiosk.html" data-needs="loyalty" onclick="this.href='kiosk.html'+location.search" target="_blank" class="nav-item"><i class="ph-bold ph-device-tablet"></i> شاشة الختم للزبون</a>
+      <a href="kiosk.html" data-needs="menu|pager|waitlist|loyalty" onclick="this.href='kiosk.html'+location.search" target="_blank" class="nav-item"><i class="ph-bold ph-device-tablet"></i> شاشة الزبون</a>
       <a id="sa-link" href="super-admin.html" class="nav-item hidden"><i class="ph-bold ph-crown text-amber-300"></i> لوحة المشتركين</a>
     </nav>
 
@@ -463,6 +463,9 @@
                   <button id="qr-download-btn" onclick="downloadQrCard()" class="bg-amber-400 hover:bg-amber-300 text-black px-3 py-1.5 rounded-lg text-[10px] font-bold transition">
                     <i class="ph-bold ph-printer"></i> تحميل للطباعة
                   </button>
+                  <a href="kiosk.html" onclick="this.href='kiosk.html'+location.search" target="_blank" class="bg-white hover:bg-brand/5 text-ink px-3 py-1.5 rounded-lg text-[10px] font-bold border border-brand/25 transition">
+                    <i class="ph-bold ph-device-tablet"></i> شاشة الزبون
+                  </a>
                 </div>
               </div>
               <div id="qrcode" class="bg-white p-2 rounded-xl shrink-0 [&_img]:w-24 [&_img]:h-24 [&_canvas]:w-24 [&_canvas]:h-24"></div>
@@ -2017,7 +2020,8 @@
       const off = key === 'pager' && el.dataset.feature ? deskLocked() : featureLocked(key);
       el.style.display = off ? 'none' : '';
     });
-    document.querySelectorAll('[data-needs]').forEach(el => { el.style.display = featureLocked(el.dataset.needs) ? 'none' : ''; });
+    // data-needs="menu|pager": يطلع لو عنده وحدة منها على الأقل
+    document.querySelectorAll('[data-needs]').forEach(el => { el.style.display = el.dataset.needs.split('|').every(featureLocked) ? 'none' : ''; });
     document.querySelectorAll('[data-hide-always]').forEach(el => { el.style.display = 'none'; });
   }
 

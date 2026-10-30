@@ -46,5 +46,6 @@
   "بطاقة الولاء": "Loyalty card",
   "سجّل واجمع الأختام: {n} = {r}": "Join and collect stamps: {n} = {r}",
   "ما قدرنا نفتح الكاميرا، اسمح للمتصفح يستخدمها وحاول مرة ثانية": "We couldn't open the camera. Allow the browser to use it and try again",
-  "ما قدرنا نحمّل الصفحة. تأكد من الإنترنت وحدّثها": "We couldn't load the page. Check your internet and refresh"
+  "ما قدرنا نحمّل الصفحة. تأكد من الإنترنت وحدّثها": "We couldn't load the page. Check your internet and refresh",
+  "بعد التشغيل تصير الشاشة ثابتة وتعرض أكواد خدماتك للزبائن: يمسحها الزبون بكاميرا جواله ويفتح المنيو أو ياخذ رقمه.": "Once started, the screen stays fixed and shows your service codes. Customers scan them with their phone camera to open the menu or take a number."
 }
