@@ -220,6 +220,12 @@
       <span id="push-on" class="chip ok hidden"><i class="ph-bold ph-bell"></i> الإشعارات مفعّلة</span>
       <span id="keep-on" class="chip ok hidden"><i class="ph-bold ph-speaker-high"></i> الرنين شغّال حتى على الصامت</span>
     </div>
+    <!-- ما يبي الولاء (أو المحل بدون ولاء): رقمه في المحفظة بس، يوصله إشعار حتى لو في تطبيق ثاني، وينتهي بعد الاستلام -->
+    <div id="pw-box" class="card p-4 space-y-2.5 hidden">
+      <p class="font-black text-[14px]"><i class="ph-bold ph-wallet"></i> نبّهني من المحفظة</p>
+      <p class="text-[12.5px] font-bold opacity-65 leading-relaxed">أضف رقمك للمحفظة، ويوصلك إشعار <span class="t-when"></span> حتى لو كنت في تطبيق ثاني. وينحذف لحاله بعد ما تستلم.</p>
+      <button id="pw-btn" class="btn btn-wallet !py-3.5 !text-base"><i class="ph-bold ph-wallet"></i> <span>أضف رقمي للمحفظة</span></button>
+    </div>
     <button id="push-btn" class="btn btn-brand hidden"><i class="ph-bold ph-bell"></i> فعّل الإشعارات</button>
     <button id="keep-btn" class="btn btn-ghost hidden"><i class="ph-bold ph-speaker-high"></i> فعّل الرنين حتى لو جوالك صامت</button>
     <button id="unlock-btn" class="btn btn-ghost hidden"><i class="ph-bold ph-speaker-high"></i> فعّل صوت التنبيه</button>
@@ -331,6 +337,7 @@
     <p id="ly-ask-sub" class="text-sm font-bold opacity-70 leading-relaxed"></p>
     <p class="text-[12.5px] font-bold opacity-70 leading-relaxed bg-white/10 border border-white/20 rounded-2xl p-3"><i class="ph-bold ph-wallet"></i> أضف البطاقة للمحفظة ويوصلك إشعار <span class="t-when"></span> حتى لو كنت في تطبيق ثاني.</p>
     <button id="ly-ask-yes" class="btn btn-brand"><i class="ph-bold ph-user-plus"></i> سجّلني</button>
+    <button id="ly-ask-pass" class="btn btn-ghost !py-3 !text-[14px]"><i class="ph-bold ph-wallet"></i> لا، بس نبّهني لما يجهز طلبي</button>
     <button id="ly-ask-no" class="text-xs font-black opacity-50 underline">لاحقاً</button>
   </div>
 </div>
@@ -679,6 +686,10 @@
     $('w-tell').classList.toggle('hidden', !!inv);
     if (!invEditing) $('inv-form').classList.toggle('hidden', !!inv || st !== 'waiting');
     $('w-demo').classList.toggle('hidden', !r.demo);
+    const ly = r.loyalty || {};
+    const passOk = r.wallet && st === 'waiting' && !ly.linked && !joined && (!ly.enabled || declinedLoyalty() || r.in_wallet);
+    $('pw-box').classList.toggle('hidden', !passOk);
+    $('pw-btn').querySelector('span').textContent = r.in_wallet ? 'رقمك في المحفظة، افتحه' : 'أضف رقمي للمحفظة';
     reviewLink = r.review_url || reviewLink;
     $('r-review').classList.toggle('hidden', !reviewLink);
     if (reviewLink) { $('r-review').href = reviewLink; $('rate-google').href = reviewLink; }
@@ -806,6 +817,25 @@
     $('ly-ask').classList.replace('hidden', 'flex');
   }
   $('ly-ask-no').onclick = () => $('ly-ask').classList.replace('flex', 'hidden');
+  // ما يبي الولاء: تذكرة مؤقتة في المحفظة لهالطلب بس
+  const NO_LY_KEY = `${KEY}_noly`;
+  const declinedLoyalty = () => { try { return localStorage.getItem(NO_LY_KEY) === loadToken(); } catch { return false; } };
+  $('ly-ask-pass').onclick = () => {
+    try { localStorage.setItem(NO_LY_KEY, loadToken()); } catch {}
+    $('ly-ask').classList.replace('flex', 'hidden');
+    addPagerPass();
+  };
+  async function addPagerPass() {
+    const btn = $('pw-btn'); btn.disabled = true;
+    const label = btn.querySelector('span').textContent;
+    btn.querySelector('span').textContent = 'جاري التجهيز…';
+    try {
+      const r = await DM.post('/api/pager?action=wallet', { slug, t: loadToken() });
+      if (r.url) location.href = r.url;
+    } catch (err) { alert(err.message || 'تعذر الإضافة للمحفظة'); btn.querySelector('span').textContent = label; }
+    btn.disabled = false;
+  }
+  $('pw-btn').onclick = addPagerPass;
   $('ly-ask-yes').onclick = () => {
     $('ly-ask').classList.replace('flex', 'hidden');
     $('v-join').scrollIntoView({ behavior: 'smooth', block: 'center' });
