@@ -97,5 +97,10 @@
   "امسح رمز QR من عند الموظف.": "Scan the QR code at the counter.",
   "بالانتظار": "Waiting",
   "قيد التحضير": "Preparing",
-  "مطابقة": "Matched"
+  "مطابقة": "Matched",
+  "خذ ختم على هالطلب": "Get a stamp on this order",
+  "سجّلني": "Sign me up",
+  "~سجّل في بطاقة الولاء، وبعد {n} أختام تاخذ {r}.": "Join the loyalty card: after {n} stamps you get {r}.",
+  "أضف البطاقة للمحفظة ويوصلك إشعار": "Add the card to your wallet and you'll be notified",
+  "حتى لو كنت في تطبيق ثاني.": "even while you're in another app."
 }

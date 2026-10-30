@@ -190,26 +190,6 @@
     </ul>
     <p id="w-tell" class="note"></p>
     <p class="note !text-[12.5px] !opacity-65"><span id="t-waiting"></span></p>
-    <div class="flex flex-wrap gap-2 justify-center">
-      <span id="push-on" class="chip ok hidden"><i class="ph-bold ph-bell"></i> الإشعارات مفعّلة</span>
-      <span id="keep-on" class="chip ok hidden"><i class="ph-bold ph-speaker-high"></i> الرنين شغّال حتى على الصامت</span>
-    </div>
-    <button id="push-btn" class="btn btn-brand hidden"><i class="ph-bold ph-bell"></i> فعّل الإشعارات</button>
-    <button id="keep-btn" class="btn btn-ghost hidden"><i class="ph-bold ph-speaker-high"></i> فعّل الرنين حتى لو جوالك صامت</button>
-    <button id="unlock-btn" class="btn btn-ghost hidden"><i class="ph-bold ph-speaker-high"></i> فعّل صوت التنبيه</button>
-    <p id="push-denied" class="hidden text-[12px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-2xl py-2.5 px-3">الإشعارات مقفلة لهذا الموقع في متصفحك. الرنين يشتغل عادي، ولو تبي الإشعار فعّله من إعدادات المتصفح.</p>
-    <!-- العميل يكتب رقم فاتورته -->
-    <form id="inv-form" class="card p-4 space-y-2.5 hidden" novalidate>
-      <label for="inv-in" class="block font-black text-[14px]"><i class="ph-bold ph-receipt"></i> رقم فاتورتك <span class="font-bold opacity-55 text-[12px]">(اختياري)</span></label>
-      <p class="text-[12px] font-bold opacity-60 -mt-1">اكتبه عشان يعرف الموظف طلبك أسرع</p>
-      <div class="flex gap-2">
-        <input id="inv-in" class="field flex-1 min-w-0 text-center !text-lg !font-black tracking-widest" inputmode="numeric" autocomplete="off" maxlength="20" dir="ltr" placeholder="1045">
-        <button id="inv-save" class="btn btn-brand !w-auto !px-5 !py-3 !text-base">حفظ</button>
-      </div>
-      <p id="inv-err" class="hidden text-[12px] font-bold text-rose-700"></p>
-    </form>
-    <a id="w-loyalty" class="hidden block text-[13px] font-black rounded-2xl py-3 px-3"></a>
-
     <!-- تسجيل في الولاء من نفس الصفحة -->
     <section id="v-join" class="card p-5 space-y-3.5 hidden">
       <div class="flex items-start gap-3">
@@ -236,6 +216,26 @@
         <button id="jn-wallet" class="btn btn-wallet !py-3.5 !text-base"><i class="ph-bold ph-wallet"></i> أضف البطاقة للمحفظة</button>
       </div>
     </section>
+    <div class="flex flex-wrap gap-2 justify-center">
+      <span id="push-on" class="chip ok hidden"><i class="ph-bold ph-bell"></i> الإشعارات مفعّلة</span>
+      <span id="keep-on" class="chip ok hidden"><i class="ph-bold ph-speaker-high"></i> الرنين شغّال حتى على الصامت</span>
+    </div>
+    <button id="push-btn" class="btn btn-brand hidden"><i class="ph-bold ph-bell"></i> فعّل الإشعارات</button>
+    <button id="keep-btn" class="btn btn-ghost hidden"><i class="ph-bold ph-speaker-high"></i> فعّل الرنين حتى لو جوالك صامت</button>
+    <button id="unlock-btn" class="btn btn-ghost hidden"><i class="ph-bold ph-speaker-high"></i> فعّل صوت التنبيه</button>
+    <p id="push-denied" class="hidden text-[12px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-2xl py-2.5 px-3">الإشعارات مقفلة لهذا الموقع في متصفحك. الرنين يشتغل عادي، ولو تبي الإشعار فعّله من إعدادات المتصفح.</p>
+    <!-- العميل يكتب رقم فاتورته -->
+    <form id="inv-form" class="card p-4 space-y-2.5 hidden" novalidate>
+      <label for="inv-in" class="block font-black text-[14px]"><i class="ph-bold ph-receipt"></i> رقم فاتورتك <span class="font-bold opacity-55 text-[12px]">(اختياري)</span></label>
+      <p class="text-[12px] font-bold opacity-60 -mt-1">اكتبه عشان يعرف الموظف طلبك أسرع</p>
+      <div class="flex gap-2">
+        <input id="inv-in" class="field flex-1 min-w-0 text-center !text-lg !font-black tracking-widest" inputmode="numeric" autocomplete="off" maxlength="20" dir="ltr" placeholder="1045">
+        <button id="inv-save" class="btn btn-brand !w-auto !px-5 !py-3 !text-base">حفظ</button>
+      </div>
+      <p id="inv-err" class="hidden text-[12px] font-bold text-rose-700"></p>
+    </form>
+    <a id="w-loyalty" class="hidden block text-[13px] font-black rounded-2xl py-3 px-3"></a>
+
 
     <details class="tips">
       <summary><i class="ph-bold ph-info"></i> نصائح عشان يوصلك التنبيه</summary>
@@ -320,6 +320,18 @@
     </ul>
     <button id="perm-yes" class="btn btn-brand"><i class="ph-bold ph-check"></i> فعّل الإشعارات والصوت</button>
     <button id="perm-no" class="text-xs font-black opacity-50 underline">لاحقاً</button>
+  </div>
+</div>
+
+<!-- بعد أخذ الرقم: دعوة للتسجيل في بطاقة الولاء (مرة لكل رقم) -->
+<div id="ly-ask" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-black/55 p-4" role="dialog" aria-modal="true" aria-labelledby="ly-ask-title">
+  <div class="card w-full max-w-sm p-6 text-center space-y-4" style="animation: pop .35s cubic-bezier(.3,1.4,.5,1)">
+    <div class="w-16 h-16 rounded-2xl bg-white/15 text-[#e9c95a] grid place-items-center mx-auto text-3xl"><i class="ph-bold ph-seal-check"></i></div>
+    <h2 id="ly-ask-title" class="text-xl font-black">خذ ختم على هالطلب</h2>
+    <p id="ly-ask-sub" class="text-sm font-bold opacity-70 leading-relaxed"></p>
+    <p class="text-[12.5px] font-bold opacity-70 leading-relaxed bg-white/10 border border-white/20 rounded-2xl p-3"><i class="ph-bold ph-wallet"></i> أضف البطاقة للمحفظة ويوصلك إشعار <span class="t-when"></span> حتى لو كنت في تطبيق ثاني.</p>
+    <button id="ly-ask-yes" class="btn btn-brand"><i class="ph-bold ph-user-plus"></i> سجّلني</button>
+    <button id="ly-ask-no" class="text-xs font-black opacity-50 underline">لاحقاً</button>
   </div>
 </div>
 
@@ -766,7 +778,7 @@
   }
   function offerPerm(always = false) {
     if (!loadToken() || $('v-waiting').classList.contains('hidden')) return;
-    if (!always && !needPush() && keeperOn() && audioReady()) return;
+    if (!always && !needPush() && keeperOn() && audioReady()) return offerJoin();
     $('perm-num').textContent = curNumber || '';
     permState();
     const ready = !needPush() && keeperOn() && audioReady();
@@ -780,9 +792,25 @@
     await subscribePush(); renderPush(); permState();
     // رنّة قصيرة عشان يتأكد إن الصوت يوصله
     ringOnce();
-    setTimeout(() => $('perm').classList.replace('flex', 'hidden'), 900);
+    setTimeout(() => { $('perm').classList.replace('flex', 'hidden'); offerJoin(); }, 900);
   };
-  $('perm-no').onclick = () => $('perm').classList.replace('flex', 'hidden');
+  $('perm-no').onclick = () => { $('perm').classList.replace('flex', 'hidden'); offerJoin(); };
+
+  // ─── دعوة الولاء: تطلع بعد نافذة التنبيه، مرة وحدة لكل رقم ───
+  const ASK_KEY = `${KEY}_lyask`;
+  function offerJoin() {
+    const t = loadToken(), l = lastLoyalty;
+    if (!t || joined || !l || !l.enabled || l.linked || $('v-waiting').classList.contains('hidden')) return;
+    try { if (localStorage.getItem(ASK_KEY) === t) return; localStorage.setItem(ASK_KEY, t); } catch {}
+    $('ly-ask-sub').textContent = `سجّل في بطاقة الولاء، وبعد ${l.needed} أختام تاخذ ${l.reward}.`;
+    $('ly-ask').classList.replace('hidden', 'flex');
+  }
+  $('ly-ask-no').onclick = () => $('ly-ask').classList.replace('flex', 'hidden');
+  $('ly-ask-yes').onclick = () => {
+    $('ly-ask').classList.replace('flex', 'hidden');
+    $('v-join').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => $('jn-name').focus({ preventScroll: true }), 450);
+  };
 
   $('unlock-btn').onclick = unlockAudio;
   $('keep-btn').onclick = () => { unlockAudio(); startKeeper(); };
