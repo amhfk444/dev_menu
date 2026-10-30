@@ -31,5 +31,6 @@
   "بطاقة تنبيه": "Alert card",
   "هذي البطاقة لطلبك الحالي بس. يوصلك منها إشعار لما يجهز، وتنتهي لحالها بعد ما تستلم.": "This card is for your current order only. It notifies you when it's ready and expires by itself after pickup.",
   "بطاقة النداء": "Pager card",
-  "بطاقة النداء: {s}": "Pager card: {s}"
+  "بطاقة النداء: {s}": "Pager card: {s}",
+  "سجّل في بطاقة الولاء ويوصلك النداء منها": "Join the loyalty card and you'll be paged from it"
 }

@@ -153,6 +153,8 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const t = (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=in.(waiting,ready)&select=id,number,status,wallet_url,lang`))[0];
     if (!t) throw new ApiError(404, 'الرقم غير موجود أو انتهى', 'NOT_FOUND');
     if (t.wallet_url) return { url: t.wallet_url };
+    // المحل المشترك في الولاء: النداء يوصل من بطاقة الولاء، فما فيه بطاقة نداء
+    if ((await loyaltyOf(store.id)).enabled) throw new ApiError(409, 'سجّل في بطاقة الولاء ويوصلك النداء منها', 'USE_LOYALTY');
     const T = SECTORS.terms(store);
     const pass = await wallet.createPagerPass({ store, number: t.number, status: t.status === 'ready' ? T.ready : T.waiting.replace('…', ''), notice: ' ', url: pagerUrl(store.client_slug), step: t.status, lang: t.lang });
     await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl } });
