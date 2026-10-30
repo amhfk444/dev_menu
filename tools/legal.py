@@ -251,6 +251,7 @@ STYLE = """  :root { --brand: #233d2c; --sand: #f5f2eb; --gold-deep: #8a6d0f; }
   li { margin-bottom: 4px; }
   .card { background: #fff; border: 1.5px solid rgba(35,61,44,.14); border-radius: 22px; padding: 26px 28px; }
   a.inline { color: var(--gold-deep); font-weight: 800; }
+  header .lang { font: 800 12px 'Cairo', Tahoma, sans-serif; color: var(--sand); background: transparent; border: 1.5px solid rgba(245,242,235,.35); border-radius: 10px; padding: 3px 10px; cursor: pointer; }
   nav.legal { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; padding: 0 20px 14px; }
   nav.legal a { font-size: 12px; font-weight: 800; color: var(--brand); text-decoration: none; }
   nav.legal a[aria-current] { color: var(--gold-deep); text-decoration: underline; text-underline-offset: 4px; }
@@ -297,7 +298,10 @@ def build(slug):
 <header>
   <div class="wrap">
     <a href="index.html">DEV MENU</a>
-    <a href="index.html" style="font-size:12px;opacity:.8">العودة للرئيسية</a>
+    <span style="display:flex;align-items:center;gap:14px">
+      <a href="index.html" style="font-size:12px;opacity:.8">العودة للرئيسية</a>
+      <button type="button" data-lang-toggle class="lang"></button>
+    </span>
   </div>
 </header>
 
