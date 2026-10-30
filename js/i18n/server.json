@@ -36,5 +36,8 @@
   "بالعافية! نتشرف بزيارتك": "Enjoy! Thanks for visiting",
   "~رقمك {n}: {s}": "Your number {n}: {s}",
   "رابط الكاشير يفتح شاشة الكاشير بس": "The cashier link only opens the cashier screen",
-  "رابط الكاشير تغيّر. اطلب الرابط الجديد من صاحب المحل": "The cashier link changed. Ask the store owner for the new link"
+  "رابط الكاشير تغيّر. اطلب الرابط الجديد من صاحب المحل": "The cashier link changed. Ask the store owner for the new link",
+  "ما فيه أطباق في الملف": "No dishes in the file",
+  "بدون اسم": "No name",
+  "سعر غير صحيح": "Invalid price"
 }

@@ -1349,6 +1349,47 @@ async function main(req) {
   }
 
   // ─── الأطباق ───
+  // ─── استيراد الأطباق من Excel/CSV: الأقسام الناقصة تنضاف بأسمائها، والأطباق تنضاف تحتها (بدون صور) ───
+  if (action === 'products-import') {
+    const rows = Array.isArray(b.rows) ? b.rows.slice(0, 500) : [];
+    if (!rows.length) throw new ApiError(400, 'ما فيه أطباق في الملف');
+    const cats = await rest(`categories?client_id=eq.${sid}&select=key,name,sort_order`);
+    const byName = new Map(cats.map(c => [c.name.trim(), c]));
+    let catOrder = Math.max(0, ...cats.map(c => c.sort_order || 0));
+    const orders = {};
+    const nextIn = async (key) => {
+      if (orders[key] === undefined) orders[key] = Math.max(0, ...(await rest(`products?client_id=eq.${sid}&category=eq.${q(key)}&select=sort_order`)).map(x => x.sort_order || 0));
+      return ++orders[key];
+    };
+    const out = [], skipped = [];
+    let newCats = 0;
+    for (const [i, r] of rows.entries()) {
+      try {
+        const name = str(r.name, 100, 'اسم الطبق');
+        const catName = str(r.category, 60, 'القسم') || 'أطباق';
+        const price = Number(String(r.price ?? '').replace(/[\u0660-\u0669]/g, d => d.charCodeAt(0) - 0x660).replace(/[^\d.]/g, ''));
+        if (!name) throw new ApiError(400, 'بدون اسم');
+        if (!validPrice(price)) throw new ApiError(400, 'سعر غير صحيح');
+        let cat = byName.get(catName);
+        if (!cat) {
+          cat = (await rest('categories', { method: 'POST', prefer: 'return=representation', body: { client_id: sid, name: catName, key: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), sort_order: ++catOrder } }))[0];
+          byName.set(catName, cat); newCats++;
+        }
+        const cal = r.calories === '' || r.calories == null ? null : int(r.calories);
+        out.push({ client_id: sid, name, price, category: cat.key, is_available: true, image_url: '', sizes: [],
+          description: str(r.description, 500, 'الوصف') || '', name_en: str(r.name_en, 100, 'الاسم الإنجليزي') || null, description_en: str(r.description_en, 500, 'الوصف الإنجليزي') || null,
+          ...(Number.isInteger(cal) && cal >= 0 && cal <= 10000 ? { calories: cal } : {}), sort_order: await nextIn(cat.key) });
+      } catch (e) { skipped.push({ row: i + 2, reason: e.message }); }   // رقم الصف في الملف (الأول عناوين)
+    }
+    if (out.length) {
+      // الصفوف بأعمدة مختلفة (السعرات اختيارية) تنضاف دفعة لكل شكل
+      const withCal = out.filter(x => 'calories' in x), noCal = out.filter(x => !('calories' in x));
+      if (withCal.length) await rest('products', { method: 'POST', body: withCal });
+      if (noCal.length) await rest('products', { method: 'POST', body: noCal });
+    }
+    return { added: out.length, categories: newCats, skipped: skipped.slice(0, 20), skipped_count: skipped.length };
+  }
+
   if (action === 'product-save') {
     const id = b.id == null ? null : int(b.id);
     const name = str(b.name, 100, 'اسم الطبق');
@@ -1463,7 +1504,7 @@ async function main(req) {
 const MENU_ACTIONS = new Set([
   'update-store', 'occasions-save', 'branch-rename', 'coupon-save', 'coupon-toggle', 'coupon-delete', 'update-slug',
   'category-add', 'category-group', 'category-rename', 'category-delete', 'reorder',
-  'product-save', 'product-toggle', 'product-delete', 'waitlist-settings'
+  'product-save', 'product-toggle', 'product-delete', 'products-import', 'waitlist-settings'
 ]);
 
 module.exports = handler(['GET', 'POST'], async (req) => {
