@@ -470,6 +470,22 @@
               </div>
               <div id="branches-list" class="space-y-2"></div>
             </div>
+    <!-- رابط الكاشير: يفتح شاشة البيجر وشاشة الختم لهالفرع بدون حساب المالك -->
+            <div id="desk-card" class="hidden pro-card p-5 space-y-3">
+              <div class="space-y-1">
+                <h3 class="text-xs font-bold text-ink"><i class="ph-bold ph-cash-register text-emerald-600"></i> رابط الكاشير<span id="desk-branch" class="text-ink/55"></span></h3>
+                <p class="text-[11px] text-ink/60 leading-relaxed">افتحه على جهاز الكاشير مرة وحدة. يفتح شاشة البيجر وشاشة الختم بس، بدون إيميلك وكلمة المرور، وما يقدر الموظف يدخل لوحة التحكم ولا يشوف الأسعار وجوالات الزبائن.</p>
+              </div>
+              <div id="desk-link-box" class="hidden space-y-2">
+                <input id="desk-link" readonly dir="ltr" class="w-full text-[11px] bg-brand/5 border border-brand/15 rounded-xl px-3 py-2.5 text-ink/80" onclick="this.select()">
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" onclick="copyDeskLink()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-brand text-cream"><i class="ph-bold ph-copy"></i> نسخ الرابط</button>
+                  <button type="button" onclick="resetDeskLink()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-white border border-rose-200 text-rose-700"><i class="ph-bold ph-arrows-clockwise"></i> غيّر الرابط</button>
+                </div>
+                <p class="text-[10px] text-ink/50">ترك موظف الشغل؟ اضغط "غيّر الرابط"، والرابط القديم يوقف على طول.</p>
+              </div>
+              <button id="desk-show" type="button" onclick="showDeskLink()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-white border border-brand/20 text-ink"><i class="ph-bold ph-link-simple"></i> اطلع رابط الكاشير</button>
+            </div>
     <!-- صفحة الروابط السريعة -->
             <div class="pro-card p-5 space-y-3">
               <div class="space-y-1">
@@ -2076,7 +2092,7 @@
     setStoreName(name);
     document.getElementById('admin-mode-badge').classList.toggle('hidden', !isSuperAdmin);
     renderBranchSwitch();
-    renderBranchesCard();
+    renderBranchesCard(); renderDeskCard();
     renderAlsoBranches();
     document.getElementById('sa-link').classList.toggle('hidden', !isSuperAdmin);
     document.getElementById('sidebar-preview').href = menuUrl();
@@ -3523,6 +3539,30 @@
     if (branches.length < 2) return;
     sel.innerHTML = branches.map(b => `<option value="${Number(b.id)}" ${b.id === client.id ? 'selected' : ''}>${b.parent_id ? '' : '★ '}${esc(b.name || b.client_slug)}</option>`).join('');
   }
+  // ─── رابط الكاشير (لكل فرع رابطه) ───
+  function renderDeskCard() {
+    const on = !!client && (DMPlans.has(client, 'pager') || DMPlans.has(client, 'loyalty'));
+    document.getElementById('desk-card').classList.toggle('hidden', !on);
+    document.getElementById('desk-branch').textContent = branches.length > 1 ? ` (${client.name || ''})` : '';
+    document.getElementById('desk-link-box').classList.add('hidden');
+    document.getElementById('desk-show').classList.remove('hidden');
+  }
+  async function showDeskLink(reset = false) {
+    try {
+      const r = reset ? await api('desk-link', { reset: true }) : await api('desk-link');
+      document.getElementById('desk-link').value = r.url;
+      document.getElementById('desk-link-box').classList.remove('hidden');
+      document.getElementById('desk-show').classList.add('hidden');
+      if (reset) showToast('تغيّر الرابط، والقديم وقف');
+    } catch (e) { showToast(e.message || 'ما قدرنا نطلع الرابط', true); }
+  }
+  function copyDeskLink() {
+    navigator.clipboard.writeText(document.getElementById('desk-link').value).then(() => showToast('تم نسخ رابط الكاشير')).catch(() => showToast('انسخ الرابط يدوياً من الخانة', true));
+  }
+  async function resetDeskLink() {
+    if (!(await DMDialog.confirm({ title: 'تغيير رابط الكاشير', message: 'الرابط القديم بيوقف على كل الأجهزة اللي مفتوح فيها، ولازم تفتح الرابط الجديد على جهاز الكاشير.', confirmText: 'غيّره', cancelText: 'تراجع' }))) return;
+    showDeskLink(true);
+  }
   function renderBranchesCard() {
     document.getElementById('branches-card').classList.toggle('hidden', branches.length < 2);
     document.getElementById('branches-list').innerHTML = branches.map(b => `
@@ -3547,7 +3587,7 @@
       const res = await api('branch-rename', { id, name });
       branches = branches.map(x => ({ ...x, ...(res.family.find(f => f.id === x.id) || {}) }));
       if (id === client.id) { client.name = name; setStoreName(client.name); document.getElementById('setting-name').value = client.name; }
-      renderBranchSwitch(); renderBranchesCard();
+      renderBranchSwitch(); renderBranchesCard(); renderDeskCard();
       showToast('تم تعديل اسم الفرع');
     } catch { showToast('تعذر تعديل الاسم', true); }
   }

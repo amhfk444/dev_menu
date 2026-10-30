@@ -73,10 +73,13 @@
   }
 
   // ─── خادمنا ───
-  async function request(path, { method = 'GET', body, auth: needAuth = false, token } = {}) {
+  // رابط الكاشير: مفتاح الفرع بدل حساب المالك (شاشة البيجر وشاشة الختم بس)
+  let deskKey = '';
+  async function request(path, { method = 'GET', body, auth: needAuth = false, token, desk } = {}) {
     const headers = {};
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (token) headers.Authorization = `Bearer ${token}`;
+    if (desk) headers['x-dm-desk'] = desk;
     // لغة الزائر: الخادم يكتب له إشعاراته وبطاقته ورسائله بنفس اللغة
     if (window.DMi18n && window.DMi18n.lang === 'en') headers['x-dm-lang'] = 'en';
     let res;
@@ -90,6 +93,7 @@
 
   async function call(path, opts = {}) {
     if (!opts.auth) return request(path, opts);
+    if (deskKey) return request(path, { ...opts, desk: deskKey });
     const t = await accessToken();
     if (!t) throw fail('انتهت الجلسة، سجّل دخولك مرة ثانية', 401, 'NO_SESSION');
     try {
@@ -269,6 +273,16 @@
     consumeOAuthRedirect,
     session: loadSession,
     signedIn: () => !!loadSession(),
+    // مفتاح الكاشير: من الرابط (?k=) أول مرة، وبعدها محفوظ في الجهاز
+    deskMode() {
+      try {
+        const u = new URL(location.href), k = u.searchParams.get('k');
+        if (k && /^[A-Za-z0-9_-]{24,64}$/.test(k)) { localStorage.setItem('dm_desk_key', k); u.searchParams.delete('k'); history.replaceState(null, '', u.pathname + u.search + u.hash); }
+        deskKey = localStorage.getItem('dm_desk_key') || '';
+      } catch {}
+      return !!deskKey;
+    },
+    leaveDesk() { deskKey = ''; try { localStorage.removeItem('dm_desk_key'); } catch {} },
     sendOtp: (email) => auth('otp', { email, create_user: true }),
     // نسخة التجربة فقط: دخول بكلمة سر لحسابات تجريبية جاهزة (بدون رمز بالبريد)
     staging: STAGING,

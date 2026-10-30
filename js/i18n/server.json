@@ -34,5 +34,7 @@
   "سجّل في بطاقة الولاء ويوصلك النداء منها": "Join the loyalty card and you'll be paged from it",
   "كل ما تاخذ رقم من البيجر تتحدث هالبطاقة برقمك، ويوصلك منها إشعار لما يجهز طلبك.": "Every time you take a pager number this card updates with it, and notifies you when your order is ready.",
   "بالعافية! نتشرف بزيارتك": "Enjoy! Thanks for visiting",
-  "~رقمك {n}: {s}": "Your number {n}: {s}"
+  "~رقمك {n}: {s}": "Your number {n}: {s}",
+  "رابط الكاشير يفتح شاشة الكاشير بس": "The cashier link only opens the cashier screen",
+  "رابط الكاشير تغيّر. اطلب الرابط الجديد من صاحب المحل": "The cashier link changed. Ask the store owner for the new link"
 }

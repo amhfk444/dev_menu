@@ -106,7 +106,17 @@ function phoneNumber(v) {
   return s;
 }
 
+// رابط الكاشير: مفتاح الفرع يفتح شاشة البيجر وشاشة الختم بس (بدون حساب المالك)
+const DESK_ACTIONS = ['pager', 'pager-update', 'pager-invoice', 'pager-ring', 'loyalty-stamp-code', 'loyalty-scan', 'loyalty-redeem', 'loyalty-transfer', 'kiosk'];
+const DESK_KEY_RE = /^[A-Za-z0-9_-]{24,64}$/;
 async function context(req, { needStore = true } = {}) {
+  const deskKey = String(req.headers['x-dm-desk'] || '');
+  if (deskKey) {
+    if (!DESK_ACTIONS.includes(String(req.query.action))) throw new ApiError(403, 'رابط الكاشير يفتح شاشة الكاشير بس', 'DESK_ONLY');
+    const store = DESK_KEY_RE.test(deskKey) ? (await rest(`clients?desk_key=eq.${q(deskKey)}&select=*&limit=1`))[0] : null;
+    if (!store) throw new ApiError(401, 'رابط الكاشير تغيّر. اطلب الرابط الجديد من صاحب المحل', 'DESK_KEY');
+    return { user: null, admin: false, store, desk: true };
+  }
   const user = await getUser(req);
   const admin = await isSuperAdmin(user.email);
   const slug = String(req.query.client || '').trim().toLowerCase();
@@ -422,6 +432,18 @@ async function main(req) {
     const services = ['menu', 'pager', 'waitlist', 'loyalty'].filter(k => PLANS.has(store, k) && (k !== 'waitlist' || store.waitlist_enabled) && (k !== 'loyalty' || x.loyalty_enabled));
     return { name: store.name, logo_url: store.logo_url || '', slug: store.client_slug, business_type: store.business_type, business_label: store.business_label, services, enabled: services.includes('loyalty'), needed: settings.needed, reward: settings.reward, reward_en: settings.reward_en };
   }
+  // ─── رابط الكاشير للفرع: يطلع (وينشأ أول مرة)، أو يتغيّر والقديم يوقف ───
+  if (action === 'desk-link') {
+    const { store, desk } = await context(req);
+    if (desk) throw new ApiError(403, 'رابط الكاشير يفتح شاشة الكاشير بس', 'DESK_ONLY');
+    let key = store.desk_key;
+    if (!key || (req.method === 'POST' && b.reset === true)) {
+      key = crypto.randomBytes(24).toString('base64url');
+      await rest(`clients?id=eq.${store.id}`, { method: 'PATCH', body: { desk_key: key } });
+    }
+    return { url: `${SITE}/pager-desk.html?k=${key}`, name: store.name };
+  }
+
   if (action === 'pager' && req.method === 'GET') {
     const { store } = await context(req);
     // شاشة الكاشير تخدم البيجر والولاء: مشترك الولاء لحاله يستخدمها لمسح بطاقات الزبائن

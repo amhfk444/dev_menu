@@ -1314,5 +1314,16 @@
   "~{n} من {m}": "{n} of {m}",
   "المكافأة بالإنجليزي": "Reward in English",
   "اسم الزبون": "Customer name",
-  "مثال: دجئ - فرع النخيل": "e.g. Store - Al Nakheel branch"
+  "مثال: دجئ - فرع النخيل": "e.g. Store - Al Nakheel branch",
+  "رابط الكاشير": "Cashier link",
+  "افتحه على جهاز الكاشير مرة وحدة. يفتح شاشة البيجر وشاشة الختم بس، بدون إيميلك وكلمة المرور، وما يقدر الموظف يدخل لوحة التحكم ولا يشوف الأسعار وجوالات الزبائن.": "Open it once on the cashier's device. It opens only the pager and stamp screens, without your email and password, and staff can't reach the dashboard, prices or customers' phone numbers.",
+  "غيّر الرابط": "Change link",
+  "ترك موظف الشغل؟ اضغط \"غيّر الرابط\"، والرابط القديم يوقف على طول.": "Staff member left? Tap \"Change link\" and the old link stops right away.",
+  "اطلع رابط الكاشير": "Show cashier link",
+  "تغيّر الرابط، والقديم وقف": "Link changed, the old one stopped",
+  "ما قدرنا نطلع الرابط": "Couldn't get the link",
+  "تم نسخ رابط الكاشير": "Cashier link copied",
+  "تغيير رابط الكاشير": "Change cashier link",
+  "غيّره": "Change it",
+  "الرابط القديم بيوقف على كل الأجهزة اللي مفتوح فيها، ولازم تفتح الرابط الجديد على جهاز الكاشير.": "The old link will stop on every device it's open on, and you'll need to open the new link on the cashier's device."
 }

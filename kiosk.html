@@ -178,7 +178,7 @@
 
   async function call(action, body) {
     try { return body === undefined ? await DM.get(O(action), true) : await DM.post(O(action), body, true); }
-    catch (e) { if (e.status === 401) location.replace('login.html'); throw e; }
+    catch (e) { if (e.status === 401 && !isDesk) location.replace('login.html'); throw e; }
   }
 
   // ─── الكاميرا ───
@@ -303,7 +303,9 @@
     $('start').remove();
   });
 
-  if (!DM.signedIn()) location.replace('login.html');
+  // رابط الكاشير يفتحها بدون حساب المالك
+  const isDesk = DM.deskMode();
+  if (!isDesk && !DM.signedIn()) location.replace('login.html');
   else load().catch(e => { $('start-err').textContent = e.message || 'ما قدرنا نحمّل الصفحة. تأكد من الإنترنت وحدّثها'; });
 </script>
 </body>

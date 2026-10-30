@@ -29,6 +29,7 @@
 .ph-caret-down:before { content: "\e136"; }
 .ph-caret-left:before { content: "\e138"; }
 .ph-carrot:before { content: "\ed38"; }
+.ph-cash-register:before { content: "\ed80"; }
 .ph-chair:before { content: "\e950"; }
 .ph-chart-bar:before { content: "\e150"; }
 .ph-chart-line-up:before { content: "\e156"; }
