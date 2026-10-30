@@ -274,13 +274,8 @@ async function refreshWalletCards(store) {
 }
 
 // "رسائل لزبائنك": رسالتين بالأسبوع بالكثير (الإزعاج يخلي الزبون يحذف البطاقة، وبعدها ما يوصله حتى "طلبك جاهز")
-const PAGER_MSG_WEEK = 2;
-function pagerMsgQuota(list) {
-  const week = list.filter(m => Date.now() - Date.parse(m.created_at) < 7 * 864e5).sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
-  const left = Math.max(0, PAGER_MSG_WEEK - week.length);
-  return { left, limit: PAGER_MSG_WEEK, next_at: left ? null : new Date(Date.parse(week[week.length - PAGER_MSG_WEEK].created_at) + 7 * 864e5).toISOString() };
-}
-const leftDays = (iso) => { const d = Math.max(1, Math.ceil((Date.parse(iso) - Date.now()) / 864e5)); return d === 1 ? 'يوم' : d === 2 ? 'يومين' : `${d} أيام`; };
+// رسائل لزبائنك بدون حد: صاحب المحل يقرر. بس دقيقتين بين كل رسالة والثانية (عشان ضغطة مكررة ما ترسلها مرتين)
+const PAGER_MSG_GAP = 2 * 60e3;
 // يرسل دفعة (40 بطاقة) ويرجع وين وقف، ولوحة التحكم تكمّل الباقي
 async function pushPagerMessage(homeId, body, afterId, limit = 40) {
   const store = (await rest(`clients?id=eq.${homeId}&select=id,name,client_slug,logo_url,accent_color,business_type`))[0];
@@ -771,15 +766,14 @@ async function main(req) {
       rest(`pager_messages?client_id=eq.${home}&select=id,body,sent,created_at&order=id.desc&limit=10`).catch(() => []),
       rest(`pager_cards?client_id=eq.${home}&wallet_serial=not.is.null&select=id`).catch(() => [])
     ]);
-    return { messages: list, cards: cards.length, ...pagerMsgQuota(list) };
+    return { messages: list, cards: cards.length };
   }
   if (action === 'pager-message') {
     const body = str(b.body, 150, 'الرسالة');
     if (body.length < 2) throw new ApiError(400, 'اكتب الرسالة');
     const home = await loyaltyHome(sid);
-    const recent = await rest(`pager_messages?client_id=eq.${home}&created_at=gte.${q(new Date(Date.now() - 7 * 864e5).toISOString())}&select=id,created_at&order=id.desc`).catch(() => []);
-    const quota = pagerMsgQuota(recent);
-    if (!quota.left) throw new ApiError(429, `وصلت حد ${PAGER_MSG_WEEK} رسائل بالأسبوع. تقدر ترسل ${quota.next_at ? `بعد ${leftDays(quota.next_at)}` : 'الأسبوع الجاي'}. الحد عشان زبائنك ما ينزعجون ويحذفون البطاقة`, 'MSG_LIMIT');
+    const recent = await rest(`pager_messages?client_id=eq.${home}&created_at=gte.${q(new Date(Date.now() - PAGER_MSG_GAP).toISOString())}&select=id&limit=1`).catch(() => []);
+    if (recent.length) throw new ApiError(429, 'أرسلت رسالة قبل شوي، انتظر دقيقتين وأرسل الثانية', 'MSG_LIMIT');
     const msg = (await rest('pager_messages', { method: 'POST', prefer: 'return=representation', body: { client_id: home, body } }))[0];
     const p = await pushPagerMessage(home, body, 0);
     await rest(`pager_messages?id=eq.${msg.id}`, { method: 'PATCH', body: { sent: p.sent } }).catch(() => {});

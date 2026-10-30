@@ -516,7 +516,7 @@
                   <span id="nt-count" class="text-[11px] text-ink/50">0/150</span>
                   <button type="button" id="nt-send" onclick="sendNotify()" class="bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition"><i class="ph-bold ph-paper-plane-tilt"></i> أرسل</button>
                 </div>
-                <p class="text-[10px] text-ink/50">رسالتين بالأسبوع بالكثير، عشان زبائنك ما ينزعجون ويحذفون البطاقة. واللي عنده رقم شغّال الحين ما توصله، عشان ما يضيع رقمه.</p>
+                <p class="text-[10px] text-ink/50">نصيحة: لا تكثر الرسائل، عشان زبائنك ما ينزعجون ويحذفون البطاقة من محفظتهم.</p>
                 <div id="nt-list" class="text-[12px]"></div>
               </div>
             </div>
@@ -3678,8 +3678,8 @@
       const r = await api('pager-messages', {});
       ntQuota = r;
       const when = (iso) => new Date(iso).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
-      document.getElementById('nt-stats').textContent = `${r.cards} زبون حافظ البطاقة · باقي لك ${r.left} من ${r.limit} رسائل هالأسبوع`;
-      document.getElementById('nt-send').disabled = !r.left;
+      document.getElementById('nt-stats').textContent = `${r.cards} زبون حافظ البطاقة`;
+      document.getElementById('nt-send').disabled = false;
       document.getElementById('nt-list').innerHTML = r.messages.length ? `<p class="text-[11px] font-bold text-ink/60 mb-1">آخر الرسائل</p><div class="divide-y divide-brand/10">${r.messages.map(m => `
         <div class="py-2"><p class="leading-relaxed">${esc(m.body)}</p><p class="text-[11px] text-ink/55 mt-0.5">${when(m.created_at)}${m.sent ? ` · وصلت لـ ${m.sent} جوال` : ''}</p></div>`).join('')}</div>` : '';
     } catch { document.getElementById('nt-stats').textContent = ''; }

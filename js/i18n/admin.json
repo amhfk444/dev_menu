@@ -1423,5 +1423,7 @@
   "انرسلت، ووصلت إشعار لـ {a} جوال{b}": "Sent, and it reached {a} phones{b}",
   " (و{a} حذفوا البطاقة من محفظتهم)": " ({a} removed the card from their wallet)",
   "ما وصلت: الزبائن اللي عندهم البطاقة ({a}) حذفوها من محفظتهم": "Not delivered: the customers who had the card ({a}) removed it from their wallet",
-  "ما قدرنا نوصلها الحين، جرّب بعد شوي": "We couldn't deliver it right now. Try again shortly"
+  "ما قدرنا نوصلها الحين، جرّب بعد شوي": "We couldn't deliver it right now. Try again shortly",
+  "نصيحة: لا تكثر الرسائل، عشان زبائنك ما ينزعجون ويحذفون البطاقة من محفظتهم.": "Tip: don't send too many messages, so your customers aren't annoyed into removing the card from their wallet.",
+  "{a} زبون حافظ البطاقة": "{a} customers have the card"
 }
