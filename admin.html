@@ -508,6 +508,7 @@
                 <p class="text-[11px] text-ink/70">إضافة على البيجر بـ <b id="nt-price"></b>.</p>
                 <button type="button" onclick="addNotify()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-brand text-cream"><i class="ph-bold ph-plus"></i> أضفها لباقتك</button>
               </div>
+              <p id="nt-trial" class="hidden text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-300/60 rounded-lg px-2.5 py-1.5"></p>
               <div id="nt-box" class="hidden space-y-2">
                 <p id="nt-stats" class="text-[11px] font-bold text-ink/70"></p>
                 <textarea id="nt-body" rows="3" maxlength="150" class="input-pro" placeholder="مثلاً: اليوم القهوة الثانية بنص السعر لين الساعة 6"></textarea>
@@ -3668,6 +3669,10 @@
     document.getElementById('nt-locked').classList.toggle('hidden', paid);
     document.getElementById('nt-box').classList.toggle('hidden', !paid);
     document.getElementById('nt-price').textContent = `${f.month} ر.س بالشهر أو ${f.year} ر.س بالسنة`;
+    // في التجربة: الرسائل تنجرب مع البيجر مجاناً، وبعد الاشتراك تحتاج تضيفها (لو ما اختارها)
+    const tryOnly = paid && client.subscription_status === 'trial' && !(client.plan_features || []).includes('notify');
+    document.getElementById('nt-trial').classList.toggle('hidden', !tryOnly);
+    if (tryOnly) document.getElementById('nt-trial').textContent = `تجربها مجاناً مع البيجر لين تنتهي التجربة. بعدها تشتغل لو أضفتها لاشتراكك بـ ${f.month} ر.س بالشهر.`;
     if (!paid) return;
     try {
       const r = await api('pager-messages', {});
