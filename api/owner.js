@@ -258,6 +258,21 @@ async function ringTicket(store, t) {
   return result;
 }
 
+// هوية المحل تغيّرت: نحدّث بطاقات المحفظة. البطاقات على المحل الرئيسي، فتغيير شعار فرع يبان في بطاقة النداء مع رقمه الجاي من الفرع
+async function refreshWalletCards(store) {
+  if (store.parent_id) return;
+  const loyalty = await pushWalletCards(store.id).catch(e => `error ${e.message}`);
+  // بطاقات النداء اللي ما عندها طلب شغّال الحين ترجع "بالعافية" بالشكل الجديد (اللي عندها طلب تتحدث مع "جاهز")
+  const cards = await rest(`pager_cards?client_id=eq.${store.id}&wallet_serial=not.is.null&select=wallet_serial,lang&limit=2000`).catch(() => []);
+  const family = (await familyOf(store, 'id').catch(() => [store])).map(f => f.id).join(',');   // الأرقام من كل الفروع
+  const busy = new Set((await rest(`pager_tickets?client_id=in.(${family})&status=in.(waiting,ready)&created_at=gte.${q(riyadhDayStart())}&wallet_serial=not.is.null&select=wallet_serial`).catch(() => [])).map(t => t.wallet_serial));
+  let pager = 0;
+  for (const c of cards.filter(c => !busy.has(c.wallet_serial))) {
+    if ((await wallet.updatePagerPass(c.wallet_serial, wallet.pagerStep({ store, step: 'idle', lang: c.lang }))).startsWith('ok')) pager++;
+  }
+  console.log('WALLET_REFRESH', store.id, 'loyalty', loyalty, 'pager', pager);
+}
+
 // المكافآت الجاهزة لعضو: مكافأة الأختام + هدايا الأصدقاء المستلمة
 // رسالة تسليم المكافأة: نص صاحب المحل، أو يكتبها المساعد لهالعميل، أو بدون
 async function redeemMessage(store, settings, card, reward) {
@@ -1105,7 +1120,10 @@ async function main(req) {
     const finalWa = has('whatsapp_number') ? p.whatsapp_number : store.whatsapp_number;
     if ((has('whatsapp_orders') ? p.whatsapp_orders : store.whatsapp_orders) && !finalWa) p.whatsapp_orders = false;
     if (!Object.keys(p).length) return { store };
-    return { store: await patchStore(sid, p) };
+    const saved = await patchStore(sid, p);
+    // الشعار أو الاسم أو اللون تغيّر: بطاقات المحفظة (الولاء والنداء) تتحدث على طول بدل ما تنتظر الختم أو الرقم الجاي
+    if (['logo_url', 'name', 'accent_color'].some(k => k in p && p[k] !== store[k])) later(refreshWalletCards(saved));
+    return { store: saved };
   }
 
   // ─── المناسبات: كل فرع له مناسباته، ونقدر ننسخ مناسبة لفروع ثانية ───
