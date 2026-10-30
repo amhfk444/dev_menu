@@ -36,6 +36,13 @@
     .dmd-choice .dmd-dot{width:18px;height:18px;border-radius:50%;border:2px solid rgba(56,79,61,.3);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center}
     .dmd-choice.on .dmd-dot{border-color:#384f3d}
     .dmd-choice.on .dmd-dot::after{content:'';width:8px;height:8px;border-radius:50%;background:#384f3d}
+    .dmd-choices.multi .dmd-dot{border-radius:6px}
+    .dmd-choices.multi .dmd-choice.on .dmd-dot{background:#384f3d}
+    .dmd-choices.multi .dmd-choice.on .dmd-dot::after{width:9px;height:5px;border-radius:0;background:none;border:solid #faf6f1;border-width:0 0 2px 2px;transform:rotate(-45deg) translate(1px,-1px)}
+    .dmd-choice.off{opacity:.55;cursor:not-allowed}
+    .dmd-choice .dmd-price{margin-inline-start:auto;font-size:12px;font-weight:800;white-space:nowrap;color:#22362a;margin-top:0}
+    .dmd-live{margin-top:14px;font-size:12px;line-height:1.7;border:1.5px solid #384f3d;border-radius:12px;padding:10px 12px;color:#22362a}
+    .dmd-live:empty{display:none}
     .dmd-note{margin-top:14px;font-size:11px;line-height:1.7;background:rgba(56,79,61,.06);border:1px solid rgba(56,79,61,.12);border-radius:12px;padding:9px 11px;color:rgba(34,54,42,.75)}
     .dmd-err{color:#b91c1c;font-size:11px;font-weight:800;margin-top:6px;min-height:0}
     .dmd-actions{display:flex;gap:8px;margin-top:18px}
@@ -51,7 +58,9 @@
     const st = document.createElement('style'); st.id = 'dmd-css'; st.textContent = CSS; document.head.appendChild(st);
   }
 
-  function open({ title, subtitle = '', icon = 'ph-pencil-simple', tone = '', fields = [], confirmText = 'حفظ', cancelText = 'إلغاء', note = '' }) {
+  // fields: نص، أو choice (اختيار واحد)، أو multi (أكثر من اختيار، و toggle يضبط الاعتماديات)
+  // showIf(values): الحقل يطلع بس لما يتحقق الشرط. live(values): نص يتحدّث مع كل تغيير (مثل السعر)
+  function open({ title, subtitle = '', icon = 'ph-pencil-simple', tone = '', fields = [], confirmText = 'حفظ', cancelText = 'إلغاء', note = '', live = null }) {
     injectCss();
     return new Promise((resolve) => {
       const back = document.createElement('div');
@@ -60,15 +69,23 @@
       back.setAttribute('aria-modal', 'true');
       const values = {};
       const fieldHtml = fields.map((f, i) => {
+        if (f.type === 'multi') {
+          values[f.name] = (f.value || []).slice();
+          return `<div class="dmd-field" data-fi="${i}">${f.label ? `<span class="dmd-label">${esc(f.label)}</span>` : ''}
+            <div class="dmd-choices multi" data-multi="${i}">${f.options.map(o => `
+              <button type="button" class="dmd-choice" data-value="${esc(o.value)}">
+                <i class="dmd-dot"></i><div>${o.icon ? `<i class="ph-bold ${esc(o.icon)}"></i> ` : ''}<b style="display:inline">${esc(o.label)}</b>${o.desc ? `<span>${esc(o.desc)}</span>` : ''}</div>${o.price ? `<span class="dmd-price">${esc(o.price)}</span>` : ''}
+              </button>`).join('')}</div><p class="dmd-err" data-err="${i}"></p></div>`;
+        }
         if (f.type === 'choice') {
           values[f.name] = f.value ?? (f.options[0] && f.options[0].value);
-          return `<div class="dmd-field">${f.label ? `<span class="dmd-label">${esc(f.label)}</span>` : ''}
+          return `<div class="dmd-field" data-fi="${i}">${f.label ? `<span class="dmd-label">${esc(f.label)}</span>` : ''}
             <div class="dmd-choices" data-choice="${esc(f.name)}">${f.options.map(o => `
               <button type="button" class="dmd-choice ${o.value === values[f.name] ? 'on' : ''}" data-value="${esc(o.value)}">
                 <i class="dmd-dot"></i><div>${o.icon ? `<i class="ph-bold ${esc(o.icon)}"></i> ` : ''}<b style="display:inline">${esc(o.label)}</b>${o.desc ? `<span>${esc(o.desc)}</span>` : ''}</div>
               </button>`).join('')}</div></div>`;
         }
-        return `<div class="dmd-field">
+        return `<div class="dmd-field" data-fi="${i}">
           <label class="dmd-label" for="dmd-f${i}">${esc(f.label)}${f.required ? '' : ' <small>(اختياري)</small>'}</label>
           ${f.multiline
             ? `<textarea id="dmd-f${i}" class="dmd-input" rows="4" data-name="${esc(f.name)}" placeholder="${esc(f.placeholder || '')}" ${f.maxlength ? `maxlength="${Number(f.maxlength)}"` : ''} style="resize:vertical;min-height:96px;line-height:1.6">${esc(f.value ?? '')}</textarea>`
@@ -86,6 +103,7 @@
             <div><p class="dmd-title">${esc(title)}</p>${subtitle ? `<p class="dmd-sub">${esc(subtitle)}</p>` : ''}</div>
           </div>
           ${fieldHtml}
+          <div class="dmd-live"></div>
           ${note ? `<p class="dmd-note">${esc(note)}</p>` : ''}
           <div class="dmd-actions">
             <button type="button" class="dmd-btn dmd-ok ${tone === 'danger' ? 'danger' : ''}" data-act="ok">${esc(confirmText)}</button>
@@ -96,6 +114,22 @@
       document.body.appendChild(back);
       requestAnimationFrame(() => back.classList.add('on'));
       const inputs = [...back.querySelectorAll('.dmd-input')];
+      // حالة الاختيارات المتعددة، والحقول المشروطة، والنص الحي
+      const refresh = () => {
+        fields.forEach((f, i) => {
+          if (f.type === 'multi') {
+            const on = f.disabled ? f.disabled(values) : [];
+            back.querySelectorAll(`[data-multi="${i}"] .dmd-choice`).forEach(c => {
+              c.classList.toggle('on', values[f.name].includes(c.dataset.value));
+              c.classList.toggle('off', on.includes(c.dataset.value));
+            });
+          }
+          if (f.showIf) back.querySelector(`[data-fi="${i}"]`).style.display = f.showIf(values) ? '' : 'none';
+        });
+        if (live) back.querySelector('.dmd-live').innerHTML = live(values) || '';
+      };
+      fields.forEach(f => { if (f.type !== 'choice' && f.type !== 'multi') values[f.name] = String(f.value ?? '').trim(); });
+      refresh();
       setTimeout(() => { const f = inputs[0] || back.querySelector('[data-act="ok"]'); f.focus(); if (inputs[0]) inputs[0].select(); }, 60);
 
       const close = (result) => {
@@ -108,6 +142,12 @@
         let ok = true;
         fields.forEach((f, i) => {
           if (f.type === 'choice') return;
+          if (f.type === 'multi') {
+            const err = f.required && !values[f.name].length && (!f.showIf || f.showIf(values)) ? (f.requiredText || `اختر ${f.label}`) : '';
+            back.querySelector(`[data-err="${i}"]`).textContent = err;
+            if (err) ok = false;
+            return;
+          }
           const input = back.querySelector(`#dmd-f${i}`), v = input.value.trim();
           const err = f.required && !v ? `اكتب ${f.label}` : (f.validate ? f.validate(v) : '') || '';
           back.querySelector(`[data-err="${i}"]`).textContent = err;
@@ -128,11 +168,20 @@
         if (act) return act.dataset.act === 'ok' ? submit() : close(null);
         const fill = e.target.closest('[data-fill]');
         if (fill) { const input = back.querySelector(`#dmd-f${fill.dataset.fill}`); input.value = fill.dataset.v; input.focus(); return; }
+        const multi = e.target.closest('[data-multi] .dmd-choice');
+        if (multi) {
+          const f = fields[Number(multi.parentElement.dataset.multi)], v = multi.dataset.value;
+          if (multi.classList.contains('off')) return;
+          const cur = values[f.name];
+          values[f.name] = f.toggle ? f.toggle(cur, v) : (cur.includes(v) ? cur.filter(x => x !== v) : [...cur, v]);
+          return refresh();
+        }
         const choice = e.target.closest('.dmd-choice');
         if (choice) {
           const group = choice.parentElement;
           values[group.dataset.choice] = choice.dataset.value;
           group.querySelectorAll('.dmd-choice').forEach(c => c.classList.toggle('on', c === choice));
+          refresh();
         }
       });
     });

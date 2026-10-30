@@ -68,8 +68,8 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const key = `${stage}:${String(end).slice(0, 10)}`;
     if (s.reminder_key === key) continue;
 
-    let branches = 0;
-    try { branches = (await rest(`clients?parent_id=eq.${s.id}&select=id`)).length; } catch {}
+    let branches = [];
+    try { branches = await rest(`clients?parent_id=eq.${s.id}&select=name,branch_features`); } catch {}
     const m = message(s, stage, end, branches);
 
     let mailed = false;

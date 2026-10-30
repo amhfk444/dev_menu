@@ -2220,7 +2220,10 @@
   const daysText = (n) => n === 1 ? 'يوم واحد' : n === 2 ? 'يومين' : n <= 10 ? `${n} أيام` : `${n} يوم`;
   // ─── الباقة بالمميزات (الأسعار في js/plans.js) ───
   // الحساب = المتجر الرئيسي وفروعه باشتراك واحد، شهري أو سنوي
-  const branchCount = () => branches.filter(b => b.parent_id).length;
+  const branchList = () => branches.filter(b => b.parent_id);
+  const branchCount = () => branchList().length;
+  // مجموع الفروع في السعر (كل فرع: رسومه + مميزاته، والقديم برسوم الفرع بس)
+  const branchesTotal = (pr) => pr.lines.filter(l => l.key === 'branch').reduce((a, l) => a + l.amount, 0);
   const myFeatures = () => DMPlans.featuresOf(client);
   let pickFeatures = null;   // المميزات اللي يختارها الحين في البطاقة
   function chosenFeatures() {
@@ -2231,7 +2234,7 @@
     }
     return DMPlans.clean([...pickFeatures]);
   }
-  const planTotal = (plan = 'year', feats = chosenFeatures()) => DMPlans.price(feats, plan, branchCount()).total;
+  const planTotal = (plan = 'year', feats = chosenFeatures()) => DMPlans.price(feats, plan, branchList()).total;
   function renewMsg(plan) {
     const feats = chosenFeatures();
     const names = feats.map(k => DMPlans.FEATURES[k].name).join(' + ');
@@ -2321,7 +2324,7 @@
     }
     const feats = chosenFeatures();
     const pick = planPick || 'year';
-    const pr = DMPlans.price(feats, pick, branchCount());
+    const pr = DMPlans.price(feats, pick, branchList());
     const save = planTotal('month') * 12 - planTotal('year');
     const row = (k) => {
       const f = DMPlans.FEATURES[k], on = feats.includes(k), covered = DMPlans.coveredNote(feats, k);
@@ -2353,7 +2356,7 @@
         <p class="text-[12px] font-bold text-ink/75">اختر اللي تحتاجه:</p>
         <div class="space-y-2">${DMPlans.ORDER.map(row).join('')}</div>
         ${pr.discounts.map(d => `<p class="text-[12px] font-bold text-emerald-800 flex justify-between"><span><i class="ph-bold ph-tag"></i> ${d.label}</span><span>- ${sar(d.amount)}</span></p>`).join('')}
-        ${branchCount() ? `<p class="text-[11px] text-ink/60">يشمل ${branchCount()} ${branchCount() === 1 ? 'فرع' : 'فروع'}: ${sar(DMPlans.BRANCH[pick])} لكل فرع</p>` : ''}
+        ${branchCount() ? `<p class="text-[11px] text-ink/60">يشمل ${branchCount()} ${branchCount() === 1 ? 'فرع' : 'فروع'} بـ ${sar(branchesTotal(pr))}</p>` : ''}
         <div role="radiogroup" aria-label="المدة" class="grid grid-cols-2 gap-2.5 pt-1">${tile('year')}${tile('month')}</div>
         <button type="button" onclick="choosePlan('${pick}')" ${planSending || !feats.length ? 'disabled' : ''} class="w-full bg-brand hover:bg-brand-dark text-cream rounded-xl py-3 text-[13px] font-bold transition disabled:opacity-50 flex items-center justify-center gap-2">
           ${planSending ? '<i class="ph-bold ph-spinner-gap ph-spin"></i> جاري الإرسال' : feats.length ? `${verb} بـ ${sar(pr.total)} ${pick === 'month' ? 'بالشهر' : 'بالسنة'}` : 'اختر ميزة وحدة على الأقل'}
@@ -3691,32 +3694,52 @@
     btn.innerHTML = '<i class="ph-bold ph-paper-plane-tilt"></i> أرسل';
     renderNotifyCard();
   }
-  // سعر الفرع الإضافي حسب نوع الاشتراك، والمستحق الحين لو انضاف في نص الاشتراك
-  function branchQuote() {
-    const monthly = client.subscription_plan === 'month', price = DMPlans.BRANCH[monthly ? 'month' : 'year'], per = monthly ? 'بالشهر' : 'بالسنة';
+  // سعر الفرع: رسوم الفرع (19/199) + سعر مميزاته، حسب نوع اشتراك الحساب، والمستحق الحين لو انضاف في نص الاشتراك
+  const accountFeatures = () => DMPlans.clean(client.plan_features && client.plan_features.length ? client.plan_features : DMPlans.LEGACY);
+  function branchQuote(feats) {
+    const monthly = client.subscription_plan === 'month', p = monthly ? 'month' : 'year', per = monthly ? 'بالشهر' : 'بالسنة';
+    const fee = DMPlans.BRANCH[p], price = DMPlans.branchPrice(feats || [], p), extra = price - fee;
+    const base = { fee, price, per, extra };
     const end = client.subscription_status === 'active' ? Date.parse(client.subscription_end_date) : NaN;
-    if (client.subscription_status === 'trial') return { price, per, text: `الفرع الإضافي بـ ${price} ر.س ${per}. وأنت في التجربة المجانية، فينضاف مجاناً الحين ويدخل في أول فاتورة.` };
-    if (!(end > Date.now())) return { price, per, text: `الفرع الإضافي بـ ${price} ر.س ${per}، ويتفعّل مع تجديد اشتراكك.` };
+    if (client.subscription_status === 'trial') return { ...base, text: 'وأنت في التجربة المجانية، فينضاف مجاناً الحين ويدخل في أول فاتورة.' };
+    if (!(end > Date.now())) return { ...base, text: 'ويتفعّل مع تجديد اشتراكك.' };
     const days = Math.ceil((end - Date.now()) / 864e5), now = Math.round(price * days / (monthly ? 30 : 365));
-    return { price, per, now, days, text: `الفرع الإضافي بـ ${price} ر.س ${per}. تدفع الحين ${now} ر.س عن ${days} يوم الباقية لين تجديد اشتراكك، وبعدها يتجدد مع حسابك.` };
+    return { ...base, now, days, text: `تدفع الحين ${now} ر.س عن ${days} يوم الباقية لين تجديد اشتراكك، وبعدها يتجدد مع حسابك.` };
   }
   const pendingBranch = () => supportRows.find(x => x.kind === 'branch' && x.status === 'open');
   async function requestBranch() {
     if (pendingBranch()) return showToast('عندك طلب فرع قيد الإضافة، بنضيفه لك قريب', true);
-    const q = branchQuote();
-    const v = await DMDialog.form({ title: 'اطلب فرع جديد', subtitle: q.text, icon: 'ph-git-branch', confirmText: 'أرسل الطلب',
+    const p = client.subscription_plan === 'month' ? 'month' : 'year', fee = DMPlans.BRANCH[p];
+    const v = await DMDialog.form({ title: 'اطلب فرع جديد', subtitle: `كل فرع له رسوم ${fee} ر.س ${p === 'month' ? 'بالشهر' : 'بالسنة'}، وتدفع معها سعر المميزات اللي تختارها له.`, icon: 'ph-git-branch', confirmText: 'أرسل الطلب',
       fields: [
         { name: 'name', label: 'اسم الفرع', value: `${client.name || ''} - `, maxlength: 80, required: true, placeholder: `${client.name || ''} - فرع النخيل` },
-        { name: 'menu', label: 'منيو الفرع', type: 'choice', value: 'copy', options: [
+        { name: 'features', label: 'مميزات الفرع (محددة نفس حسابك، وتقدر تغيّرها)', type: 'multi', required: true, requiredText: 'اختر ميزة وحدة على الأقل للفرع',
+          value: accountFeatures(), toggle: (list, k) => DMPlans.toggle(list, k),
+          disabled: (vals) => DMPlans.ORDER.filter(k => DMPlans.coveredBy(vals.features, k)),
+          options: DMPlans.ORDER.map(k => ({ value: k, label: DMPlans.FEATURES[k].name, icon: DMPlans.FEATURES[k].icon, price: `${DMPlans.FEATURES[k][p]} ر.س`,
+            desc: k === 'notify' ? 'مشمولة في بطاقة الولاء، وتحتاج البيجر' : '' })) },
+        { name: 'menu', label: 'منيو الفرع', type: 'choice', value: 'copy', showIf: (vals) => vals.features.includes('menu'), options: [
           { value: 'copy', label: 'نفس منيو المحل', desc: 'نفس الأقسام والأطباق، وتقدر تغيّر الأسعار وتخفي أطباق لهالفرع', icon: 'ph-copy' },
           { value: 'empty', label: 'منيو جديد', desc: 'يبدأ فاضي، وتضيف أطباقه بنفسك', icon: 'ph-file' }
         ] }
       ],
-      note: 'الطلب يوصل لإدارة DEV MENU، وبعد ما ينضاف الفرع يطلع لك في القائمة فوق، وتوصلك الفاتورة على بريدك.' });
+      live: (vals) => {
+        const feats = DMPlans.clean(vals.features);
+        if (!feats.length) return '';
+        const q = branchQuote(feats), pr = DMPlans.price(feats, p);
+        return `<div style="display:flex;justify-content:space-between"><span>رسوم الفرع</span><span>${q.fee} ر.س</span></div>
+          ${pr.lines.map(l => `<div style="display:flex;justify-content:space-between"><span>${l.label}</span><span>${l.amount} ر.س</span></div>`).join('')}
+          ${pr.discounts.map(d => `<div style="display:flex;justify-content:space-between;color:#047857"><span>${d.label}</span><span>- ${d.amount} ر.س</span></div>`).join('')}
+          <div style="display:flex;justify-content:space-between;font-weight:900;border-top:1px solid rgba(56,79,61,.15);margin-top:4px;padding-top:4px"><span>سعر الفرع ${q.per}</span><span>${q.price} ر.س</span></div>
+          <div style="font-size:11px;color:rgba(34,54,42,.7);margin-top:4px">${q.text}</div>`;
+      },
+      note: 'الطلب يوصل لإدارة DEV MENU، وبعد ما ينضاف الفرع يطلع لك في "فروعك"، وتوصلك الفاتورة على بريدك.' });
     if (!v) return;
-    const body = `أبغى أضيف فرع جديد: "${v.name}" (${v.menu === 'empty' ? 'منيو جديد' : 'نفس منيو المحل'}).\nالسعر: ${q.price} ر.س ${q.per}${q.now ? `، والمستحق الحين ${q.now} ر.س عن ${q.days} يوم` : ''}.`;
+    const feats = DMPlans.clean(v.features), q = branchQuote(feats), empty = !feats.includes('menu') || v.menu === 'empty';
+    const names = feats.map(k => DMPlans.FEATURES[k].name).join(' + ');
+    const body = `أبغى أضيف فرع جديد: "${v.name}".\nالمميزات: ${names}${feats.includes('menu') ? ` (${v.menu === 'empty' ? 'منيو جديد' : 'نفس منيو المحل'})` : ''}.\nالسعر: ${q.price} ر.س ${q.per}${q.now ? `، والمستحق الحين ${q.now} ر.س عن ${q.days} يوم` : ''}.`;
     try {
-      await api('support-send', { kind: 'branch', body, meta: { name: v.name, empty_menu: v.menu === 'empty' } });
+      await api('support-send', { kind: 'branch', body, meta: { name: v.name, features: feats, empty_menu: empty } });
       showToast('وصل طلبك، وبيطلع الفرع في "فروعك" أول ما ينضاف');
       loadSupport();
     } catch (e) { showToast(e.message || 'ما انرسل. تأكد من الإنترنت وحاول مرة ثانية', true); }
@@ -3726,7 +3749,7 @@
     const main = !client.parent_id;
     document.getElementById('branches-card').classList.toggle('hidden', !main && branches.length < 2);
     document.getElementById('branch-ask').classList.toggle('hidden', !main);
-    if (main) { const q = branchQuote(); document.getElementById('branch-ask-price').textContent = `كل فرع إضافي بـ ${q.price} ر.س ${q.per}`; }
+    if (main) { const q = branchQuote(); document.getElementById('branch-ask-price').textContent = `كل فرع: رسوم ${q.fee} ر.س ${q.per} + سعر مميزاته`; }
     // الطلب المفتوح يطلع كسطر في القائمة لين ينضاف الفرع
     const wait = main && pendingBranch();
     document.getElementById('branch-ask-btn').classList.toggle('hidden', !!wait);
@@ -4881,7 +4904,7 @@
     const day = (iso) => iso ? new Date(iso).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
     // في التجربة: الخدمات اللي اختارها وسعرها بعد التجربة
     const feats = status === 'active' ? myFeatures() : chosenFeatures(), period = status === 'active' ? (monthly ? 'month' : 'year') : (client.requested_plan === 'month' ? 'month' : 'year');
-    const pr = DMPlans.price(feats, period, branchCount()), per = period === 'month' ? 'بالشهر' : 'بالسنة';
+    const pr = DMPlans.price(feats, period, branchList()), per = period === 'month' ? 'بالشهر' : 'بالسنة';
     const state = client.is_active === false ? 'موقوف'
       : status === 'trial' ? `تجربة مجانية، تنتهي ${day(client.trial_ends_at)}`
       : status === 'active' ? (Date.parse(client.subscription_end_date) > Date.now() ? `مشترك، يتجدد ${day(client.subscription_end_date)}` : `منتهي من ${day(client.subscription_end_date)}`)
@@ -4893,7 +4916,7 @@
       row('الحالة', state),
       row('نوع الاشتراك', period === 'month' ? 'شهري' : 'سنوي'),
       row('الباقة', feats.length ? feats.map(k => DMPlans.FEATURES[k].name).join('، ') : 'ما اخترت خدمات'),
-      branchCount() ? row('الفروع الإضافية', `${branchCount()} × ${sar(DMPlans.BRANCH[period])}`) : '',
+      ...pr.lines.filter(l => l.key === 'branch').map(l => row(esc(l.label), `${sar(l.amount)}${l.detail ? `<span class="block text-[10px] font-medium text-ink/55">رسوم الفرع + ${esc(l.detail)}</span>` : ''}`)),
       ...pr.discounts.map(d => row(esc(d.label), `- ${sar(d.amount)}`)),
       row(status === 'trial' ? 'السعر بعد التجربة' : 'السعر', `${sar(pr.total)} ${per}`)
     ].join('');

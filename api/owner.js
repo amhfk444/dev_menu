@@ -394,7 +394,7 @@ async function main(req) {
       rest(`categories?client_id=eq.${store.id}&select=*`),
       rest(`products?client_id=eq.${store.id}&select=*`),
       // المتجر الرئيسي وفروعه (لقائمة التبديل بين الفروع)
-      familyOf(store, 'id,name,client_slug,parent_id,occasions').catch(() => [])
+      familyOf(store, 'id,name,client_slug,parent_id,occasions,branch_features').catch(() => [])
     ]);
     return { email: user.email, is_admin: admin, store, branches, categories: categories.sort(bySort), products: products.sort(bySort), live: storeTopics(store.id) };
   }
@@ -424,7 +424,9 @@ async function main(req) {
       if (!name || name.length < 2) throw new ApiError(400, 'اكتب اسم الفرع');
       const open = await rest(`support_requests?client_id=eq.${mainId}&kind=eq.branch&status=eq.open&select=id`).catch(() => []);
       if (open.length) throw new ApiError(409, 'عندك طلب فرع قيد الإضافة، بنضيفه لك قريب', 'BRANCH_PENDING');
-      meta = { name, empty_menu: !!(b.meta && b.meta.empty_menu) };
+      const features = PLANS.clean(b.meta && b.meta.features);
+      if (!features.length) throw new ApiError(400, 'اختر ميزة وحدة على الأقل للفرع');
+      meta = { name, features, empty_menu: !!(b.meta && b.meta.empty_menu) };
     }
     const row = (await rest('support_requests', { method: 'POST', prefer: 'return=representation', body: { client_id: mainId, kind, body, ...(meta ? { meta } : {}) } }))[0];
     if (mailConfigured()) {
@@ -1218,7 +1220,7 @@ async function main(req) {
       }
     }
     for (const bid of copiedTo) await patchStore(bid, { occasions: family.find(x => x.id === bid).occasions });
-    return { occasions: mine, copied_to: [...copiedTo], family: await familyOf(store, 'id,name,client_slug,parent_id,occasions') };
+    return { occasions: mine, copied_to: [...copiedTo], family: await familyOf(store, 'id,name,client_slug,parent_id,occasions,branch_features') };
   }
 
   // ─── إخفاء تنبيه الإدارة بعد قراءته ───

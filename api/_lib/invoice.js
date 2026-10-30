@@ -19,11 +19,12 @@ function invoiceNumber(storeId) {
 }
 
 // الأيام الباقية لين تجديد الحساب، والمبلغ النسبي لفرع جديد (حسب نوع اشتراك الحساب: شهري أو سنوي)
-function branchProration(parent, now = Date.now()) {
+// features: مميزات الفرع (رسوم الفرع + سعرها)، وبدونها رسوم الفرع بس
+function branchProration(parent, features, now = Date.now()) {
   const end = parent.subscription_status === 'active' ? Date.parse(parent.subscription_end_date) : NaN;
   if (parent.subscription_status === 'trial' || !(end > now)) return null;
   const days = Math.ceil((end - now) / 86400000), monthly = parent.subscription_plan === 'month';
-  const price = monthly ? PLAN_PRICE.branchMonth : PLAN_PRICE.branch;
+  const price = PLANS.branchPrice(features, monthly ? 'month' : 'year');
   return { days, amount: Math.round(price * days / (monthly ? 30 : 365)), end: parent.subscription_end_date, renew: `${price} ر.س ${monthly ? 'شهرياً' : 'سنوياً'}` };
 }
 
