@@ -1346,5 +1346,14 @@
   "~{n} طبق في قسم واحد": "{n} dishes in 1 section",
   "~{n} طبق في قسمين": "{n} dishes in 2 sections",
   "طبقين في قسم واحد": "2 dishes in 1 section",
-  "طبق واحد في قسم واحد": "1 dish in 1 section"
+  "طبق واحد في قسم واحد": "1 dish in 1 section",
+  "رسالة توصل إشعار على شاشة القفل لكل زبون حافظ بطاقة النداء في محفظة جواله، من كل فروعك. مثل: عرض اليوم، منتج جديد، أو \"فتحنا فرع جديد\".": "A message that reaches the lock screen of every customer who saved the pager card in their phone wallet, across all your branches. For example: today's offer, a new product, or \"we opened a new branch\".",
+  "إضافة على البيجر بـ": "A pager add-on for",
+  "{a} ر.س بالشهر أو {b} ر.س بالسنة": "{a} SAR/month or {b} SAR/year",
+  "مثلاً: اليوم القهوة الثانية بنص السعر لين الساعة 6": "e.g. Today the second coffee is half price until 6",
+  "رسالتين بالأسبوع بالكثير، عشان زبائنك ما ينزعجون ويحذفون البطاقة. واللي عنده رقم شغّال الحين ما توصله، عشان ما يضيع رقمه.": "Two messages a week at most, so your customers aren't bothered into deleting the card. Customers with an active number right now won't get it, so they don't lose their number.",
+  "{n} زبون حافظ البطاقة · باقي لك {l} من {m} رسائل هالأسبوع": "{n} customers saved the card · {l} of {m} messages left this week",
+  "· وصلت لـ {n} جوال": "· reached {n} phones",
+  "انرسلت، بس ما فيه أحد حافظ البطاقة للحين": "Sent, but no one has saved the card yet",
+  "ما انرسلت. تأكد من الإنترنت وحاول مرة ثانية": "Not sent. Check your internet and try again"
 }

@@ -273,6 +273,35 @@ async function refreshWalletCards(store) {
   console.log('WALLET_REFRESH', store.id, 'loyalty', loyalty, 'pager', pager);
 }
 
+// "رسائل لزبائنك": رسالتين بالأسبوع بالكثير (الإزعاج يخلي الزبون يحذف البطاقة، وبعدها ما يوصله حتى "طلبك جاهز")
+const PAGER_MSG_WEEK = 2;
+function pagerMsgQuota(list) {
+  const week = list.filter(m => Date.now() - Date.parse(m.created_at) < 7 * 864e5).sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
+  const left = Math.max(0, PAGER_MSG_WEEK - week.length);
+  return { left, limit: PAGER_MSG_WEEK, next_at: left ? null : new Date(Date.parse(week[week.length - PAGER_MSG_WEEK].created_at) + 7 * 864e5).toISOString() };
+}
+const leftDays = (iso) => { const d = Math.max(1, Math.ceil((Date.parse(iso) - Date.now()) / 864e5)); return d === 1 ? 'يوم' : d === 2 ? 'يومين' : `${d} أيام`; };
+// يرسل دفعة (40 بطاقة) ويرجع وين وقف، ولوحة التحكم تكمّل الباقي
+async function pushPagerMessage(homeId, body, afterId, limit = 40) {
+  const store = (await rest(`clients?id=eq.${homeId}&select=id,name,client_slug,logo_url,accent_color,business_type`))[0];
+  if (!store || !wallet.configured()) return { sent: 0, lastId: afterId, done: true, total: 0 };
+  const base = `pager_cards?client_id=eq.${homeId}&wallet_serial=not.is.null`;
+  const [cards, all] = await Promise.all([
+    rest(`${base}&id=gt.${Number(afterId) || 0}&select=id,wallet_serial,lang&order=id.asc&limit=${limit}`),
+    afterId ? Promise.resolve(null) : rest(`${base}&select=id`).catch(() => [])
+  ]);
+  const family = (await familyOf(store, 'id').catch(() => [store])).map(f => f.id).join(',');
+  const busy = new Set((await rest(`pager_tickets?client_id=in.(${family})&status=in.(waiting,ready)&created_at=gte.${q(riyadhDayStart())}&wallet_serial=not.is.null&select=wallet_serial`).catch(() => [])).map(t => t.wallet_serial));
+  let sent = 0;
+  const todo = cards.filter(c => !busy.has(c.wallet_serial));
+  for (let i = 0; i < todo.length; i += 10) {
+    await Promise.all(todo.slice(i, i + 10).map(async (c) => {
+      if ((await wallet.updatePagerPass(c.wallet_serial, { ...wallet.pagerStep({ store, step: 'idle', lang: c.lang }), notice: body })).startsWith('ok')) sent++;
+    }));
+  }
+  return { sent, lastId: cards.length ? cards[cards.length - 1].id : afterId, done: cards.length < limit, total: all ? all.length : null };
+}
+
 // المكافآت الجاهزة لعضو: مكافأة الأختام + هدايا الأصدقاء المستلمة
 // رسالة تسليم المكافأة: نص صاحب المحل، أو يكتبها المساعد لهالعميل، أو بدون
 async function redeemMessage(store, settings, card, reward) {
@@ -612,6 +641,7 @@ async function main(req) {
   req._sid = sid;
   // المميزات حسب باقة المحل
   if (['pager-update', 'pager-invoice', 'pager-ring'].includes(action) && !PLANS.has(store, 'pager')) throw new ApiError(403, 'البيجر مو ضمن باقتك', 'ADDON_OFF');
+  if (['pager-message', 'pager-message-push'].includes(action) && !PLANS.has(store, 'notify')) throw new ApiError(403, '"رسائل لزبائنك" مو ضمن باقتك. أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
   if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-member-delete', 'loyalty-import', 'loyalty-redeem', 'loyalty-message', 'loyalty-message-push', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء متوقفة: مو ضمن باقتك أو انتهى اشتراكك. جدّد من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
 
 
@@ -682,6 +712,37 @@ async function main(req) {
     if (!msg) throw new ApiError(404, 'الرسالة غير موجودة');
     const p = await pushWalletBatch(sid, { notice: msg.body, afterId: int(b.after) || 0 });
     await rest(`loyalty_messages?id=eq.${msg.id}`, { method: 'PATCH', body: { wallet_sent: (msg.wallet_sent || 0) + p.sent } }).catch(() => {});
+    return { progress: p };
+  }
+
+  // ─── رسائل لزبائنك: إشعار على بطاقة النداء لكل زبون حافظها (إضافة على البيجر) ───
+  // البطاقات للمحل الرئيسي (كل الفروع). اللي عنده رقم شغّال الحين ما نغيّر بطاقته عشان ما يضيع رقمه
+  if (action === 'pager-messages') {
+    const home = await loyaltyHome(sid);
+    const [list, cards] = await Promise.all([
+      rest(`pager_messages?client_id=eq.${home}&select=id,body,sent,created_at&order=id.desc&limit=10`).catch(() => []),
+      rest(`pager_cards?client_id=eq.${home}&wallet_serial=not.is.null&select=id`).catch(() => [])
+    ]);
+    return { messages: list, cards: cards.length, ...pagerMsgQuota(list) };
+  }
+  if (action === 'pager-message') {
+    const body = str(b.body, 150, 'الرسالة');
+    if (body.length < 2) throw new ApiError(400, 'اكتب الرسالة');
+    const home = await loyaltyHome(sid);
+    const recent = await rest(`pager_messages?client_id=eq.${home}&created_at=gte.${q(new Date(Date.now() - 7 * 864e5).toISOString())}&select=id,created_at&order=id.desc`).catch(() => []);
+    const quota = pagerMsgQuota(recent);
+    if (!quota.left) throw new ApiError(429, `وصلت حد ${PAGER_MSG_WEEK} رسائل بالأسبوع. تقدر ترسل ${quota.next_at ? `بعد ${leftDays(quota.next_at)}` : 'الأسبوع الجاي'}. الحد عشان زبائنك ما ينزعجون ويحذفون البطاقة`, 'MSG_LIMIT');
+    const msg = (await rest('pager_messages', { method: 'POST', prefer: 'return=representation', body: { client_id: home, body } }))[0];
+    const p = await pushPagerMessage(home, body, 0);
+    await rest(`pager_messages?id=eq.${msg.id}`, { method: 'PATCH', body: { sent: p.sent } }).catch(() => {});
+    return { message: { ...msg, sent: p.sent }, progress: p };
+  }
+  if (action === 'pager-message-push') {
+    const home = await loyaltyHome(sid);
+    const msg = (await rest(`pager_messages?id=eq.${int(b.message_id)}&client_id=eq.${home}&select=id,body,sent`))[0];
+    if (!msg) throw new ApiError(404, 'الرسالة غير موجودة');
+    const p = await pushPagerMessage(home, msg.body, int(b.after) || 0);
+    await rest(`pager_messages?id=eq.${msg.id}`, { method: 'PATCH', body: { sent: (msg.sent || 0) + p.sent } }).catch(() => {});
     return { progress: p };
   }
 

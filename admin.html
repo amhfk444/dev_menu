@@ -486,6 +486,27 @@
               </div>
               <button id="desk-show" type="button" onclick="showDeskLink()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-white border border-brand/20 text-ink"><i class="ph-bold ph-link-simple"></i> اطلع رابط الكاشير</button>
             </div>
+    <!-- رسائل لزبائنك: إشعار على بطاقة النداء (إضافة على البيجر، للمحل اللي ما عنده ولاء) -->
+            <div id="nt-card" class="hidden pro-card p-5 space-y-3">
+              <div class="space-y-1">
+                <h3 class="text-xs font-bold text-ink"><i class="ph-bold ph-megaphone text-emerald-600"></i> رسائل لزبائنك</h3>
+                <p class="text-[11px] text-ink/60 leading-relaxed">رسالة توصل إشعار على شاشة القفل لكل زبون حافظ بطاقة النداء في محفظة جواله، من كل فروعك. مثل: عرض اليوم، منتج جديد، أو "فتحنا فرع جديد".</p>
+              </div>
+              <div id="nt-locked" class="hidden space-y-2">
+                <p class="text-[11px] text-ink/70">إضافة على البيجر بـ <b id="nt-price"></b>.</p>
+                <button type="button" onclick="addNotify()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-brand text-cream"><i class="ph-bold ph-plus"></i> أضفها لباقتك</button>
+              </div>
+              <div id="nt-box" class="hidden space-y-2">
+                <p id="nt-stats" class="text-[11px] font-bold text-ink/70"></p>
+                <textarea id="nt-body" rows="3" maxlength="150" class="input-pro" placeholder="مثلاً: اليوم القهوة الثانية بنص السعر لين الساعة 6"></textarea>
+                <div class="flex items-center justify-between gap-2">
+                  <span id="nt-count" class="text-[11px] text-ink/50">0/150</span>
+                  <button type="button" id="nt-send" onclick="sendNotify()" class="bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition"><i class="ph-bold ph-paper-plane-tilt"></i> أرسل</button>
+                </div>
+                <p class="text-[10px] text-ink/50">رسالتين بالأسبوع بالكثير، عشان زبائنك ما ينزعجون ويحذفون البطاقة. واللي عنده رقم شغّال الحين ما توصله، عشان ما يضيع رقمه.</p>
+                <div id="nt-list" class="text-[12px]"></div>
+              </div>
+            </div>
     <!-- صفحة الروابط السريعة -->
             <div class="pro-card p-5 space-y-3">
               <div class="space-y-1">
@@ -2121,7 +2142,7 @@
     setStoreName(name);
     document.getElementById('admin-mode-badge').classList.toggle('hidden', !isSuperAdmin);
     renderBranchSwitch();
-    renderBranchesCard(); renderDeskCard();
+    renderBranchesCard(); renderDeskCard(); renderNotifyCard();
     renderAlsoBranches();
     document.getElementById('sa-link').classList.toggle('hidden', !isSuperAdmin);
     document.getElementById('sidebar-preview').href = menuUrl();
@@ -2233,7 +2254,7 @@
   const planName = (p) => p === 'month' ? 'الشهرية' : 'السنوية';
   function requestedPlan() { return planChoice || (!client.parent_id && client.requested_plan) || null; }
   function pickPlan(p) { planPick = p; renderSubscriptionStatus(); }
-  function toggleFeature(k) { chosenFeatures(); pickFeatures.has(k) ? pickFeatures.delete(k) : pickFeatures.add(k); renderSubscriptionStatus(); }
+  function toggleFeature(k) { pickFeatures = new Set(DMPlans.toggle(chosenFeatures(), k)); renderSubscriptionStatus(); }
   function changePlan() { planChoice = null; planOpen = true; if (!client.parent_id) client.requested_plan = null; renderSubscriptionStatus(); }
   function openPlan() { planOpen = true; renderSubscriptionStatus(); goToPlans(); }
   async function choosePlan(plan) {
@@ -3591,6 +3612,53 @@
   async function resetDeskLink() {
     if (!(await DMDialog.confirm({ title: 'تغيير رابط الكاشير', message: 'الرابط القديم بيوقف على كل الأجهزة اللي مفتوح فيها، ولازم تفتح الرابط الجديد على جهاز الكاشير.', confirmText: 'غيّره', cancelText: 'تراجع' }))) return;
     showDeskLink(true);
+  }
+  // ─── رسائل لزبائنك (بطاقة النداء) ───
+  // تطلع للمحل اللي عنده البيجر بدون ولاء (اللي عنده ولاء يرسل من صفحة الولاء)
+  let ntQuota = null;
+  async function renderNotifyCard() {
+    const on = !!client && DMPlans.has(client, 'pager') && !DMPlans.has(client, 'loyalty');
+    document.getElementById('nt-card').classList.toggle('hidden', !on);
+    if (!on) return;
+    const paid = DMPlans.has(client, 'notify'), f = DMPlans.FEATURES.notify;
+    document.getElementById('nt-locked').classList.toggle('hidden', paid);
+    document.getElementById('nt-box').classList.toggle('hidden', !paid);
+    document.getElementById('nt-price').textContent = `${f.month} ر.س بالشهر أو ${f.year} ر.س بالسنة`;
+    if (!paid) return;
+    try {
+      const r = await api('pager-messages', {});
+      ntQuota = r;
+      const when = (iso) => new Date(iso).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+      document.getElementById('nt-stats').textContent = `${r.cards} زبون حافظ البطاقة · باقي لك ${r.left} من ${r.limit} رسائل هالأسبوع`;
+      document.getElementById('nt-send').disabled = !r.left;
+      document.getElementById('nt-list').innerHTML = r.messages.length ? `<p class="text-[11px] font-bold text-ink/60 mb-1">آخر الرسائل</p><div class="divide-y divide-brand/10">${r.messages.map(m => `
+        <div class="py-2"><p class="leading-relaxed">${esc(m.body)}</p><p class="text-[11px] text-ink/55 mt-0.5">${when(m.created_at)}${m.sent ? ` · وصلت لـ ${m.sent} جوال` : ''}</p></div>`).join('')}</div>` : '';
+    } catch { document.getElementById('nt-stats').textContent = ''; }
+  }
+  function addNotify() {
+    if (client.parent_id) return showToast('الاشتراك يتعدل من المتجر الرئيسي', true);
+    lockedKey = 'notify'; addFeature();
+  }
+  document.addEventListener('input', (e) => { if (e.target && e.target.id === 'nt-body') document.getElementById('nt-count').textContent = `${e.target.value.length}/150`; });
+  async function sendNotify() {
+    const body = document.getElementById('nt-body').value.trim();
+    if (body.length < 2) return showToast('اكتب الرسالة', true);
+    if (!(await DMDialog.confirm({ title: 'إرسال الرسالة', message: `توصل إشعار لكل زبون حافظ بطاقة النداء${ntQuota ? ` (${ntQuota.cards})` : ''}:\n${body}`, confirmText: 'أرسل', cancelText: 'تراجع' }))) return;
+    const btn = document.getElementById('nt-send'); btn.disabled = true;
+    try {
+      const r = await api('pager-message', { body });
+      document.getElementById('nt-body').value = ''; document.getElementById('nt-count').textContent = '0/150';
+      let p = r.progress || { done: true }, sent = p.sent || 0;
+      const total = p.total;
+      while (!p.done) {
+        btn.innerHTML = `<i class="ph-bold ph-spinner-gap ph-spin"></i> وصلت لـ ${sent}${total ? ` من ${total}` : ''}`;
+        p = (await api('pager-message-push', { message_id: r.message.id, after: p.lastId })).progress;
+        sent += p.sent;
+      }
+      showToast(sent ? `انرسلت، ووصلت إشعار لـ ${sent} جوال` : 'انرسلت، بس ما فيه أحد حافظ البطاقة للحين');
+    } catch (e) { showToast(e.message || 'ما انرسلت. تأكد من الإنترنت وحاول مرة ثانية', true); }
+    btn.innerHTML = '<i class="ph-bold ph-paper-plane-tilt"></i> أرسل';
+    renderNotifyCard();
   }
   function renderBranchesCard() {
     document.getElementById('branches-card').classList.toggle('hidden', branches.length < 2);

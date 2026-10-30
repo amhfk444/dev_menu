@@ -8,10 +8,11 @@
   const FEATURES = {
     menu:     { name: 'المنيو الرقمي',  desc: 'المنيو بصوره وأسعاره، كود QR للطاولات، الطلب على الواتساب، الثيمات والإحصائيات', icon: 'ph-fork-knife', month: 39, year: 349 },
     pager:    { name: 'البيجر',          desc: 'جوال الزبون يرن لما يجهز طلبه، بدون أجهزة', icon: 'ph-bell', month: 49, year: 449 },
+    notify:   { name: 'رسائل لزبائنك',  desc: 'إضافة للبيجر: ترسل إشعار لكل زبون حافظ بطاقة النداء، مثل عرض اليوم أو منتج جديد', icon: 'ph-megaphone', month: 19, year: 179, needs: 'pager' },
     waitlist: { name: 'قائمة الانتظار', desc: 'الزبون يسجل دوره ويجيه تنبيه لما يجي دوره', icon: 'ph-hourglass-medium', month: 29, year: 249 },
     loyalty:  { name: 'بطاقة الولاء',    desc: 'أختام ومكافآت ومحفظة الجوال ومساعد ذكي يكلم زبائنك', icon: 'ph-seal-check', month: 69, year: 649 }
   };
-  const ORDER = ['menu', 'pager', 'waitlist', 'loyalty'];
+  const ORDER = ['menu', 'pager', 'notify', 'waitlist', 'loyalty'];
   const BRANCH = { month: 19, year: 199 };
   // الأسعار مبنية على السوق السعودي (2026-10): أرخص من المنافسين بـ 25% إلى 40% وفيها مميزات أكثر
   //   المنيو 39/349 (هلا أوردر 50/600)، البيجر 49/449 (بيجري 599 و699 بالهوية)، الولاء 69/649 (نقطتي 89/849)
@@ -25,7 +26,15 @@
   // المشتركين القدامى (قبل نظام المميزات) كانت باقتهم المنيو + البيجر + الانتظار
   const LEGACY = ['menu', 'pager', 'waitlist'];
 
-  const clean = (list) => ORDER.filter(k => (list || []).includes(k));
+  // الإضافة ما تشتغل بدون الأساس حقها (رسائل لزبائنك تحتاج البيجر)
+  const clean = (list) => { const l = list || []; return ORDER.filter(k => l.includes(k) && (!FEATURES[k].needs || l.includes(FEATURES[k].needs))); };
+  // تشغيل/إيقاف ميزة في الاختيار: الإضافة تجيب أساسها معها، وشيل الأساس يشيل إضافاته
+  function toggle(list, key) {
+    const s = new Set(list || []);
+    if (s.has(key)) { s.delete(key); ORDER.forEach(k => { if (FEATURES[k].needs === key) s.delete(k); }); }
+    else { s.add(key); if (FEATURES[key] && FEATURES[key].needs) s.add(FEATURES[key].needs); }
+    return clean([...s]);
+  }
 
   // تفاصيل السعر: { lines, discount, total }
   function price(features, period = 'year', branches = 0) {
@@ -42,7 +51,8 @@
   function featuresOf(store) {
     if (!store) return [];
     // التجربة: الخدمات اللي اختارها عند التسجيل (المسجلين قبل نظام الاختيار: كل شي)
-    if (store.subscription_status === 'trial') return Array.isArray(store.plan_features) && store.plan_features.length ? clean(store.plan_features) : ORDER.slice();
+    // (اللي اختار البيجر يجرب معه "رسائل لزبائنك")
+    if (store.subscription_status === 'trial') return Array.isArray(store.plan_features) && store.plan_features.length ? clean(store.plan_features.includes('pager') ? [...store.plan_features, 'notify'] : store.plan_features) : ORDER.slice();
     if (store.subscription_status === 'active') return Array.isArray(store.plan_features) && store.plan_features.length ? clean(store.plan_features) : LEGACY.slice();
     return [];
   }
@@ -56,7 +66,7 @@
   }
   const has = (store, key) => live(store) && featuresOf(store).includes(key);
 
-  const api = { FEATURES, ORDER, BRANCH, BUNDLES, LEGACY, price, featuresOf, has, live, clean };
+  const api = { FEATURES, ORDER, BRANCH, BUNDLES, LEGACY, price, featuresOf, has, live, clean, toggle };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.DMPlans = api;
 })(typeof window !== 'undefined' ? window : globalThis);

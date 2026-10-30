@@ -567,7 +567,7 @@
   if (window.DMPlans) {
     // سعر كل خدمة في بطاقتها
     document.querySelectorAll('[data-price]').forEach(el => { const f = DMPlans.FEATURES[el.dataset.price]; if (f) el.innerHTML = `&#x20C1; ${f.month}`; });
-    const full = DMPlans.price(DMPlans.ORDER, 'month').total, ly = DMPlans.FEATURES.loyalty.month;
+    const full = DMPlans.price(DMPlans.ORDER.filter(k => k !== 'notify'), 'month').total, ly = DMPlans.FEATURES.loyalty.month;
     if (full) document.getElementById('chip-full').innerHTML = `&#x20C1; ${full}`;
     if (ly) document.getElementById('chip-loyalty').innerHTML = `&#x20C1; ${ly}`;
   }
@@ -643,9 +643,7 @@
   }
   $('picks').addEventListener('click', (e) => {
     const b = e.target.closest('[data-feat]'); if (!b) return;
-    const k = b.dataset.feat, s = new Set(choice.features);
-    s.has(k) ? s.delete(k) : s.add(k);
-    choice.features = DMPlans.clean([...s]); saveChoice(); renderPricing();
+    choice.features = DMPlans.toggle(choice.features, b.dataset.feat); saveChoice(); renderPricing();
   });
   $('presets').addEventListener('click', (e) => {
     const b = e.target.closest('[data-preset]'); if (!b) return;
