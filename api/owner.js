@@ -6,7 +6,7 @@
 const crypto = require('crypto');
 const {
   handler, rest, rpc, q, storage, publicUrl, ownsMediaUrl, SUPABASE_URL, BUCKET,
-  ApiError, getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody, SLUG_RE, RESERVED_SLUGS, CURRENCIES, SITE, storeLink, loyaltyHome
+  ApiError, getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody, SLUG_RE, RESERVED_SLUGS, CURRENCIES, SITE, storeLink, loyaltyHome, later
 } = require('./_lib/core');
 const { FIELDS, normalizeSettings, riyadhDayStart, positionOf, emailTemplate, statusUrlFor } = require('./_lib/waitlist');
 const { sendMail, mailConfigured } = require('./_lib/mail');
@@ -913,34 +913,38 @@ async function main(req) {
       t = { ...t, ring_count: 0, acked_at: null };
       push = await ringTicket(store, t);
     }
-    // بطاقة ولاء مربوطة بالرقم: ختم أول ما يجهز الطلب (مرة وحدة)
-    if (status === 'ready' && t.loyalty_card_id && !t.loyalty_stamped) {
-      try {
-        const lhome = await loyaltyHome(sid);
-        const x = (await rest(`clients?id=eq.${lhome}&select=loyalty_enabled,loyalty_settings`))[0] || {};
-        const ls = normalizeLoyalty(x.loyalty_settings);
-        if (x.loyalty_enabled && ls.pager_stamp) {
-          await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { loyalty_stamped: true } });
-          await purchaseStamp(lhome, t.loyalty_card_id, ls);
-        }
-      } catch (e) { console.error('PAGER_STAMP', e.message); }
-    }
+    // بطاقة النداء وبطاقة الولاء يتحدثون بالخلفية: الكاشير ياخذ الرد على طول، والإشعار يوصل خلال ثواني
     // رقمه مضاف للمحفظة: تحديث يطلع إشعار من النظام (حتى لو يشوف فيديو)
     if (status === 'ready' && t.wallet_serial) {
-      const wr = await wallet.updatePagerPass(t.wallet_serial, wallet.pagerStep({ store, number: t.number, step: 'ready', lang: t.lang }));
-      console.log('PAGER_PASS', sid, t.id, wr);
-      await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_error: `ready ${wr} at=${new Date().toISOString().slice(11, 19)}` } }).catch(() => {});
+      later(wallet.updatePagerPass(t.wallet_serial, wallet.pagerStep({ store, number: t.number, step: 'ready', lang: t.lang })).then(wr => {
+        console.log('PAGER_PASS', sid, t.id, wr);
+        return rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_error: `ready ${wr} at=${new Date().toISOString().slice(11, 19)}` } });
+      }));
     }
     // انلغى: بطاقة النداء ترجع "بالعافية". الاستلام ما يحدّثها (توفير): تبقى على "جاهز" لين ياخذ رقم جديد
     if (status === 'cancelled' && t.wallet_serial) {
-      const er = await wallet.updatePagerPass(t.wallet_serial, wallet.pagerStep({ store, step: 'idle', lang: t.lang }));
-      console.log('PAGER_PASS_END', sid, t.id, er);
-      await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_error: `${t.wallet_error || ''} | end ${er}`.slice(0, 300) } }).catch(() => {});
+      later(wallet.updatePagerPass(t.wallet_serial, wallet.pagerStep({ store, step: 'idle', lang: t.lang })).then(er => {
+        console.log('PAGER_PASS_END', sid, t.id, er);
+        return rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_error: `${t.wallet_error || ''} | end ${er}`.slice(0, 300) } });
+      }));
     }
-    // بطاقة ولاء مربوطة وفي المحفظة: إشعار "طلبك جاهز" من البطاقة (يوصل الآيفون حتى لو المتصفح مسكّر)
-    if (status === 'ready' && t.loyalty_card_id && PLANS.has(store, 'loyalty')) {
-      const wr = await pagerReadyNotice(await loyaltyHome(sid), t.loyalty_card_id, t.number, store.name, SECTORS.terms(store));
-      console.log('PAGER_WALLET', sid, t.id, wr);
+    // بطاقة ولاء مربوطة بالرقم: ختم أول ما يجهز الطلب (مرة وحدة)، وبعده إشعار "طلبك جاهز" من بطاقة المحفظة
+    if (status === 'ready' && t.loyalty_card_id) {
+      later((async () => {
+        const lhome = await loyaltyHome(sid);
+        if (!t.loyalty_stamped) {
+          try {
+            const x = (await rest(`clients?id=eq.${lhome}&select=loyalty_enabled,loyalty_settings`))[0] || {};
+            const ls = normalizeLoyalty(x.loyalty_settings);
+            if (x.loyalty_enabled && ls.pager_stamp) {
+              await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { loyalty_stamped: true } });
+              await purchaseStamp(lhome, t.loyalty_card_id, ls);
+            }
+          } catch (e) { console.error('PAGER_STAMP', e.message); }
+        }
+        if (PLANS.has(store, 'loyalty')) console.log('PAGER_WALLET', sid, t.id, await pagerReadyNotice(lhome, t.loyalty_card_id, t.number, store.name, SECTORS.terms(store)));
+        await poke([topic('pager', sid), topic('ticket', t.token)]);   // صفحة الزبون تشوف الختم
+      })());
     }
     await poke([topic('pager', sid), topic('ticket', t.token)]);
     return { ticket: { id: t.id, number: t.number, status: t.status, created_at: t.created_at, ready_at: t.ready_at, closed_at: t.closed_at, has_push: !!t.push_sub, ring_count: t.ring_count || 0, acked_at: t.acked_at || null }, push };

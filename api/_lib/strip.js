@@ -115,8 +115,16 @@ async function stampStrip(settings, card) {
 // ─── بطاقة تنبيه البيجر: بلون المحل، ثلاث خطوات (استلمنا ← قيد التجهيز ← جاهز) بدون أختام ولا كتابة ───
 // الكتابة (الرقم والحالة) في حقول البطاقة نفسها، عشان الخطوط العربية مو موجودة في الخادم
 // لون المحل: لونه المختار، أو اللون الغالب في شعاره (مغمّق عشان الكتابة البيضاء تبان)، أو أخضر DEV MENU
+const colors = new Map(), strips = new Map();   // ذاكرة: لون كل محل (10 دقايق)، وصورة كل لون وخطوة
 async function brandColor(store) {
   if (/^#[0-9a-f]{6}$/i.test(store.accent_color || '')) return store.accent_color;
+  const key = store.logo_url || '', hit = colors.get(key);
+  if (hit && hit.at > Date.now() - 600e3) return hit.color;
+  const color = await logoColor(store);
+  colors.set(key, { color, at: Date.now() });
+  return color;
+}
+async function logoColor(store) {
   try {
     const res = await fetch(store.logo_url, { signal: AbortSignal.timeout(6000) });
     const { dominant: { r, g, b } } = await sharp(Buffer.from(await res.arrayBuffer())).flatten({ background: '#000' }).stats();
@@ -130,6 +138,13 @@ async function brandColor(store) {
 }
 
 async function pagerStrip(color, step) {
+  const key = `${color}:${step}`;
+  if (!strips.has(key)) strips.set(key, drawPagerStrip(color, step));
+  const out = await strips.get(key);
+  if (!out) strips.delete(key);
+  return out;
+}
+async function drawPagerStrip(color, step) {
   try {
     const ink = inkFor(color), gold = '#e9c95a';
     // الخطوة الحالية: 1 قيد التجهيز، 2 جاهز، 3 استلم (كلها منجزة، والبطاقة تنتظر الزيارة الجاية)

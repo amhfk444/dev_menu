@@ -159,6 +159,13 @@ async function storeHasFeature(storeId, key) {
   return PLANS.has(s, key);
 }
 
+// شغل بعد الرد (تحديث بطاقات المحفظة): الزبون والكاشير ياخذون الرد على طول، والتحديث يكمل بالخلفية
+function later(promise) {
+  const p = Promise.resolve(promise).catch(e => console.error('LATER', e && e.message));
+  try { require('@vercel/functions').waitUntil(p); } catch {}
+  return p;
+}
+
 // الولاء وحدة للمحل بكل فروعه: بياناتها وإعداداتها على المحل الرئيسي. يرجّع رقم المحل الرئيسي للفرع (أو نفسه)
 const homes = new Map();
 async function loyaltyHome(storeId) {
@@ -210,5 +217,5 @@ const reqLang = (req) => String((req && req.headers && req.headers['x-dm-lang'])
 module.exports = {
   reqLang, SUPABASE_URL, BUCKET, ApiError, rest, rpc, q, storage, publicUrl, ownsMediaUrl, storagePathFromUrl,
   getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody, handler,
-  SLUG_RE, RESERVED_SLUGS, findPublicStore, CURRENCIES, storeHasFeature, storeFeatures, SITE, storeLink, loyaltyHome
+  SLUG_RE, RESERVED_SLUGS, findPublicStore, CURRENCIES, storeHasFeature, storeFeatures, SITE, storeLink, loyaltyHome, later
 };
