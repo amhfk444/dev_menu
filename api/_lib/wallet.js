@@ -121,12 +121,12 @@ async function pagerBody({ store, number, step, status, notice, url, lang }) {
   const body = {
     logoText: String(store.name || 'DEV MENU').slice(0, 40),
     organizationName: String(store.name || 'DEV MENU').slice(0, 64),
-    description: L(`تنبيه طلبك من ${store.name || ''}`).slice(0, 120),
+    description: L(`بطاقة النداء: ${store.name || ''}`).slice(0, 120),
     color,
     headerFields: [{ label: L('رقمك'), value: String(number) }],
     secondaryFields: [{ label: L('الحالة'), value: L(String(status)).slice(0, 40), changeMessage: '%@' }],
     backFields: [
-      { label: L('بطاقة تنبيه'), value: L('هذي البطاقة لطلبك الحالي بس. يوصلك منها إشعار لما يجهز، وتنتهي لحالها بعد ما تستلم.') },
+      { label: L('بطاقة النداء'), value: L('هذي البطاقة لطلبك الحالي بس. يوصلك منها إشعار لما يجهز، وتنتهي لحالها بعد ما تستلم.') },
       { label: L('صفحة رقمك'), value: url }
     ],
     sharingProhibited: true,

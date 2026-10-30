@@ -29,5 +29,7 @@
   "تعذر تجهيز رقمك للمحفظة، جرّب بعد شوي": "Couldn't prepare your number for the wallet, try again shortly",
   "تنبيه طلبك من {s}": "Order alert from {s}",
   "بطاقة تنبيه": "Alert card",
-  "هذي البطاقة لطلبك الحالي بس. يوصلك منها إشعار لما يجهز، وتنتهي لحالها بعد ما تستلم.": "This card is for your current order only. It notifies you when it's ready and expires by itself after pickup."
+  "هذي البطاقة لطلبك الحالي بس. يوصلك منها إشعار لما يجهز، وتنتهي لحالها بعد ما تستلم.": "This card is for your current order only. It notifies you when it's ready and expires by itself after pickup.",
+  "بطاقة النداء": "Pager card",
+  "بطاقة النداء: {s}": "Pager card: {s}"
 }

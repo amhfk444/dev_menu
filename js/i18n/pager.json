@@ -110,5 +110,9 @@
   "رقمك في المحفظة، افتحه": "Your number is in Wallet, open it",
   "جاري التجهيز…": "Preparing…",
   "تعذر الإضافة للمحفظة": "Couldn't add to wallet",
-  "لا، بس نبّهني لما يجهز طلبي": "No, just notify me when my order is ready"
+  "لا، بس نبّهني لما يجهز طلبي": "No, just notify me when my order is ready",
+  "بطاقة النداء": "Pager card",
+  "أضف بطاقة النداء": "Add the pager card",
+  "لا، بس أضف بطاقة النداء": "No, just add the pager card",
+  "بطاقة النداء في محفظتك، افتحها": "The pager card is in your wallet, open it"
 }
