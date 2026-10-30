@@ -410,7 +410,7 @@ async function main(req) {
     // الموقوف والمنتهي يقدرون يرسلون كمان (عشان يجددون)
     const { store } = await context(req);
     const mainId = store.parent_id || store.id;
-    const kind = ['renew', 'plan', 'addon', 'suspended', 'contact'].includes(b.kind) ? b.kind : 'contact';
+    const kind = ['renew', 'plan', 'addon', 'branch', 'suspended', 'contact'].includes(b.kind) ? b.kind : 'contact';
     const body = str(b.body, 1000, 'الرسالة');
     if (!body || body.length < 3) throw new ApiError(400, 'اكتب رسالتك');
     const today = await rest(`support_requests?client_id=eq.${mainId}&created_at=gte.${q(new Date(Date.now() - 864e5).toISOString())}&select=id`).catch(() => null);
@@ -418,7 +418,7 @@ async function main(req) {
     if (today.length >= 10) throw new ApiError(429, 'أرسلت طلبات كثيرة اليوم، بنرد عليك قريب');
     const row = (await rest('support_requests', { method: 'POST', prefer: 'return=representation', body: { client_id: mainId, kind, body } }))[0];
     if (mailConfigured()) {
-      const KIND = { renew: 'تجديد', plan: 'تغيير باقة', addon: 'تفعيل إضافة', suspended: 'حساب موقوف', contact: 'رسالة' };
+      const KIND = { renew: 'تجديد', plan: 'تغيير باقة', addon: 'تفعيل إضافة', branch: 'فرع جديد', suspended: 'حساب موقوف', contact: 'رسالة' };
       await sendMail({
         to: process.env.ADMIN_EMAIL || 'dmenu950@gmail.com', fromName: 'DEV MENU',
         subject: `طلب ${KIND[kind]}: ${store.name}`,
