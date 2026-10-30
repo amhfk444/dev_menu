@@ -1377,5 +1377,9 @@
   "تجربة مجانية، تنتهي {d}": "Free trial, ends {d}",
   "مشترك، يتجدد {d}": "Subscribed, renews {d}",
   "منتهي من {d}": "Expired since {d}",
-  "فرع جديد": "New branch"
+  "فرع جديد": "New branch",
+  "عندك طلب فرع قيد الإضافة، بنضيفه لك قريب": "You already have a branch request in progress. We'll add it soon",
+  "وصل طلبك، وبيطلع الفرع في \"فروعك\" أول ما ينضاف": "Request sent. The branch will appear under \"Your branches\" once it's added",
+  "وصل طلبك للإدارة، وبيطلع هنا أول ما ينضاف": "Request sent. It will appear here once it's added",
+  "قيد الإضافة": "Being added"
 }

@@ -54,7 +54,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
 
   // طلبات المشتركين (تجديد، باقة، تفعيل، تواصل)
   if (action === 'support' && req.method === 'GET') {
-    const rows = await rest('support_requests?select=id,client_id,kind,body,status,reply,created_at,handled_at&order=status.desc,id.desc&limit=200').catch(() => null);
+    const rows = await rest('support_requests?select=id,client_id,kind,body,meta,status,reply,created_at,handled_at&order=status.desc,id.desc&limit=200').catch(() => null);
     return { requests: rows || [], ready: !!rows };
   }
 
@@ -226,6 +226,12 @@ module.exports = handler(['GET', 'POST'], async (req) => {
         lines: [{ label: `فرع جديد — ${client.name}`, detail: `${pr.days} يوم لين تجديد الحساب`, amount: pr.amount }],
         note: `بعد تاريخ التجديد يتجدد الفرع مع الحساب بـ ${pr.renew}. للدفع تواصل معنا عبر واتساب.`
       });
+    }
+    // موافقة على طلب صاحب المحل: يتقفل الطلب ويطلع له الرد في لوحته
+    const reqId = Number(b.request_id);
+    if (Number.isInteger(reqId) && reqId > 0) {
+      const reply = `تمت إضافة فرع "${client.name}"، تلقاه في "فروعك" وتديره من نفس حسابك.${invoice && invoice.sent ? ` وأرسلنا الفاتورة على ${invoice.to}.` : ''}`;
+      await rest(`support_requests?id=eq.${reqId}&client_id=eq.${id}`, { method: 'PATCH', body: { status: 'done', reply, handled_at: new Date().toISOString() } }).catch(() => {});
     }
     return { client, invoice };
   }

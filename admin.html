@@ -476,7 +476,7 @@
               <div id="branches-list" class="space-y-2"></div>
               <div id="branch-ask" class="hidden flex flex-wrap items-center justify-between gap-2 pt-1">
                 <p id="branch-ask-price" class="text-[11px] text-ink/60"></p>
-                <button type="button" onclick="requestBranch()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-brand text-cream"><i class="ph-bold ph-plus"></i> اطلب فرع جديد</button>
+                <button type="button" id="branch-ask-btn" onclick="requestBranch()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-brand text-cream"><i class="ph-bold ph-plus"></i> اطلب فرع جديد</button>
               </div>
             </div>
     <!-- رابط الكاشير: يفتح شاشة البيجر وشاشة الختم لهالفرع بدون حساب المالك -->
@@ -2250,11 +2250,13 @@
       loadSupport();
     } catch (e) { showToast(e.message || 'ما انرسل. تأكد من الإنترنت وحاول مرة ثانية', true); }
   }
+  let supportRows = [];
   async function loadSupport() {
     const box = document.getElementById('support-box');
     if (!box) return;
     let r = { requests: [] };
     try { r = await api('support-list'); } catch {}
+    supportRows = r.requests || []; renderBranchesCard();
     const when = (iso) => new Date(iso).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short' });
     box.innerHTML = `
       <div class="flex items-center justify-between gap-2">
@@ -3698,7 +3700,9 @@
     const days = Math.ceil((end - Date.now()) / 864e5), now = Math.round(price * days / (monthly ? 30 : 365));
     return { price, per, now, days, text: `الفرع الإضافي بـ ${price} ر.س ${per}. تدفع الحين ${now} ر.س عن ${days} يوم الباقية لين تجديد اشتراكك، وبعدها يتجدد مع حسابك.` };
   }
+  const pendingBranch = () => supportRows.find(x => x.kind === 'branch' && x.status === 'open');
   async function requestBranch() {
+    if (pendingBranch()) return showToast('عندك طلب فرع قيد الإضافة، بنضيفه لك قريب', true);
     const q = branchQuote();
     const v = await DMDialog.form({ title: 'اطلب فرع جديد', subtitle: q.text, icon: 'ph-git-branch', confirmText: 'أرسل الطلب',
       fields: [
@@ -3712,8 +3716,8 @@
     if (!v) return;
     const body = `أبغى أضيف فرع جديد: "${v.name}" (${v.menu === 'empty' ? 'منيو جديد' : 'نفس منيو المحل'}).\nالسعر: ${q.price} ر.س ${q.per}${q.now ? `، والمستحق الحين ${q.now} ر.س عن ${q.days} يوم` : ''}.`;
     try {
-      await api('support-send', { kind: 'branch', body });
-      showToast('وصل طلب الفرع للإدارة، والرد يطلع لك تحت "اشتراكك"');
+      await api('support-send', { kind: 'branch', body, meta: { name: v.name, empty_menu: v.menu === 'empty' } });
+      showToast('وصل طلبك، وبيطلع الفرع في "فروعك" أول ما ينضاف');
       loadSupport();
     } catch (e) { showToast(e.message || 'ما انرسل. تأكد من الإنترنت وحاول مرة ثانية', true); }
   }
@@ -3723,7 +3727,18 @@
     document.getElementById('branches-card').classList.toggle('hidden', !main && branches.length < 2);
     document.getElementById('branch-ask').classList.toggle('hidden', !main);
     if (main) { const q = branchQuote(); document.getElementById('branch-ask-price').textContent = `كل فرع إضافي بـ ${q.price} ر.س ${q.per}`; }
-    document.getElementById('branches-list').innerHTML = branches.map(b => `
+    // الطلب المفتوح يطلع كسطر في القائمة لين ينضاف الفرع
+    const wait = main && pendingBranch();
+    document.getElementById('branch-ask-btn').classList.toggle('hidden', !!wait);
+    document.getElementById('branches-list').innerHTML = (wait ? `
+      <div class="flex items-center gap-2 border border-dashed border-amber-500/50 bg-amber-50/60 rounded-xl p-2.5">
+        <i class="ph-bold ph-hourglass-medium text-amber-600"></i>
+        <div class="min-w-0 flex-1">
+          <p class="text-xs font-black text-ink truncate">${esc((wait.meta && wait.meta.name) || 'فرع جديد')}</p>
+          <p class="text-[10px] text-ink/60">وصل طلبك للإدارة، وبيطلع هنا أول ما ينضاف</p>
+        </div>
+        <span class="text-[10px] font-bold text-amber-700 shrink-0">قيد الإضافة</span>
+      </div>` : '') + branches.map(b => `
       <div class="flex items-center gap-2 bg-brand/5 border ${b.id === client.id ? 'border-brand' : 'border-brand/15'} rounded-xl p-2.5">
         <div class="min-w-0 flex-1">
           <p class="text-xs font-black text-ink truncate">${b.parent_id ? '' : '<i class="ph-bold ph-star text-amber-500 text-[9px]"></i> '}${esc(b.name || b.client_slug)}${b.id === client.id ? ' <span class="text-[9px] font-bold text-emerald-700">(مفتوح الحين)</span>' : ''}</p>

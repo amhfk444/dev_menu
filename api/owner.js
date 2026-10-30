@@ -403,7 +403,7 @@ async function main(req) {
   if (action === 'support-list' && req.method === 'GET') {
     const { store } = await context(req);
     const mainId = store.parent_id || store.id;
-    const rows = await rest(`support_requests?client_id=eq.${mainId}&select=id,kind,body,status,reply,created_at,handled_at&order=id.desc&limit=20`).catch(() => null);
+    const rows = await rest(`support_requests?client_id=eq.${mainId}&select=id,kind,body,meta,status,reply,created_at,handled_at&order=id.desc&limit=20`).catch(() => null);
     return { requests: rows || [], ready: !!rows };
   }
   if (action === 'support-send' && req.method === 'POST') {
@@ -416,7 +416,17 @@ async function main(req) {
     const today = await rest(`support_requests?client_id=eq.${mainId}&created_at=gte.${q(new Date(Date.now() - 864e5).toISOString())}&select=id`).catch(() => null);
     if (!today) throw new ApiError(503, 'خدمة الطلبات تتجهز، حاول بعد شوي', 'NOT_READY');
     if (today.length >= 10) throw new ApiError(429, 'أرسلت طلبات كثيرة اليوم، بنرد عليك قريب');
-    const row = (await rest('support_requests', { method: 'POST', prefer: 'return=representation', body: { client_id: mainId, kind, body } }))[0];
+    // طلب فرع: الاسم ونوع المنيو محفوظة، والمدير يوافق بضغطة. طلب واحد مفتوح بس
+    let meta = null;
+    if (kind === 'branch') {
+      if (store.parent_id) throw new ApiError(400, 'اطلب الفرع من حساب المحل الرئيسي');
+      const name = str(b.meta && b.meta.name, 80, 'اسم الفرع');
+      if (!name || name.length < 2) throw new ApiError(400, 'اكتب اسم الفرع');
+      const open = await rest(`support_requests?client_id=eq.${mainId}&kind=eq.branch&status=eq.open&select=id`).catch(() => []);
+      if (open.length) throw new ApiError(409, 'عندك طلب فرع قيد الإضافة، بنضيفه لك قريب', 'BRANCH_PENDING');
+      meta = { name, empty_menu: !!(b.meta && b.meta.empty_menu) };
+    }
+    const row = (await rest('support_requests', { method: 'POST', prefer: 'return=representation', body: { client_id: mainId, kind, body, ...(meta ? { meta } : {}) } }))[0];
     if (mailConfigured()) {
       const KIND = { renew: 'تجديد', plan: 'تغيير باقة', addon: 'تفعيل إضافة', branch: 'فرع جديد', suspended: 'حساب موقوف', contact: 'رسالة' };
       await sendMail({
