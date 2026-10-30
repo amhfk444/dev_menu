@@ -8,8 +8,14 @@ const { normalizeLoyalty, isHappyNow } = require('./loyalty');
 const { pushWalletCards } = require('./loyalty-assistant');
 const { topic, poke } = require('./live');
 
+// الفرع اللي صار فيه الختم أو الصرف (عشان عدد عملاء الولاء لكل فرع)
+async function tagBranch(cardId, branchId) {
+  if (!branchId) return;
+  await rest(`loyalty_events?card_id=eq.${Number(cardId)}&branch_id=is.null&created_at=gte.${q(new Date(Date.now() - 120e3).toISOString())}`, { method: 'PATCH', body: { branch_id: Number(branchId) } }).catch(() => {});
+}
+
 // ختم مع الشراء: يلتزم بإعداد "ختم واحد كل" عشان ما يتكرر مع كل رقم بيجر أو كود
-async function purchaseStamp(storeId, cardId, settings = null) {
+async function purchaseStamp(storeId, cardId, settings = null, branchId = null) {
   if (!settings) {
     const extra = (await rest(`clients?id=eq.${storeId}&select=loyalty_settings`))[0] || {};
     settings = normalizeLoyalty(extra.loyalty_settings);
@@ -17,6 +23,7 @@ async function purchaseStamp(storeId, cardId, settings = null) {
   const count = isHappyNow(settings) ? 2 : 1;
   const r = await rpc('server_loyalty_stamp', { p_card: cardId, p_cooldown_hours: settings.cooldown_hours, p_needed: settings.needed, p_distance: null, p_count: count });
   if (r.ok) {
+    await tagBranch(cardId, branchId);
     await pushWalletCards(storeId, { cardIds: [cardId] }).catch(e => console.error('WALLET_SYNC', e.message));
     // لوحة التاجر المفتوحة تتحدث على طول (أرقام الولاء والرسم)
     poke(topic('owner', storeId), 'loyalty').catch(() => {});
@@ -70,4 +77,4 @@ function parseMemberQr(storeIds, value) {
   return [].concat(storeIds).some(s => crypto.timingSafeEqual(Buffer.from(m[2]), Buffer.from(sign(s, id)))) ? id : null;
 }
 
-module.exports = { purchaseStamp, newStampCode, consumeStampCode, pagerTicket, cooldownLeft, leftText, memberQr, parseMemberQr };
+module.exports = { purchaseStamp, tagBranch, newStampCode, consumeStampCode, pagerTicket, cooldownLeft, leftText, memberQr, parseMemberQr };

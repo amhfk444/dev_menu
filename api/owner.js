@@ -18,7 +18,7 @@ const { tr } = require('./_lib/i18n');
 const wallet = require('./_lib/wallet');
 const { pushWalletCards, pushWalletBatch, runAssistant, pagerReadyNotice, walletNotice } = require('./_lib/loyalty-assistant');
 const { loyaltyMessages, loyaltyNearLines } = require('./_lib/ai');
-const { purchaseStamp, newStampCode, parseMemberQr, cooldownLeft, leftText } = require('./_lib/loyalty-stamp');
+const { purchaseStamp, tagBranch, newStampCode, parseMemberQr, cooldownLeft, leftText } = require('./_lib/loyalty-stamp');
 
 const bySort = (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id;
 const COFFEE_TYPES = ['cafe', 'mixed'];
@@ -583,6 +583,19 @@ async function main(req) {
       rest(`loyalty_feedback?client_id=eq.${store.id}&created_at=gte.${iso(90)}&select=reason,note,created_at,card_id&order=id.desc&limit=500`).catch(() => []),
       rest(`loyalty_gifts?client_id=eq.${store.id}&select=status,new_member,created_at&limit=5000`).catch(() => [])
     ]);
+    // عملاء كل فرع (للي عنده أكثر من فرع)
+    let branchStats = null;
+    const family = await familyOf(store, 'id,name,parent_id').catch(() => []);
+    if (family.length > 1) {
+      const rows = await rpc('server_loyalty_branch_stats', { p_client: store.id }).catch(() => null);
+      if (Array.isArray(rows)) {
+        const by = Object.fromEntries(rows.map(r => [r.branch_id == null ? 'none' : r.branch_id, r]));
+        const zero = { members: 0, customers30: 0, stamps30: 0, redeems30: 0 };
+        branchStats = family.map(f => ({ id: f.id, name: f.name, main: !f.parent_id, ...zero, ...(by[f.id] || {}) }));
+        // الأعضاء والأختام قبل تتبع الفروع
+        if (by.none && (by.none.members || by.none.stamps30)) branchStats.push({ id: null, name: null, ...zero, ...by.none });
+      }
+    }
     const active = cards.filter(c => c.last_stamp_at && Date.parse(c.last_stamp_at) > Date.now() - 30 * day).length;
     // آخر 7 أيام (بتوقيت الرياض): زيارات كل يوم، والعملاء العائدين، وآخر الزيارات
     const dayKey = (t) => new Date(Date.parse(t) + 3 * 3600e3).toISOString().slice(0, 10);
@@ -595,7 +608,7 @@ async function main(req) {
       enabled: extra.loyalty_enabled === true, settings: normalizeLoyalty(extra.loyalty_settings),
       location_set: validPoint(spot ? spot.loyalty_lat : extra.loyalty_lat, spot ? spot.loyalty_lng : extra.loyalty_lng), slug: here.client_slug,
       stats: { members: cards.length, active30: active, away30: cards.filter(c => c.last_stamp_at && Date.parse(c.last_stamp_at) < Date.now() - 30 * day).length, stamps7: stamps7.length, redeemed: redeemed.length, returning7: returning }, week, recent,
-      cards: cards.slice(0, 50), messages, wallet: wallet.configured(),
+      cards: cards.slice(0, 50), messages, wallet: wallet.configured(), branches: branchStats,
       entitled: PLANS.has(store, 'loyalty'),
       ai: extra.loyalty_ai === true, near_lines: Array.isArray(extra.loyalty_near_lines) ? extra.loyalty_near_lines : [],
       feedback: {
@@ -648,7 +661,7 @@ async function main(req) {
   }
 
   if (req.method !== 'POST') throw new ApiError(404, 'هذا الطلب غير معروف، حدّث الصفحة وحاول مرة ثانية', 'UNKNOWN');
-  const { store, admin } = await context(req);
+  const { store, admin, here } = await context(req);
   const sid = store.id;
   req._sid = sid;
   // المميزات حسب باقة المحل
@@ -793,11 +806,12 @@ async function main(req) {
         return { ask: true, who, days: Math.floor((Date.now() - Date.parse(card.last_stamp_at)) / 864e5), gift: settings.feedback.gift, stamps: card.stamps, needed: settings.needed };
       }
     }
-    const r = await purchaseStamp(sid, card.id, settings);
+    const r = await purchaseStamp(sid, card.id, settings, here.id);
     let count = r.count;
     // ختم هدية على الجواب (لو صاحب المحل مفعّلها)
     if (r.stamped && answered && settings.feedback.gift) {
       const g = await rpc('server_loyalty_stamp', { p_card: card.id, p_cooldown_hours: 0, p_needed: settings.needed, p_distance: null, p_count: 1 }).catch(() => ({}));
+      if (g.ok) await tagBranch(card.id, here.id);
       if (g.ok) { count++; await pushWalletCards(sid, { cardIds: [card.id] }).catch(() => 0); }
     }
     const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=stamps`))[0] || {};
@@ -815,11 +829,12 @@ async function main(req) {
       const rows = await rest(`loyalty_gifts?code=eq.${q(String(b.gift))}&to_card=eq.${card.id}&status=eq.claimed&expires_at=gt.${q(new Date().toISOString())}`,
         { method: 'PATCH', prefer: 'return=representation', body: { status: 'redeemed', redeemed_at: new Date().toISOString() } });
       if (!rows.length) throw new ApiError(409, 'الهدية مستخدمة أو منتهية', 'GIFT_USED');
-      await rest('loyalty_events', { method: 'POST', body: { client_id: sid, card_id: card.id, kind: 'gift_redeem' } }).catch(() => {});
+      await rest('loyalty_events', { method: 'POST', body: { client_id: sid, branch_id: here.id, card_id: card.id, kind: 'gift_redeem' } }).catch(() => {});
       reward = rows[0].reward;
     } else {
       const r = await rpc('server_loyalty_redeem', { p_card: card.id, p_needed: settings.needed, p_distance: null });
       if (!r.ok) throw new ApiError(409, 'أختامه ما كملت', 'NOT_ENOUGH');
+      await tagBranch(card.id, here.id);
     }
     // رسالة تسليم المكافأة على بطاقة العميل (والتحديث نفسه يصفّر أختامه)
     const msg = await redeemMessage(store, settings, card, reward);
@@ -899,6 +914,7 @@ async function main(req) {
     const extra = (await rest(`clients?id=eq.${sid}&select=loyalty_settings`))[0] || {};
     const settings = normalizeLoyalty(extra.loyalty_settings);
     const r = await rpc('server_loyalty_stamp', { p_card: id, p_cooldown_hours: 0, p_needed: settings.needed, p_distance: null });
+    if (r.ok) await tagBranch(id, here.id);
     if (!r.ok && r.reason === 'FULL') throw new ApiError(409, 'بطاقته مكتملة، لازم يستخدم المكافأة أول');
     await pushWalletCards(sid, { cardIds: [id] });
     const fresh = (await rest(`loyalty_cards?id=eq.${id}&select=id,stamps,visits,rewards,last_stamp_at`))[0];
@@ -1026,7 +1042,7 @@ async function main(req) {
             const ls = normalizeLoyalty(x.loyalty_settings);
             if (x.loyalty_enabled && ls.pager_stamp) {
               await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { loyalty_stamped: true } });
-              await purchaseStamp(lhome, t.loyalty_card_id, ls);
+              await purchaseStamp(lhome, t.loyalty_card_id, ls, sid);
             }
           } catch (e) { console.error('PAGER_STAMP', e.message); }
         }

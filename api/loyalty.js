@@ -18,7 +18,7 @@ const wallet = require('./_lib/wallet');
 const { nearLineFor, pushWalletCards } = require('./_lib/loyalty-assistant');
 const { tr } = require('./_lib/i18n');
 const { loyaltyMessages } = require('./_lib/ai');
-const { purchaseStamp, consumeStampCode, pagerTicket, cooldownLeft, leftText, memberQr } = require('./_lib/loyalty-stamp');
+const { purchaseStamp, tagBranch, consumeStampCode, pagerTicket, cooldownLeft, leftText, memberQr } = require('./_lib/loyalty-stamp');
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{10,64}$/;
 const MAX_ACCURACY_M = 100;   // دقة أسوأ من كذا = نطلب منه يحاول مرة ثانية
@@ -116,6 +116,7 @@ const publicInfo = (ctx) => ({
 async function stampCard(ctx, card, distance) {
   const count = isHappyNow(ctx.settings) ? 2 : 1;
   const r = await rpc('server_loyalty_stamp', { p_card: card.id, p_cooldown_hours: ctx.settings.cooldown_hours, p_needed: ctx.settings.needed, p_distance: distance, p_count: count });
+  if (r.ok) await tagBranch(card.id, ctx.branch.id);
   const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
   if (r.ok) await syncWallet(ctx, fresh);
   return { stamped: !!r.ok, count: r.ok ? count : 0, reason: r.ok ? null : r.reason, next_at: r.next_at || null, card: cardView(fresh) };
@@ -231,7 +232,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       if (!card) {
         card = (await rest('loyalty_cards', {
           method: 'POST', prefer: 'return=representation',
-          body: { client_id: ctx.store.id, token: crypto.randomBytes(18).toString('base64url'), lang: reqLang(req), ...profile }
+          body: { client_id: ctx.store.id, branch_id: ctx.branch.id, token: crypto.randomBytes(18).toString('base64url'), lang: reqLang(req), ...profile }
         }))[0];
       } else if (!card.name || card.name === 'عضو' || !card.gender) {
         // بطاقة مستوردة من نظام سابق (أو قديمة بدون بيانات): نكمّلها باسمه وجنسه
@@ -243,14 +244,14 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       if (b.code) {
         if (!isNew) await assertNotCooling(ctx, card, b.code);
         await consumeStampCode(ctx.store.id, b.code, card.id);
-        const r = await purchaseStamp(ctx.store.id, card.id, ctx.settings);
+        const r = await purchaseStamp(ctx.store.id, card.id, ctx.settings, ctx.branch.id);
         out = { ...r, card: cardView((await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0]) };
       } else if (ticket) {
         // نربط البطاقة برقم البيجر: ينختم لما يجهز الطلب (أو الحين لو جاهز)
         await rest(`pager_tickets?id=eq.${ticket.id}`, { method: 'PATCH', body: { loyalty_card_id: card.id } });
         let r = { stamped: false, count: 0, reason: 'PAGER_PENDING' };
         if (['ready', 'done'].includes(ticket.status) && !ticket.loyalty_stamped) {
-          r = await purchaseStamp(ctx.store.id, card.id, ctx.settings);
+          r = await purchaseStamp(ctx.store.id, card.id, ctx.settings, ctx.branch.id);
           await rest(`pager_tickets?id=eq.${ticket.id}`, { method: 'PATCH', body: { loyalty_stamped: true } });
         }
         out = { ...r, card: cardView((await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0]) };
@@ -308,6 +309,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       const distance = checkPresence(ctx, b);
       const r = await rpc('server_loyalty_redeem', { p_card: card.id, p_needed: ctx.settings.needed, p_distance: distance });
       if (!r.ok) throw new ApiError(409, 'ما كملت الأختام للحين', 'NOT_ENOUGH');
+      await tagBranch(card.id, ctx.branch.id);
       const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
       await syncWallet(ctx, fresh);
       return { ...publicInfo(ctx), redeemed: true, redeemed_at: new Date().toISOString(), card: cardView(fresh) };
@@ -319,7 +321,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       const card = await cardByToken(ctx, b.t);
       await assertNotCooling(ctx, card, b.code);
       await consumeStampCode(ctx.store.id, b.code, card.id);
-      const r = await purchaseStamp(ctx.store.id, card.id, ctx.settings);
+      const r = await purchaseStamp(ctx.store.id, card.id, ctx.settings, ctx.branch.id);
       const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
       return { ...publicInfo(ctx), ...r, card: cardView(fresh) };
     }
@@ -335,7 +337,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       let r = { stamped: false, count: 0, reason: 'PAGER_PENDING' };
       if (['ready', 'done'].includes(ticket.status) && !ticket.loyalty_stamped) {
         await rest(`pager_tickets?id=eq.${ticket.id}`, { method: 'PATCH', body: { loyalty_stamped: true } });
-        r = await purchaseStamp(ctx.store.id, card.id, ctx.settings);
+        r = await purchaseStamp(ctx.store.id, card.id, ctx.settings, ctx.branch.id);
       }
       const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
       return { ...publicInfo(ctx), ...r, card: cardView(fresh) };
@@ -354,6 +356,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       if (ctx.settings.feedback.gift && card.stamps < ctx.settings.needed) {
         const r = await rpc('server_loyalty_stamp', { p_card: card.id, p_cooldown_hours: 0, p_needed: ctx.settings.needed, p_distance: null, p_count: 1 });
         gifted = !!r.ok;
+        if (gifted) await tagBranch(card.id, ctx.branch.id);
       }
       const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
       if (gifted) await syncWallet(ctx, fresh);
@@ -418,7 +421,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       const rows = await rest(`loyalty_gifts?code=eq.${q(String(b.code || ''))}&to_card=eq.${card.id}&status=eq.claimed&expires_at=gt.${q(new Date().toISOString())}`,
         { method: 'PATCH', prefer: 'return=representation', body: { status: 'redeemed', redeemed_at: new Date().toISOString() } });
       if (!rows.length) throw new ApiError(409, 'الهدية مستخدمة أو منتهية', 'GIFT_USED');
-      await rest('loyalty_events', { method: 'POST', body: { client_id: ctx.store.id, card_id: card.id, kind: 'gift_redeem' } }).catch(() => {});
+      await rest('loyalty_events', { method: 'POST', body: { client_id: ctx.store.id, branch_id: ctx.branch.id, card_id: card.id, kind: 'gift_redeem' } }).catch(() => {});
       return { ok: true, reward: rows[0].reward, redeemed_at: new Date().toISOString(), gifts: await giftsFor(ctx, card) };
     }
 

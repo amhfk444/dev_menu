@@ -831,7 +831,7 @@
   "قبل {t}": "{t} ago",
   "عضو": "Members",
   "ختم هالأسبوع": "Stamps this week",
-  "مكافأة": "Rewards",
+  "مكافأة": "rewards",
   "الأختام آخر 7 أيام": "Stamps, last 7 days",
   "{n} عضو زاروك آخر 30 يوم": "{n} members visited in the last 30 days",
   "امسح بطاقة زبون": "Scan a customer card",
@@ -1396,5 +1396,11 @@
   "ربط الفرع": "Branch link",
   "{a} تشتغل في الفرع مع حسابك بدون سعر إضافي.": "{a} works in the branch with your account at no extra cost.",
   "كل فرع: ربط {a} ر.س {b} + سعر مميزاته": "Each branch: {a} SAR link {b} + its features",
-  "ربط الفرع + {a}": "Branch link + {a}"
+  "ربط الفرع + {a}": "Branch link + {a}",
+  "عملاؤك في كل فرع": "Your customers in each branch",
+  "الزبون اللي زار أكثر من فرع ينحسب في كل فرع زاره، وبطاقته وأختامه وحدة في كل فروعك.": "A customer who visited more than one branch is counted in each branch they visited. Their card and stamps are shared across all your branches.",
+  "قبل تتبع الفروع": "Before branch tracking",
+  "عميل": "customers",
+  "زيارة": "visits",
+  "سجّلوا فيه": "joined here"
 }

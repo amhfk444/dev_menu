@@ -1357,6 +1357,12 @@
         <!-- نظرة عامة -->
         <div data-lytab="overview" class="space-y-5">
           <div id="ly-kpis" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+          <!-- عملاء كل فرع (للي عنده أكثر من فرع) -->
+          <div id="ly-branches-card" class="hidden pro-card p-5 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2"><h3 class="text-sm font-bold"><i class="ph-bold ph-git-branch text-emerald-600"></i> عملاؤك في كل فرع</h3><span class="text-[11px] text-ink/50">آخر 30 يوم</span></div>
+            <div id="ly-branches" class="space-y-3"></div>
+            <p class="text-[11px] text-ink/50">الزبون اللي زار أكثر من فرع ينحسب في كل فرع زاره، وبطاقته وأختامه وحدة في كل فروعك.</p>
+          </div>
           <div class="grid lg:grid-cols-[1.4fr_1fr] gap-5 items-start">
             <div class="pro-card p-5 space-y-4">
               <div class="flex items-center justify-between"><h3 class="text-sm font-bold">الزيارات خلال الأسبوع</h3><span class="text-[11px] text-ink/50"><span class="inline-block w-2 h-2 rounded-full bg-brand ml-1"></span> زيارات مسجّلة</span></div>
@@ -4622,6 +4628,22 @@
     ['m', 'رجال', c => c.gender === 'm'],
     ['f', 'نساء', c => c.gender === 'f']
   ];
+  // عملاء كل فرع: اللي زاروه آخر 30 يوم، وزياراته، والأعضاء اللي سجلوا فيه، والمكافآت المصروفة فيه
+  function renderLyBranches() {
+    const B = (ly.data && ly.data.branches) || null, card = document.getElementById('ly-branches-card');
+    card.classList.toggle('hidden', !B);
+    if (!B) return;
+    const max = Math.max(1, ...B.map(b => b.customers30));
+    const stat = (v, l) => `<span class="text-[11px] text-ink/60"><b class="text-ink text-[13px] tnum">${v}</b> ${l}</span>`;
+    document.getElementById('ly-branches').innerHTML = B.map(b => `
+      <div class="space-y-1.5">
+        <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <p class="text-[13px] font-bold">${b.id == null ? '<span class="text-ink/55">قبل تتبع الفروع</span>' : `${b.main ? '<i class="ph-bold ph-star text-amber-500 text-[10px]"></i> ' : ''}${esc(b.name || '')}`}</p>
+          <div class="flex flex-wrap gap-x-4 gap-y-1">${stat(b.customers30, 'عميل')}${stat(b.stamps30, 'زيارة')}${stat(b.members, 'سجّلوا فيه')}${stat(b.redeems30, 'مكافأة')}</div>
+        </div>
+        <div class="h-2.5 rounded-full bg-brand/10 overflow-hidden"><div class="h-full rounded-full ${b.id == null ? 'bg-ink/25' : 'bg-brand'}" style="width:${Math.round(b.customers30 / max * 100)}%"></div></div>
+      </div>`).join('');
+  }
   function renderLyMembers() {
     const M = ly.members || [], n = ly.data ? ly.data.settings.needed : 8;
     const week = M.filter(c => daysAgo(c.created_at) <= 7).length;
@@ -4633,6 +4655,7 @@
       kpi('ph-storefront', 'الزيارات', S.stamps7 || 0, 'آخر 7 أيام') +
       kpi('ph-arrows-clockwise', 'عملاء عائدون', S.returning7 || 0, 'آخر 7 أيام') +
       kpi('ph-gift', 'مكافآت مستخدمة', S.redeemed || 0, M.length ? `${once.length} زاروا مرة وما رجعوا` : '');
+    renderLyBranches();
     document.getElementById('lyt-count').textContent = M.length || '';
     document.getElementById('ly-members-sub').textContent = `${M.length} عضو، منهم ${M.filter(c => c.in_wallet).length} حافظين البطاقة في المحفظة`;
     // الزيارات خلال الأسبوع
