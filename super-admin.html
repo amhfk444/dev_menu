@@ -235,9 +235,11 @@
   function branchProration(parent) {
     const s = statusOf(parent);
     if (s.key === 'trial') return { amount: 0, days: s.left, text: 'الحساب في الفترة التجريبية: الفرع بدون رسوم الحين، ويدخل في فاتورة الاشتراك.' };
-    if (s.key !== 'paid' || !s.left) return { amount: PLAN_PRICE.branch, days: 365, text: `الحساب غير مشترك حالياً: الفرع يتفعّل مع تجديد الحساب (${money(PLAN_PRICE.branch)} سنوياً).` };
-    const amount = Math.round(PLAN_PRICE.branch * s.left / 365);
-    return { amount, days: s.left, text: `المستحق الآن ${money(amount)} عن ${s.left} يوم الباقية لين تجديد الحساب في ${s.endText}، وبعدها يتجدد مع الحساب بـ ${money(PLAN_PRICE.branch)} سنوياً.` };
+    // الشهري بسعر الفرع الشهري، والسنوي بالسنوي
+    const monthly = parent.subscription_plan === 'month', price = monthly ? PLAN_PRICE.branchMonth : PLAN_PRICE.branch, per = monthly ? 'شهرياً' : 'سنوياً';
+    if (s.key !== 'paid' || !s.left) return { amount: price, days: monthly ? 30 : 365, per, price, text: `الحساب غير مشترك حالياً: الفرع يتفعّل مع تجديد الحساب (${money(price)} ${per}).` };
+    const amount = Math.round(price * s.left / (monthly ? 30 : 365));
+    return { amount, days: s.left, per, price, text: `المستحق الآن ${money(amount)} عن ${s.left} يوم الباقية لين تجديد الحساب في ${s.endText}، وبعدها يتجدد مع الحساب بـ ${money(price)} ${per}.` };
   }
   const TYPES = Object.fromEntries(Object.entries(DMSectors.SECTORS).map(([k, v]) => [k, [v.name, v.icon]]));
   const typeOf = (c) => [DMSectors.label(c), (TYPES[c.business_type] || TYPES.restaurant)[1]];
@@ -585,7 +587,7 @@
         ${isProspect(c) ? `<a href="${esc(pitchLink(c))}" target="_blank" rel="noopener"><i class="ph-bold ph-whatsapp-logo" style="color:#16a34a"></i> أرسل له المنيو واتساب</a>
         <button onclick="transferStore(${id})"><i class="ph-bold ph-key" style="color:#7c3aed"></i> تسليم المتجر لصاحبه</button>` : ''}
         ${remind && !c.parent_id ? `<a href="${esc(remind)}" target="_blank" rel="noopener"><i class="ph-bold ph-whatsapp-logo" style="color:#16a34a"></i> رسالة تذكير بالتجديد</a>` : ''}
-        ${!c.parent_id ? `<button onclick="addBranch(${id})"><i class="ph-bold ph-git-branch" style="color:#047857"></i> إضافة فرع · ${money(PLAN_PRICE.branch)}/سنة</button>` : ''}
+        ${!c.parent_id ? `<button onclick="addBranch(${id})"><i class="ph-bold ph-git-branch" style="color:#047857"></i> إضافة فرع · ${c.subscription_plan === 'month' ? `${money(PLAN_PRICE.branchMonth)}/شهر` : `${money(PLAN_PRICE.branch)}/سنة`}</button>` : ''}
         <button onclick="renameStore(${id})"><i class="ph-bold ph-pencil-simple"></i> تعديل الاسم</button>
         ${!c.parent_id ? `<button onclick="openTypeDlg(${id})"><i class="ph-bold ph-storefront"></i> نوع النشاط: ${esc(DMSectors.label(c))}</button>` : ''}
         <button onclick="openNotify(${id})"><i class="ph-bold ph-bell"></i> ${c.admin_notification ? 'تعديل الإشعار' : 'إرسال إشعار'}</button>
@@ -658,7 +660,7 @@
       // فاتورة الفرع: الأيام الباقية لين تجديد الحساب
       const pr = branchProration(c), phone = waPhone(c.phone);
       const msg = pr.amount
-        ? `مرحباً، معك فريق DEV MENU 👋\nتم إضافة فرع "${name}" لحساب "${c.name}".\nالمستحق الآن: ${pr.amount} ر.س عن ${pr.days} يوم الباقية لين تجديد اشتراكك في ${statusOf(c).endText}.\nبعدها يتجدد الفرع مع الحساب بـ ${PLAN_PRICE.branch} ر.س سنوياً.\nرابط الفرع: ${DM.storeUrl(res.client.client_slug)}`
+        ? `مرحباً، معك فريق DEV MENU 👋\nتم إضافة فرع "${name}" لحساب "${c.name}".\nالمستحق الآن: ${pr.amount} ر.س عن ${pr.days} يوم الباقية لين تجديد اشتراكك في ${statusOf(c).endText}.\nبعدها يتجدد الفرع مع الحساب بـ ${pr.price} ر.س ${pr.per}.\nرابط الفرع: ${DM.storeUrl(res.client.client_slug)}`
         : '';
       const send = await DMDialog.confirm({
         title: 'تم إنشاء الفرع', icon: 'ph-check-circle', tone: 'success',

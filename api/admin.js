@@ -217,14 +217,14 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     await syncBranchSubscriptions(id);
     const client = (await rest(`clients?id=eq.${newId}&select=*`))[0];
     // فرع في نص الاشتراك: فاتورة مستحقة عن الأيام الباقية لين تجديد الحساب
-    const main = (await rest(`clients?id=eq.${id}&select=id,name,email,subscription_status,subscription_end_date`))[0];
+    const main = (await rest(`clients?id=eq.${id}&select=id,name,email,subscription_status,subscription_plan,subscription_end_date`))[0];
     const pr = branchProration(main);
     let invoice = null;
     if (pr && pr.amount > 0) {
       invoice = await sendInvoice(main, {
         status: 'due', validUntil: pr.end,
         lines: [{ label: `فرع جديد — ${client.name}`, detail: `${pr.days} يوم لين تجديد الحساب`, amount: pr.amount }],
-        note: `بعد تاريخ التجديد يتجدد الفرع مع الحساب بـ ${PLAN_PRICE.branch} ر.س سنوياً. للدفع تواصل معنا عبر واتساب.`
+        note: `بعد تاريخ التجديد يتجدد الفرع مع الحساب بـ ${pr.renew}. للدفع تواصل معنا عبر واتساب.`
       });
     }
     return { client, invoice };

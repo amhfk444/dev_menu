@@ -18,12 +18,13 @@ function invoiceNumber(storeId) {
   return `DM-${storeId}-${d}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 }
 
-// الأيام الباقية لين تجديد الحساب، والمبلغ النسبي لفرع جديد
+// الأيام الباقية لين تجديد الحساب، والمبلغ النسبي لفرع جديد (حسب نوع اشتراك الحساب: شهري أو سنوي)
 function branchProration(parent, now = Date.now()) {
   const end = parent.subscription_status === 'active' ? Date.parse(parent.subscription_end_date) : NaN;
   if (parent.subscription_status === 'trial' || !(end > now)) return null;
-  const days = Math.ceil((end - now) / 86400000);
-  return { days, amount: Math.round(PLAN_PRICE.branch * days / 365), end: parent.subscription_end_date };
+  const days = Math.ceil((end - now) / 86400000), monthly = parent.subscription_plan === 'month';
+  const price = monthly ? PLAN_PRICE.branchMonth : PLAN_PRICE.branch;
+  return { days, amount: Math.round(price * days / (monthly ? 30 : 365)), end: parent.subscription_end_date, renew: `${price} ر.س ${monthly ? 'شهرياً' : 'سنوياً'}` };
 }
 
 // paid = فاتورة مدفوعة (تفعيل/تجديد)، due = مستحقة الدفع (فرع في نص الاشتراك)
