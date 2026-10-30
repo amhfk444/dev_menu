@@ -112,4 +112,50 @@ async function stampStrip(settings, card) {
   }
 }
 
-module.exports = { stampStrip };
+// ─── بطاقة تنبيه البيجر: بلون المحل، ثلاث خطوات (استلمنا ← قيد التجهيز ← جاهز) بدون أختام ولا كتابة ───
+// الكتابة (الرقم والحالة) في حقول البطاقة نفسها، عشان الخطوط العربية مو موجودة في الخادم
+// لون المحل: لونه المختار، أو اللون الغالب في شعاره (مغمّق عشان الكتابة البيضاء تبان)، أو أخضر DEV MENU
+async function brandColor(store) {
+  if (/^#[0-9a-f]{6}$/i.test(store.accent_color || '')) return store.accent_color;
+  try {
+    const res = await fetch(store.logo_url, { signal: AbortSignal.timeout(6000) });
+    const { dominant: { r, g, b } } = await sharp(Buffer.from(await res.arrayBuffer())).flatten({ background: '#000' }).stats();
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    if (max - min < 40 || max > 235) throw 0;   // رمادي أو أبيض: ما يصلح لون للبطاقة
+    let rgb = [r, g, b];
+    const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+    if (lum > .32) rgb = rgb.map(v => v * (.32 / lum));
+    return '#' + rgb.map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
+  } catch { return '#233d2c'; }
+}
+
+async function pagerStrip(color, step) {
+  try {
+    const ink = inkFor(color), gold = '#e9c95a';
+    const ready = step === 'ready', cur = ready ? 2 : 1;
+    const cy = H / 2, xs = [W - 250, W / 2, 250];   // من اليمين: استلمنا، قيد التجهيز، جاهز
+    const icons = ['check', 'cooking-pot', 'bell-ringing'];
+    let g = '';
+    // الخط بين الخطوات: المنجز ممتلئ، والباقي منقط باهت
+    for (let i = 0; i < 2; i++) {
+      const done = i < cur;
+      g += `<line x1="${xs[i] - 70}" y1="${cy}" x2="${xs[i + 1] + 70}" y2="${cy}" stroke="${done ? gold : ink}" stroke-opacity="${done ? .9 : .3}" stroke-width="8" stroke-linecap="round"${done ? '' : ' stroke-dasharray="4 22"'}/>`;
+    }
+    xs.forEach((x, i) => {
+      const done = i < cur, now = i === cur, R = now ? 104 : 62, s = now ? 104 : 56;
+      if (now) {
+        // الخطوة الحالية: هالة، وموجات حول الجرس لما يجهز
+        g += `<circle cx="${x}" cy="${cy}" r="${R + 34}" fill="${gold}" fill-opacity=".14"/>`;
+        if (ready) g += `<circle cx="${x}" cy="${cy}" r="${R + 62}" fill="none" stroke="${gold}" stroke-opacity=".35" stroke-width="5"/><circle cx="${x}" cy="${cy}" r="${R + 92}" fill="none" stroke="${gold}" stroke-opacity=".15" stroke-width="4"/>`;
+        g += `<circle cx="${x}" cy="${cy}" r="${R}" fill="${gold}"/>`;
+      } else if (done) g += `<circle cx="${x}" cy="${cy}" r="${R}" fill="${ink}" fill-opacity=".9"/>`;
+      else g += `<circle cx="${x}" cy="${cy}" r="${R - 3}" fill="none" stroke="${ink}" stroke-opacity=".35" stroke-width="6"/>`;
+      g += icon(done && !now ? 'check' : icons[i], x - s / 2, cy - s / 2, s, now ? '#1b1b1b' : done ? color : ink, now || done ? 1 : .4);
+    });
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}"><defs><radialGradient id="g" cx="${ready ? 20 : 50}%" cy="50%" r="65%"><stop offset="0" stop-color="${gold}" stop-opacity=".18"/><stop offset="1" stop-color="${gold}" stop-opacity="0"/></radialGradient></defs><rect width="${W}" height="${H}" fill="${color}"/><rect width="${W}" height="${H}" fill="url(#g)"/>${g}</svg>`;
+    const png = await sharp(Buffer.from(svg)).png({ compressionLevel: 9, palette: true }).toBuffer();
+    return `data:image/png;base64,${png.toString('base64')}`;
+  } catch (e) { console.error('PAGER_STRIP', e.message); return null; }
+}
+
+module.exports = { stampStrip, pagerStrip, brandColor };

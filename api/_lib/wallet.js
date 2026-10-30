@@ -112,32 +112,39 @@ async function revokePass(serial) {
   catch (e) { return e.status === 404 ? 'gone' : `error ${e.status || ''}`.trim(); }
 }
 
-// ─── رقم البيجر كبطاقة في المحفظة: يوصله إشعار النظام لما يجي دوره (حتى وهو يشوف فيديو) ───
-// الحالة فوق، ولما تتغير آبل تطلعها إشعار على شاشة القفل. البطاقة تنتهي بعد يوم
-function pagerBody({ store, number, status, notice, url, color, lang }) {
+// ─── بطاقة تنبيه البيجر: مؤقتة لطلب واحد، بهوية المحل (لونه وشعاره) وبدون أختام، عشان ما تختلط ببطاقة الولاء ───
+// الرقم فوق، والحالة تحت الصورة. لما تتغير الحالة آبل تطلعها إشعار على شاشة القفل بشعار المحل. تنتهي بعد يوم
+async function pagerBody({ store, number, step, status, notice, url, lang }) {
   const L = (t) => tr(lang, t);
+  const { pagerStrip, brandColor } = require('./strip');
+  const color = await brandColor(store);
   const body = {
     logoText: String(store.name || 'DEV MENU').slice(0, 40),
     organizationName: String(store.name || 'DEV MENU').slice(0, 64),
-    description: L(`رقمك في ${store.name || ''}`).slice(0, 120),
-    colorPreset: 'green',
-    headerFields: [{ label: L('الحالة'), value: L(String(status)).slice(0, 40), changeMessage: '%@' }],
-    primaryFields: [{ label: L('رقمك'), value: String(number) }],
-    backFields: [{ label: L('صفحة رقمك'), value: url }],
+    description: L(`تنبيه طلبك من ${store.name || ''}`).slice(0, 120),
+    color,
+    headerFields: [{ label: L('رقمك'), value: String(number) }],
+    secondaryFields: [{ label: L('الحالة'), value: L(String(status)).slice(0, 40), changeMessage: '%@' }],
+    backFields: [
+      { label: L('بطاقة تنبيه'), value: L('هذي البطاقة لطلبك الحالي بس. يوصلك منها إشعار لما يجهز، وتنتهي لحالها بعد ما تستلم.') },
+      { label: L('صفحة رقمك'), value: url }
+    ],
     sharingProhibited: true,
     expirationDays: 1,
     notification: String(notice || ' ').slice(0, 250)
   };
-  if (color) { body.color = color; delete body.colorPreset; }
-  if (store.logo_url && /^https:\/\//.test(store.logo_url)) body.logoURL = store.logo_url;
+  const strip = await pagerStrip(color, step);
+  if (strip) body.stripURL = strip;
+  if (store.logo_url && /^https:\/\//.test(store.logo_url)) { body.logoURL = store.logo_url; body.iconURL = store.logo_url; }
   return body;
 }
 async function createPagerPass(ctx) {
   if (!configured()) throw new ApiError(503, 'المحفظة مو متاحة حالياً', 'WALLET_OFF');
-  try { return await call('POST', '', pagerBody(ctx)); }
+  try { return await call('POST', '', await pagerBody(ctx)); }
   catch (e) {
+    // الباقة المجانية ترفض الصور واللون: بطاقة بسيطة بدلها
     if (e.status >= 400 && e.status < 500 && e.status !== 401 && e.status !== 429) {
-      const b = pagerBody(ctx); delete b.logoURL; delete b.color; b.colorPreset = 'green';
+      const b = await pagerBody(ctx); ['logoURL', 'iconURL', 'stripURL', 'color'].forEach(k => delete b[k]); b.colorPreset = 'dark';
       try { return await call('POST', '', b); } catch {}
     }
     throw new ApiError(502, 'تعذر تجهيز رقمك للمحفظة، جرّب بعد شوي', 'WALLET_FAILED');
@@ -145,7 +152,7 @@ async function createPagerPass(ctx) {
 }
 async function updatePagerPass(serial, ctx) {
   if (!configured() || !serial) return 'off';
-  try { const r = await call('PUT', `/${encodeURIComponent(serial)}`, pagerBody(ctx)); return `ok devices=${r.notifiedDevices ?? '?'}`; }
+  try { const r = await call('PUT', `/${encodeURIComponent(serial)}`, await pagerBody(ctx)); return `ok devices=${r.notifiedDevices ?? '?'}`; }
   catch (e) { return `${e.status || ''} ${e.message || ''}`.trim().slice(0, 200); }
 }
 

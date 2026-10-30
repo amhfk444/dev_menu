@@ -888,7 +888,7 @@ async function main(req) {
     if (status === 'ready' && t.wallet_serial) {
       const T = SECTORS.terms(store);
       const L = (x) => tr(t.lang, x);
-      const wr = await wallet.updatePagerPass(t.wallet_serial, { store, number: t.number, status: T.ready, notice: L(`🔔 ${T.ready} رقم ${t.number}. ${T.readyBody}`), url: storeLink(store.client_slug, 'pager'), color: store.accent_color, lang: t.lang });
+      const wr = await wallet.updatePagerPass(t.wallet_serial, { store, number: t.number, status: T.ready, notice: L(`🔔 ${T.ready} رقم ${t.number}. ${T.readyBody}`), url: storeLink(store.client_slug, 'pager'), step: 'ready', lang: t.lang });
       console.log('PAGER_PASS', sid, t.id, wr);
     }
     // استلم أو انلغى: تذكرة المحفظة تنطفي وتنتقل للبطاقات المنتهية

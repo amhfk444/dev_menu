@@ -23,7 +23,7 @@ const pagerUrl = (slug) => storeLink(slug, 'pager');
 async function walletReady(store, t) {
   if (!t.wallet_serial) return;
   const T = SECTORS.terms(store);
-  const r = await wallet.updatePagerPass(t.wallet_serial, { store, number: t.number, status: T.ready, notice: `🔔 ${T.ready} رقم ${t.number}. ${T.readyBody}`, url: pagerUrl(store.client_slug), color: store.accent_color, lang: t.lang });
+  const r = await wallet.updatePagerPass(t.wallet_serial, { store, number: t.number, status: T.ready, notice: `🔔 ${T.ready} رقم ${t.number}. ${T.readyBody}`, url: pagerUrl(store.client_slug), step: 'ready', lang: t.lang });
   console.log('PAGER_PASS', store.id, t.id, r);
 }
 
@@ -154,7 +154,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (!t) throw new ApiError(404, 'الرقم غير موجود أو انتهى', 'NOT_FOUND');
     if (t.wallet_url) return { url: t.wallet_url };
     const T = SECTORS.terms(store);
-    const pass = await wallet.createPagerPass({ store, number: t.number, status: t.status === 'ready' ? T.ready : T.waiting.replace('…', ''), notice: ' ', url: pagerUrl(store.client_slug), color: store.accent_color, lang: t.lang });
+    const pass = await wallet.createPagerPass({ store, number: t.number, status: t.status === 'ready' ? T.ready : T.waiting.replace('…', ''), notice: ' ', url: pagerUrl(store.client_slug), step: t.status, lang: t.lang });
     await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl } });
     return { url: pass.shareUrl };
   }
