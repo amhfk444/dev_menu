@@ -71,7 +71,8 @@ async function reviewUrl(storeId) {
 }
 // محل التجربة في الصفحة التعريفية: الرقم يجهز تلقائياً بعد ثواني عشان الزائر يجرب الرنّة بنفسه
 const DEMO = new Set(['bistrobella']);
-const DEMO_AFTER = 12e3;
+// بدون بطاقة نداء: 25 ثانية (وقت يضيفها لو حب)، ومع البطاقة: 10 ثواني من إضافتها، عشان يشوف إشعار المحفظة يوصله
+const DEMO_AFTER = 25e3, DEMO_AFTER_CARD = 10e3;
 async function demoRing(store, token) {
   const rows = await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=eq.waiting`, { method: 'PATCH', prefer: 'return=representation',
     body: { status: 'ready', ready_at: new Date().toISOString(), ring_count: 1, last_ring_at: new Date().toISOString() } }).catch(() => []);
@@ -130,7 +131,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const sel = `pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&select=number,status,created_at,ready_at`;
     const t = (await rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url`).catch(() => rest(`${sel},invoice_no`)).catch(() => rest(sel)))[0];
     if (!t) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
-    if (DEMO.has(store.client_slug) && t.status === 'waiting' && Date.now() - Date.parse(t.created_at) > DEMO_AFTER) {
+    if (DEMO.has(store.client_slug) && t.status === 'waiting' && Date.now() - Date.parse(t.created_at) > (t.wallet_url ? DEMO_AFTER_CARD : DEMO_AFTER)) {
       await demoRing(store, token);
       t.status = 'ready'; t.ready_at = new Date().toISOString();
     }
@@ -176,12 +177,13 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     // المحل المشترك في الولاء: النداء يوصل من بطاقة الولاء، فما فيه بطاقة نداء
     if ((await loyaltyOf(store.id)).enabled) throw new ApiError(409, 'سجّل في بطاقة الولاء ويوصلك النداء منها', 'USE_LOYALTY');
     const pc = TOKEN_RE.test(String(b.pc || '')) ? await linkPagerCard(store, token, b.pc) : null;
+    if (pc && DEMO.has(store.client_slug)) await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { created_at: new Date().toISOString() } }).catch(() => {});
     if (pc) return { url: pc.wallet_url, card: b.pc };
     if (t.wallet_url) return { url: t.wallet_url };
     const pass = await wallet.createPagerPass(wallet.pagerStep({ store, number: t.number, step: t.status, lang: t.lang }));
     const card = crypto.randomBytes(18).toString('base64url');
     await rest('pager_cards', { method: 'POST', body: { client_id: await brandOf(store), token: card, wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, lang: t.lang || null } });
-    await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl } });
+    await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, ...(DEMO.has(store.client_slug) ? { created_at: new Date().toISOString() } : {}) } });
     return { url: pass.shareUrl, card };
   }
 

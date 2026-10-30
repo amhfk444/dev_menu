@@ -115,5 +115,6 @@
   "أضفها للمحفظة مرة وحدة، وكل ما تاخذ رقم يوصلك منها إشعار": "Add it to your wallet once, and every time you take a number it notifies you",
   "يوصلك إشعار": "You'll be notified",
   "حتى لو كنت في تطبيق ثاني أو سكّرت المتصفح.": "even if you're in another app or closed the browser.",
-  "تضيفها مرة وحدة، وكل ما تاخذ رقم تتحدث برقمك.": "Add it once, and it updates with every number you take."
+  "تضيفها مرة وحدة، وكل ما تاخذ رقم تتحدث برقمك.": "Add it once, and it updates with every number you take.",
+  "هذي تجربة: خلال ثواني يرن جوالك 🔔 وإذا أضفت بطاقة النداء، يوصلك منها إشعار \"طلبك جاهز\" حتى لو طلعت من الصفحة": "This is a demo: your phone rings in a few seconds 🔔 Add the pager card and it will notify you \"your order is ready\" even if you leave the page"
 }
