@@ -25,9 +25,16 @@ async function walletReady(store, t) {
   console.log('PAGER_PASS', store.id, t.id, r);
 }
 
-// بطاقة النداء (المحل اللي ما عنده ولاء): نربطها بالرقم ونحدّثها برقمه. يرجّع البطاقة أو null
+// المحل الرئيسي للفرع: بطاقة النداء وحدة لكل الفروع (تنحفظ على المحل الرئيسي)
+async function brandOf(store) {
+  if (store._brand) return store._brand;
+  const row = (await rest(`clients?id=eq.${store.id}&select=parent_id`).catch(() => []))[0] || {};
+  return (store._brand = row.parent_id || store.id);
+}
+
+// بطاقة النداء (المحل اللي ما عنده ولاء): نربطها بالرقم ونحدّثها برقمه واسم الفرع. يرجّع البطاقة أو null
 async function linkPagerCard(store, ticketToken, cardToken) {
-  const pc = (await rest(`pager_cards?token=eq.${q(cardToken)}&client_id=eq.${store.id}&select=id,wallet_serial,wallet_url,lang`).catch(() => []))[0];
+  const pc = (await rest(`pager_cards?token=eq.${q(cardToken)}&client_id=eq.${await brandOf(store)}&select=id,wallet_serial,wallet_url,lang`).catch(() => []))[0];
   if (!pc || !pc.wallet_serial || (await loyaltyOf(store.id)).enabled) return null;
   const t = (await rest(`pager_tickets?token=eq.${q(ticketToken)}&client_id=eq.${store.id}`, { method: 'PATCH', prefer: 'return=representation', body: { wallet_serial: pc.wallet_serial, wallet_url: pc.wallet_url } }))[0];
   if (!t) return null;
@@ -90,7 +97,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
   if (action === 'info' && req.method === 'GET') {
     const store = await loadStore(req.query.slug);
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=300');   // بيانات المحل العامة: تتخزن 30 ثانية في CDN
-    return { store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, push_key: pushPublicKey() };
+    return { store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, push_key: pushPublicKey(), brand: await brandOf(store) };
   }
 
   if (action === 'take' && req.method === 'POST') {
@@ -171,7 +178,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (t.wallet_url) return { url: t.wallet_url };
     const pass = await wallet.createPagerPass(wallet.pagerStep({ store, number: t.number, step: t.status, lang: t.lang }));
     const card = crypto.randomBytes(18).toString('base64url');
-    await rest('pager_cards', { method: 'POST', body: { client_id: store.id, token: card, wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, lang: t.lang || null } });
+    await rest('pager_cards', { method: 'POST', body: { client_id: await brandOf(store), token: card, wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, lang: t.lang || null } });
     await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl } });
     return { url: pass.shareUrl, card };
   }

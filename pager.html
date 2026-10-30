@@ -817,16 +817,28 @@
     $('ly-ask').classList.replace('hidden', 'flex');
   }
   $('ly-ask-no').onclick = () => $('ly-ask').classList.replace('flex', 'hidden');
-  // رمز بطاقة النداء في هالجوال: يرسل مع كل رقم جديد عشان تتحدث نفس البطاقة
-  const PC_KEY = `dm_pcard_${slug}`;
-  const pagerCard = () => { try { return localStorage.getItem(PC_KEY) || ''; } catch { return ''; } };
+  // رمز بطاقة النداء في هالجوال: يرسل مع كل رقم جديد عشان تتحدث نفس البطاقة.
+  // وحدة للمحل بكل فروعه (brand = المحل الرئيسي)، وتنحفظ على devmenu.digital كله عشان كل فرع له رابط مختلف
+  let brand = 0;
+  const PC_NAME = () => `dm_pc_${brand}`;
+  const SHARED = /(^|\.)devmenu\.digital$/.test(location.hostname) ? '; domain=.devmenu.digital' : '';
+  function pagerCard() {
+    const m = brand && document.cookie.match(new RegExp(`(?:^|; )${PC_NAME()}=([A-Za-z0-9_-]+)`));
+    if (m) return m[1];
+    try { return localStorage.getItem(PC_NAME()) || localStorage.getItem(`dm_pcard_${slug}`) || ''; } catch { return ''; }
+  }
+  function savePagerCard(t) {
+    if (!brand) return;
+    document.cookie = `${PC_NAME()}=${t}; max-age=31536000; path=/; secure; samesite=lax${SHARED}`;
+    try { localStorage.setItem(PC_NAME(), t); } catch {}
+  }
   async function addPagerPass() {
     const btn = $('pw-btn'); btn.disabled = true;
     const label = btn.querySelector('span').textContent;
     btn.querySelector('span').textContent = 'جاري التجهيز…';
     try {
       const r = await DM.post('/api/pager?action=wallet', { slug, t: loadToken(), pc: pagerCard() || undefined });
-      if (r.card) try { localStorage.setItem(PC_KEY, r.card); } catch {}
+      if (r.card) savePagerCard(r.card);
       if (r.url) location.href = r.url;
     } catch (err) { alert(err.message || 'تعذر الإضافة للمحفظة'); btn.querySelector('span').textContent = label; }
     btn.disabled = false;
@@ -905,7 +917,7 @@
   (async function init() {
     if (!slug) return unavailable('الرابط غير صحيح', 'امسح رمز QR من عند الموظف.');
     // نتأكد إن المتجر موجود، ونجيب مفتاح الإشعارات
-    try { const info = await DM.get(`/api/pager?action=info&slug=${encodeURIComponent(slug)}`); setStore(info.store); pushKey = info.push_key || ''; }
+    try { const info = await DM.get(`/api/pager?action=info&slug=${encodeURIComponent(slug)}`); setStore(info.store); pushKey = info.push_key || ''; brand = Number(info.brand) || 0; }
     catch (e) { return unavailable('البيجر غير متاح حالياً', 'اسأل الموظف.'); }
     if ('serviceWorker' in navigator && pushKey) navigator.serviceWorker.register('/sw.js').catch(() => {});
     if (loadToken()) { await poll(); return offerPerm(); }   // رجع للصفحة: الصوت يحتاج ضغطة منه من جديد
