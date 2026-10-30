@@ -219,6 +219,8 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (!rows.length) return { ok: false };
     // لو الزبون ضغط "استلمت" قبل الكاشير، نقفل الرقم
     await rest(`pager_tickets?id=eq.${rows[0].id}&status=eq.ready`, { method: 'PATCH', body: { status: 'done', closed_at: new Date().toISOString(), push_sub: null } }).catch(() => {});
+    // ضغط "استلمت" قبل الكاشير: بطاقة النداء ترجع "بالعافية"
+    if (rows[0].wallet_serial && rows[0].status === 'ready') later(wallet.updatePagerPass(rows[0].wallet_serial, wallet.pagerStep({ store, step: 'idle', lang: rows[0].lang })));
     await poke(topic('pager', store.id));
     return { ok: true, google: rating >= 4 ? await reviewUrl(store.id) : null };
   }

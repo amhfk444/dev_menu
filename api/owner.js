@@ -921,8 +921,8 @@ async function main(req) {
         return rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_error: `ready ${wr} at=${new Date().toISOString().slice(11, 19)}` } });
       }));
     }
-    // انلغى: بطاقة النداء ترجع "بالعافية". الاستلام ما يحدّثها (توفير): تبقى على "جاهز" لين ياخذ رقم جديد
-    if (status === 'cancelled' && t.wallet_serial) {
+    // استلم أو انلغى: بطاقة النداء ترجع "بالعافية" (إشعار) وتنتظر الزيارة الجاية
+    if ((status === 'done' || status === 'cancelled') && t.wallet_serial) {
       later(wallet.updatePagerPass(t.wallet_serial, wallet.pagerStep({ store, step: 'idle', lang: t.lang })).then(er => {
         console.log('PAGER_PASS_END', sid, t.id, er);
         return rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_error: `${t.wallet_error || ''} | end ${er}`.slice(0, 300) } });
