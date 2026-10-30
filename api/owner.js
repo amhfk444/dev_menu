@@ -498,11 +498,12 @@ async function main(req) {
   // ─── البيجر: أرقام اليوم ───
   // ─── شاشة العرض للزبون (تابلت عند الكاشير): بيانات المحل وخدماته ───
   if (action === 'kiosk' && req.method === 'GET') {
-    const { store } = await context(req);
+    // الشاشة تعرض الفرع نفسه (اسمه وأكواد خدماته)، وإعدادات الولاء من المحل الرئيسي
+    const { store, here } = await context(req);
     const x = (await rest(`clients?id=eq.${store.id}&select=loyalty_enabled,loyalty_settings`))[0] || {};
     const settings = normalizeLoyalty(x.loyalty_settings);
-    const services = ['menu', 'pager', 'waitlist', 'loyalty'].filter(k => PLANS.has(store, k) && (k !== 'waitlist' || store.waitlist_enabled) && (k !== 'loyalty' || x.loyalty_enabled));
-    return { name: store.name, logo_url: store.logo_url || '', slug: store.client_slug, business_type: store.business_type, business_label: store.business_label, services, enabled: services.includes('loyalty'), needed: settings.needed, reward: settings.reward, reward_en: settings.reward_en };
+    const services = ['menu', 'pager', 'waitlist', 'loyalty'].filter(k => PLANS.has(here, k) && (k !== 'waitlist' || here.waitlist_enabled) && (k !== 'loyalty' || x.loyalty_enabled));
+    return { name: here.name, logo_url: here.logo_url || store.logo_url || '', slug: here.client_slug, business_type: here.business_type, business_label: here.business_label, services, enabled: services.includes('loyalty'), needed: settings.needed, reward: settings.reward, reward_en: settings.reward_en };
   }
   // ─── رابط الكاشير للفرع: يطلع (وينشأ أول مرة)، أو يتغيّر والقديم يوقف ───
   if (action === 'desk-link') {
