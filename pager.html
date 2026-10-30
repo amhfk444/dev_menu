@@ -341,6 +341,18 @@
   </div>
 </div>
 
+<!-- بعد أخذ الرقم (محل بدون ولاء): دعوة لإضافة بطاقة النداء، وما تطلع لو البطاقة محفوظة في الجوال -->
+<div id="pc-ask" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-black/55 p-4" role="dialog" aria-modal="true" aria-labelledby="pc-ask-title">
+  <div class="card w-full max-w-sm p-6 text-center space-y-4" style="animation: pop .35s cubic-bezier(.3,1.4,.5,1)">
+    <div class="w-16 h-16 rounded-2xl bg-white/15 text-[#e9c95a] grid place-items-center mx-auto text-3xl"><i class="ph-bold ph-bell-ringing"></i></div>
+    <h2 id="pc-ask-title" class="text-xl font-black">أضف بطاقة النداء</h2>
+    <p class="text-sm font-bold opacity-70 leading-relaxed">يوصلك إشعار <span class="t-when"></span> حتى لو كنت في تطبيق ثاني أو سكّرت المتصفح.</p>
+    <p class="text-[12.5px] font-bold opacity-70 leading-relaxed bg-white/10 border border-white/20 rounded-2xl p-3"><i class="ph-bold ph-wallet"></i> تضيفها مرة وحدة، وكل ما تاخذ رقم تتحدث برقمك.</p>
+    <button id="pc-ask-yes" class="btn btn-wallet"><i class="ph-bold ph-wallet"></i> أضف بطاقة النداء</button>
+    <button id="pc-ask-no" class="text-xs font-black opacity-50 underline">لاحقاً</button>
+  </div>
+</div>
+
 <script>
   const params = new URLSearchParams(location.search);
   const slug = (params.get('client') || DM.hostSlug()).trim().toLowerCase();
@@ -687,7 +699,8 @@
     $('w-demo').classList.toggle('hidden', !r.demo);
     const ly = r.loyalty || {};
     // بطاقة النداء للمحل اللي ما عنده ولاء بس (المحل المشترك في الولاء: النداء يوصل من بطاقة الولاء)
-    const passOk = r.wallet && st === 'waiting' && !ly.enabled;
+    const passOk = r.wallet && st === 'waiting' && !ly.enabled && !r.in_wallet && !pagerCard();
+    lastPass = passOk;
     $('pw-box').classList.toggle('hidden', !passOk);
     $('pw-btn').querySelector('span').textContent = r.in_wallet ? 'بطاقة النداء في محفظتك، افتحها' : 'أضف بطاقة النداء';
     reviewLink = r.review_url || reviewLink;
@@ -809,14 +822,23 @@
 
   // ─── دعوة الولاء: تطلع بعد نافذة التنبيه، مرة وحدة لكل رقم ───
   const ASK_KEY = `${KEY}_lyask`;
+  let lastPass = false;
   function offerJoin() {
     const t = loadToken(), l = lastLoyalty;
+    if (t && lastPass && !$('v-waiting').classList.contains('hidden')) return offerPagerCard(t);   // محل بدون ولاء
     if (!t || joined || !l || !l.enabled || l.linked || $('v-waiting').classList.contains('hidden')) return;
     try { if (localStorage.getItem(ASK_KEY) === t) return; localStorage.setItem(ASK_KEY, t); } catch {}
     $('ly-ask-sub').textContent = `سجّل في بطاقة الولاء، وبعد ${l.needed} أختام تاخذ ${l.reward}.`;
     $('ly-ask').classList.replace('hidden', 'flex');
   }
   $('ly-ask-no').onclick = () => $('ly-ask').classList.replace('flex', 'hidden');
+  // دعوة بطاقة النداء: مرة لكل رقم، وما تطلع لو البطاقة محفوظة في الجوال
+  function offerPagerCard(t) {
+    try { if (localStorage.getItem(ASK_KEY) === t) return; localStorage.setItem(ASK_KEY, t); } catch {}
+    $('pc-ask').classList.replace('hidden', 'flex');
+  }
+  $('pc-ask-no').onclick = () => $('pc-ask').classList.replace('flex', 'hidden');
+  $('pc-ask-yes').onclick = () => { $('pc-ask').classList.replace('flex', 'hidden'); addPagerPass(); };
   // رمز بطاقة النداء في هالجوال: يرسل مع كل رقم جديد عشان تتحدث نفس البطاقة.
   // وحدة للمحل بكل فروعه (brand = المحل الرئيسي)، وتنحفظ على devmenu.digital كله عشان كل فرع له رابط مختلف
   let brand = 0;
