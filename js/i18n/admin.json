@@ -1338,7 +1338,13 @@
   "أضف الأطباق": "Add the dishes",
   "نضيف الأطباق…": "Adding dishes…",
   "تمت الإضافة": "Added",
-  "~{n} طبق في {c} قسم": "{n} dishes in {c} section",
+  "ما فيه أطباق لها اسم": "No dishes with a name",
+  "~{n} أطباق في {c} أقسام": "{n} dishes in {c} sections",
   "~{n} طبق في {c} أقسام": "{n} dishes in {c} sections",
-  "ما فيه أطباق لها اسم": "No dishes with a name"
+  "~{n} أطباق في قسمين": "{n} dishes in 2 sections",
+  "~{n} أطباق في قسم واحد": "{n} dishes in 1 section",
+  "~{n} طبق في قسم واحد": "{n} dishes in 1 section",
+  "~{n} طبق في قسمين": "{n} dishes in 2 sections",
+  "طبقين في قسم واحد": "2 dishes in 1 section",
+  "طبق واحد في قسم واحد": "1 dish in 1 section"
 }
