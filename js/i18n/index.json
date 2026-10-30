@@ -204,5 +204,16 @@
   "DEV MENU ديف منيو | أكثر من منيو: منيو رقمي وبيجر وانتظار وبطاقة ولاء": "DEV MENU | More than a menu: digital menu, pager, waitlist and loyalty card",
   "DEV MENU ديف منيو | أكثر من منيو": "DEV MENU | More than a menu",
   "أكثر من منيو": "More than a menu",
-  "، لكل منشأة تخدم عملاء: مطعم، مقهى، عيادة، صالون، متجر": ", for any business that serves customers: restaurant, café, clinic, salon, shop"
+  "، لكل منشأة تخدم عملاء: مطعم، مقهى، عيادة، صالون، متجر": ", for any business that serves customers: restaurant, café, clinic, salon, shop",
+  "بطاقة نداء بشعارك في محفظة جواله، يوصله منها الإشعار حتى وهو في تطبيق ثاني": "A pager card with your logo in their phone wallet that notifies them even while in another app",
+  "شاشة كاشير على أي جوال أو تابلت، ولكل فرع رابطه بدون حسابك": "A cashier screen on any phone or tablet, with a link per branch that doesn't need your account",
+  "بطاقة وحدة لكل فروعك: يختم ويصرف مكافأته من أي فرع": "One card for all your branches: stamp and redeem at any branch",
+  "جواله يرن، وإشعار من محفظته حتى لو في تطبيق ثاني": "Their phone rings, plus a wallet notice even in another app",
+  "أكثر من فرع": "More than one branch",
+  "بطاقة ولاء وحدة تشتغل في كل فروعك": "One loyalty card that works in all your branches",
+  "كل فرع وأوراقه": "Each branch with its own paper cards",
+  "يمسح العميل رمز QR ويأخذ رقمه من المتصفح دون تحميل تطبيق، وعند جاهزية طلبه أو حلول دوره يضغط الموظف زر النداء، فيصل التنبيه إلى جوال العميل مباشرة. ويمكن للعميل إضافة بطاقة النداء أو بطاقة الولاء إلى محفظة جواله مرة واحدة، فيصله الإشعار منها حتى لو كان يستخدم تطبيقاً آخر أو أغلق المتصفح.": "The customer scans the QR code and takes a number in the browser without installing an app. When the order is ready or it's their turn, staff tap the call button and the alert reaches the customer's phone right away. The customer can also add the pager card or loyalty card to their phone wallet once, and get the notice from it even while using another app or with the browser closed.",
+  "يحصل كل فرع على رابط ورمز QR وأسعار خاصة به، وتُدار جميع الفروع من لوحة تحكم واحدة. وتكون بطاقة الولاء وبطاقة النداء واحدة لجميع الفروع، فيجمع العميل أختامه ويصرف مكافأته من أي فرع. وتبلغ تكلفة الفرع الإضافي 19 ريالاً شهرياً أو 199 ريالاً سنوياً.": "Each branch gets its own link, QR code and prices, and all branches are managed from one dashboard. The loyalty card and pager card are shared across all branches, so customers collect stamps and redeem rewards at any branch. An extra branch costs 19 SAR a month or 199 SAR a year.",
+  "هل يحتاج الكاشير إلى حسابي؟": "Does the cashier need my account?",
+  "لا. لكل فرع رابط كاشير خاص يفتح شاشة البيجر وشاشة الختم فقط، دون البريد الإلكتروني وكلمة المرور، ولا يصل الموظف إلى لوحة التحكم أو الأسعار أو أرقام جوالات العملاء. ويمكنك تغيير الرابط في أي وقت، فيتوقف الرابط القديم مباشرة.": "No. Each branch has its own cashier link that opens only the pager and stamp screens, without your email and password, and staff can't reach the dashboard, prices or customers' phone numbers. You can change the link anytime and the old one stops right away."
 }
