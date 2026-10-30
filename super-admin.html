@@ -607,7 +607,7 @@
     const s = statusOf(c);
     const menu = DM.storeUrl(c.client_slug);
     const msg = s.live
-      ? `مرحباً، معك فريق DEV MENU 👋\nنذكّرك إن ${c.subscription_status === 'trial' ? 'التجربة المجانية' : 'اشتراك'} منيو "${c.name}" ينتهي خلال ${s.left ?? ''} ${s.left === 1 ? 'يوم' : 'أيام'}.\nباقتك (${featNames(planFeats(c))}${branchesOf(c).length ? ` + ${branchesOf(c).length} فرع` : ''}): السنوي ${totalFor(c, 'year', planFeats(c))} ر.س، أو الشهري ${totalFor(c, 'month', planFeats(c))} ر.س.\nرابط منيوك: ${menu}`
+      ? `مرحباً، معك فريق DEV MENU 👋\nنذكّرك إن ${c.subscription_status === 'trial' ? 'التجربة المجانية' : 'اشتراك'} منيو "${c.name}" ينتهي خلال ${s.left ?? ''} ${s.left === 1 ? 'يوم' : 'أيام'}.\nباقتك (${featNames(planFeats(c))}${branchesOf(c).length ? ` + ${branchesOf(c).length} فرع` : ''}): السنوي ${totalFor(c, 'year', planFeats(c))} ر.س، أو الشهري ${totalFor(c, 'month', planFeats(c))} ر.س.\nرابط المنيو: ${menu}`
       : `مرحباً، معك فريق DEV MENU 👋\nمنيو "${c.name}" متوقف حالياً عن الزبائن. تقدر تجدده الآن ويرجع فوراً: السنوي ${totalFor(c, 'year', planFeats(c))} ر.س، أو الشهري ${totalFor(c, 'month', planFeats(c))} ر.س.`;
     return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
   }
