@@ -886,15 +886,13 @@ async function main(req) {
     }
     // رقمه مضاف للمحفظة: تحديث يطلع إشعار من النظام (حتى لو يشوف فيديو)
     if (status === 'ready' && t.wallet_serial) {
-      const T = SECTORS.terms(store);
-      const L = (x) => tr(t.lang, x);
-      const wr = await wallet.updatePagerPass(t.wallet_serial, { store, number: t.number, status: T.ready, notice: L(`🔔 ${T.ready} رقم ${t.number}. ${T.readyBody}`), url: storeLink(store.client_slug, 'pager'), step: 'ready', lang: t.lang });
+      const wr = await wallet.updatePagerPass(t.wallet_serial, wallet.pagerStep({ store, number: t.number, step: 'ready', lang: t.lang }));
       console.log('PAGER_PASS', sid, t.id, wr);
       await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_error: `ready ${wr} at=${new Date().toISOString().slice(11, 19)}` } }).catch(() => {});
     }
-    // استلم أو انلغى: تذكرة المحفظة تنطفي وتنتقل للبطاقات المنتهية
+    // استلم أو انلغى: بطاقة النداء ترجع "بالعافية" وتنتظر الزيارة الجاية
     if ((status === 'done' || status === 'cancelled') && t.wallet_serial) {
-      const er = await wallet.revokePass(t.wallet_serial);
+      const er = await wallet.updatePagerPass(t.wallet_serial, wallet.pagerStep({ store, step: 'idle', lang: t.lang }));
       console.log('PAGER_PASS_END', sid, t.id, er);
       await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_error: `${t.wallet_error || ''} | end ${er}`.slice(0, 300) } }).catch(() => {});
     }

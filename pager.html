@@ -223,7 +223,7 @@
     <!-- محل بدون ولاء: بطاقة النداء، يوصله منها إشعار حتى لو في تطبيق ثاني، وتنتهي بعد الاستلام -->
     <div id="pw-box" class="card p-4 space-y-2.5 hidden">
       <p class="font-black text-[14px]"><i class="ph-bold ph-wallet"></i> بطاقة النداء</p>
-      <p class="text-[12.5px] font-bold opacity-65 leading-relaxed">أضف رقمك للمحفظة، ويوصلك إشعار <span class="t-when"></span> حتى لو كنت في تطبيق ثاني. وينحذف لحاله بعد ما تستلم.</p>
+      <p class="text-[12.5px] font-bold opacity-65 leading-relaxed">أضفها للمحفظة مرة وحدة، وكل ما تاخذ رقم يوصلك منها إشعار <span class="t-when"></span> حتى لو كنت في تطبيق ثاني.</p>
       <button id="pw-btn" class="btn btn-wallet !py-3.5 !text-base"><i class="ph-bold ph-wallet"></i> <span>أضف بطاقة النداء</span></button>
     </div>
     <button id="push-btn" class="btn btn-brand hidden"><i class="ph-bold ph-bell"></i> فعّل الإشعارات</button>
@@ -722,7 +722,7 @@
     const btn = $('take-btn'); btn.disabled = true; btn.innerHTML = '<i class="ph-bold ph-spinner-gap ph-spin"></i>';
     try {
       let lt = ''; try { lt = localStorage.getItem(`dm_loyalty_${slug}`) || ''; } catch {}
-      const r = await DM.post('/api/pager?action=take', { slug, lt: lt || undefined });
+      const r = await DM.post('/api/pager?action=take', { slug, lt: lt || undefined, pc: pagerCard() || undefined });
       saveToken(r.token); setStore(r.store); dismissed = false;
       if (perm) await perm;
       await subscribePush();
@@ -817,12 +817,16 @@
     $('ly-ask').classList.replace('hidden', 'flex');
   }
   $('ly-ask-no').onclick = () => $('ly-ask').classList.replace('flex', 'hidden');
+  // رمز بطاقة النداء في هالجوال: يرسل مع كل رقم جديد عشان تتحدث نفس البطاقة
+  const PC_KEY = `dm_pcard_${slug}`;
+  const pagerCard = () => { try { return localStorage.getItem(PC_KEY) || ''; } catch { return ''; } };
   async function addPagerPass() {
     const btn = $('pw-btn'); btn.disabled = true;
     const label = btn.querySelector('span').textContent;
     btn.querySelector('span').textContent = 'جاري التجهيز…';
     try {
-      const r = await DM.post('/api/pager?action=wallet', { slug, t: loadToken() });
+      const r = await DM.post('/api/pager?action=wallet', { slug, t: loadToken(), pc: pagerCard() || undefined });
+      if (r.card) try { localStorage.setItem(PC_KEY, r.card); } catch {}
       if (r.url) location.href = r.url;
     } catch (err) { alert(err.message || 'تعذر الإضافة للمحفظة'); btn.querySelector('span').textContent = label; }
     btn.disabled = false;

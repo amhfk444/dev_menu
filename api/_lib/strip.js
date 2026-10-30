@@ -132,7 +132,8 @@ async function brandColor(store) {
 async function pagerStrip(color, step) {
   try {
     const ink = inkFor(color), gold = '#e9c95a';
-    const ready = step === 'ready', cur = ready ? 2 : 1;
+    // الخطوة الحالية: 1 قيد التجهيز، 2 جاهز، 3 استلم (كلها منجزة، والبطاقة تنتظر الزيارة الجاية)
+    const ready = step === 'ready', cur = ready ? 2 : step === 'idle' ? 3 : 1;
     const cy = H / 2, xs = [W - 250, W / 2, 250];   // من اليمين: استلمنا، قيد التجهيز، جاهز
     const icons = ['check', 'cooking-pot', 'bell-ringing'];
     let g = '';
@@ -152,7 +153,7 @@ async function pagerStrip(color, step) {
       else g += `<circle cx="${x}" cy="${cy}" r="${R - 3}" fill="none" stroke="${ink}" stroke-opacity=".35" stroke-width="6"/>`;
       g += icon(done && !now ? 'check' : icons[i], x - s / 2, cy - s / 2, s, now ? '#1b1b1b' : done ? color : ink, now || done ? 1 : .4);
     });
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}"><defs><radialGradient id="g" cx="${ready ? 20 : 50}%" cy="50%" r="65%"><stop offset="0" stop-color="${gold}" stop-opacity=".18"/><stop offset="1" stop-color="${gold}" stop-opacity="0"/></radialGradient></defs><rect width="${W}" height="${H}" fill="${color}"/><rect width="${W}" height="${H}" fill="url(#g)"/>${g}</svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}"><defs><radialGradient id="g" cx="${ready ? 25 : 50}%" cy="50%" r="65%"><stop offset="0" stop-color="${gold}" stop-opacity=".18"/><stop offset="1" stop-color="${gold}" stop-opacity="0"/></radialGradient></defs><rect width="${W}" height="${H}" fill="${color}"/><rect width="${W}" height="${H}" fill="url(#g)"/>${g}</svg>`;
     const png = await sharp(Buffer.from(svg)).png({ compressionLevel: 9, palette: true }).toBuffer();
     return `data:image/png;base64,${png.toString('base64')}`;
   } catch (e) { console.error('PAGER_STRIP', e.message); return null; }

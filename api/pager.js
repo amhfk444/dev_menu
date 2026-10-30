@@ -10,7 +10,7 @@
 // الكاشير يغيّر الحالة من /api/owner?action=pager-update
 // =====================================================================
 const crypto = require('crypto');
-const { reqLang, handler, rest, rpc, q, ApiError, readBody, findPublicStore, storeHasFeature, storeLink } = require('./_lib/core');
+const { reqLang, handler, rest, rpc, q, ApiError, readBody, findPublicStore, storeHasFeature } = require('./_lib/core');
 const { pushPublicKey, cleanSubscription, sendPush } = require('./_lib/push');
 const { topic, poke } = require('./_lib/live');
 const { normalizeLoyalty } = require('./_lib/loyalty');
@@ -18,13 +18,23 @@ const { pagerReadyNotice } = require('./_lib/loyalty-assistant');
 const SECTORS = require('./_lib/sectors');
 const { riyadhDayStart } = require('./_lib/waitlist');
 const wallet = require('./_lib/wallet');
-const pagerUrl = (slug) => storeLink(slug, 'pager');
 // تحديث رقم المحفظة لما يجي دوره (يطلع إشعار من النظام)
 async function walletReady(store, t) {
   if (!t.wallet_serial) return;
-  const T = SECTORS.terms(store);
-  const r = await wallet.updatePagerPass(t.wallet_serial, { store, number: t.number, status: T.ready, notice: `🔔 ${T.ready} رقم ${t.number}. ${T.readyBody}`, url: pagerUrl(store.client_slug), step: 'ready', lang: t.lang });
+  const r = await wallet.updatePagerPass(t.wallet_serial, wallet.pagerStep({ store, number: t.number, step: 'ready', lang: t.lang }));
   console.log('PAGER_PASS', store.id, t.id, r);
+}
+
+// بطاقة النداء (المحل اللي ما عنده ولاء): نربطها بالرقم ونحدّثها برقمه. يرجّع البطاقة أو null
+async function linkPagerCard(store, ticketToken, cardToken) {
+  const pc = (await rest(`pager_cards?token=eq.${q(cardToken)}&client_id=eq.${store.id}&select=id,wallet_serial,wallet_url,lang`).catch(() => []))[0];
+  if (!pc || !pc.wallet_serial || (await loyaltyOf(store.id)).enabled) return null;
+  const t = (await rest(`pager_tickets?token=eq.${q(ticketToken)}&client_id=eq.${store.id}`, { method: 'PATCH', prefer: 'return=representation', body: { wallet_serial: pc.wallet_serial, wallet_url: pc.wallet_url } }))[0];
+  if (!t) return null;
+  await rest(`pager_cards?id=eq.${pc.id}`, { method: 'PATCH', body: { last_used_at: new Date().toISOString() } }).catch(() => {});
+  const r = await wallet.updatePagerPass(pc.wallet_serial, wallet.pagerStep({ store, number: t.number, step: t.status, lang: t.lang || pc.lang }));
+  await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_error: `link ${r}` } }).catch(() => {});
+  return pc;
 }
 
 // بطاقة الولاء في المحل: شغالة؟ وتختم مع البيجر؟
@@ -94,6 +104,8 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
         const card = (await rest(`loyalty_cards?token=eq.${q(b.lt)}&client_id=eq.${store.id}&select=id`).catch(() => []))[0];
         if (card) await rest(`pager_tickets?token=eq.${q(res.token)}&client_id=eq.${store.id}`, { method: 'PATCH', body: { loyalty_card_id: card.id } }).catch(() => {});
       }
+      // عنده بطاقة نداء من زيارة سابقة: نربطها بالرقم الجديد وتتحدث برقمه
+      if (TOKEN_RE.test(String(b.pc || ''))) await linkPagerCard(store, res.token, b.pc).catch(e => console.error('PAGER_CARD', e.message));
       await poke(topic('pager', store.id));
       return { token: res.token, number: res.number, store: { name: store.name, logo_url: store.logo_url, accent_color: store.accent_color || null } };
     } catch (e) {
@@ -145,20 +157,23 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     return { ok: true };
   }
 
-  // ─── رقم البيجر في المحفظة ───
+  // ─── بطاقة النداء: وحدة للزبون في المحل، تنعاد مع كل رقم ───
   if (action === 'wallet' && req.method === 'POST') {
     const store = await loadStore(b.slug);
     const token = String(b.t || '');
     if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
     const t = (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=in.(waiting,ready)&select=id,number,status,wallet_url,lang`))[0];
     if (!t) throw new ApiError(404, 'الرقم غير موجود أو انتهى', 'NOT_FOUND');
-    if (t.wallet_url) return { url: t.wallet_url };
     // المحل المشترك في الولاء: النداء يوصل من بطاقة الولاء، فما فيه بطاقة نداء
     if ((await loyaltyOf(store.id)).enabled) throw new ApiError(409, 'سجّل في بطاقة الولاء ويوصلك النداء منها', 'USE_LOYALTY');
-    const T = SECTORS.terms(store);
-    const pass = await wallet.createPagerPass({ store, number: t.number, status: t.status === 'ready' ? T.ready : T.waiting.replace('…', ''), notice: ' ', url: pagerUrl(store.client_slug), step: t.status, lang: t.lang });
+    const pc = TOKEN_RE.test(String(b.pc || '')) ? await linkPagerCard(store, token, b.pc) : null;
+    if (pc) return { url: pc.wallet_url, card: b.pc };
+    if (t.wallet_url) return { url: t.wallet_url };
+    const pass = await wallet.createPagerPass(wallet.pagerStep({ store, number: t.number, step: t.status, lang: t.lang }));
+    const card = crypto.randomBytes(18).toString('base64url');
+    await rest('pager_cards', { method: 'POST', body: { client_id: store.id, token: card, wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, lang: t.lang || null } });
     await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl } });
-    return { url: pass.shareUrl };
+    return { url: pass.shareUrl, card };
   }
 
   // ─── العميل يكتب رقم فاتورته (الموظف يشوفه على شاشته على طول) ───
@@ -193,7 +208,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (!rows.length) return { ok: false };
     // لو الزبون ضغط "استلمت" قبل الكاشير، نقفل الرقم
     await rest(`pager_tickets?id=eq.${rows[0].id}&status=eq.ready`, { method: 'PATCH', body: { status: 'done', closed_at: new Date().toISOString(), push_sub: null } }).catch(() => {});
-    if (rows[0].wallet_serial && rows[0].status === 'ready') await wallet.revokePass(rows[0].wallet_serial).catch(() => {});
+    if (rows[0].wallet_serial && rows[0].status === 'ready') await wallet.updatePagerPass(rows[0].wallet_serial, wallet.pagerStep({ store, step: 'idle', lang: rows[0].lang })).catch(() => {});
     await poke(topic('pager', store.id));
     return { ok: true, google: rating >= 4 ? await reviewUrl(store.id) : null };
   }

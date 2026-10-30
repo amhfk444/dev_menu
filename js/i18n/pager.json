@@ -104,8 +104,6 @@
   "أضف البطاقة للمحفظة ويوصلك إشعار": "Add the card to your wallet and you'll be notified",
   "حتى لو كنت في تطبيق ثاني.": "even while you're in another app.",
   "نبّهني من المحفظة": "Notify me from Wallet",
-  "أضف رقمك للمحفظة، ويوصلك إشعار": "Add your number to your wallet and you'll be notified",
-  "حتى لو كنت في تطبيق ثاني. وينحذف لحاله بعد ما تستلم.": "even while in another app. It's removed by itself after pickup.",
   "أضف رقمي للمحفظة": "Add my number to Wallet",
   "رقمك في المحفظة، افتحه": "Your number is in Wallet, open it",
   "جاري التجهيز…": "Preparing…",
@@ -113,6 +111,6 @@
   "لا، بس نبّهني لما يجهز طلبي": "No, just notify me when my order is ready",
   "بطاقة النداء": "Pager card",
   "أضف بطاقة النداء": "Add the pager card",
-  "لا، بس أضف بطاقة النداء": "No, just add the pager card",
-  "بطاقة النداء في محفظتك، افتحها": "The pager card is in your wallet, open it"
+  "بطاقة النداء في محفظتك، افتحها": "The pager card is in your wallet, open it",
+  "أضفها للمحفظة مرة وحدة، وكل ما تاخذ رقم يوصلك منها إشعار": "Add it to your wallet once, and every time you take a number it notifies you"
 }
