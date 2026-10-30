@@ -278,28 +278,27 @@ async function refreshWalletCards(store) {
 const PAGER_MSG_GAP = 2 * 60e3;
 // يرسل دفعة (40 بطاقة) ويرجع وين وقف، ولوحة التحكم تكمّل الباقي
 async function pushPagerMessage(homeId, body, afterId, limit = 40) {
-  const store = (await rest(`clients?id=eq.${homeId}&select=id,name,client_slug,logo_url,accent_color,business_type`))[0];
-  if (!store || !wallet.configured()) return { sent: 0, lastId: afterId, done: true, total: 0 };
   const base = `pager_cards?client_id=eq.${homeId}&wallet_serial=not.is.null`;
-  const [cards, all] = await Promise.all([
+  const [store, cards, all] = await Promise.all([
+    rest(`clients?id=eq.${homeId}&select=id,name,client_slug,logo_url,accent_color,business_type`).then(r => r[0]),
     rest(`${base}&id=gt.${Number(afterId) || 0}&select=id,wallet_serial,lang&order=id.asc&limit=${limit}`),
     afterId ? Promise.resolve(null) : rest(`${base}&select=id`).catch(() => [])
   ]);
+  if (!store || !wallet.configured() || !cards.length) return { sent: 0, gone: 0, lastId: afterId, done: true, total: all ? all.length : 0 };
   // الزبون اللي عنده رقم شغّال اليوم: توصله الرسالة وبطاقته تبقى على رقمه وحالته (ما ننزله لـ "بالعافية")
-  const family = (await familyOf(store, 'id').catch(() => [store])).map(f => f.id).join(',');
-  const live = new Map((await rest(`pager_tickets?client_id=in.(${family})&status=in.(waiting,ready)&created_at=gte.${q(riyadhDayStart())}&wallet_serial=not.is.null&select=wallet_serial,number,status&order=id.asc`).catch(() => [])).map(t => [t.wallet_serial, t]));
+  const serials = cards.map(c => q(c.wallet_serial)).join(',');
+  const live = new Map((await rest(`pager_tickets?wallet_serial=in.(${serials})&status=in.(waiting,ready)&created_at=gte.${q(riyadhDayStart())}&select=wallet_serial,number,status&order=id.asc`).catch(() => [])).map(t => [t.wallet_serial, t]));
   let sent = 0, gone = 0;
-  for (let i = 0; i < cards.length; i += 10) {
-    await Promise.all(cards.slice(i, i + 10).map(async (c) => {
-      const t = live.get(c.wallet_serial);
-      const step = t ? wallet.pagerStep({ store, number: t.number, step: t.status === 'ready' ? 'ready' : 'waiting', lang: c.lang }) : wallet.pagerStep({ store, step: 'idle', lang: c.lang });
-      const r = await wallet.updatePagerPass(c.wallet_serial, { ...step, notice: body });
-      // devices=0: البطاقة انحذفت من محفظة الزبون، فما يوصله إشعار
-      if (r.startsWith('ok') && !/devices=0\b/.test(r)) sent++;
-      else if (r.startsWith('ok')) gone++;
-      else console.error('PAGER_MSG', c.id, r);
-    }));
-  }
+  // كل الدفعة مع بعض (40 بالكثير) عشان ما ينتظر صاحب المحل
+  await Promise.all(cards.map(async (c) => {
+    const t = live.get(c.wallet_serial);
+    const step = t ? wallet.pagerStep({ store, number: t.number, step: t.status === 'ready' ? 'ready' : 'waiting', lang: c.lang }) : wallet.pagerStep({ store, step: 'idle', lang: c.lang });
+    const r = await wallet.updatePagerPass(c.wallet_serial, { ...step, notice: body });
+    // devices=0: البطاقة انحذفت من محفظة الزبون، فما يوصله إشعار
+    if (r.startsWith('ok') && !/devices=0\b/.test(r)) sent++;
+    else if (r.startsWith('ok')) gone++;
+    else console.error('PAGER_MSG', c.id, r);
+  }));
   return { sent, gone, lastId: cards.length ? cards[cards.length - 1].id : afterId, done: cards.length < limit, total: all ? all.length : null };
 }
 

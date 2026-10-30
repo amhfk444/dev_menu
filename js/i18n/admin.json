@@ -1425,5 +1425,12 @@
   "ما وصلت: الزبائن اللي عندهم البطاقة ({a}) حذفوها من محفظتهم": "Not delivered: the customers who had the card ({a}) removed it from their wallet",
   "ما قدرنا نوصلها الحين، جرّب بعد شوي": "We couldn't deliver it right now. Try again shortly",
   "نصيحة: لا تكثر الرسائل، عشان زبائنك ما ينزعجون ويحذفون البطاقة من محفظتهم.": "Tip: don't send too many messages, so your customers aren't annoyed into removing the card from their wallet.",
-  "{a} زبون حافظ البطاقة": "{a} customers have the card"
+  "{a} زبون حافظ البطاقة": "{a} customers have the card",
+  "يرسل لزبائنك…": "Sending to your customers…",
+  "انرسلت، وبتوصل لزبائنك خلال ثواني": "Sent. It will reach your customers in a few seconds",
+  "وصلت لـ {a}{b}…": "Reached {a}{b}…",
+  " من {a}": " of {a}",
+  "الحين · وصلت لـ {a} جوال": "Just now · reached {a} phones",
+  "الحين · ما وصلت لأحد": "Just now · reached no one",
+  "وصلت لـ {a} جوال، و{b} حذفوا البطاقة من محفظتهم": "Reached {a} phones, and {b} removed the card from their wallet"
 }

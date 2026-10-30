@@ -3689,26 +3689,34 @@
     lockedKey = 'notify'; addFeature();
   }
   document.addEventListener('input', (e) => { if (e.target && e.target.id === 'nt-body') document.getElementById('nt-count').textContent = `${e.target.value.length}/150`; });
+  // الإرسال يكمل بالخلفية: الرسالة تطلع في القائمة على طول ("يرسل…") وصاحب المحل يكمل شغله، وبعدها يطلع كم جوال وصلت
   async function sendNotify() {
-    const body = document.getElementById('nt-body').value.trim();
+    const input = document.getElementById('nt-body'), body = input.value.trim();
     if (body.length < 2) return showToast('اكتب الرسالة', true);
-    if (!(await DMDialog.confirm({ title: 'إرسال الرسالة', message: `توصل إشعار لكل زبون حافظ بطاقة النداء${ntQuota ? ` (${ntQuota.cards})` : ''}:\n${body}`, confirmText: 'أرسل', cancelText: 'تراجع' }))) return;
-    const btn = document.getElementById('nt-send'); btn.disabled = true;
+    if (!(await DMDialog.confirm({ title: 'إرسال الرسالة', message: `توصل إشعار لكل زبون حافظ بطاقة النداء${ntQuota ? ` (${ntQuota.cards})` : ''}:\n${body}`, confirmText: 'أرسل', cancelText: 'تراجع', tone: 'success' }))) return;
+    input.value = ''; document.getElementById('nt-count').textContent = '0/150';
+    const list = document.getElementById('nt-list'), row = document.createElement('div');
+    row.className = 'py-2'; row.innerHTML = `<p class="leading-relaxed">${esc(body)}</p><p class="text-[11px] text-emerald-700 font-bold mt-0.5"><i class="ph-bold ph-spinner-gap ph-spin"></i> يرسل لزبائنك…</p>`;
+    if (!list.querySelector('.divide-y')) list.innerHTML = '<p class="text-[11px] font-bold text-ink/60 mb-1">آخر الرسائل</p><div class="divide-y divide-brand/10"></div>';
+    list.querySelector('.divide-y').prepend(row);
+    showToast('انرسلت، وبتوصل لزبائنك خلال ثواني');
     try {
       const r = await api('pager-message', { body });
-      document.getElementById('nt-body').value = ''; document.getElementById('nt-count').textContent = '0/150';
       let p = r.progress || { done: true }, sent = p.sent || 0, gone = p.gone || 0;
       const total = p.total;
       while (!p.done) {
-        btn.innerHTML = `<i class="ph-bold ph-spinner-gap ph-spin"></i> وصلت لـ ${sent}${total ? ` من ${total}` : ''}`;
+        row.lastElementChild.innerHTML = `<i class="ph-bold ph-spinner-gap ph-spin"></i> وصلت لـ ${sent}${total ? ` من ${total}` : ''}…`;
         p = (await api('pager-message-push', { message_id: r.message.id, after: p.lastId })).progress;
         sent += p.sent; gone += p.gone || 0;
       }
-      showToast(sent ? `انرسلت، ووصلت إشعار لـ ${sent} جوال${gone ? ` (و${gone} حذفوا البطاقة من محفظتهم)` : ''}`
-        : gone ? `ما وصلت: الزبائن اللي عندهم البطاقة (${gone}) حذفوها من محفظتهم` : total ? 'ما قدرنا نوصلها الحين، جرّب بعد شوي' : 'انرسلت، بس ما فيه أحد حافظ البطاقة للحين', !sent && !!(gone || total));
-    } catch (e) { showToast(e.message || 'ما انرسلت. تأكد من الإنترنت وحاول مرة ثانية', true); }
-    btn.innerHTML = '<i class="ph-bold ph-paper-plane-tilt"></i> أرسل';
-    renderNotifyCard();
+      row.lastElementChild.className = 'text-[11px] text-ink/55 mt-0.5';
+      row.lastElementChild.textContent = sent ? `الحين · وصلت لـ ${sent} جوال` : 'الحين · ما وصلت لأحد';
+      if (!sent) showToast(gone ? `ما وصلت: الزبائن اللي عندهم البطاقة (${gone}) حذفوها من محفظتهم` : total ? 'ما قدرنا نوصلها الحين، جرّب بعد شوي' : 'انرسلت، بس ما فيه أحد حافظ البطاقة للحين', !!(gone || total));
+      else if (gone) showToast(`وصلت لـ ${sent} جوال، و${gone} حذفوا البطاقة من محفظتهم`);
+    } catch (e) {
+      row.remove(); input.value = body; document.getElementById('nt-count').textContent = `${body.length}/150`;
+      showToast(e.message || 'ما انرسلت. تأكد من الإنترنت وحاول مرة ثانية', true);
+    }
   }
   // سعر الفرع: رسوم الفرع (19/199) + سعر مميزاته، حسب نوع اشتراك الحساب، والمستحق الحين لو انضاف في نص الاشتراك
   const accountFeatures = () => DMPlans.clean(client.plan_features && client.plan_features.length ? client.plan_features : DMPlans.LEGACY);
