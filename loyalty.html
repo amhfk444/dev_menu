@@ -249,7 +249,7 @@
   const VIEWS = ['loading', 'unavailable', 'join', 'card'];
   const show = (v) => VIEWS.forEach(x => $(`v-${x}`).classList.toggle('hidden', x !== v));
   const loadToken = () => { try { return localStorage.getItem(KEY) || ''; } catch { return ''; } };
-  const saveToken = (t) => { try { t ? localStorage.setItem(KEY, t) : localStorage.removeItem(KEY); } catch {} };
+  const saveToken = (t) => DM.rememberLoyalty(slug, t);
   // اسم المكافأة بالإنجليزي (لو كتبه صاحب المحل) ينضاف للقاموس، فيتبدل مع اللغة في كل مكان
   const enReward = (st) => { if (st && st.reward_en && window.DMi18n) DMi18n.add({ [st.reward]: st.reward_en }); return st; };
   let settings = null, card = null, busy = false, walletOn = false, justJoined = false, happyNow = false, gifts = [], survey = false;
@@ -614,7 +614,7 @@
 
   async function start() {
     show('loading');
-    const token = loadToken();
+    const token = loadToken() || await DM.loyaltyToken(slug);   // بطاقته من فرع ثاني لنفس المحل
     try {
       if (token) {
         const r = await DM.get(`/api/loyalty?action=card&slug=${encodeURIComponent(slug)}&t=${encodeURIComponent(token)}`);

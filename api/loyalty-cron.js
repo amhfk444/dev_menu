@@ -11,7 +11,8 @@ const { runAssistant } = require('./_lib/loyalty-assistant');
 module.exports = handler(['GET', 'POST'], async (req) => {
   await assertCronKey(req);
   const started = Date.now();
-  const stores = await rest('clients?loyalty_enabled=is.true&loyalty_ai=is.true&is_active=is.true&select=id&order=id.asc&limit=200');
+  // الفروع ولاءها على المحل الرئيسي، فالمساعد يشتغل على الرئيسي بس
+  const stores = await rest('clients?loyalty_enabled=is.true&loyalty_ai=is.true&is_active=is.true&parent_id=is.null&select=id&order=id.asc&limit=200');
   const results = [];
   for (const s of stores) {
     if (Date.now() - started > 45e3) break;   // الباقي ياخذ دوره بكرة

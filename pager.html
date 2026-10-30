@@ -645,7 +645,7 @@
     try {
       const r = await DM.post('/api/loyalty?action=join', { slug, name, phone, gender: jnGender, pt: loadToken() });
       lyToken = r.token; joined = true;
-      try { localStorage.setItem(`dm_loyalty_${slug}`, r.token); } catch {}
+      DM.rememberLoyalty(slug, r.token);
       $('jn-form').classList.add('hidden'); $('jn-done').classList.remove('hidden');
       document.querySelectorAll('.t-when').forEach(el => { el.textContent = T.ringWhen; });
       if (!r.wallet) $('jn-wallet').classList.add('hidden');
@@ -721,7 +721,7 @@
     const perm = pushSupported() && Notification.permission === 'default' ? Notification.requestPermission().catch(() => {}) : null;
     const btn = $('take-btn'); btn.disabled = true; btn.innerHTML = '<i class="ph-bold ph-spinner-gap ph-spin"></i>';
     try {
-      let lt = ''; try { lt = localStorage.getItem(`dm_loyalty_${slug}`) || ''; } catch {}
+      const lt = await DM.loyaltyToken(slug);   // بطاقة الولاء (ولو انسجّلت من فرع ثاني)
       const r = await DM.post('/api/pager?action=take', { slug, lt: lt || undefined, pc: pagerCard() || undefined });
       saveToken(r.token); setStore(r.store); dismissed = false;
       if (perm) await perm;

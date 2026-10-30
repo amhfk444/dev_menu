@@ -10,7 +10,7 @@
 // الكاشير يغيّر الحالة من /api/owner?action=pager-update
 // =====================================================================
 const crypto = require('crypto');
-const { reqLang, handler, rest, rpc, q, ApiError, readBody, findPublicStore, storeHasFeature } = require('./_lib/core');
+const { reqLang, handler, rest, rpc, q, ApiError, readBody, findPublicStore, storeHasFeature, loyaltyHome } = require('./_lib/core');
 const { pushPublicKey, cleanSubscription, sendPush } = require('./_lib/push');
 const { topic, poke } = require('./_lib/live');
 const { normalizeLoyalty } = require('./_lib/loyalty');
@@ -45,7 +45,8 @@ async function linkPagerCard(store, ticketToken, cardToken) {
 }
 
 // بطاقة الولاء في المحل: شغالة؟ وتختم مع البيجر؟
-async function loyaltyOf(storeId) {
+async function loyaltyOf(branchId) {
+  const storeId = await loyaltyHome(branchId);   // الولاء على المحل الرئيسي
   const x = (await rest(`clients?id=eq.${storeId}&select=loyalty_enabled,loyalty_settings`).catch(() => []))[0] || {};
   const st = normalizeLoyalty(x.loyalty_settings);
   const entitled = await storeHasFeature(storeId, 'loyalty');
@@ -54,8 +55,9 @@ async function loyaltyOf(storeId) {
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{10,64}$/;
 // بطاقة الولاء المربوطة بالرقم: في المحفظة؟ وعنده مكافأة جاهزة؟ (تطلع للعميل وللموظف)
-async function linkedCard(storeId, cardId) {
+async function linkedCard(branchId, cardId) {
   if (!cardId) return { wallet: false, reward_ready: false };
+  const storeId = await loyaltyHome(branchId);
   const c = (await rest(`loyalty_cards?id=eq.${cardId}&select=stamps,wallet_serial`).catch(() => []))[0] || {};
   const x = (await rest(`clients?id=eq.${storeId}&select=loyalty_settings`).catch(() => []))[0] || {};
   const gifts = await rest(`loyalty_gifts?to_card=eq.${cardId}&status=eq.claimed&expires_at=gt.${q(new Date().toISOString())}&select=code&limit=1`).catch(() => []);
@@ -76,7 +78,7 @@ async function demoRing(store, token) {
   const t = rows[0];
   if (!t) return;
   const T = SECTORS.terms(store);
-  if (t.loyalty_card_id) await pagerReadyNotice(store.id, t.loyalty_card_id, t.number, store.name, T);
+  if (t.loyalty_card_id) await pagerReadyNotice(await loyaltyHome(store.id), t.loyalty_card_id, t.number, store.name, T);
   await walletReady(store, t).catch(() => {});
   if (t.push_sub) await sendPush(t.push_sub, { title: `🔔 ${T.ready} رقم ${t.number}`, body: `هذي تجربة من DEV MENU، كذا يوصل التنبيه لزبونك`, url: `https://${store.client_slug}.devmenu.digital/pager`, tag: `pager-${t.id}-1` }).catch(() => {});
   await poke([topic('pager', store.id), topic('ticket', token)]);
@@ -108,7 +110,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       if (reqLang(req) === 'en') await rest(`pager_tickets?token=eq.${q(res.token)}&client_id=eq.${store.id}`, { method: 'PATCH', body: { lang: 'en' } }).catch(() => {});
       // عنده بطاقة ولاء في نفس الجوال: نربطها برقم البيجر، وينختم لما يجهز الطلب
       if (/^[A-Za-z0-9_-]{10,64}$/.test(String(b.lt || ''))) {
-        const card = (await rest(`loyalty_cards?token=eq.${q(b.lt)}&client_id=eq.${store.id}&select=id`).catch(() => []))[0];
+        const card = (await rest(`loyalty_cards?token=eq.${q(b.lt)}&client_id=eq.${await loyaltyHome(store.id)}&select=id`).catch(() => []))[0];
         if (card) await rest(`pager_tickets?token=eq.${q(res.token)}&client_id=eq.${store.id}`, { method: 'PATCH', body: { loyalty_card_id: card.id } }).catch(() => {});
       }
       // عنده بطاقة نداء من زيارة سابقة: نربطها بالرقم الجديد وتتحدث برقمه

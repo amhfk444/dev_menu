@@ -7,10 +7,12 @@
 //   POST /api/loyalty?action=stamp             ختم زيارة { slug, t, lat, lng, acc }
 //   POST /api/loyalty?action=redeem            استخدام المكافأة قدام الموظف { slug, t, lat, lng, acc }
 //   POST /api/loyalty?action=wallet            رابط إضافة البطاقة لمحفظة آبل أو قوقل { slug, t }
+//   POST /api/loyalty?action=pick              بطاقة هالمحل من بين بطاقات الجوال المحفوظة { slug, ts: [tokens] }
+// بطاقة الولاء وحدة للمحل بكل فروعه (تنحفظ على المحل الرئيسي)
 // كل ختم يحتاج الزبون يكون داخل نطاق المحل (50 متر افتراضياً). ما نخزن موقعه، بس المسافة.
 // =====================================================================
 const crypto = require('crypto');
-const { reqLang, handler, rest, rpc, q, ApiError, readBody, findPublicStore, waNumber, storeHasFeature } = require('./_lib/core');
+const { reqLang, handler, rest, rpc, q, ApiError, readBody, findPublicStore, waNumber, storeHasFeature, loyaltyHome } = require('./_lib/core');
 const { normalizeLoyalty, distanceM, validPoint, isHappyNow, staleAi } = require('./_lib/loyalty');
 const wallet = require('./_lib/wallet');
 const { nearLineFor, pushWalletCards } = require('./_lib/loyalty-assistant');
@@ -21,13 +23,22 @@ const { purchaseStamp, consumeStampCode, pagerTicket, cooldownLeft, leftText, me
 const TOKEN_RE = /^[A-Za-z0-9_-]{10,64}$/;
 const MAX_ACCURACY_M = 100;   // دقة أسوأ من كذا = نطلب منه يحاول مرة ثانية
 
+// بطاقة الولاء وحدة للمحل بكل فروعه: البطاقة والإعدادات من المحل الرئيسي (ctx.store)،
+// وموقع الختم من الفرع اللي فتح منه الزبون (لكل فرع نطاقه، ولو ما حدده ناخذ موقع الرئيسي)
 async function loadStore(slug) {
-  const { store, bad } = await findPublicStore(slug, 'id,name,client_slug,logo_url');
+  const { store: here, bad } = await findPublicStore(slug, 'id,name,client_slug,logo_url');
   if (bad) throw new ApiError(400, 'الرابط غير صحيح');
-  if (!store) throw new ApiError(404, 'بطاقة الولاء غير متاحة حالياً', 'NOT_AVAILABLE');
-  const extra = (await rest(`clients?id=eq.${store.id}&select=loyalty_enabled,loyalty_settings,loyalty_lat,loyalty_lng,loyalty_near_lines`))[0] || {};
-  if (!extra.loyalty_enabled || !(await storeHasFeature(store.id, 'loyalty'))) throw new ApiError(404, 'بطاقة الولاء غير متاحة حالياً', 'NOT_AVAILABLE');
-  return { store, settings: normalizeLoyalty(extra.loyalty_settings), lat: extra.loyalty_lat, lng: extra.loyalty_lng, nearLines: extra.loyalty_near_lines };
+  if (!here) throw new ApiError(404, 'بطاقة الولاء غير متاحة حالياً', 'NOT_AVAILABLE');
+  const home = await loyaltyHome(here.id);
+  const [main, spot] = await Promise.all([
+    rest(`clients?id=eq.${home}&select=id,name,client_slug,logo_url,loyalty_enabled,loyalty_settings,loyalty_lat,loyalty_lng,loyalty_near_lines`).then(r => r[0] || {}),
+    home === here.id ? null : rest(`clients?id=eq.${here.id}&select=loyalty_lat,loyalty_lng`).then(r => r[0] || {})
+  ]);
+  if (!main.loyalty_enabled || !(await storeHasFeature(home, 'loyalty'))) throw new ApiError(404, 'بطاقة الولاء غير متاحة حالياً', 'NOT_AVAILABLE');
+  const own = spot && validPoint(spot.loyalty_lat, spot.loyalty_lng);
+  return { store: { id: main.id, name: main.name, client_slug: main.client_slug, logo_url: main.logo_url }, branch: here,
+           settings: normalizeLoyalty(main.loyalty_settings), lat: own ? spot.loyalty_lat : main.loyalty_lat, lng: own ? spot.loyalty_lng : main.loyalty_lng, nearLines: main.loyalty_near_lines,
+           homeLat: main.loyalty_lat, homeLng: main.loyalty_lng };
 }
 
 // الزبون داخل المحل؟ يرجّع المسافة أو يرمي سبب الرفض
@@ -86,7 +97,7 @@ const latestMessage = async (storeId, cardId, settings, forWallet = false) => {
   const m = ((await rest(`loyalty_messages?client_id=eq.${storeId}&or=${q(`(card_id.is.null,card_id.eq.${cardId})`)}&select=id,body,created_at,source,kind&order=id.desc&limit=4`).catch(() => [])).find(x => forWallet || x.kind !== 'pager')) || null;
   return settings && staleAi(m, settings) ? null : m;
 };
-const walletCtx = async (ctx, card) => wallet.buildCtx({ store: ctx.store, settings: ctx.settings, card, lat: ctx.lat, lng: ctx.lng, notice: ((await latestMessage(ctx.store.id, card.id, ctx.settings, true)) || {}).body, nearText: nearLineFor({ loyalty_near_lines: ctx.nearLines, name: ctx.store.name }, card, ctx.settings) });
+const walletCtx = async (ctx, card) => wallet.buildCtx({ store: ctx.store, settings: ctx.settings, card, lat: ctx.homeLat ?? ctx.lat, lng: ctx.homeLng ?? ctx.lng, notice: ((await latestMessage(ctx.store.id, card.id, ctx.settings, true)) || {}).body, nearText: nearLineFor({ loyalty_near_lines: ctx.nearLines, name: ctx.store.name }, card, ctx.settings) });
 // البطاقة في المحفظة تتحدث مع كل ختم (لو الزبون ضافها)
 const syncWallet = async (ctx, card) => {
   if (!card.wallet_serial) return;
@@ -108,6 +119,14 @@ async function stampCard(ctx, card, distance) {
   const fresh = (await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0];
   if (r.ok) await syncWallet(ctx, fresh);
   return { stamped: !!r.ok, count: r.ok ? count : 0, reason: r.ok ? null : r.reason, next_at: r.next_at || null, card: cardView(fresh) };
+}
+
+// بطاقات الولاء المحفوظة في الجوال (لكل المحلات): يرجّع اللي تخص هالمحل، عشان الزبون يلقى بطاقته من أي فرع
+async function pickCard(storeId, tokens) {
+  const ts = [...new Set((Array.isArray(tokens) ? tokens : []).map(String).filter(t => TOKEN_RE.test(t)))].slice(0, 20);
+  if (!ts.length) return null;
+  const row = (await rest(`loyalty_cards?client_id=eq.${storeId}&token=in.(${ts.map(q).join(',')})&select=token&limit=1`).catch(() => []))[0];
+  return row ? row.token : null;
 }
 
 const FEEDBACK = ['wait', 'price', 'quality', 'far', 'busy', 'other'];
@@ -171,6 +190,12 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       return info;
     }
 
+    // ─── الجوال يدوّر على بطاقته لهالمحل بين بطاقاته المحفوظة (يفتح من فرع ثاني) ───
+    if (action === 'pick' && req.method === 'POST') {
+      const ctx = await loadStore(b.slug);
+      return { token: await pickCard(ctx.store.id, b.ts) };
+    }
+
     if (action === 'card' && req.method === 'GET') {
       const ctx = await loadStore(req.query.slug);
       const card = await cardByToken(ctx, req.query.t);
@@ -196,7 +221,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       const ctx = await loadStore(b.slug);
       const profile = readProfile(b);
       // الإثبات: كود الكاشير، أو رقم بيجر، أو الموقع (لو المحل يسمح بالختم بالموقع)
-      const ticket = !b.code && b.pt ? await pagerTicket(ctx.store.id, b.pt) : null;
+      const ticket = !b.code && b.pt ? await pagerTicket(ctx.branch.id, b.pt) : null;
       if (b.pt && !b.code && (!ticket || Date.now() - Date.parse(ticket.created_at) > 18 * 3600e3)) throw new ApiError(409, 'رقم البيجر منتهي، اطلب كود الختم من الكاشير', 'BAD_TICKET');
       let card = (await rest(`loyalty_cards?client_id=eq.${ctx.store.id}&phone=eq.${q(profile.phone)}&select=*`))[0];
       // الحماية: بطاقة مسجلة باسم شخص (اكتمل تسجيلها) ما تنعطى لأي أحد يكتب نفس الجوال.
@@ -303,7 +328,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (action === 'pager-link' && req.method === 'POST') {
       const ctx = await loadStore(b.slug);
       const card = await cardByToken(ctx, b.t);
-      const ticket = await pagerTicket(ctx.store.id, b.pt);
+      const ticket = await pagerTicket(ctx.branch.id, b.pt);
       if (!ticket || Date.now() - Date.parse(ticket.created_at) > 18 * 3600e3) throw new ApiError(409, 'رقم البيجر منتهي', 'BAD_TICKET');
       if (ticket.loyalty_card_id && ticket.loyalty_card_id !== card.id) throw new ApiError(409, 'هذا الطلب مربوط ببطاقة ثانية', 'TICKET_TAKEN');
       await rest(`pager_tickets?id=eq.${ticket.id}`, { method: 'PATCH', body: { loyalty_card_id: card.id } });

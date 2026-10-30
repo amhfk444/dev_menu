@@ -1325,5 +1325,6 @@
   "تم نسخ رابط الكاشير": "Cashier link copied",
   "تغيير رابط الكاشير": "Change cashier link",
   "غيّره": "Change it",
-  "الرابط القديم بيوقف على كل الأجهزة اللي مفتوح فيها، ولازم تفتح الرابط الجديد على جهاز الكاشير.": "The old link will stop on every device it's open on, and you'll need to open the new link on the cashier's device."
+  "الرابط القديم بيوقف على كل الأجهزة اللي مفتوح فيها، ولازم تفتح الرابط الجديد على جهاز الكاشير.": "The old link will stop on every device it's open on, and you'll need to open the new link on the cashier's device.",
+  "بطاقة الولاء وحدة لكل فروعك: الزبون يجمع أختامه ويصرف مكافأته من أي فرع، والأعضاء والإعدادات مشتركة. موقع المحل بس لكل فرع لحاله.": "One loyalty card for all your branches: customers collect stamps and redeem rewards at any branch, and members and settings are shared. Only the store location is per branch."
 }

@@ -62,11 +62,12 @@ async function pagerTicket(storeId, token) {
 const SECRET = `devmenu-member:${process.env.SUPABASE_SERVICE_ROLE_KEY || ''}`;
 const sign = (storeId, cardId) => crypto.createHmac('sha256', SECRET).update(`${storeId}:${cardId}`).digest('base64url').slice(0, 10);
 const memberQr = (card) => `DMV1.${card.id}.${sign(card.client_id, card.id)}`;
-function parseMemberQr(storeId, value) {
+// storeIds: المحل الرئيسي وفروعه (البطاقات اللي انتقلت من فرع للرئيسي كودها موقّع برقم الفرع لين تتحدث)
+function parseMemberQr(storeIds, value) {
   const m = String(value || '').trim().match(/^DMV1\.(\d{1,12})\.([A-Za-z0-9_-]{10})$/);
   if (!m) return null;
   const id = Number(m[1]);
-  return crypto.timingSafeEqual(Buffer.from(m[2]), Buffer.from(sign(storeId, id))) ? id : null;
+  return [].concat(storeIds).some(s => crypto.timingSafeEqual(Buffer.from(m[2]), Buffer.from(sign(s, id)))) ? id : null;
 }
 
 module.exports = { purchaseStamp, newStampCode, consumeStampCode, pagerTicket, cooldownLeft, leftText, memberQr, parseMemberQr };

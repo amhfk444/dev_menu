@@ -1042,6 +1042,7 @@
           <button type="button" role="tab" data-lyt="messages"><i class="ph-bold ph-paper-plane-tilt"></i> الرسائل والمساعد</button>
           <button type="button" role="tab" data-lyt="settings"><i class="ph-bold ph-sliders-horizontal"></i> الإعدادات</button>
         </div>
+        <p id="ly-shared" class="hidden text-[12px] font-bold text-emerald-800 bg-emerald-500/5 border border-emerald-600/20 rounded-xl px-3 py-2.5"><i class="ph-bold ph-git-branch"></i> بطاقة الولاء وحدة لكل فروعك: الزبون يجمع أختامه ويصرف مكافأته من أي فرع، والأعضاء والإعدادات مشتركة. موقع المحل بس لكل فرع لحاله.</p>
         <div id="ly-grid" class="grid lg:grid-cols-[1.1fr_.9fr] gap-5 items-start">
           <div class="space-y-5">
             <!-- الإعدادات -->
@@ -1154,7 +1155,7 @@
 
             <!-- موقع المحل -->
             <div data-lytab="settings" class="pro-card p-5 md:p-6 space-y-3">
-              <h3 class="text-sm font-bold flex items-center gap-2"><i class="ph-bold ph-map-pin"></i> موقع المحل</h3>
+              <h3 class="text-sm font-bold flex items-center gap-2"><i class="ph-bold ph-map-pin"></i> موقع المحل<span id="ly-loc-branch" class="text-ink/55"></span></h3>
               <p id="ly-loc-status" class="text-[13px]"></p>
               <p class="text-[12px] text-ink/60 leading-relaxed">اضغط الزر وأنت <b>واقف داخل المحل</b> بجوالك. كذا الموقع يطابق اللي يشوفه جوال الزبون داخل المحل، ويقل الخطأ.</p>
               <button type="button" id="ly-loc-btn" onclick="setLoyaltyLocation()" class="bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-4 py-2.5 rounded-xl text-sm font-bold transition"><i class="ph-bold ph-crosshair"></i> حدد موقع المحل من هنا</button>
@@ -4197,6 +4198,9 @@
     document.getElementById('ly-fb-gift').checked = !st.feedback || st.feedback.gift !== false;
     document.getElementById('ly-fb-days').value = String((st.feedback && st.feedback.days) || 30);
     document.getElementById('ly-gifts').checked = !st.gifts || st.gifts.enabled !== false;
+    // الولاء وحدة لكل الفروع: الإعدادات والأعضاء مشتركة، والموقع لكل فرع
+    document.getElementById('ly-loc-branch').textContent = branches.length > 1 ? ` (${client.name || ''})` : '';
+    document.getElementById('ly-shared').classList.toggle('hidden', branches.length < 2);
     document.getElementById('ly-loc-status').innerHTML = d.location_set
       ? '<span class="text-emerald-700 font-semibold"><i class="ph-bold ph-check-circle"></i> موقع المحل محدد</span>'
       : '<span class="text-ink/60 font-semibold"><i class="ph-bold ph-info"></i> اختياري: لو حددته، تطلع بطاقة الزبون على شاشة قفل جواله لما يقرب من المحل. الختم والصرف والإشعارات ما تعتمد عليه.</span>';

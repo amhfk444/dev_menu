@@ -6,7 +6,7 @@
 //   POST /api/waitlist?action=cancel          إلغاء التسجيل
 // =====================================================================
 const crypto = require('crypto');
-const { reqLang, handler, rest, rpc, q, ApiError, readBody, str, int, findPublicStore, storeHasFeature } = require('./_lib/core');
+const { reqLang, handler, rest, rpc, q, ApiError, readBody, str, int, findPublicStore, storeHasFeature, loyaltyHome } = require('./_lib/core');
 const { topic, poke } = require('./_lib/live');
 const { SEATING, normalizeSettings, riyadhDayStart, positionOf, emailTemplate, statusUrlFor } = require('./_lib/waitlist');
 const { sendMail } = require('./_lib/mail');
@@ -26,11 +26,13 @@ const todayEntries = (clientId) =>
   rest(`waitlist_entries?client_id=eq.${clientId}&created_at=gte.${q(riyadhDayStart())}&select=id,status&order=id.asc`);
 
 // عنده بطاقة ولاء؟ (من نفس الجوال، أو بنفس رقم الجوال) نربطها بالدور عشان يوصله إشعار المحفظة
+// (البطاقة على المحل الرئيسي، والدور على الفرع)
 async function linkLoyalty(storeId, token, lt, phone) {
   let card = null;
-  if (/^[A-Za-z0-9_-]{10,64}$/.test(String(lt || ''))) card = (await rest(`loyalty_cards?token=eq.${q(lt)}&client_id=eq.${storeId}&select=id`).catch(() => []))[0];
+  const home = await loyaltyHome(storeId);
+  if (/^[A-Za-z0-9_-]{10,64}$/.test(String(lt || ''))) card = (await rest(`loyalty_cards?token=eq.${q(lt)}&client_id=eq.${home}&select=id`).catch(() => []))[0];
   const digits = String(phone || '').replace(/\D/g, '');
-  if (!card && digits.length >= 9) card = (await rest(`loyalty_cards?client_id=eq.${storeId}&phone=in.(${q(digits)},${q('+' + digits)})&select=id&limit=1`).catch(() => []))[0];
+  if (!card && digits.length >= 9) card = (await rest(`loyalty_cards?client_id=eq.${home}&phone=in.(${q(digits)},${q('+' + digits)})&select=id&limit=1`).catch(() => []))[0];
   if (card) await rest(`waitlist_entries?token=eq.${q(token)}&client_id=eq.${storeId}`, { method: 'PATCH', body: { loyalty_card_id: card.id } });
 }
 

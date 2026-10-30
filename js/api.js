@@ -73,6 +73,7 @@
   }
 
   // ─── خادمنا ───
+  const loyaltyTokens = () => { const m = document.cookie.match(/(?:^|; )dm_lts=([A-Za-z0-9_.-]+)/); return m ? m[1].split('.').filter(x => /^[A-Za-z0-9_-]{10,64}$/.test(x)) : []; };
   // رابط الكاشير: مفتاح الفرع بدل حساب المالك (شاشة البيجر وشاشة الختم بس)
   let deskKey = '';
   async function request(path, { method = 'GET', body, auth: needAuth = false, token, desk } = {}) {
@@ -273,6 +274,24 @@
     consumeOAuthRedirect,
     session: loadSession,
     signedIn: () => !!loadSession(),
+    // بطاقة الولاء وحدة للمحل بكل فروعه، وكل فرع له رابط مختلف: نحفظ بطاقات الجوال على devmenu.digital كله،
+    // ولما يفتح من فرع ما فيه بطاقته محفوظة، نسأل الخادم أي وحدة منها تخص هالمحل
+    rememberLoyalty(slug, t) {
+      try { t ? localStorage.setItem(`dm_loyalty_${slug}`, t) : localStorage.removeItem(`dm_loyalty_${slug}`); } catch {}
+      if (!t) return;
+      const list = [t, ...loyaltyTokens().filter(x => x !== t)].slice(0, 15);
+      const shared = /(^|\.)devmenu\.digital$/.test(location.hostname) ? '; domain=.devmenu.digital' : '';
+      document.cookie = `dm_lts=${list.join('.')}; max-age=31536000; path=/; secure; samesite=lax${shared}`;
+    },
+    async loyaltyToken(slug) {
+      let t = ''; try { t = localStorage.getItem(`dm_loyalty_${slug}`) || ''; } catch {}
+      if (t) return t;
+      const ts = loyaltyTokens();
+      if (!ts.length) return '';
+      try { const r = await request('/api/loyalty?action=pick', { method: 'POST', body: { slug, ts } }); t = r.token || ''; } catch {}
+      if (t) try { localStorage.setItem(`dm_loyalty_${slug}`, t); } catch {}
+      return t;
+    },
     // مفتاح الكاشير: من الرابط (?k=) أول مرة، وبعدها محفوظ في الجهاز
     deskMode() {
       try {

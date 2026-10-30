@@ -231,7 +231,7 @@
     const btn = document.getElementById('join-btn');
     btn.disabled = true;
     try {
-      try { data.lt = localStorage.getItem(`dm_loyalty_${slug}`) || undefined; } catch {}
+      data.lt = (await DM.loyaltyToken(slug)) || undefined;   // بطاقة الولاء (ولو انسجّلت من فرع ثاني)
       const res = await DM.post('/api/waitlist?action=join', data);
       saveToken(res.token);
       history.replaceState(null, '', `${DM.storePage('waitlist', slug)}${DM.hostSlug() ? '?' : '&'}t=${encodeURIComponent(res.token)}`);

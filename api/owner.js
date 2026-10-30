@@ -6,7 +6,7 @@
 const crypto = require('crypto');
 const {
   handler, rest, rpc, q, storage, publicUrl, ownsMediaUrl, SUPABASE_URL, BUCKET,
-  ApiError, getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody, SLUG_RE, RESERVED_SLUGS, CURRENCIES, SITE, storeLink
+  ApiError, getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody, SLUG_RE, RESERVED_SLUGS, CURRENCIES, SITE, storeLink, loyaltyHome
 } = require('./_lib/core');
 const { FIELDS, normalizeSettings, riyadhDayStart, positionOf, emailTemplate, statusUrlFor } = require('./_lib/waitlist');
 const { sendMail, mailConfigured } = require('./_lib/mail');
@@ -109,7 +109,23 @@ function phoneNumber(v) {
 // رابط الكاشير: مفتاح الفرع يفتح شاشة البيجر وشاشة الختم بس (بدون حساب المالك)
 const DESK_ACTIONS = ['pager', 'pager-update', 'pager-invoice', 'pager-ring', 'loyalty-stamp-code', 'loyalty-scan', 'loyalty-redeem', 'loyalty-transfer', 'kiosk'];
 const DESK_KEY_RE = /^[A-Za-z0-9_-]{24,64}$/;
-async function context(req, { needStore = true } = {}) {
+// الولاء وحدة للمحل بكل فروعه: أي طلب ولاء من فرع يشتغل على بيانات المحل الرئيسي وإعداداته
+// (ما عدا موقع الختم: لكل فرع موقعه). here = الفرع اللي جاي منه الطلب
+async function context(req, opts) {
+  const ctx = await storeContext(req, opts);
+  const action = String(req.query.action || '');
+  ctx.here = ctx.store;
+  if (ctx.store && ctx.store.parent_id && (action.startsWith('loyalty') || action === 'kiosk') && action !== 'loyalty-location') {
+    ctx.store = (await rest(`clients?id=eq.${ctx.store.parent_id}&select=*&limit=1`))[0] || ctx.store;
+  }
+  return ctx;
+}
+// كل فروع المحل (عشان كود العضوية القديم الموقّع برقم فرع يمشي)
+async function familyIds(store) {
+  const root = store.parent_id || store.id;
+  return (await rest(`clients?or=${q(`(id.eq.${root},parent_id.eq.${root})`)}&select=id`).catch(() => [])).map(r => r.id).concat(root);
+}
+async function storeContext(req, { needStore = true } = {}) {
   const deskKey = String(req.headers['x-dm-desk'] || '');
   if (deskKey) {
     if (!DESK_ACTIONS.includes(String(req.query.action))) throw new ApiError(403, 'رابط الكاشير يفتح شاشة الكاشير بس', 'DESK_ONLY');
@@ -452,15 +468,16 @@ async function main(req) {
     const base = `pager_tickets?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&order=number.asc&select=id,number,status,created_at,ready_at,closed_at,push_sub`;
     // أعمدة التكرار من 21-pager-repeat.sql — لو ما انضافت نكمل بدونها
     const tickets = !hasPager ? [] : await rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id`).catch(() => rest(`${base},ring_count,acked_at,invoice_no`)).catch(() => rest(`${base},ring_count,acked_at`)).catch(() => rest(base));
-    const lx = (await rest(`clients?id=eq.${store.id}&select=loyalty_enabled`).catch(() => []))[0] || {};
+    const lhome = await loyaltyHome(store.id);   // الولاء على المحل الرئيسي
+    const lx = (await rest(`clients?id=eq.${lhome}&select=loyalty_enabled`).catch(() => []))[0] || {};
     lx.loyalty_enabled = lx.loyalty_enabled && PLANS.has(store, 'loyalty');
     // أرقام مربوطة ببطاقات ولاء فيها مكافأة جاهزة
     const rewardsBy = {};
     const linked = [...new Set(tickets.filter(t => t.loyalty_card_id && t.status !== 'done').map(t => t.loyalty_card_id))];
     if (linked.length && lx.loyalty_enabled) {
-      const st = normalizeLoyalty((await rest(`clients?id=eq.${store.id}&select=loyalty_settings`).catch(() => []))[0]?.loyalty_settings);
+      const st = normalizeLoyalty((await rest(`clients?id=eq.${lhome}&select=loyalty_settings`).catch(() => []))[0]?.loyalty_settings);
       const cards = await rest(`loyalty_cards?id=in.(${linked.join(',')})&select=id,member_no,name,stamps`).catch(() => []);
-      for (const c of cards) { const r = await readyRewards(store.id, c, st); if (r.length) rewardsBy[c.id] = { card_id: c.id, name: c.name || `عضو #${c.member_no}`, rewards: r }; }
+      for (const c of cards) { const r = await readyRewards(lhome, c, st); if (r.length) rewardsBy[c.id] = { card_id: c.id, name: c.name || `عضو #${c.member_no}`, rewards: r }; }
     }
     return { tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub, reward: t.loyalty_card_id ? rewardsBy[t.loyalty_card_id] || null : null })), slug: store.client_slug, name: store.name, business_type: store.business_type, max_rings: PAGER_MAX_RINGS, live: topic('pager', store.id), loyalty: lx.loyalty_enabled === true, pager: hasPager, loyalty_entitled: PLANS.has(store, 'loyalty') };
   }
@@ -498,7 +515,8 @@ async function main(req) {
 
   // ─── بطاقة الولاء: الإعدادات والإحصائيات وآخر البطاقات ───
   if (action === 'loyalty' && req.method === 'GET') {
-    const { store } = await context(req);
+    const { store, here } = await context(req);
+    const spot = here.id === store.id ? null : (await rest(`clients?id=eq.${here.id}&select=loyalty_lat,loyalty_lng`).catch(() => []))[0];
     const extra = (await rest(`clients?id=eq.${store.id}&select=loyalty_enabled,loyalty_settings,loyalty_lat,loyalty_lng,loyalty_ai,loyalty_near_lines`))[0] || {};
     const day = 864e5, iso = (n) => q(new Date(Date.now() - n * day).toISOString());
     const [cards, stamps7, redeemed, messages, feedback, gifts] = await Promise.all([
@@ -519,7 +537,7 @@ async function main(req) {
     const recent = stamps7.slice(0, 8).map(e => ({ id: e.card_id, at: e.created_at, name: (byId[e.card_id] || {}).name || null, no: (byId[e.card_id] || {}).member_no, stamps: (byId[e.card_id] || {}).stamps }));
     return {
       enabled: extra.loyalty_enabled === true, settings: normalizeLoyalty(extra.loyalty_settings),
-      location_set: validPoint(extra.loyalty_lat, extra.loyalty_lng), slug: store.client_slug,
+      location_set: validPoint(spot ? spot.loyalty_lat : extra.loyalty_lat, spot ? spot.loyalty_lng : extra.loyalty_lng), slug: here.client_slug,
       stats: { members: cards.length, active30: active, away30: cards.filter(c => c.last_stamp_at && Date.parse(c.last_stamp_at) < Date.now() - 30 * day).length, stamps7: stamps7.length, redeemed: redeemed.length, returning7: returning }, week, recent,
       cards: cards.slice(0, 50), messages, wallet: wallet.configured(),
       entitled: PLANS.has(store, 'loyalty'),
@@ -667,7 +685,7 @@ async function main(req) {
     if (!x.loyalty_enabled) throw new ApiError(409, 'شغّل بطاقة الولاء أول من لوحة التحكم');
     const settings = normalizeLoyalty(x.loyalty_settings);
     let id = null;
-    if (b.qr) { id = parseMemberQr(sid, b.qr); if (!id) throw new ApiError(400, 'هذا مو كود عضوية من بطاقتنا', 'BAD_QR'); }
+    if (b.qr) { id = parseMemberQr(await familyIds(store), b.qr); if (!id) throw new ApiError(400, 'هذا مو كود عضوية من بطاقتنا', 'BAD_QR'); }
     const no = b.qr ? null : parseInt(String(b.member_id || '').replace(/[^\d]/g, ''), 10);
     const card = b.qr ? (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${sid}&select=*`))[0]
       : Number.isInteger(no) ? (await rest(`loyalty_cards?member_no=eq.${no}&client_id=eq.${sid}&select=*`))[0] : null;
@@ -898,11 +916,12 @@ async function main(req) {
     // بطاقة ولاء مربوطة بالرقم: ختم أول ما يجهز الطلب (مرة وحدة)
     if (status === 'ready' && t.loyalty_card_id && !t.loyalty_stamped) {
       try {
-        const x = (await rest(`clients?id=eq.${sid}&select=loyalty_enabled,loyalty_settings`))[0] || {};
+        const lhome = await loyaltyHome(sid);
+        const x = (await rest(`clients?id=eq.${lhome}&select=loyalty_enabled,loyalty_settings`))[0] || {};
         const ls = normalizeLoyalty(x.loyalty_settings);
         if (x.loyalty_enabled && ls.pager_stamp) {
           await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { loyalty_stamped: true } });
-          await purchaseStamp(sid, t.loyalty_card_id, ls);
+          await purchaseStamp(lhome, t.loyalty_card_id, ls);
         }
       } catch (e) { console.error('PAGER_STAMP', e.message); }
     }
@@ -920,7 +939,7 @@ async function main(req) {
     }
     // بطاقة ولاء مربوطة وفي المحفظة: إشعار "طلبك جاهز" من البطاقة (يوصل الآيفون حتى لو المتصفح مسكّر)
     if (status === 'ready' && t.loyalty_card_id && PLANS.has(store, 'loyalty')) {
-      const wr = await pagerReadyNotice(sid, t.loyalty_card_id, t.number, store.name, SECTORS.terms(store));
+      const wr = await pagerReadyNotice(await loyaltyHome(sid), t.loyalty_card_id, t.number, store.name, SECTORS.terms(store));
       console.log('PAGER_WALLET', sid, t.id, wr);
     }
     await poke([topic('pager', sid), topic('ticket', t.token)]);
@@ -992,7 +1011,7 @@ async function main(req) {
     // مربوط ببطاقة ولاء في المحفظة: إشعار "جاء دورك/طاولتك جاهزة" من البطاقة
     if (status === 'notified' && updated.loyalty_card_id && PLANS.has(store, 'loyalty')) {
       const T = SECTORS.terms(store);
-      await walletNotice(sid, updated.loyalty_card_id, `🔔 ${T.wlReady} دور #${updated.ticket}. تفضّل للاستقبال في ${store.name}`).catch(() => {});
+      await walletNotice(await loyaltyHome(sid), updated.loyalty_card_id, `🔔 ${T.wlReady} دور #${updated.ticket}. تفضّل للاستقبال في ${store.name}`).catch(() => {});
     }
     await poke(topic('wl', sid));
     return { entry: updated, email_sent };

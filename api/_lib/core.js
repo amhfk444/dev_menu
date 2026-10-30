@@ -159,6 +159,18 @@ async function storeHasFeature(storeId, key) {
   return PLANS.has(s, key);
 }
 
+// الولاء وحدة للمحل بكل فروعه: بياناتها وإعداداتها على المحل الرئيسي. يرجّع رقم المحل الرئيسي للفرع (أو نفسه)
+const homes = new Map();
+async function loyaltyHome(storeId) {
+  const id = Number(storeId);
+  const hit = homes.get(id);
+  if (hit && hit.at > Date.now() - 300e3) return hit.home;
+  const row = (await rest(`clients?id=eq.${id}&select=parent_id`))[0] || {};
+  const home = Number(row.parent_id) || id;
+  homes.set(id, { home, at: Date.now() });
+  return home;
+}
+
 // عملات المنيو المسموحة (نفس قائمة js/api.js)
 const CURRENCIES = {
   SAR: 'ر.س', AED: 'د.إ', KWD: 'د.ك', QAR: 'ر.ق', BHD: 'د.ب', OMR: 'ر.ع', EGP: 'ج.م', JOD: 'د.أ', IQD: 'د.ع',
@@ -198,5 +210,5 @@ const reqLang = (req) => String((req && req.headers && req.headers['x-dm-lang'])
 module.exports = {
   reqLang, SUPABASE_URL, BUCKET, ApiError, rest, rpc, q, storage, publicUrl, ownsMediaUrl, storagePathFromUrl,
   getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody, handler,
-  SLUG_RE, RESERVED_SLUGS, findPublicStore, CURRENCIES, storeHasFeature, storeFeatures, SITE, storeLink
+  SLUG_RE, RESERVED_SLUGS, findPublicStore, CURRENCIES, storeHasFeature, storeFeatures, SITE, storeLink, loyaltyHome
 };
