@@ -3806,7 +3806,7 @@
       <div class="flex items-center gap-2 bg-brand/5 border ${b.id === client.id ? 'border-brand' : 'border-brand/15'} rounded-xl p-2.5">
         <div class="min-w-0 flex-1">
           <p class="text-xs font-black text-ink truncate">${b.parent_id ? '' : '<i class="ph-bold ph-star text-amber-500 text-[9px]"></i> '}${esc(b.name || b.client_slug)}${b.id === client.id ? ' <span class="text-[9px] font-bold text-emerald-700">(مفتوح الحين)</span>' : ''}</p>
-          <a href="${esc(DM.storeUrl(b.client_slug))}" target="_blank" rel="noopener" class="text-[10px] text-ink/55 hover:text-ink" dir="ltr">${esc(b.client_slug)}.devmenu.digital</a>
+          <a href="${esc(DM.storeUrl(b.client_slug))}" target="_blank" rel="noopener" class="block truncate text-[10px] text-ink/55 hover:text-ink text-right" dir="ltr">${esc(b.client_slug)}.devmenu.digital</a>
         </div>
         ${main && b.parent_id ? (pendingBranchFeatures(b.id) ? '<span class="text-[10px] font-bold text-amber-700 shrink-0">قيد التفعيل</span>' : `<button type="button" onclick="requestBranchFeatures(${Number(b.id)})" class="px-2.5 h-8 rounded-lg bg-white border border-brand/20 text-[10px] font-bold text-ink/80 hover:bg-brand/10"><i class="ph-bold ph-sliders-horizontal"></i> المميزات</button>`) : ''}
         <button type="button" onclick="renameBranch(${Number(b.id)})" title="تعديل الاسم" class="w-8 h-8 rounded-lg bg-white border border-brand/20 text-ink/70 hover:bg-brand/10"><i class="ph-bold ph-pencil-simple text-[10px]"></i></button>
