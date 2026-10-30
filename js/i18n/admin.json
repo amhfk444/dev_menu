@@ -1385,16 +1385,16 @@
   "وأنت في التجربة المجانية، فينضاف مجاناً الحين ويدخل في أول فاتورة.": "You're on the free trial, so it's added free now and included in your first invoice.",
   "ويتفعّل مع تجديد اشتراكك.": "It activates when you renew your subscription.",
   "تدفع الحين {a} ر.س عن {b} يوم الباقية لين تجديد اشتراكك، وبعدها يتجدد مع حسابك.": "You pay {a} SAR now for the {b} days left until your renewal, then it renews with your account.",
-  "كل فرع له رسوم {a} ر.س {b}، وتدفع معها سعر المميزات اللي تختارها له.": "Each branch has a {a} SAR fee {b}, plus the price of the features you choose for it.",
   "{a} - فرع النخيل": "{a} - Al Nakheel branch",
   "مميزات الفرع (محددة نفس حسابك، وتقدر تغيّرها)": "Branch features (same as your account, you can change them)",
   "اختر ميزة وحدة على الأقل للفرع": "Choose at least one feature for the branch",
-  "مشمولة في بطاقة الولاء، وتحتاج البيجر": "Included in the loyalty card, needs the pager",
-  "رسوم الفرع": "Branch fee",
   "سعر الفرع {a}": "Branch price {a}",
   "الطلب يوصل لإدارة DEV MENU، وبعد ما ينضاف الفرع يطلع لك في \"فروعك\"، وتوصلك الفاتورة على بريدك.": "Your request goes to the DEV MENU team. Once the branch is added it appears under \"Your branches\" and the invoice is emailed to you.",
-  "كل فرع: رسوم {a} ر.س {b} + سعر مميزاته": "Each branch: {a} SAR fee {b} + its features",
-  "رسوم الفرع + {a}": "Branch fee + {a}",
   "يشمل {a} {b} بـ {c}": "Includes {a} {b} for {c}",
-  "فرع {a}": "Branch {a}"
+  "فرع {a}": "Branch {a}",
+  "ربط الفرع {a} ر.س {b}: دخول واحد لكل فروعك، ومنيو مربوط، وولاء مشترك يجمع فيه الزبون أختامه من أي فرع، وفاتورة وحدة. ومعه سعر المميزات اللي تختارها للفرع.": "Branch link {a} SAR {b}: one login for all your branches, a linked menu, a shared loyalty card customers can collect stamps on at any branch, and one invoice. Plus the price of the features you choose for the branch.",
+  "ربط الفرع": "Branch link",
+  "{a} تشتغل في الفرع مع حسابك بدون سعر إضافي.": "{a} works in the branch with your account at no extra cost.",
+  "كل فرع: ربط {a} ر.س {b} + سعر مميزاته": "Each branch: {a} SAR link {b} + its features",
+  "ربط الفرع + {a}": "Branch link + {a}"
 }

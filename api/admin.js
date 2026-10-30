@@ -41,8 +41,13 @@ async function syncBranchSubscriptions(parentId) {
 }
 
 // الفروع القديمة (بدون مميزات خاصة) تاخذ مميزات الحساب، والفرع اللي له مميزاته يبقى عليها
+// والفرع اللي له مميزاته ياخذ معها مميزات الحساب كله (الولاء والرسائل)
 async function followParentFeatures(parentId, features) {
   try { await rest(`clients?parent_id=eq.${parentId}&branch_features=is.null`, { method: 'PATCH', body: { plan_features: features, waitlist_enabled: features.includes('waitlist') } }); } catch {}
+  try {
+    const own = await rest(`clients?parent_id=eq.${parentId}&branch_features=not.is.null&select=id,branch_features`);
+    await Promise.all(own.map(br => rest(`clients?id=eq.${br.id}`, { method: 'PATCH', body: { plan_features: PLANS.branchFeatures(br.branch_features, features) } })));
+  } catch {}
 }
 
 module.exports = handler(['GET', 'POST'], async (req) => {
@@ -192,8 +197,15 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     // نوع الاشتراك (شهري / سنوي) يتغيّر هنا بدون تجديد ولا تغيير تاريخ الانتهاء
     const plan = ['month', 'year'].includes(b.period) ? { subscription_plan: b.period } : {};
     const target = (await rest(`clients?id=eq.${id}&select=parent_id`))[0];
-    // الفرع: مميزاته الخاصة (يدفع رسوم الفرع + سعرها)
-    const out = await patch({ plan_features: features, waitlist_enabled: features.includes('waitlist'), ...(target && target.parent_id ? { branch_features: features } : plan) });
+    if (target && target.parent_id) {
+      // الفرع: مميزاته الخاصة (يدفع ربط الفرع + سعرها)، ومعها مميزات الحساب كله
+      const own = PLANS.ownBranch(features);
+      const parent = (await rest(`clients?id=eq.${target.parent_id}&select=plan_features`))[0] || {};
+      const all = PLANS.branchFeatures(own, parent.plan_features || []);
+      if (!all.length) throw new ApiError(400, 'اختر ميزة وحدة على الأقل للفرع');
+      return patch({ branch_features: own, plan_features: all, waitlist_enabled: all.includes('waitlist') });
+    }
+    const out = await patch({ plan_features: features, waitlist_enabled: features.includes('waitlist'), ...plan });
     if (!out.client.parent_id) await followParentFeatures(id, features);
     return out;
   }
@@ -215,11 +227,13 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       for (let n = 2; n < 100 && !slug; n++) if (await slugFree(`${base}-${n}`)) slug = `${base}-${n}`;
       if (!slug) throw new ApiError(400, 'تعذر اختيار رابط للفرع، اكتبه يدوياً');
     }
-    // مميزات الفرع: يختارها صاحب المحل، والفرع يدفع رسومه + سعرها
-    const features = PLANS.clean(b.features);
-    if (!features.length) throw new ApiError(400, 'اختر ميزة وحدة على الأقل للفرع');
+    // مميزات الفرع: يختارها صاحب المحل ويدفع ربط الفرع + سعرها، ومعها مميزات الحساب كله (الولاء والرسائل)
+    const features = PLANS.clean(PLANS.ownBranch(b.features));
+    const parentFeats = ((await rest(`clients?id=eq.${id}&select=plan_features`))[0] || {}).plan_features || PLANS.LEGACY;
+    const all = PLANS.branchFeatures(features, parentFeats);
+    if (!all.length) throw new ApiError(400, 'اختر ميزة وحدة على الأقل للفرع');
     const newId = int(await rpc('server_create_branch', { p_parent_id: id, p_name: name, p_slug: slug }));
-    await rest(`clients?id=eq.${newId}`, { method: 'PATCH', body: { branch_features: features, plan_features: features, waitlist_enabled: features.includes('waitlist') } });
+    await rest(`clients?id=eq.${newId}`, { method: 'PATCH', body: { branch_features: features, plan_features: all, waitlist_enabled: all.includes('waitlist') } });
     // منيو فارغ: الفرع ياخذ الهوية والإعدادات بس، بدون الأقسام والأطباق
     if (b.empty_menu === true || !features.includes('menu')) {
       await rest(`products?client_id=eq.${newId}`, { method: 'DELETE' });
@@ -234,7 +248,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     if (pr && pr.amount > 0) {
       invoice = await sendInvoice(main, {
         status: 'due', validUntil: pr.end,
-        lines: [{ label: `فرع جديد — ${client.name}`, detail: `${features.map(k => PLANS.FEATURES[k].name).join(' + ')}، ${pr.days} يوم لين تجديد الحساب`, amount: pr.amount }],
+        lines: [{ label: `فرع جديد — ${client.name}`, detail: `ربط الفرع${features.length ? ` + ${features.map(k => PLANS.FEATURES[k].name).join(' + ')}` : ''}، ${pr.days} يوم لين تجديد الحساب`, amount: pr.amount }],
         note: `بعد تاريخ التجديد يتجدد الفرع مع الحساب بـ ${pr.renew}. للدفع تواصل معنا عبر واتساب.`
       });
     }

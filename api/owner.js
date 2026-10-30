@@ -424,8 +424,8 @@ async function main(req) {
       if (!name || name.length < 2) throw new ApiError(400, 'اكتب اسم الفرع');
       const open = await rest(`support_requests?client_id=eq.${mainId}&kind=eq.branch&status=eq.open&select=id`).catch(() => []);
       if (open.length) throw new ApiError(409, 'عندك طلب فرع قيد الإضافة، بنضيفه لك قريب', 'BRANCH_PENDING');
-      const features = PLANS.clean(b.meta && b.meta.features);
-      if (!features.length) throw new ApiError(400, 'اختر ميزة وحدة على الأقل للفرع');
+      const features = PLANS.clean(PLANS.ownBranch(b.meta && b.meta.features));
+      if (!PLANS.branchFeatures(features, PLANS.featuresOf(store)).length) throw new ApiError(400, 'اختر ميزة وحدة على الأقل للفرع');
       meta = { name, features, empty_menu: !!(b.meta && b.meta.empty_menu) };
     }
     const row = (await rest('support_requests', { method: 'POST', prefer: 'return=representation', body: { client_id: mainId, kind, body, ...(meta ? { meta } : {}) } }))[0];
