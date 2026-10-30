@@ -778,7 +778,10 @@
     const c = find(fd.id), feats = DMPlans.clean([...fd.feats]);
     const pr = DMPlans.price(feats, fd.period, branchesOf(c).length);
     document.getElementById('feat-list').innerHTML = DMPlans.ORDER.map(k => {
-      const f = DMPlans.FEATURES[k], on = feats.includes(k);
+      const f = DMPlans.FEATURES[k], on = feats.includes(k), covered = DMPlans.coveredNote(feats, k);
+      if (covered) return `<div class="flex items-center gap-3 rounded-xl border border-dashed border-brand/20 px-3 py-2.5 opacity-70">
+        <input type="checkbox" disabled class="w-4 h-4">
+        <span class="flex-1 text-[13px] font-bold"><i class="ph-bold ${f.icon} ${FEAT_COLOR[k]}"></i> ${f.name}<span class="block text-[11px] font-medium text-ink/60">${covered}</span></span></div>`;
       return `<label class="flex items-center gap-3 rounded-xl border ${on ? 'border-brand bg-brand/[0.04]' : 'border-brand/15'} px-3 py-2.5 cursor-pointer">
         <input type="checkbox" ${on ? 'checked' : ''} onchange="toggleFeat('${k}')" class="w-4 h-4 accent-[#384f3d]">
         <span class="flex-1 text-[13px] font-bold"><i class="ph-bold ${f.icon} ${FEAT_COLOR[k]}"></i> ${f.name}</span>

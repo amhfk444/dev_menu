@@ -124,6 +124,8 @@
   .feat-pick p { font-size: 13px; line-height: 1.7; color: rgba(246,243,236,.65); margin-top: 3px; }
   .feat-pick .pr { margin-inline-start: auto; text-align: left; white-space: nowrap; font-weight: 700; font-size: 17px; }
   .feat-pick .pr small { display: block; font-size: 11px; font-weight: 600; color: rgba(246,243,236,.55); }
+  .feat-pick.covered { opacity: .7; cursor: default; border-style: dashed; }
+  .feat-pick.covered .box { border-color: rgba(255,255,255,.35); color: rgba(246,243,236,.7); }
   .summary { background: #f6f3ec; color: var(--ink); border-radius: 28px; padding: 26px; }
   .summary .line { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; font-weight: 600; padding: 5px 0; }
   .summary .disc { color: #047857; }
@@ -497,6 +499,7 @@
       <details class="q"><summary>كيف يتم الدفع؟ <i class="ph-bold ph-plus"></i></summary><p>تبدأ بتجربة مجانية مدتها 7 أيام دون الحاجة إلى بطاقة بنكية. وخلال فترة التجربة يتواصل معك فريقنا لإتمام الدفع، ويُفعَّل اشتراكك في اليوم نفسه. ويتوفر الاشتراك الشهري والسنوي.</p></details>
       <details class="q"><summary>هل يمكنني تعديل باقتي لاحقاً؟ <i class="ph-bold ph-plus"></i></summary><p>نعم. يمكنك إضافة أي خدمة أو إلغاؤها من لوحة التحكم في أي وقت، ويُحتسب السعر وفق الخدمات المختارة.</p></details>
       <details class="q"><summary>كيف يصل التنبيه إلى العميل؟ <i class="ph-bold ph-plus"></i></summary><p>يمسح العميل رمز QR ويأخذ رقمه من المتصفح دون تحميل تطبيق، وعند جاهزية طلبه أو حلول دوره يضغط الموظف زر النداء، فيصل التنبيه إلى جوال العميل مباشرة. ويمكن للعميل إضافة بطاقة النداء أو بطاقة الولاء إلى محفظة جواله مرة واحدة، فيصله الإشعار منها حتى لو كان يستخدم تطبيقاً آخر أو أغلق المتصفح.</p></details>
+      <details class="q"><summary>هل يمكنني إرسال رسائل لعملائي؟ <i class="ph-bold ph-plus"></i></summary><p>نعم، بطريقتين. إذا كان اشتراكك في البيجر، أضف خدمة "رسائل لزبائنك" لترسل إشعاراً لكل عميل حفظ بطاقة النداء في محفظة جواله، مثل عرض اليوم أو منتج جديد، بحد أقصى رسالتين في الأسبوع. وإذا كان اشتراكك في بطاقة الولاء، فالرسائل مشمولة فيها دون إضافة، ويمكنك الإرسال لجميع الأعضاء أو لعضو معيّن أو لمن انقطعت زيارته.</p></details>
       <details class="q"><summary>كيف أتأكد من تجربة التنبيه؟ <i class="ph-bold ph-plus"></i></summary><p>قبل بدء التشغيل، جرّب الخدمة كاملة على الجوالات التي يستخدمها عملاؤك، مع التأكد من اتصال الإنترنت وإعدادات التنبيه. ويسعد فريقنا بشرح الإعداد وطريقة الاختبار على كل جهاز.</p></details>
       <details class="q"><summary>ماذا لو تعذّر على العميل استخدام جواله؟ <i class="ph-bold ph-plus"></i></summary><p>ننصح بأن يكون لدى فريقك إجراء بديل، مثل مناداة رقم العميل مباشرة، مع الاتفاق على طريقة التعامل قبل التشغيل، حتى لا تتوقف الخدمة على جوال العميل وحده.</p></details>
       <details class="q"><summary>لدي حساب، كيف أسجل الدخول؟ <i class="ph-bold ph-plus"></i></summary><p>اضغط على زر "دخول" في أعلى الصفحة، أو انتقل إلى <a href="login.html" class="underline font-bold">صفحة الدخول</a>، ثم ادخل بالبريد الإلكتروني أو حساب Google الذي سجلت به.</p></details>
@@ -618,7 +621,12 @@
     document.querySelectorAll('[data-period]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.period === p)));
     $('presets').innerHTML = PRESETS.map(([name, f], i) => `<button type="button" class="preset" data-preset="${i}" aria-pressed="${same(choice.features, f)}">${name}</button>`).join('');
     $('picks').innerHTML = P.ORDER.map(k => {
-      const f = P.FEATURES[k], on = choice.features.includes(k);
+      const f = P.FEATURES[k], on = choice.features.includes(k), covered = P.coveredNote(choice.features, k);
+      // الرسائل مع الولاء: مشمولة فيه، فتطلع معطّلة ومعها السبب بدل السعر
+      if (covered) return `<button type="button" role="checkbox" aria-checked="false" aria-disabled="true" disabled class="feat-pick covered">
+        <span class="box"><i class="ph-bold ph-check"></i></span>
+        <span class="min-w-0"><b><i class="ph-bold ${f.icon}"></i> ${f.name}</b><p>${covered}.</p></span>
+      </button>`;
       return `<button type="button" role="checkbox" aria-checked="${on}" data-feat="${k}" class="feat-pick">
         <span class="box">${on ? '<i class="ph-bold ph-check"></i>' : ''}</span>
         <span class="min-w-0"><b><i class="ph-bold ${f.icon}"></i> ${f.name}</b><p>${f.desc}</p></span>

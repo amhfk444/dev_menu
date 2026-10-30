@@ -236,6 +236,7 @@
   .feat-row.on { border-color: var(--brand); background: rgba(56, 79, 61, .04); }
   .feat-box { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid var(--line-2); display: grid; place-items: center; font-size: 12px; color: #fff; flex-shrink: 0; }
   .feat-row.on .feat-box { background: var(--brand); border-color: var(--brand); }
+  .feat-row.covered { border-style: dashed; background: rgba(56, 79, 61, .03); opacity: .8; }
   .plan-done { display: flex; gap: 12px; padding: 14px; border-radius: 14px; background: rgba(47, 122, 75, .07); border: 1px solid rgba(47, 122, 75, .2); }
   .plan-done-ic { width: 30px; height: 30px; border-radius: 50%; background: var(--ok); color: #fff; display: grid; place-items: center; flex-shrink: 0; font-size: 14px; }
   .editing-glow { border-color: rgba(180, 130, 20, 0.7) !important; background: rgba(251, 191, 36, 0.08) !important; box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15); }
@@ -2299,7 +2300,13 @@
     const pr = DMPlans.price(feats, pick, branchCount());
     const save = planTotal('month') * 12 - planTotal('year');
     const row = (k) => {
-      const f = DMPlans.FEATURES[k], on = feats.includes(k);
+      const f = DMPlans.FEATURES[k], on = feats.includes(k), covered = DMPlans.coveredNote(feats, k);
+      // الرسائل مع الولاء: مشمولة فيه، فتطلع معطّلة ومعها السبب بدل السعر
+      if (covered) return `
+        <div role="checkbox" aria-checked="false" aria-disabled="true" class="feat-row covered">
+          <span class="feat-box"><i class="ph-bold ph-check text-ink/50"></i></span>
+          <span class="flex-1 min-w-0 text-right"><b class="block text-[13px]"><i class="ph-bold ${f.icon}"></i> ${f.name}</b><span class="block text-[11px] text-ink/60 leading-relaxed">${covered}.</span></span>
+        </div>`;
       return `
         <button type="button" role="checkbox" aria-checked="${on}" onclick="toggleFeature('${k}')" class="feat-row ${on ? 'on' : ''}">
           <span class="feat-box">${on ? '<i class="ph-bold ph-check"></i>' : ''}</span>

@@ -360,5 +360,6 @@
   "~⁧{n} {c}⁩": "⁦{c} {n}⁩",
   "~{n} ر.س": "{n} SAR",
   "رسائل لزبائنك": "Messages to your customers",
-  "إضافة للبيجر: ترسل إشعار لكل زبون حافظ بطاقة النداء، مثل عرض اليوم أو منتج جديد": "Pager add-on: send a notification to every customer who saved the pager card, like today's offer or a new product"
+  "إضافة للبيجر: ترسل إشعار لكل زبون حافظ بطاقة النداء، مثل عرض اليوم أو منتج جديد": "Pager add-on: send a notification to every customer who saved the pager card, like today's offer or a new product",
+  "مشمولة في {a}: ترسل منها رسائلك لكل زبائنك أو لزبون معيّن، فلا تحتاج إلى إضافتها": "Included in {a}: send your messages from it to all your customers or to one customer, so you don't need to add it"
 }

@@ -8,7 +8,7 @@
   const FEATURES = {
     menu:     { name: 'المنيو الرقمي',  desc: 'المنيو بصوره وأسعاره، كود QR للطاولات، الطلب على الواتساب، الثيمات والإحصائيات', icon: 'ph-fork-knife', month: 39, year: 349 },
     pager:    { name: 'البيجر',          desc: 'جوال الزبون يرن لما يجهز طلبه، بدون أجهزة', icon: 'ph-bell', month: 49, year: 449 },
-    notify:   { name: 'رسائل لزبائنك',  desc: 'إضافة للبيجر: ترسل إشعار لكل زبون حافظ بطاقة النداء، مثل عرض اليوم أو منتج جديد', icon: 'ph-megaphone', month: 19, year: 179, needs: 'pager' },
+    notify:   { name: 'رسائل لزبائنك',  desc: 'إضافة للبيجر: ترسل إشعار لكل زبون حافظ بطاقة النداء، مثل عرض اليوم أو منتج جديد', icon: 'ph-megaphone', month: 19, year: 179, needs: 'pager', within: 'loyalty' },
     waitlist: { name: 'قائمة الانتظار', desc: 'الزبون يسجل دوره ويجيه تنبيه لما يجي دوره', icon: 'ph-hourglass-medium', month: 29, year: 249 },
     loyalty:  { name: 'بطاقة الولاء',    desc: 'أختام ومكافآت ومحفظة الجوال ومساعد ذكي يكلم زبائنك', icon: 'ph-seal-check', month: 69, year: 649 }
   };
@@ -27,15 +27,19 @@
   // المشتركين القدامى (قبل نظام المميزات) كانت باقتهم المنيو + البيجر + الانتظار
   const LEGACY = ['menu', 'pager', 'waitlist'];
 
-  // الإضافة ما تشتغل بدون الأساس حقها (رسائل لزبائنك تحتاج البيجر)
-  const clean = (list) => { const l = list || []; return ORDER.filter(k => l.includes(k) && (!FEATURES[k].needs || l.includes(FEATURES[k].needs))); };
+  // الإضافة ما تشتغل بدون الأساس حقها (رسائل لزبائنك تحتاج البيجر)، وتنشال لو فيه خدمة تشملها (الولاء فيه الرسائل)
+  const coveredBy = (list, key) => { const w = FEATURES[key] && FEATURES[key].within; return w && (list || []).includes(w) ? w : null; };
+  const clean = (list) => { const l = list || []; return ORDER.filter(k => l.includes(k) && (!FEATURES[k].needs || l.includes(FEATURES[k].needs)) && !coveredBy(l, k)); };
   // تشغيل/إيقاف ميزة في الاختيار: الإضافة تجيب أساسها معها، وشيل الأساس يشيل إضافاته
+  // والإضافة المشمولة في خدمة مختارة (الرسائل مع الولاء) ما تنضاف
   function toggle(list, key) {
     const s = new Set(list || []);
     if (s.has(key)) { s.delete(key); ORDER.forEach(k => { if (FEATURES[k].needs === key) s.delete(k); }); }
-    else { s.add(key); if (FEATURES[key] && FEATURES[key].needs) s.add(FEATURES[key].needs); }
+    else if (!coveredBy([...s], key)) { s.add(key); if (FEATURES[key] && FEATURES[key].needs) s.add(FEATURES[key].needs); }
     return clean([...s]);
   }
+  // نص يوضح ليش الإضافة مو متاحة في هالاختيار
+  const coveredNote = (list, key) => { const w = coveredBy(list, key); return w ? `مشمولة في ${FEATURES[w].name}: ترسل منها رسائلك لكل زبائنك أو لزبون معيّن، فلا تحتاج إلى إضافتها` : ''; };
 
   // تفاصيل السعر: { lines, discount, total }
   function price(features, period = 'year', branches = 0) {
@@ -67,7 +71,7 @@
   }
   const has = (store, key) => live(store) && featuresOf(store).includes(key);
 
-  const api = { FEATURES, ORDER, BRANCH, BUNDLES, LEGACY, price, featuresOf, has, live, clean, toggle };
+  const api = { FEATURES, ORDER, BRANCH, BUNDLES, LEGACY, price, featuresOf, has, live, clean, toggle, coveredBy, coveredNote };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.DMPlans = api;
 })(typeof window !== 'undefined' ? window : globalThis);
