@@ -275,7 +275,7 @@
           <li><i class="ph-bold ph-check"></i> الطلب على الواتساب، كوبونات وخصومات</li>
           <li><i class="ph-bold ph-check"></i> عربي وإنجليزي، ثيمات وخلفية صورة أو فيديو</li>
         </ul>
-        <p class="from">من <b dir="ltr">&#x20C1; 39</b> بالشهر</p>
+        <p class="from"><b dir="ltr" data-price="menu">&#x20C1; 39</b> بالشهر</p>
       </article>
       <article class="prod reveal">
         <span class="prod-ic" style="background:#e3f1ef;color:#0f766e"><i class="ph-bold ph-bell-ringing"></i></span>
@@ -287,7 +287,7 @@
           <li><i class="ph-bold ph-check"></i> إحصائيات وقت الانتظار وأوقات الذروة</li>
           <li><i class="ph-bold ph-check"></i> تقييم بعد الاستلام، والراضي ينطلب منه تقييم قوقل</li>
         </ul>
-        <p class="from">من <b dir="ltr">&#x20C1; 25</b> بالشهر</p>
+        <p class="from"><b dir="ltr" data-price="pager">&#x20C1; 49</b> بالشهر</p>
       </article>
       <article class="prod reveal">
         <span class="prod-ic" style="background:#f1ecfb;color:#6d28d9"><i class="ph-bold ph-seal-check"></i></span>
@@ -299,7 +299,7 @@
           <li><i class="ph-bold ph-check"></i> مساعد ذكي يكتب لزبونك رسالة باسمه لما يغيب</li>
           <li><i class="ph-bold ph-check"></i> عندك بطاقة قديمة؟ الكاشير ينقل رصيد الزبون بضغطة</li>
         </ul>
-        <p class="from">من <b dir="ltr">&#x20C1; 49</b> بالشهر</p>
+        <p class="from"><b dir="ltr" data-price="loyalty">&#x20C1; 69</b> بالشهر</p>
       </article>
       <article class="prod reveal">
         <span class="prod-ic" style="background:#e8f2fa;color:#0369a1"><i class="ph-bold ph-hourglass-medium"></i></span>
@@ -310,7 +310,7 @@
           <li><i class="ph-bold ph-check"></i> تنبيه بالجوال والبريد لما يجي دوره</li>
           <li><i class="ph-bold ph-check"></i> يطلع في المنيو للي واقف ينتظر</li>
         </ul>
-        <p class="from">من <b dir="ltr">&#x20C1; 15</b> بالشهر</p>
+        <p class="from"><b dir="ltr" data-price="waitlist">&#x20C1; 29</b> بالشهر</p>
       </article>
     </div>
   </div>
@@ -564,6 +564,8 @@
 
   // ─── أسعار أعلى الصفحة: من نفس ملف الأسعار (js/plans.js) ───
   if (window.DMPlans) {
+    // سعر كل خدمة في بطاقتها
+    document.querySelectorAll('[data-price]').forEach(el => { const f = DMPlans.FEATURES[el.dataset.price]; if (f) el.innerHTML = `&#x20C1; ${f.month}`; });
     const full = DMPlans.price(DMPlans.ORDER, 'month').total, ly = DMPlans.FEATURES.loyalty.month;
     if (full) document.getElementById('chip-full').innerHTML = `&#x20C1; ${full}`;
     if (ly) document.getElementById('chip-loyalty').innerHTML = `&#x20C1; ${ly}`;
