@@ -4730,10 +4730,24 @@
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   }
 
+  // الختم أو الصرف من اللوحة: اللي عنده فروع يختار الفرع اللي صار فيه (عشان ينحسب في "عملاؤك في كل فرع")
+  // يرجّع { branch_id } أو null لو تراجع
+  async function askLyBranch({ title, message, confirmText }) {
+    if (branches.length < 2) return (await DMDialog.confirm({ title, message, confirmText, cancelText: 'تراجع', tone: 'success' })) ? {} : null;
+    let last = null; try { last = Number(localStorage.getItem('dm_ly_branch')); } catch {}
+    const ids = branches.map(b => b.id), pick = ids.includes(last) ? last : client.id;
+    const v = await DMDialog.form({ title, subtitle: message, icon: 'ph-storefront', confirmText, cancelText: 'تراجع',
+      fields: [{ name: 'branch', label: 'من أي فرع؟', type: 'choice', value: String(pick),
+        options: branches.map(b => ({ value: String(b.id), label: b.name || b.client_slug, icon: b.parent_id ? 'ph-git-branch' : 'ph-star' })) }] });
+    if (!v) return null;
+    try { localStorage.setItem('dm_ly_branch', v.branch); } catch {}
+    return { branch_id: Number(v.branch) };
+  }
   async function redeemLyMember() {
     if (!ly.member) return;
-    if (!(await DMDialog.confirm({ title: 'صرف المكافأة', message: `تصرف ${ly.data.settings.reward} لـ ${memberName(ly.member)} الحين؟`, confirmText: 'اصرفها', cancelText: 'تراجع' }))) return;
-    try { const r = await api('loyalty-redeem', { card_id: ly.member.id }); showToast(`تم صرف ${r.reward}`); const id = ly.member.id; await onLoyaltyPage(); openLyMember(id); }
+    const at = await askLyBranch({ title: 'صرف المكافأة', message: `تصرف ${ly.data.settings.reward} لـ ${memberName(ly.member)} الحين؟`, confirmText: 'اصرفها' });
+    if (!at) return;
+    try { const r = await api('loyalty-redeem', { card_id: ly.member.id, ...at }); showToast(`تم صرف ${r.reward}`); const id = ly.member.id; await onLoyaltyPage(); openLyMember(id); }
     catch (e) { showToast(e.message || 'ما انصرفت المكافأة. حاول مرة ثانية', true); }
   }
   // ─── حذف عضو ───
@@ -4966,9 +4980,10 @@
   function closeLyMember() { const box = document.getElementById('ly-member'); box.classList.add('hidden'); box.classList.remove('flex'); ly.member = null; }
   async function giveLyStamp() {
     if (!ly.member) return;
-    if (!(await DMDialog.confirm({ title: 'إعطاء ختم', message: `تعطي ${memberName(ly.member)} ختم الحين؟`, confirmText: 'أعطه ختم', cancelText: 'تراجع' }))) return;
+    const at = await askLyBranch({ title: 'إعطاء ختم', message: `تعطي ${memberName(ly.member)} ختم الحين؟`, confirmText: 'أعطه ختم' });
+    if (!at) return;
     const btn = document.getElementById('lm-stamp'); btn.disabled = true;
-    try { await api('loyalty-give-stamp', { card_id: ly.member.id }); showToast('انضاف الختم'); const id = ly.member.id; await onLoyaltyPage(); openLyMember(id); }
+    try { await api('loyalty-give-stamp', { card_id: ly.member.id, ...at }); showToast('انضاف الختم'); const id = ly.member.id; await onLoyaltyPage(); openLyMember(id); }
     catch (e) { showToast(e.message || 'تعذر إضافة الختم', true); btn.disabled = false; }
   }
   async function sendLyMemberMsg() {

@@ -664,6 +664,12 @@ async function main(req) {
   const { store, admin, here } = await context(req);
   const sid = store.id;
   req._sid = sid;
+  // الفرع اللي صار فيه الختم أو الصرف: يختاره صاحب المحل من اللوحة (من فروعه بس)، وإلا الفرع المفتوح
+  const atBranch = async () => {
+    const want = Number(b.branch_id);
+    if (!Number.isInteger(want) || want === here.id) return here.id;
+    return (await familyIds(store)).includes(want) ? want : here.id;
+  };
   // المميزات حسب باقة المحل
   if (['pager-update', 'pager-invoice', 'pager-ring'].includes(action) && !PLANS.has(store, 'pager')) throw new ApiError(403, 'البيجر مو ضمن باقتك', 'ADDON_OFF');
   if (['pager-message', 'pager-message-push'].includes(action) && !PLANS.has(store, 'notify')) throw new ApiError(403, '"رسائل لزبائنك" مو ضمن باقتك. أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
@@ -829,12 +835,12 @@ async function main(req) {
       const rows = await rest(`loyalty_gifts?code=eq.${q(String(b.gift))}&to_card=eq.${card.id}&status=eq.claimed&expires_at=gt.${q(new Date().toISOString())}`,
         { method: 'PATCH', prefer: 'return=representation', body: { status: 'redeemed', redeemed_at: new Date().toISOString() } });
       if (!rows.length) throw new ApiError(409, 'الهدية مستخدمة أو منتهية', 'GIFT_USED');
-      await rest('loyalty_events', { method: 'POST', body: { client_id: sid, branch_id: here.id, card_id: card.id, kind: 'gift_redeem' } }).catch(() => {});
+      await rest('loyalty_events', { method: 'POST', body: { client_id: sid, branch_id: await atBranch(), card_id: card.id, kind: 'gift_redeem' } }).catch(() => {});
       reward = rows[0].reward;
     } else {
       const r = await rpc('server_loyalty_redeem', { p_card: card.id, p_needed: settings.needed, p_distance: null });
       if (!r.ok) throw new ApiError(409, 'أختامه ما كملت', 'NOT_ENOUGH');
-      await tagBranch(card.id, here.id);
+      await tagBranch(card.id, await atBranch());
     }
     // رسالة تسليم المكافأة على بطاقة العميل (والتحديث نفسه يصفّر أختامه)
     const msg = await redeemMessage(store, settings, card, reward);
@@ -914,7 +920,7 @@ async function main(req) {
     const extra = (await rest(`clients?id=eq.${sid}&select=loyalty_settings`))[0] || {};
     const settings = normalizeLoyalty(extra.loyalty_settings);
     const r = await rpc('server_loyalty_stamp', { p_card: id, p_cooldown_hours: 0, p_needed: settings.needed, p_distance: null });
-    if (r.ok) await tagBranch(id, here.id);
+    if (r.ok) await tagBranch(id, await atBranch());
     if (!r.ok && r.reason === 'FULL') throw new ApiError(409, 'بطاقته مكتملة، لازم يستخدم المكافأة أول');
     await pushWalletCards(sid, { cardIds: [id] });
     const fresh = (await rest(`loyalty_cards?id=eq.${id}&select=id,stamps,visits,rewards,last_stamp_at`))[0];
