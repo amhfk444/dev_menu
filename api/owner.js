@@ -890,9 +890,14 @@ async function main(req) {
       const L = (x) => tr(t.lang, x);
       const wr = await wallet.updatePagerPass(t.wallet_serial, { store, number: t.number, status: T.ready, notice: L(`🔔 ${T.ready} رقم ${t.number}. ${T.readyBody}`), url: storeLink(store.client_slug, 'pager'), step: 'ready', lang: t.lang });
       console.log('PAGER_PASS', sid, t.id, wr);
+      await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_error: `ready ${wr} at=${new Date().toISOString().slice(11, 19)}` } }).catch(() => {});
     }
     // استلم أو انلغى: تذكرة المحفظة تنطفي وتنتقل للبطاقات المنتهية
-    if ((status === 'done' || status === 'cancelled') && t.wallet_serial) console.log('PAGER_PASS_END', sid, t.id, await wallet.revokePass(t.wallet_serial));
+    if ((status === 'done' || status === 'cancelled') && t.wallet_serial) {
+      const er = await wallet.revokePass(t.wallet_serial);
+      console.log('PAGER_PASS_END', sid, t.id, er);
+      await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_error: `${t.wallet_error || ''} | end ${er}`.slice(0, 300) } }).catch(() => {});
+    }
     // بطاقة ولاء مربوطة وفي المحفظة: إشعار "طلبك جاهز" من البطاقة (يوصل الآيفون حتى لو المتصفح مسكّر)
     if (status === 'ready' && t.loyalty_card_id && PLANS.has(store, 'loyalty')) {
       const wr = await pagerReadyNotice(sid, t.loyalty_card_id, t.number, store.name, SECTORS.terms(store));
