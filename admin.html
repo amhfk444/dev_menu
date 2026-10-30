@@ -3754,6 +3754,37 @@
       loadSupport();
     } catch (e) { showToast(e.message || 'ما انرسل. تأكد من الإنترنت وحاول مرة ثانية', true); }
   }
+  // مميزات فرع موجود: صاحب المحل يختار، ويشوف السعر الجديد والفرق، والطلب يوصل الإدارة تفعّله بضغطة
+  const pendingBranchFeatures = (id) => supportRows.some(x => x.kind === 'addon' && x.status === 'open' && x.meta && Number(x.meta.branch_id) === id);
+  const branchOwn = (b) => DMPlans.ownBranch(Array.isArray(b.branch_features) ? b.branch_features : accountFeatures());
+  async function requestBranchFeatures(id) {
+    const b = branches.find(x => x.id === id); if (!b) return;
+    if (pendingBranchFeatures(id)) return showToast('عندك طلب لهالفرع قيد التفعيل، بنفعّله لك قريب', true);
+    const p = client.subscription_plan === 'month' ? 'month' : 'year', per = p === 'month' ? 'بالشهر' : 'بالسنة';
+    const cur = branchOwn(b), curPrice = DMPlans.branchPrice(b.branch_features, p);
+    const wide = accountFeatures().filter(k => DMPlans.ACCOUNT_WIDE.includes(k));
+    const v = await DMDialog.form({ title: `مميزات ${b.name || 'الفرع'}`, subtitle: `سعره الحين ${curPrice} ر.س ${per}${Array.isArray(b.branch_features) ? '' : ' (السعر القديم للفروع)'}. اختر اللي يحتاجه الفرع.`, icon: 'ph-sliders-horizontal', confirmText: 'أرسل الطلب',
+      fields: [{ name: 'features', label: 'مميزات الفرع', type: 'multi', value: cur, required: !wide.length, requiredText: 'اختر ميزة وحدة على الأقل للفرع',
+        options: DMPlans.BRANCH_KEYS.map(k => ({ value: k, label: DMPlans.FEATURES[k].name, icon: DMPlans.FEATURES[k].icon, price: `${DMPlans.FEATURES[k][p]} ر.س` })) }],
+      live: (vals) => {
+        const feats = DMPlans.clean(vals.features), q = branchQuote(feats), old = branchQuote(b.branch_features);
+        const diff = q.now != null && old.now != null ? q.now - (Array.isArray(b.branch_features) ? old.now : Math.round(DMPlans.BRANCH[p] * q.days / (p === 'month' ? 30 : 365))) : null;
+        return `<div style="display:flex;justify-content:space-between;font-weight:900"><span>سعر الفرع الجديد ${per}</span><span>${q.price} ر.س</span></div>
+          <div style="font-size:11px;color:rgba(34,54,42,.7);margin-top:4px">${client.subscription_status === 'trial' ? 'وأنت في التجربة المجانية، فتتفعّل مجاناً الحين.' : diff > 0 ? `تدفع الحين الفرق ${diff} ر.س عن ${q.days} يوم الباقية لين تجديد اشتراكك.` : 'ما عليك مبلغ الحين، والسعر الجديد يبدأ مع تجديد اشتراكك.'}</div>
+          ${wide.length ? `<div style="font-size:11px;color:#047857;margin-top:4px">${wide.map(k => DMPlans.FEATURES[k].name).join(' و')} تشتغل في الفرع مع حسابك بدون سعر إضافي.</div>` : ''}`;
+      },
+      note: 'الطلب يوصل لإدارة DEV MENU، وبعد التفعيل يطلع لك الرد تحت "اشتراكك"، وتوصلك الفاتورة على بريدك لو عليك فرق.' });
+    if (!v) return;
+    const feats = DMPlans.clean(v.features);
+    if (feats.join() === cur.join() && Array.isArray(b.branch_features)) return showToast('ما غيّرت شي في مميزات الفرع');
+    const q = branchQuote(feats);
+    const body = `أبغى أغيّر مميزات فرع "${b.name}": ${feats.map(k => DMPlans.FEATURES[k].name).join(' + ') || 'بدون مميزات خاصة'}.\nسعر الفرع الجديد: ${q.price} ر.س ${q.per}.`;
+    try {
+      await api('support-send', { kind: 'addon', body, meta: { branch_id: b.id, features: feats } });
+      showToast('وصل طلبك، وبنفعّل المميزات قريب');
+      loadSupport();
+    } catch (e) { showToast(e.message || 'ما انرسل. تأكد من الإنترنت وحاول مرة ثانية', true); }
+  }
   function renderBranchesCard() {
     // المحل الرئيسي يشوف البطاقة دايم (عشان يطلب فرع)، والفرع يشوفها لو فيه أكثر من فرع
     const main = !client.parent_id;
@@ -3777,6 +3808,7 @@
           <p class="text-xs font-black text-ink truncate">${b.parent_id ? '' : '<i class="ph-bold ph-star text-amber-500 text-[9px]"></i> '}${esc(b.name || b.client_slug)}${b.id === client.id ? ' <span class="text-[9px] font-bold text-emerald-700">(مفتوح الحين)</span>' : ''}</p>
           <a href="${esc(DM.storeUrl(b.client_slug))}" target="_blank" rel="noopener" class="text-[10px] text-ink/55 hover:text-ink" dir="ltr">${esc(b.client_slug)}.devmenu.digital</a>
         </div>
+        ${main && b.parent_id ? (pendingBranchFeatures(b.id) ? '<span class="text-[10px] font-bold text-amber-700 shrink-0">قيد التفعيل</span>' : `<button type="button" onclick="requestBranchFeatures(${Number(b.id)})" class="px-2.5 h-8 rounded-lg bg-white border border-brand/20 text-[10px] font-bold text-ink/80 hover:bg-brand/10"><i class="ph-bold ph-sliders-horizontal"></i> المميزات</button>`) : ''}
         <button type="button" onclick="renameBranch(${Number(b.id)})" title="تعديل الاسم" class="w-8 h-8 rounded-lg bg-white border border-brand/20 text-ink/70 hover:bg-brand/10"><i class="ph-bold ph-pencil-simple text-[10px]"></i></button>
         ${b.id === client.id ? '' : `<button type="button" onclick="switchBranch(${Number(b.id)})" class="px-2.5 h-8 rounded-lg bg-brand text-cream text-[10px] font-bold">إدارة</button>`}
       </div>`).join('');

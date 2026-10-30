@@ -200,10 +200,30 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     if (target && target.parent_id) {
       // الفرع: مميزاته الخاصة (يدفع ربط الفرع + سعرها)، ومعها مميزات الحساب كله
       const own = PLANS.ownBranch(features);
-      const parent = (await rest(`clients?id=eq.${target.parent_id}&select=plan_features`))[0] || {};
+      const parent = (await rest(`clients?id=eq.${target.parent_id}&select=id,name,email,plan_features,subscription_status,subscription_plan,subscription_end_date`))[0] || {};
       const all = PLANS.branchFeatures(own, parent.plan_features || []);
       if (!all.length) throw new ApiError(400, 'اختر ميزة وحدة على الأقل للفرع');
-      return patch({ branch_features: own, plan_features: all, waitlist_enabled: all.includes('waitlist') });
+      const before = (await rest(`clients?id=eq.${id}&select=name,branch_features`))[0] || {};
+      const out = await patch({ branch_features: own, plan_features: all, waitlist_enabled: all.includes('waitlist') });
+      // في نص الاشتراك: فاتورة الفرق عن الأيام الباقية لين تجديد الحساب (لو زاد السعر)
+      let invoice = null;
+      const now = branchProration(parent, own), old = branchProration(parent, before.branch_features);
+      const due = now && old ? now.amount - old.amount : 0;
+      if (due > 0 && b.invoice !== false) {
+        const added = own.filter(k => !(before.branch_features || []).includes(k)).map(k => PLANS.FEATURES[k].name).join(' + ');
+        invoice = await sendInvoice(parent, {
+          status: 'due', validUntil: now.end,
+          lines: [{ label: `مميزات فرع ${before.name || ''}`.trim(), detail: `${added ? `إضافة ${added}، ` : ''}${now.days} يوم لين تجديد الحساب`, amount: due }],
+          note: `بعد تاريخ التجديد يتجدد الفرع مع الحساب بـ ${now.renew}. للدفع تواصل معنا عبر واتساب.`
+        });
+      }
+      // موافقة على طلب صاحب المحل: يتقفل الطلب ويطلع له الرد في لوحته
+      const reqId = Number(b.request_id);
+      if (Number.isInteger(reqId) && reqId > 0) {
+        const reply = `تفعّلت مميزات فرع "${before.name || ''}": ${all.map(k => PLANS.FEATURES[k].name).join('، ')}.${invoice && invoice.sent ? ` وأرسلنا فاتورة الفرق على ${invoice.to}.` : ''}`;
+        await rest(`support_requests?id=eq.${reqId}&client_id=eq.${parent.id}`, { method: 'PATCH', body: { status: 'done', reply, handled_at: new Date().toISOString() } }).catch(() => {});
+      }
+      return { ...out, invoice, due: due > 0 ? due : 0, renew: now ? now.renew : null };
     }
     const out = await patch({ plan_features: features, waitlist_enabled: features.includes('waitlist'), ...plan });
     if (!out.client.parent_id) await followParentFeatures(id, features);

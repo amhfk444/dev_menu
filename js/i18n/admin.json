@@ -1404,5 +1404,19 @@
   "زيارة": "visits",
   "سجّلوا فيه": "joined here",
   "من أي فرع؟": "Which branch?",
-  "شاشة الزبون": "Customer screen"
+  "شاشة الزبون": "Customer screen",
+  "عندك طلب لهالفرع قيد التفعيل، بنفعّله لك قريب": "This branch already has a request in progress. We'll activate it soon",
+  "سعره الحين {a} ر.س {b}{c}. اختر اللي يحتاجه الفرع.": "Its current price is {a} SAR {b}{c}. Choose what the branch needs.",
+  " (السعر القديم للفروع)": " (old branch price)",
+  "مميزات الفرع": "Branch features",
+  "مميزات {a}": "{a} features",
+  "سعر الفرع الجديد {a}": "New branch price {a}",
+  "وأنت في التجربة المجانية، فتتفعّل مجاناً الحين.": "You're on the free trial, so it's activated free now.",
+  "تدفع الحين الفرق {a} ر.س عن {b} يوم الباقية لين تجديد اشتراكك.": "You pay the {a} SAR difference now for the {b} days left until your renewal.",
+  "ما عليك مبلغ الحين، والسعر الجديد يبدأ مع تجديد اشتراكك.": "Nothing to pay now. The new price starts when you renew.",
+  "الطلب يوصل لإدارة DEV MENU، وبعد التفعيل يطلع لك الرد تحت \"اشتراكك\"، وتوصلك الفاتورة على بريدك لو عليك فرق.": "Your request goes to the DEV MENU team. Once activated, the reply appears under \"Your subscription\" and any difference is invoiced to your email.",
+  "ما غيّرت شي في مميزات الفرع": "You didn't change the branch features",
+  "وصل طلبك، وبنفعّل المميزات قريب": "Request sent. We'll activate the features soon",
+  "قيد التفعيل": "Being activated",
+  "المميزات": "Features"
 }

@@ -363,6 +363,7 @@
           <p class="text-[12.5px] whitespace-pre-line">${esc(x.body)}</p>
           ${x.reply ? `<p class="text-[12px] text-ink/70"><b>ردك:</b> ${esc(x.reply)}</p>` : ''}
           <div class="flex flex-wrap gap-2 pt-1">
+            ${x.kind === 'addon' && x.status === 'open' && x.meta && x.meta.branch_id ? `<button type="button" onclick="approveBranchFeatures(${x.id})" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-emerald-700 text-white"><i class="ph-bold ph-sliders-horizontal"></i> فعّل مميزات "${esc(x.meta.name || '')}"</button>` : ''}
             ${x.kind === 'branch' && x.status === 'open' && x.meta && x.meta.name ? `<button type="button" onclick="approveBranch(${x.id})" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-emerald-700 text-white"><i class="ph-bold ph-git-branch"></i> أضف الفرع "${esc(x.meta.name)}"</button>` : ''}
             <button type="button" onclick="replySupport(${x.id})" class="text-[11px] font-bold px-3 py-1.5 rounded-lg ${x.kind === 'branch' && x.status === 'open' ? 'border border-ink/15' : 'bg-ink text-white'}">${x.reply ? 'عدّل الرد' : x.kind === 'branch' && x.status === 'open' ? 'اعتذر برد' : 'رد'}</button>
             <button type="button" onclick="setSupport(${x.id}, '${x.status === 'open' ? 'done' : 'open'}')" class="text-[11px] font-bold px-3 py-1.5 rounded-lg border border-ink/15">${x.status === 'open' ? 'تم' : 'رجّعه مفتوح'}</button>
@@ -379,6 +380,12 @@
     const v = await DMDialog.form({ title: 'رد على الطلب', subtitle: 'يطلع الرد لصاحب المتجر في لوحته تحت "اشتراكك"', icon: 'ph-chat-circle-text',
       fields: [{ name: 'reply', label: 'الرد', value: x.reply || '', maxlength: 1000, required: true, multiline: true }], confirmText: 'أرسل الرد وأقفل الطلب' });
     if (v) setSupport(id, 'done', v.reply);
+  }
+  // طلب مميزات فرع: نافذة المميزات معبّاة بطلبه، والحفظ يفعّلها ويرسل فاتورة الفرق ويقفل الطلب
+  function approveBranchFeatures(rid) {
+    const x = supRows.find(r => r.id === rid); if (!x || !x.meta) return;
+    if (!find(x.meta.branch_id)) return showToast('الفرع غير موجود في القائمة، حدّث الصفحة', true);
+    openFeatures(x.meta.branch_id, { features: x.meta.features, requestId: rid });
   }
   // طلب فرع من صاحب المحل: نفس نافذة "إضافة فرع" معبّاة بطلبه، وبعد الإنشاء يتقفل الطلب ويوصله الرد
   function approveBranch(rid) {
@@ -779,13 +786,18 @@
   }
 
   // نافذة المميزات: mode = activate (تفعيل/تجديد مع فاتورة) أو features (تعديل الباقة بدون تمديد)
-  const fd = { id: null, mode: 'activate', period: 'year', feats: new Set() };
+  const fd = { id: null, mode: 'activate', period: 'year', feats: new Set(), requestId: null };
   function activate(id, period) { openFeat(id, 'activate', period); }
-  function openFeatures(id) { const c = find(id), main = c && c.parent_id ? find(c.parent_id) : c; openFeat(id, 'features', (main && main.subscription_plan) || 'year'); }
+  function openFeatures(id, pre = {}) {
+    const c = find(id), main = c && c.parent_id ? find(c.parent_id) : c;
+    openFeat(id, 'features', (main && main.subscription_plan) || 'year');
+    fd.requestId = pre.requestId || null;
+    if (pre.features) { fd.feats = new Set(DMPlans.ownBranch(pre.features)); renderFeat(); }
+  }
   function openFeat(id, mode, period) {
     openMenu = null; renderStores();
     const c = find(id);
-    Object.assign(fd, { id, mode, period: period === 'month' ? 'month' : 'year', feats: new Set(mode === 'activate' ? reqFeats(c) : c.parent_id ? DMPlans.ownBranch(c.branch_features || planFeats(c)) : planFeats(c)) });
+    Object.assign(fd, { id, mode, requestId: null, period: period === 'month' ? 'month' : 'year', feats: new Set(mode === 'activate' ? reqFeats(c) : c.parent_id ? DMPlans.ownBranch(c.branch_features || planFeats(c)) : planFeats(c)) });
     document.getElementById('feat-title').innerHTML = mode === 'activate' ? '<i class="ph-bold ph-check-circle text-green-700"></i> تفعيل الاشتراك' : '<i class="ph-bold ph-sliders-horizontal"></i> مميزات الباقة';
     document.getElementById('feat-store').textContent = `${c.name || c.client_slug}${c.requested_plan ? ` · طلب: ${featNames(reqFeats(c))} (${c.requested_plan === 'month' ? 'شهري' : 'سنوي'})` : ''}`;
     renderFeat();
@@ -819,11 +831,18 @@
       <p class="flex justify-between border-t border-brand/10 pt-1.5 font-black"><span>المجموع ${fd.period === 'month' ? 'بالشهر' : 'بالسنة'}</span><span>${money(pr.total)}</span></p>`;
     document.getElementById('feat-note').textContent = fd.mode === 'activate'
       ? `إذا كان الاشتراك سارياً تنضاف المدة على تاريخ انتهائه، ويتجدد المتجر وفروعه بنفس التاريخ. ${c.email ? `تنرسل فاتورة مدفوعة لبريد ${c.email}.` : 'ما عنده بريد، فما بتنرسل فاتورة.'}`
-      : isBranch ? `مميزات هالفرع بس، وسعره يدخل في تجديد الحساب. ما تنرسل فاتورة الحين.${Array.isArray(c.branch_features) ? '' : ' الفرع على السعر القديم (ربط الفرع بس)، والحفظ ينقله لسعر ربط الفرع + مميزاته.'}`
+      : isBranch ? `${fd.requestId ? 'صاحب المحل طلب هالمميزات. ' : ''}${branchDueText(c, feats)}${Array.isArray(c.branch_features) ? '' : ' الفرع على السعر القديم (ربط الفرع بس)، والحفظ ينقله لسعر ربط الفرع + مميزاته.'}`
       : 'يتغيّر اللي يشوفه صاحب المحل ونوع اشتراكه (شهري أو سنوي) على طول، بدون ما يتغير تاريخ الاشتراك وبدون فاتورة.';
     const btn = document.getElementById('feat-save');
     btn.disabled = !feats.length && !isBranch;
     btn.textContent = fd.mode === 'activate' ? `تفعيل ${fd.period === 'month' ? 'شهر' : 'سنة'} · ${money(pr.total)}` : 'حفظ المميزات';
+  }
+  // فرق سعر الفرع عن الأيام الباقية لين تجديد الحساب (لو زاد)
+  function branchDueText(c, feats) {
+    const main = find(c.parent_id) || {}, now = branchProration(main, feats), old = branchProration(main, c.branch_features);
+    const due = (now.amount || 0) - (old.amount || 0);
+    if (statusOf(main).key !== 'paid' || !now.days) return 'السعر الجديد يدخل في تجديد الحساب، وما تنرسل فاتورة الحين.';
+    return due > 0 ? `تنرسل له فاتورة بالفرق: ${money(due)} عن ${now.days} يوم الباقية لين تجديد الحساب، وبعدها يتجدد الفرع بـ ${money(now.price)} ${now.per}.` : `ما عليه مبلغ الحين، وبعد التجديد يصير الفرع بـ ${money(now.price)} ${now.per}.`;
   }
   async function saveFeat() {
     const features = DMPlans.clean([...fd.feats]);
@@ -833,6 +852,11 @@
       if (fd.mode === 'activate') {
         const res = await DM.post(A('activate'), { id: fd.id, period: fd.period, features }, true);
         showToast(`تم تفعيل ${fd.period === 'month' ? 'شهر' : 'سنة'}${invoiceNote(res.invoice)}`, res.invoice && !res.invoice.sent && res.invoice.reason !== 'NO_EMAIL');
+      } else if ((find(fd.id) || {}).parent_id) {
+        // الفرع: فاتورة الفرق (لو فيه)، وطلب صاحب المحل يتقفل
+        const res = await DM.post(A('features'), { id: fd.id, features, ...(fd.requestId ? { request_id: fd.requestId } : {}) }, true);
+        showToast(`تم تحديث مميزات الفرع${res.due ? invoiceNote(res.invoice) : ''}`, res.invoice && !res.invoice.sent && res.invoice.reason !== 'NO_EMAIL');
+        if (fd.requestId) loadSupport();
       } else {
         const error = await post('features', { id: fd.id, features, period: fd.period });
         if (error) throw error;

@@ -428,6 +428,16 @@ async function main(req) {
       if (!PLANS.branchFeatures(features, PLANS.featuresOf(store)).length) throw new ApiError(400, 'اختر ميزة وحدة على الأقل للفرع');
       meta = { name, features, empty_menu: !!(b.meta && b.meta.empty_menu) };
     }
+    // طلب تغيير مميزات فرع: من فروع نفس المحل بس، وطلب واحد مفتوح لكل فرع
+    if (kind === 'addon' && b.meta && b.meta.branch_id) {
+      const br = (await rest(`clients?id=eq.${int(b.meta.branch_id)}&parent_id=eq.${mainId}&select=id,name`))[0];
+      if (!br) throw new ApiError(404, 'الفرع غير موجود', 'NO_BRANCH');
+      const open = await rest(`support_requests?client_id=eq.${mainId}&kind=eq.addon&status=eq.open&select=id,meta`).catch(() => []);
+      if (open.some(x => x.meta && Number(x.meta.branch_id) === br.id)) throw new ApiError(409, 'عندك طلب لهالفرع قيد التفعيل، بنفعّله لك قريب', 'BRANCH_PENDING');
+      const features = PLANS.clean(PLANS.ownBranch(b.meta.features));
+      if (!PLANS.branchFeatures(features, PLANS.featuresOf(store)).length) throw new ApiError(400, 'اختر ميزة وحدة على الأقل للفرع');
+      meta = { branch_id: br.id, name: br.name, features };
+    }
     const row = (await rest('support_requests', { method: 'POST', prefer: 'return=representation', body: { client_id: mainId, kind, body, ...(meta ? { meta } : {}) } }))[0];
     if (mailConfigured()) {
       const KIND = { renew: 'تجديد', plan: 'تغيير باقة', addon: 'تفعيل إضافة', branch: 'فرع جديد', suspended: 'حساب موقوف', contact: 'رسالة' };
