@@ -4718,7 +4718,8 @@
     const rows = productImportRows();
     document.getElementById('pi-rows').innerHTML = rows.slice(0, 8).map(r => `<tr class="border-t border-brand/10"><td class="p-2">${esc(r.category || 'أطباق')}</td><td class="p-2">${esc(r.name)}</td><td class="p-2" dir="ltr">${esc(r.price || '—')}</td></tr>`).join('');
     const cats = new Set(rows.map(r => r.category || 'أطباق')).size;
-    document.getElementById('pi-count').textContent = `${rows.length} طبق في ${cats} ${cats === 1 ? 'قسم' : 'أقسام'}`;
+    const dishes = (n) => n === 1 ? 'طبق واحد' : n === 2 ? 'طبقين' : n <= 10 ? `${n} أطباق` : `${n} طبق`;
+    document.getElementById('pi-count').textContent = `${dishes(rows.length)} في ${cats === 1 ? 'قسم واحد' : cats === 2 ? 'قسمين' : `${cats} أقسام`}`;
   }
   // نموذج يفتح في Excel (CSV بترميز يفهمه للعربي)
   function downloadProductTemplate() {
@@ -4740,7 +4741,7 @@
       closeProductImport();
       const why = (r.skipped || []).map(x => `الصف ${x.row}: ${x.reason}`).join('\n');
       await DMDialog.confirm({ title: 'تمت الإضافة', tone: '', icon: 'ph-check-circle', confirmText: 'تمام', cancelText: 'إغلاق',
-        message: `انضاف ${r.added} طبق${r.categories ? ` و${r.categories} ${r.categories === 1 ? 'قسم جديد' : 'أقسام جديدة'}` : ''}.${r.skipped_count ? `\n\nما انضاف ${r.skipped_count}:\n${why}` : ''}\n\nأضف صورة كل طبق من زر التعديل.` });
+        message: `انضاف ${r.added === 1 ? 'طبق واحد' : r.added === 2 ? 'طبقين' : r.added <= 10 ? `${r.added} أطباق` : `${r.added} طبق`}${r.categories ? ` و${r.categories} ${r.categories === 1 ? 'قسم جديد' : 'أقسام جديدة'}` : ''}.${r.skipped_count ? `\n\nما انضاف ${r.skipped_count}:\n${why}` : ''}\n\nأضف صورة كل طبق من زر التعديل.` });
       refreshAll();
     } catch (e) { showToast(e.message || 'تعذر الاستيراد', true); }
     btn.disabled = false; btn.innerHTML = '<i class="ph-bold ph-file-arrow-up"></i> أضف الأطباق';
