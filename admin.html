@@ -3697,14 +3697,15 @@
     try {
       const r = await api('pager-message', { body });
       document.getElementById('nt-body').value = ''; document.getElementById('nt-count').textContent = '0/150';
-      let p = r.progress || { done: true }, sent = p.sent || 0;
+      let p = r.progress || { done: true }, sent = p.sent || 0, gone = p.gone || 0;
       const total = p.total;
       while (!p.done) {
         btn.innerHTML = `<i class="ph-bold ph-spinner-gap ph-spin"></i> وصلت لـ ${sent}${total ? ` من ${total}` : ''}`;
         p = (await api('pager-message-push', { message_id: r.message.id, after: p.lastId })).progress;
-        sent += p.sent;
+        sent += p.sent; gone += p.gone || 0;
       }
-      showToast(sent ? `انرسلت، ووصلت إشعار لـ ${sent} جوال` : 'انرسلت، بس ما فيه أحد حافظ البطاقة للحين');
+      showToast(sent ? `انرسلت، ووصلت إشعار لـ ${sent} جوال${gone ? ` (و${gone} حذفوا البطاقة من محفظتهم)` : ''}`
+        : gone ? `ما وصلت: الزبائن اللي عندهم البطاقة (${gone}) حذفوها من محفظتهم` : total ? 'ما قدرنا نوصلها الحين، جرّب بعد شوي' : 'انرسلت، بس ما فيه أحد حافظ البطاقة للحين', !sent && !!(gone || total));
     } catch (e) { showToast(e.message || 'ما انرسلت. تأكد من الإنترنت وحاول مرة ثانية', true); }
     btn.innerHTML = '<i class="ph-bold ph-paper-plane-tilt"></i> أرسل';
     renderNotifyCard();

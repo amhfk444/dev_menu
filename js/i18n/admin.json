@@ -1419,5 +1419,9 @@
   "وصل طلبك، وبنفعّل المميزات قريب": "Request sent. We'll activate the features soon",
   "قيد التفعيل": "Being activated",
   "المميزات": "Features",
-  "تجربها مجاناً مع البيجر لين تنتهي التجربة. بعدها تشتغل لو أضفتها لاشتراكك بـ {a} ر.س بالشهر.": "You can try it free with the pager until your trial ends. After that it works only if you add it to your subscription for {a} SAR a month."
+  "تجربها مجاناً مع البيجر لين تنتهي التجربة. بعدها تشتغل لو أضفتها لاشتراكك بـ {a} ر.س بالشهر.": "You can try it free with the pager until your trial ends. After that it works only if you add it to your subscription for {a} SAR a month.",
+  "انرسلت، ووصلت إشعار لـ {a} جوال{b}": "Sent, and it reached {a} phones{b}",
+  " (و{a} حذفوا البطاقة من محفظتهم)": " ({a} removed the card from their wallet)",
+  "ما وصلت: الزبائن اللي عندهم البطاقة ({a}) حذفوها من محفظتهم": "Not delivered: the customers who had the card ({a}) removed it from their wallet",
+  "ما قدرنا نوصلها الحين، جرّب بعد شوي": "We couldn't deliver it right now. Try again shortly"
 }

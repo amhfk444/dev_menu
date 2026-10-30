@@ -290,16 +290,22 @@ async function pushPagerMessage(homeId, body, afterId, limit = 40) {
     rest(`${base}&id=gt.${Number(afterId) || 0}&select=id,wallet_serial,lang&order=id.asc&limit=${limit}`),
     afterId ? Promise.resolve(null) : rest(`${base}&select=id`).catch(() => [])
   ]);
+  // الزبون اللي عنده رقم شغّال اليوم: توصله الرسالة وبطاقته تبقى على رقمه وحالته (ما ننزله لـ "بالعافية")
   const family = (await familyOf(store, 'id').catch(() => [store])).map(f => f.id).join(',');
-  const busy = new Set((await rest(`pager_tickets?client_id=in.(${family})&status=in.(waiting,ready)&created_at=gte.${q(riyadhDayStart())}&wallet_serial=not.is.null&select=wallet_serial`).catch(() => [])).map(t => t.wallet_serial));
-  let sent = 0;
-  const todo = cards.filter(c => !busy.has(c.wallet_serial));
-  for (let i = 0; i < todo.length; i += 10) {
-    await Promise.all(todo.slice(i, i + 10).map(async (c) => {
-      if ((await wallet.updatePagerPass(c.wallet_serial, { ...wallet.pagerStep({ store, step: 'idle', lang: c.lang }), notice: body })).startsWith('ok')) sent++;
+  const live = new Map((await rest(`pager_tickets?client_id=in.(${family})&status=in.(waiting,ready)&created_at=gte.${q(riyadhDayStart())}&wallet_serial=not.is.null&select=wallet_serial,number,status&order=id.asc`).catch(() => [])).map(t => [t.wallet_serial, t]));
+  let sent = 0, gone = 0;
+  for (let i = 0; i < cards.length; i += 10) {
+    await Promise.all(cards.slice(i, i + 10).map(async (c) => {
+      const t = live.get(c.wallet_serial);
+      const step = t ? wallet.pagerStep({ store, number: t.number, step: t.status === 'ready' ? 'ready' : 'waiting', lang: c.lang }) : wallet.pagerStep({ store, step: 'idle', lang: c.lang });
+      const r = await wallet.updatePagerPass(c.wallet_serial, { ...step, notice: body });
+      // devices=0: البطاقة انحذفت من محفظة الزبون، فما يوصله إشعار
+      if (r.startsWith('ok') && !/devices=0\b/.test(r)) sent++;
+      else if (r.startsWith('ok')) gone++;
+      else console.error('PAGER_MSG', c.id, r);
     }));
   }
-  return { sent, lastId: cards.length ? cards[cards.length - 1].id : afterId, done: cards.length < limit, total: all ? all.length : null };
+  return { sent, gone, lastId: cards.length ? cards[cards.length - 1].id : afterId, done: cards.length < limit, total: all ? all.length : null };
 }
 
 // المكافآت الجاهزة لعضو: مكافأة الأختام + هدايا الأصدقاء المستلمة
