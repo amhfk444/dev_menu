@@ -33,6 +33,7 @@
 <script src="/js/sectors.js"></script>
 <script src="/js/vendor/qrcode.min.js" defer></script>
 <style>
+  .disc-note { font-size: 12px; font-weight: 700; color: var(--gold); margin-top: 6px; }
   :root { --brand: #233d2c; --brand-dark: #15271b; --ink: #1b3022; --sand: #f6f3ec; --gold: #7fb685; --gold-deep: #3f7a4a;
           --muted: rgba(27,48,34,.64); --line: rgba(27,48,34,.1); }
   html { scroll-behavior: smooth; }
@@ -627,6 +628,7 @@
     const pr = P.price(choice.features, p);
     $('sum-lines').innerHTML = pr.features.length
       ? pr.lines.map(l => `<div class="line"><span>${esc(l.label)}</span><span dir="ltr">${money(l.amount)}</span></div>`).join('') + pr.discounts.map(d => `<div class="line disc"><span>${esc(d.label)}</span><span dir="ltr">- ${money(d.amount)}</span></div>`).join('')
+        + (pr.discounts.length ? '<p class="disc-note"><i class="ph-bold ph-clock-countdown"></i> خصومات الباقات عرض لفترة محدودة</p>' : '')
       : '<p class="text-[14px] font-semibold text-[color:var(--muted)] py-2">اختر أداة وحدة على الأقل</p>';
     $('sum-total').textContent = money(pr.total);
     $('sum-per').innerHTML = p === 'year' && pr.total ? `بالسنة<br>يعني <span dir="ltr">${money(Math.round(pr.total / 12))}</span> بالشهر` : 'بالشهر';

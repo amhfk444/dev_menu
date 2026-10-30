@@ -38,6 +38,7 @@
 .ph-check-circle:before { content: "\e184"; }
 .ph-circle:before { content: "\e18a"; }
 .ph-clock:before { content: "\e19a"; }
+.ph-clock-countdown:before { content: "\ed2c"; }
 .ph-clock-counter-clockwise:before { content: "\e1a0"; }
 .ph-coffee:before { content: "\e1c2"; }
 .ph-coins:before { content: "\e78e"; }
