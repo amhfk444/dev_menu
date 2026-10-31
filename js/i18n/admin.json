@@ -1443,5 +1443,9 @@
   "توصل إشعار لكل زبون حافظ بطاقة النداء ({a}): {b}": "Sends a notification to every customer who saved the pager card ({a}): {b}",
   "توصل إشعار لزبائن {a} (اللي أخذوا رقم منه) ({b}): {c}": "Sends a notification to {a} customers (who took a number there) ({b}): {c}",
   "الحين · {a} · وصلت لـ {b} جوال": "Just now · {a} · reached {b} phones",
-  "الحين · {a} · ما وصلت لأحد": "Just now · {a} · reached no one"
+  "الحين · {a} · ما وصلت لأحد": "Just now · {a} · reached no one",
+  "اكتب عرضك، ويوصل إشعار على شاشة القفل لزبائنك الحافظين بطاقة النداء.": "Write your offer, and it reaches the lock screen of your customers who saved the pager card.",
+  "كذا تطلع على جوال زبونك": "How it looks on your customer's phone",
+  "رسالتك تطلع هنا": "Your message shows here",
+  "أرسل لـ {a} زبون": "Send to {a} customers"
 }

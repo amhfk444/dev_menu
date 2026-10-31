@@ -402,10 +402,8 @@
           <span class="flex-1 min-w-0"><span class="block text-sm font-semibold">بطاقة الولاء</span><span class="block text-xs text-ink/60">زبونك يجمع أختامه بنفسه ويرجع لك</span></span>
           <i class="ph-bold ph-caret-left text-xs text-ink/40"></i>
         </button>
-        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
-          <div class="xl:col-span-2 space-y-6">
             <!-- ملخص الخدمات: لكل خدمة مفعّلة أرقامها اليوم -->
-            <div id="svc-summary" class="grid sm:grid-cols-2 gap-4"></div>
+            <div id="svc-summary" class="grid sm:grid-cols-2 2xl:grid-cols-4 gap-4"></div>
   <!-- إحصائيات المنيو -->
             <div data-needs="menu" class="pro-card p-5 space-y-5">
               <div class="flex flex-wrap items-center justify-between gap-3 border-b border-brand/20 pb-3">
@@ -423,13 +421,49 @@
               </div>
               <div id="stats-body" class="text-xs text-ink/60 space-y-5">جاري التحميل...</div>
             </div>
-          </div>
-          <div class="space-y-6">
+        <!-- أدواتك: الكروت تتوزع على عمودين أو ثلاثة حسب الشاشة، وتملى المساحة مهما كانت المميزات -->
+        <div class="columns-1 md:columns-2 2xl:columns-3 gap-6 [&>*]:break-inside-avoid [&>*]:mb-6">
     <!-- روابط الخدمات: رابط لكل خدمة مفعّلة -->
             <div class="pro-card p-5 space-y-3">
               <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-link-simple text-emerald-600"></i> روابط خدماتك</h3>
               <p class="text-[11px] text-ink/60">شاركها مع عملائك أو اطبع لها كود QR. الرابط الرئيسي يفتح أول خدمة عندك.</p>
               <div id="svc-links" class="space-y-2"></div>
+            </div>
+    <!-- رسائل لزبائنك: إشعار على بطاقة النداء (إضافة على البيجر، للمحل اللي ما عنده ولاء) -->
+            <div id="nt-card" class="hidden pro-card p-5 space-y-4">
+              <div class="space-y-1">
+                <h3 class="text-xs font-bold text-ink"><i class="ph-bold ph-megaphone text-emerald-600"></i> رسائل لزبائنك</h3>
+                <p class="text-[11px] text-ink/60 leading-relaxed">اكتب عرضك، ويوصل إشعار على شاشة القفل لزبائنك الحافظين بطاقة النداء.</p>
+              </div>
+              <div id="nt-locked" class="hidden space-y-2">
+                <p class="text-[11px] text-ink/70">إضافة على البيجر بـ <b id="nt-price"></b>.</p>
+                <button type="button" onclick="addNotify()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-brand text-cream"><i class="ph-bold ph-plus"></i> أضفها لباقتك</button>
+              </div>
+              <p id="nt-trial" class="hidden text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-300/60 rounded-lg px-2.5 py-1.5"></p>
+              <div id="nt-box" class="hidden space-y-3">
+                <label id="nt-to-box" class="hidden block space-y-1">
+                  <span class="text-[11px] font-bold text-ink/70">لمين ترسل؟</span>
+                  <select id="nt-to" onchange="ntToChanged()" class="input-pro bg-cream text-xs"></select>
+                </label>
+                <label class="block space-y-1">
+                  <span class="flex items-center justify-between text-[11px] font-bold text-ink/70">رسالتك <span id="nt-count" class="font-normal text-ink/50">0/150</span></span>
+                  <textarea id="nt-body" rows="2" maxlength="150" oninput="ntPreview()" class="input-pro" placeholder="مثلاً: اليوم القهوة الثانية بنص السعر لين الساعة 6"></textarea>
+                </label>
+                <!-- معاينة: كذا يطلع الإشعار على جوال الزبون -->
+                <div class="rounded-2xl bg-[#1c1c1e] p-3 space-y-2">
+                  <p class="text-[10px] font-bold text-white/55">كذا تطلع على جوال زبونك</p>
+                  <div dir="ltr" class="flex items-start gap-2.5 rounded-2xl bg-white/[0.12] p-2.5">
+                    <img id="nt-pv-logo" alt="" class="w-9 h-9 rounded-lg bg-white object-cover shrink-0">
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center justify-between gap-2 text-[11px] font-bold text-white"><span id="nt-pv-name" class="truncate"></span><span class="font-normal text-white/50">now</span></div>
+                      <p id="nt-pv-text" dir="rtl" class="text-right text-[12px] text-white/90 leading-snug break-words"></p>
+                    </div>
+                  </div>
+                </div>
+                <button type="button" id="nt-send" onclick="sendNotify()" class="w-full bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition"><i class="ph-bold ph-paper-plane-tilt"></i> <span id="nt-send-label">أرسل</span></button>
+                <p class="text-[10px] text-ink/50">نصيحة: لا تكثر الرسائل، عشان زبائنك ما ينزعجون ويحذفون البطاقة من محفظتهم.</p>
+                <div id="nt-list" class="text-[12px]"></div>
+              </div>
             </div>
     <!-- حالة الاشتراك -->
             <div id="subscription-card" class="pro-card p-5 space-y-3">
@@ -498,32 +532,6 @@
               </div>
               <button id="desk-show" type="button" onclick="showDeskLink()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-white border border-brand/20 text-ink"><i class="ph-bold ph-link-simple"></i> اطلع رابط الكاشير</button>
             </div>
-    <!-- رسائل لزبائنك: إشعار على بطاقة النداء (إضافة على البيجر، للمحل اللي ما عنده ولاء) -->
-            <div id="nt-card" class="hidden pro-card p-5 space-y-3">
-              <div class="space-y-1">
-                <h3 class="text-xs font-bold text-ink"><i class="ph-bold ph-megaphone text-emerald-600"></i> رسائل لزبائنك</h3>
-                <p class="text-[11px] text-ink/60 leading-relaxed">رسالة توصل إشعار على شاشة القفل لزبائنك الحافظين بطاقة النداء في محفظة جوالهم. مثل: عرض اليوم، منتج جديد، أو "فتحنا فرع جديد".</p>
-              </div>
-              <div id="nt-locked" class="hidden space-y-2">
-                <p class="text-[11px] text-ink/70">إضافة على البيجر بـ <b id="nt-price"></b>.</p>
-                <button type="button" onclick="addNotify()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-brand text-cream"><i class="ph-bold ph-plus"></i> أضفها لباقتك</button>
-              </div>
-              <p id="nt-trial" class="hidden text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-300/60 rounded-lg px-2.5 py-1.5"></p>
-              <div id="nt-box" class="hidden space-y-2">
-                <p id="nt-stats" class="text-[11px] font-bold text-ink/70"></p>
-                <label id="nt-to-box" class="hidden block space-y-1">
-                  <span class="text-[11px] font-bold text-ink/70">لمين ترسل؟</span>
-                  <select id="nt-to" onchange="ntToChanged()" class="input-pro bg-cream text-xs"></select>
-                </label>
-                <textarea id="nt-body" rows="3" maxlength="150" class="input-pro" placeholder="مثلاً: اليوم القهوة الثانية بنص السعر لين الساعة 6"></textarea>
-                <div class="flex items-center justify-between gap-2">
-                  <span id="nt-count" class="text-[11px] text-ink/50">0/150</span>
-                  <button type="button" id="nt-send" onclick="sendNotify()" class="bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition"><i class="ph-bold ph-paper-plane-tilt"></i> أرسل</button>
-                </div>
-                <p class="text-[10px] text-ink/50">نصيحة: لا تكثر الرسائل، عشان زبائنك ما ينزعجون ويحذفون البطاقة من محفظتهم.</p>
-                <div id="nt-list" class="text-[12px]"></div>
-              </div>
-            </div>
     <!-- صفحة الروابط السريعة -->
             <div class="pro-card p-5 space-y-3">
               <div class="space-y-1">
@@ -546,7 +554,6 @@
               <div class="h-2 bg-brand/5 rounded-full overflow-hidden"><div id="checklist-bar" class="h-full bg-brand rounded-full transition-all" style="width:0%"></div></div>
               <ul id="checklist-body" class="space-y-1.5"></ul>
             </div>
-          </div>
         </div>
       </section>
 
@@ -3689,20 +3696,32 @@
         sel.innerHTML = `<option value="">كل الفروع (${r.cards} زبون)</option>` + branches.map(x => `<option value="${x.id}">${esc(x.name || '')} (${(r.by_branch || {})[x.id] || 0} زبون)</option>`).join('');
         sel.value = prev && sel.querySelector(`option[value="${prev}"]`) ? prev : client.parent_id ? String(client.id) : '';
       } else sel.innerHTML = '';
-      ntToChanged();
+      ntToChanged(); ntPreview();
       document.getElementById('nt-send').disabled = false;
       const branchName = (id) => (branches.find(x => x.id === id) || {}).name;
       document.getElementById('nt-list').innerHTML = r.messages.length ? `<p class="text-[11px] font-bold text-ink/60 mb-1">آخر الرسائل</p><div class="divide-y divide-brand/10">${r.messages.map(m => `
         <div class="py-2"><p class="leading-relaxed">${esc(m.body)}</p><p class="text-[11px] text-ink/55 mt-0.5">${when(m.created_at)}${many ? ` · ${m.branch_id ? `زبائن ${esc(branchName(m.branch_id) || 'فرع')}` : 'كل الفروع'}` : ''}${m.sent ? ` · وصلت لـ ${m.sent} جوال` : ''}</p></div>`).join('')}</div>` : '';
-    } catch { document.getElementById('nt-stats').textContent = ''; }
+    } catch { document.getElementById('nt-send-label').textContent = 'أرسل'; }
   }
   // عدد الزبائن اللي بتوصلهم الرسالة حسب الاختيار
   const ntTarget = () => { const v = document.getElementById('nt-to').value; return v ? Number(v) : null; };
   const ntCount = () => !ntQuota ? null : ntTarget() ? (ntQuota.by_branch || {})[ntTarget()] || 0 : ntQuota.cards;
+  // زر الإرسال يقول كم زبون بتوصله
   function ntToChanged() {
     if (!ntQuota) return;
-    const id = ntTarget(), name = id ? (branches.find(x => x.id === id) || {}).name : '';
-    document.getElementById('nt-stats').textContent = id ? `${ntCount()} زبون أخذ رقم من ${name}` : `${ntQuota.cards} زبون حافظ البطاقة`;
+    document.getElementById('nt-send-label').textContent = `أرسل لـ ${ntCount()} زبون`;
+  }
+  // المعاينة: اسم المحل الرئيسي وشعاره (البطاقة وحدة لكل الفروع) ونص الرسالة
+  function ntPreview() {
+    const home = branches.find(x => !x.parent_id) || client;
+    const logo = document.getElementById('nt-pv-logo'), src = home.logo_url || client.logo_url || '';
+    if (src && logo.getAttribute('src') !== src) logo.src = src;
+    logo.classList.toggle('invisible', !src);
+    document.getElementById('nt-pv-name').textContent = home.name || client.name || '';
+    const v = document.getElementById('nt-body').value.trim();
+    const t = document.getElementById('nt-pv-text');
+    t.textContent = v || 'رسالتك تطلع هنا';
+    t.classList.toggle('text-white/40', !v);
   }
   function addNotify() {
     if (client.parent_id) return showToast('الاشتراك يتعدل من المتجر الرئيسي', true);
@@ -3716,7 +3735,7 @@
     const to = ntTarget(), toName = to ? (branches.find(x => x.id === to) || {}).name : '';
     const who = to ? `لزبائن ${toName} (اللي أخذوا رقم منه)` : 'لكل زبون حافظ بطاقة النداء';
     if (!(await DMDialog.confirm({ title: 'إرسال الرسالة', message: `توصل إشعار ${who}${ntQuota ? ` (${ntCount()})` : ''}:\n${body}`, confirmText: 'أرسل', cancelText: 'تراجع', tone: 'success' }))) return;
-    input.value = ''; document.getElementById('nt-count').textContent = '0/150';
+    input.value = ''; document.getElementById('nt-count').textContent = '0/150'; ntPreview();
     const list = document.getElementById('nt-list'), row = document.createElement('div');
     row.className = 'py-2'; row.innerHTML = `<p class="leading-relaxed">${esc(body)}</p><p class="text-[11px] text-emerald-700 font-bold mt-0.5"><i class="ph-bold ph-spinner-gap ph-spin"></i> يرسل لزبائنك…</p>`;
     if (!list.querySelector('.divide-y')) list.innerHTML = '<p class="text-[11px] font-bold text-ink/60 mb-1">آخر الرسائل</p><div class="divide-y divide-brand/10"></div>';
@@ -3737,7 +3756,7 @@
       if (!sent) showToast(gone ? `ما وصلت: الزبائن اللي عندهم البطاقة (${gone}) حذفوها من محفظتهم` : total ? 'ما قدرنا نوصلها الحين، جرّب بعد شوي' : 'انرسلت، بس ما فيه أحد حافظ البطاقة للحين', !!(gone || total));
       else if (gone) showToast(`وصلت لـ ${sent} جوال، و${gone} حذفوا البطاقة من محفظتهم`);
     } catch (e) {
-      row.remove(); input.value = body; document.getElementById('nt-count').textContent = `${body.length}/150`;
+      row.remove(); input.value = body; document.getElementById('nt-count').textContent = `${body.length}/150`; ntPreview();
       showToast(e.message || 'ما انرسلت. تأكد من الإنترنت وحاول مرة ثانية', true);
     }
   }
