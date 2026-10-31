@@ -2419,7 +2419,8 @@
     try { await api('notifications-delete', id == null ? {} : { id }); }
     catch { notifs = keep; renderNotifs(); showToast('ما انحذف، تأكد من الإنترنت', true); }
   }
-  document.addEventListener('click', (e) => { if (notifOpen && !e.target.closest('#notif-panel, #notif-btn, .dmd-back')) toggleNotifs(false); });
+  // ضغطة برا القائمة تقفلها (زر الحذف ينشال من الصفحة بعد الضغط، فما نعتبره برا)
+  document.addEventListener('click', (e) => { if (notifOpen && e.target.isConnected && !e.target.closest('#notif-panel, #notif-btn, .dmd-back')) toggleNotifs(false); });
   setInterval(() => { if (!document.hidden && client) loadNotifs(); }, 60000);
 
   // الترقية من الشهري للسنوي: كم يوفّر، وطلب يوصل للإدارة بضغطة
