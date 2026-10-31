@@ -986,6 +986,16 @@ async function main(req) {
   // ─── المساعد الذكي: تشغيل وإيقاف ───
   if (action === 'loyalty-ai') {
     const row = (await rest(`clients?id=eq.${sid}`, { method: 'PATCH', body: { loyalty_ai: b.enabled === true }, prefer: 'return=representation' }))[0];
+    // تشغيل المساعد: جمل القرب تنكتب على طول (ما تنتظر موعده اليومي) وتوصل لبطاقات المحفظة
+    const stale = !Array.isArray(row.loyalty_near_lines) || !row.loyalty_near_lines.length || !row.loyalty_near_at || Date.now() - Date.parse(row.loyalty_near_at) > 7 * 864e5;
+    if (row.loyalty_ai === true && stale) {
+      later((async () => {
+        const lines = await loyaltyNearLines({ storeName: row.name, businessType: SECTORS.label(row), reward: normalizeLoyalty(row.loyalty_settings).reward });
+        if (!lines.length) return;
+        await rest(`clients?id=eq.${sid}`, { method: 'PATCH', body: { loyalty_near_lines: lines, loyalty_near_at: new Date().toISOString() } });
+        await pushWalletCards(sid);
+      })());
+    }
     return { ai: row.loyalty_ai === true };
   }
 
