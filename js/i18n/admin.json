@@ -1453,5 +1453,17 @@
   "زبائن {a} ({b})": "{a} customers ({b})",
   "ما انعرف فرعهم": "Branch unknown",
   "{a} عضو قديم ما انختم لهم من وقت ما بدينا نسجّل الفروع": "{a} older members with no stamp since branches started being tracked",
-  "{a} عضو في {b}، منهم {c} حافظين البطاقة في المحفظة": "{a} members at {b}, {c} of them saved the card in their wallet"
+  "{a} عضو في {b}، منهم {c} حافظين البطاقة في المحفظة": "{a} members at {b}, {c} of them saved the card in their wallet",
+  "تصميم البطاقة وإعداداتها وأرقامها": "Card design, settings and numbers",
+  "العملاء": "Customers",
+  "أعضاء بطاقة الولاء في كل فروعك": "Loyalty members across all your branches",
+  "الرسائل": "Messages",
+  "أرسل عروضك وأخبارك لجوالات عملائك": "Send your offers and news to your customers' phones",
+  "الفروع": "Branches",
+  "فروعك ومميزات كل فرع وروابط الكاشير": "Your branches, each branch's features and cashier links",
+  "الاشتراك": "Subscription",
+  "باقتك وتجديدها وطلباتك للإدارة": "Your plan, renewal and requests to the team",
+  "خدماتك": "Your services",
+  "منشأتك": "Your business",
+  "المزيد": "More"
 }

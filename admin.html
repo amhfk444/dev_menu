@@ -165,6 +165,9 @@
   #nav-count { background: rgba(251, 248, 243, 0.13); font-variant-numeric: tabular-nums; }
 
   /* شريط الجوال السفلي */
+  .more-item { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 6px; border-radius: 16px; background: rgba(56,79,61,.06); font-size: 12px; font-weight: 700; color: #22362a; }
+  .more-item i { font-size: 22px; }
+  .more-item.nav-active { background: #384f3d; color: #f1e9de; }
   .bnav { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 8px; font-size: 10px; font-weight: 700; color: rgba(34, 54, 42, 0.5); }
   .bnav i { font-size: 16px; }
   .bnav.nav-active { color: var(--brand); font-weight: 700; }
@@ -318,11 +321,17 @@
 
     <nav class="p-3 pt-4 space-y-1 flex-1 overflow-y-auto">
       <button data-nav="dashboard" class="nav-item"><i class="ph-bold ph-gauge"></i> الرئيسية</button>
+      <button data-nav="customers" data-needs="loyalty" class="nav-item"><i class="ph-bold ph-users-three"></i> العملاء <span id="lyt-count" class="mr-auto text-[10px] px-2 py-0.5 rounded-full"></span></button>
+      <button data-nav="messages" data-needs="pager|loyalty" class="nav-item"><i class="ph-bold ph-paper-plane-tilt"></i> الرسائل</button>
+      <p class="px-3 pt-4 pb-1 text-[10px] text-cream/45 font-bold">خدماتك</p>
       <button data-nav="menu" class="nav-item"><i class="ph-bold ph-fork-knife"></i> المنيو <span id="nav-count" class="mr-auto text-[10px] px-2 py-0.5 rounded-full">0</span></button>
+      <a href="pager-desk.html" data-feature="pager" onclick="return openPagerDesk(this)" class="nav-item"><i class="ph-bold ph-bell"></i> <span id="nav-desk-label">شاشة البيجر</span></a>
       <button data-nav="waitlist" class="nav-item"><i class="ph-bold ph-hourglass-medium"></i> قائمة الانتظار <span id="nav-waitlist" class="mr-auto hidden text-[10px] bg-amber-400 text-black px-2 py-0.5 rounded-full font-black">0</span></button>
       <button data-nav="loyalty" class="nav-item"><i class="ph-bold ph-seal-check"></i> بطاقة الولاء</button>
-      <a href="pager-desk.html" data-feature="pager" onclick="return openPagerDesk(this)" class="nav-item"><i class="ph-bold ph-bell"></i> <span id="nav-desk-label">شاشة البيجر</span> <span class="mr-auto text-[9px] bg-[#c9a227] text-[#15271b] font-black px-1.5 py-0.5 rounded-md">جديد</span></a>
+      <p class="px-3 pt-4 pb-1 text-[10px] text-cream/45 font-bold">منشأتك</p>
+      <button data-nav="branches" class="nav-item"><i class="ph-bold ph-git-branch"></i> الفروع</button>
       <button data-nav="settings" class="nav-item"><i class="ph-bold ph-palette"></i> هوية المنشأة</button>
+      <button data-nav="account" class="nav-item"><i class="ph-bold ph-identification-card"></i> الاشتراك</button>
       <p class="px-3 pt-5 pb-1 text-[10px] text-cream/45 font-bold">اختصارات</p>
       <a id="sidebar-preview" data-needs="menu" href="#" target="_blank" rel="noopener" class="nav-item"><i class="ph-bold ph-arrow-square-out"></i> معاينة المنيو</a>
       <button onclick="copyMenuLink()" data-needs="menu" class="nav-item"><i class="ph-bold ph-link-simple"></i> نسخ رابط المنيو</button>
@@ -429,52 +438,6 @@
               <p class="text-[11px] text-ink/60">شاركها مع عملائك أو اطبع لها كود QR. الرابط الرئيسي يفتح أول خدمة عندك.</p>
               <div id="svc-links" class="space-y-2"></div>
             </div>
-    <!-- رسائل لزبائنك: إشعار على بطاقة النداء (إضافة على البيجر، للمحل اللي ما عنده ولاء) -->
-            <div id="nt-card" class="hidden pro-card p-5 space-y-4">
-              <div class="space-y-1">
-                <h3 class="text-xs font-bold text-ink"><i class="ph-bold ph-megaphone text-emerald-600"></i> رسائل لزبائنك</h3>
-                <p class="text-[11px] text-ink/60 leading-relaxed">اكتب عرضك، ويوصل إشعار على شاشة القفل لزبائنك الحافظين بطاقة النداء.</p>
-              </div>
-              <div id="nt-locked" class="hidden space-y-2">
-                <p class="text-[11px] text-ink/70">إضافة على البيجر بـ <b id="nt-price"></b>.</p>
-                <button type="button" onclick="addNotify()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-brand text-cream"><i class="ph-bold ph-plus"></i> أضفها لباقتك</button>
-              </div>
-              <p id="nt-trial" class="hidden text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-300/60 rounded-lg px-2.5 py-1.5"></p>
-              <div id="nt-box" class="hidden space-y-3">
-                <label id="nt-to-box" class="hidden block space-y-1">
-                  <span class="text-[11px] font-bold text-ink/70">لمين ترسل؟</span>
-                  <select id="nt-to" onchange="ntToChanged()" class="input-pro bg-cream text-xs"></select>
-                </label>
-                <label class="block space-y-1">
-                  <span class="flex items-center justify-between text-[11px] font-bold text-ink/70">رسالتك <span id="nt-count" class="font-normal text-ink/50">0/150</span></span>
-                  <textarea id="nt-body" rows="2" maxlength="150" oninput="ntPreview()" class="input-pro" placeholder="مثلاً: اليوم القهوة الثانية بنص السعر لين الساعة 6"></textarea>
-                </label>
-                <!-- معاينة: كذا يطلع الإشعار على جوال الزبون -->
-                <div class="rounded-2xl bg-[#1c1c1e] p-3 space-y-2">
-                  <p class="text-[10px] font-bold text-white/55">كذا تطلع على جوال زبونك</p>
-                  <div dir="ltr" class="flex items-start gap-2.5 rounded-2xl bg-white/[0.12] p-2.5">
-                    <img id="nt-pv-logo" alt="" class="w-9 h-9 rounded-lg bg-white object-cover shrink-0">
-                    <div class="flex-1 min-w-0">
-                      <div class="flex items-center justify-between gap-2 text-[11px] font-bold text-white"><span id="nt-pv-name" class="truncate"></span><span class="font-normal text-white/50">now</span></div>
-                      <p id="nt-pv-text" dir="rtl" class="text-right text-[12px] text-white/90 leading-snug break-words"></p>
-                    </div>
-                  </div>
-                </div>
-                <button type="button" id="nt-send" onclick="sendNotify()" class="w-full bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition"><i class="ph-bold ph-paper-plane-tilt"></i> <span id="nt-send-label">أرسل</span></button>
-                <p class="text-[10px] text-ink/50">نصيحة: لا تكثر الرسائل، عشان زبائنك ما ينزعجون ويحذفون البطاقة من محفظتهم.</p>
-                <div id="nt-list" class="text-[12px]"></div>
-              </div>
-            </div>
-    <!-- حالة الاشتراك -->
-            <div id="subscription-card" class="pro-card p-5 space-y-3">
-              <h3 class="text-[13px] font-bold text-ink flex items-center gap-1.5"><i class="ph-bold ph-identification-card text-ink/60"></i> اشتراكك</h3>
-              <div id="subscription-info" class="space-y-4 text-ink/90">
-                <p>جاري التحقق من الاشتراك...</p>
-              </div>
-              <!-- طلباتك للإدارة: التجديد وتغيير الباقة والتواصل، بدون واتساب -->
-              <div id="support-box" class="pt-3 mt-1 border-t border-brand/10 space-y-2.5"></div>
-            </div>
-
     <!-- تنبيهات الإدارة -->
             <div id="admin-notice-box" class="pro-card p-4 space-y-2 border-r-4 border-r-blue-400 hidden">
               <div class="flex items-center justify-between gap-2">
@@ -503,34 +466,6 @@
                 </div>
               </div>
               <div id="qrcode" class="bg-white p-2 rounded-xl shrink-0 [&_img]:w-24 [&_img]:h-24 [&_canvas]:w-24 [&_canvas]:h-24"></div>
-            </div>
-    <!-- الفروع -->
-            <div id="branches-card" class="hidden pro-card p-5 space-y-3">
-              <div class="flex items-center justify-between">
-                <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-git-branch text-emerald-600"></i> فروعك</h3>
-                <span class="text-[10px] text-ink/50">كل فرع له منيو مستقل</span>
-              </div>
-              <div id="branches-list" class="space-y-2"></div>
-              <div id="branch-ask" class="hidden flex flex-wrap items-center justify-between gap-2 pt-1">
-                <p id="branch-ask-price" class="text-[11px] text-ink/60"></p>
-                <button type="button" id="branch-ask-btn" onclick="requestBranch()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-brand text-cream"><i class="ph-bold ph-plus"></i> اطلب فرع جديد</button>
-              </div>
-            </div>
-    <!-- رابط الكاشير: يفتح شاشة البيجر وشاشة الختم لهالفرع بدون حساب المالك -->
-            <div id="desk-card" class="hidden pro-card p-5 space-y-3">
-              <div class="space-y-1">
-                <h3 class="text-xs font-bold text-ink"><i class="ph-bold ph-cash-register text-emerald-600"></i> رابط الكاشير<span id="desk-branch" class="text-ink/55"></span></h3>
-                <p class="text-[11px] text-ink/60 leading-relaxed">افتحه على جهاز الكاشير مرة وحدة. يفتح شاشة البيجر وشاشة الختم بس، بدون إيميلك وكلمة المرور، وما يقدر الموظف يدخل لوحة التحكم ولا يشوف الأسعار وجوالات الزبائن.</p>
-              </div>
-              <div id="desk-link-box" class="hidden space-y-2">
-                <input id="desk-link" readonly dir="ltr" class="w-full text-[11px] bg-brand/5 border border-brand/15 rounded-xl px-3 py-2.5 text-ink/80" onclick="this.select()">
-                <div class="flex flex-wrap gap-2">
-                  <button type="button" onclick="copyDeskLink()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-brand text-cream"><i class="ph-bold ph-copy"></i> نسخ الرابط</button>
-                  <button type="button" onclick="resetDeskLink()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-white border border-rose-200 text-rose-700"><i class="ph-bold ph-arrows-clockwise"></i> غيّر الرابط</button>
-                </div>
-                <p class="text-[10px] text-ink/50">ترك موظف الشغل؟ اضغط "غيّر الرابط"، والرابط القديم يوقف على طول.</p>
-              </div>
-              <button id="desk-show" type="button" onclick="showDeskLink()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-white border border-brand/20 text-ink"><i class="ph-bold ph-link-simple"></i> اطلع رابط الكاشير</button>
             </div>
     <!-- صفحة الروابط السريعة -->
             <div class="pro-card p-5 space-y-3">
@@ -1086,9 +1021,7 @@
 
         <div class="ly-tabs" role="tablist" aria-label="أقسام الولاء">
           <button type="button" role="tab" data-lyt="overview"><i class="ph-bold ph-chart-bar"></i> نظرة عامة</button>
-          <button type="button" role="tab" data-lyt="members"><i class="ph-bold ph-users-three"></i> الأعضاء <span id="lyt-count" class="lyt-badge"></span></button>
           <button type="button" role="tab" data-lyt="design"><i class="ph-bold ph-palette"></i> تصميم البطاقة</button>
-          <button type="button" role="tab" data-lyt="messages"><i class="ph-bold ph-paper-plane-tilt"></i> الرسائل والمساعد</button>
           <button type="button" role="tab" data-lyt="settings"><i class="ph-bold ph-sliders-horizontal"></i> الإعدادات</button>
         </div>
         <p id="ly-shared" class="hidden text-[12px] font-bold text-emerald-800 bg-emerald-500/5 border border-emerald-600/20 rounded-xl px-3 py-2.5"><i class="ph-bold ph-git-branch"></i> بطاقة الولاء وحدة لكل فروعك: الزبون يجمع أختامه ويصرف مكافأته من أي فرع، والأعضاء والإعدادات مشتركة. موقع المحل بس لكل فرع لحاله.</p>
@@ -1161,46 +1094,6 @@
               </div>
               <button type="submit" id="ly-save" class="bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition">حفظ</button>
             </form>
-
-            <!-- المساعد الذكي -->
-            <div data-lytab="messages" class="pro-card p-5 md:p-6 space-y-4">
-              <div class="flex flex-wrap items-start justify-between gap-3">
-                <div class="space-y-1 max-w-md">
-                  <h3 class="text-sm font-bold flex items-center gap-2"><i class="ph-bold ph-sparkle"></i> المساعد الذكي: صاحب زبونك</h3>
-                  <p class="text-[12px] text-ink/65 leading-relaxed">يعرف كل زبون: متى آخر مرة جا، وكم مرة، وكم باقي له. ويكتب له بنفسه رسالة عفوية بالعامية، كل مرة غير، توصله إشعار على جواله.</p>
-                </div>
-                <button type="button" id="ly-ai" role="switch" aria-checked="false" class="avail" onclick="toggleLyAi()">
-                  <span class="avail-track"></span><span class="avail-label !w-auto">متوقف</span>
-                </button>
-              </div>
-              <ul class="text-[12px] text-ink/75 space-y-1.5">
-                <li class="flex gap-2"><i class="ph-bold ph-map-pin text-ink/45 mt-0.5"></i> <span><b>لما يقرب من المحل:</b> جملة حلوة تطلع على شاشة قفل الآيفون تغريه يدخل (تتجدد كل أسبوع)</span></li>
-                <li class="flex gap-2"><i class="ph-bold ph-heart text-ink/45 mt-0.5"></i> <span><b>لما يغيب:</b> رسالة اشتياق، حسب عادته هو (اللي يجي كل يومين يختلف عن اللي يجي كل أسبوعين)</span></li>
-                <li class="flex gap-2"><i class="ph-bold ph-seal-check text-ink/45 mt-0.5"></i> <span><b>باقي له ختم، أو مكافأته جاهزة:</b> تشجيع وتذكير</span></li>
-                <li class="flex gap-2"><i class="ph-bold ph-user-plus text-ink/45 mt-0.5"></i> <span><b>جا مرة وحدة وما رجع:</b> رسالة تخلي الزيارة الثانية طبيعية</span></li>
-              </ul>
-              <p class="text-[11px] text-ink/50">يشتغل كل يوم الساعة 4 العصر. ما يرسل لنفس الزبون أكثر من مرة كل أسبوع أو أسبوعين.</p>
-              <div class="flex flex-wrap gap-2">
-                <button type="button" id="ly-ai-preview" onclick="previewLyAi()" class="bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-eye"></i> شوف أمثلة على أسلوبه</button>
-                <button type="button" id="ly-ai-run" onclick="runLyAi()" class="bg-brand hover:bg-brand-dark text-cream px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-paper-plane-tilt"></i> شغّله الحين</button>
-              </div>
-              <div id="ly-ai-out" class="space-y-2"></div>
-            </div>
-
-            <!-- رسالة للأعضاء -->
-            <div data-lytab="messages" class="pro-card p-5 md:p-6 space-y-3">
-              <h3 class="text-sm font-bold flex items-center gap-2"><i class="ph-bold ph-megaphone"></i> أرسل رسالة لأعضاء البطاقة</h3>
-              <p class="text-[12px] text-ink/60 leading-relaxed">توصل إشعار على جوال اللي حافظين البطاقة في المحفظة، وتطلع للكل في صفحة البطاقة لما يفتحونها.</p>
-              <label class="block"><span class="text-xs font-semibold text-ink/70 block mb-1.5">لمين؟</span>
-                <select id="ly-msg-to" class="input-pro"></select></label>
-              <label class="block"><span class="text-xs font-semibold text-ink/70 block mb-1.5">الرسالة</span>
-                <textarea id="ly-msg-body" rows="3" maxlength="200" class="input-pro" placeholder="مثلاً: اليوم الختم دبل! زورونا قبل الساعة 6"></textarea></label>
-              <div class="flex items-center justify-between gap-3">
-                <span id="ly-msg-count" class="text-[11px] text-ink/50">0/200</span>
-                <button type="button" id="ly-msg-send" onclick="sendLyMessage()" class="bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition"><i class="ph-bold ph-paper-plane-tilt"></i> أرسل</button>
-              </div>
-              <div id="ly-msg-list" class="text-sm"></div>
-            </div>
 
             <!-- موقع المحل -->
             <div data-lytab="settings" class="pro-card p-5 md:p-6 space-y-3">
@@ -1384,7 +1277,7 @@
               <div id="ly-week" class="flex items-end gap-2 h-44" dir="rtl"></div>
             </div>
             <div class="pro-card p-5 space-y-3">
-              <div class="flex items-center justify-between"><h3 class="text-sm font-bold">آخر الزيارات</h3><button type="button" onclick="setLyTab('members')" class="text-[11px] font-bold text-brand underline underline-offset-4">كل الأعضاء</button></div>
+              <div class="flex items-center justify-between"><h3 class="text-sm font-bold">آخر الزيارات</h3><button type="button" onclick="location.hash='customers'" class="text-[11px] font-bold text-brand underline underline-offset-4">كل الأعضاء</button></div>
               <div id="ly-recent" class="divide-y divide-brand/10"></div>
             </div>
           </div>
@@ -1400,7 +1293,11 @@
         </div>
 
         <!-- الأعضاء -->
-        <div data-lytab="members" class="pro-card overflow-hidden">
+      </section>
+
+      <!-- ═════════════════ العملاء ═════════════════ -->
+      <section data-page="customers" class="hidden space-y-5">
+        <div class="pro-card overflow-hidden">
           <div class="p-5 flex flex-wrap items-center justify-between gap-3 border-b border-brand/10">
             <div><h3 class="text-base font-bold">الأعضاء</h3><p id="ly-members-sub" class="text-xs text-ink/55 mt-0.5"></p></div>
             <div class="flex flex-wrap gap-2">
@@ -1423,6 +1320,138 @@
           </div>
           <p id="ly-more" class="text-xs text-ink/55 text-center pb-4"></p>
         </div>
+      </section>
+
+      <!-- ═════════════════ الرسائل: رسائل بطاقة النداء أو بطاقة الولاء ═════════════════ -->
+      <section data-page="messages" class="hidden">
+        <div class="grid gap-5 items-start [grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))]">
+    <!-- رسائل لزبائنك: إشعار على بطاقة النداء (إضافة على البيجر، للمحل اللي ما عنده ولاء) -->
+            <div id="nt-card" class="hidden pro-card p-5 space-y-4">
+              <div class="space-y-1">
+                <h3 class="text-xs font-bold text-ink"><i class="ph-bold ph-megaphone text-emerald-600"></i> رسائل لزبائنك</h3>
+                <p class="text-[11px] text-ink/60 leading-relaxed">اكتب عرضك، ويوصل إشعار على شاشة القفل لزبائنك الحافظين بطاقة النداء.</p>
+              </div>
+              <div id="nt-locked" class="hidden space-y-2">
+                <p class="text-[11px] text-ink/70">إضافة على البيجر بـ <b id="nt-price"></b>.</p>
+                <button type="button" onclick="addNotify()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-brand text-cream"><i class="ph-bold ph-plus"></i> أضفها لباقتك</button>
+              </div>
+              <p id="nt-trial" class="hidden text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-300/60 rounded-lg px-2.5 py-1.5"></p>
+              <div id="nt-box" class="hidden space-y-3">
+                <label id="nt-to-box" class="hidden block space-y-1">
+                  <span class="text-[11px] font-bold text-ink/70">لمين ترسل؟</span>
+                  <select id="nt-to" onchange="ntToChanged()" class="input-pro bg-cream text-xs"></select>
+                </label>
+                <label class="block space-y-1">
+                  <span class="flex items-center justify-between text-[11px] font-bold text-ink/70">رسالتك <span id="nt-count" class="font-normal text-ink/50">0/150</span></span>
+                  <textarea id="nt-body" rows="2" maxlength="150" oninput="ntPreview()" class="input-pro" placeholder="مثلاً: اليوم القهوة الثانية بنص السعر لين الساعة 6"></textarea>
+                </label>
+                <!-- معاينة: كذا يطلع الإشعار على جوال الزبون -->
+                <div class="rounded-2xl bg-[#1c1c1e] p-3 space-y-2">
+                  <p class="text-[10px] font-bold text-white/55">كذا تطلع على جوال زبونك</p>
+                  <div dir="ltr" class="flex items-start gap-2.5 rounded-2xl bg-white/[0.12] p-2.5">
+                    <img id="nt-pv-logo" alt="" class="w-9 h-9 rounded-lg bg-white object-cover shrink-0">
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center justify-between gap-2 text-[11px] font-bold text-white"><span id="nt-pv-name" class="truncate"></span><span class="font-normal text-white/50">now</span></div>
+                      <p id="nt-pv-text" dir="rtl" class="text-right text-[12px] text-white/90 leading-snug break-words"></p>
+                    </div>
+                  </div>
+                </div>
+                <button type="button" id="nt-send" onclick="sendNotify()" class="w-full bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition"><i class="ph-bold ph-paper-plane-tilt"></i> <span id="nt-send-label">أرسل</span></button>
+                <p class="text-[10px] text-ink/50">نصيحة: لا تكثر الرسائل، عشان زبائنك ما ينزعجون ويحذفون البطاقة من محفظتهم.</p>
+                <div id="nt-list" class="text-[12px]"></div>
+              </div>
+            </div>
+          <div data-needs="loyalty" class="contents">
+            <!-- رسالة للأعضاء -->
+            <div class="pro-card p-5 md:p-6 space-y-3">
+              <h3 class="text-sm font-bold flex items-center gap-2"><i class="ph-bold ph-megaphone"></i> أرسل رسالة لأعضاء البطاقة</h3>
+              <p class="text-[12px] text-ink/60 leading-relaxed">توصل إشعار على جوال اللي حافظين البطاقة في المحفظة، وتطلع للكل في صفحة البطاقة لما يفتحونها.</p>
+              <label class="block"><span class="text-xs font-semibold text-ink/70 block mb-1.5">لمين؟</span>
+                <select id="ly-msg-to" class="input-pro"></select></label>
+              <label class="block"><span class="text-xs font-semibold text-ink/70 block mb-1.5">الرسالة</span>
+                <textarea id="ly-msg-body" rows="3" maxlength="200" class="input-pro" placeholder="مثلاً: اليوم الختم دبل! زورونا قبل الساعة 6"></textarea></label>
+              <div class="flex items-center justify-between gap-3">
+                <span id="ly-msg-count" class="text-[11px] text-ink/50">0/200</span>
+                <button type="button" id="ly-msg-send" onclick="sendLyMessage()" class="bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition"><i class="ph-bold ph-paper-plane-tilt"></i> أرسل</button>
+              </div>
+              <div id="ly-msg-list" class="text-sm"></div>
+            </div>
+            <!-- المساعد الذكي -->
+            <div class="pro-card p-5 md:p-6 space-y-4">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="space-y-1 max-w-md">
+                  <h3 class="text-sm font-bold flex items-center gap-2"><i class="ph-bold ph-sparkle"></i> المساعد الذكي: صاحب زبونك</h3>
+                  <p class="text-[12px] text-ink/65 leading-relaxed">يعرف كل زبون: متى آخر مرة جا، وكم مرة، وكم باقي له. ويكتب له بنفسه رسالة عفوية بالعامية، كل مرة غير، توصله إشعار على جواله.</p>
+                </div>
+                <button type="button" id="ly-ai" role="switch" aria-checked="false" class="avail" onclick="toggleLyAi()">
+                  <span class="avail-track"></span><span class="avail-label !w-auto">متوقف</span>
+                </button>
+              </div>
+              <ul class="text-[12px] text-ink/75 space-y-1.5">
+                <li class="flex gap-2"><i class="ph-bold ph-map-pin text-ink/45 mt-0.5"></i> <span><b>لما يقرب من المحل:</b> جملة حلوة تطلع على شاشة قفل الآيفون تغريه يدخل (تتجدد كل أسبوع)</span></li>
+                <li class="flex gap-2"><i class="ph-bold ph-heart text-ink/45 mt-0.5"></i> <span><b>لما يغيب:</b> رسالة اشتياق، حسب عادته هو (اللي يجي كل يومين يختلف عن اللي يجي كل أسبوعين)</span></li>
+                <li class="flex gap-2"><i class="ph-bold ph-seal-check text-ink/45 mt-0.5"></i> <span><b>باقي له ختم، أو مكافأته جاهزة:</b> تشجيع وتذكير</span></li>
+                <li class="flex gap-2"><i class="ph-bold ph-user-plus text-ink/45 mt-0.5"></i> <span><b>جا مرة وحدة وما رجع:</b> رسالة تخلي الزيارة الثانية طبيعية</span></li>
+              </ul>
+              <p class="text-[11px] text-ink/50">يشتغل كل يوم الساعة 4 العصر. ما يرسل لنفس الزبون أكثر من مرة كل أسبوع أو أسبوعين.</p>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" id="ly-ai-preview" onclick="previewLyAi()" class="bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-eye"></i> شوف أمثلة على أسلوبه</button>
+                <button type="button" id="ly-ai-run" onclick="runLyAi()" class="bg-brand hover:bg-brand-dark text-cream px-4 py-2.5 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-paper-plane-tilt"></i> شغّله الحين</button>
+              </div>
+              <div id="ly-ai-out" class="space-y-2"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═════════════════ الفروع ═════════════════ -->
+      <section data-page="branches" class="hidden">
+        <div class="grid gap-5 items-start [grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))]">
+    <!-- الفروع -->
+            <div id="branches-card" class="hidden pro-card p-5 space-y-3">
+              <div class="flex items-center justify-between">
+                <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-git-branch text-emerald-600"></i> فروعك</h3>
+                <span class="text-[10px] text-ink/50">كل فرع له منيو مستقل</span>
+              </div>
+              <div id="branches-list" class="space-y-2"></div>
+              <div id="branch-ask" class="hidden flex flex-wrap items-center justify-between gap-2 pt-1">
+                <p id="branch-ask-price" class="text-[11px] text-ink/60"></p>
+                <button type="button" id="branch-ask-btn" onclick="requestBranch()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-brand text-cream"><i class="ph-bold ph-plus"></i> اطلب فرع جديد</button>
+              </div>
+            </div>
+    <!-- رابط الكاشير: يفتح شاشة البيجر وشاشة الختم لهالفرع بدون حساب المالك -->
+            <div id="desk-card" class="hidden pro-card p-5 space-y-3">
+              <div class="space-y-1">
+                <h3 class="text-xs font-bold text-ink"><i class="ph-bold ph-cash-register text-emerald-600"></i> رابط الكاشير<span id="desk-branch" class="text-ink/55"></span></h3>
+                <p class="text-[11px] text-ink/60 leading-relaxed">افتحه على جهاز الكاشير مرة وحدة. يفتح شاشة البيجر وشاشة الختم بس، بدون إيميلك وكلمة المرور، وما يقدر الموظف يدخل لوحة التحكم ولا يشوف الأسعار وجوالات الزبائن.</p>
+              </div>
+              <div id="desk-link-box" class="hidden space-y-2">
+                <input id="desk-link" readonly dir="ltr" class="w-full text-[11px] bg-brand/5 border border-brand/15 rounded-xl px-3 py-2.5 text-ink/80" onclick="this.select()">
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" onclick="copyDeskLink()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-brand text-cream"><i class="ph-bold ph-copy"></i> نسخ الرابط</button>
+                  <button type="button" onclick="resetDeskLink()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-white border border-rose-200 text-rose-700"><i class="ph-bold ph-arrows-clockwise"></i> غيّر الرابط</button>
+                </div>
+                <p class="text-[10px] text-ink/50">ترك موظف الشغل؟ اضغط "غيّر الرابط"، والرابط القديم يوقف على طول.</p>
+              </div>
+              <button id="desk-show" type="button" onclick="showDeskLink()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-white border border-brand/20 text-ink"><i class="ph-bold ph-link-simple"></i> اطلع رابط الكاشير</button>
+            </div>
+        </div>
+      </section>
+
+      <!-- ═════════════════ الاشتراك ═════════════════ -->
+      <section data-page="account" class="hidden">
+        <div class="max-w-2xl">
+    <!-- حالة الاشتراك -->
+            <div id="subscription-card" class="pro-card p-5 space-y-3">
+              <h3 class="text-[13px] font-bold text-ink flex items-center gap-1.5"><i class="ph-bold ph-identification-card text-ink/60"></i> اشتراكك</h3>
+              <div id="subscription-info" class="space-y-4 text-ink/90">
+                <p>جاري التحقق من الاشتراك...</p>
+              </div>
+              <!-- طلباتك للإدارة: التجديد وتغيير الباقة والتواصل، بدون واتساب -->
+              <div id="support-box" class="pt-3 mt-1 border-t border-brand/10 space-y-2.5"></div>
+            </div>
+        </div>
+      </section>
 
         <!-- ملف عضو -->
         <!-- استيراد أعضاء من نظام سابق -->
@@ -1472,7 +1501,6 @@
             <div id="lm-msgs"></div>
           </div>
         </div>
-      </section>
 
       <section data-page="settings" class="hidden space-y-6">
         <!-- رابط المتجر المختصر -->
@@ -1785,11 +1813,21 @@
   <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-cream/95 backdrop-blur-xl border-t border-brand/15 flex" style="padding-bottom: env(safe-area-inset-bottom)">
     <button data-nav="dashboard" class="bnav"><i class="ph-bold ph-gauge"></i><span>الرئيسية</span></button>
     <button data-nav="menu" class="bnav"><i class="ph-bold ph-fork-knife"></i><span>المنيو</span></button>
-    <button data-nav="waitlist" class="bnav relative"><i class="ph-bold ph-hourglass-medium"></i><span>الانتظار</span><span id="bnav-waitlist" class="hidden absolute top-1.5 left-1/2 ml-2 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-400 text-black text-[10px] font-black leading-[18px]">0</span></button>
-    <button data-nav="loyalty" class="bnav"><i class="ph-bold ph-seal-check"></i><span>الولاء</span></button>
     <a href="pager-desk.html" data-feature="pager" onclick="return openPagerDesk(this)" class="bnav"><i class="ph-bold ph-bell"></i><span id="bnav-desk-label">البيجر</span></a>
-    <button data-nav="settings" class="bnav"><i class="ph-bold ph-palette"></i><span>الهوية</span></button>
+    <button data-nav="loyalty" class="bnav"><i class="ph-bold ph-seal-check"></i><span>الولاء</span></button>
+    <button data-nav="messages" data-needs="pager|loyalty" class="bnav"><i class="ph-bold ph-paper-plane-tilt"></i><span>الرسائل</span></button>
+    <button type="button" onclick="toggleMore(true)" class="bnav relative"><i class="ph-bold ph-dots-three-outline"></i><span>المزيد</span><span id="bnav-waitlist" class="hidden absolute top-1.5 left-1/2 ml-2 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-400 text-black text-[10px] font-black leading-[18px]">0</span></button>
   </nav>
+  <!-- المزيد (جوال): باقي الصفحات -->
+  <div id="more-sheet" class="lg:hidden fixed inset-0 z-40 hidden items-end bg-ink/40 backdrop-blur-sm" onclick="if (event.target === this) toggleMore(false)">
+    <div class="w-full bg-cream rounded-t-3xl p-4 pb-8 grid grid-cols-3 gap-2" style="padding-bottom: calc(2rem + env(safe-area-inset-bottom))" onclick="if (event.target.closest('[data-nav]')) toggleMore(false)">
+      <button data-nav="customers" data-needs="loyalty" class="more-item"><i class="ph-bold ph-users-three"></i><span>العملاء</span></button>
+      <button data-nav="waitlist" class="more-item"><i class="ph-bold ph-hourglass-medium"></i><span>قائمة الانتظار</span></button>
+      <button data-nav="branches" class="more-item"><i class="ph-bold ph-git-branch"></i><span>الفروع</span></button>
+      <button data-nav="settings" class="more-item"><i class="ph-bold ph-palette"></i><span>هوية المنشأة</span></button>
+      <button data-nav="account" class="more-item"><i class="ph-bold ph-identification-card"></i><span>الاشتراك</span></button>
+    </div>
+  </div>
 </div>
 
 <!-- JavaScript البرمجي المنظم -->
@@ -1893,11 +1931,16 @@
     dashboard: ['الرئيسية', 'نظرة عامة على منشأتك وخدماتك'],
     menu:      ['المنيو', 'أضف أطباقك وأقسامك ورتّبها'],
     waitlist:  ['قائمة الانتظار', 'سجّل عملاءك وبلّغهم لما يجي دورهم'],
-    loyalty:   ['بطاقة الولاء', 'زبونك يجمع أختامه بنفسه ويرجع لك'],
+    loyalty:   ['بطاقة الولاء', 'تصميم البطاقة وإعداداتها وأرقامها'],
+    customers: ['العملاء', 'أعضاء بطاقة الولاء في كل فروعك'],
+    messages:  ['الرسائل', 'أرسل عروضك وأخبارك لجوالات عملائك'],
+    branches:  ['الفروع', 'فروعك ومميزات كل فرع وروابط الكاشير'],
+    account:   ['الاشتراك', 'باقتك وتجديدها وطلباتك للإدارة'],
     settings:  ['هوية المنشأة', 'الاسم والشعار والخلفية ومعلومات التواصل']
   };
   // المميزات اللي مو ضمن باقة المشترك: الصفحة تعرض "أضفها لباقتك" بدل محتواها
-  const PAGE_FEATURE = { menu: 'menu', waitlist: 'waitlist', loyalty: 'loyalty' };
+  // الرسائل: من بطاقة الولاء، أو من بطاقة النداء (إضافة على البيجر)
+  const PAGE_FEATURE = { menu: 'menu', waitlist: 'waitlist', loyalty: 'loyalty', customers: 'loyalty', messages: () => DMPlans.has(client, 'loyalty') || DMPlans.has(client, 'pager') ? null : 'pager' };
   // الخدمات اللي مو ضمن باقته (في التجربة أو الاشتراك) تختفي من اللوحة كلها
   const featureLocked = (key) => !!client && ['active', 'trial'].includes(client.subscription_status) && !DMPlans.has(client, key);
   let lockedKey = null;
@@ -2041,7 +2084,7 @@
 
   function showPage(page) {
     if (!PAGES[page] && page !== 'pager') page = 'dashboard';
-    const key = page === 'pager' ? 'pager' : PAGE_FEATURE[page];
+    const key = page === 'pager' ? 'pager' : typeof PAGE_FEATURE[page] === 'function' ? PAGE_FEATURE[page]() : PAGE_FEATURE[page];
     const locked = key && featureLocked(key);
     if (page === 'pager' && !locked) page = 'dashboard';
     if (locked) showLocked(key);
@@ -2059,8 +2102,11 @@
     if (location.hash !== '#' + page) history.replaceState(null, '', location.pathname + location.search + '#' + page);
     window.scrollTo({ top: 0 });
     if (typeof onWaitlistPage === 'function') onWaitlistPage(page === 'waitlist');
-    if (page === 'loyalty' && typeof onLoyaltyPage === 'function') onLoyaltyPage();
+    // صفحات الولاء والعملاء والرسائل تاخذ بياناتها من بطاقة الولاء
+    if (['loyalty', 'customers'].includes(page) || (page === 'messages' && DMPlans.has(client, 'loyalty'))) onLoyaltyPage();
+    if (page === 'messages') renderNotifyCard();
   }
+  function toggleMore(on) { const m = document.getElementById('more-sheet'); m.classList.toggle('hidden', !on); m.classList.toggle('flex', on); }
   document.querySelectorAll('[data-nav]').forEach(b => b.addEventListener('click', () => {
     if (location.hash === '#' + b.dataset.nav) return showPage(b.dataset.nav);
     location.hash = b.dataset.nav;
@@ -2325,8 +2371,7 @@
     planSending = false; renderSubscriptionStatus();
   }
   function goToPlans() {
-    if (location.hash !== '#dashboard') location.hash = 'dashboard';
-    setTimeout(() => document.getElementById('subscription-card').scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
+    if (location.hash !== '#account') location.hash = 'account';
   }
 
   function planPicker(verb) {
@@ -4446,14 +4491,13 @@
     document.querySelectorAll('[data-lyt]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.lyt === tab)));
     document.querySelectorAll('[data-lytab]').forEach(el => el.classList.toggle('hidden', el.dataset.lytab !== tab));
     const grid = document.getElementById('ly-grid');
-    grid.classList.toggle('hidden', !['settings', 'messages'].includes(tab));
-    grid.style.gridTemplateColumns = tab === 'messages' ? '1fr' : '';
+    grid.classList.toggle('hidden', tab !== 'settings');
     try { localStorage.setItem('dm_ly_tab', tab); } catch {}
   }
   document.querySelectorAll('[data-lyt]').forEach(b => b.addEventListener('click', () => setLyTab(b.dataset.lyt)));
   async function onLoyaltyPage() {
     let saved = ''; try { saved = localStorage.getItem('dm_ly_tab') || ''; } catch {}
-    setLyTab(ly.tab || saved || 'overview');
+    setLyTab(['overview', 'design', 'settings'].includes(ly.tab || saved) ? (ly.tab || saved) : 'overview');
     try { [ly.data, ly.members] = await Promise.all([api('loyalty'), api('loyalty-members').then(r => r.members)]); }
     catch (e) { showToast(e.message || 'تعذر تحميل بطاقة الولاء', true); return; }
     renderLoyalty();
