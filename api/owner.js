@@ -1018,22 +1018,17 @@ async function main(req) {
     if (!['waiting', 'ready', 'done', 'cancelled'].includes(status)) throw new ApiError(400, 'حالة غير صحيحة');
     const now = new Date().toISOString();
     const patch = { status };
-    if (status === 'ready') { patch.ready_at = now; patch.closed_at = null; }
+    // "جاهز" = أول رنّة، والعدّاد يبدأ من جديد (لو رجع للتجهيز ثم جاهز مرة ثانية)
+    if (status === 'ready') Object.assign(patch, { ready_at: now, closed_at: null, ring_count: 0, last_ring_at: null, acked_at: null });
     else if (status === 'waiting') { patch.ready_at = null; patch.closed_at = null; }
     else patch.closed_at = now;
     if (status === 'done' || status === 'cancelled') patch.push_sub = null;
     const rows = await rest(`pager_tickets?id=eq.${id}&client_id=eq.${sid}`, { method: 'PATCH', body: patch, prefer: 'return=representation' });
     if (!rows.length) throw new ApiError(404, 'الرقم غير موجود');
-    let t = rows[0];
-    // "جاهز" = أول رنّة، والعدّاد يبدأ من جديد (لو رجع للتجهيز ثم جاهز مرة ثانية)
-    let push = 'off';
+    const t = rows[0];
     if (status === 'ready' && !t.push_sub) console.log('PAGER_READY_NO_SUB', sid, t.id);
-    if (status === 'ready') {
-      await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { ring_count: 0, last_ring_at: null, acked_at: null } }).catch(() => {});
-      t = { ...t, ring_count: 0, acked_at: null };
-      push = await ringTicket(store, t);
-    }
     // بطاقة النداء وبطاقة الولاء يتحدثون بالخلفية: الكاشير ياخذ الرد على طول، والإشعار يوصل خلال ثواني
+    // تحديث البطاقة يبدأ قبل رنّة المتصفح (WalletWallet ياخذ ثواني، فما ينتظر الرنّة)
     // رقمه مضاف للمحفظة: تحديث يطلع إشعار من النظام (حتى لو يشوف فيديو)
     if (status === 'ready' && t.wallet_serial) {
       later(wallet.updatePagerPass(t.wallet_serial, wallet.pagerStep({ store, number: t.number, step: 'ready', lang: t.lang })).then(wr => {
@@ -1048,10 +1043,11 @@ async function main(req) {
         return rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_error: `${t.wallet_error || ''} | end ${er}`.slice(0, 300) } });
       }));
     }
-    // بطاقة ولاء مربوطة بالرقم: ختم أول ما يجهز الطلب (مرة وحدة)، وبعده إشعار "طلبك جاهز" من بطاقة المحفظة
+    // بطاقة ولاء مربوطة بالرقم: إشعار "طلبك جاهز" من بطاقة المحفظة أول، وبعده الختم (مرة وحدة)
     if (status === 'ready' && t.loyalty_card_id) {
       later((async () => {
         const lhome = await loyaltyHome(sid);
+        if (PLANS.has(store, 'loyalty')) console.log('PAGER_WALLET', sid, t.id, await pagerReadyNotice(lhome, t.loyalty_card_id, t.number, store.name, SECTORS.terms(store)));
         if (!t.loyalty_stamped) {
           try {
             const x = (await rest(`clients?id=eq.${lhome}&select=loyalty_enabled,loyalty_settings`))[0] || {};
@@ -1062,10 +1058,10 @@ async function main(req) {
             }
           } catch (e) { console.error('PAGER_STAMP', e.message); }
         }
-        if (PLANS.has(store, 'loyalty')) console.log('PAGER_WALLET', sid, t.id, await pagerReadyNotice(lhome, t.loyalty_card_id, t.number, store.name, SECTORS.terms(store)));
         await poke([topic('pager', sid), topic('ticket', t.token)]);   // صفحة الزبون تشوف الختم
       })());
     }
+    const push = status === 'ready' ? await ringTicket(store, t) : 'off';
     await poke([topic('pager', sid), topic('ticket', t.token)]);
     return { ticket: { id: t.id, number: t.number, status: t.status, created_at: t.created_at, ready_at: t.ready_at, closed_at: t.closed_at, has_push: !!t.push_sub, ring_count: t.ring_count || 0, acked_at: t.acked_at || null }, push };
   }
