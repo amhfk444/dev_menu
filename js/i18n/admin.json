@@ -1506,5 +1506,14 @@
   "إشعار من الإدارة": "Notice from DEV MENU",
   "تنبيه": "Alert",
   "تذكير": "Reminder",
-  "معلومة": "Info"
+  "معلومة": "Info",
+  "قراءة الكل": "Mark all read",
+  "حذف الكل": "Delete all",
+  "الإشعارات المقروءة تنحذف تلقائياً بعد يوم": "Read notifications are deleted automatically after a day",
+  "حذف الإشعار": "Delete notification",
+  "حذف كل الإشعارات": "Delete all notifications",
+  "تنحذف كل الإشعارات من القائمة، وما ترجع.": "All notifications are removed and can't be restored.",
+  "احذف الكل": "Delete all",
+  "ما انحفظ، تأكد من الإنترنت": "Not saved, check your connection",
+  "ما انحذف، تأكد من الإنترنت": "Not deleted, check your connection"
 }

@@ -409,15 +409,26 @@ async function main(req) {
   if (action === 'notifications' && req.method === 'GET') {
     const { store } = await context(req);
     const mainId = store.parent_id || store.id;
+    // المقروءة تنحذف بعد يوم من قراءتها (غير المقروءة تبقى لين يقرأها)
+    await rest(`owner_notifications?client_id=eq.${mainId}&read_at=lt.${q(new Date(Date.now() - 864e5).toISOString())}`, { method: 'DELETE' }).catch(() => {});
     const [items, unread] = await Promise.all([
       rest(`owner_notifications?client_id=eq.${mainId}&select=id,kind,title,body,link,created_at,read_at&order=id.desc&limit=30`).catch(() => []),
       rest(`owner_notifications?client_id=eq.${mainId}&read_at=is.null&select=id&limit=100`).catch(() => [])
     ]);
     return { items, unread: unread.length };
   }
+  // قراءة إشعار واحد (id) أو الكل
   if (action === 'notifications-read' && req.method === 'POST') {
     const { store } = await context(req);
-    await rest(`owner_notifications?client_id=eq.${store.parent_id || store.id}&read_at=is.null`, { method: 'PATCH', body: { read_at: new Date().toISOString() } }).catch(() => {});
+    const one = Number.isInteger(Number(b.id)) && b.id != null ? `&id=eq.${Number(b.id)}` : '';
+    await rest(`owner_notifications?client_id=eq.${store.parent_id || store.id}&read_at=is.null${one}`, { method: 'PATCH', body: { read_at: new Date().toISOString() } }).catch(() => {});
+    return { ok: true };
+  }
+  // حذف إشعار واحد (id) أو الكل
+  if (action === 'notifications-delete' && req.method === 'POST') {
+    const { store } = await context(req);
+    const one = Number.isInteger(Number(b.id)) && b.id != null ? `&id=eq.${Number(b.id)}` : '';
+    await rest(`owner_notifications?client_id=eq.${store.parent_id || store.id}${one}`, { method: 'DELETE' });
     return { ok: true };
   }
 

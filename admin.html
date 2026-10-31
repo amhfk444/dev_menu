@@ -388,9 +388,14 @@
     <div id="notif-panel" class="hidden fixed z-50 top-[4.5rem] inset-x-3 md:inset-x-auto md:left-8 md:w-[400px] max-h-[75vh] overflow-y-auto pro-card !p-0 shadow-2xl" role="dialog" aria-label="الإشعارات">
       <div class="sticky top-0 bg-cream/95 backdrop-blur px-4 py-3 border-b border-brand/10 flex items-center justify-between">
         <h3 class="text-sm font-bold"><i class="ph-bold ph-bell"></i> الإشعارات</h3>
-        <button type="button" onclick="toggleNotifs(false)" aria-label="إغلاق" class="w-8 h-8 rounded-lg hover:bg-brand/10 flex items-center justify-center"><i class="ph-bold ph-x text-xs"></i></button>
+        <div class="flex items-center gap-1">
+          <button type="button" id="notif-read-all" onclick="readAllNotifs()" class="text-[11px] font-bold px-2.5 py-1.5 rounded-lg hover:bg-brand/10"><i class="ph-bold ph-checks"></i> قراءة الكل</button>
+          <button type="button" id="notif-del-all" onclick="deleteNotif()" class="text-[11px] font-bold px-2.5 py-1.5 rounded-lg text-rose-700 hover:bg-rose-50"><i class="ph-bold ph-trash"></i> حذف الكل</button>
+          <button type="button" onclick="toggleNotifs(false)" aria-label="إغلاق" class="w-8 h-8 rounded-lg hover:bg-brand/10 flex items-center justify-center"><i class="ph-bold ph-x text-xs"></i></button>
+        </div>
       </div>
       <div id="notif-list" class="divide-y divide-brand/10"></div>
+      <p class="text-[10.5px] text-ink/45 text-center px-4 py-2.5 border-t border-brand/10">الإشعارات المقروءة تنحذف تلقائياً بعد يوم</p>
     </div>
     <main class="flex-1 w-full max-w-[1600px] mx-auto px-4 md:px-8 py-6 pb-28 lg:pb-10">
 
@@ -2349,7 +2354,7 @@
   // التجربة: اللي اختار البيجر بدون الرسائل يجربها مجاناً (وتتوقف بعد التجربة إلا إذا أضافها)
   const trialGift = () => !!client && client.subscription_status === 'trial' && DMPlans.has(client, 'notify') && !(client.plan_features || []).includes('notify') && !DMPlans.has(client, 'loyalty');
   // ─── جرس الإشعارات ───
-  // يتحدث مع فتح اللوحة وكل دقيقة، ولما يفتح القائمة تصير كلها مقروءة
+  // يتحدث لحظياً، وصاحب المحل يقرأ ويحذف بنفسه (المقروءة تنحذف بعد يوم)
   let notifs = [], notifOpen = false;
   // أيقونة ولون كل نوع: رد، فرع، تنبيه، تذكير، معلومة، أو إشعار من الإدارة
   const NOTIF_ICON = { reply: 'ph-chat-circle-text', branch: 'ph-git-branch', admin: 'ph-megaphone', alert: 'ph-warning', reminder: 'ph-clock', info: 'ph-info' };
@@ -2366,15 +2371,23 @@
   }
   function renderNotifs() {
     const when = (iso) => new Date(iso).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+    const unread = notifs.filter(n => !n.read_at).length;
+    document.getElementById('notif-read-all').classList.toggle('hidden', !unread);
+    document.getElementById('notif-del-all').classList.toggle('hidden', !notifs.length);
+    const b = document.getElementById('notif-badge');
+    b.textContent = unread > 9 ? '9+' : unread; b.classList.toggle('hidden', !unread);
     document.getElementById('notif-list').innerHTML = notifs.length ? notifs.map(n => `
-      <button type="button" onclick="openNotif(${n.id})" class="w-full text-right flex gap-3 px-4 py-3 hover:bg-brand/[0.04] ${n.read_at ? '' : 'bg-amber-50/70'}">
+      <div class="relative group ${n.read_at ? '' : 'bg-amber-50/70'}">
+      <button type="button" onclick="deleteNotif(${n.id})" aria-label="حذف الإشعار" title="حذف" class="absolute top-2.5 left-2.5 w-7 h-7 rounded-lg text-ink/40 hover:text-rose-700 hover:bg-rose-50 flex items-center justify-center"><i class="ph-bold ph-x text-[11px]"></i></button>
+      <button type="button" onclick="openNotif(${n.id})" class="w-full text-right flex gap-3 ps-4 pe-12 py-3 hover:bg-brand/[0.04]">
         <span class="w-9 h-9 rounded-xl ${NOTIF_TONE[n.kind] || 'bg-brand/10 text-brand'} grid place-items-center shrink-0"><i class="ph-bold ${NOTIF_ICON[n.kind] || 'ph-bell'}"></i></span>
         <span class="flex-1 min-w-0">
           <span class="flex items-center gap-2"><b class="text-[13px]">${esc(n.title)}</b>${n.read_at ? '' : '<span class="w-2 h-2 rounded-full bg-red-600 shrink-0" aria-label="جديد"></span>'}</span>
           ${n.body ? `<span class="block text-[12px] text-ink/70 leading-relaxed mt-0.5 whitespace-pre-line">${esc(n.body)}</span>` : ''}
           <span class="block text-[11px] text-ink/45 mt-1">${when(n.created_at)}</span>
         </span>
-      </button>`).join('') : '<p class="text-[12px] text-ink/55 text-center py-10 px-6">ما فيه إشعارات للحين. لما ترد الإدارة على طلبك أو يوصلك إشعار منها، يطلع هنا.</p>';
+      </button>
+      </div>`).join('') : '<p class="text-[12px] text-ink/55 text-center py-10 px-6">ما فيه إشعارات للحين. لما ترد الإدارة على طلبك أو يوصلك إشعار منها، يطلع هنا.</p>';
   }
   async function toggleNotifs(on = !notifOpen) {
     notifOpen = on;
@@ -2384,19 +2397,29 @@
     // تحت الشريط العلوي مهما كان طوله (في الجوال سطرين)
     panel.style.top = `${Math.round(document.querySelector('header.sticky').getBoundingClientRect().bottom) + 8}px`;
     renderNotifs();
-    if (notifs.some(n => !n.read_at)) {
-      document.getElementById('notif-badge').classList.add('hidden');
-      try { await api('notifications-read', {}); } catch {}
-      // تبقى مميزة لين يقفل القائمة، وبعدها تصير مقروءة
-      setTimeout(() => { notifs = notifs.map(n => ({ ...n, read_at: n.read_at || new Date().toISOString() })); }, 0);
+  }
+  // يضغط على الإشعار: يصير مقروء، ويوديه لمكانه لو له رابط
+  async function openNotif(id) {
+    const n = notifs.find(x => x.id === id); if (!n) return;
+    if (!n.read_at) {
+      n.read_at = new Date().toISOString(); renderNotifs();
+      api('notifications-read', { id }).catch(() => {});
     }
+    if (n.link && n.link.startsWith('#')) { toggleNotifs(false); location.hash = n.link.slice(1); }
   }
-  function openNotif(id) {
-    const n = notifs.find(x => x.id === id);
-    toggleNotifs(false);
-    if (n && n.link && n.link.startsWith('#')) location.hash = n.link.slice(1);
+  async function readAllNotifs() {
+    notifs = notifs.map(n => ({ ...n, read_at: n.read_at || new Date().toISOString() })); renderNotifs();
+    try { await api('notifications-read', {}); } catch { showToast('ما انحفظ، تأكد من الإنترنت', true); }
   }
-  document.addEventListener('click', (e) => { if (notifOpen && !e.target.closest('#notif-panel, #notif-btn')) toggleNotifs(false); });
+  // حذف إشعار واحد، أو الكل (بعد تأكيد)
+  async function deleteNotif(id) {
+    if (id == null && !(await DMDialog.confirm({ title: 'حذف كل الإشعارات', message: 'تنحذف كل الإشعارات من القائمة، وما ترجع.', confirmText: 'احذف الكل', cancelText: 'تراجع', tone: 'danger' }))) return;
+    const keep = notifs;
+    notifs = id == null ? [] : notifs.filter(n => n.id !== id); renderNotifs();
+    try { await api('notifications-delete', id == null ? {} : { id }); }
+    catch { notifs = keep; renderNotifs(); showToast('ما انحذف، تأكد من الإنترنت', true); }
+  }
+  document.addEventListener('click', (e) => { if (notifOpen && !e.target.closest('#notif-panel, #notif-btn, .dmd-back')) toggleNotifs(false); });
   setInterval(() => { if (!document.hidden && client) loadNotifs(); }, 60000);
 
   // الترقية من الشهري للسنوي: كم يوفّر، وطلب يوصل للإدارة بضغطة
