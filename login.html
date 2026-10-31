@@ -86,6 +86,19 @@
   .toast i { font-size: 14px; }
   .toast-success i { color: #4ade80; }
   .toast-error i { color: #fbbf24; }
+
+  /* ═══ نفس أساس النظام: Shopify Polaris (@shopify/polaris-tokens 9.4.2)، وأخضر DEV MENU ═══ */
+  :root { --brand: #384f3d; --brand-dark: #2a3e2f; --sand: #f1f1f1; --cream: #fdfdfd; }
+  body { background: #f1f1f1; color: #303030; }
+  .page-bg { display: none; }
+  .pro-card { border: 0; border-radius: 12px; box-shadow: 0 1px 0 rgba(26,26,26,.07), inset 1px 0 0 rgba(0,0,0,.13), inset -1px 0 0 rgba(0,0,0,.13), inset 0 -1px 0 rgba(0,0,0,.17), inset 0 1px 0 rgba(204,204,204,.5); }
+  .btn-primary { color: #fff; border-radius: 8px !important; box-shadow: inset 0 -1px 0 1px rgba(0,0,0,.55), inset 0 0 0 1px var(--brand), inset 0 .5px 0 1.5px rgba(255,255,255,.25); }
+  .btn-primary:hover { transform: none; box-shadow: inset 0 -1px 0 1px rgba(0,0,0,.55), inset 0 0 0 1px var(--brand-dark), inset 0 .5px 0 1.5px rgba(255,255,255,.25); }
+  .lbl { font-size: 13px; font-weight: 600; color: #303030; }
+  .input-pro, .otp-box { background: #fdfdfd; border: 1px solid #8a8a8a; border-radius: 8px; font-weight: 500; color: #303030; }
+  .input-pro:hover, .otp-box:hover { border-color: #616161; }
+  .input-pro:focus, .otp-box:focus { outline: 2px solid #005bd3; outline-offset: 1px; border-color: #8a8a8a; box-shadow: none; background: #fdfdfd; transform: none; }
+  .otp-box.filled { background: var(--brand); color: #fff; border-color: var(--brand); }
 </style>
 <link rel="stylesheet" href="/css/tw/login.css">
 </head>
@@ -95,11 +108,10 @@
 <div id="toast-wrap"></div>
 
 <header class="w-full max-w-md flex items-center justify-between py-4">
-  <div class="flex items-center gap-2.5">
-    <div class="w-10 h-10 bg-brand text-white rounded-xl flex items-center justify-center font-black text-sm tracking-wider shadow-md">DM</div>
-    <span class="font-black text-sm tracking-widest text-brand">DEV MENU</span>
-  </div>
-  <a href="index.html" class="text-xs font-bold bg-white border border-[#233d2c]/20 px-4 py-2 rounded-xl text-brand hover:bg-[#f5f2eb] transition shadow-sm">
+  <a href="index.html" class="flex items-center" dir="ltr" aria-label="DEV MENU">
+    <img src="images/logo-full-sm.png" alt="DEV MENU" width="96" height="66" class="h-[52px] w-auto">
+  </a>
+  <a href="index.html" class="text-xs font-semibold bg-white px-4 py-2 rounded-lg text-[#303030] hover:bg-[#384f3d]/10 hover:text-brand transition" style="box-shadow: inset 0 -1px 0 #b5b5b5, inset 0 0 0 1px rgba(0,0,0,.1), inset 0 .5px 0 1.5px #fff">
     <i class="ph-bold ph-house ml-1"></i> الرئيسية
   </a>
 </header>
@@ -114,7 +126,7 @@
   </div>
 
   <!-- الدخول بحساب Google -->
-  <button type="button" id="google-btn" onclick="loginWithGoogle()" class="w-full bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 font-bold py-3.5 rounded-xl text-xs flex items-center justify-center gap-3 shadow-sm transition disabled:opacity-60">
+  <button type="button" id="google-btn" onclick="loginWithGoogle()" style="box-shadow: inset 0 -1px 0 #b5b5b5, inset 0 0 0 1px rgba(0,0,0,.1), inset 0 .5px 0 1.5px #fff" class="w-full bg-white hover:bg-[#384f3d]/10 text-[#303030] font-semibold py-3.5 rounded-lg text-xs flex items-center justify-center gap-3 shadow-sm transition disabled:opacity-60">
     <svg class="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.13 0-5.78-2.11-6.73-4.96H1.19v3.15C3.18 21.31 7.25 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.19C.43 8.15 0 9.89 0 12s.43 3.85 1.19 5.39l4.08-3.15z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.25 0 3.18 2.69 1.19 6.61l4.08 3.15c.95-2.85 3.6-4.96 6.73-4.96z"/></svg>
     <span>الدخول بحساب Google</span>
   </button>
