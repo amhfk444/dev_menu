@@ -64,15 +64,16 @@
 <div id="toast" class="fixed top-4 inset-x-0 mx-auto w-fit z-50 hidden bg-[#15271b] text-[#f5f2eb] text-sm font-black px-5 py-3 rounded-2xl shadow-xl"></div>
 
 <header class="sticky top-0 z-40 bg-[#f5f2eb]/90 backdrop-blur border-b border-[#233d2c]/10">
-  <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
+  <!-- الجوال: العنوان سطر، والأزرار سطر تحته يتمرر بالعرض. الشاشة العريضة: سطر واحد -->
+  <div class="max-w-6xl mx-auto px-4 py-2.5 md:py-0 md:h-16 flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-3">
     <div class="flex items-center gap-3 min-w-0">
       <a href="admin.html" class="owner-only w-10 h-10 rounded-xl bg-white border border-[#233d2c]/15 grid place-items-center text-[#233d2c]" title="لوحة التحكم"><i class="ph-bold ph-arrow-right"></i></a>
       <div class="min-w-0">
         <h1 class="text-base font-black truncate"><i class="ph-bold ph-bell text-[#c9a227]"></i> <span id="desk-title">شاشة البيجر</span> — <span id="store-name">…</span></h1>
-        <p id="desk-sub" class="text-[11px] font-bold opacity-55">اضغط على الرقم لما يجي دوره، ويرن جوال العميل</p>
+        <p id="desk-sub" class="hidden md:block text-[11px] font-bold opacity-55">اضغط على الرقم لما يجي دوره، ويرن جوال العميل</p>
       </div>
     </div>
-    <div class="flex gap-2 shrink-0">
+    <div class="flex gap-2 overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0 pb-0.5 [&>*]:shrink-0 [&>*]:whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <button id="scan-btn" class="mini bg-[#233d2c] text-white hidden"><i class="ph-bold ph-camera"></i> امسح بطاقة زبون</button>
       <button id="stamp-btn" class="mini bg-[#c9a227] text-[#15271b] hidden"><i class="ph-bold ph-seal-check"></i> كود ختم</button>
       <button id="join-btn" class="mini bg-white border border-[#233d2c]/15 hidden"><i class="ph-bold ph-user-plus"></i> QR تسجيل الولاء</button>
@@ -84,10 +85,9 @@
       <button type="button" data-lang-toggle class="mini bg-white border border-[#233d2c]/15"></button>
     </div>
   </div>
+  <!-- انقطع الاتصال: الكاشير يعرف إن الأرقام ممكن ما تكون محدّثة -->
+  <div id="net-bar" class="hidden bg-[#b42318] text-white text-[13px] font-bold px-4 py-2.5 text-center" role="status"></div>
 </header>
-
-<!-- انقطع الاتصال: الكاشير يعرف إن الأرقام ممكن ما تكون محدّثة -->
-<div id="net-bar" class="hidden sticky top-16 z-30 bg-[#b42318] text-white text-[13px] font-bold px-4 py-2.5 text-center" role="status"></div>
 <main class="max-w-6xl mx-auto px-4 py-6 space-y-6">
   <!-- مشترك الولاء بدون البيجر: الشاشة للأختام بس -->
   <section id="loyalty-desk" class="panel p-6 hidden">

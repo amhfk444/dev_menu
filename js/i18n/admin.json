@@ -1486,5 +1486,13 @@
   "تم رفع الفيديو": "Video uploaded",
   "الخلفية الحالية": "Current background",
   "الفيديو الحالي": "Current video",
-  "{a}، ويظهر في المنيو وصفحة الروابط": "{a}; it shows on the menu and the links page"
+  "{a}، ويظهر في المنيو وصفحة الروابط": "{a}; it shows on the menu and the links page",
+  "رقّ اشتراكك إلى السنوي": "Upgrade to yearly",
+  "اشتراكك الحالي شهري ({a} ر.س). السنوي {b} ر.س، وتوفّر {c} ر.س في السنة، ويشمل فروعك.": "Your plan is monthly ({a} SAR). Yearly is {b} SAR, saving {c} SAR a year, and covers your branches.",
+  "اشتراكك الحالي شهري ({a} ر.س). السنوي {b} ر.س، ويشمل فروعك.": "Your plan is monthly ({a} SAR). Yearly is {b} SAR and covers your branches.",
+  "الترقية إلى الاشتراك السنوي": "Upgrade to the yearly plan",
+  "يوصل طلبك للإدارة، ونتواصل معك لإتمام الدفع، ويتحوّل اشتراكك وفروعك إلى السنوي.": "Your request reaches our team; we'll contact you to complete payment and switch your account and branches to yearly.",
+  "أرسل طلب الترقية": "Send upgrade request",
+  "وصل طلب الترقية للإدارة، وبنتواصل معك قريب": "Upgrade request sent; we'll contact you soon",
+  "اشتراك الفرع {a} مثل اشتراك حسابك. ربط الفرع {b} ر.س {c}، ومعه سعر الخدمات اللي تختارها للفرع.": "The branch follows your account's {a} plan. Branch link {b} SAR {c}, plus the services you choose for it."
 }

@@ -2332,6 +2332,24 @@
 
   // ─── التواصل مع الإدارة: الطلب يوصل لصفحة المدير العام، والرد يطلع هنا ───
   const SUPPORT_KIND = { renew: 'تجديد', plan: 'تغيير باقة', addon: 'تفعيل إضافة', branch: 'فرع جديد', suspended: 'حساب موقوف', contact: 'رسالة' };
+  // الترقية من الشهري للسنوي: كم يوفّر، وطلب يوصل للإدارة بضغطة
+  function upgradeBox() {
+    const f = myFeatures(), list = branchList();
+    const month = DMPlans.price(f, 'month', list).total, year = DMPlans.price(f, 'year', list).total, save = month * 12 - year;
+    return `<div class="rounded-2xl border border-emerald-600/30 bg-emerald-600/5 p-3.5 space-y-2">
+      <p class="text-[13px] font-bold text-ink"><i class="ph-bold ph-arrow-circle-up text-emerald-700"></i> رقّ اشتراكك إلى السنوي</p>
+      <p class="text-[12px] text-ink/70">اشتراكك الحالي شهري (${month} ر.س). السنوي ${year} ر.س${save > 0 ? `، وتوفّر ${save} ر.س في السنة` : ''}، ويشمل فروعك.</p>
+      <button type="button" onclick="requestUpgrade()" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2.5 rounded-xl text-[13px] transition"><i class="ph-bold ph-arrow-circle-up"></i> الترقية إلى الاشتراك السنوي</button>
+    </div>`;
+  }
+  async function requestUpgrade() {
+    if (!(await DMDialog.confirm({ title: 'الترقية إلى الاشتراك السنوي', message: 'يوصل طلبك للإدارة، ونتواصل معك لإتمام الدفع، ويتحوّل اشتراكك وفروعك إلى السنوي.', confirmText: 'أرسل طلب الترقية', cancelText: 'تراجع', tone: 'success' }))) return;
+    try {
+      await api('support-send', { kind: 'plan', body: 'طلب ترقية الاشتراك من الشهري إلى السنوي (الحساب وفروعه).' });
+      showToast('وصل طلب الترقية للإدارة، وبنتواصل معك قريب');
+      loadSupport();
+    } catch (e) { showToast(e.message || 'ما انرسل. تأكد من الإنترنت وحاول مرة ثانية', true); }
+  }
   async function contactAdmin(kind = 'contact', prefill = '', title = 'راسل إدارة DEV MENU') {
     const v = await DMDialog.form({ title, subtitle: 'توصل لإدارة DEV MENU، والرد يطلع لك هنا تحت "اشتراكك"', icon: 'ph-chat-circle-text',
       fields: [{ name: 'body', label: 'رسالتك', value: prefill, maxlength: 1000, required: true, multiline: true }], confirmText: 'أرسل' });
@@ -2495,6 +2513,7 @@
         </div>` : ''}
       ${status === 'active' ? `<div class="flex flex-wrap items-center gap-1.5">${myFeatures().map(k => `<span class="text-[11px] font-bold bg-brand/5 border border-brand/15 rounded-full px-2.5 py-1"><i class="ph-bold ${DMPlans.FEATURES[k].icon}"></i> ${DMPlans.FEATURES[k].name}</span>`).join('')}${!showPlans && !client.parent_id ? '<button type="button" onclick="openPlan()" class="text-[11px] font-bold text-brand underline underline-offset-4">عدّل باقتك</button>' : ''}</div>` : ''}
       ${client.parent_id ? '<p class="text-[11px] text-ink/60"><i class="ph-bold ph-tree-structure"></i> اشتراك الفرع تابع للمتجر الرئيسي</p>' : ''}
+      ${live && status === 'active' && client.subscription_plan === 'month' && !client.parent_id ? upgradeBox() : ''}
       ${showPlans && !client.parent_id ? planPicker(verb) : ''}`;
 
     // شريط تنبيه بارز أعلى اللوحة
@@ -3872,8 +3891,14 @@
   }
   // سعر الفرع: رسوم الفرع (19/199) + سعر مميزاته، حسب نوع اشتراك الحساب، والمستحق الحين لو انضاف في نص الاشتراك
   const accountFeatures = () => DMPlans.clean(client.plan_features && client.plan_features.length ? client.plan_features : DMPlans.LEGACY);
+  // نوع اشتراك الحساب (الفروع تمشي عليه): المشترك حسب اشتراكه، وفي التجربة حسب اللي اختاره عند التسجيل
+  const accountPeriod = () => {
+    const m = branches.find(b => !b.parent_id) || client;
+    const v = m.subscription_status === 'active' ? (m.subscription_plan || client.subscription_plan) : (m.requested_plan || client.requested_plan || m.subscription_plan || client.subscription_plan);
+    return v === 'year' ? 'year' : 'month';
+  };
   function branchQuote(feats) {
-    const monthly = client.subscription_plan === 'month', p = monthly ? 'month' : 'year', per = monthly ? 'بالشهر' : 'بالسنة';
+    const monthly = accountPeriod() === 'month', p = monthly ? 'month' : 'year', per = monthly ? 'بالشهر' : 'بالسنة';
     const fee = DMPlans.BRANCH[p], price = DMPlans.branchPrice(feats || [], p), extra = price - fee;
     const base = { fee, price, per, extra };
     const end = client.subscription_status === 'active' ? Date.parse(client.subscription_end_date) : NaN;
@@ -3885,9 +3910,9 @@
   const pendingBranch = () => supportRows.find(x => x.kind === 'branch' && x.status === 'open');
   async function requestBranch() {
     if (pendingBranch()) return showToast('عندك طلب فرع قيد الإضافة، بنضيفه لك قريب', true);
-    const p = client.subscription_plan === 'month' ? 'month' : 'year', fee = DMPlans.BRANCH[p];
+    const p = accountPeriod(), fee = DMPlans.BRANCH[p];
     const wide = accountFeatures().filter(k => DMPlans.ACCOUNT_WIDE.includes(k)), wideNames = wide.map(k => DMPlans.FEATURES[k].name).join(' و');
-    const v = await DMDialog.form({ title: 'اطلب فرع جديد', subtitle: `ربط الفرع ${fee} ر.س ${p === 'month' ? 'بالشهر' : 'بالسنة'}: دخول واحد لكل فروعك، ومنيو مربوط، وولاء مشترك يجمع فيه الزبون أختامه من أي فرع، وفاتورة وحدة. ومعه سعر المميزات اللي تختارها للفرع.`, icon: 'ph-git-branch', confirmText: 'أرسل الطلب',
+    const v = await DMDialog.form({ title: 'اطلب فرع جديد', subtitle: `اشتراك الفرع ${p === 'month' ? 'شهري' : 'سنوي'} مثل اشتراك حسابك. ربط الفرع ${fee} ر.س ${p === 'month' ? 'بالشهر' : 'بالسنة'}، ومعه سعر الخدمات اللي تختارها للفرع.`, icon: 'ph-git-branch', confirmText: 'أرسل الطلب',
       fields: [
         { name: 'name', label: 'اسم الفرع', value: `${client.name || ''} - `, maxlength: 80, required: true, placeholder: `${client.name || ''} - فرع النخيل` },
         { name: 'features', label: 'مميزات الفرع (محددة نفس حسابك، وتقدر تغيّرها)', type: 'multi', required: !wide.length, requiredText: 'اختر ميزة وحدة على الأقل للفرع',
@@ -3926,7 +3951,7 @@
   async function requestBranchFeatures(id) {
     const b = branches.find(x => x.id === id); if (!b) return;
     if (pendingBranchFeatures(id)) return showToast('عندك طلب لهالفرع قيد التفعيل، بنفعّله لك قريب', true);
-    const p = client.subscription_plan === 'month' ? 'month' : 'year', per = p === 'month' ? 'بالشهر' : 'بالسنة';
+    const p = accountPeriod(), per = p === 'month' ? 'بالشهر' : 'بالسنة';
     const cur = branchOwn(b), curPrice = DMPlans.branchPrice(b.branch_features, p);
     const wide = accountFeatures().filter(k => DMPlans.ACCOUNT_WIDE.includes(k));
     const v = await DMDialog.form({ title: `مميزات ${b.name || 'الفرع'}`, subtitle: `سعره الحين ${curPrice} ر.س ${per}${Array.isArray(b.branch_features) ? '' : ' (السعر القديم للفروع)'}. اختر اللي يحتاجه الفرع.`, icon: 'ph-sliders-horizontal', confirmText: 'أرسل الطلب',
