@@ -124,5 +124,12 @@
   "يرن جوالك": "Your phone rings",
   "~{n} من {m}": "{n} of {m}",
   "~{w}: {n}": "{w}: {n}",
-  "شاشة الزبون": "Customer screen"
+  "شاشة الزبون": "Customer screen",
+  "الصوت": "Sound",
+  "بدون صوت": "Muted",
+  "ملء الشاشة": "Full screen",
+  "خروج": "Exit",
+  "صوت تنبيه الأرقام الجديدة": "Sound alert for new numbers",
+  "انقطع الاتصال بالإنترنت. قد لا تكون الأرقام محدّثة، ونعيد المحاولة تلقائياً…": "Internet connection lost. Numbers may be out of date; reconnecting automatically…",
+  "رجع الاتصال، والأرقام محدّثة": "Back online, numbers are up to date"
 }
