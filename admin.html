@@ -9,12 +9,18 @@
 <link rel="icon" type="image/png" sizes="192x192" href="/images/icon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
 <title>لوحة التحكم الاحترافية | Dev Menu</title>
+<!-- تطبيق صاحب المحل: لوحة التحكم على الشاشة الرئيسية -->
+<link rel="manifest" href="/admin-manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="DEV MENU">
 
 <link rel="stylesheet" href="/css/fonts.css">
 <link rel="stylesheet" href="/css/icons.css">
 <link rel="stylesheet" href="/css/loyalty-card.css">
 <script src="js/api.js"></script>
 <script src="js/dialog.js"></script>
+<script src="/js/install.js"></script>
 <script src="/js/loyalty-card.js"></script>
 <script src="/js/plans.js"></script>
 <script src="/js/sectors.js"></script>
@@ -337,6 +343,7 @@
       <button onclick="copyMenuLink()" data-needs="menu" class="nav-item"><i class="ph-bold ph-link-simple"></i> نسخ رابط المنيو</button>
       <button onclick="downloadQrCard()" data-needs="menu" class="nav-item"><i class="ph-bold ph-printer"></i> بطاقة QR</button>
       <a href="kiosk.html" data-needs="menu|pager|waitlist|loyalty" onclick="this.href='kiosk.html'+location.search" target="_blank" class="nav-item"><i class="ph-bold ph-device-tablet"></i> شاشة الزبون</a>
+      <button type="button" id="install-nav" onclick="DMInstall.install()" class="nav-item hidden"><i class="ph-bold ph-download-simple"></i> ثبّت التطبيق</button>
       <a id="sa-link" href="super-admin.html" class="nav-item hidden"><i class="ph-bold ph-crown text-amber-300"></i> لوحة المشتركين</a>
     </nav>
 
@@ -404,6 +411,7 @@
         </div>
 
         <div id="renew-banner" class="hidden rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 border"></div>
+        <div id="install-banner"></div>
 
         <div id="quick-counts" data-needs="menu" class="pro-card p-5"></div>
         <button type="button" data-needs="loyalty" onclick="location.hash='loyalty'" class="lg:hidden pro-card w-full flex items-center gap-3 p-4 text-right hover:bg-brand/[0.03] transition">
@@ -2236,6 +2244,10 @@
     document.getElementById('admin-mode-badge').classList.toggle('hidden', !isSuperAdmin);
     renderBranchSwitch();
     renderBranchesCard(); renderDeskCard(); renderNotifyCard();
+    // ثبّت التطبيق: بطاقة في الرئيسية (لين يثبّت أو يأجلها)، وزر دايم في القائمة
+    DMInstall.banner(document.getElementById('install-banner'), { key: 'admin', title: 'ثبّت تطبيق DEV MENU', text: 'افتح لوحة التحكم من الشاشة الرئيسية لجوالك بضغطة واحدة' });
+    const navInstall = () => document.getElementById('install-nav').classList.toggle('hidden', !DMInstall.available());
+    navInstall(); DMInstall.onReady(navInstall);
     renderAlsoBranches();
     document.getElementById('sa-link').classList.toggle('hidden', !isSuperAdmin);
     document.getElementById('sidebar-preview').href = menuUrl();

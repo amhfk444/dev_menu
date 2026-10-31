@@ -9,6 +9,11 @@
 <link rel="icon" type="image/png" sizes="192x192" href="/images/icon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
 <meta name="theme-color" content="#233d2c">
+<!-- تطبيق الكاشير: يثبّته على الشاشة الرئيسية للجهاز (الرابط فيه مفتاح الفرع) -->
+<link rel="manifest" href="/desk-manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="الكاشير">
 <title>شاشة البيجر | DEV MENU</title>
 <link rel="stylesheet" href="/css/fonts.css">
 <link rel="stylesheet" href="/css/icons.css">
@@ -17,6 +22,7 @@
 <script src="/js/vendor/jsqr.js"></script>
 <script src="js/api.js"></script>
 <script src="/js/sectors.js"></script>
+<script src="/js/install.js"></script>
 <style>
   :root { --brand: #233d2c; --sand: #f5f2eb; --gold: #c9a227; }
   body { font-family: 'IBM Plex Sans Arabic', sans-serif; background: var(--sand); color: #1b3022; }
@@ -81,6 +87,7 @@
 </header>
 
 <main class="max-w-6xl mx-auto px-4 py-6 space-y-6">
+  <div id="install-banner"></div>
   <!-- مشترك الولاء بدون البيجر: الشاشة للأختام بس -->
   <section id="loyalty-desk" class="panel p-6 hidden">
     <h2 class="text-lg font-black mb-1">بطاقة الولاء</h2>
@@ -613,6 +620,8 @@
 
   // رابط الكاشير: يفتح الشاشة بمفتاح الفرع بدون حساب المالك، وتختفي أزرار المالك
   const isDesk = DM.deskMode();
+  // جهاز الكاشير: يثبّت الشاشة كتطبيق ويفتحها بضغطة
+  if (isDesk && !EMBED) DMInstall.banner($('install-banner'), { key: 'desk', title: 'ثبّت تطبيق الكاشير', text: 'افتح شاشة البيجر والختم من الشاشة الرئيسية للجهاز بضغطة واحدة' });
   function deskGone(msg) {
     DM.leaveDesk();
     document.querySelector('main').innerHTML = `<div class="max-w-md mx-auto text-center py-20 space-y-3"><i class="ph-bold ph-lock-key text-5xl text-[#c9a227]"></i><p class="font-black text-lg">${esc(msg)}</p></div>`;

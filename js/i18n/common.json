@@ -361,5 +361,12 @@
   "تنبيه العميل على جواله عند جاهزية طلبه دون أجهزة إضافية، مع بطاقة نداء مجانية تُحفظ في محفظة جواله ويصله منها التنبيه حتى خارج الصفحة": "Alerts the customer on their phone when the order is ready, with no extra devices, plus a free pager card saved in their phone wallet that notifies them even outside the page",
   "إضافة للبيجر: إرسال إشعارات للعملاء الذين يحتفظون ببطاقة النداء، مثل عروض اليوم أو المنتجات الجديدة": "Pager add-on: send notifications to customers who keep the pager card, such as daily offers or new products",
   "تسجيل العملاء في قائمة الانتظار وتنبيههم تلقائياً عند حلول دورهم": "Customers join the waitlist and are notified automatically when it is their turn",
-  "بطاقة أختام ومكافآت في محفظة جوال العميل، مع إرسال الرسائل ومساعد ذكي للتواصل مع العملاء": "A stamps and rewards card in the customer's phone wallet, with messaging and an AI assistant to engage customers"
+  "بطاقة أختام ومكافآت في محفظة جوال العميل، مع إرسال الرسائل ومساعد ذكي للتواصل مع العملاء": "A stamps and rewards card in the customer's phone wallet, with messaging and an AI assistant to engage customers",
+  "لاحقاً": "Later",
+  "ثبّت التطبيق على جوالك": "Install the app on your phone",
+  "افتح هذه الصفحة في Safari أولاً، فالتثبيت لا يعمل من داخل التطبيقات الأخرى.": "Open this page in Safari first; installing does not work inside other apps.",
+  "اضغط زر المشاركة": "Tap the Share button",
+  "أسفل الشاشة.": "at the bottom of the screen.",
+  "اختر \"إضافة إلى الشاشة الرئيسية\".": "Choose \"Add to Home Screen\".",
+  "اضغط \"إضافة\"، وتجد التطبيق بين تطبيقات جوالك.": "Tap \"Add\", and the app appears with your other apps."
 }
