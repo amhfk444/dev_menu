@@ -37,7 +37,7 @@
       <p style="font-weight:800;font-size:18px">${t('ثبّت التطبيق على جوالك')}</p>
       ${inApp() ? `<p style="margin-top:10px;padding:10px 12px;border-radius:12px;background:#fff4d6;color:#7a5a00;font-weight:700;font-size:13px">${t('افتح هذه الصفحة في Safari أولاً، فالتثبيت لا يعمل من داخل التطبيقات الأخرى.')}</p>` : ''}
       <ol style="list-style:none;padding:0;margin:4px 0 0">
-        ${step(1, `${t('اضغط زر المشاركة')} <i class="ph-bold ph-export" style="font-size:18px;vertical-align:-3px"></i> ${t('أسفل الشاشة.')}`)}
+        ${step(1, `${t('اضغط زر المشاركة')} <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a7aff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg> ${t('أسفل الشاشة.')}`)}
         ${step(2, t('اختر "إضافة إلى الشاشة الرئيسية".'))}
         ${step(3, t('اضغط "إضافة"، وتجد التطبيق بين تطبيقات جوالك.'))}
       </ol>
