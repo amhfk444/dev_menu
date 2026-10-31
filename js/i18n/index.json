@@ -39,7 +39,6 @@
   "ما تدفع شي الحين. الفرع الإضافي": "Nothing to pay now. Each extra branch is",
   "{f} (شهري)": "{f} (monthly)",
   "{f} (سنوي)": "{f} (yearly)",
-  "الكاملة + الولاء": "Full + loyalty",
   "منيو + ولاء": "Menu + loyalty",
   "وش يصير": "What happens",
   "بعد ما تختار؟": "after you choose?",
@@ -225,5 +224,9 @@
   "أي": "that's",
   "أدخل اسم المنشأة": "Enter the business name",
   "اختر الخدمات التي تحتاجها أولاً، ويتفعّل حسابك بها": "Choose the services you need first; your account is activated with them",
-  "هدية التجربة: \"رسائل لزبائنك\" مفعّلة مجاناً خلال الأيام السبعة، وتتوقف بعدها إلا إذا أضفتها لاشتراكك.": "Trial gift: \"Customer messages\" is free during the 7 days and stops afterwards unless you add it to your plan."
+  "هدية التجربة: \"رسائل لزبائنك\" مفعّلة مجاناً خلال الأيام السبعة، وتتوقف بعدها إلا إذا أضفتها لاشتراكك.": "Trial gift: \"Customer messages\" is free during the 7 days and stops afterwards unless you add it to your plan.",
+  "منيو + بيجر": "Menu + pager",
+  "أدخل اسم منشأتك ورقم جوالك وبريدك، ويصبح حسابك جاهزاً خلال دقيقة برابط خاص باسم منشأتك، مثل": "Your business name, phone and email, and your account is ready in a minute with its own link, like",
+  "7 أيام مجاناً دون بطاقة بنكية، ونجهّز لك رابطاً خاصاً باسم منشأتك ورموز QR تلقائياً بعد التسجيل.": "7 days free, no card needed. We set up your own business link and QR codes automatically after you sign up.",
+  "يشمل رابطاً خاصاً لمنشأتك:": "Includes your own business link:"
 }

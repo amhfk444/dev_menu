@@ -377,8 +377,8 @@
     </div>
     <div class="flex flex-wrap items-center justify-center gap-3 mb-8 reveal">
       <div class="period" role="group" aria-label="مدة الاشتراك">
-        <button type="button" data-period="month" aria-pressed="false">شهري</button>
-        <button type="button" data-period="year" aria-pressed="true">سنوي <small>شهرين مجاناً</small></button>
+        <button type="button" data-period="month" aria-pressed="true">شهري</button>
+        <button type="button" data-period="year" aria-pressed="false">سنوي <small>شهرين مجاناً</small></button>
       </div>
       <div id="presets" class="flex flex-wrap justify-center gap-2"></div>
     </div>
@@ -387,6 +387,7 @@
       <aside class="summary lg:sticky lg:top-24 reveal" aria-live="polite">
         <p class="text-[13px] font-bold text-[color:var(--muted)]">باقتك</p>
         <div id="sum-lines" class="mt-2"></div>
+        <p class="mt-2 text-[12.5px] font-semibold text-[color:var(--muted)] flex items-center gap-1.5"><i class="ph-bold ph-globe"></i> يشمل رابطاً خاصاً لمنشأتك: <span dir="ltr" class="font-bold text-[color:var(--ink)]">yourname.devmenu.digital</span></p>
         <div class="border-t border-[color:var(--line)] mt-3 pt-4 flex items-end justify-between gap-3">
           <div><p class="text-[13px] font-bold text-[color:var(--muted)]">المجموع</p><p class="total" dir="ltr" id="sum-total"></p></div>
           <p class="text-[13px] font-semibold text-[color:var(--muted)] text-left" id="sum-per"></p>
@@ -403,7 +404,7 @@
   <div class="wrap">
     <h2 class="h2 text-center mb-10 reveal">ماذا يحدث <em>بعد اختيار باقتك؟</em></h2>
     <div class="grid md:grid-cols-3 gap-4">
-      <div class="after reveal"><span class="n">1</span><h3 class="text-[18px] font-bold mt-4">تسجّل وتبدأ فوراً</h3><p class="sub !text-[14.5px] mt-1">أدخل اسم منشأتك ورقم جوالك وبريدك، ويصبح حسابك جاهزاً خلال دقيقة.</p></div>
+      <div class="after reveal"><span class="n">1</span><h3 class="text-[18px] font-bold mt-4">تسجّل وتبدأ فوراً</h3><p class="sub !text-[14.5px] mt-1">أدخل اسم منشأتك ورقم جوالك وبريدك، ويصبح حسابك جاهزاً خلال دقيقة برابط خاص باسم منشأتك، مثل <span dir="ltr" class="font-bold">yourname.devmenu.digital</span></p></div>
       <div class="after reveal"><span class="n">2</span><h3 class="text-[18px] font-bold mt-4">تجربة مجانية لمدة 7 أيام</h3><p class="sub !text-[14.5px] mt-1">جهّز المنيو أو بطاقتك، واطبع رموز QR، ودع عملاءك يجربون الخدمة بكامل مميزاتها.</p></div>
       <div class="after reveal"><span class="n">3</span><h3 class="text-[18px] font-bold mt-4">نتواصل معك للدفع</h3><p class="sub !text-[14.5px] mt-1">نتواصل معك على جوالك لإتمام الدفع، ويُفعَّل اشتراكك في اليوم نفسه.</p></div>
     </div>
@@ -415,7 +416,7 @@
   <div class="wrap grid lg:grid-cols-[.8fr_1.2fr] gap-10 items-start">
     <div class="space-y-5 reveal lg:pt-6">
       <h2 class="h2">ابدأ تجربتك <em>اليوم.</em></h2>
-      <p class="sub">7 أيام مجاناً دون بطاقة بنكية، ونجهّز لك رابط منشأتك ورموز QR تلقائياً بعد التسجيل.</p>
+      <p class="sub">7 أيام مجاناً دون بطاقة بنكية، ونجهّز لك رابطاً خاصاً باسم منشأتك ورموز QR تلقائياً بعد التسجيل.</p>
       <a href="https://wa.me/966561161448" target="_blank" rel="noopener" class="inline-flex items-center gap-3 bg-white border border-[color:var(--line)] rounded-2xl px-5 py-4">
         <span class="w-11 h-11 rounded-xl bg-[#25d366]/15 text-[#128c7e] grid place-items-center text-xl"><i class="ph-bold ph-whatsapp-logo"></i></span>
         <span class="text-[14px] leading-relaxed"><span class="text-[color:var(--muted)]">تحتاج مساعدة قبل التسجيل؟</span><br><b class="underline underline-offset-4">تواصل معنا عبر واتساب</b></span>
@@ -608,7 +609,7 @@
   if (window.DMPlans) {
     // سعر كل خدمة في بطاقتها
     document.querySelectorAll('[data-price]').forEach(el => { const f = DMPlans.FEATURES[el.dataset.price]; if (f) el.innerHTML = `&#x20C1; ${f.month}`; });
-    const full = DMPlans.price(DMPlans.ORDER.filter(k => k !== 'notify'), 'month').total, ly = DMPlans.FEATURES.loyalty.month;
+    const full = DMPlans.price(['menu', 'pager', 'loyalty'], 'month').total, ly = DMPlans.FEATURES.loyalty.month;
     if (full) document.getElementById('chip-full').innerHTML = `&#x20C1; ${full}`;
     if (ly) document.getElementById('chip-loyalty').innerHTML = `&#x20C1; ${ly}`;
   }
@@ -644,11 +645,11 @@
   const CHOICE_KEY = 'dm_plan_choice';
   let typeTouched = false;
   // بدون اختيار مسبق: الحساب يتفعل بالخدمات اللي يختارها هو بس
-  let choice = { period: 'year', features: [] };
-  try { const c = JSON.parse(localStorage.getItem(CHOICE_KEY) || 'null'); if (c && Array.isArray(c.features)) choice = { period: c.period === 'month' ? 'month' : 'year', features: DMPlans.clean(c.features) }; } catch {}
+  let choice = { period: 'month', features: [] };
+  try { const c = JSON.parse(localStorage.getItem(CHOICE_KEY) || 'null'); if (c && Array.isArray(c.features)) choice = { period: c.period === 'year' ? 'year' : 'month', features: DMPlans.clean(c.features) }; } catch {}
   const PRESETS = [
-    ['الباقة الكاملة', ['menu', 'pager', 'waitlist']],
-    ['الكاملة + الولاء', ['menu', 'pager', 'waitlist', 'loyalty']],
+    ['الباقة الكاملة', ['menu', 'pager', 'loyalty']],
+    ['منيو + بيجر', ['menu', 'pager']],
     ['منيو + ولاء', ['menu', 'loyalty']],
     ['الولاء فقط', ['loyalty']]
   ];
