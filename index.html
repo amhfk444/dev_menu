@@ -194,6 +194,24 @@
     .cmp-row > div:first-child { grid-column: 1 / -1; padding-bottom: 0; }
     .phone { width: 220px; }
   }
+
+  /* ═══ نفس أساس النظام: Shopify Polaris (@shopify/polaris-tokens 9.4.2)، وأخضر DEV MENU ═══
+     خلفية رمادية، أسطح بيضاء بحافة Polaris، حواف 12 للبطاقات و8 للأزرار، والمرور والاختيار أخضر */
+  :root { --brand: #384f3d; --brand-dark: #2a3e2f; --ink: #303030; --sand: #f1f1f1; --muted: #616161; --line: #e3e3e3;
+    --shadow-card: 0 1px 0 rgba(26,26,26,.07), inset 1px 0 0 rgba(0,0,0,.13), inset -1px 0 0 rgba(0,0,0,.13), inset 0 -1px 0 rgba(0,0,0,.17), inset 0 1px 0 rgba(204,204,204,.5);
+    --shadow-button: inset 0 -1px 0 #b5b5b5, inset 0 0 0 1px rgba(0,0,0,.1), inset 0 .5px 0 1.5px #fff;
+    --shadow-primary: inset 0 -1px 0 1px rgba(0,0,0,.55), inset 0 0 0 1px var(--brand), inset 0 .5px 0 1.5px rgba(255,255,255,.25); }
+  .prod, .after, .cmp, details.q, .reg, .price-chip, .demo { border: 0; border-radius: 12px; box-shadow: var(--shadow-card); }
+  .btn { border-radius: 8px; }
+  .btn-main { box-shadow: var(--shadow-primary); }
+  .btn-soft { border: 0; box-shadow: var(--shadow-button); }
+  .btn-soft:hover { background: rgba(56,79,61,.12); color: var(--brand); }
+  .topbar nav { border-radius: 12px; border-color: var(--line); box-shadow: var(--shadow-card); }
+  .topbar a.lnk { border-radius: 8px; }
+  .topbar a.lnk:hover { color: var(--brand); background: rgba(56,79,61,.12); }
+  .topbar a.lnk:active { color: #fff; background: var(--brand); }
+  .tabs button:hover { color: var(--brand); background: rgba(56,79,61,.1); }
+  .tabs button[aria-selected="true"] { background: var(--brand); color: #fff; box-shadow: var(--shadow-primary); }
 </style>
 </head>
 <body>

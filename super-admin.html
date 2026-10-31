@@ -36,15 +36,29 @@
   /* تبويبات اللوحة */
   .sa-tab { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; padding: 14px 14px 12px; font-size: 13px; font-weight: 800; color: rgba(34,54,42,.55); border-bottom: 3px solid transparent; }
   .sa-tab[aria-selected="true"] { color: #22362a; border-bottom-color: #384f3d; }
-  /* ═══ نفس هوية لوحة التاجر: زجاج فوق خلفية رملية فيها توهج أخضر وذهبي ═══ */
-  body { background:
-      radial-gradient(42% 38% at 88% 4%, rgba(56,79,61,.22) 0%, transparent 70%),
-      radial-gradient(38% 34% at 10% 20%, rgba(201,162,39,.18) 0%, transparent 70%),
-      radial-gradient(45% 40% at 70% 95%, rgba(74,102,80,.2) 0%, transparent 72%),
-      linear-gradient(160deg, #f1ebe1 0%, #e9e0d2 100%);
-    background-attachment: fixed; }
-  .card { background: #fffdf9; border: 1px solid rgba(56,79,61,.1); box-shadow: 0 1px 2px rgba(34,54,42,.05), 0 14px 34px -24px rgba(34,54,42,.35); }
-  header.bg-brand { background: linear-gradient(170deg, rgba(56,79,61,.95), rgba(38,58,44,.97)) !important; box-shadow: 0 10px 30px -20px rgba(0,0,0,.5); }
+  /* ═══ نفس أساس لوحة التاجر: Shopify Polaris (@shopify/polaris-tokens 9.4.2) والأخضر للأساسي ═══ */
+  :root { --brand: #384f3d; --brand-dark: #2a3e2f;
+    --shadow-card: 0 1px 0 rgba(26,26,26,.07), inset 1px 0 0 rgba(0,0,0,.13), inset -1px 0 0 rgba(0,0,0,.13), inset 0 -1px 0 rgba(0,0,0,.17), inset 0 1px 0 rgba(204,204,204,.5);
+    --shadow-button: inset 0 -1px 0 #b5b5b5, inset 0 0 0 1px rgba(0,0,0,.1), inset 0 .5px 0 1.5px #fff;
+    --shadow-primary: inset 0 -1px 0 1px rgba(0,0,0,.55), inset 0 0 0 1px var(--brand), inset 0 .5px 0 1.5px rgba(255,255,255,.25); }
+  body { background: #f1f1f1; color: #303030; }
+  .card { background: #fff; border: 0; border-radius: 12px; box-shadow: var(--shadow-card); }
+  .field { background: #fdfdfd; border: 1px solid #8a8a8a; border-radius: 8px; padding: .45rem .75rem; font-size: 13px; color: #303030; }
+  .field:hover { border-color: #616161; }
+  .field:focus { outline: 2px solid #005bd3; outline-offset: 1px; border-color: #8a8a8a; box-shadow: none; }
+  .chip { background: #fff; border: 0; box-shadow: var(--shadow-button); color: #303030; font-weight: 600; }
+  .chip:hover { background: rgba(56,79,61,.12); color: var(--brand); }
+  .chip.on, .chip:active { background: var(--brand); color: #fff; box-shadow: var(--shadow-primary); }
+  header.bg-brand { background: var(--brand) !important; }
+  /* التبويبات: المرور أخضر فاتح، والمفتوح أخضر */
+  .sa-tab { color: #616161; font-weight: 700; border-radius: 8px 8px 0 0; }
+  .sa-tab:hover { color: var(--brand); background: rgba(56,79,61,.08); }
+  .sa-tab[aria-selected="true"] { color: var(--brand); border-bottom-color: var(--brand); }
+  main button.bg-brand, main a.bg-brand, .dmd-box button.bg-brand { border-radius: 8px !important; box-shadow: var(--shadow-primary); font-weight: 600; }
+  main button.bg-brand:hover, main a.bg-brand:hover { background-color: var(--brand-dark); }
+  .menu-pop { border: 0; border-radius: 12px; box-shadow: 0 8px 16px -4px rgba(26,26,26,.22), var(--shadow-card); }
+  .menu-pop button:hover, .menu-pop a:hover { background: rgba(56,79,61,.12); color: var(--brand); }
+  .menu-pop button:hover i, .menu-pop a:hover i { color: var(--brand); }
   /* بلاطات الأرقام: أيقونة في مربع ملوّن + رقم كبير */
   .kpi { display: flex; align-items: center; gap: 12px; padding: 14px; text-align: right; }
   .kpi .ic { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; font-size: 18px; background: rgba(56,79,61,.09); flex-shrink: 0; }
@@ -152,7 +166,7 @@
   </header>
 
   <!-- التبويبات: كل شغلة في مكانها -->
-  <nav class="sticky top-0 z-30 bg-sand/95 backdrop-blur border-b border-ink/10">
+  <nav class="sticky top-0 z-30 bg-[#f1f1f1]/95 backdrop-blur border-b border-[#e3e3e3]">
     <div class="max-w-[1500px] mx-auto px-3 md:px-8 flex gap-1 overflow-x-auto no-scrollbar" role="tablist">
       <button type="button" data-satab-btn="requests" class="sa-tab"><i class="ph-bold ph-chat-circle-text"></i> الطلبات <span id="sup-open" class="text-[10px] font-black bg-red-500 text-white rounded-full px-2 py-0.5 hidden"></span></button>
       <button type="button" data-satab-btn="stores" class="sa-tab"><i class="ph-bold ph-storefront"></i> المشتركين <span id="stores-count" class="text-[10px] font-black bg-ink/10 rounded-full px-2 py-0.5"></span></button>
