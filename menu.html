@@ -171,7 +171,7 @@
     <div class="relative z-[1] w-32 h-32 mx-auto">
       <div class="absolute inset-0 bg-white/10 rounded-full blur-xl"></div>
       <div class="relative w-full h-full p-2 rounded-full bg-black/90 border-2 border-white/40 shadow-2xl flex items-center justify-center overflow-hidden">
-        <img id="project-logo" src="images/logo.jpeg" class="w-full h-full object-cover rounded-full" onerror="this.src='https://via.placeholder.com/150/000000/ffffff?text=LOGO'">
+        <img id="project-logo" src="images/logo.jpeg?v=2" class="w-full h-full object-cover rounded-full" onerror="this.src='https://via.placeholder.com/150/000000/ffffff?text=LOGO'">
       </div>
     </div>
     <div class="space-y-1">
@@ -707,7 +707,7 @@
     const logo = safeUrl(p.logo_url);
     const logoEl = document.getElementById('project-logo');
     if (logo) { if (logoEl.getAttribute('src') !== logo) logoEl.src = logo; }
-    else if (!first) logoEl.src = 'images/logo.jpeg';
+    else if (!first) logoEl.src = 'images/logo.jpeg?v=2';
 
     const promo = (p.promo_message || '').trim();
     document.getElementById('promo-text').textContent = tr(promo);
