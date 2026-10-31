@@ -1410,6 +1410,8 @@
               <button type="button" onclick="exportLyCsv()" class="bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-3.5 py-2 rounded-xl text-[13px] font-bold transition"><i class="ph-bold ph-file-arrow-down"></i> تصدير CSV</button>
             </div>
           </div>
+          <!-- أعضاء كل فرع (للي عنده أكثر من فرع) -->
+          <div id="ly-branch-filters" class="hidden px-5 pt-4 flex flex-wrap items-center gap-2"></div>
           <div id="ly-filters" class="px-5 pt-4 flex flex-wrap gap-2"></div>
           <div class="overflow-x-auto p-2 sm:p-3">
             <table class="ly-table w-full text-sm min-w-[720px]">
@@ -4436,7 +4438,7 @@
   }
 
   // ─── بطاقة الولاء ───
-  const ly = { data: null, members: [], qrUrl: '', design: null, dirty: false, filter: 'all', member: null };
+  const ly = { data: null, members: [], qrUrl: '', design: null, dirty: false, filter: 'all', branch: null, member: null };
   const loyaltyUrl = () => DM.storeUrl(client.client_slug, 'loyalty');   // كود التسجيل ثابت، ما ينتهي
   // ─── تبويبات صفحة الولاء ───
   function setLyTab(tab) {
@@ -4793,16 +4795,28 @@
       const tile = (l, v) => `<div class="rounded-xl bg-brand/[0.04] border border-brand/10 p-2.5"><p class="text-[10px] text-ink/60">${l}</p><p class="text-lg font-bold">${v || 0}</p></div>`;
       document.getElementById('ly-gift-stats').innerHTML = tile('هدايا انرسلت', gs.sent) + tile('انستلمت', gs.claimed) + tile('انصرفت في المحل', gs.redeemed) + tile('زبائن جدد جوا بهدية', gs.new_members);
     }
-    document.getElementById('ly-filters').innerHTML = LY_FILTERS.map(([k, label, fn]) => `<button type="button" onclick="ly.filter='${k}'; renderLyMembers()" class="text-[12px] font-bold px-3 py-1.5 rounded-full border transition ${ly.filter === k ? 'bg-brand text-cream border-brand' : 'border-brand/20 hover:border-brand/40'}">${label} <span class="opacity-60">${M.filter(fn).length}</span></button>`).join('');
+    // الفروع: أعضاء كل فرع (سجّلوا فيه أو انختم لهم فيه)، والفلاتر تحت تحسب على الفرع المختار
+    const fam = branches.length > 1 ? branches : [];
+    const inBranch = (c, id) => id === 'none' ? !(c.branch_ids || []).length : (c.branch_ids || []).map(Number).includes(id);
+    if (ly.branch != null && !fam.some(x => x.id === ly.branch) && ly.branch !== 'none') ly.branch = null;
+    const MB = ly.branch == null ? M : M.filter(c => inBranch(c, ly.branch));
+    const chip = (val, label, count) => `<button type="button" onclick="ly.branch=${val === null ? 'null' : typeof val === 'string' ? `'${val}'` : val}; renderLyMembers()" class="text-[12px] font-bold px-3 py-1.5 rounded-full border transition ${ly.branch === val ? 'bg-brand text-cream border-brand' : 'border-brand/20 hover:border-brand/40'}"><i class="ph-bold ph-git-branch"></i> ${label} <span class="opacity-60">${count}</span></button>`;
+    const noBranch = M.filter(c => inBranch(c, 'none')).length;
+    const bf = document.getElementById('ly-branch-filters');
+    bf.classList.toggle('hidden', !fam.length);
+    bf.innerHTML = fam.length ? chip(null, 'كل الفروع', M.length) + fam.map(x => chip(x.id, esc(x.name || ''), M.filter(c => inBranch(c, x.id)).length)).join('') + (noBranch ? chip('none', 'ما انعرف فرعهم', noBranch) : '') : '';
+    if (fam.length && ly.branch != null) document.getElementById('ly-members-sub').textContent = ly.branch === 'none' ? `${MB.length} عضو قديم ما انختم لهم من وقت ما بدينا نسجّل الفروع` : `${MB.length} عضو في ${(fam.find(x => x.id === ly.branch) || {}).name || ''}، منهم ${MB.filter(c => c.in_wallet).length} حافظين البطاقة في المحفظة`;
+    const branchNames = (c) => fam.length ? (c.branch_ids || []).map(id => (fam.find(x => x.id === Number(id)) || {}).name).filter(Boolean).join('، ') : '';
+    document.getElementById('ly-filters').innerHTML = LY_FILTERS.map(([k, label, fn]) => `<button type="button" onclick="ly.filter='${k}'; renderLyMembers()" class="text-[12px] font-bold px-3 py-1.5 rounded-full border transition ${ly.filter === k ? 'bg-brand text-cream border-brand' : 'border-brand/20 hover:border-brand/40'}">${label} <span class="opacity-60">${MB.filter(fn).length}</span></button>`).join('');
     const q = (document.getElementById('ly-q').value || '').trim().toLowerCase();
     const fn = (LY_FILTERS.find(f => f[0] === ly.filter) || LY_FILTERS[0])[2];
-    const list = M.filter(fn).filter(c => !q || memberName(c).toLowerCase().includes(q) || String(c.phone || '').includes(q) || String(c.member_no) === q);
+    const list = MB.filter(fn).filter(c => !q || memberName(c).toLowerCase().includes(q) || String(c.phone || '').includes(q) || String(c.member_no) === q);
     const AV = ['bg-brand/10 text-brand', 'bg-amber-100 text-amber-800', 'bg-sky-100 text-sky-800', 'bg-rose-100 text-rose-800', 'bg-violet-100 text-violet-800'];
     document.getElementById('ly-rows').innerHTML = list.slice(0, 200).map(c => {
       const st = Math.min(c.stamps, n), ready = c.stamps >= n;
       return `
       <tr onclick="openLyMember(${c.id})">
-        <td><div class="flex items-center gap-3"><span class="ly-av ${AV[c.id % AV.length]}">${esc(memberName(c).trim().charAt(0))}</span><div class="min-w-0"><p class="font-semibold truncate">${esc(memberName(c))}</p><p class="text-[11px] text-ink/50"><span dir="ltr">#${c.member_no}</span>${c.gender ? ` <span class="mx-1 text-ink/25">|</span> ${c.gender === 'f' ? 'أنثى' : 'ذكر'}` : ''}${c.in_wallet ? ` <span class="mx-1 text-ink/25">|</span> <i class="ph-bold ph-wallet" title="في المحفظة"></i>` : ''}</p></div></div></td>
+        <td><div class="flex items-center gap-3"><span class="ly-av ${AV[c.id % AV.length]}">${esc(memberName(c).trim().charAt(0))}</span><div class="min-w-0"><p class="font-semibold truncate">${esc(memberName(c))}</p><p class="text-[11px] text-ink/50"><span dir="ltr">#${c.member_no}</span>${c.gender ? ` <span class="mx-1 text-ink/25">|</span> ${c.gender === 'f' ? 'أنثى' : 'ذكر'}` : ''}${c.in_wallet ? ` <span class="mx-1 text-ink/25">|</span> <i class="ph-bold ph-wallet" title="في المحفظة"></i>` : ''}${branchNames(c) ? ` <span class="mx-1 text-ink/25">|</span> <i class="ph-bold ph-git-branch"></i> ${esc(branchNames(c))}` : ''}</p></div></div></td>
         <td class="text-ink/70" dir="ltr">${esc(c.phone || '—')}</td>
         <td><div class="flex items-center gap-2"><div class="ly-prog"><span style="width:${st / n * 100}%;${ready ? 'background:#c9a227' : ''}"></span></div><span class="text-[12px] font-bold tnum" dir="ltr">${st}/${n}</span>${ready ? '<span class="text-[10px] font-bold bg-amber-100 text-amber-800 rounded-full px-2 py-0.5">مكافأة جاهزة</span>' : ''}</div></td>
         <td class="font-semibold tnum">${c.visits}</td>

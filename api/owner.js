@@ -655,7 +655,7 @@ async function main(req) {
   // ─── بطاقة الولاء: كل الأعضاء (للقائمة والداشبورد وملف CSV) ───
   if (action === 'loyalty-members' && req.method === 'GET') {
     const { store } = await context(req);
-    const cards = await rest(`loyalty_cards?client_id=eq.${store.id}&select=id,member_no,name,phone,gender,stamps,visits,rewards,last_stamp_at,created_at,wallet_serial,ai_last_at&order=last_stamp_at.desc.nullslast&limit=5000`);
+    const cards = await rest(`loyalty_cards?client_id=eq.${store.id}&select=id,member_no,name,phone,gender,stamps,visits,rewards,last_stamp_at,created_at,wallet_serial,ai_last_at,branch_ids&order=last_stamp_at.desc.nullslast&limit=5000`);
     return { members: cards.map(({ wallet_serial, ...c }) => ({ ...c, in_wallet: !!wallet_serial })) };
   }
 
