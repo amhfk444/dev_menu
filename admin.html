@@ -260,28 +260,10 @@
   .plan-done-ic { width: 30px; height: 30px; border-radius: 50%; background: var(--ok); color: #fff; display: grid; place-items: center; flex-shrink: 0; font-size: 14px; }
   .editing-glow { border-color: rgba(180, 130, 20, 0.7) !important; background: rgba(251, 191, 36, 0.08) !important; box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15); }
 
-  /* ═══ خلفية رملية فيها توهج أخضر وذهبي، ولمسة زجاج في الشريط العلوي والقائمة الجانبية ═══ */
-  body { background:
-      radial-gradient(42% 38% at 88% 6%, rgba(56, 79, 61, .22) 0%, transparent 70%),
-      radial-gradient(38% 34% at 12% 22%, rgba(201, 162, 39, .2) 0%, transparent 70%),
-      radial-gradient(45% 40% at 70% 92%, rgba(74, 102, 80, .2) 0%, transparent 72%),
-      radial-gradient(35% 30% at 18% 88%, rgba(201, 162, 39, .14) 0%, transparent 70%),
-      linear-gradient(160deg, #f1ebe1 0%, #e9e0d2 100%);
-    background-attachment: fixed; }
-  /* البطاقات والنوافذ صلبة وواضحة (الزجاج بس للخلفية والشريط العلوي والقائمة الجانبية) */
-  .pro-card { background: #fffdf9; border: 1px solid rgba(56, 79, 61, .1); box-shadow: 0 1px 2px rgba(34, 54, 42, .05), 0 14px 34px -24px rgba(34, 54, 42, .35); }
-  header.sticky { background: rgba(245, 240, 232, .55) !important; border-bottom-color: rgba(255, 255, 255, .6) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%); }
-  /* القائمة الجانبية: زجاج أخضر غامق، والصفحة الحالية كبسولة زجاج فاتحة */
-  aside.bg-brand { background: linear-gradient(170deg, rgba(56, 79, 61, .94) 0%, rgba(38, 58, 44, .96) 100%) !important;
-    -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-left: 1px solid rgba(255, 255, 255, .12); }
-  .nav-item.nav-active { background: rgba(255, 255, 255, .16); color: #fff; border: 1px solid rgba(255, 255, 255, .22); border-radius: 12px;
-    margin-left: 0; padding-left: .85rem; width: 100%; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25); }
-  .nav-item.nav-active::before, .nav-item.nav-active::after { display: none; }
-  .nav-item.nav-active i { color: var(--saffron); }
-  .nav-item.nav-active #nav-count { background: rgba(255, 255, 255, .2); }
-  /* شريط الجوال السفلي زجاجي */
-  nav.fixed.bottom-0 { background: rgba(250, 246, 240, .7) !important; -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%); }
+  /* ═══ Polaris: خلفية رمادية سادة، والشريط العلوي والسفلي سطح أبيض بخط فاصل (بدل الزجاج والتوهج) ═══ */
+  body { background: var(--page); }
+  header.sticky { background: rgba(241, 241, 241, .92) !important; border-bottom: 1px solid var(--line) !important; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+  nav.fixed.bottom-0 { background: #fff !important; border-top: 1px solid var(--line) !important; }
 </style>
 <link rel="stylesheet" href="/css/tw/admin.css">
 </head>
