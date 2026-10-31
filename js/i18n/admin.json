@@ -1476,5 +1476,15 @@
   "(المنيو وصفحة الروابط)": "(menu and links page)",
   "المظهر": "Appearance",
   "معاينة صفحة الروابط": "Preview links page",
-  "تم حفظ المظهر، ويظهر في المنيو وصفحة الروابط": "Appearance saved; it shows on the menu and the links page"
+  "تم حفظ المظهر، ويظهر في المنيو وصفحة الروابط": "Appearance saved; it shows on the menu and the links page",
+  "جاري تجهيز الصورة…": "Preparing the image…",
+  "جاري تجهيز الفيديو…": "Preparing the video…",
+  "جاري الرفع {a}%": "Uploading {a}%",
+  "جاري الحفظ…": "Saving…",
+  "تم تحديث الشعار": "Logo updated",
+  "تم رفع الخلفية": "Background uploaded",
+  "تم رفع الفيديو": "Video uploaded",
+  "الخلفية الحالية": "Current background",
+  "الفيديو الحالي": "Current video",
+  "{a}، ويظهر في المنيو وصفحة الروابط": "{a}; it shows on the menu and the links page"
 }

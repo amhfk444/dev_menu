@@ -1567,19 +1567,21 @@
           <img id="logo-preview" src="images/logo.jpeg" class="w-7 h-7 object-cover rounded-full border border-brand/30" onerror="this.onerror=null;this.src='images/logo.jpeg'">
         </div>
         <input type="file" id="logo-file" accept="image/*" class="input-pro text-[10px]">
-        <button onclick="uploadMedia('logo')" class="w-full bg-brand/10 hover:bg-brand/15 text-ink text-xs font-bold py-2 rounded-xl transition border border-brand/25">تحديث الشعار</button>
+        <button id="upl-logo" onclick="uploadMedia('logo')" class="w-full bg-brand/10 hover:bg-brand/15 text-ink text-xs font-bold py-2 rounded-xl transition border border-brand/25">تحديث الشعار</button>
       </div>
 
       <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
         <label class="text-[11px] font-bold text-ink/75">صورة الخلفية <span class="text-ink/50 font-semibold">(المنيو وصفحة الروابط)</span></label>
         <input type="file" id="bg-img-file" accept="image/*" class="input-pro text-[10px]">
-        <button onclick="uploadMedia('bg_image')" class="w-full bg-brand/10 hover:bg-brand/15 text-ink text-xs font-bold py-2 rounded-xl transition border border-brand/25">تحديث الخلفية</button>
+        <button id="upl-bg_image" onclick="uploadMedia('bg_image')" class="w-full bg-brand/10 hover:bg-brand/15 text-ink text-xs font-bold py-2 rounded-xl transition border border-brand/25">تحديث الخلفية</button>
+        <div id="bg-img-prev" class="hidden"></div>
       </div>
 
       <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
         <label class="text-[11px] font-bold text-ink/75">فيديو الخلفية (MP4) <span class="text-ink/50 font-semibold">(المنيو وصفحة الروابط)</span></label>
         <input type="file" id="bg-video-file" accept="video/*" class="input-pro text-[10px]">
-        <button onclick="uploadMedia('bg_video')" class="w-full bg-brand/10 hover:bg-brand/15 text-ink text-xs font-bold py-2 rounded-xl transition border border-brand/25">تحديث الفيديو</button>
+        <button id="upl-bg_video" onclick="uploadMedia('bg_video')" class="w-full bg-brand/10 hover:bg-brand/15 text-ink text-xs font-bold py-2 rounded-xl transition border border-brand/25">تحديث الفيديو</button>
+        <div id="bg-video-prev" class="hidden"></div>
       </div>
     </div>
         </div>
@@ -2271,7 +2273,7 @@
     setWaInput(client.whatsapp_number);
     document.getElementById('social-whatsapp-cc').onchange = (e) => { document.getElementById('social-whatsapp').placeholder = e.target.value === '966' ? '05xxxxxxxx' : 'رقم الواتساب'; };
     document.getElementById('social-snap').value = client.snapchat_url || '';
-    setLogo(client.logo_url);
+    setLogo(client.logo_url); renderBgPreview();
 
     document.getElementById('info-hours').value = client.opening_hours || '';
     document.getElementById('info-location').value = client.location_url || '';
@@ -2717,7 +2719,7 @@
   }
 
   // الخادم يعطي رابط رفع موقّع لملف واحد داخل مجلد المتجر، والملف يروح مباشرة للتخزين
-  async function uploadFile(file, prefix, maxDim = 1600) {
+  async function uploadFile(file, prefix, maxDim = 1600, onProgress = null) {
     if (file.type.startsWith('image/')) {
       file = await compressImage(file, maxDim);
       if (file.size > MAX_IMAGE_MB * 1024 * 1024) {
@@ -2728,7 +2730,7 @@
     try {
       const { upload_url, public_url } = await api('upload-url', { kind: prefix, type: file.type, size: file.size });
       lastApiError = '';
-      await DM.putFile(upload_url, file, progressToast(file.type.startsWith('video/') ? 'جاري رفع الفيديو...' : 'جاري الرفع...'));
+      await DM.putFile(upload_url, file, onProgress || progressToast(file.type.startsWith('video/') ? 'جاري رفع الفيديو...' : 'جاري الرفع...'));
       return public_url;
     } catch (error) {
       console.error('Upload error:', error, { size: file.size, type: file.type });
@@ -2738,26 +2740,51 @@
     }
   }
 
+  // الزر نفسه يوضح حالة الرفع: يتعبّى بالنسبة، وبعدها "تم"، ومعاينة الخلفية الحالية تحته
+  function uploadBtn(type) {
+    const btn = document.getElementById(`upl-${type}`), label = btn.dataset.label || (btn.dataset.label = btn.textContent);
+    const paint = (txt, pct = null, tone = '') => {
+      btn.innerHTML = txt;
+      btn.style.background = pct == null ? '' : `linear-gradient(to left, rgba(56,79,61,.28) ${pct}%, transparent ${pct}%)`;
+      btn.classList.toggle('!bg-emerald-600', tone === 'ok'); btn.classList.toggle('!text-white', tone === 'ok'); btn.classList.toggle('!border-emerald-600', tone === 'ok');
+    };
+    return {
+      busy(txt) { btn.disabled = true; paint(`<i class="ph-bold ph-spinner-gap ph-spin"></i> ${txt}`, 0); },
+      progress(pct) { paint(`<i class="ph-bold ph-spinner-gap ph-spin"></i> جاري الرفع ${pct}%`, pct); },
+      done(txt) { paint(`<i class="ph-bold ph-check-circle"></i> ${txt}`, null, 'ok'); setTimeout(() => { btn.disabled = false; paint(label); }, 3500); },
+      fail() { btn.disabled = false; paint(label); }
+    };
+  }
+  function renderBgPreview() {
+    const img = safeUrl(client.bg_image_url), vid = safeUrl(client.bg_video_url);
+    const box = (id, html) => { const el = document.getElementById(id); el.classList.toggle('hidden', !html); el.innerHTML = html || ''; };
+    box('bg-img-prev', img && !vid ? `<p class="text-[10px] font-bold text-emerald-700 mb-1"><i class="ph-bold ph-check-circle"></i> الخلفية الحالية</p><img src="${esc(img)}" alt="" class="w-full h-20 object-cover rounded-xl border border-brand/15">` : '');
+    box('bg-video-prev', vid ? `<p class="text-[10px] font-bold text-emerald-700 mb-1"><i class="ph-bold ph-check-circle"></i> الفيديو الحالي</p><video src="${esc(vid)}" muted loop autoplay playsinline class="w-full h-20 object-cover rounded-xl border border-brand/15"></video>` : '');
+  }
   async function uploadMedia(type) {
     const cfg = {
-      logo:     { input: 'logo-file',     kind: 'image', maxDim: 800,  payload: url => ({ logo_url: url }) },
-      bg_image: { input: 'bg-img-file',   kind: 'image', maxDim: 1920, payload: url => ({ bg_image_url: url, bg_video_url: null }) },
-      bg_video: { input: 'bg-video-file', kind: 'video', maxDim: 0,    payload: url => ({ bg_video_url: url, bg_image_url: null }) }
+      logo:     { input: 'logo-file',     kind: 'image', maxDim: 800,  payload: url => ({ logo_url: url }), done: 'تم تحديث الشعار' },
+      bg_image: { input: 'bg-img-file',   kind: 'image', maxDim: 1920, payload: url => ({ bg_image_url: url, bg_video_url: null }), done: 'تم رفع الخلفية' },
+      bg_video: { input: 'bg-video-file', kind: 'video', maxDim: 0,    payload: url => ({ bg_video_url: url, bg_image_url: null }), done: 'تم رفع الفيديو' }
     }[type];
     const fileInput = document.getElementById(cfg.input);
     const file = fileInput.files[0];
     const problem = validateFile(file, cfg.kind);
     if (problem) return showToast(problem, true);
 
-    showToast(cfg.kind === 'image' ? 'جاري تجهيز الصورة ورفعها...' : 'جاري رفع الفيديو...');
-    const url = await uploadFile(file, type, cfg.maxDim);
-    if (!url) return showToast(`فشل رفع الملف: ${lastUploadError}`, true);
+    const ui = uploadBtn(type);
+    ui.busy(cfg.kind === 'image' ? 'جاري تجهيز الصورة…' : 'جاري تجهيز الفيديو…');
+    const url = await uploadFile(file, type, cfg.maxDim, (pct) => ui.progress(pct));
+    if (!url) { ui.fail(); return showToast(`فشل رفع الملف: ${lastUploadError}`, true); }
 
+    ui.busy('جاري الحفظ…');
     if (await updateClient(cfg.payload(url))) {
       if (type === 'logo') setLogo(url);
       fileInput.value = '';
-      showToast('تم التحديث وظهر في المنيو');
-    } else showToast('تم رفع الملف لكن تعذر حفظه في المتجر', true);
+      renderBgPreview();
+      ui.done(cfg.done);
+      showToast(`${cfg.done}، ويظهر في المنيو وصفحة الروابط`);
+    } else { ui.fail(); showToast('تم رفع الملف لكن تعذر حفظه في المتجر', true); }
   }
 
   // ─── بطاقة QR جاهزة للطباعة ───
