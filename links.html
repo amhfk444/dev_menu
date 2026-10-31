@@ -187,11 +187,11 @@
 
     // 6) روابط التواصل
     const social = [
-      [safeUrl(p.instagram_url), 'انستجرام', 'ph-bold ph-instagram-logo', 'صور وعروض المحل'],
-      [safeUrl(p.tiktok_url), 'تيك توك', 'ph-bold ph-tiktok-logo', 'فيديوهات المحل'],
-      [safeUrl(p.snapchat_url), 'سناب شات', 'ph-bold ph-snapchat-logo', 'يومياتنا أولاً بأول'],
-      [safeUrl(p.website_url), 'موقعنا الإلكتروني', 'ph-bold ph-globe', 'تعرّف علينا أكثر']
-    ].filter(([u]) => u).map(([href, label, icon, sub]) => linkBtn({ href, label, icon, sub }));
+      [safeUrl(p.instagram_url), 'انستجرام', 'ph-bold ph-instagram-logo'],
+      [safeUrl(p.tiktok_url), 'تيك توك', 'ph-bold ph-tiktok-logo'],
+      [safeUrl(p.snapchat_url), 'سناب شات', 'ph-bold ph-snapchat-logo'],
+      [safeUrl(p.website_url), 'موقعنا الإلكتروني', 'ph-bold ph-globe']
+    ].filter(([u]) => u).map(([href, label, icon]) => linkBtn({ href, label, icon }));
     sec.social = group('تابعنا', social);
 
     // 7) الروابط المخصصة
