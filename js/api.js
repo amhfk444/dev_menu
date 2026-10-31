@@ -292,12 +292,14 @@
       if (t) try { localStorage.setItem(`dm_loyalty_${slug}`, t); } catch {}
       return t;
     },
-    // مفتاح الكاشير: من الرابط (?k=) أول مرة، وبعدها محفوظ في الجهاز
+    // مفتاح الكاشير: من الرابط (?k=)، ويبقى في الرابط عشان كل صفحة تعرف فرعها
+    // (فرعين مفتوحين على نفس الجهاز، أو تحديث الصفحة، ما يخلط الأرقام)
+    // المالك داخل بحسابه: الشاشة تتبع الفرع المختار في اللوحة، مو رابط كاشير محفوظ من قبل
     deskMode() {
       try {
-        const u = new URL(location.href), k = u.searchParams.get('k');
-        if (k && /^[A-Za-z0-9_-]{24,64}$/.test(k)) { localStorage.setItem('dm_desk_key', k); u.searchParams.delete('k'); history.replaceState(null, '', u.pathname + u.search + u.hash); }
-        deskKey = localStorage.getItem('dm_desk_key') || '';
+        const k = new URL(location.href).searchParams.get('k');
+        if (k && /^[A-Za-z0-9_-]{24,64}$/.test(k)) { localStorage.setItem('dm_desk_key', k); deskKey = k; return true; }
+        deskKey = loadSession() ? '' : (localStorage.getItem('dm_desk_key') || '');
       } catch {}
       return !!deskKey;
     },
