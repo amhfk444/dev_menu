@@ -43,7 +43,7 @@
     const arrow = `<svg class="dm-nudge" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#e9c95a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="animation:${ipad ? 'dmNudgeUp' : 'dmNudgeDown'} 1s ease-in-out infinite;filter:drop-shadow(0 4px 10px rgba(0,0,0,.4))"><path d="${ipad ? 'M12 20V4M5 11l7-7 7 7' : 'M12 4v16M5 13l7 7 7-7'}"/></svg>`;
     const card = inApp()
       ? `<p style="font-weight:800;font-size:16px">${t('افتح هذه الصفحة في Safari أولاً')}</p><p style="margin-top:6px;font-size:13.5px;opacity:.8">${t('التثبيت لا يعمل من داخل التطبيقات الأخرى. اضغط ••• ثم "فتح في Safari".')}</p>`
-      : `<p style="font-weight:800;font-size:16px">${t('اضغط زر المشاركة')} ${SHARE} ${ipad ? t('في الأعلى') : t('في الأسفل')}</p>
+      : `<p style="font-weight:800;font-size:16px;display:flex;align-items:center;gap:6px;flex-wrap:nowrap;white-space:nowrap"><span>${t('اضغط زر المشاركة')}</span>${SHARE.replace('vertical-align:-4px', 'flex-shrink:0')}<span>${ipad ? t('في الأعلى') : t('في الأسفل')}</span></p>
          <p style="margin-top:6px;font-size:13.5px;opacity:.85">${t('ثم اختر "إضافة إلى الشاشة الرئيسية" واضغط "إضافة".')}</p>
          <p style="margin-top:6px;font-size:12px;opacity:.6">${t('إذا لم يظهر زر المشاركة، اضغط ••• في شريط Safari ثم "مشاركة".')}</p>`;
     const bubble = `<div dir="rtl" style="max-width:360px;background:#f5f2eb;color:#1b3022;border-radius:20px;padding:16px 18px;font:500 15px/1.55 inherit;box-shadow:0 24px 50px -16px rgba(0,0,0,.55);text-align:right">${card}</div>`;
