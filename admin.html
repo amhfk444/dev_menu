@@ -2029,11 +2029,22 @@
     const on = SVC_PAGES.filter(([k]) => !featureLocked(k));
     // الرابط الرئيسي = صفحة الروابط السريعة (فيها كل الخدمات)، وتحته رابط كل خدمة
     const rows = [['home', 'الرابط الرئيسي', 'ph-house', DM.storeUrl(client.client_slug, 'links')], ...on.map(([k, page, name, icon]) => [k, name, icon, DM.storeUrl(client.client_slug, page)])];
+    // روابط الشاشات: تفتح بدون حساب المالك (نفس مفتاح رابط الكاشير)
+    if (!deskLocked()) {
+      const key = client.desk_key ? encodeURIComponent(client.desk_key) : '';
+      rows.push(['kiosk', 'شاشة الزبون (للتابلت)', 'ph-device-tablet', key && `${location.origin}/kiosk.html?k=${key}`, 'تفتح بدون حسابك، وتعرض أكواد خدماتك']);
+      rows.push(['desk', 'شاشة الكاشير', 'ph-cash-register', key && `${location.origin}/pager-desk.html?k=${key}`, 'للموظف، بدون حسابك']);
+    }
     const btn = 'text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-white border border-brand/15';
-    box.innerHTML = rows.map(([k, name, icon, url]) => `
+    box.innerHTML = rows.map(([k, name, icon, url, sub]) => !url ? `
+      <div class="flex flex-wrap items-center gap-2 bg-brand/5 border-brand/15 border rounded-xl px-3 py-2">
+        <i class="ph-bold ${icon} text-ink/60"></i>
+        <div class="min-w-0 flex-1"><p class="text-[12px] font-bold">${name}</p><p class="text-[11px] text-ink/55">${sub}</p></div>
+        <button type="button" onclick="makeScreenLinks(this)" class="${btn}"><i class="ph-bold ph-link-simple"></i> أنشئ الرابط</button>
+      </div>` : `
       <div class="flex flex-wrap items-center gap-2 ${k === 'home' ? 'bg-white border-brand/30' : 'bg-brand/5 border-brand/15'} border rounded-xl px-3 py-2">
         <i class="ph-bold ${icon} text-ink/60"></i>
-        <div class="min-w-0 flex-1"><p class="text-[12px] font-bold">${name}</p><p class="text-[11px] text-ink/55 truncate" dir="ltr">${esc(url.replace(/^https?:\/\//, ''))}</p></div>
+        <div class="min-w-0 flex-1"><p class="text-[12px] font-bold">${name}</p>${sub ? `<p class="text-[11px] text-ink/55">${sub}</p>` : `<p class="text-[11px] text-ink/55 truncate" dir="ltr">${esc(url.replace(/^https?:\/\//, ''))}</p>`}</div>
         <button type="button" onclick="navigator.clipboard.writeText('${esc(url)}').then(() => showToast('تم نسخ الرابط'))" class="${btn}"><i class="ph-bold ph-copy"></i> نسخ</button>
         <a href="${esc(url)}" target="_blank" rel="noopener" aria-label="فتح" class="${btn}"><i class="ph-bold ph-arrow-square-out"></i></a>
         ${k === 'home' ? `<div class="w-full flex flex-wrap gap-1.5 pt-1">
@@ -2041,6 +2052,11 @@
           <button type="button" onclick="openLinksSettings()" class="${btn} hover:bg-brand/5"><i class="ph-bold ph-sliders-horizontal"></i> تخصيص الصفحة</button>
         </div>` : ''}
       </div>`).join('');
+  }
+  async function makeScreenLinks(btn) {
+    btn.disabled = true;
+    try { const r = await api('desk-link'); client.desk_key = new URL(r.kiosk_url).searchParams.get('k'); renderServiceLinks(); showToast('جهز الرابط، انسخه وافتحه على الجهاز'); }
+    catch { btn.disabled = false; showToast('ما قدرنا ننشئ الرابط، جرّب مرة ثانية', true); }
   }
   // ─── ملخص الخدمات في الرئيسية ───
   const tile = (v, l) => `<div class="rounded-2xl bg-white border border-brand/[0.13] px-3 py-3"><p class="text-2xl font-bold tnum leading-none">${v}</p><p class="text-[11.5px] text-ink/60 mt-1.5">${l}</p></div>`;
@@ -4020,6 +4036,7 @@
     try {
       const r = reset ? await api('desk-link', { reset: true }) : await api('desk-link');
       document.getElementById('desk-link').value = r.url;
+      client.desk_key = new URL(r.url).searchParams.get('k'); renderServiceLinks();
       document.getElementById('desk-link-box').classList.remove('hidden');
       document.getElementById('desk-show').classList.add('hidden');
       if (reset) { showToast('تغيّر الرابط، والقديم وقف'); document.getElementById('kiosk-link').value = r.kiosk_url; document.getElementById('kiosk-open').href = r.kiosk_url; }
