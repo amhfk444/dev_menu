@@ -2333,6 +2333,8 @@
 
   // ─── التواصل مع الإدارة: الطلب يوصل لصفحة المدير العام، والرد يطلع هنا ───
   const SUPPORT_KIND = { renew: 'تجديد', plan: 'تغيير باقة', addon: 'تفعيل إضافة', branch: 'فرع جديد', suspended: 'حساب موقوف', contact: 'رسالة' };
+  // التجربة: اللي اختار البيجر بدون الرسائل يجربها مجاناً (وتتوقف بعد التجربة إلا إذا أضافها)
+  const trialGift = () => !!client && client.subscription_status === 'trial' && DMPlans.has(client, 'notify') && !(client.plan_features || []).includes('notify') && !DMPlans.has(client, 'loyalty');
   // الترقية من الشهري للسنوي: كم يوفّر، وطلب يوصل للإدارة بضغطة
   function upgradeBox() {
     const f = myFeatures(), list = branchList();
@@ -2513,6 +2515,7 @@
           <div class="h-1.5 rounded-full bg-brand/10 mt-2 overflow-hidden"><div class="h-full rounded-full ${left <= 3 ? 'bg-brick' : 'bg-brand'}" style="width:${pct}%"></div></div>
         </div>` : ''}
       ${status === 'active' ? `<div class="flex flex-wrap items-center gap-1.5">${myFeatures().map(k => `<span class="text-[11px] font-bold bg-brand/5 border border-brand/15 rounded-full px-2.5 py-1"><i class="ph-bold ${DMPlans.FEATURES[k].icon}"></i> ${DMPlans.FEATURES[k].name}</span>`).join('')}${!showPlans && !client.parent_id ? '<button type="button" onclick="openPlan()" class="text-[11px] font-bold text-brand underline underline-offset-4">عدّل باقتك</button>' : ''}</div>` : ''}
+      ${trialGift() ? `<div class="rounded-xl border border-amber-300/60 bg-amber-50 px-3 py-2.5 text-[12px] text-amber-900 leading-relaxed"><b><i class="ph-bold ph-gift"></i> هدية التجربة:</b> "رسائل لزبائنك" مفعّلة لك مجاناً مع البيجر خلال التجربة، وتتوقف بعدها إلا إذا أضفتها لاشتراكك بـ ${DMPlans.FEATURES.notify.month} ر.س بالشهر. <a href="#messages" class="font-bold underline underline-offset-2">جرّبها الحين</a></div>` : ''}
       ${client.parent_id ? '<p class="text-[11px] text-ink/60"><i class="ph-bold ph-tree-structure"></i> اشتراك الفرع تابع للمتجر الرئيسي</p>' : ''}
       ${live && status === 'active' && client.subscription_plan === 'month' && !client.parent_id ? upgradeBox() : ''}
       ${showPlans && !client.parent_id ? planPicker(verb) : ''}`;

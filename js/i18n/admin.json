@@ -1494,5 +1494,8 @@
   "يوصل طلبك للإدارة، ونتواصل معك لإتمام الدفع، ويتحوّل اشتراكك وفروعك إلى السنوي.": "Your request reaches our team; we'll contact you to complete payment and switch your account and branches to yearly.",
   "أرسل طلب الترقية": "Send upgrade request",
   "وصل طلب الترقية للإدارة، وبنتواصل معك قريب": "Upgrade request sent; we'll contact you soon",
-  "اشتراك الفرع {a} مثل اشتراك حسابك. ربط الفرع {b} ر.س {c}، ومعه سعر الخدمات اللي تختارها للفرع.": "The branch follows your account's {a} plan. Branch link {b} SAR {c}, plus the services you choose for it."
+  "اشتراك الفرع {a} مثل اشتراك حسابك. ربط الفرع {b} ر.س {c}، ومعه سعر الخدمات اللي تختارها للفرع.": "The branch follows your account's {a} plan. Branch link {b} SAR {c}, plus the services you choose for it.",
+  "هدية التجربة:": "Trial gift:",
+  "\"رسائل لزبائنك\" مفعّلة لك مجاناً مع البيجر خلال التجربة، وتتوقف بعدها إلا إذا أضفتها لاشتراكك بـ {a} ر.س بالشهر.": "\"Customer messages\" is free with the pager during your trial and stops afterwards unless you add it for {a} SAR a month.",
+  "جرّبها الحين": "Try it now"
 }
