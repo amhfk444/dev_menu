@@ -219,8 +219,8 @@
   <div class="wrap grid lg:grid-cols-[1.08fr_.92fr] gap-12 lg:gap-14 items-center">
     <div class="space-y-7 reveal">
       <p class="pill"><i class="ph-bold ph-storefront"></i> <span><b class="text-[15px]">أكثر من منيو</b>، لكل منشأة تخدم عملاء: مطعم، مقهى، عيادة، صالون، متجر</span></p>
-      <h1 class="hero-h">منيو، بيجر،<br>وبطاقة ولاء.<br><em>كلها في جوال زبونك.</em></h1>
-      <p class="lead max-w-xl">زبونك يمسح الكود ويشوف المنيو بالصور، ياخذ رقمه ويرن جواله لما يجهز طلبه، ويجمع أختامه في محفظة جواله ويرجع لك. بدون تطبيق وبدون أجهزة.</p>
+      <h1 class="hero-h">منيو، بيجر،<br>وبطاقة ولاء.<br><em>جميعها في جوال عميلك.</em></h1>
+      <p class="lead max-w-xl">يمسح عميلك الرمز ويتصفح المنيو بالصور، ويحصل على رقمه فيصله التنبيه عند جاهزية طلبه، ويجمع أختامه في محفظة جواله فيعود إليك. دون تطبيق ودون أجهزة.</p>
       <div class="grid grid-cols-2 gap-3 max-w-md">
         <div class="price-chip"><small>الباقة الكاملة</small><b dir="ltr" id="chip-full">&#x20C1; 151</b> <span class="text-[12px] font-semibold text-[color:var(--muted)]">بالشهر</span></div>
         <div class="price-chip"><small>بطاقة الولاء</small><b dir="ltr" id="chip-loyalty">&#x20C1; 69</b> <span class="text-[12px] font-semibold text-[color:var(--muted)]">بالشهر</span></div>
@@ -229,16 +229,16 @@
         <a href="#pricing" class="btn btn-main px-7 py-4 text-[15px]">اختر باقتك وابدأ مجاناً</a>
         <a href="#try" class="btn btn-soft px-6 py-4 text-[15px]"><i class="ph-bold ph-bell-ringing"></i> جرّب البيجر بنفسك</a>
       </div>
-      <p class="text-[13px] font-semibold text-[color:var(--muted)]"><i class="ph-bold ph-check-circle text-emerald-700"></i> 7 أيام مجاناً بدون بطاقة بنكية، وبعدها نتواصل معك للدفع.</p>
+      <p class="text-[13px] font-semibold text-[color:var(--muted)]"><i class="ph-bold ph-check-circle text-emerald-700"></i> تجربة مجانية لمدة 7 أيام دون بطاقة بنكية، ثم نتواصل معك لإتمام الاشتراك.</p>
       <div id="trust" class="hidden pt-2">
-        <p class="text-[13px] font-semibold text-[color:var(--muted)] mb-3">محلات تستخدم DEV MENU الحين</p>
+        <p class="text-[13px] font-semibold text-[color:var(--muted)] mb-3">منشآت تستخدم DEV MENU</p>
         <div id="trust-logos" class="logos flex flex-wrap gap-3"></div>
       </div>
     </div>
 
     <!-- بطاقة تجربة تفاعلية -->
     <div class="demo reveal" id="try">
-      <div class="tabs" role="tablist" aria-label="شوف كل ميزة">
+      <div class="tabs" role="tablist" aria-label="استعرض المميزات">
         <button role="tab" aria-selected="true" data-tab="menu"><i class="ph-bold ph-fork-knife"></i> المنيو</button>
         <button role="tab" aria-selected="false" data-tab="pager"><i class="ph-bold ph-bell"></i> البيجر</button>
         <button role="tab" aria-selected="false" data-tab="loyalty"><i class="ph-bold ph-seal-check"></i> الولاء</button>
@@ -247,14 +247,14 @@
       <div class="ring-card">
         <span class="ring-ic" id="ring-ic"><i class="ph-bold ph-bell-ringing"></i></span>
         <div class="flex-1 min-w-0">
-          <p class="font-bold text-[15px]">ضغطة منك، ويرن جوال زبونك</p>
-          <p class="text-[12.5px] text-[color:var(--muted)] mt-0.5">اسمع صوت التنبيه، أو جرّبه على جوالك</p>
+          <p class="font-bold text-[15px]">بضغطة واحدة يصل التنبيه إلى جوال عميلك</p>
+          <p class="text-[12.5px] text-[color:var(--muted)] mt-0.5">استمع إلى صوت التنبيه، أو جرّبه على جوالك</p>
         </div>
-        <button type="button" id="ring-btn" class="btn btn-main px-4 py-2.5 text-[13px]">اسمع</button>
+        <button type="button" id="ring-btn" class="btn btn-main px-4 py-2.5 text-[13px]">استمع</button>
       </div>
       <div class="flex items-center gap-4 mt-3 px-1">
         <div id="try-qr" class="hidden md:block w-[92px] h-[92px] bg-white p-1.5 rounded-xl border border-[color:var(--line)] shrink-0"></div>
-        <p class="text-[13px] leading-relaxed text-[color:var(--muted)]"><span class="hidden md:inline">امسح الكود بجوالك وخذ رقم من محل تجريبي.</span> <a href="https://bistrobella.devmenu.digital/pager" target="_blank" rel="noopener" class="font-bold text-[color:var(--brand)] underline underline-offset-4 md:hidden">افتح البيجر التجريبي</a> خلال ثواني يجهز طلبك ويرن جوالك، حتى لو قفلت الشاشة.</p>
+        <p class="text-[13px] leading-relaxed text-[color:var(--muted)]"><span class="hidden md:inline">امسح الرمز بجوالك واحصل على رقم من منشأة تجريبية.</span> <a href="https://bistrobella.devmenu.digital/pager" target="_blank" rel="noopener" class="font-bold text-[color:var(--brand)] underline underline-offset-4 md:hidden">افتح البيجر التجريبي</a> خلال ثوانٍ يجهز طلبك ويصلك التنبيه، حتى لو كانت الشاشة مقفلة.</p>
       </div>
     </div>
   </div>
@@ -265,24 +265,24 @@
   <div class="wrap">
     <div class="max-w-2xl mb-10 reveal">
       <p class="pill mb-3"><i class="ph-bold ph-squares-four"></i> المميزات</p>
-      <h2 class="h2">أربع أدوات. <em>تختار منها اللي تحتاجه.</em></h2>
-      <p class="sub mt-4">كل وحدة تشتغل لحالها، ولما تجمعها تشتغل مع بعض: البيجر يختم بطاقة الولاء تلقائياً، والمنيو يعرض قائمة الانتظار.</p>
+      <h2 class="h2">أربع أدوات. <em>اختر منها ما تحتاجه.</em></h2>
+      <p class="sub mt-4">تعمل كل أداة بشكل مستقل، وعند الجمع بينها تتكامل: يضيف البيجر ختم الولاء تلقائياً، ويعرض المنيو قائمة الانتظار.</p>
     </div>
     <div class="grid md:grid-cols-2 gap-4">
       <article class="prod reveal">
         <span class="prod-ic" style="background:#eaf3ec;color:#233d2c"><i class="ph-bold ph-fork-knife"></i></span>
         <h3>المنيو الرقمي</h3>
-        <p>منيو بصور أطباقك وأسعارها يفتح برمز QR، وتعدّل أي سعر من جوالك ويتحدث على طول.</p>
+        <p>منيو بصور أطباقك وأسعارها يُفتح برمز QR، ويمكنك تعديل أي سعر من جوالك ليظهر التحديث فوراً.</p>
         <ul class="space-y-1.5">
-          <li><i class="ph-bold ph-check"></i> شكل قائمة أو صور كبيرة، والصورة تنفتح كاملة</li>
-          <li><i class="ph-bold ph-check"></i> الطلب على الواتساب، كوبونات وخصومات</li>
-          <li><i class="ph-bold ph-check"></i> عربي وإنجليزي، ثيمات وخلفية صورة أو فيديو</li>
+          <li><i class="ph-bold ph-check"></i> عرض بشكل قائمة أو بصور كبيرة، مع إمكانية تكبير الصورة</li>
+          <li><i class="ph-bold ph-check"></i> استقبال الطلبات عبر واتساب، مع كوبونات وخصومات</li>
+          <li><i class="ph-bold ph-check"></i> باللغتين العربية والإنجليزية، مع ثيمات وخلفية بصورة أو فيديو</li>
         </ul>
         <p class="from"><b dir="ltr" data-price="menu">&#x20C1; 39</b> بالشهر</p>
       </article>
       <article class="prod reveal">
         <span class="prod-ic" style="background:#e3f1ef;color:#0f766e"><i class="ph-bold ph-bell-ringing"></i></span>
-        <h3>البيجر في جوال زبونك</h3>
+        <h3>البيجر في جوال عميلك</h3>
         <p>يمسح العميل الرمز ويحصل على رقمه، وعند جاهزية طلبه يصله التنبيه على جواله حتى لو كانت الشاشة مقفلة، دون أجهزة معرّضة للتلف أو الضياع.</p>
         <ul class="space-y-1.5">
           <li><i class="ph-bold ph-check"></i> بطاقة نداء مجانية بشعار منشأتك تُحفظ في محفظة جوال العميل، ويصله منها التنبيه حتى أثناء استخدام تطبيق آخر</li>
@@ -295,23 +295,23 @@
       <article class="prod reveal">
         <span class="prod-ic" style="background:#f1ecfb;color:#6d28d9"><i class="ph-bold ph-seal-check"></i></span>
         <h3>بطاقة الولاء</h3>
-        <p>بطاقة أختام باسم زبونك في محفظة جواله. ينختم له بعد كل شراء، ولما يكمّل ياخذ مكافأته.</p>
+        <p>بطاقة أختام باسم عميلك في محفظة جواله، يُضاف إليها ختم بعد كل عملية شراء، وعند اكتمالها يحصل على مكافأته.</p>
         <ul class="space-y-1.5">
-          <li><i class="ph-bold ph-check"></i> الكاشير يمسح كود الزبون، أو يختم تلقائياً مع البيجر</li>
-          <li><i class="ph-bold ph-check"></i> بطاقة وحدة لكل فروعك: يختم ويصرف مكافأته من أي فرع</li>
-          <li><i class="ph-bold ph-check"></i> مساعد ذكي يكتب لزبونك رسالة باسمه لما يغيب</li>
-          <li><i class="ph-bold ph-check"></i> عندك بطاقة قديمة؟ الكاشير ينقل رصيد الزبون بضغطة</li>
+          <li><i class="ph-bold ph-check"></i> يمسح الكاشير رمز العميل، أو يُضاف الختم تلقائياً مع البيجر</li>
+          <li><i class="ph-bold ph-check"></i> بطاقة واحدة لجميع فروعك: يجمع العميل أختامه ويصرف مكافأته من أي فرع</li>
+          <li><i class="ph-bold ph-check"></i> مساعد ذكي يرسل لعميلك رسالة باسمه عند انقطاع زيارته</li>
+          <li><i class="ph-bold ph-check"></i> نقل رصيد العميل من بطاقتك السابقة بضغطة واحدة من الكاشير</li>
         </ul>
         <p class="from"><b dir="ltr" data-price="loyalty">&#x20C1; 69</b> بالشهر</p>
       </article>
       <article class="prod reveal">
         <span class="prod-ic" style="background:#e8f2fa;color:#0369a1"><i class="ph-bold ph-hourglass-medium"></i></span>
         <h3>قائمة الانتظار</h3>
-        <p>ضيوفك يسجلون دورهم من جوالهم، ويوصلهم تنبيه لما يجي دورهم. بدون زحمة عند الباب.</p>
+        <p>يسجّل ضيوفك دورهم من جوالاتهم، ويصلهم تنبيه عند حلول دورهم، دون ازدحام عند المدخل.</p>
         <ul class="space-y-1.5">
-          <li><i class="ph-bold ph-check"></i> الدور والعدد قدامك على شاشة وحدة</li>
-          <li><i class="ph-bold ph-check"></i> تنبيه بالجوال والبريد لما يجي دوره</li>
-          <li><i class="ph-bold ph-check"></i> يطلع في المنيو للي واقف ينتظر</li>
+          <li><i class="ph-bold ph-check"></i> عرض الأدوار وأعداد الضيوف على شاشة واحدة</li>
+          <li><i class="ph-bold ph-check"></i> تنبيه عبر الجوال والبريد الإلكتروني عند حلول الدور</li>
+          <li><i class="ph-bold ph-check"></i> تظهر في المنيو لمن ينتظر دوره</li>
         </ul>
         <p class="from"><b dir="ltr" data-price="waitlist">&#x20C1; 29</b> بالشهر</p>
       </article>
@@ -324,18 +324,18 @@
   <div class="wrap grid lg:grid-cols-[.95fr_1.05fr] gap-12 items-center">
     <div class="reveal order-last lg:order-first">
       <div class="flex justify-center gap-4">
-        <div class="phone !w-[220px] !m-0" style="margin-top:40px !important"><video src="videos/pager-ad-v3.mp4" poster="videos/pager-ad-v3.jpg" autoplay muted loop playsinline preload="none" aria-label="البيجر يرن في جوال الزبون"></video></div>
+        <div class="phone !w-[220px] !m-0" style="margin-top:40px !important"><video src="videos/pager-ad-v3.mp4" poster="videos/pager-ad-v3.jpg" autoplay muted loop playsinline preload="none" aria-label="تنبيه البيجر في جوال العميل"></video></div>
         <div class="phone !w-[220px] !m-0 hidden sm:block"><video src="videos/loyalty-ad-v3.mp4" poster="videos/loyalty-ad-v3.jpg" autoplay muted loop playsinline preload="none" aria-label="بطاقة الولاء من DEV MENU"></video></div>
       </div>
     </div>
     <div class="reveal">
       <p class="pill mb-3"><i class="ph-bold ph-play-circle"></i> كيف يعمل</p>
-      <h2 class="h2">من أول زيارة <em>لين يرجع.</em></h2>
+      <h2 class="h2">من أول زيارة <em>حتى عودته.</em></h2>
       <div class="mt-6">
-        <div class="step-row"><span class="step-n">01</span><div><h3>يمسح الكود ويطلب</h3><p>الزبون يفتح المنيو من الطاولة أو الكاشير، يشوف الأطباق بصورها ويطلب.</p></div></div>
-        <div class="step-row"><span class="step-n">02</span><div><h3>ياخذ رقمه ويرتاح</h3><p>رقم البيجر في جواله، ولما تضغط "جاهز" يرن جواله وين ما كان.</p></div></div>
-        <div class="step-row"><span class="step-n">03</span><div><h3>ينختم له ويقيّم تجربته</h3><p>البيجر يختم بطاقته تلقائياً، وبعد الاستلام يعطيك رأيه.</p></div></div>
-        <div class="step-row"><span class="step-n">04</span><div><h3>يرجع لك</h3><p>إذا غاب تجيه رسالة باسمه، ولما يكمّل أختامه ياخذ مكافأته.</p></div></div>
+        <div class="step-row"><span class="step-n">01</span><div><h3>يمسح الرمز ويطلب</h3><p>يفتح العميل المنيو من الطاولة أو عند الكاشير، ويتصفح الأطباق بصورها ثم يطلب.</p></div></div>
+        <div class="step-row"><span class="step-n">02</span><div><h3>يحصل على رقمه وينتظر براحة</h3><p>يُحفظ رقم البيجر في جواله، وعند الضغط على "جاهز" يصله التنبيه أينما كان.</p></div></div>
+        <div class="step-row"><span class="step-n">03</span><div><h3>يحصل على ختمه ويقيّم تجربته</h3><p>يُضاف الختم إلى بطاقته تلقائياً، وبعد الاستلام يشاركك رأيه.</p></div></div>
+        <div class="step-row"><span class="step-n">04</span><div><h3>يعود إليك</h3><p>إذا انقطعت زيارته تصله رسالة باسمه، وعند اكتمال أختامه يحصل على مكافأته.</p></div></div>
       </div>
     </div>
   </div>
@@ -345,8 +345,8 @@
 <section id="pricing" class="dark py-16 md:py-24">
   <div class="wrap">
     <div class="text-center max-w-2xl mx-auto mb-10 reveal">
-      <h2 class="h2">باقة <span class="text-[color:var(--gold)]">على مقاس محلك.</span></h2>
-      <p class="sub mt-4">اختر الأدوات اللي تحتاجها ويطلع سعرك على طول. تبدأ مجاناً 7 أيام، وبعدها نتواصل معك للدفع والتفعيل.</p>
+      <h2 class="h2">باقة <span class="text-[color:var(--gold)]">تناسب منشأتك.</span></h2>
+      <p class="sub mt-4">اختر الأدوات التي تحتاجها ويظهر السعر مباشرة. تبدأ بتجربة مجانية لمدة 7 أيام، ثم نتواصل معك للدفع والتفعيل.</p>
     </div>
     <div class="flex flex-wrap items-center justify-center gap-3 mb-8 reveal">
       <div class="period" role="group" aria-label="مدة الاشتراك">
@@ -364,8 +364,8 @@
           <div><p class="text-[13px] font-bold text-[color:var(--muted)]">المجموع</p><p class="total" dir="ltr" id="sum-total"></p></div>
           <p class="text-[13px] font-semibold text-[color:var(--muted)] text-left" id="sum-per"></p>
         </div>
-        <a href="#register" id="sum-go" class="btn btn-main w-full py-4 text-[15px] mt-5">ابدأ مجاناً بهالباقة</a>
-        <p class="text-[12px] font-semibold text-[color:var(--muted)] text-center mt-3">ما تدفع شي الحين. الفرع الإضافي: رسوم <span dir="ltr">&#x20C1; 19</span> بالشهر + سعر مميزاته.</p>
+        <a href="#register" id="sum-go" class="btn btn-main w-full py-4 text-[15px] mt-5">ابدأ مجاناً بهذه الباقة</a>
+        <p class="text-[12px] font-semibold text-[color:var(--muted)] text-center mt-3">لا يلزمك الدفع الآن. الفرع الإضافي: رسوم <span dir="ltr">&#x20C1; 19</span> بالشهر + سعر مميزاته.</p>
       </aside>
     </div>
   </div>
@@ -374,11 +374,11 @@
 <!-- ═══════════ وش يصير بعد ما تختار ═══════════ -->
 <section class="py-16 md:py-20">
   <div class="wrap">
-    <h2 class="h2 text-center mb-10 reveal">وش يصير <em>بعد ما تختار؟</em></h2>
+    <h2 class="h2 text-center mb-10 reveal">ماذا يحدث <em>بعد اختيار باقتك؟</em></h2>
     <div class="grid md:grid-cols-3 gap-4">
-      <div class="after reveal"><span class="n">1</span><h3 class="text-[18px] font-bold mt-4">تسجّل وتبدأ على طول</h3><p class="sub !text-[14.5px] mt-1">اسم منشأتك وجوالك وبريدك، وحسابك جاهز خلال دقيقة.</p></div>
-      <div class="after reveal"><span class="n">2</span><h3 class="text-[18px] font-bold mt-4">تجرّب 7 أيام مجاناً</h3><p class="sub !text-[14.5px] mt-1">جهّز المنيو أو بطاقتك، اطبع الأكواد، وخلّ عملاءك يجربون. كل شي شغّال.</p></div>
-      <div class="after reveal"><span class="n">3</span><h3 class="text-[18px] font-bold mt-4">نتواصل معك للدفع</h3><p class="sub !text-[14.5px] mt-1">نكلمك على جوالك لإتمام الدفع، ويتفعّل اشتراكك بنفس اليوم.</p></div>
+      <div class="after reveal"><span class="n">1</span><h3 class="text-[18px] font-bold mt-4">تسجّل وتبدأ فوراً</h3><p class="sub !text-[14.5px] mt-1">أدخل اسم منشأتك ورقم جوالك وبريدك، ويصبح حسابك جاهزاً خلال دقيقة.</p></div>
+      <div class="after reveal"><span class="n">2</span><h3 class="text-[18px] font-bold mt-4">تجربة مجانية لمدة 7 أيام</h3><p class="sub !text-[14.5px] mt-1">جهّز المنيو أو بطاقتك، واطبع رموز QR، ودع عملاءك يجربون الخدمة بكامل مميزاتها.</p></div>
+      <div class="after reveal"><span class="n">3</span><h3 class="text-[18px] font-bold mt-4">نتواصل معك للدفع</h3><p class="sub !text-[14.5px] mt-1">نتواصل معك على جوالك لإتمام الدفع، ويُفعَّل اشتراكك في اليوم نفسه.</p></div>
     </div>
   </div>
 </section>
@@ -387,11 +387,11 @@
 <section id="register" class="py-16 md:py-20">
   <div class="wrap grid lg:grid-cols-[.8fr_1.2fr] gap-10 items-start">
     <div class="space-y-5 reveal lg:pt-6">
-      <h2 class="h2">ابدأ تجربتك <em>الحين.</em></h2>
-      <p class="sub">7 أيام مجاناً بدون بطاقة بنكية. نجهّز لك رابط محلك وأكواد QR تلقائياً بعد التسجيل.</p>
+      <h2 class="h2">ابدأ تجربتك <em>اليوم.</em></h2>
+      <p class="sub">7 أيام مجاناً دون بطاقة بنكية، ونجهّز لك رابط منشأتك ورموز QR تلقائياً بعد التسجيل.</p>
       <a href="https://wa.me/966561161448" target="_blank" rel="noopener" class="inline-flex items-center gap-3 bg-white border border-[color:var(--line)] rounded-2xl px-5 py-4">
         <span class="w-11 h-11 rounded-xl bg-[#25d366]/15 text-[#128c7e] grid place-items-center text-xl"><i class="ph-bold ph-whatsapp-logo"></i></span>
-        <span class="text-[14px] leading-relaxed"><span class="text-[color:var(--muted)]">تحتاج مساعدة قبل التسجيل؟</span><br><b class="underline underline-offset-4">كلّمنا على واتساب</b></span>
+        <span class="text-[14px] leading-relaxed"><span class="text-[color:var(--muted)]">تحتاج مساعدة قبل التسجيل؟</span><br><b class="underline underline-offset-4">تواصل معنا عبر واتساب</b></span>
       </a>
     </div>
 
@@ -401,7 +401,7 @@
         <div class="text-left shrink-0"><p id="chosen-price" class="font-bold text-[18px]" dir="ltr"></p><a href="#pricing" class="text-[12px] font-bold text-[color:var(--gold-deep)] underline underline-offset-4">غيّرها</a></div>
       </div>
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-[17px] font-bold">بيانات محلك</h3>
+        <h3 class="text-[17px] font-bold">بيانات منشأتك</h3>
         <span id="step-indicator" class="text-[12px] font-bold text-[color:var(--gold-deep)] bg-[#7fb685]/20 px-3 py-1.5 rounded-full">الخطوة 1 من 2</span>
       </div>
 
@@ -420,13 +420,13 @@
           </div>
           <!-- "أخرى": منشآت تحتاج البيجر أو الانتظار أو الولاء -->
           <div id="reg-more" class="hidden mt-3 space-y-2">
-            <p class="text-[12.5px] font-semibold text-[color:var(--muted)]">وش نوع منشأتك؟</p>
+            <p class="text-[12.5px] font-semibold text-[color:var(--muted)]">ما نوع منشأتك؟</p>
             <div id="reg-sectors" class="grid grid-cols-3 gap-2"></div>
             <input type="text" id="reg-label" maxlength="60" placeholder="اكتب نشاطك، مثلاً: مركز تدريب" class="field hidden">
           </div>
         </div>
         <div>
-          <label for="reg-phone" class="lbl">رقم الجوال <span class="font-semibold text-[color:var(--muted)]">(نتواصل معك عليه)</span></label>
+          <label for="reg-phone" class="lbl">رقم الجوال <span class="font-semibold text-[color:var(--muted)]">(للتواصل معك)</span></label>
           <div class="flex gap-2" dir="ltr">
             <select id="reg-country" aria-label="رمز الدولة" class="field !w-auto shrink-0 !px-2.5"></select>
             <input type="tel" id="reg-phone" inputmode="tel" autocomplete="tel-national" placeholder="05xxxxxxxx" maxlength="18" required class="field flex-1 min-w-0">
@@ -437,7 +437,7 @@
           <svg class="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.170z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.450 1.16-4.05 1.16-3.13 0-5.78-2.11-6.73-4.96H1.19v3.15C3.18 21.31 7.25 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.19C.43 8.15 0 9.89 0 12s.43 3.85 1.19 5.39l4.08-3.15z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.25 0 3.18 2.69 1.19 6.61l4.08 3.15c.95-2.85 3.6-4.96 6.73-4.96z"/></svg>
           سجّل بحساب Google
         </button>
-        <div class="flex items-center gap-3 text-[12px] font-semibold text-[color:var(--muted)]"><span class="flex-1 border-t border-[color:var(--line)]"></span> أو برمز يوصل بريدك <span class="flex-1 border-t border-[color:var(--line)]"></span></div>
+        <div class="flex items-center gap-3 text-[12px] font-semibold text-[color:var(--muted)]"><span class="flex-1 border-t border-[color:var(--line)]"></span> أو برمز يُرسل إلى بريدك <span class="flex-1 border-t border-[color:var(--line)]"></span></div>
         <div>
           <label for="reg-email" class="lbl">البريد الإلكتروني</label>
           <input type="email" id="reg-email" placeholder="name@domain.com" class="field" dir="ltr">
@@ -445,14 +445,14 @@
         <button type="submit" id="submit-btn" class="btn btn-main w-full py-4 text-[15px] disabled:opacity-60">
           <span id="btn-text">أرسل رمز التحقق</span> <i id="btn-spinner" class="ph-bold ph-spinner-gap ph-spin hidden"></i>
         </button>
-        <p class="text-[13px] font-bold text-center">عندك حساب؟ <a href="login.html" class="underline underline-offset-4 text-[color:var(--brand)]">ادخل من هنا</a></p>
+        <p class="text-[13px] font-bold text-center">لديك حساب؟ <a href="login.html" class="underline underline-offset-4 text-[color:var(--brand)]">سجّل الدخول من هنا</a></p>
         <p class="text-[12px] font-semibold text-[color:var(--muted)] text-center">بالتسجيل توافق على <a href="terms.html" target="_blank" class="underline">الشروط والأحكام</a> و<a href="privacy.html" target="_blank" class="underline">سياسة الخصوصية</a>.</p>
       </form>
 
       <div id="otp-section" class="hidden space-y-5">
         <div class="chosen text-center">
-          <p class="text-[14px] font-bold">أرسلنا رمز من 6 أرقام إلى <span id="otp-email" dir="ltr"></span></p>
-          <p class="text-[12px] text-[color:var(--muted)] mt-1">ما وصلك؟ شيّك على الرسائل غير المرغوب فيها (Spam).</p>
+          <p class="text-[14px] font-bold">أرسلنا رمزاً من 6 أرقام إلى <span id="otp-email" dir="ltr"></span></p>
+          <p class="text-[12px] text-[color:var(--muted)] mt-1">لم يصلك؟ تحقق من مجلد الرسائل غير المرغوب فيها (Spam).</p>
         </div>
         <div class="flex justify-center gap-2" dir="ltr">
           <input type="text" inputmode="numeric" class="otp-box" maxlength="1" aria-label="الرقم 1">
@@ -475,17 +475,17 @@
 <!-- ═══════════ المقارنة ═══════════ -->
 <section class="py-16 md:py-20">
   <div class="wrap max-w-4xl">
-    <h2 class="h2 text-center mb-3 reveal">DEV MENU <em>أو الطريقة القديمة؟</em></h2>
-    <p class="sub text-center mb-10 reveal">منيو ورق، أجهزة بيجر، وبطاقة أختام ورقية. كل وحدة لها تكلفة وتعب.</p>
+    <h2 class="h2 text-center mb-3 reveal">DEV MENU <em>أم الطريقة التقليدية؟</em></h2>
+    <p class="sub text-center mb-10 reveal">منيو ورقي، وأجهزة بيجر، وبطاقة أختام ورقية، ولكلٍّ منها تكلفة وعناء.</p>
     <div class="cmp reveal">
-      <div class="cmp-head"><div></div><div>مع DEV MENU</div><div>الطريقة القديمة</div></div>
-      <div class="cmp-row"><div>تغيير الأسعار</div><div class="yes"><i class="ph-bold ph-check-circle"></i> من جوالك ويتحدث على طول</div><div class="no"><i class="ph-bold ph-x-circle"></i> طباعة منيو جديد</div></div>
-      <div class="cmp-row"><div>نداء الزبون</div><div class="yes"><i class="ph-bold ph-check-circle"></i> جواله يرن، وإشعار من محفظته حتى لو في تطبيق ثاني</div><div class="no"><i class="ph-bold ph-x-circle"></i> أجهزة بمدى محدود تحتاج شحن</div></div>
-      <div class="cmp-row"><div>الأجهزة والصيانة</div><div class="yes"><i class="ph-bold ph-check-circle"></i> ولا جهاز، جوال الزبون يكفي</div><div class="no"><i class="ph-bold ph-x-circle"></i> تضيع وتخرب وتنظّف</div></div>
-      <div class="cmp-row"><div>ولاء الزبون</div><div class="yes"><i class="ph-bold ph-check-circle"></i> بطاقة في محفظته ما تضيع</div><div class="no"><i class="ph-bold ph-x-circle"></i> ورقة تنتسى في المحفظة</div></div>
-      <div class="cmp-row"><div>تعرف زبائنك</div><div class="yes"><i class="ph-bold ph-check-circle"></i> مين يرجع، ومتى، ووش رأيه</div><div class="no"><i class="ph-bold ph-x-circle"></i> ما تعرف شي</div></div>
-      <div class="cmp-row"><div>أكثر من فرع</div><div class="yes"><i class="ph-bold ph-check-circle"></i> بطاقة ولاء وحدة تشتغل في كل فروعك</div><div class="no"><i class="ph-bold ph-x-circle"></i> كل فرع وأوراقه</div></div>
-      <div class="cmp-row"><div>هوية محلك</div><div class="yes"><i class="ph-bold ph-check-circle"></i> شعارك وألوانك في كل شاشة</div><div class="no"><i class="ph-bold ph-x-circle"></i> أجهزة وأوراق عامة</div></div>
+      <div class="cmp-head"><div></div><div>مع DEV MENU</div><div>الطريقة التقليدية</div></div>
+      <div class="cmp-row"><div>تغيير الأسعار</div><div class="yes"><i class="ph-bold ph-check-circle"></i> من جوالك ويظهر التحديث فوراً</div><div class="no"><i class="ph-bold ph-x-circle"></i> طباعة منيو جديد</div></div>
+      <div class="cmp-row"><div>نداء العميل</div><div class="yes"><i class="ph-bold ph-check-circle"></i> تنبيه على جواله وإشعار من محفظته حتى أثناء استخدام تطبيق آخر</div><div class="no"><i class="ph-bold ph-x-circle"></i> أجهزة بمدى محدود تحتاج إلى شحن</div></div>
+      <div class="cmp-row"><div>الأجهزة والصيانة</div><div class="yes"><i class="ph-bold ph-check-circle"></i> لا حاجة لأي جهاز، جوال العميل يكفي</div><div class="no"><i class="ph-bold ph-x-circle"></i> معرّضة للضياع والتلف وتحتاج إلى تنظيف</div></div>
+      <div class="cmp-row"><div>ولاء العميل</div><div class="yes"><i class="ph-bold ph-check-circle"></i> بطاقة محفوظة في محفظة جواله لا تضيع</div><div class="no"><i class="ph-bold ph-x-circle"></i> بطاقة ورقية تُنسى أو تضيع</div></div>
+      <div class="cmp-row"><div>معرفة عملائك</div><div class="yes"><i class="ph-bold ph-check-circle"></i> من يعود، ومتى، وما رأيه</div><div class="no"><i class="ph-bold ph-x-circle"></i> لا تتوفر أي بيانات</div></div>
+      <div class="cmp-row"><div>أكثر من فرع</div><div class="yes"><i class="ph-bold ph-check-circle"></i> بطاقة ولاء واحدة تعمل في جميع فروعك</div><div class="no"><i class="ph-bold ph-x-circle"></i> لكل فرع أوراقه الخاصة</div></div>
+      <div class="cmp-row"><div>هوية منشأتك</div><div class="yes"><i class="ph-bold ph-check-circle"></i> شعارك وألوانك في كل شاشة</div><div class="no"><i class="ph-bold ph-x-circle"></i> أجهزة وأوراق عامة</div></div>
     </div>
   </div>
 </section>
@@ -517,8 +517,8 @@
     <div class="dark !m-0 px-6 py-14 md:py-16 text-center reveal">
       <img src="images/logo-mark-white.png" alt="DEV MENU" width="150" height="101" class="h-[100px] w-auto mx-auto opacity-95" loading="lazy">
       <p class="text-[color:var(--gold)] font-bold text-[18px] mt-3 mb-8">أكثر من منيو</p>
-      <h2 class="h2">زبونك جا مرة. <span class="text-[color:var(--gold)]">خلّه يرجع.</span></h2>
-      <p class="sub mt-4 mb-8">ابدأ خلال دقيقة، وجرّب كل شي 7 أيام مجاناً.</p>
+      <h2 class="h2">عميلك زارك مرة. <span class="text-[color:var(--gold)]">اجعله يعود.</span></h2>
+      <p class="sub mt-4 mb-8">ابدأ خلال دقيقة، وجرّب جميع المميزات 7 أيام مجاناً.</p>
       <div class="flex flex-wrap justify-center gap-3">
         <a href="#pricing" class="btn btn-gold px-8 py-4 text-[15px]">اختر باقتك</a>
         <a href="https://wa.me/966561161448" target="_blank" rel="noopener" class="btn px-7 py-4 text-[15px] border border-white/25 text-white"><i class="ph-bold ph-whatsapp-logo"></i> تواصل معنا</a>
@@ -617,7 +617,7 @@
     ['الباقة الكاملة', ['menu', 'pager', 'waitlist']],
     ['الكاملة + الولاء', ['menu', 'pager', 'waitlist', 'loyalty']],
     ['منيو + ولاء', ['menu', 'loyalty']],
-    ['الولاء لحاله', ['loyalty']]
+    ['الولاء فقط', ['loyalty']]
   ];
   const same = (a, b) => a.length === b.length && a.every(x => b.includes(x));
   const per = () => choice.period === 'month' ? 'بالشهر' : 'بالسنة';
@@ -643,12 +643,12 @@
     $('sum-lines').innerHTML = pr.features.length
       ? pr.lines.map(l => `<div class="line"><span>${esc(l.label)}</span><span dir="ltr">${money(l.amount)}</span></div>`).join('') + pr.discounts.map(d => `<div class="line disc"><span>${esc(d.label)}</span><span dir="ltr">- ${money(d.amount)}</span></div>`).join('')
         + (pr.discounts.length ? '<p class="disc-note"><i class="ph-bold ph-clock-countdown"></i> خصومات الباقات عرض لفترة محدودة</p>' : '')
-      : '<p class="text-[14px] font-semibold text-[color:var(--muted)] py-2">اختر أداة وحدة على الأقل</p>';
+      : '<p class="text-[14px] font-semibold text-[color:var(--muted)] py-2">اختر أداة واحدة على الأقل</p>';
     $('sum-total').textContent = money(pr.total);
-    $('sum-per').innerHTML = p === 'year' && pr.total ? `بالسنة<br>يعني <span dir="ltr">${money(Math.round(pr.total / 12))}</span> بالشهر` : 'بالشهر';
+    $('sum-per').innerHTML = p === 'year' && pr.total ? `بالسنة<br>أي <span dir="ltr">${money(Math.round(pr.total / 12))}</span> بالشهر` : 'بالشهر';
     $('sum-go').classList.toggle('pointer-events-none', !pr.features.length);
     $('sum-go').classList.toggle('opacity-50', !pr.features.length);
-    $('chosen-name').textContent = pr.features.length ? `${pr.features.map(k => P.FEATURES[k].name).join(' + ')} (${p === 'month' ? 'شهري' : 'سنوي'})` : 'ما اخترت باقة';
+    $('chosen-name').textContent = pr.features.length ? `${pr.features.map(k => P.FEATURES[k].name).join(' + ')} (${p === 'month' ? 'شهري' : 'سنوي'})` : 'لم تختر باقة';
     $('chosen-price').textContent = pr.features.length ? money(pr.total) : '';
     // اختار البيجر أو الانتظار أو الولاء بدون منيو؟ غالباً منشأته مو مطعم، فنفتح له "أخرى"
     const noMenu = pr.features.length && !pr.features.includes('menu');
@@ -694,9 +694,9 @@
   // ─── التسجيل (رمز على البريد أو حساب Google) ───
   let formDataCache = {};
   function otpErrorMessage(error) {
-    if (error && error.status === 429) return 'طلبت رموز كثيرة، انتظر دقيقة وحاول مرة ثانية';
+    if (error && error.status === 429) return 'طلبت رموزاً كثيرة، انتظر دقيقة ثم حاول مرة أخرى';
     if (error && error.status === 0) return error.message;
-    return 'تعذر إرسال الرمز لبريدك، تأكد من البريد وحاول مرة ثانية';
+    return 'تعذّر إرسال الرمز إلى بريدك، تحقق من البريد وحاول مرة أخرى';
   }
   $('reg-country').innerHTML = DM.countryOptions();
   const normalizeMobile = (raw) => DM.intlPhone(raw, $('reg-country').value);
@@ -720,13 +720,13 @@
     const name = $('reg-name').value.trim();
     const email = $('reg-email').value.trim().toLowerCase();
     const phone = normalizeMobile($('reg-phone').value);
-    if (!name || !$('reg-phone').value.trim()) return showToast('اكتب اسم المحل ورقم الجوال', 'error');
-    if (!email) { $('reg-email').focus(); return showToast('اكتب بريدك عشان نرسل لك الرمز، أو سجّل بحساب Google', 'error'); }
+    if (!name || !$('reg-phone').value.trim()) return showToast('أدخل اسم المنشأة ورقم الجوال', 'error');
+    if (!email) { $('reg-email').focus(); return showToast('أدخل بريدك الإلكتروني لنرسل إليك الرمز، أو سجّل بحساب Google', 'error'); }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast('البريد الإلكتروني غير صحيح', 'error');
     if (!phone) return showToast('رقم الجوال غير صحيح، تأكد من رمز الدولة والرقم', 'error');
     setRegisterBusy(true);
     try {
-      if (businessType() === 'other' && !businessLabel()) { $('reg-label').focus(); return showToast('اكتب نوع نشاطك', 'error'); }
+      if (businessType() === 'other' && !businessLabel()) { $('reg-label').focus(); return showToast('أدخل نوع نشاطك', 'error'); }
       formDataCache = { name, email, phone, businessType: businessType(), businessLabel: businessLabel() };
       try { await DM.sendOtp(email); } catch (error) { return showToast(otpErrorMessage(error), 'error'); }
       $('register-form').classList.add('hidden');
@@ -734,8 +734,8 @@
       $('step-indicator').textContent = 'الخطوة 2 من 2';
       $('otp-email').textContent = email;
       resetOtpBoxes(); otpBoxes[0].focus(); startResendCooldown();
-      showToast('أرسلنا الرمز لبريدك', 'success');
-    } catch (err) { console.error(err); showToast('تعذر الاتصال، حاول مرة ثانية', 'error'); }
+      showToast('أرسلنا الرمز إلى بريدك', 'success');
+    } catch (err) { console.error(err); showToast('تعذّر الاتصال، حاول مرة أخرى', 'error'); }
     finally { setRegisterBusy(false); }
   });
 
@@ -764,14 +764,14 @@
   async function resendOtp() {
     if (!formDataCache.email) return;
     try { await DM.sendOtp(formDataCache.email); } catch (error) { return showToast(otpErrorMessage(error), 'error'); }
-    startResendCooldown(); showToast('أرسلنا الرمز مرة ثانية', 'success');
+    startResendCooldown(); showToast('أعدنا إرسال الرمز', 'success');
   }
 
   let verifying = false;
   async function verifyOtpAndRegister() {
     if (verifying) return;
     const token = otpBoxes.map(b => b.value).join('');
-    if (token.length < otpBoxes.length) return showToast('اكتب الرمز كامل (6 أرقام)', 'error');
+    if (token.length < otpBoxes.length) return showToast('أدخل الرمز كاملاً (6 أرقام)', 'error');
     verifying = true;
     let redirecting = false;
     const btn = $('verify-btn');
@@ -782,15 +782,15 @@
       try { await DM.post('/api/owner?action=register', { name: formDataCache.name, phone: formDataCache.phone, business_type: formDataCache.businessType, business_label: formDataCache.businessLabel, ...planPayload() }, true); }
       catch (e) { regErr = e; }
       if (regErr) {
-        if (regErr.code === 'EMAIL_TAKEN') { showToast('هذا البريد له حساب من قبل، جاري تحويلك للوحة التحكم...', 'info'); redirecting = true; setTimeout(() => { location.href = 'admin.html'; }, 1800); }
-        else { showToast(regErr.message || 'تعذر إنشاء الحساب، حاول مرة ثانية', 'error'); backToForm(); }
+        if (regErr.code === 'EMAIL_TAKEN') { showToast('هذا البريد مسجّل مسبقاً، جارٍ تحويلك إلى لوحة التحكم...', 'info'); redirecting = true; setTimeout(() => { location.href = 'admin.html'; }, 1800); }
+        else { showToast(regErr.message || 'تعذّر إنشاء الحساب، حاول مرة أخرى', 'error'); backToForm(); }
         return;
       }
       redirecting = true;
       try { localStorage.removeItem(CHOICE_KEY); } catch {}
       showToast('حسابك جاهز! تجربتك المجانية بدأت', 'success');
       setTimeout(() => { location.href = 'admin.html'; }, 1200);
-    } catch (err) { console.error(err); showToast('تعذر الاتصال، حاول مرة ثانية', 'error'); }
+    } catch (err) { console.error(err); showToast('تعذّر الاتصال، حاول مرة أخرى', 'error'); }
     finally { verifying = false; if (!redirecting) { btn.disabled = false; btn.textContent = 'تأكيد وإنشاء الحساب'; } }
   }
 
@@ -798,9 +798,9 @@
   function registerWithGoogle() {
     const name = $('reg-name').value.trim();
     const phone = normalizeMobile($('reg-phone').value);
-    if (!name) { $('reg-name').focus(); return showToast('اكتب اسم المنشأة', 'error'); }
+    if (!name) { $('reg-name').focus(); return showToast('أدخل اسم المنشأة', 'error'); }
     if (!phone) { $('reg-phone').focus(); return showToast('رقم الجوال غير صحيح، تأكد من رمز الدولة والرقم', 'error'); }
-    if (businessType() === 'other' && !businessLabel()) { $('reg-label').focus(); return showToast('اكتب نوع نشاطك', 'error'); }
+    if (businessType() === 'other' && !businessLabel()) { $('reg-label').focus(); return showToast('أدخل نوع نشاطك', 'error'); }
     try { localStorage.setItem(PENDING_KEY, JSON.stringify({ name, phone, businessType: businessType(), businessLabel: businessLabel(), ...planPayload(), at: Date.now() })); } catch {}
     $('google-btn').disabled = true;
     location.href = DM.googleUrl(location.origin + location.pathname);
@@ -820,8 +820,8 @@
       try { localStorage.removeItem(CHOICE_KEY); } catch {}
       showToast('حسابك جاهز! تجربتك المجانية بدأت', 'success');
     } catch (e) {
-      if (e.code !== 'EMAIL_TAKEN') return showToast(e.message || 'تعذر إنشاء الحساب، حاول مرة ثانية', 'error');
-      showToast('هذا الحساب له متجر من قبل، جاري تحويلك...', 'info');
+      if (e.code !== 'EMAIL_TAKEN') return showToast(e.message || 'تعذّر إنشاء الحساب، حاول مرة أخرى', 'error');
+      showToast('هذا الحساب مرتبط بمنشأة مسجّلة مسبقاً، جارٍ تحويلك...', 'info');
     }
     setTimeout(() => { location.href = 'admin.html'; }, 1200);
   }
