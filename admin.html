@@ -2730,6 +2730,7 @@
     try {
       const { upload_url, public_url } = await api('upload-url', { kind: prefix, type: file.type, size: file.size });
       lastApiError = '';
+      if (onProgress) onProgress(0);   // الملف جاهز وبدأ الرفع
       await DM.putFile(upload_url, file, onProgress || progressToast(file.type.startsWith('video/') ? 'جاري رفع الفيديو...' : 'جاري الرفع...'));
       return public_url;
     } catch (error) {
