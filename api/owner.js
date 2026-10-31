@@ -24,6 +24,8 @@ const { purchaseStamp, tagBranch, newStampCode, parseMemberQr, cooldownLeft, lef
 const bySort = (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id;
 const COFFEE_TYPES = ['cafe', 'mixed'];
 const SECTORS = require('./_lib/sectors');
+// أقسام صفحة الروابط السريعة (للترتيب والإخفاء)
+const LINKS_SECTIONS = ['services', 'contact', 'delivery', 'social', 'custom', 'location'];
 const BUSINESS_TYPES = SECTORS.KEYS;
 const ALLERGENS = ['gluten', 'milk', 'egg', 'nuts', 'peanut', 'sesame', 'fish', 'shellfish', 'soy'];
 const PROCESS = ['washed', 'natural', 'honey', 'anaerobic', 'carbonic', 'other'];
@@ -1251,12 +1253,12 @@ async function main(req) {
         return { label: str(n.label, 40, 'عنوان الرقم'), phone: phoneNumber(n.phone) };
       });
     }
-    if (has('links_order')) {
-      // ترتيب أقسام صفحة الروابط: مفاتيح معروفة بدون تكرار
-      const keys = ['services', 'contact', 'delivery', 'social', 'custom', 'location'];
-      const o = b.links_order;
-      if (o !== null && (!Array.isArray(o) || o.some(k => !keys.includes(k)) || new Set(o).size !== o.length)) throw new ApiError(400, 'ترتيب غير صحيح');
-      p.links_order = o && o.length ? o : null;
+    // ترتيب أقسام صفحة الروابط والمخفي منها: مفاتيح معروفة بدون تكرار
+    for (const k of ['links_order', 'links_hidden']) {
+      if (!has(k)) continue;
+      const o = b[k];
+      if (o !== null && (!Array.isArray(o) || o.some(x => !LINKS_SECTIONS.includes(x)) || new Set(o).size !== o.length)) throw new ApiError(400, 'ترتيب غير صحيح');
+      p[k] = o && o.length ? o : null;
     }
     if (has('custom_links')) {
       if (!Array.isArray(b.custom_links) || b.custom_links.length > MAX_CUSTOM_LINKS) throw new ApiError(400, `الروابط حدها ${MAX_CUSTOM_LINKS}`);

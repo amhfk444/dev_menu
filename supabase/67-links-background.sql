@@ -1,9 +1,11 @@
--- صفحة الروابط السريعة: خلفية خاصة فيها وترتيب أقسامها
+-- صفحة الروابط السريعة: خلفية خاصة فيها وترتيب أقسامها وإخفاؤها
 -- خلفية خاصة لصفحة الروابط السريعة (صورة أو فيديو). لو فاضية تاخذ خلفية المنيو
 alter table public.clients add column if not exists links_bg_image_url text;
 alter table public.clients add column if not exists links_bg_video_url text;
 -- ترتيب أقسام صفحة الروابط (services, contact, delivery, social, custom, location). فاضي = الترتيب الافتراضي
 alter table public.clients add column if not exists links_order text[];
+-- أقسام صفحة الروابط المخفية (روابطها تبقى محفوظة)
+alter table public.clients add column if not exists links_hidden text[];
 notify pgrst, 'reload schema';
 
 -- إضافة الأعمدة إلى public_clients (المنيو العام يقرأ منها)
@@ -30,7 +32,7 @@ begin
     src := 'clients';
   end if;
 
-  foreach col in array array['links_bg_image_url', 'links_bg_video_url', 'links_order'] loop
+  foreach col in array array['links_bg_image_url', 'links_bg_video_url', 'links_order', 'links_hidden'] loop
     if not exists (
       select 1 from information_schema.columns
       where table_schema = 'public' and table_name = 'public_clients' and column_name = col

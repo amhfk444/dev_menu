@@ -496,6 +496,7 @@
               <div class="flex flex-wrap gap-1.5">
                 <button onclick="copyLinksPage()" class="bg-brand/10 hover:bg-brand/15 text-ink px-3 py-1.5 rounded-lg text-[10px] font-bold border border-brand/25 transition"><i class="ph-bold ph-copy"></i> نسخ الرابط</button>
                 <a id="links-preview" href="#" target="_blank" rel="noopener" class="bg-brand/10 hover:bg-brand/15 text-ink px-3 py-1.5 rounded-lg text-[10px] font-bold border border-brand/25 transition"><i class="ph-bold ph-eye"></i> معاينة</a>
+                <button onclick="openLinksSettings()" class="bg-white hover:bg-brand/5 text-ink px-3 py-1.5 rounded-lg text-[10px] font-bold border border-brand/25 transition"><i class="ph-bold ph-sliders-horizontal"></i> تخصيص الصفحة</button>
                 <button id="links-qr-btn" onclick="downloadLinksQr()" class="bg-amber-400 hover:bg-amber-300 text-black px-3 py-1.5 rounded-lg text-[10px] font-bold transition disabled:opacity-50"><i class="ph-bold ph-qr-code"></i> تحميل QR</button>
               </div>
             </div>
@@ -1604,7 +1605,7 @@
       </div>
     </div>
     <!-- خلفية صفحة الروابط السريعة: خاصة فيها، ولو ما فيه تاخذ خلفية المنيو -->
-    <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-3">
+    <div id="links-bg-card" class="scroll-mt-24 bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-3">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <label class="text-[11px] font-bold text-ink/75"><i class="ph-bold ph-link-simple"></i> خلفية صفحة الروابط السريعة <span class="text-ink/50 font-semibold">(صورة أو فيديو مختلف عن خلفية المنيو)</span></label>
         <div id="links-bg-status" class="flex items-center gap-2 text-[10px] font-bold text-ink/60"></div>
@@ -1621,14 +1622,19 @@
       </div>
       <div id="links-bg-prev" class="hidden"></div>
     </div>
-    <!-- ترتيب أقسام صفحة الروابط السريعة -->
-    <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-3">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <label class="text-[11px] font-bold text-ink/75"><i class="ph-bold ph-arrows-down-up"></i> ترتيب صفحة الروابط السريعة <span class="text-ink/50 font-semibold">(الأقسام الفاضية ما تظهر في الصفحة)</span></label>
-        <button type="button" onclick="resetLinksOrder()" class="text-[10px] font-bold text-ink/70 bg-white border border-brand/20 hover:bg-brand/10 px-2.5 py-1 rounded-lg transition">الترتيب الافتراضي</button>
+    <!-- ترتيب أقسام صفحة الروابط السريعة: سحب أو أسهم، إخفاء، وتعديل. ينحفظ تلقائياً -->
+    <div id="links-order-card" class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-3 scroll-mt-24">
+      <div class="flex flex-wrap items-start justify-between gap-2">
+        <div class="space-y-0.5">
+          <label class="block text-[11px] font-bold text-ink/75"><i class="ph-bold ph-arrows-down-up"></i> ترتيب صفحة الروابط السريعة</label>
+          <p class="text-[10px] text-ink/55">اسحب القسم لمكانه أو استخدم الأسهم، والتغيير ينحفظ تلقائياً.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="links-order-status" class="text-[10px] font-bold" aria-live="polite"></span>
+          <button type="button" onclick="resetLinksOrder()" class="text-[10px] font-bold text-ink/70 bg-white border border-brand/20 hover:bg-brand/10 px-2.5 py-1 rounded-lg transition">الترتيب الافتراضي</button>
+        </div>
       </div>
       <ol id="links-order" class="space-y-1.5"></ol>
-      <button onclick="saveLinksOrder()" class="w-full bg-brand text-cream hover:bg-brand-dark text-xs font-bold py-2 rounded-xl transition">حفظ الترتيب</button>
     </div>
         </div>
         <!-- المظهر: الثيم ولون الهوية (للمنيو وصفحة الروابط، لكل الباقات) -->
@@ -2677,6 +2683,7 @@
       const res = await api('update-store', payload);
       Object.assign(client, res.store || payload);
       renderDashboardSummary();
+      if (linksOrder.length) renderLinksOrder(false);
       return true;
     } catch (e) {
       console.error(e);
@@ -2906,7 +2913,7 @@
       ? `<span class="text-emerald-700"><i class="ph-bold ph-check-circle"></i> خلفية خاصة</span><button type="button" onclick="resetLinksBg()" class="bg-white hover:bg-brand/10 text-ink border border-brand/25 px-2.5 py-1 rounded-lg transition">استخدم خلفية المنيو</button>`
       : '<span>حالياً: نفس خلفية المنيو</span>';
   }
-  // ─── ترتيب أقسام صفحة الروابط ───
+  // ─── ترتيب أقسام صفحة الروابط: سحب أو أسهم، إخفاء، تعديل، وحفظ تلقائي ───
   const LINKS_SECTIONS = {
     services: ['خدماتك', 'المنيو، خذ رقمك، بطاقة الولاء، قائمة الانتظار', 'ph-squares-four'],
     contact:  ['الطلبات والتواصل', 'أرقام الطلبات وواتساب', 'ph-phone'],
@@ -2915,36 +2922,99 @@
     custom:   ['روابط أخرى', 'الروابط اللي أضفتها بنفسك', 'ph-link-simple'],
     location: ['زورونا', 'موقعك على الخريطة', 'ph-map-pin']
   };
-  let linksOrder = [];
+  // هل القسم فيه روابط تظهر في الصفحة؟
+  const LINKS_FILLED = {
+    services: () => true,
+    contact:  () => (client.order_numbers || []).some(n => n && String(n.phone || '').replace(/\D/g, '').length >= 9) || !!String(client.whatsapp_number || '').replace(/\D/g, ''),
+    delivery: () => (client.delivery_apps || []).some(d => d && d.url),
+    social:   () => ['instagram_url', 'tiktok_url', 'snapchat_url', 'website_url'].some(k => client[k]),
+    custom:   () => (client.custom_links || []).some(l => l && l.title && l.url),
+    location: () => !!client.location_url
+  };
+  // وين يعدّل روابط كل قسم (أول بطاقة ظاهرة)
+  const LINKS_EDITORS = { contact: ['order-numbers-list', 'social-whatsapp'], delivery: ['delivery-picker'], social: ['social-tiktok'], custom: ['custom-links-list'], location: ['info-location'] };
+  let linksOrder = [], linksHidden = new Set(), linksDrag = null, linksSaveTimer = null;
+  function linksEditorCard(k) {
+    for (const id of LINKS_EDITORS[k] || []) {
+      const el = document.getElementById(id), card = el && (el.closest('.pro-card') || el);
+      if (card && !card.closest('.hidden:not([data-page])')) return card;   // البطاقة ظاهرة (مو مخفية لأن الخدمة مقفلة)
+    }
+    return null;
+  }
   function renderLinksOrder(fromClient = true) {
     if (fromClient) {
       const saved = Array.isArray(client.links_order) ? client.links_order.filter(k => LINKS_SECTIONS[k]) : [];
       linksOrder = [...new Set([...saved, ...Object.keys(LINKS_SECTIONS)])];
+      linksHidden = new Set((client.links_hidden || []).filter(k => LINKS_SECTIONS[k]));
     }
     const last = linksOrder.length - 1;
-    const arrow = (i, d, icon, off) => `<button type="button" onclick="moveLinksSection(${i}, ${d})" ${off ? 'disabled' : ''} aria-label="${d < 0 ? 'لفوق' : 'لتحت'}" class="w-8 h-8 rounded-lg bg-white border border-brand/20 hover:bg-brand/10 text-ink transition disabled:opacity-30 disabled:hover:bg-white"><i class="ph-bold ${icon}"></i></button>`;
+    const iconBtn = (attrs, icon, label, extra = '') => `<button type="button" ${attrs} aria-label="${label}" title="${label}" class="w-8 h-8 shrink-0 rounded-lg bg-white border border-brand/20 hover:bg-brand/10 text-ink transition disabled:opacity-30 disabled:hover:bg-white ${extra}"><i class="ph-bold ${icon}"></i></button>`;
     document.getElementById('links-order').innerHTML = linksOrder.map((k, i) => {
       const [name, hint, icon] = LINKS_SECTIONS[k];
-      return `<li class="flex items-center gap-2 bg-white rounded-xl border border-brand/15 px-3 py-2">
-        <span class="w-5 text-[11px] font-bold text-ink/50">${i + 1}</span>
+      const hidden = linksHidden.has(k), empty = !LINKS_FILLED[k]();
+      const state = hidden ? '<span class="text-[10px] font-bold text-ink/50 bg-brand/10 px-1.5 py-0.5 rounded">مخفي</span>'
+        : empty ? '<span class="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">فاضي، ما يظهر</span>' : '';
+      const edit = linksEditorCard(k) ? `<button type="button" onclick="editLinksSection('${k}')" class="h-8 shrink-0 px-2.5 rounded-lg bg-white border border-brand/20 hover:bg-brand/10 text-ink text-[10px] font-bold transition"><i class="ph-bold ph-pencil-simple"></i><span> ${empty ? 'أضف روابط' : 'تعديل'}</span></button>` : '';
+      return `<li draggable="true" data-i="${i}" class="links-row flex flex-wrap sm:flex-nowrap items-center gap-2 bg-white rounded-xl border border-brand/15 px-2.5 py-2 transition ${hidden || empty ? 'opacity-60' : ''}">
+        <i class="ph-bold ph-dots-six-vertical text-ink/40 cursor-grab hidden sm:inline" aria-hidden="true"></i>
+        <span class="w-4 text-[11px] font-bold text-ink/50">${i + 1}</span>
         <i class="ph-bold ${icon} text-ink/70"></i>
-        <span class="flex-1 min-w-0"><b class="block text-xs text-ink">${name}</b><span class="block text-[10px] text-ink/55 truncate">${hint}</span></span>
-        ${arrow(i, -1, 'ph-arrow-up', i === 0)}${arrow(i, 1, 'ph-arrow-down', i === last)}
+        <span class="flex-1 min-w-0"><span class="flex flex-wrap items-center gap-1.5"><b class="text-xs text-ink">${name}</b>${state}</span><span class="block text-[10px] text-ink/55 truncate">${hint}</span></span>
+        <span class="flex items-center gap-1.5 w-full sm:w-auto ps-6 sm:ps-0">
+        ${edit}
+        ${iconBtn(`onclick="toggleLinksSection('${k}')"`, hidden ? 'ph-eye-slash' : 'ph-eye', hidden ? 'إظهار في الصفحة' : 'إخفاء من الصفحة', hidden ? '!bg-brand/10' : '')}
+        ${iconBtn(`onclick="moveLinksSection(${i}, -1)" ${i === 0 ? 'disabled' : ''}`, 'ph-arrow-up', 'لفوق')}
+        ${iconBtn(`onclick="moveLinksSection(${i}, 1)" ${i === last ? 'disabled' : ''}`, 'ph-arrow-down', 'لتحت')}
+        </span>
       </li>`;
     }).join('');
+  }
+  function linksOrderStatus(html) { document.getElementById('links-order-status').innerHTML = html; }
+  function queueLinksSave() {
+    renderLinksOrder(false);
+    linksOrderStatus('<span class="text-ink/50"><i class="ph-bold ph-spinner-gap ph-spin"></i> جاري الحفظ…</span>');
+    clearTimeout(linksSaveTimer);
+    linksSaveTimer = setTimeout(async () => {
+      const isDefault = linksOrder.join() === Object.keys(LINKS_SECTIONS).join();
+      const ok = await updateClient({ links_order: isDefault ? null : linksOrder, links_hidden: linksHidden.size ? [...linksHidden] : null });
+      linksOrderStatus(ok ? '<span class="text-emerald-700"><i class="ph-bold ph-check-circle"></i> تم الحفظ</span>' : '<span class="text-red-600"><i class="ph-bold ph-warning-circle"></i> تعذر الحفظ</span>');
+      if (!ok) showToast('تعذر حفظ ترتيب صفحة الروابط', true);
+    }, 500);
   }
   function moveLinksSection(i, d) {
     const j = i + d;
     if (j < 0 || j >= linksOrder.length) return;
     [linksOrder[i], linksOrder[j]] = [linksOrder[j], linksOrder[i]];
-    renderLinksOrder(false);
+    queueLinksSave();
   }
-  function resetLinksOrder() { linksOrder = Object.keys(LINKS_SECTIONS); renderLinksOrder(false); }
-  async function saveLinksOrder() {
-    const isDefault = linksOrder.join() === Object.keys(LINKS_SECTIONS).join();
-    if (await updateClient({ links_order: isDefault ? null : linksOrder })) showToast('تم حفظ ترتيب صفحة الروابط');
-    else showToast('تعذر حفظ الترتيب', true);
+  function toggleLinksSection(k) { linksHidden.has(k) ? linksHidden.delete(k) : linksHidden.add(k); queueLinksSave(); }
+  function resetLinksOrder() { linksOrder = Object.keys(LINKS_SECTIONS); linksHidden.clear(); queueLinksSave(); }
+  function editLinksSection(k) {
+    const card = linksEditorCard(k);
+    if (!card) return;
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.classList.add('ring-2', 'ring-brand');
+    setTimeout(() => card.classList.remove('ring-2', 'ring-brand'), 1800);
   }
+  // من بطاقة صفحة الروابط في الرئيسية: يفتح الخلفية والترتيب على طول
+  function openLinksSettings() {
+    if (location.hash === '#settings') showPage('settings'); else location.hash = 'settings';
+    setTimeout(() => document.getElementById('links-bg-card').scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+  }
+  (() => {
+    const list = document.getElementById('links-order');
+    const rowOf = e => e.target.closest && e.target.closest('.links-row');
+    list.addEventListener('dragstart', e => { const r = rowOf(e); if (!r) return; linksDrag = +r.dataset.i; e.dataTransfer.effectAllowed = 'move'; r.classList.add('opacity-40'); });
+    list.addEventListener('dragover', e => { const r = rowOf(e); if (r == null || linksDrag == null) return; e.preventDefault(); list.querySelectorAll('.links-row').forEach(x => x.classList.toggle('!border-brand', x === r)); });
+    list.addEventListener('drop', e => {
+      const r = rowOf(e); if (!r || linksDrag == null) return; e.preventDefault();
+      const to = +r.dataset.i, from = linksDrag; linksDrag = null;
+      if (to === from) return renderLinksOrder(false);
+      linksOrder.splice(to, 0, linksOrder.splice(from, 1)[0]);
+      queueLinksSave();
+    });
+    list.addEventListener('dragend', () => { linksDrag = null; renderLinksOrder(false); });
+  })();
   async function resetLinksBg() {
     if (await updateClient({ links_bg_image_url: null, links_bg_video_url: null })) { renderBgPreview(); showToast('صفحة الروابط رجعت تاخذ خلفية المنيو'); }
   }

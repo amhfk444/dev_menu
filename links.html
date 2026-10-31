@@ -204,7 +204,8 @@
 
     sec.services = out.join('');
     const order = [...(Array.isArray(p.links_order) ? p.links_order : []), ...LINKS_ORDER];
-    document.getElementById('links').innerHTML = [...new Set(order)].map(k => sec[k] || '').join('');
+    const hidden = new Set(Array.isArray(p.links_hidden) ? p.links_hidden : []);
+    document.getElementById('links').innerHTML = [...new Set(order)].filter(k => !hidden.has(k)).map(k => sec[k] || '').join('');
     document.getElementById('loading').remove();
     document.getElementById('page').classList.remove('hidden');
     if (window.DMOccasions && p.occasion) {
