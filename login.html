@@ -101,8 +101,17 @@
   .otp-box.filled { background: var(--brand); color: #fff; border-color: var(--brand); }
 </style>
 <link rel="stylesheet" href="/css/tw/login.css">
+<style>#oauth-wait{display:none}html.oauth-return #oauth-wait{display:flex}html.oauth-return body{overflow:hidden}</style>
+<script>if (/access_token=/.test(location.hash)) document.documentElement.classList.add('oauth-return');</script>
 </head>
 <body>
+<!-- الرجوع من Google: شاشة انتظار بدل ما تبان الصفحة من جديد -->
+<div id="oauth-wait" role="status" aria-live="polite" style="position:fixed;inset:0;z-index:9999;background:#f1f1f1;flex-direction:column;align-items:center;justify-content:center;gap:14px">
+  <img src="images/logo-full-sm.png" alt="DEV MENU" style="width:150px;height:auto">
+  <i class="ph-bold ph-spinner-gap ph-spin" style="font-size:22px;color:#384f3d"></i>
+  <p id="oauth-wait-text" style="font-size:14px;font-weight:700;color:#303030;margin:0">جاري تسجيل دخولك…</p>
+</div>
+
 
 <div class="page-bg"></div>
 <div id="toast-wrap"></div>
@@ -222,16 +231,13 @@
     try { who = await DM.get('/api/owner?action=whoami', true); }
     catch (e) {
       if (e.status === 401) { await DM.logout(); return; }
+      document.documentElement.classList.remove('oauth-return');
       return showToast(e.message, 'error');
     }
     if (who.is_admin) { window.location.href = 'super-admin.html'; return; }
-    if (!who.has_store) {
-      await DM.logout();
-      showToast('لا يوجد متجر مرتبط بهذا الحساب. جاري تحويلك لإنشاء متجرك...', 'error');
-      setTimeout(() => { window.location.href = 'index.html#register'; }, 2200);
-      return;
-    }
-    window.location.href = 'admin.html';
+    // حساب جديد (دخل بـ Google أو بالرمز وما عنده منشأة): يكمل التسجيل وهو داخل، بدون ما يعيد التحقق
+    if (!who.has_store) { window.location.replace('index.html?continue=signup#register'); return; }
+    window.location.replace('admin.html');
   }
 
   // الدخول بحساب Google: نروح لصفحة Google ونرجع لهذي الصفحة
@@ -243,8 +249,8 @@
   // بعد الرجوع من Google، أو إذا كان داخل مسبقاً: نحوّله للوحته
   (async () => {
     try {
-      if (await DM.consumeOAuthRedirect()) showToast('تم تسجيل الدخول، جاري تحويلك...', 'success');
-    } catch (e) { return showToast(e.message, 'error'); }
+      await DM.consumeOAuthRedirect();
+    } catch (e) { document.documentElement.classList.remove('oauth-return'); return showToast(e.message, 'error'); }
     if (DM.signedIn()) goToDashboard();
   })();
 

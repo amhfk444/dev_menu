@@ -213,8 +213,17 @@
   .tabs button:hover { color: var(--brand); background: rgba(56,79,61,.1); }
   .tabs button[aria-selected="true"] { background: var(--brand); color: #fff; box-shadow: var(--shadow-primary); }
 </style>
+<style>#oauth-wait{display:none}html.oauth-return #oauth-wait{display:flex}html.oauth-return body{overflow:hidden}</style>
+<script>if (/access_token=/.test(location.hash)) document.documentElement.classList.add('oauth-return');</script>
 </head>
 <body>
+<!-- الرجوع من Google: شاشة انتظار بدل ما تبان الصفحة من جديد -->
+<div id="oauth-wait" role="status" aria-live="polite" style="position:fixed;inset:0;z-index:9999;background:#f1f1f1;flex-direction:column;align-items:center;justify-content:center;gap:14px">
+  <img src="images/logo-full-sm.png" alt="DEV MENU" style="width:150px;height:auto">
+  <i class="ph-bold ph-spinner-gap ph-spin" style="font-size:22px;color:#384f3d"></i>
+  <p id="oauth-wait-text" style="font-size:14px;font-weight:700;color:#303030;margin:0">جاري تجهيز حسابك…</p>
+</div>
+
 <div id="toast-wrap"></div>
 
 <!-- ═══════════ الشريط العلوي ═══════════ -->
@@ -424,6 +433,11 @@
       </div>
 
       <form id="register-form" class="space-y-4" novalidate>
+        <!-- دخل بحسابه (Google أو الرمز) وما عنده منشأة: يكمل بدون تحقق ثاني -->
+        <div id="signed-note" class="hidden rounded-lg border border-[color:var(--line)] bg-[color:var(--surface,#fff)] p-3.5 text-[13px] leading-relaxed">
+          <p class="font-bold"><i class="ph-bold ph-check-circle text-[color:var(--brand)]"></i> تم الدخول بحساب <span id="signed-email" dir="ltr"></span></p>
+          <p class="text-[color:var(--muted)] font-semibold mt-0.5">أكمل بيانات منشأتك واختر خدماتك، ثم أنشئ حسابك. <button type="button" onclick="useAnotherAccount()" class="underline font-bold text-[color:var(--brand)]">استخدم حساباً آخر</button></p>
+        </div>
         <div>
           <label for="reg-name" class="lbl">اسم المنشأة</label>
           <input type="text" id="reg-name" placeholder="مثال: جولت كوفي" required class="field">
@@ -455,15 +469,15 @@
           <svg class="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.170z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.450 1.16-4.05 1.16-3.13 0-5.78-2.11-6.73-4.96H1.19v3.15C3.18 21.31 7.25 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.19C.43 8.15 0 9.89 0 12s.43 3.85 1.19 5.39l4.08-3.15z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.25 0 3.18 2.69 1.19 6.61l4.08 3.15c.95-2.85 3.6-4.96 6.73-4.96z"/></svg>
           سجّل بحساب Google
         </button>
-        <div class="flex items-center gap-3 text-[12px] font-semibold text-[color:var(--muted)]"><span class="flex-1 border-t border-[color:var(--line)]"></span> أو برمز يُرسل إلى بريدك <span class="flex-1 border-t border-[color:var(--line)]"></span></div>
-        <div>
+        <div id="reg-or" class="flex items-center gap-3 text-[12px] font-semibold text-[color:var(--muted)]"><span class="flex-1 border-t border-[color:var(--line)]"></span> أو برمز يُرسل إلى بريدك <span class="flex-1 border-t border-[color:var(--line)]"></span></div>
+        <div id="reg-email-wrap">
           <label for="reg-email" class="lbl">البريد الإلكتروني</label>
           <input type="email" id="reg-email" placeholder="name@domain.com" class="field" dir="ltr">
         </div>
         <button type="submit" id="submit-btn" class="btn btn-main w-full py-4 text-[15px] disabled:opacity-60">
           <span id="btn-text">أرسل رمز التحقق</span> <i id="btn-spinner" class="ph-bold ph-spinner-gap ph-spin hidden"></i>
         </button>
-        <p class="text-[13px] font-bold text-center">لديك حساب؟ <a href="login.html" class="underline underline-offset-4 text-[color:var(--brand)]">سجّل الدخول من هنا</a></p>
+        <p id="reg-login-link" class="text-[13px] font-bold text-center">لديك حساب؟ <a href="login.html" class="underline underline-offset-4 text-[color:var(--brand)]">سجّل الدخول من هنا</a></p>
         <p class="text-[12px] font-semibold text-[color:var(--muted)] text-center">بالتسجيل توافق على <a href="terms.html" target="_blank" class="underline">الشروط والأحكام</a> و<a href="privacy.html" target="_blank" class="underline">سياسة الخصوصية</a>.</p>
       </form>
 
@@ -746,6 +760,7 @@
   $('register-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (needFeatures()) return;
+    if (signedSignup) return createSignedInStore();
     const name = $('reg-name').value.trim();
     const email = $('reg-email').value.trim().toLowerCase();
     const phone = normalizeMobile($('reg-phone').value);
@@ -835,25 +850,67 @@
     $('google-btn').disabled = true;
     location.href = DM.googleUrl(location.origin + location.pathname);
   }
+  const stopWaiting = () => document.documentElement.classList.remove('oauth-return');
+
+  // داخل بحسابه وما عنده منشأة: نخفي Google والبريد ونخليه يكمل البيانات بس
+  let signedSignup = false;
+  function continueSignedIn() {
+    signedSignup = true;
+    const s = DM.session() || {};
+    $('signed-email').textContent = s.email || (s.user && s.user.email) || '';
+    $('signed-note').classList.remove('hidden');
+    ['google-btn', 'reg-or', 'reg-email-wrap', 'reg-login-link'].forEach(id => { $(id).style.display = 'none'; });
+    $('btn-text').textContent = 'إنشاء الحساب';
+    stopWaiting();
+    // بعد ما تكتمل الصفحة (الخطوط والصور تحرّك المكان)
+    const go = () => $('register').scrollIntoView({ block: 'start', behavior: 'instant' });
+    go(); window.addEventListener('load', () => setTimeout(go, 50), { once: true });
+  }
+  async function useAnotherAccount() {
+    try { await DM.logout(); } catch {}
+    location.replace(location.pathname + '#register');
+  }
+  async function registerSignedIn(data) {
+    await DM.post('/api/owner?action=register', { name: data.name, phone: data.phone, business_type: data.businessType, business_label: data.businessLabel, plan: data.plan, features: data.features }, true);
+    try { localStorage.removeItem(CHOICE_KEY); } catch {}
+  }
+  async function createSignedInStore() {
+    const name = $('reg-name').value.trim();
+    const phone = normalizeMobile($('reg-phone').value);
+    if (!name) { $('reg-name').focus(); return showToast('أدخل اسم المنشأة', 'error'); }
+    if (!phone) { $('reg-phone').focus(); return showToast('رقم الجوال غير صحيح، تأكد من رمز الدولة والرقم', 'error'); }
+    if (businessType() === 'other' && !businessLabel()) { $('reg-label').focus(); return showToast('أدخل نوع نشاطك', 'error'); }
+    setRegisterBusy(true);
+    try { await registerSignedIn({ name, phone, businessType: businessType(), businessLabel: businessLabel(), ...planPayload() }); }
+    catch (e) { if (e.code !== 'EMAIL_TAKEN') { setRegisterBusy(false); return showToast(e.message || 'تعذّر إنشاء الحساب، حاول مرة أخرى', 'error'); } }
+    location.replace('admin.html');
+  }
+
+  // الرجوع من Google: ننشئ الحساب ونروح للوحة على طول (شاشة الانتظار ظاهرة من أول ما فتحت الصفحة)
   async function finishGoogleSignup() {
     let session;
-    try { session = await DM.consumeOAuthRedirect(); } catch (e) { showToast(e.message, 'error'); return; }
-    if (!session) return;
+    try { session = await DM.consumeOAuthRedirect(); } catch (e) { stopWaiting(); showToast(e.message, 'error'); return; }
+    if (!session) {
+      if (new URLSearchParams(location.search).get('continue') === 'signup' && DM.signedIn()) continueSignedIn();
+      return;
+    }
     let pending = null;
     try { pending = JSON.parse(localStorage.getItem(PENDING_KEY) || 'null'); } catch {}
     if (pending && Date.now() - (pending.at || 0) > 3600e3) pending = null;
     try { localStorage.removeItem(PENDING_KEY); } catch {}
-    if (!pending) { location.href = 'login.html'; return; }
-    showToast('جاري إنشاء حسابك...', 'info');
-    try {
-      await DM.post('/api/owner?action=register', { name: pending.name, phone: pending.phone, business_type: pending.businessType, business_label: pending.businessLabel, plan: pending.plan, features: pending.features }, true);
-      try { localStorage.removeItem(CHOICE_KEY); } catch {}
-      showToast('حسابك جاهز! تجربتك المجانية بدأت', 'success');
-    } catch (e) {
-      if (e.code !== 'EMAIL_TAKEN') return showToast(e.message || 'تعذّر إنشاء الحساب، حاول مرة أخرى', 'error');
-      showToast('هذا الحساب مرتبط بمنشأة مسجّلة مسبقاً، جارٍ تحويلك...', 'info');
+    if (!pending) {
+      // ما عندنا بياناته (مثلاً ضغط Google من مكان ثاني): لو عنده منشأة يدخل، وإلا يكمل البيانات
+      let who = null;
+      try { who = await DM.get('/api/owner?action=whoami', true); } catch {}
+      if (who && who.is_admin) return location.replace('super-admin.html');
+      if (who && who.has_store) return location.replace('admin.html');
+      return continueSignedIn();
     }
-    setTimeout(() => { location.href = 'admin.html'; }, 1200);
+    try { await registerSignedIn(pending); }
+    catch (e) {
+      if (e.code !== 'EMAIL_TAKEN') { $('reg-name').value = pending.name || ''; continueSignedIn(); return showToast(e.message || 'تعذّر إنشاء الحساب، حاول مرة أخرى', 'error'); }
+    }
+    location.replace('admin.html');
   }
   finishGoogleSignup();
 

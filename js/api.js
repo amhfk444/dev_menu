@@ -148,12 +148,16 @@
     const access = hash.get('access_token');
     if (!access) return null;
     clean();
+    // البريد موجود داخل التوكن نفسه، فما نحتاج طلب ثاني (إلا لو ما لقيناه)
     let email = '';
-    try {
-      const r = await fetch(`${AUTH_URL}/user`, { headers: { apikey: AUTH_KEY, Authorization: `Bearer ${access}` } });
-      const u = await r.json();
-      email = (u && u.email ? u.email : '').toLowerCase();
-    } catch {}
+    try { email = String(JSON.parse(atob(access.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).email || '').toLowerCase(); } catch {}
+    if (!email) {
+      try {
+        const r = await fetch(`${AUTH_URL}/user`, { headers: { apikey: AUTH_KEY, Authorization: `Bearer ${access}` } });
+        const u = await r.json();
+        email = (u && u.email ? u.email : '').toLowerCase();
+      } catch {}
+    }
     const s = {
       access_token: access,
       refresh_token: hash.get('refresh_token'),
