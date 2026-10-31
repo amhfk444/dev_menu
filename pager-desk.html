@@ -51,6 +51,24 @@
     #print-card, #print-card * { visibility: visible; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     #print-card { position: fixed; inset: 0; margin: auto; box-shadow: none; }
   }
+
+  /* ═══ نفس أساس النظام: Shopify Polaris (@shopify/polaris-tokens 9.4.2)، وأخضر DEV MENU ═══ */
+  :root { --brand: #384f3d; --brand-dark: #2a3e2f; --sand: #f1f1f1;
+    --shadow-card: 0 1px 0 rgba(26,26,26,.07), inset 1px 0 0 rgba(0,0,0,.13), inset -1px 0 0 rgba(0,0,0,.13), inset 0 -1px 0 rgba(0,0,0,.17), inset 0 1px 0 rgba(204,204,204,.5);
+    --shadow-button: inset 0 -1px 0 #b5b5b5, inset 0 0 0 1px rgba(0,0,0,.1), inset 0 .5px 0 1.5px #fff;
+    --shadow-primary: inset 0 -1px 0 1px rgba(0,0,0,.55), inset 0 0 0 1px var(--brand), inset 0 .5px 0 1.5px rgba(255,255,255,.25); }
+  body { background: #f1f1f1; color: #303030; }
+  header.sticky { background: rgba(241,241,241,.94) !important; border-bottom-color: #e3e3e3 !important; }
+  .panel { border: 0; border-radius: 12px; box-shadow: var(--shadow-card); }
+  .tile { border-radius: 12px; }
+  .tile-wait { background: var(--brand); color: #fff; box-shadow: var(--shadow-primary); }
+  .tile-wait:hover { background: var(--brand-dark); box-shadow: var(--shadow-primary); }
+  .tile-ready { background: #fff8db; color: #4f4700; border: 0; box-shadow: var(--shadow-card), inset 0 0 0 2px rgba(201,162,39,.55); }
+  .mini { border-radius: 8px; font-weight: 600; }
+  header .mini.bg-white, header a.mini.bg-white, header button[data-lang-toggle] { border: 0 !important; box-shadow: var(--shadow-button); }
+  header .mini.bg-white:hover, header button[data-lang-toggle]:hover { background: rgba(56,79,61,.12); color: var(--brand); }
+  header .mini.bg-\[\#233d2c\] { background: var(--brand); box-shadow: var(--shadow-primary); }
+  #search { border-radius: 8px; }
 </style>
 <link rel="stylesheet" href="/css/tw/pager-desk.css">
 <style>body.desk .owner-only { display: none !important; }
@@ -74,7 +92,7 @@
       </div>
     </div>
     <div class="flex gap-2 overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0 pb-0.5 [&>*]:shrink-0 [&>*]:whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      <button id="scan-btn" class="mini bg-[#233d2c] text-white hidden"><i class="ph-bold ph-camera"></i> امسح بطاقة زبون</button>
+      <button id="scan-btn" class="mini bg-[#384f3d] text-white hidden"><i class="ph-bold ph-camera"></i> امسح بطاقة زبون</button>
       <button id="stamp-btn" class="mini bg-[#c9a227] text-[#15271b] hidden"><i class="ph-bold ph-seal-check"></i> كود ختم</button>
       <button id="join-btn" class="mini bg-white border border-[#233d2c]/15 hidden"><i class="ph-bold ph-user-plus"></i> QR تسجيل الولاء</button>
       <a id="kiosk-btn" href="kiosk.html" onclick="this.href='kiosk.html'+location.search" class="mini bg-white border border-[#233d2c]/15 hidden"><i class="ph-bold ph-device-tablet"></i> شاشة الزبون</a>
@@ -94,7 +112,7 @@
     <h2 class="text-lg font-black mb-1">بطاقة الولاء</h2>
     <p class="text-sm font-bold opacity-60 mb-5">بعد ما يدفع الزبون: اطلب منه يفتح بطاقته وامسح الكود اللي فيها.</p>
     <div class="grid sm:grid-cols-3 gap-3">
-      <button data-open="scan-btn" class="bg-[#233d2c] text-white rounded-2xl p-5 text-right"><i class="ph-bold ph-camera text-3xl text-[#c9a227]"></i><b class="block text-lg mt-2">امسح بطاقة زبون</b><span class="text-xs opacity-70">بالكاميرا أو برقم العضوية</span></button>
+      <button data-open="scan-btn" class="bg-[#384f3d] text-white rounded-2xl p-5 text-right"><i class="ph-bold ph-camera text-3xl text-[#c9a227]"></i><b class="block text-lg mt-2">امسح بطاقة زبون</b><span class="text-xs opacity-70">بالكاميرا أو برقم العضوية</span></button>
       <button data-open="stamp-btn" class="bg-[#c9a227] text-[#15271b] rounded-2xl p-5 text-right"><i class="ph-bold ph-seal-check text-3xl"></i><b class="block text-lg mt-2">كود ختم</b><span class="text-xs opacity-70">الزبون يمسحه من جواله</span></button>
       <button data-open="join-btn" class="bg-white border border-[#233d2c]/15 rounded-2xl p-5 text-right"><i class="ph-bold ph-user-plus text-3xl"></i><b class="block text-lg mt-2">QR تسجيل الولاء</b><span class="text-xs opacity-70">للزبون الجديد يسجل في البطاقة</span></button>
       <a href="kiosk.html" onclick="this.href='kiosk.html'+location.search" class="sm:col-span-3 bg-white border border-[#233d2c]/15 rounded-2xl p-4 text-right flex items-center gap-3"><i class="ph-bold ph-device-tablet text-3xl"></i><span><b class="block">شاشة الختم للزبون</b><span class="text-xs opacity-70">تابلت ثابت: الزبون يقرّب كوده من الكاميرا وينختم تلقائياً</span></span></a>
@@ -108,7 +126,7 @@
     </div>
     <div class="relative mb-4">
       <i class="ph-bold ph-magnifying-glass absolute start-4 top-1/2 -translate-y-1/2 opacity-40"></i>
-      <input id="search" type="text" inputmode="numeric" autocomplete="off" placeholder="ابحث برقم الفاتورة أو رقم البيجر…" class="w-full bg-[#f5f2eb] border border-[#233d2c]/15 rounded-2xl py-3 ps-11 pe-4 text-base font-black outline-none focus:border-[#233d2c]">
+      <input id="search" type="text" inputmode="numeric" autocomplete="off" placeholder="ابحث برقم الفاتورة أو رقم البيجر…" class="w-full bg-[#fdfdfd] border border-[#8a8a8a] hover:border-[#616161] rounded-lg py-3 ps-11 pe-4 text-base font-semibold focus:outline focus:outline-2 focus:outline-[#005bd3] focus:outline-offset-1">
     </div>
     <div id="wait-grid" class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-7 gap-3"></div>
     <p id="wait-empty" class="text-center text-sm font-bold opacity-50 py-8 hidden">ما فيه أرقام تنتظر. أول ما يمسح العميل الـ QR يطلع رقمه هنا.</p>
@@ -128,7 +146,7 @@
     <input id="inv-input" type="text" inputmode="numeric" autocomplete="off" dir="ltr" maxlength="20" placeholder="1045" class="w-full text-center text-3xl font-black tracking-widest bg-[#f5f2eb] border-2 border-[#233d2c]/15 rounded-2xl py-4 outline-none focus:border-[#233d2c]">
     <p id="inv-err" class="hidden text-sm font-bold text-rose-700"></p>
     <div class="flex gap-2">
-      <button type="submit" id="inv-save" class="flex-1 bg-[#233d2c] text-[#f5f2eb] font-black rounded-2xl py-3">حفظ</button>
+      <button type="submit" id="inv-save" class="flex-1 bg-[#384f3d] text-[#f5f2eb] font-black rounded-2xl py-3">حفظ</button>
       <button type="button" id="inv-cancel" class="flex-1 bg-white border border-[#233d2c]/20 font-black rounded-2xl py-3">إلغاء</button>
     </div>
   </form>
@@ -168,14 +186,14 @@
     </div>
     <form id="scan-manual" class="flex gap-2" dir="rtl">
       <input id="scan-id" inputmode="numeric" placeholder="أو اكتب رقم العضوية" class="flex-1 min-w-0 rounded-2xl border border-[#233d2c]/20 px-4 py-3 font-bold text-center" dir="ltr">
-      <button class="bg-[#233d2c] text-white font-black rounded-2xl px-5">ختم</button>
+      <button class="bg-[#384f3d] text-white font-black rounded-2xl px-5">ختم</button>
     </form>
     <p id="tr-hint" class="rounded-2xl bg-[#fbf6e6] border border-[#c9a227]/40 px-3 py-2.5 text-[12px] font-bold text-right"><i class="ph-bold ph-arrows-left-right text-[#8a6d0f]"></i> عنده أختام من نظام قديم؟ امسح كوده أو اكتب رقم عضويته، ويطلع لك زر <b>نقل رصيد قديم</b></p>
     <!-- آخر عضو انمسح: نقل رصيد بطاقته القديمة -->
     <div id="tr-box" class="hidden rounded-2xl border-2 border-[#c9a227] bg-[#fbf6e6] p-3 text-right">
       <div class="flex items-center gap-2">
         <div class="flex-1 min-w-0"><p class="text-[11px] font-bold opacity-60">آخر عضو</p><p id="tr-who" class="font-black truncate"></p></div>
-        <button id="tr-open" class="shrink-0 bg-[#233d2c] text-white font-black rounded-xl px-3 py-2.5 text-sm"><i class="ph-bold ph-arrows-left-right"></i> نقل رصيد قديم</button>
+        <button id="tr-open" class="shrink-0 bg-[#384f3d] text-white font-black rounded-xl px-3 py-2.5 text-sm"><i class="ph-bold ph-arrows-left-right"></i> نقل رصيد قديم</button>
       </div>
       <div id="tr-pick" class="hidden mt-3">
         <p class="text-sm font-bold mb-2">كم ختم في بطاقته القديمة؟</p>
@@ -194,7 +212,7 @@
     <div id="stamp-qr" class="w-64 h-64 mx-auto grid place-items-center"></div>
     <p id="stamp-state" class="text-sm font-bold opacity-70"></p>
     <div class="flex gap-2">
-      <button id="stamp-new" class="flex-1 bg-[#233d2c] text-white font-black rounded-2xl py-3"><i class="ph-bold ph-arrow-clockwise"></i> كود جديد</button>
+      <button id="stamp-new" class="flex-1 bg-[#384f3d] text-white font-black rounded-2xl py-3"><i class="ph-bold ph-arrow-clockwise"></i> كود جديد</button>
       <button id="stamp-close" class="flex-1 bg-[#f5f2eb] font-black rounded-2xl py-3">إغلاق</button>
     </div>
     <p class="text-[11px] opacity-50">الكود يصلح لزبون واحد ولمدة 90 ثانية</p>
@@ -326,7 +344,7 @@
         <div class="text-[11px] mt-1 opacity-70">${ringLabel(t)}</div>
         ${t.reward ? `<button class="mini w-full mt-1.5 bg-[#c9a227] text-[#15271b] rw-pulse" data-reward="${t.id}"><i class="ph-bold ph-gift"></i> عنده مكافأة</button>` : ''}
         <div class="flex gap-1.5 mt-3">
-          <button class="mini flex-1 bg-[#233d2c] text-white" data-done="${t.id}"><i class="ph-bold ph-check"></i> ${T.deskDone}</button>
+          <button class="mini flex-1 bg-[#384f3d] text-white" data-done="${t.id}"><i class="ph-bold ph-check"></i> ${T.deskDone}</button>
           <button class="mini bg-white border border-[#c9a227]/40" data-undo="${t.id}" title="إرجاع للتجهيز"><i class="ph-bold ph-arrow-counter-clockwise"></i></button>
         </div>
       </div>`).join('');
@@ -510,7 +528,7 @@
     $('rw-who').textContent = who.name || '';
     $('rw-list').innerHTML = rewards.map((r, i) => `<div class="flex items-center justify-between gap-3 bg-[#fbf6e6] border border-[#c9a227]/40 rounded-2xl p-3">
       <span class="font-black text-right"><i class="ph-bold ph-gift text-[#8a6d0f]"></i> ${esc(r.label)}</span>
-      <button class="bg-[#233d2c] text-white font-black rounded-xl px-4 py-2.5 shrink-0" data-rw-type="${r.type}" data-rw-code="${esc(r.code || '')}">اصرف الحين</button></div>`).join('');
+      <button class="bg-[#384f3d] text-white font-black rounded-xl px-4 py-2.5 shrink-0" data-rw-type="${r.type}" data-rw-code="${esc(r.code || '')}">اصرف الحين</button></div>`).join('');
     $('rw-modal').classList.replace('hidden', 'flex');
   }
   $('rw-later').onclick = () => $('rw-modal').classList.replace('flex', 'hidden');
@@ -603,7 +621,7 @@
   const mins = (m) => m == null ? '—' : m < 1 ? 'أقل من دقيقة' : `${Math.round(m)} د`;
   async function loadStats() {
     $('st-days').textContent = stDays;
-    $('st-range').innerHTML = [7, 30, 90].map(d => `<button data-d="${d}" class="px-3 py-1.5 rounded-xl text-xs font-black ${d === stDays ? 'bg-[#233d2c] text-white' : 'bg-white border border-[#233d2c]/15'}">${d} يوم</button>`).join('');
+    $('st-range').innerHTML = [7, 30, 90].map(d => `<button data-d="${d}" class="px-3 py-1.5 rounded-xl text-xs font-black ${d === stDays ? 'bg-[#384f3d] text-white' : 'bg-white border border-[#233d2c]/15'}">${d} يوم</button>`).join('');
     $('st-body').innerHTML = '<p class="text-center opacity-60 font-bold py-10"><i class="ph-bold ph-spinner-gap ph-spin"></i></p>';
     let r;
     try { r = await call(`pager-stats&days=${stDays}`); } catch (e) { $('st-body').innerHTML = `<p class="text-center font-bold text-rose-700 py-8">${esc(e.message || 'ما قدرنا نحمّل الصفحة. تأكد من الإنترنت وحدّثها')}</p>`; return; }
@@ -625,13 +643,13 @@
       <div class="bg-white rounded-2xl border border-[#233d2c]/10 p-4">
         <div class="flex flex-wrap items-baseline justify-between gap-2"><p class="font-black">الزحمة حسب الساعة</p>
           <p class="text-xs font-bold opacity-60">${peak ? `الذروة ${hl(peak.h)} (${peak.n} رقم)` : ''}${slow ? ` · أبطأ ساعة ${hl(slow.h)} (${mins(slow.wait)} انتظار)` : ''}</p></div>
-        <div class="flex items-end gap-1 h-36 mt-4" dir="ltr">${r.hours.map(h => `<div class="flex-1 flex flex-col items-center justify-end h-full" title="${hl(h.h)}: ${h.n} رقم${h.wait != null ? `، انتظار ${mins(h.wait)}` : ''}"><div class="w-full rounded-t ${h.wait != null && h.wait > (r.wait.avg || 0) * 1.4 ? 'bg-[#c9a227]' : 'bg-[#233d2c]/75'}" style="height:${h.n ? Math.max(4, h.n / maxN * 100) : 0}%"></div></div>`).join('')}</div>
+        <div class="flex items-end gap-1 h-36 mt-4" dir="ltr">${r.hours.map(h => `<div class="flex-1 flex flex-col items-center justify-end h-full" title="${hl(h.h)}: ${h.n} رقم${h.wait != null ? `، انتظار ${mins(h.wait)}` : ''}"><div class="w-full rounded-t ${h.wait != null && h.wait > (r.wait.avg || 0) * 1.4 ? 'bg-[#c9a227]' : 'bg-[#384f3d]/75'}" style="height:${h.n ? Math.max(4, h.n / maxN * 100) : 0}%"></div></div>`).join('')}</div>
         <div class="flex justify-between text-[10px] font-bold opacity-50 mt-1" dir="ltr"><span>12 ص</span><span>6 ص</span><span>12 م</span><span>6 م</span><span>11 م</span></div>
         <p class="text-[11px] font-bold opacity-55 mt-2"><span class="inline-block w-2.5 h-2.5 rounded-sm bg-[#c9a227] align-middle"></span> ساعات انتظارها أطول من المعتاد</p>
       </div>
       ${R.n ? `<div class="bg-white rounded-2xl border border-[#233d2c]/10 p-4 space-y-3">
         <p class="font-black">تقييمات الزبائن</p>
-        ${[5, 4, 3, 2, 1].map(k => `<div class="flex items-center gap-2 text-xs font-bold"><span class="w-8" dir="ltr">${k} ★</span><div class="flex-1 h-2.5 rounded-full bg-[#233d2c]/10 overflow-hidden"><div class="h-full ${k >= 4 ? 'bg-emerald-600' : k === 3 ? 'bg-[#c9a227]' : 'bg-rose-600'}" style="width:${R.dist[k - 1] / R.n * 100}%"></div></div><span class="w-8 text-left">${R.dist[k - 1]}</span></div>`).join('')}
+        ${[5, 4, 3, 2, 1].map(k => `<div class="flex items-center gap-2 text-xs font-bold"><span class="w-8" dir="ltr">${k} ★</span><div class="flex-1 h-2.5 rounded-full bg-[#384f3d]/10 overflow-hidden"><div class="h-full ${k >= 4 ? 'bg-emerald-600' : k === 3 ? 'bg-[#c9a227]' : 'bg-rose-600'}" style="width:${R.dist[k - 1] / R.n * 100}%"></div></div><span class="w-8 text-left">${R.dist[k - 1]}</span></div>`).join('')}
         ${R.notes.length ? `<div class="divide-y divide-[#233d2c]/10 text-sm">${R.notes.map(x => `<p class="py-2"><b class="${x.r >= 4 ? 'text-emerald-700' : 'text-rose-700'}" dir="ltr">${x.r} ★</b> ${esc(x.note)}</p>`).join('')}</div>` : ''}
       </div>` : ''}
       <p class="text-[11px] font-bold opacity-50">متوسط الخدمة (من أخذ الرقم لين الاستلام): ${mins(r.service.avg)} · ألغيت ${r.cancelled}</p>`;
