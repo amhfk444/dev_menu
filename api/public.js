@@ -21,7 +21,8 @@ async function findStore(rawSlug) {
   // عمود العملة من 23-currency.sql — لو ما انضاف للحين نكمل بدونه (الريال افتراضياً)
   // وخلفية صفحة الروابط من 67-links-background.sql — قبل إضافتها تاخذ الصفحة خلفية المنيو
   let found;
-  for (const extra of [',currency,links_bg_image_url,links_bg_video_url,links_order,links_hidden', ',currency', '']) {
+  const LINKS = ',links_bg_image_url,links_bg_video_url,links_order,links_hidden';
+  for (const extra of [',currency' + LINKS, LINKS, ',currency', '']) {
     try { found = await findPublicStore(rawSlug, STORE_FIELDS + extra); break; }
     catch (e) { if (!extra) throw e; }
   }
