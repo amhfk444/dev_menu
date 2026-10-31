@@ -355,16 +355,17 @@
 
     <!-- ═════════ الشريط العلوي ═════════ -->
     <header class="sticky top-0 z-20 bg-sand/85 backdrop-blur-xl border-b border-brand/15">
-      <div class="px-4 md:px-8 h-16 flex items-center justify-between gap-3">
-        <div class="flex items-center gap-3 min-w-0">
+      <!-- الجوال: اسم الصفحة سطر كامل، والفرع والأزرار ينزلون سطر تحته لو ما وسعتهم المساحة -->
+      <div class="px-4 md:px-8 py-2 md:py-0 md:h-16 flex flex-wrap md:flex-nowrap items-center justify-between gap-x-3 gap-y-2">
+        <div class="flex items-center gap-3 min-w-[55%] flex-1 md:min-w-0">
           <img id="mobile-logo" src="images/logo.jpeg" alt="" class="lg:hidden w-9 h-9 rounded-lg object-cover border border-brand/20" onerror="this.onerror=null;this.src='images/logo.jpeg'">
           <div class="min-w-0">
             <h1 id="page-title" class="text-base font-black leading-tight">الرئيسية</h1>
             <p id="page-subtitle" class="text-[11px] text-ink/60 truncate"></p>
           </div>
         </div>
-        <div class="flex items-center gap-2 shrink-0">
-          <select id="branch-switch" onchange="switchBranch(this.value)" aria-label="الفرع" class="hidden max-w-[150px] sm:max-w-[220px] text-xs font-bold bg-cream border border-brand/25 rounded-xl px-2.5 py-2 text-ink"></select>
+        <div class="flex items-center gap-2 shrink-0 max-md:w-full max-md:justify-end">
+          <select id="branch-switch" onchange="switchBranch(this.value)" aria-label="الفرع" class="hidden max-md:flex-1 max-md:min-w-0 md:max-w-[220px] text-xs font-bold bg-cream border border-brand/25 rounded-xl px-2.5 py-2 text-ink"></select>
           <span id="admin-mode-badge" class="hidden text-[10px] font-bold bg-amber-400/15 text-amber-700 border border-amber-400/30 px-2.5 py-1 rounded-full"><i class="ph-bold ph-crown"></i> وضع المدير العام</span>
           <button type="button" onclick="openAccount()" aria-label="معلومات الحساب" title="معلومات الحساب" class="bg-cream hover:bg-brand/5 text-ink w-9 h-9 rounded-xl border border-brand/25 flex items-center justify-center"><i class="ph-bold ph-identification-card text-sm"></i></button>
           <button type="button" data-lang-toggle class="text-xs bg-cream border border-brand/25 text-ink font-bold px-3 py-2 rounded-xl"></button>
