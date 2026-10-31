@@ -51,6 +51,9 @@
   .lnk.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); box-shadow: 0 10px 28px -10px var(--accent-glow); }
   .lnk.primary .ico { background: rgba(0, 0, 0, 0.12); }
   .lnk.primary .arrow { color: inherit; opacity: .7; }
+  .lnk .txt { flex: 1; min-width: 0; }
+  .lnk .sub { display: block; font-size: 11px; font-weight: 500; color: var(--fg3); margin-top: 2px; }
+  .lnk.primary .sub { color: inherit; opacity: .75; }
   .group-title { font-size: 11px; font-weight: 800; color: var(--fg3); padding: 8px 4px 0; }
 </style>
 <link rel="stylesheet" href="/css/tw/links.css">
@@ -106,12 +109,12 @@
   const TYPE_LABELS = { restaurant: 'RESTAURANT', cafe: 'SPECIALTY COFFEE', mixed: 'RESTAURANT & CAFE', bakery: 'BAKERY & SWEETS' };
 
   // زر واحد: href لازم يكون آمن مسبقاً، والأيقونة إما class أو صورة
-  function linkBtn({ href, label, icon, img, primary = false, external = true }) {
+  function linkBtn({ href, label, sub = '', icon, img, primary = false, external = true }) {
     const ico = img
       ? `<span class="ico" style="background:#fff"><img src="${esc(img)}" alt="" data-l="${esc(label.charAt(0))}" class="w-6 h-6 object-contain" onerror="this.parentNode.textContent=this.dataset.l;this.parentNode.style.color='#000'"></span>`
       : `<span class="ico"><i class="${icon}"></i></span>`;
     return `<a href="${esc(href)}" ${external ? 'target="_blank" rel="noopener"' : ''} class="lnk${primary ? ' primary' : ''}">
-      ${ico}<span class="truncate">${esc(label)}</span><i class="ph-bold ph-caret-left arrow"></i></a>`;
+      ${ico}<span class="txt"><span class="block truncate">${esc(label)}</span>${sub ? `<span class="sub truncate">${esc(sub)}</span>` : ''}</span><i class="ph-bold ph-caret-left arrow"></i></a>`;
   }
   const group = (title, items) => items.length ? `<p class="group-title">${esc(title)}</p>${items.join('')}` : '';
 
@@ -155,18 +158,18 @@
 
     // 1) المنيو و 2) قائمة الانتظار
     const sv = p.services || { menu: true };
-    if (sv.menu) out.push(linkBtn({ href: DM.storePage('menu', p.client_slug), label: 'عرض المنيو', icon: 'ph-bold ph-fork-knife', primary: true, external: false }));
-    if (sv.pager) out.push(linkBtn({ href: DM.storePage('pager', p.client_slug), label: 'خذ رقمك', icon: 'ph-bold ph-bell', primary: !sv.menu, external: false }));
-    if (sv.loyalty) out.push(linkBtn({ href: DM.storePage('loyalty', p.client_slug), label: 'بطاقة الولاء', icon: 'ph-bold ph-seal-check', external: false }));
-    if (p.waitlist_open === true) out.push(linkBtn({ href: DM.storePage('waitlist', p.client_slug), label: 'انضم لقائمة الانتظار', icon: 'ph-bold ph-hourglass-medium', external: false }));
+    if (sv.menu) out.push(linkBtn({ href: DM.storePage('menu', p.client_slug), label: 'عرض المنيو', sub: 'تصفّح الأصناف والأسعار', icon: 'ph-bold ph-fork-knife', primary: true, external: false }));
+    if (sv.pager) out.push(linkBtn({ href: DM.storePage('pager', p.client_slug), label: 'البيجر', sub: 'احصل على رقم انتظار وننبهك عند جاهزية طلبك', icon: 'ph-bold ph-bell', primary: !sv.menu, external: false }));
+    if (sv.loyalty) out.push(linkBtn({ href: DM.storePage('loyalty', p.client_slug), label: 'بطاقة الولاء', sub: 'اجمع الأختام واحصل على مكافأتك', icon: 'ph-bold ph-seal-check', external: false }));
+    if (p.waitlist_open === true) out.push(linkBtn({ href: DM.storePage('waitlist', p.client_slug), label: 'انضم لقائمة الانتظار', sub: 'سجّل اسمك وننبهك عند حلول دورك', icon: 'ph-bold ph-hourglass-medium', external: false }));
 
     // 3) أرقام الطلبات و 4) واتساب
     const contact = (Array.isArray(p.order_numbers) ? p.order_numbers : [])
       .map(n => ({ label: String((n && n.label) || '').trim(), phone: String((n && n.phone) || '').replace(/[^\d+]/g, '') }))
       .filter(n => /^\+?\d{9,15}$/.test(n.phone))
-      .map(n => linkBtn({ href: `tel:${n.phone}`, label: n.label || `اتصل بنا ${n.phone}`, icon: 'ph-bold ph-phone', external: false }));
+      .map(n => linkBtn({ href: `tel:${n.phone}`, label: n.label || `اتصل بنا ${n.phone}`, sub: 'اتصل واطلب مباشرة', icon: 'ph-bold ph-phone', external: false }));
     const wa = String(p.whatsapp_number || '').replace(/\D/g, '');
-    if (wa) contact.push(linkBtn({ href: `https://wa.me/${wa}`, label: 'تواصل عبر واتساب', icon: 'ph-bold ph-whatsapp-logo' }));
+    if (wa) contact.push(linkBtn({ href: `https://wa.me/${wa}`, label: 'تواصل عبر واتساب', sub: 'راسلنا للطلب أو الاستفسار', icon: 'ph-bold ph-whatsapp-logo' }));
     sec.contact = group('الطلبات والتواصل', contact);
 
     // 5) تطبيقات التوصيل بشعاراتها
@@ -178,17 +181,17 @@
       if (!name) return '';
       let domain = meta ? meta[1] : '';
       if (!domain) { try { domain = new URL(url).hostname; } catch {} }
-      return linkBtn({ href: url, label: `اطلب عبر ${name}`, img: `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` });
+      return linkBtn({ href: url, label: `اطلب عبر ${name}`, sub: 'يصلك طلبك إلى باب منزلك', img: `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` });
     }).filter(Boolean);
     sec.delivery = group('تطبيقات التوصيل', delivery);
 
     // 6) روابط التواصل
     const social = [
-      [safeUrl(p.instagram_url), 'انستجرام', 'ph-bold ph-instagram-logo'],
-      [safeUrl(p.tiktok_url), 'تيك توك', 'ph-bold ph-tiktok-logo'],
-      [safeUrl(p.snapchat_url), 'سناب شات', 'ph-bold ph-snapchat-logo'],
-      [safeUrl(p.website_url), 'موقعنا الإلكتروني', 'ph-bold ph-globe']
-    ].filter(([u]) => u).map(([href, label, icon]) => linkBtn({ href, label, icon }));
+      [safeUrl(p.instagram_url), 'انستجرام', 'ph-bold ph-instagram-logo', 'صور وعروض المحل'],
+      [safeUrl(p.tiktok_url), 'تيك توك', 'ph-bold ph-tiktok-logo', 'فيديوهات المحل'],
+      [safeUrl(p.snapchat_url), 'سناب شات', 'ph-bold ph-snapchat-logo', 'يومياتنا أولاً بأول'],
+      [safeUrl(p.website_url), 'موقعنا الإلكتروني', 'ph-bold ph-globe', 'تعرّف علينا أكثر']
+    ].filter(([u]) => u).map(([href, label, icon, sub]) => linkBtn({ href, label, icon, sub }));
     sec.social = group('تابعنا', social);
 
     // 7) الروابط المخصصة
@@ -200,7 +203,7 @@
 
     // 8) الموقع على الخريطة
     const loc = safeUrl(p.location_url);
-    if (loc) sec.location = group('زورونا', [linkBtn({ href: loc, label: 'موقعنا على الخريطة', icon: 'ph-bold ph-map-pin' })]);
+    if (loc) sec.location = group('زورونا', [linkBtn({ href: loc, label: 'موقعنا على الخريطة', sub: 'الاتجاهات إلى المحل', icon: 'ph-bold ph-map-pin' })]);
 
     sec.services = out.join('');
     const order = [...(Array.isArray(p.links_order) ? p.links_order : []), ...LINKS_ORDER];
