@@ -10,7 +10,7 @@ const {
 const { followParentFeatures } = require('./_lib/branch-features');
 
 const { sendMail, mailConfigured } = require('./_lib/mail');
-const { PLAN_PRICE, invoiceNumber, invoiceEmail, branchProration } = require('./_lib/invoice');
+const { PLAN_PRICE, invoiceNumber, invoiceEmail, branchProration, branchInvoiceLines } = require('./_lib/invoice');
 const PLANS = require('./_lib/plans');
 const SECTORS = require('./_lib/sectors');
 
@@ -256,13 +256,13 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const client = (await rest(`clients?id=eq.${newId}&select=*`))[0];
     // فرع في نص الاشتراك: فاتورة مستحقة عن الأيام الباقية لين تجديد الحساب
     const main = (await rest(`clients?id=eq.${id}&select=id,name,email,subscription_status,subscription_plan,subscription_end_date`))[0];
-    const pr = branchProration(main, features);
+    // فاتورة وحدة مفصّلة: كل بند محسوب على الأيام الباقية، ومن التجديد الجاي يدخل الفرع بسعره الكامل في فاتورة الحساب
+    const bill = branchInvoiceLines(main, features, client.name);
     let invoice = null;
-    if (pr && pr.amount > 0) {
+    if (bill) {
       invoice = await sendInvoice(main, {
-        status: 'due', validUntil: pr.end,
-        lines: [{ label: `فرع جديد — ${client.name}`, detail: `ربط الفرع${features.length ? ` + ${features.map(k => PLANS.FEATURES[k].name).join(' + ')}` : ''}، ${pr.days} يوم لين تجديد الحساب`, amount: pr.amount }],
-        note: `بعد تاريخ التجديد يتجدد الفرع مع الحساب بـ ${pr.renew}. للدفع تواصل معنا عبر واتساب.`
+        status: 'due', validUntil: bill.pr.end, lines: bill.lines,
+        note: `الفرع "${client.name}" تفعّل الحين، وهذي الفاتورة عن ${bill.pr.days} يوم الباقية لين تجديد حسابك. من تاريخ التجديد يتجدد الفرع مع الحساب في نفس الفاتورة بسعره الكامل: ${bill.pr.renew}. للدفع تواصل معنا عبر واتساب.`
       });
     }
     // موافقة على طلب صاحب المحل: يتقفل الطلب ويطلع له الرد في لوحته
@@ -271,7 +271,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       const reply = `تمت إضافة فرع "${client.name}"، تلقاه في "فروعك" وتديره من نفس حسابك.${invoice && invoice.sent ? ` وأرسلنا الفاتورة على ${invoice.to}.` : ''}`;
       await rest(`support_requests?id=eq.${reqId}&client_id=eq.${id}`, { method: 'PATCH', body: { status: 'done', reply, handled_at: new Date().toISOString() } }).catch(() => {});
     }
-    return { client, invoice };
+    return { client, invoice, bill: bill ? { lines: bill.lines, total: bill.pr.amount, days: bill.pr.days, renew: bill.pr.renew } : null };
   }
 
   if (action === 'summary') {

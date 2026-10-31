@@ -28,6 +28,20 @@ function branchProration(parent, features, now = Date.now()) {
   return { days, amount: Math.round(price * days / (monthly ? 30 : 365)), end: parent.subscription_end_date, renew: `${price} ر.س ${monthly ? 'شهرياً' : 'سنوياً'}` };
 }
 
+// بنود فاتورة الفرع الجديد بالتفصيل: كل بند (ربط الفرع، كل ميزة، الخصم) محسوب على الأيام الباقية لين تجديد الحساب
+// والمجموع = نفس المبلغ النسبي للفرع (الفرق البسيط من التقريب ينضاف لآخر بند)
+function branchInvoiceLines(parent, features, branchName, now = Date.now()) {
+  const pr = branchProration(parent, features, now);
+  if (!pr || !(pr.amount > 0)) return null;
+  const monthly = parent.subscription_plan === 'month', p = monthly ? 'month' : 'year', full = monthly ? 30 : 365, per = monthly ? 'بالشهر' : 'بالسنة';
+  const own = PLANS.price(PLANS.ownBranch(features || []), p);
+  const items = [{ label: 'ربط الفرع', amount: PLANS.BRANCH[p] }, ...own.lines.map(l => ({ label: l.label, amount: l.amount })), ...own.discounts.map(d => ({ label: d.label, amount: -d.amount }))];
+  const lines = items.map(i => ({ label: `${i.label} — ${branchName}`, detail: `${sar(Math.abs(i.amount))} ${per} × ${pr.days} يوم من ${full}`, amount: Math.round(i.amount * pr.days / full) }));
+  const diff = pr.amount - lines.reduce((n, l) => n + l.amount, 0);
+  if (diff) lines[lines.length - 1].amount += diff;
+  return { lines, pr };
+}
+
 // paid = فاتورة مدفوعة (تفعيل/تجديد)، due = مستحقة الدفع (فرع في نص الاشتراك)
 function invoiceEmail({ store, lines, status = 'paid', validUntil, note = '', number }) {
   const total = lines.reduce((n, l) => n + Number(l.amount), 0);
@@ -83,4 +97,4 @@ function invoiceEmail({ store, lines, status = 'paid', validUntil, note = '', nu
   return { subject, html, text, total };
 }
 
-module.exports = { PLAN_PRICE, invoiceNumber, invoiceEmail, branchProration };
+module.exports = { PLAN_PRICE, invoiceNumber, invoiceEmail, branchProration, branchInvoiceLines };

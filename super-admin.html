@@ -364,7 +364,7 @@
           ${x.reply ? `<p class="text-[12px] text-ink/70"><b>ردك:</b> ${esc(x.reply)}</p>` : ''}
           <div class="flex flex-wrap gap-2 pt-1">
             ${x.kind === 'addon' && x.status === 'open' && x.meta && x.meta.branch_id ? `<button type="button" onclick="approveBranchFeatures(${x.id})" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-emerald-700 text-white"><i class="ph-bold ph-sliders-horizontal"></i> فعّل مميزات "${esc(x.meta.name || '')}"</button>` : ''}
-            ${x.kind === 'branch' && x.status === 'open' && x.meta && x.meta.name ? `<button type="button" onclick="approveBranch(${x.id})" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-emerald-700 text-white"><i class="ph-bold ph-git-branch"></i> أضف الفرع "${esc(x.meta.name)}"</button>` : ''}
+            ${x.kind === 'branch' && x.status === 'open' && x.meta && x.meta.name ? `<button type="button" onclick="approveBranch(${x.id})" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-emerald-700 text-white"><i class="ph-bold ph-git-branch"></i> وافق وأضف الفرع "${esc(x.meta.name)}"</button><button type="button" onclick="editBranchRequest(${x.id})" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-white border border-[#233d2c]/20"><i class="ph-bold ph-pencil-simple"></i> عدّل قبل الإضافة</button>` : ''}
             <button type="button" onclick="replySupport(${x.id})" class="text-[11px] font-bold px-3 py-1.5 rounded-lg ${x.kind === 'branch' && x.status === 'open' ? 'border border-ink/15' : 'bg-ink text-white'}">${x.reply ? 'عدّل الرد' : x.kind === 'branch' && x.status === 'open' ? 'اعتذر برد' : 'رد'}</button>
             <button type="button" onclick="setSupport(${x.id}, '${x.status === 'open' ? 'done' : 'open'}')" class="text-[11px] font-bold px-3 py-1.5 rounded-lg border border-ink/15">${x.status === 'open' ? 'تم' : 'رجّعه مفتوح'}</button>
             ${c.phone ? `<span class="text-[11px] text-ink/50 self-center" dir="ltr">${esc(c.phone)}</span>` : ''}
@@ -387,8 +387,20 @@
     if (!find(x.meta.branch_id)) return showToast('الفرع غير موجود في القائمة، حدّث الصفحة', true);
     openFeatures(x.meta.branch_id, { features: x.meta.features, requestId: rid });
   }
-  // طلب فرع من صاحب المحل: نفس نافذة "إضافة فرع" معبّاة بطلبه، وبعد الإنشاء يتقفل الطلب ويوصله الرد
-  function approveBranch(rid) {
+  // طلب فرع من صاحب المحل: موافقة بضغطة تضيف الفرع بالمميزات اللي اختارها، وتطلع فاتورة الأيام الباقية
+  async function approveBranch(rid) {
+    const x = supRows.find(r => r.id === rid); if (!x || !x.meta) return;
+    const c = find(x.client_id);
+    if (!c) return showToast('المتجر غير موجود في القائمة، حدّث الصفحة', true);
+    const features = DMPlans.clean(DMPlans.ownBranch(x.meta.features || [])), copyMenu = features.includes('menu') && !x.meta.empty_menu;
+    const ok = await DMDialog.confirm({
+      title: `إضافة فرع "${x.meta.name}"`, icon: 'ph-git-branch', tone: 'success',
+      message: `لحساب "${c.name}"\nالمميزات: ${features.length ? featNames(features) : 'مميزات الحساب فقط'}${features.includes('menu') ? `\nالمنيو: ${copyMenu ? 'نسخة من منيو المتجر' : 'منيو فارغ'}` : ''}\n\n${branchProration(c, features).text}`,
+      confirmText: 'أضف الفرع', cancelText: 'تراجع'
+    });
+    if (ok) createBranch(c, { name: x.meta.name, features, copyMenu, slug: '', requestId: rid });
+  }
+  function editBranchRequest(rid) {
     const x = supRows.find(r => r.id === rid); if (!x || !x.meta) return;
     if (!find(x.client_id)) return showToast('المتجر غير موجود في القائمة، حدّث الصفحة', true);
     addBranch(x.client_id, { name: x.meta.name, features: x.meta.features, menu: x.meta.empty_menu ? 'empty' : 'copy', requestId: rid });
@@ -678,19 +690,25 @@
       note: 'الفرع ضمن نفس اشتراك الحساب ويتجدد معه، وصاحب المتجر يديره من قائمة الفروع في لوحته.'
     });
     if (!r) return;
-    const name = r.name, features = DMPlans.clean(r.features), copyMenu = features.includes('menu') && r.menu !== 'empty', slug = r.slug.toLowerCase();
+    createBranch(c, { name: r.name, features: DMPlans.clean(r.features), copyMenu: DMPlans.clean(r.features).includes('menu') && r.menu !== 'empty', slug: r.slug.toLowerCase(), requestId: pre.requestId });
+  }
+  // ينشئ الفرع: مربوط بالحساب ويتجدد معه، وفاتورة وحدة مفصّلة عن الأيام الباقية (تنرسل بالبريد، وتقدر ترسلها واتساب)
+  async function createBranch(c, { name, features, copyMenu, slug, requestId }) {
+    const id = c.id, pre = { requestId };
     try {
       const res = await DM.post(A('branch-create'), { id, name, slug, features, empty_menu: !copyMenu, ...(pre.requestId ? { request_id: pre.requestId } : {}) }, true).catch(e => { throw forbidden(e); });
       loadClients(); if (pre.requestId) loadSupport();
       // فاتورة الفرع: الأيام الباقية لين تجديد الحساب
       const pr = branchProration(c, features), phone = waPhone(c.phone);
-      const msg = pr.amount
-        ? `مرحباً، معك فريق DEV MENU 👋\nتم إضافة فرع "${name}" لحساب "${c.name}".\nمميزات الفرع: ${featNames(features)}.\nالمستحق الآن: ${pr.amount} ر.س عن ${pr.days} يوم الباقية لين تجديد اشتراكك في ${statusOf(c).endText}.\nبعدها يتجدد الفرع مع الحساب بـ ${pr.price} ر.س ${pr.per}.\nرابط الفرع: ${DM.storeUrl(res.client.client_slug)}`
+      // الفاتورة نفسها بتفاصيلها (من الخادم): كل بند عن الأيام الباقية، والمجموع
+      const bill = res.bill, items = bill ? bill.lines.map(l => `• ${l.label.split(' — ')[0]}: ${l.amount} ر.س`).join('\n') : '';
+      const msg = bill
+        ? `مرحباً، معك فريق DEV MENU 👋\nتم تفعيل فرع "${name}" لحساب "${c.name}"، وهو مربوط بحسابك ويتجدد معه.\n\nفاتورة الفرع عن ${bill.days} يوم الباقية لين تجديد اشتراكك في ${statusOf(c).endText}:\n${items}\nالمبلغ المستحق: ${bill.total} ر.س\n\nمن تاريخ التجديد يدخل الفرع في فاتورة حسابك بسعره الكامل: ${bill.renew}.\nرابط الفرع: ${DM.storeUrl(res.client.client_slug)}`
         : `مرحباً، معك فريق DEV MENU 👋\nتم إضافة فرع "${name}" لحساب "${c.name}"، وتلقاه في "فروعك" في لوحتك.\nرابط الفرع: ${DM.storeUrl(res.client.client_slug)}`;
       const send = await DMDialog.confirm({
         title: 'تم إنشاء الفرع', icon: 'ph-check-circle', tone: 'success',
         message: `${res.client.name} · ${res.client.client_slug}\n\n${pr.text}${res.invoice ? (res.invoice.sent ? `\n\nانرسلت الفاتورة المستحقة إلى ${res.invoice.to}.` : `\n\nالفاتورة ما انرسلت بالبريد${invoiceNote(res.invoice).replace(/^،? ?/, ': ')}`) : ''}`,
-        confirmText: phone ? (pr.amount ? 'أرسل الفاتورة واتساب' : 'بلّغه واتساب') : 'تم', cancelText: 'إغلاق'
+        confirmText: phone ? (bill ? 'أرسل الفاتورة واتساب' : 'بلّغه واتساب') : 'تم', cancelText: 'إغلاق'
       });
       if (send && phone) window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
     } catch (e) { showToast(`تعذر إنشاء الفرع: ${e.message}`, true); }
