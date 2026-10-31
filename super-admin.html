@@ -90,14 +90,12 @@
       <h2 class="text-sm font-black"><i class="ph-bold ph-bell text-blue-600"></i> إشعار لصاحب المتجر</h2>
       <p id="notify-store" class="text-xs text-ink/60 mt-1"></p>
     </div>
-    <textarea id="notify-text" rows="4" maxlength="300" placeholder="مثال: تم تجديد اشتراكك، شكراً لك 🌿" class="field resize-none"></textarea>
-    <p class="text-[10px] text-ink/50">يظهر أعلى لوحة التحكم عنده حتى تحذفه.</p>
-    <div class="flex gap-2 justify-between">
-      <button onclick="saveNotification(true)" class="px-4 py-2 rounded-xl text-xs font-bold bg-red-500/10 text-red-700 border border-red-500/20">حذف الإشعار</button>
-      <div class="flex gap-2">
-        <button onclick="closeNotify()" class="px-4 py-2 rounded-xl text-xs font-bold bg-brand/10">إلغاء</button>
-        <button onclick="saveNotification()" class="px-4 py-2 rounded-xl text-xs font-bold bg-brand text-cream">حفظ</button>
-      </div>
+    <input id="notify-title" maxlength="120" placeholder="العنوان (اختياري): إشعار من الإدارة" class="field">
+    <textarea id="notify-text" rows="4" maxlength="1000" placeholder="مثال: تم تجديد اشتراكك، شكراً لك 🌿" class="field resize-none"></textarea>
+    <p class="text-[10px] text-ink/50">يوصله في جرس الإشعارات بلوحة التحكم، ويطلع في كل فروعه.</p>
+    <div class="flex gap-2 justify-end">
+      <button onclick="closeNotify()" class="px-4 py-2 rounded-xl text-xs font-bold bg-brand/10">إلغاء</button>
+      <button onclick="saveNotification()" class="px-4 py-2 rounded-xl text-xs font-bold bg-brand text-cream"><i class="ph-bold ph-paper-plane-tilt"></i> أرسل</button>
     </div>
   </div>
 </div>
@@ -176,7 +174,10 @@
     <section class="card p-5 space-y-3">
       <div class="flex items-center justify-between gap-2">
         <p class="text-xs font-black flex items-center gap-2"><i class="ph-bold ph-chat-circle-text text-blue-700"></i> طلبات المشتركين <span id="sup-open" class="text-[10px] font-black bg-red-500 text-white rounded-full px-2 py-0.5 hidden"></span></p>
-        <button type="button" onclick="loadSupport()" class="text-[11px] font-bold text-ink/60"><i class="ph-bold ph-arrow-clockwise"></i> تحديث</button>
+        <span class="flex items-center gap-3">
+          <button type="button" onclick="notifyAll()" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-brand text-cream"><i class="ph-bold ph-megaphone"></i> إشعار للمشتركين</button>
+          <button type="button" onclick="loadSupport()" class="text-[11px] font-bold text-ink/60"><i class="ph-bold ph-arrow-clockwise"></i> تحديث</button>
+        </span>
       </div>
       <div id="sup-list" class="space-y-2"></div>
     </section>
@@ -618,7 +619,7 @@
         ${!c.parent_id ? `<button onclick="addBranch(${id})"><i class="ph-bold ph-git-branch" style="color:#047857"></i> إضافة فرع · ربط ${c.subscription_plan === 'month' ? `${money(PLAN_PRICE.branchMonth)}/شهر` : `${money(PLAN_PRICE.branch)}/سنة`} + مميزاته</button>` : `<button onclick="openFeatures(${id})"><i class="ph-bold ph-sliders-horizontal"></i> مميزات الفرع</button>`}
         <button onclick="renameStore(${id})"><i class="ph-bold ph-pencil-simple"></i> تعديل الاسم</button>
         ${!c.parent_id ? `<button onclick="openTypeDlg(${id})"><i class="ph-bold ph-storefront"></i> نوع النشاط: ${esc(DMSectors.label(c))}</button>` : ''}
-        <button onclick="openNotify(${id})"><i class="ph-bold ph-bell"></i> ${c.admin_notification ? 'تعديل الإشعار' : 'إرسال إشعار'}</button>
+        <button onclick="openNotify(${id})"><i class="ph-bold ph-bell"></i> إرسال إشعار</button>
         <div class="h-px bg-brand/10 my-1"></div>
         ${c.parent_id ? '' : `<button onclick="setFeatured(${id}, ${!c.is_featured})"><i class="ph-bold ph-star" ${c.is_featured ? 'style="color:#d97706"' : ''}></i> ${c.is_featured ? 'إزالة من أمثلة الرئيسية' : 'عرضه في أمثلة الرئيسية'}</button>`}
         <button onclick="setActive(${id}, ${c.is_active === false})"><i class="ph-bold ${c.is_active === false ? 'ph-play' : 'ph-pause'}"></i> ${c.is_active === false ? (c.parent_id ? 'إعادة تشغيل الفرع' : 'إعادة تشغيل المتجر') : (c.parent_id ? 'إيقاف الفرع' : 'إيقاف المتجر')}</button>
@@ -926,16 +927,34 @@
     notifyId = id;
     const c = find(id);
     document.getElementById('notify-store').textContent = c ? (c.name || c.client_slug) : '';
-    document.getElementById('notify-text').value = (c && c.admin_notification) || '';
+    document.getElementById('notify-text').value = ''; document.getElementById('notify-title').value = '';
     const d = document.getElementById('notify-dlg'); d.classList.remove('hidden'); d.classList.add('flex');
     document.getElementById('notify-text').focus();
   }
   function closeNotify() { const d = document.getElementById('notify-dlg'); d.classList.add('hidden'); d.classList.remove('flex'); }
-  async function saveNotification(clear = false) {
-    const message = clear ? '' : document.getElementById('notify-text').value.trim();
-    const error = await post('notify', { id: notifyId, message });
-    if (error) return showToast('تعذر حفظ الإشعار', true);
-    closeNotify(); showToast(message ? 'سيظهر الإشعار في لوحته' : 'تم حذف الإشعار'); loadClients();
+  async function saveNotification() {
+    const message = document.getElementById('notify-text').value.trim(), title = document.getElementById('notify-title').value.trim();
+    if (!message) return showToast('اكتب الإشعار', true);
+    const error = await post('notify', { id: notifyId, message, title });
+    if (error) return showToast('تعذر إرسال الإشعار', true);
+    closeNotify(); showToast('انرسل الإشعار، ويطلع في جرس لوحته');
+  }
+  // إشعار لكل المشتركين (أو اللي في التجربة، أو المدفوعين)
+  async function notifyAll() {
+    const v = await DMDialog.form({ title: 'إشعار للمشتركين', subtitle: 'يوصل في جرس الإشعارات بلوحة كل مشترك', icon: 'ph-megaphone', confirmText: 'أرسل',
+      fields: [
+        { name: 'audience', label: 'لمين؟', type: 'choice', value: 'all', options: [
+          { value: 'all', label: 'كل المشتركين', icon: 'ph-users-three' },
+          { value: 'trial', label: 'اللي في التجربة', icon: 'ph-hourglass-medium' },
+          { value: 'active', label: 'المشتركين المدفوعين', icon: 'ph-seal-check' }] },
+        { name: 'title', label: 'العنوان', value: 'إشعار من الإدارة', maxlength: 120, required: true },
+        { name: 'message', label: 'الإشعار', maxlength: 1000, required: true, multiline: true, placeholder: 'مثال: نزلت ميزة جديدة في صفحة الرسائل...' }
+      ] });
+    if (!v) return;
+    try {
+      const r = await DM.post(A('notify-all'), { audience: v.audience, title: v.title, message: v.message }, true);
+      showToast(`انرسل الإشعار لـ ${r.sent} مشترك`);
+    } catch (e) { showToast(`تعذر الإرسال: ${e.message}`, true); }
   }
   document.getElementById('notify-dlg').addEventListener('click', (e) => { if (e.target.id === 'notify-dlg') closeNotify(); });
 

@@ -8,6 +8,7 @@ const {
   ApiError, getUser, isSuperAdmin, str, int, readBody, waNumber, SLUG_RE, RESERVED_SLUGS, SITE, storeLink
 } = require('./_lib/core');
 const { followParentFeatures } = require('./_lib/branch-features');
+const { notifyOwner } = require('./_lib/owner-notify');
 
 const { sendMail, mailConfigured } = require('./_lib/mail');
 const { PLAN_PRICE, invoiceNumber, invoiceEmail, branchProration, branchInvoiceLines } = require('./_lib/invoice');
@@ -71,6 +72,8 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     if (typeof b.reply === 'string') body.reply = b.reply.trim().slice(0, 1000) || null;
     const row = (await rest(`support_requests?id=eq.${id}`, { method: 'PATCH', prefer: 'return=representation', body }))[0];
     if (!row) throw new ApiError(404, 'الطلب غير موجود');
+    // رد جديد: يوصل صاحب المحل إشعار في جرس لوحته
+    if (body.reply) await notifyOwner(row.client_id, { kind: 'reply', title: 'ردّت الإدارة على طلبك', body: body.reply, link: '#account' }).catch(e => console.error('NOTIFY_REPLY', e.message));
     return { request: row };
   }
 
@@ -94,6 +97,16 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     await rest(`clients?id=eq.${row.id}`, { method: 'PATCH', body: extra });
     try { await rest(`clients?id=eq.${row.id}`, { method: 'PATCH', body: { email: null } }); } catch {}   // لو العمود ما يقبل فاضي يبقى البريد المؤقت
     return { client: (await rest(`clients?id=eq.${row.id}&select=*`))[0] };
+  }
+
+  // إشعار لكل المشتركين (أو اللي في التجربة، أو المشتركين المدفوعين): يطلع في جرس لوحاتهم
+  if (action === 'notify-all') {
+    const message = str(b.message, 1000, 'الإشعار');
+    if (!message) throw new ApiError(400, 'اكتب الإشعار');
+    const who = ['trial', 'active'].includes(b.audience) ? `&subscription_status=eq.${b.audience}` : '';
+    const stores = await rest(`clients?parent_id=is.null&is_active=is.true&email=not.is.null&email=not.like.*%40prospect.invalid${who}&select=id`);
+    const sent = await notifyOwner(stores.map(c => c.id), { kind: 'admin', title: str(b.title, 120, 'العنوان') || 'إشعار من الإدارة', body: message });
+    return { sent };
   }
 
   const id = int(b.id);
@@ -175,7 +188,15 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     }
     return { ...out, mailed };
   }
-  if (action === 'notify') return patch({ admin_notification: str(b.message, 300, 'الإشعار') || null });
+  // إشعار من الإدارة لمحل واحد: يطلع في جرس لوحته (للحساب كله)
+  if (action === 'notify') {
+    const message = str(b.message, 1000, 'الإشعار');
+    if (!message) throw new ApiError(400, 'اكتب الإشعار');
+    const target = (await rest(`clients?id=eq.${id}&select=id,parent_id`))[0];
+    if (!target) throw new ApiError(404, 'المتجر غير موجود');
+    await notifyOwner(target.parent_id || target.id, { kind: 'admin', title: str(b.title, 120, 'العنوان') || 'إشعار من الإدارة', body: message });
+    return { ok: true };
+  }
   if (action === 'featured') return patch({ is_featured: b.featured === true });
   // نوع نشاط المحل (المدير العام يعدّله)
   if (action === 'business-type') {
@@ -215,6 +236,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       if (Number.isInteger(reqId) && reqId > 0) {
         const reply = `تفعّلت مميزات فرع "${before.name || ''}": ${all.map(k => PLANS.FEATURES[k].name).join('، ')}.${invoice && invoice.sent ? ` وأرسلنا فاتورة الفرق على ${invoice.to}.` : ''}`;
         await rest(`support_requests?id=eq.${reqId}&client_id=eq.${parent.id}`, { method: 'PATCH', body: { status: 'done', reply, handled_at: new Date().toISOString() } }).catch(() => {});
+        await notifyOwner(parent.id, { kind: 'branch', title: 'تفعّلت مميزات فرعك', body: reply, link: '#branches' }).catch(() => {});
       }
       return { ...out, invoice, due: due > 0 ? due : 0, renew: now ? now.renew : null };
     }
@@ -271,6 +293,8 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       const reply = `تمت إضافة فرع "${client.name}"، تلقاه في "فروعك" وتديره من نفس حسابك.${invoice && invoice.sent ? ` وأرسلنا الفاتورة على ${invoice.to}.` : ''}`;
       await rest(`support_requests?id=eq.${reqId}&client_id=eq.${id}`, { method: 'PATCH', body: { status: 'done', reply, handled_at: new Date().toISOString() } }).catch(() => {});
     }
+    // إشعار في جرس لوحته: الفرع انضاف (وفاتورته لو فيه مبلغ)
+    await notifyOwner(id, { kind: 'branch', title: 'تمت إضافة فرعك', body: `فرع "${client.name}" صار جاهز في "الفروع".${invoice && invoice.sent ? ` وأرسلنا الفاتورة على ${invoice.to}.` : ''}`, link: '#branches' }).catch(() => {});
     return { client, invoice, bill: bill ? { lines: bill.lines, total: bill.pr.amount, days: bill.pr.days, renew: bill.pr.renew } : null };
   }
 

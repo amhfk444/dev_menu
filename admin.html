@@ -367,6 +367,11 @@
         <div class="flex items-center gap-2 shrink-0 max-md:w-full max-md:justify-end">
           <select id="branch-switch" onchange="switchBranch(this.value)" aria-label="الفرع" class="hidden max-md:flex-1 max-md:min-w-0 md:max-w-[220px] text-xs font-bold bg-cream border border-brand/25 rounded-xl px-2.5 py-2 text-ink"></select>
           <span id="admin-mode-badge" class="hidden text-[10px] font-bold bg-amber-400/15 text-amber-700 border border-amber-400/30 px-2.5 py-1 rounded-full"><i class="ph-bold ph-crown"></i> وضع المدير العام</span>
+          <!-- جرس الإشعارات: ردود الإدارة والفروع وإشعارات الإدارة -->
+          <button type="button" id="notif-btn" onclick="toggleNotifs()" aria-label="الإشعارات" title="الإشعارات" class="relative bg-cream hover:bg-brand/5 text-ink w-9 h-9 rounded-xl border border-brand/25 flex items-center justify-center">
+            <i class="ph-bold ph-bell"></i>
+            <span id="notif-badge" class="hidden absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-black leading-[18px] text-center"></span>
+          </button>
           <button type="button" onclick="openAccount()" aria-label="معلومات الحساب" title="معلومات الحساب" class="bg-cream hover:bg-brand/5 text-ink w-9 h-9 rounded-xl border border-brand/25 flex items-center justify-center"><i class="ph-bold ph-identification-card text-sm"></i></button>
           <button type="button" data-lang-toggle class="text-xs bg-cream border border-brand/25 text-ink font-bold px-3 py-2 rounded-xl"></button>
           <a id="preview-menu-btn" data-needs="menu" href="#" target="_blank" rel="noopener" class="text-xs bg-brand text-cream font-bold px-3.5 py-2 rounded-xl transition hover:bg-brand-dark flex items-center gap-1.5">
@@ -379,6 +384,14 @@
       </div>
     </header>
 
+    <!-- قائمة الإشعارات -->
+    <div id="notif-panel" class="hidden fixed z-50 top-[4.5rem] inset-x-3 md:inset-x-auto md:left-8 md:w-[400px] max-h-[75vh] overflow-y-auto pro-card !p-0 shadow-2xl" role="dialog" aria-label="الإشعارات">
+      <div class="sticky top-0 bg-cream/95 backdrop-blur px-4 py-3 border-b border-brand/10 flex items-center justify-between">
+        <h3 class="text-sm font-bold"><i class="ph-bold ph-bell"></i> الإشعارات</h3>
+        <button type="button" onclick="toggleNotifs(false)" aria-label="إغلاق" class="w-8 h-8 rounded-lg hover:bg-brand/10 flex items-center justify-center"><i class="ph-bold ph-x text-xs"></i></button>
+      </div>
+      <div id="notif-list" class="divide-y divide-brand/10"></div>
+    </div>
     <main class="flex-1 w-full max-w-[1600px] mx-auto px-4 md:px-8 py-6 pb-28 lg:pb-10">
 
       <!-- ═════════════════ صفحة الرئيسية ═════════════════ -->
@@ -2255,7 +2268,7 @@
     setStoreName(name);
     document.getElementById('admin-mode-badge').classList.toggle('hidden', !isSuperAdmin);
     renderBranchSwitch();
-    renderBranchesCard(); renderDeskCard(); renderNotifyCard();
+    renderBranchesCard(); renderDeskCard(); renderNotifyCard(); loadNotifs();
     renderAlsoBranches();
     document.getElementById('sa-link').classList.toggle('hidden', !isSuperAdmin);
     document.getElementById('sidebar-preview').href = menuUrl();
@@ -2335,6 +2348,51 @@
   const SUPPORT_KIND = { renew: 'تجديد', plan: 'تغيير باقة', addon: 'تفعيل إضافة', branch: 'فرع جديد', suspended: 'حساب موقوف', contact: 'رسالة' };
   // التجربة: اللي اختار البيجر بدون الرسائل يجربها مجاناً (وتتوقف بعد التجربة إلا إذا أضافها)
   const trialGift = () => !!client && client.subscription_status === 'trial' && DMPlans.has(client, 'notify') && !(client.plan_features || []).includes('notify') && !DMPlans.has(client, 'loyalty');
+  // ─── جرس الإشعارات ───
+  // يتحدث مع فتح اللوحة وكل دقيقة، ولما يفتح القائمة تصير كلها مقروءة
+  let notifs = [], notifOpen = false;
+  const NOTIF_ICON = { reply: 'ph-chat-circle-text', branch: 'ph-git-branch', admin: 'ph-megaphone' };
+  async function loadNotifs() {
+    try {
+      const r = await api('notifications');
+      notifs = r.items || [];
+      const b = document.getElementById('notif-badge');
+      b.textContent = r.unread > 9 ? '9+' : r.unread; b.classList.toggle('hidden', !r.unread);
+      if (notifOpen) renderNotifs();
+    } catch {}
+  }
+  function renderNotifs() {
+    const when = (iso) => new Date(iso).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+    document.getElementById('notif-list').innerHTML = notifs.length ? notifs.map(n => `
+      <button type="button" onclick="openNotif(${n.id})" class="w-full text-right flex gap-3 px-4 py-3 hover:bg-brand/[0.04] ${n.read_at ? '' : 'bg-amber-50/70'}">
+        <span class="w-9 h-9 rounded-xl bg-brand/10 text-brand grid place-items-center shrink-0"><i class="ph-bold ${NOTIF_ICON[n.kind] || 'ph-bell'}"></i></span>
+        <span class="flex-1 min-w-0">
+          <span class="flex items-center gap-2"><b class="text-[13px]">${esc(n.title)}</b>${n.read_at ? '' : '<span class="w-2 h-2 rounded-full bg-red-600 shrink-0" aria-label="جديد"></span>'}</span>
+          ${n.body ? `<span class="block text-[12px] text-ink/70 leading-relaxed mt-0.5 whitespace-pre-line">${esc(n.body)}</span>` : ''}
+          <span class="block text-[11px] text-ink/45 mt-1">${when(n.created_at)}</span>
+        </span>
+      </button>`).join('') : '<p class="text-[12px] text-ink/55 text-center py-10 px-6">ما فيه إشعارات للحين. لما ترد الإدارة على طلبك أو يوصلك إشعار منها، يطلع هنا.</p>';
+  }
+  async function toggleNotifs(on = !notifOpen) {
+    notifOpen = on;
+    document.getElementById('notif-panel').classList.toggle('hidden', !on);
+    if (!on) return;
+    renderNotifs();
+    if (notifs.some(n => !n.read_at)) {
+      document.getElementById('notif-badge').classList.add('hidden');
+      try { await api('notifications-read', {}); } catch {}
+      // تبقى مميزة لين يقفل القائمة، وبعدها تصير مقروءة
+      setTimeout(() => { notifs = notifs.map(n => ({ ...n, read_at: n.read_at || new Date().toISOString() })); }, 0);
+    }
+  }
+  function openNotif(id) {
+    const n = notifs.find(x => x.id === id);
+    toggleNotifs(false);
+    if (n && n.link && n.link.startsWith('#')) location.hash = n.link.slice(1);
+  }
+  document.addEventListener('click', (e) => { if (notifOpen && !e.target.closest('#notif-panel, #notif-btn')) toggleNotifs(false); });
+  setInterval(() => { if (!document.hidden && client) loadNotifs(); }, 60000);
+
   // الترقية من الشهري للسنوي: كم يوفّر، وطلب يوصل للإدارة بضغطة
   function upgradeBox() {
     const f = myFeatures(), list = branchList();

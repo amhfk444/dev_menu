@@ -1497,5 +1497,11 @@
   "اشتراك الفرع {a} مثل اشتراك حسابك. ربط الفرع {b} ر.س {c}، ومعه سعر الخدمات اللي تختارها للفرع.": "The branch follows your account's {a} plan. Branch link {b} SAR {c}, plus the services you choose for it.",
   "هدية التجربة:": "Trial gift:",
   "\"رسائل لزبائنك\" مفعّلة لك مجاناً مع البيجر خلال التجربة، وتتوقف بعدها إلا إذا أضفتها لاشتراكك بـ {a} ر.س بالشهر.": "\"Customer messages\" is free with the pager during your trial and stops afterwards unless you add it for {a} SAR a month.",
-  "جرّبها الحين": "Try it now"
+  "جرّبها الحين": "Try it now",
+  "الإشعارات": "Notifications",
+  "ما فيه إشعارات للحين. لما ترد الإدارة على طلبك أو يوصلك إشعار منها، يطلع هنا.": "No notifications yet. When our team replies to your request or sends you a notice, it shows here.",
+  "ردّت الإدارة على طلبك": "Our team replied to your request",
+  "تمت إضافة فرعك": "Your branch was added",
+  "تفعّلت مميزات فرعك": "Your branch features are active",
+  "إشعار من الإدارة": "Notice from DEV MENU"
 }

@@ -405,6 +405,22 @@ async function main(req) {
   }
 
   // ─── طلبات صاحب المتجر للإدارة (تجديد، باقة، تفعيل، تواصل): بدل الواتساب ───
+  // ─── جرس الإشعارات: ردود الإدارة، الفروع، وإشعارات الإدارة (للحساب كله) ───
+  if (action === 'notifications' && req.method === 'GET') {
+    const { store } = await context(req);
+    const mainId = store.parent_id || store.id;
+    const [items, unread] = await Promise.all([
+      rest(`owner_notifications?client_id=eq.${mainId}&select=id,kind,title,body,link,created_at,read_at&order=id.desc&limit=30`).catch(() => []),
+      rest(`owner_notifications?client_id=eq.${mainId}&read_at=is.null&select=id&limit=100`).catch(() => [])
+    ]);
+    return { items, unread: unread.length };
+  }
+  if (action === 'notifications-read' && req.method === 'POST') {
+    const { store } = await context(req);
+    await rest(`owner_notifications?client_id=eq.${store.parent_id || store.id}&read_at=is.null`, { method: 'PATCH', body: { read_at: new Date().toISOString() } }).catch(() => {});
+    return { ok: true };
+  }
+
   if (action === 'support-list' && req.method === 'GET') {
     const { store } = await context(req);
     const mainId = store.parent_id || store.id;
