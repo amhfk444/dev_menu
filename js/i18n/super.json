@@ -185,5 +185,16 @@
   "{d} · باقي {n}": "{d} · {n} left",
   "· طلب: {f} ({p})": "· Request: {f} ({p})",
   "مثال: مطعم أوسلو برجر": "e.g. Oslo Burger",
-  "يتغيّر اللي يشوفه صاحب المحل ونوع اشتراكه (شهري أو سنوي) على طول، بدون ما يتغير تاريخ الاشتراك وبدون فاتورة.": "What the owner sees and their plan type (monthly or yearly) change right away, without changing the subscription date or sending an invoice."
+  "يتغيّر اللي يشوفه صاحب المحل ونوع اشتراكه (شهري أو سنوي) على طول، بدون ما يتغير تاريخ الاشتراك وبدون فاتورة.": "What the owner sees and their plan type (monthly or yearly) change right away, without changing the subscription date or sending an invoice.",
+  "الطلبات": "Requests",
+  "المشتركين": "Subscribers",
+  "الأرقام والدخل": "Numbers & revenue",
+  "الإشعارات": "Notifications",
+  "المفتوحة": "Open",
+  "المنتهية": "Done",
+  "الكل": "All",
+  "ما فيه طلبات مفتوحة، كل شي تمام ✓": "No open requests, all good ✓",
+  "إشعار للمشتركين": "Notify subscribers",
+  "اكتب إشعار": "Write a notice",
+  "إشعار لمحل واحد": "Notify one store"
 }

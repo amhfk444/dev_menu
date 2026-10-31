@@ -33,6 +33,9 @@
   /* البطاقة اللي قائمتها مفتوحة تطلع فوق باقي البطاقات (تأثير الزجاج يخلي كل بطاقة طبقة لحالها) */
   .card:has(.menu-pop) { position: relative; z-index: 40; }
   .no-scrollbar::-webkit-scrollbar { display: none; }
+  /* تبويبات اللوحة */
+  .sa-tab { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; padding: 14px 14px 12px; font-size: 13px; font-weight: 800; color: rgba(34,54,42,.55); border-bottom: 3px solid transparent; }
+  .sa-tab[aria-selected="true"] { color: #22362a; border-bottom-color: #384f3d; }
   /* ═══ نفس هوية لوحة التاجر: زجاج فوق خلفية رملية فيها توهج أخضر وذهبي ═══ */
   body { background:
       radial-gradient(42% 38% at 88% 4%, rgba(56,79,61,.22) 0%, transparent 70%),
@@ -149,8 +152,19 @@
     </div>
   </header>
 
+  <!-- التبويبات: كل شغلة في مكانها -->
+  <nav class="sticky top-0 z-30 bg-sand/95 backdrop-blur border-b border-ink/10">
+    <div class="max-w-[1500px] mx-auto px-3 md:px-8 flex gap-1 overflow-x-auto no-scrollbar" role="tablist">
+      <button type="button" data-satab-btn="requests" class="sa-tab"><i class="ph-bold ph-chat-circle-text"></i> الطلبات <span id="sup-open" class="text-[10px] font-black bg-red-500 text-white rounded-full px-2 py-0.5 hidden"></span></button>
+      <button type="button" data-satab-btn="stores" class="sa-tab"><i class="ph-bold ph-storefront"></i> المشتركين <span id="stores-count" class="text-[10px] font-black bg-ink/10 rounded-full px-2 py-0.5"></span></button>
+      <button type="button" data-satab-btn="overview" class="sa-tab"><i class="ph-bold ph-chart-line-up"></i> الأرقام والدخل</button>
+      <button type="button" data-satab-btn="notify" class="sa-tab"><i class="ph-bold ph-megaphone"></i> الإشعارات</button>
+    </div>
+  </nav>
+
   <main class="max-w-[1500px] mx-auto px-3 md:px-8 py-6 space-y-6">
-    <!-- الأرقام -->
+    <!-- ═══ الأرقام والدخل ═══ -->
+    <div data-satab="overview" class="space-y-6">
     <section id="kpis" class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3"></section>
 
     <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -170,20 +184,35 @@
       </div>
     </section>
 
-    <!-- طلبات المشتركين: التجديد وتغيير الباقة والتواصل (بدل الواتساب) -->
-    <section class="card p-5 space-y-3">
-      <div class="flex items-center justify-between gap-2">
-        <p class="text-xs font-black flex items-center gap-2"><i class="ph-bold ph-chat-circle-text text-blue-700"></i> طلبات المشتركين <span id="sup-open" class="text-[10px] font-black bg-red-500 text-white rounded-full px-2 py-0.5 hidden"></span></p>
-        <span class="flex items-center gap-3">
-          <button type="button" onclick="notifyAll()" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-brand text-cream"><i class="ph-bold ph-megaphone"></i> إشعار للمشتركين</button>
-          <button type="button" onclick="loadSupport()" class="text-[11px] font-bold text-ink/60"><i class="ph-bold ph-arrow-clockwise"></i> تحديث</button>
-        </span>
+    </div>
+
+    <!-- ═══ الطلبات: التجديد وتغيير الباقة والفروع والتواصل ═══ -->
+    <section data-satab="requests" class="card p-5 space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div id="sup-filters" class="flex gap-1.5"></div>
+        <button type="button" onclick="loadSupport()" class="text-[11px] font-bold text-ink/60"><i class="ph-bold ph-arrow-clockwise"></i> تحديث</button>
       </div>
       <div id="sup-list" class="space-y-2"></div>
     </section>
 
+    <!-- ═══ الإشعارات ═══ -->
+    <section data-satab="notify" class="grid gap-4 md:grid-cols-2 items-start">
+      <div class="card p-5 space-y-3">
+        <p class="text-sm font-black"><i class="ph-bold ph-megaphone text-blue-700"></i> إشعار للمشتركين</p>
+        <p class="text-[12px] text-ink/65 leading-relaxed">يوصل في جرس الإشعارات بلوحة كل مشترك على طول. تختار ترسله للكل، أو اللي في التجربة، أو المشتركين المدفوعين.</p>
+        <button type="button" onclick="notifyAll()" class="px-4 py-2.5 rounded-xl bg-brand text-cream text-xs font-bold"><i class="ph-bold ph-paper-plane-tilt"></i> اكتب إشعار</button>
+      </div>
+      <div class="card p-5 space-y-2">
+        <p class="text-sm font-black"><i class="ph-bold ph-storefront text-ink/70"></i> إشعار لمحل واحد</p>
+        <p class="text-[12px] text-ink/65 leading-relaxed">من تبويب "المشتركين"، افتح قائمة المحل (⋯) واختر "إرسال إشعار".</p>
+        <p class="text-[12px] text-ink/65 leading-relaxed">وردّك على أي طلب يوصله إشعار تلقائي.</p>
+      </div>
+    </section>
+
+    <!-- ═══ المشتركين ═══ -->
+    <div data-satab="stores" class="space-y-6">
     <!-- الأدوات -->
-    <section class="card p-3 md:p-4 space-y-3 sticky top-2 z-20">
+    <section class="card p-3 md:p-4 space-y-3 sticky top-14 z-20">
       <div class="flex flex-col md:flex-row gap-2">
         <div class="relative flex-1">
           <i class="ph-bold ph-magnifying-glass absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/40 text-xs"></i>
@@ -206,6 +235,7 @@
     <!-- المتاجر -->
     <section id="stores" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></section>
     <p id="empty" class="hidden text-center text-sm text-ink/50 py-16"><i class="ph-bold ph-prohibit text-2xl block mb-2"></i> لا توجد نتائج</p>
+    </div>
   </main>
 </div>
 
@@ -352,10 +382,23 @@
     const open = supRows.filter(x => x.status === 'open').length;
     const badge = document.getElementById('sup-open');
     badge.textContent = open; badge.classList.toggle('hidden', !open);
+    supReady = r.ready;
+    renderSupport();
+    // أول فتح للوحة: لو فيه طلبات مفتوحة نبدأ فيها (هي الشغل)
+    if (saAuto && open) showTab('requests');
+    saAuto = false;
+  }
+  // الطلبات: المفتوحة أول (هي الشغل)، والمنتهية بفلتر
+  let supFilter = 'open', supReady = true;
+  function renderSupport() {
+    const n = { open: supRows.filter(x => x.status === 'open').length, done: supRows.filter(x => x.status !== 'open').length, all: supRows.length };
+    document.getElementById('sup-filters').innerHTML = [['open', 'المفتوحة'], ['done', 'المنتهية'], ['all', 'الكل']].map(([k, l]) =>
+      `<button type="button" onclick="supFilter='${k}'; renderSupport()" class="text-[12px] font-bold px-3 py-1.5 rounded-full border ${supFilter === k ? 'bg-brand text-cream border-brand' : 'border-ink/15'}">${l} <span class="opacity-60">${n[k]}</span></button>`).join('');
+    const rows = supRows.filter(x => supFilter === 'all' || (supFilter === 'open' ? x.status === 'open' : x.status !== 'open'));
     const byId = Object.fromEntries(clients.map(c => [c.id, c]));
     const when = (iso) => new Date(iso).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
-    document.getElementById('sup-list').innerHTML = !r.ready ? '<p class="text-[12px] text-red-700">جدول الطلبات ما انشأ للحين: شغّل supabase/48-support-requests.sql</p>'
-      : supRows.slice(0, 30).map(x => { const c = byId[x.client_id] || {}; return `
+    document.getElementById('sup-list').innerHTML = !supReady ? '<p class="text-[12px] text-red-700">جدول الطلبات ما انشأ للحين: شغّل supabase/48-support-requests.sql</p>'
+      : rows.slice(0, 60).map(x => { const c = byId[x.client_id] || {}; return `
         <div class="rounded-xl border ${x.status === 'open' ? 'border-amber-400/60 bg-amber-50/60' : 'border-ink/10 bg-white/60'} p-3 space-y-1.5">
           <div class="flex flex-wrap items-center justify-between gap-2 text-[11px]">
             <span class="font-black">${esc(c.name || `متجر #${x.client_id}`)} <span class="text-ink/45 font-bold" dir="ltr">${esc(c.client_slug || '')}</span> · ${SUP_KIND[x.kind] || 'رسالة'}</span>
@@ -370,8 +413,19 @@
             <button type="button" onclick="setSupport(${x.id}, '${x.status === 'open' ? 'done' : 'open'}')" class="text-[11px] font-bold px-3 py-1.5 rounded-lg border border-ink/15">${x.status === 'open' ? 'تم' : 'رجّعه مفتوح'}</button>
             ${c.phone ? `<span class="text-[11px] text-ink/50 self-center" dir="ltr">${esc(c.phone)}</span>` : ''}
           </div>
-        </div>`; }).join('') || '<p class="text-[12px] text-ink/50">ما فيه طلبات.</p>';
+        </div>`; }).join('') || `<p class="text-[12px] text-ink/50 py-6 text-center">${supFilter === 'open' ? 'ما فيه طلبات مفتوحة، كل شي تمام ✓' : 'ما فيه طلبات.'}</p>`;
   }
+  // ─── التبويبات ───
+  let saTab = '', saAuto = !location.hash;
+  function showTab(t) {
+    if (!['requests', 'stores', 'overview', 'notify'].includes(t)) t = 'stores';
+    saTab = t;
+    document.querySelectorAll('[data-satab]').forEach(el => el.classList.toggle('hidden', el.dataset.satab !== t));
+    document.querySelectorAll('[data-satab-btn]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.satabBtn === t)));
+    if (location.hash !== '#' + t) history.replaceState(null, '', location.pathname + location.search + '#' + t);
+  }
+  document.querySelectorAll('[data-satab-btn]').forEach(b => b.addEventListener('click', () => { saAuto = false; showTab(b.dataset.satabBtn); window.scrollTo({ top: 0 }); }));
+  showTab(location.hash ? location.hash.slice(1) : 'stores');
   async function setSupport(id, status, reply) {
     try { await DM.post(A('support-update'), { id, status, ...(reply !== undefined ? { reply } : {}) }, true); await loadSupport(); }
     catch (e) { showToast(e.message || 'ما انحفظ التعديل. تأكد من الإنترنت وحاول مرة ثانية', true); }
@@ -432,6 +486,7 @@
   const FEAT_BADGE = { menu: 'bg-emerald-500/10 text-emerald-800 border-emerald-500/20', pager: 'bg-amber-400/15 text-amber-900 border-amber-500/25', waitlist: 'bg-sky-500/10 text-sky-700 border-sky-500/20', loyalty: 'bg-violet-500/10 text-violet-700 border-violet-500/20' };
   function renderKpis() {
     const n = counts();
+    document.getElementById('stores-count').textContent = n.all;
     const tile = (label, value, icon, color, f) => `
       <button onclick="setFilter('${f}')" class="card kpi hover:border-brand/40 transition ${filter === f ? 'ring-2 ring-brand/50' : ''}">
         <span class="ic"><i class="ph-bold ${icon} ${color}"></i></span>
@@ -483,7 +538,8 @@
     ['all', 'الكل'], ['requests', 'طلبات اشتراك'], ['paid', 'مشتركون'], ['trial', 'تجريبي'], ['soon', 'ينتهي قريباً'], ['expired', 'منتهي'],
     ['suspended', 'موقوف'], ...DMPlans.ORDER.map(k => ['f_' + k, DMPlans.FEATURES[k].name]), ['featured', 'أمثلة الرئيسية'], ['noEmail', 'بدون بريد']
   ];
-  function setFilter(f) { filter = f; renderKpis(); renderFilters(); renderStores(); }
+  // أرقام "الأرقام والدخل" تفتح المشتركين بنفس الفلتر
+  function setFilter(f) { filter = f; renderKpis(); renderFilters(); renderStores(); if (saTab && saTab !== 'stores') showTab('stores'); }
   function renderFilters() {
     const n = counts();
     document.getElementById('filters').innerHTML = FILTERS.map(([k, label]) =>
