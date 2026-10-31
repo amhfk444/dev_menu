@@ -356,6 +356,9 @@ async function main(req) {
     let phone = '';
     try { phone = waNumber(b.phone); } catch { throw new ApiError(400, 'رقم الجوال غير صحيح', 'INVALID_PHONE'); }
     const type = BUSINESS_TYPES.includes(b.business_type) ? b.business_type : 'restaurant';
+    // الحساب يتفعل بالخدمات اللي اختارها بس (بدونها كانت التجربة تفتح كل الخدمات)
+    const chosen = PLANS.clean(Array.isArray(b.features) ? b.features : []);
+    if (!chosen.length) throw new ApiError(400, 'اختر الخدمات التي تحتاجها أولاً', 'NO_FEATURES');
     try {
       const slug = await rpc('server_register_client', { p_email: user.email, p_name: name, p_phone: phone, p_type: type });
       // الأنواع الجديدة (عيادة، صالون...) تنحفظ بعد الإنشاء، ومعها اسم النشاط لو اختار "أخرى"
@@ -364,13 +367,13 @@ async function main(req) {
         await rest(`clients?client_slug=eq.${q(slug)}`, { method: 'PATCH', body: { business_type: type, business_label: label || null } }).catch(e => console.error('REGISTER_TYPE', e.message));
       }
       // الباقة اللي اختارها قبل التسجيل: تنحفظ كطلب اشتراك، يبدأ التجربة المجانية، ونتواصل معه للدفع
-      const plan = ['month', 'year'].includes(b.plan) ? b.plan : null;
-      const features = PLANS.clean(Array.isArray(b.features) ? b.features : []);
-      if (plan && features.length) {
+      const plan = ['month', 'year'].includes(b.plan) ? b.plan : 'month';
+      const features = chosen;
+      if (features.length) {
         // الخدمات اللي اختارها تشتغل على طول في التجربة، والإدارة يوصلها إشعار بس
         const main = (await rest(`clients?client_slug=eq.${q(slug)}`, { method: 'PATCH', prefer: 'return=representation',
           body: { plan_features: features, waitlist_enabled: features.includes('waitlist'), loyalty_enabled: features.includes('loyalty'),
-                  requested_plan: plan, requested_features: features, plan_requested_at: new Date().toISOString() } }).catch(() => []))[0];
+                  requested_plan: plan, requested_features: features, plan_requested_at: new Date().toISOString() } }).catch(e => { console.error('REGISTER_FEATURES', slug, e.message); return []; }))[0];
         if (main && mailConfigured()) {
           await sendMail({
             to: process.env.ADMIN_EMAIL || 'dmenu950@gmail.com', fromName: 'DEV MENU',

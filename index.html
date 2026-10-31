@@ -611,7 +611,8 @@
   // ─── اختيار الباقة: يتحفظ ويروح مع التسجيل ───
   const CHOICE_KEY = 'dm_plan_choice';
   let typeTouched = false;
-  let choice = { period: 'year', features: ['menu', 'pager', 'waitlist'] };
+  // بدون اختيار مسبق: الحساب يتفعل بالخدمات اللي يختارها هو بس
+  let choice = { period: 'year', features: [] };
   try { const c = JSON.parse(localStorage.getItem(CHOICE_KEY) || 'null'); if (c && Array.isArray(c.features)) choice = { period: c.period === 'month' ? 'month' : 'year', features: DMPlans.clean(c.features) }; } catch {}
   const PRESETS = [
     ['الباقة الكاملة', ['menu', 'pager', 'waitlist']],
@@ -715,8 +716,16 @@
     }, 1000);
   }
 
+  // ما يبدأ التسجيل قبل ما يختار خدماته (الحساب يتفعل بها هي بس)
+  function needFeatures() {
+    if (choice.features.length) return false;
+    showToast('اختر الخدمات التي تحتاجها أولاً، ويتفعّل حسابك بها', 'error');
+    $('pricing').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return true;
+  }
   $('register-form').addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (needFeatures()) return;
     const name = $('reg-name').value.trim();
     const email = $('reg-email').value.trim().toLowerCase();
     const phone = normalizeMobile($('reg-phone').value);
@@ -796,6 +805,7 @@
 
   const PENDING_KEY = 'dm_pending_store';
   function registerWithGoogle() {
+    if (needFeatures()) return;
     const name = $('reg-name').value.trim();
     const phone = normalizeMobile($('reg-phone').value);
     if (!name) { $('reg-name').focus(); return showToast('أدخل اسم المنشأة', 'error'); }
