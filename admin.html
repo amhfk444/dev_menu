@@ -2354,6 +2354,7 @@
   const NOTIF_ICON = { reply: 'ph-chat-circle-text', branch: 'ph-git-branch', admin: 'ph-megaphone' };
   async function loadNotifs() {
     try {
+      // ما يحتاج تحديث الصفحة: يجي الإشعار لحظياً، وهذا احتياط كل دقيقة
       const r = await api('notifications');
       notifs = r.items || [];
       const b = document.getElementById('notif-badge');
@@ -3344,7 +3345,11 @@
     }, 1000); };
     DM.live(L.waitlist, () => { if (client && client.waitlist_enabled) loadWaitlist(); refreshHome(); });
     if (L.pager) DM.live(L.pager, refreshHome);
-    DM.live(L.owner, (ev) => { if (ev === 'loyalty') refreshHome(); });
+    DM.live(L.owner, (ev) => {
+      if (ev === 'loyalty') refreshHome();
+      // إشعار جديد من الإدارة: الجرس يتحدث على طول، ورسالة صغيرة تنبّهه
+      if (ev === 'notify') loadNotifs().then(() => { const n = notifs.find(x => !x.read_at); if (n) showToast(`🔔 ${n.title}`); });
+    });
 
   }
 
