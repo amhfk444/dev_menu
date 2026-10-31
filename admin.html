@@ -454,7 +454,7 @@
     <!-- روابط الخدمات: رابط لكل خدمة مفعّلة -->
             <div class="pro-card p-5 space-y-3">
               <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-link-simple text-emerald-600"></i> روابط خدماتك</h3>
-              <p class="text-[11px] text-ink/60">شاركها مع عملائك أو اطبع لها كود QR. الرابط الرئيسي يفتح أول خدمة عندك.</p>
+              <p class="text-[11px] text-ink/60">شاركها مع عملائك أو اطبع لها كود QR. الرابط الرئيسي يفتح صفحة الروابط السريعة اللي فيها كل خدماتك.</p>
               <div id="svc-links" class="space-y-2"></div>
             </div>
     <!-- تنبيهات الإدارة -->
@@ -2041,7 +2041,8 @@
     const box = document.getElementById('svc-links');
     if (!box || !client) return;
     const on = SVC_PAGES.filter(([k]) => !featureLocked(k));
-    const rows = [['home', 'الرابط الرئيسي', 'ph-house', DM.storeUrl(client.client_slug)], ...on.filter(([k]) => k !== 'menu').map(([k, page, name, icon]) => [k, name, icon, DM.storeUrl(client.client_slug, page)])];
+    // الرابط الرئيسي = صفحة الروابط السريعة (فيها كل الخدمات)، وتحته رابط كل خدمة
+    const rows = [['home', 'الرابط الرئيسي', 'ph-house', DM.storeUrl(client.client_slug, 'links')], ...on.map(([k, page, name, icon]) => [k, name, icon, DM.storeUrl(client.client_slug, page)])];
     box.innerHTML = rows.map(([k, name, icon, url]) => `
       <div class="flex items-center gap-2 bg-brand/5 border border-brand/15 rounded-xl px-3 py-2">
         <i class="ph-bold ${icon} text-ink/60"></i>
