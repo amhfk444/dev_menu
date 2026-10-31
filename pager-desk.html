@@ -80,7 +80,6 @@
       <button id="stats-btn" class="owner-only mini bg-white border border-[#233d2c]/15 hidden"><i class="ph-bold ph-chart-bar"></i> الإحصائيات</button>
       <button id="qr-btn" class="mini bg-white border border-[#233d2c]/15 hidden"><i class="ph-bold ph-qr-code"></i> QR البيجر</button>
       <button id="sound-btn" type="button" class="mini bg-white border border-[#233d2c]/15 hidden" title="صوت تنبيه الأرقام الجديدة"></button>
-      <button id="fs-btn" type="button" class="mini bg-white border border-[#233d2c]/15 hidden" title="ملء الشاشة"></button>
       <!-- اللغة داخل الأزرار (الزر العائم كان يغطي "QR البيجر") -->
       <button type="button" data-lang-toggle class="mini bg-white border border-[#233d2c]/15"></button>
     </div>
@@ -353,11 +352,9 @@
     if (u) setStatus(+u.dataset.undo, 'waiting', 'رقم # رجع للانتظار');
   });
 
-  // ─── جهاز الكاشير: الشاشة ما تطفي، صوت ووميض للأرقام الجديدة، شريط انقطاع الاتصال، ملء الشاشة ───
+  // ─── جهاز الكاشير: الشاشة ما تطفي، صوت ووميض للأرقام الجديدة، شريط انقطاع الاتصال ───
   const SVG = (d) => `<svg width="15" height="15" viewBox="0 0 256 256" fill="currentColor" style="display:inline;vertical-align:-2px"><path d="${d}"/></svg>`;
   const IC = {
-    out: SVG('M220,48V96a12,12,0,0,1-24,0V77l-35.51,35.52a12,12,0,0,1-17-17L179,60H160a12,12,0,0,1,0-24h48A12,12,0,0,1,220,48ZM95.51,143.51,60,179V160a12,12,0,0,0-24,0v48a12,12,0,0,0,12,12H96a12,12,0,0,0,0-24H77l35.52-35.51a12,12,0,0,0-17-17ZM208,148a12,12,0,0,0-12,12v19l-35.51-35.52a12,12,0,0,0-17,17L179,196H160a12,12,0,0,0,0,24h48a12,12,0,0,0,12-12V160A12,12,0,0,0,208,148ZM77,60H96a12,12,0,0,0,0-24H48A12,12,0,0,0,36,48V96a12,12,0,0,0,24,0V77l35.51,35.52a12,12,0,0,0,17-17Z'),
-    in: SVG('M140,104V64a12,12,0,0,1,24,0V75l35.51-35.52a12,12,0,0,1,17,17L181,92h11a12,12,0,0,1,0,24H152A12,12,0,0,1,140,104Zm-36,36H64a12,12,0,0,0,0,24H75L39.51,199.51a12,12,0,0,0,17,17L92,181v11a12,12,0,0,0,24,0V152A12,12,0,0,0,104,140Zm77,24h11a12,12,0,0,0,0-24H152a12,12,0,0,0-12,12v40a12,12,0,0,0,24,0V181l35.51,35.52a12,12,0,0,0,17-17ZM104,52A12,12,0,0,0,92,64V75L56.49,39.51a12,12,0,0,0-17,17L75,92H64a12,12,0,0,0,0,24h40a12,12,0,0,0,12-12V64A12,12,0,0,0,104,52Z'),
     on: SVG('M157.27,21.22a12,12,0,0,0-12.64,1.31L75.88,76H32A20,20,0,0,0,12,96v64a20,20,0,0,0,20,20H75.88l68.75,53.47A12,12,0,0,0,164,224V32A12,12,0,0,0,157.27,21.22ZM36,100H68v56H36Zm104,99.46L92,162.13V93.87l48-37.33ZM212,128a44,44,0,0,1-11,29.11,12,12,0,1,1-18-15.88,20,20,0,0,0,0-26.43,12,12,0,0,1,18-15.86A43.94,43.94,0,0,1,212,128Zm40,0a83.87,83.87,0,0,1-21.39,56,12,12,0,0,1-17.89-16,60,60,0,0,0,0-80,12,12,0,1,1,17.88-16A83.87,83.87,0,0,1,252,128Z'),
     off: SVG('M56.88,31.93A12,12,0,1,0,39.12,48.07L64.51,76H32A20,20,0,0,0,12,96v64a20,20,0,0,0,20,20H75.88l68.75,53.47A12,12,0,0,0,164,224V185.44l35.12,38.63a12,12,0,0,0,17.76-16.14ZM36,100H68v56H36Zm104,99.46L92,162.13V106.24L140,159Zm-31-134a12,12,0,0,1,2.11-16.84l33.51-26.07A12,12,0,0,1,164,32V94.94a12,12,0,0,1-24,0V56.54l-14.15,11A12,12,0,0,1,109,65.44Zm74,49.35a12,12,0,0,1,18-15.85,44,44,0,0,1,5.55,50.21,12,12,0,0,1-21-11.55A19.67,19.67,0,0,0,188,128,20,20,0,0,0,183,114.79ZM252,128a84.18,84.18,0,0,1-19.11,53.35,12,12,0,1,1-18.53-15.25A60,60,0,0,0,212.73,88a12,12,0,1,1,17.88-16A83.87,83.87,0,0,1,252,128Z'),
     wifi: SVG('M216.88,207.93a12,12,0,1,1-17.76,16.14L147.78,167.6a56.06,56.06,0,0,0-52.71,7.1,12,12,0,0,1-14.14-19.4,79.35,79.35,0,0,1,41.92-15.12L103.51,118.9a104.18,104.18,0,0,0-40.06,19.55,12,12,0,0,1-14.9-18.81A128.46,128.46,0,0,1,85.61,99.21l-17.31-19a151.140,151.140,0,0,0-36.68,22.28A12,12,0,1,1,16.39,83.910a175.52,175.52,0,0,1,35-22.38L39.12,48.07A12,12,0,1,1,56.88,31.93ZM128,188a16,16,0,1,0,16,16A16,16,0,0,0,128,188Z')
@@ -405,19 +402,8 @@
   addEventListener('offline', netDown);
   addEventListener('online', () => load());
 
-  // 4) ملء الشاشة للتابلت: يختفي شريط المتصفح وتصير الشاشة كأنها تطبيق
-  const fsEl = document.documentElement;
-  const fsOn = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
-  const fsAble = !!(fsEl.requestFullscreen || fsEl.webkitRequestFullscreen) && (document.fullscreenEnabled || document.webkitFullscreenEnabled);
-  function renderFs() { $('fs-btn').innerHTML = `${fsOn() ? IC.in : IC.out} ${fsOn() ? 'خروج' : 'ملء الشاشة'}`; }
-  $('fs-btn').onclick = () => {
-    if (fsOn()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
-    else (fsEl.requestFullscreen || fsEl.webkitRequestFullscreen).call(fsEl).catch?.(() => {});
-  };
-  ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, renderFs));
   if (!EMBED) {
     $('sound-btn').classList.remove('hidden'); renderSound();
-    if (fsAble) { $('fs-btn').classList.remove('hidden'); renderFs(); }
     keepAwake();
   }
 

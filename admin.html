@@ -1435,6 +1435,22 @@
               </div>
               <button id="desk-show" type="button" onclick="showDeskLink()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-white border border-brand/20 text-ink"><i class="ph-bold ph-link-simple"></i> اطلع رابط الكاشير</button>
             </div>
+    <!-- رابط شاشة الزبون: يفتحها على شاشة خارجية أو تابلت قدّام العميل بدون حساب المالك -->
+            <div id="kiosk-card" class="hidden pro-card p-5 space-y-3">
+              <div class="space-y-1">
+                <h3 class="text-xs font-bold text-ink"><i class="ph-bold ph-device-tablet text-emerald-600"></i> رابط شاشة الزبون<span id="kiosk-branch" class="text-ink/55"></span></h3>
+                <p class="text-[11px] text-ink/60 leading-relaxed">انسخ الرابط وافتحه على شاشة أو جهاز لوحي قدّام العميل، فتعرض رموز QR لخدماتك وكود الختم. يعمل دون الحاجة إلى إيميلك وكلمة المرور.</p>
+              </div>
+              <div id="kiosk-link-box" class="hidden space-y-2">
+                <input id="kiosk-link" readonly dir="ltr" class="w-full text-[11px] bg-brand/5 border border-brand/15 rounded-xl px-3 py-2.5 text-ink/80" onclick="this.select()">
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" onclick="copyKioskLink()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-brand text-cream"><i class="ph-bold ph-copy"></i> نسخ الرابط</button>
+                  <a id="kiosk-open" href="#" target="_blank" rel="noopener" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-white border border-brand/20 text-ink"><i class="ph-bold ph-arrow-square-out"></i> افتح الشاشة</a>
+                </div>
+                <p class="text-[10px] text-ink/50">"غيّر الرابط" في رابط الكاشير يغيّر هذا الرابط معه.</p>
+              </div>
+              <button id="kiosk-show" type="button" onclick="showKioskLink()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-white border border-brand/20 text-ink"><i class="ph-bold ph-link-simple"></i> اطلع رابط شاشة الزبون</button>
+            </div>
         </div>
       </section>
 
@@ -3699,6 +3715,24 @@
     document.getElementById('desk-branch').textContent = branches.length > 1 ? ` (${client.name || ''})` : '';
     document.getElementById('desk-link-box').classList.add('hidden');
     document.getElementById('desk-show').classList.remove('hidden');
+    // شاشة الزبون: تعرض أكواد الخدمات (المنيو والبيجر والانتظار والولاء)
+    const kon = !!client && ['menu', 'pager', 'waitlist', 'loyalty'].some(k => DMPlans.has(client, k));
+    document.getElementById('kiosk-card').classList.toggle('hidden', !kon);
+    document.getElementById('kiosk-branch').textContent = branches.length > 1 ? ` (${client.name || ''})` : '';
+    document.getElementById('kiosk-link-box').classList.add('hidden');
+    document.getElementById('kiosk-show').classList.remove('hidden');
+  }
+  async function showKioskLink() {
+    try {
+      const r = await api('desk-link');
+      document.getElementById('kiosk-link').value = r.kiosk_url;
+      document.getElementById('kiosk-open').href = r.kiosk_url;
+      document.getElementById('kiosk-link-box').classList.remove('hidden');
+      document.getElementById('kiosk-show').classList.add('hidden');
+    } catch (e) { showToast(e.message || 'ما قدرنا نطلع الرابط', true); }
+  }
+  function copyKioskLink() {
+    navigator.clipboard.writeText(document.getElementById('kiosk-link').value).then(() => showToast('تم نسخ رابط شاشة الزبون')).catch(() => showToast('انسخ الرابط يدوياً من الخانة', true));
   }
   async function showDeskLink(reset = false) {
     try {
@@ -3706,14 +3740,14 @@
       document.getElementById('desk-link').value = r.url;
       document.getElementById('desk-link-box').classList.remove('hidden');
       document.getElementById('desk-show').classList.add('hidden');
-      if (reset) showToast('تغيّر الرابط، والقديم وقف');
+      if (reset) { showToast('تغيّر الرابط، والقديم وقف'); document.getElementById('kiosk-link').value = r.kiosk_url; document.getElementById('kiosk-open').href = r.kiosk_url; }
     } catch (e) { showToast(e.message || 'ما قدرنا نطلع الرابط', true); }
   }
   function copyDeskLink() {
     navigator.clipboard.writeText(document.getElementById('desk-link').value).then(() => showToast('تم نسخ رابط الكاشير')).catch(() => showToast('انسخ الرابط يدوياً من الخانة', true));
   }
   async function resetDeskLink() {
-    if (!(await DMDialog.confirm({ title: 'تغيير رابط الكاشير', message: 'الرابط القديم بيوقف على كل الأجهزة اللي مفتوح فيها، ولازم تفتح الرابط الجديد على جهاز الكاشير.', confirmText: 'غيّره', cancelText: 'تراجع' }))) return;
+    if (!(await DMDialog.confirm({ title: 'تغيير رابط الكاشير', message: 'الرابط القديم بيوقف على كل الأجهزة اللي مفتوح فيها، ومعه رابط شاشة الزبون. لازم تفتح الروابط الجديدة على جهاز الكاشير والشاشة.', confirmText: 'غيّره', cancelText: 'تراجع' }))) return;
     showDeskLink(true);
   }
   // ─── رسائل لزبائنك (بطاقة النداء) ───

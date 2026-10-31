@@ -525,7 +525,8 @@ async function main(req) {
       key = crypto.randomBytes(24).toString('base64url');
       await rest(`clients?id=eq.${store.id}`, { method: 'PATCH', body: { desk_key: key } });
     }
-    return { url: `${SITE}/pager-desk.html?k=${key}`, name: store.name };
+    // نفس مفتاح الفرع يفتح شاشة الزبون (شاشة خارجية قدّام العميل) بدون حساب المالك
+    return { url: `${SITE}/pager-desk.html?k=${key}`, kiosk_url: `${SITE}/kiosk.html?k=${key}`, name: store.name };
   }
 
   if (action === 'pager' && req.method === 'GET') {

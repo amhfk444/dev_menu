@@ -1465,5 +1465,11 @@
   "باقتك وتجديدها وطلباتك للإدارة": "Your plan, renewal and requests to the team",
   "خدماتك": "Your services",
   "منشأتك": "Your business",
-  "المزيد": "More"
+  "المزيد": "More",
+  "رابط شاشة الزبون": "Customer screen link",
+  "انسخ الرابط وافتحه على شاشة أو جهاز لوحي قدّام العميل، فتعرض رموز QR لخدماتك وكود الختم. يعمل دون الحاجة إلى إيميلك وكلمة المرور.": "Copy the link and open it on a screen or tablet facing the customer. It shows your service QR codes and the stamp code, without needing your email or password.",
+  "\"غيّر الرابط\" في رابط الكاشير يغيّر هذا الرابط معه.": "\"Change link\" on the cashier link changes this link too.",
+  "اطلع رابط شاشة الزبون": "Get the customer screen link",
+  "تم نسخ رابط شاشة الزبون": "Customer screen link copied",
+  "الرابط القديم بيوقف على كل الأجهزة اللي مفتوح فيها، ومعه رابط شاشة الزبون. لازم تفتح الروابط الجديدة على جهاز الكاشير والشاشة.": "The old link stops on every device it is open on, along with the customer screen link. Open the new links on the cashier device and the screen."
 }
