@@ -34,11 +34,13 @@ async function brandOf(store) {
 
 // بطاقة النداء (المحل اللي ما عنده ولاء): نربطها بالرقم ونحدّثها برقمه واسم الفرع. يرجّع البطاقة أو null
 async function linkPagerCard(store, ticketToken, cardToken) {
-  const pc = (await rest(`pager_cards?token=eq.${q(cardToken)}&client_id=eq.${await brandOf(store)}&select=id,wallet_serial,wallet_url,lang`).catch(() => []))[0];
+  const pc = (await rest(`pager_cards?token=eq.${q(cardToken)}&client_id=eq.${await brandOf(store)}&select=id,wallet_serial,wallet_url,lang,branch_ids`).catch(() => []))[0];
   if (!pc || !pc.wallet_serial || (await loyaltyOf(store.id)).enabled) return null;
   const t = (await rest(`pager_tickets?token=eq.${q(ticketToken)}&client_id=eq.${store.id}`, { method: 'PATCH', prefer: 'return=representation', body: { wallet_serial: pc.wallet_serial, wallet_url: pc.wallet_url } }))[0];
   if (!t) return null;
-  await rest(`pager_cards?id=eq.${pc.id}`, { method: 'PATCH', body: { last_used_at: new Date().toISOString() } }).catch(() => {});
+  // الفرع ينضاف لفروع البطاقة (عشان رسائل زبائن الفرع توصله)
+  const branches = (pc.branch_ids || []).map(Number);
+  await rest(`pager_cards?id=eq.${pc.id}`, { method: 'PATCH', body: { last_used_at: new Date().toISOString(), ...(branches.includes(store.id) ? {} : { branch_ids: [...branches, store.id] }) } }).catch(() => {});
   later(wallet.updatePagerPass(pc.wallet_serial, wallet.pagerStep({ store, number: t.number, step: t.status, lang: t.lang || pc.lang }))
     .then(r => rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_error: `link ${r}` } })));
   return pc;
@@ -182,7 +184,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (t.wallet_url) return { url: t.wallet_url };
     const pass = await wallet.createPagerPass(wallet.pagerStep({ store, number: t.number, step: t.status, lang: t.lang }));
     const card = crypto.randomBytes(18).toString('base64url');
-    await rest('pager_cards', { method: 'POST', body: { client_id: await brandOf(store), token: card, wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, lang: t.lang || null } });
+    await rest('pager_cards', { method: 'POST', body: { client_id: await brandOf(store), token: card, wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, lang: t.lang || null, branch_ids: [store.id] } });
     await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, ...(DEMO.has(store.client_slug) ? { created_at: new Date().toISOString() } : {}) } });
     return { url: pass.shareUrl, card };
   }

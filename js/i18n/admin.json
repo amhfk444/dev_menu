@@ -1432,5 +1432,14 @@
   " من {a}": " of {a}",
   "الحين · وصلت لـ {a} جوال": "Just now · reached {a} phones",
   "الحين · ما وصلت لأحد": "Just now · reached no one",
-  "وصلت لـ {a} جوال، و{b} حذفوا البطاقة من محفظتهم": "Reached {a} phones, and {b} removed the card from their wallet"
+  "وصلت لـ {a} جوال، و{b} حذفوا البطاقة من محفظتهم": "Reached {a} phones, and {b} removed the card from their wallet",
+  "رسالة توصل إشعار على شاشة القفل لزبائنك الحافظين بطاقة النداء في محفظة جوالهم. مثل: عرض اليوم، منتج جديد، أو \"فتحنا فرع جديد\".": "A message that reaches the lock screen of your customers who saved the pager card in their phone wallet. For example: today's offer, a new product, or \"we opened a new branch\".",
+  "لمين ترسل؟": "Send to",
+  "كل الفروع ({a} زبون)": "All branches ({a} customers)",
+  "{a} ({b} زبون)": "{a} ({b} customers)",
+  "كل الفروع": "All branches",
+  "زبائن {a}": "{a} customers",
+  "{a} زبون أخذ رقم من {b}": "{a} customers took a number at {b}",
+  "توصل إشعار لكل زبون حافظ بطاقة النداء ({a}): {b}": "Sends a notification to every customer who saved the pager card ({a}): {b}",
+  "توصل إشعار لزبائن {a} (اللي أخذوا رقم منه) ({b}): {c}": "Sends a notification to {a} customers (who took a number there) ({b}): {c}"
 }

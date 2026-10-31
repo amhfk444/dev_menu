@@ -502,7 +502,7 @@
             <div id="nt-card" class="hidden pro-card p-5 space-y-3">
               <div class="space-y-1">
                 <h3 class="text-xs font-bold text-ink"><i class="ph-bold ph-megaphone text-emerald-600"></i> رسائل لزبائنك</h3>
-                <p class="text-[11px] text-ink/60 leading-relaxed">رسالة توصل إشعار على شاشة القفل لكل زبون حافظ بطاقة النداء في محفظة جواله، من كل فروعك. مثل: عرض اليوم، منتج جديد، أو "فتحنا فرع جديد".</p>
+                <p class="text-[11px] text-ink/60 leading-relaxed">رسالة توصل إشعار على شاشة القفل لزبائنك الحافظين بطاقة النداء في محفظة جوالهم. مثل: عرض اليوم، منتج جديد، أو "فتحنا فرع جديد".</p>
               </div>
               <div id="nt-locked" class="hidden space-y-2">
                 <p class="text-[11px] text-ink/70">إضافة على البيجر بـ <b id="nt-price"></b>.</p>
@@ -511,6 +511,10 @@
               <p id="nt-trial" class="hidden text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-300/60 rounded-lg px-2.5 py-1.5"></p>
               <div id="nt-box" class="hidden space-y-2">
                 <p id="nt-stats" class="text-[11px] font-bold text-ink/70"></p>
+                <label id="nt-to-box" class="hidden block space-y-1">
+                  <span class="text-[11px] font-bold text-ink/70">لمين ترسل؟</span>
+                  <select id="nt-to" onchange="ntToChanged()" class="input-pro bg-cream text-xs"></select>
+                </label>
                 <textarea id="nt-body" rows="3" maxlength="150" class="input-pro" placeholder="مثلاً: اليوم القهوة الثانية بنص السعر لين الساعة 6"></textarea>
                 <div class="flex items-center justify-between gap-2">
                   <span id="nt-count" class="text-[11px] text-ink/50">0/150</span>
@@ -3678,11 +3682,27 @@
       const r = await api('pager-messages', {});
       ntQuota = r;
       const when = (iso) => new Date(iso).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
-      document.getElementById('nt-stats').textContent = `${r.cards} زبون حافظ البطاقة`;
+      // أكثر من فرع: يختار كل الفروع أو زبائن فرع واحد (ولو فاتح لوحة فرع، يكون هو المختار)
+      const many = branches.length > 1, sel = document.getElementById('nt-to'), prev = sel.value;
+      document.getElementById('nt-to-box').classList.toggle('hidden', !many);
+      if (many) {
+        sel.innerHTML = `<option value="">كل الفروع (${r.cards} زبون)</option>` + branches.map(x => `<option value="${x.id}">${esc(x.name || '')} (${(r.by_branch || {})[x.id] || 0} زبون)</option>`).join('');
+        sel.value = prev && sel.querySelector(`option[value="${prev}"]`) ? prev : client.parent_id ? String(client.id) : '';
+      } else sel.innerHTML = '';
+      ntToChanged();
       document.getElementById('nt-send').disabled = false;
+      const branchName = (id) => (branches.find(x => x.id === id) || {}).name;
       document.getElementById('nt-list').innerHTML = r.messages.length ? `<p class="text-[11px] font-bold text-ink/60 mb-1">آخر الرسائل</p><div class="divide-y divide-brand/10">${r.messages.map(m => `
-        <div class="py-2"><p class="leading-relaxed">${esc(m.body)}</p><p class="text-[11px] text-ink/55 mt-0.5">${when(m.created_at)}${m.sent ? ` · وصلت لـ ${m.sent} جوال` : ''}</p></div>`).join('')}</div>` : '';
+        <div class="py-2"><p class="leading-relaxed">${esc(m.body)}</p><p class="text-[11px] text-ink/55 mt-0.5">${when(m.created_at)}${many ? ` · ${m.branch_id ? `زبائن ${esc(branchName(m.branch_id) || 'فرع')}` : 'كل الفروع'}` : ''}${m.sent ? ` · وصلت لـ ${m.sent} جوال` : ''}</p></div>`).join('')}</div>` : '';
     } catch { document.getElementById('nt-stats').textContent = ''; }
+  }
+  // عدد الزبائن اللي بتوصلهم الرسالة حسب الاختيار
+  const ntTarget = () => { const v = document.getElementById('nt-to').value; return v ? Number(v) : null; };
+  const ntCount = () => !ntQuota ? null : ntTarget() ? (ntQuota.by_branch || {})[ntTarget()] || 0 : ntQuota.cards;
+  function ntToChanged() {
+    if (!ntQuota) return;
+    const id = ntTarget(), name = id ? (branches.find(x => x.id === id) || {}).name : '';
+    document.getElementById('nt-stats').textContent = id ? `${ntCount()} زبون أخذ رقم من ${name}` : `${ntQuota.cards} زبون حافظ البطاقة`;
   }
   function addNotify() {
     if (client.parent_id) return showToast('الاشتراك يتعدل من المتجر الرئيسي', true);
@@ -3693,7 +3713,9 @@
   async function sendNotify() {
     const input = document.getElementById('nt-body'), body = input.value.trim();
     if (body.length < 2) return showToast('اكتب الرسالة', true);
-    if (!(await DMDialog.confirm({ title: 'إرسال الرسالة', message: `توصل إشعار لكل زبون حافظ بطاقة النداء${ntQuota ? ` (${ntQuota.cards})` : ''}:\n${body}`, confirmText: 'أرسل', cancelText: 'تراجع', tone: 'success' }))) return;
+    const to = ntTarget(), toName = to ? (branches.find(x => x.id === to) || {}).name : '';
+    const who = to ? `لزبائن ${toName} (اللي أخذوا رقم منه)` : 'لكل زبون حافظ بطاقة النداء';
+    if (!(await DMDialog.confirm({ title: 'إرسال الرسالة', message: `توصل إشعار ${who}${ntQuota ? ` (${ntCount()})` : ''}:\n${body}`, confirmText: 'أرسل', cancelText: 'تراجع', tone: 'success' }))) return;
     input.value = ''; document.getElementById('nt-count').textContent = '0/150';
     const list = document.getElementById('nt-list'), row = document.createElement('div');
     row.className = 'py-2'; row.innerHTML = `<p class="leading-relaxed">${esc(body)}</p><p class="text-[11px] text-emerald-700 font-bold mt-0.5"><i class="ph-bold ph-spinner-gap ph-spin"></i> يرسل لزبائنك…</p>`;
@@ -3701,7 +3723,7 @@
     list.querySelector('.divide-y').prepend(row);
     showToast('انرسلت، وبتوصل لزبائنك خلال ثواني');
     try {
-      const r = await api('pager-message', { body });
+      const r = await api('pager-message', { body, ...(to ? { branch_id: to } : {}) });
       let p = r.progress || { done: true }, sent = p.sent || 0, gone = p.gone || 0;
       const total = p.total;
       while (!p.done) {

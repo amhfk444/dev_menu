@@ -277,8 +277,9 @@ async function refreshWalletCards(store) {
 // رسائل لزبائنك بدون حد: صاحب المحل يقرر. بس دقيقتين بين كل رسالة والثانية (عشان ضغطة مكررة ما ترسلها مرتين)
 const PAGER_MSG_GAP = 2 * 60e3;
 // يرسل دفعة (40 بطاقة) ويرجع وين وقف، ولوحة التحكم تكمّل الباقي
-async function pushPagerMessage(homeId, body, afterId, limit = 40) {
-  const base = `pager_cards?client_id=eq.${homeId}&wallet_serial=not.is.null`;
+// branchId: زبائن فرع واحد بس (اللي أخذوا منه رقم)، وبدونه كل الفروع
+async function pushPagerMessage(homeId, body, afterId, limit = 40, branchId = null) {
+  const base = `pager_cards?client_id=eq.${homeId}&wallet_serial=not.is.null${branchId ? `&branch_ids=cs.{${Number(branchId)}}` : ''}`;
   const [store, cards, all] = await Promise.all([
     rest(`clients?id=eq.${homeId}&select=id,name,client_slug,logo_url,accent_color,business_type`).then(r => r[0]),
     rest(`${base}&id=gt.${Number(afterId) || 0}&select=id,wallet_serial,lang&order=id.asc&limit=${limit}`),
@@ -759,30 +760,35 @@ async function main(req) {
 
   // ─── رسائل لزبائنك: إشعار على بطاقة النداء لكل زبون حافظها (إضافة على البيجر) ───
   // البطاقات للمحل الرئيسي (كل الفروع). اللي عنده رقم شغّال الحين ما نغيّر بطاقته عشان ما يضيع رقمه
+  // صاحب المحل يختار: كل الفروع، أو زبائن فرع واحد (اللي أخذوا منه رقم)
   if (action === 'pager-messages') {
     const home = await loyaltyHome(sid);
     const [list, cards] = await Promise.all([
-      rest(`pager_messages?client_id=eq.${home}&select=id,body,sent,created_at&order=id.desc&limit=10`).catch(() => []),
-      rest(`pager_cards?client_id=eq.${home}&wallet_serial=not.is.null&select=id`).catch(() => [])
+      rest(`pager_messages?client_id=eq.${home}&select=id,body,sent,created_at,branch_id&order=id.desc&limit=10`).catch(() => []),
+      rest(`pager_cards?client_id=eq.${home}&wallet_serial=not.is.null&select=branch_ids&limit=20000`).catch(() => [])
     ]);
-    return { messages: list, cards: cards.length };
+    const by_branch = {};
+    cards.forEach(c => (c.branch_ids || []).forEach(id => { by_branch[id] = (by_branch[id] || 0) + 1; }));
+    return { messages: list, cards: cards.length, by_branch };
   }
   if (action === 'pager-message') {
     const body = str(b.body, 150, 'الرسالة');
     if (body.length < 2) throw new ApiError(400, 'اكتب الرسالة');
     const home = await loyaltyHome(sid);
+    const branch = b.branch_id ? Number(b.branch_id) : null;
+    if (branch && !(await familyIds(store)).includes(branch)) throw new ApiError(400, 'الفرع غير موجود');
     const recent = await rest(`pager_messages?client_id=eq.${home}&created_at=gte.${q(new Date(Date.now() - PAGER_MSG_GAP).toISOString())}&select=id&limit=1`).catch(() => []);
     if (recent.length) throw new ApiError(429, 'أرسلت رسالة قبل شوي، انتظر دقيقتين وأرسل الثانية', 'MSG_LIMIT');
-    const msg = (await rest('pager_messages', { method: 'POST', prefer: 'return=representation', body: { client_id: home, body } }))[0];
-    const p = await pushPagerMessage(home, body, 0);
+    const msg = (await rest('pager_messages', { method: 'POST', prefer: 'return=representation', body: { client_id: home, body, branch_id: branch } }))[0];
+    const p = await pushPagerMessage(home, body, 0, 40, branch);
     await rest(`pager_messages?id=eq.${msg.id}`, { method: 'PATCH', body: { sent: p.sent } }).catch(() => {});
     return { message: { ...msg, sent: p.sent }, progress: p };
   }
   if (action === 'pager-message-push') {
     const home = await loyaltyHome(sid);
-    const msg = (await rest(`pager_messages?id=eq.${int(b.message_id)}&client_id=eq.${home}&select=id,body,sent`))[0];
+    const msg = (await rest(`pager_messages?id=eq.${int(b.message_id)}&client_id=eq.${home}&select=id,body,sent,branch_id`))[0];
     if (!msg) throw new ApiError(404, 'الرسالة غير موجودة');
-    const p = await pushPagerMessage(home, msg.body, int(b.after) || 0);
+    const p = await pushPagerMessage(home, msg.body, int(b.after) || 0, 40, msg.branch_id);
     await rest(`pager_messages?id=eq.${msg.id}`, { method: 'PATCH', body: { sent: (msg.sent || 0) + p.sent } }).catch(() => {});
     return { progress: p };
   }
