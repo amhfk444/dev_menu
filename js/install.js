@@ -47,11 +47,11 @@
     document.body.appendChild(box);
   }
 
-  // بطاقة التثبيت: تطلع لين يثبّت التطبيق، أو يضغط "لاحقاً" (ترجع بعد أسبوعين)
+  // بطاقة التثبيت: تطلع لين يثبّت التطبيق، أو يضغط "لاحقاً" (ترجع بعد يوم)
   function banner(el, { key, title, text }) {
     if (!el) return;
     const name = `dm_install_later_${key}`;
-    const later = () => { try { return Date.now() - Number(localStorage.getItem(name) || 0) < 14 * 864e5; } catch { return false; } };
+    const later = () => { try { return Date.now() - Number(localStorage.getItem(name) || 0) < 864e5; } catch { return false; } };
     const render = () => {
       el.innerHTML = '';
       if (!available() || later()) return;
