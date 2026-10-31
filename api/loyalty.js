@@ -232,7 +232,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       if (!card) {
         card = (await rest('loyalty_cards', {
           method: 'POST', prefer: 'return=representation',
-          body: { client_id: ctx.store.id, branch_id: ctx.branch.id, token: crypto.randomBytes(18).toString('base64url'), lang: reqLang(req), ...profile }
+          body: { client_id: ctx.store.id, branch_id: ctx.branch.id, branch_ids: [ctx.branch.id], token: crypto.randomBytes(18).toString('base64url'), lang: reqLang(req), ...profile }
         }))[0];
       } else if (!card.name || card.name === 'عضو' || !card.gender) {
         // بطاقة مستوردة من نظام سابق (أو قديمة بدون بيانات): نكمّلها باسمه وجنسه

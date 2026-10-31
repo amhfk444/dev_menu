@@ -4660,7 +4660,10 @@
   const lyCardLabel = (c) => `${c.name || `عضو #${c.member_no}`}${c.name ? ` #${c.member_no}` : ''}${c.phone ? ` (${c.phone})` : ''}`;
   function renderLyMessages() {
     const d = ly.data, sel = document.getElementById('ly-msg-to'), keep = sel.value;
-    sel.innerHTML = `<option value="">كل الأعضاء (${d.stats.members})</option><option value="away">اللي ما جوا من أكثر من 30 يوم (${d.stats.away30 || 0})</option>` + d.cards.map(c => `<option value="${c.id}">${esc(lyCardLabel(c))}</option>`).join('');
+    // أكثر من فرع: زبائن فرع واحد (سجّلوا فيه أو انختم لهم فيه)
+    const lyBr = (d.branches || []).filter(x => x.id != null);
+    const brOpts = lyBr.length > 1 ? `<optgroup label="زبائن فرع">${lyBr.map(x => `<option value="b:${x.id}">${esc(x.name || '')} (${x.visitors || 0})</option>`).join('')}</optgroup>` : '';
+    sel.innerHTML = `<option value="">كل الأعضاء (${d.stats.members})</option>${brOpts}<option value="away">اللي ما جوا من أكثر من 30 يوم (${d.stats.away30 || 0})</option>` + (d.cards.length ? `<optgroup label="عضو واحد">${d.cards.map(c => `<option value="${c.id}">${esc(lyCardLabel(c))}</option>`).join('')}</optgroup>` : '');
     if ([...sel.options].some(o => o.value === keep)) sel.value = keep;
     const byId = Object.fromEntries(d.cards.map(c => [c.id, c]));
     const when = (iso) => new Date(iso).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
@@ -4669,7 +4672,7 @@
       <div class="divide-y divide-brand/10">${d.messages.map(m => `
         <div class="py-2.5">
           <p class="leading-relaxed">${m.source === 'ai' ? '<span class="text-[10px] font-bold bg-violet-500/10 text-violet-700 rounded-full px-2 py-0.5 ml-1"><i class="ph-bold ph-sparkle"></i> المساعد</span>' : ''}${esc(m.body)}</p>
-          <p class="text-[11px] text-ink/55 mt-0.5">${m.card_id ? esc(byId[m.card_id] ? lyCardLabel(byId[m.card_id]) : `زبون #${m.card_id}`) : 'لكل الأعضاء'} · ${when(m.created_at)}${m.wallet_sent ? ` · وصلت إشعار لـ ${m.wallet_sent} جوال` : ''}</p>
+          <p class="text-[11px] text-ink/55 mt-0.5">${m.card_id ? esc(byId[m.card_id] ? lyCardLabel(byId[m.card_id]) : `زبون #${m.card_id}`) : m.branch_id ? `زبائن ${esc((lyBr.find(x => x.id === m.branch_id) || {}).name || 'فرع')}` : 'لكل الأعضاء'} · ${when(m.created_at)}${m.wallet_sent ? ` · وصلت إشعار لـ ${m.wallet_sent} جوال` : ''}</p>
         </div>`).join('')}</div>` : '';
   }
   const LY_DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
@@ -4684,11 +4687,12 @@
     const body = document.getElementById('ly-msg-body').value.trim();
     const to = document.getElementById('ly-msg-to').value;
     if (body.length < 2) return showToast('اكتب الرسالة', true);
-    const target = to === 'away' ? `اللي ما جوا من أكثر من 30 يوم (${ly.data.stats.away30 || 0})` : to ? lyCardLabel(ly.data.cards.find(c => String(c.id) === to)) : `كل الأعضاء (${ly.data.stats.members})`;
+    const br = to.startsWith('b:') ? (ly.data.branches || []).find(x => String(x.id) === to.slice(2)) : null;
+    const target = br ? `زبائن ${br.name} (${br.visitors || 0})` : to === 'away' ? `اللي ما جوا من أكثر من 30 يوم (${ly.data.stats.away30 || 0})` : to ? lyCardLabel(ly.data.cards.find(c => String(c.id) === to)) : `كل الأعضاء (${ly.data.stats.members})`;
     if (!(await DMDialog.confirm({ title: 'إرسال الرسالة', message: `لـ ${target}:\n${body}`, confirmText: 'أرسل', cancelText: 'تراجع' }))) return;
     const btn = document.getElementById('ly-msg-send'); btn.disabled = true;
     try {
-      const r = await api('loyalty-message', to === 'away' ? { body, audience: 'away' } : { body, card_id: to || null });
+      const r = await api('loyalty-message', br ? { body, branch_id: br.id } : to === 'away' ? { body, audience: 'away' } : { body, card_id: to || null });
       document.getElementById('ly-msg-body').value = ''; document.getElementById('ly-msg-count').textContent = '0/200';
       // للكل: نكمّل الإرسال على دفعات لين توصل لكل جوال
       let p = r.progress || { done: true }, sent = p.sent || 0;

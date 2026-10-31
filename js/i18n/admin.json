@@ -1447,5 +1447,8 @@
   "اكتب عرضك، ويوصل إشعار على شاشة القفل لزبائنك الحافظين بطاقة النداء.": "Write your offer, and it reaches the lock screen of your customers who saved the pager card.",
   "كذا تطلع على جوال زبونك": "How it looks on your customer's phone",
   "رسالتك تطلع هنا": "Your message shows here",
-  "أرسل لـ {a} زبون": "Send to {a} customers"
+  "أرسل لـ {a} زبون": "Send to {a} customers",
+  "زبائن فرع": "Branch customers",
+  "عضو واحد": "One member",
+  "زبائن {a} ({b})": "{a} customers ({b})"
 }

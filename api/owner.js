@@ -591,7 +591,7 @@ async function main(req) {
       rest(`loyalty_cards?client_id=eq.${store.id}&select=id,member_no,name,phone,stamps,visits,rewards,last_stamp_at,created_at&order=last_stamp_at.desc.nullslast&limit=500`),
       rest(`loyalty_events?client_id=eq.${store.id}&kind=eq.stamp&created_at=gte.${iso(7)}&select=id,card_id,created_at&order=id.desc&limit=5000`),
       rest(`loyalty_events?client_id=eq.${store.id}&kind=eq.redeem&select=id`),
-      rest(`loyalty_messages?client_id=eq.${store.id}&or=${q('(kind.is.null,kind.not.in.(pager,away))')}&select=id,card_id,body,wallet_sent,created_at,source,kind&order=id.desc&limit=15`).catch(() => []),
+      rest(`loyalty_messages?client_id=eq.${store.id}&or=${q('(kind.is.null,kind.not.in.(pager,away))')}&select=id,card_id,body,wallet_sent,created_at,source,kind,branch_id&order=id.desc&limit=15`).catch(() => []),
       rest(`loyalty_feedback?client_id=eq.${store.id}&created_at=gte.${iso(90)}&select=reason,note,created_at,card_id&order=id.desc&limit=500`).catch(() => []),
       rest(`loyalty_gifts?client_id=eq.${store.id}&select=status,new_member,created_at&limit=5000`).catch(() => [])
     ]);
@@ -607,6 +607,11 @@ async function main(req) {
         // الأعضاء والأختام قبل تتبع الفروع
         if (by.none && (by.none.members || by.none.stamps30)) branchStats.push({ id: null, name: null, ...zero, ...by.none });
       }
+      // رسائل لزبائن فرع واحد: كم عضو زار كل فرع (سجّل فيه أو انختم له فيه)
+      const tags = await rest(`loyalty_cards?client_id=eq.${store.id}&select=branch_ids&limit=20000`).catch(() => []);
+      const visitors = {};
+      tags.forEach(c => (c.branch_ids || []).forEach(id => { visitors[id] = (visitors[id] || 0) + 1; }));
+      if (branchStats) branchStats.forEach(x => { if (x.id != null) x.visitors = visitors[x.id] || 0; });
     }
     const active = cards.filter(c => c.last_stamp_at && Date.parse(c.last_stamp_at) > Date.now() - 30 * day).length;
     // آخر 7 أيام (بتوقيت الرياض): زيارات كل يوم، والعملاء العائدين، وآخر الزيارات
@@ -733,27 +738,30 @@ async function main(req) {
       const sent = await pushWalletCards(sid, { cardIds: away.map(c => c.id), notice: body });
       return { message: { id: 0, body, card_id: null, audience: 'away', wallet_sent: sent, created_at: new Date().toISOString() }, progress: { done: true, sent, total: away.length } };
     }
+    // زبائن فرع واحد (من فروع المحل بس)
+    const branch = b.branch_id ? Number(b.branch_id) : null;
+    if (branch && !(await familyIds(store)).includes(branch)) throw new ApiError(400, 'الفرع غير موجود');
     let cardId = null;
-    if (b.card_id != null && b.card_id !== '') {
+    if (!branch && b.card_id != null && b.card_id !== '') {
       cardId = int(b.card_id);
       const own = (await rest(`loyalty_cards?id=eq.${cardId}&client_id=eq.${sid}&select=id`))[0];
       if (!own) throw new ApiError(404, 'العضو غير موجود');
     }
-    const msg = (await rest('loyalty_messages', { method: 'POST', prefer: 'return=representation', body: { client_id: sid, card_id: cardId, body } }))[0];
+    const msg = (await rest('loyalty_messages', { method: 'POST', prefer: 'return=representation', body: { client_id: sid, card_id: cardId, body, branch_id: branch } }))[0];
     // المحفظة: لعضو واحد على طول، وللكل على دفعات (لوحة التحكم تكمّل الباقي بـ loyalty-message-push)
     if (cardId) {
       const sent = await pushWalletCards(sid, { cardIds: [cardId], notice: body });
       await rest(`loyalty_messages?id=eq.${msg.id}`, { method: 'PATCH', body: { wallet_sent: sent } }).catch(() => {});
       return { message: { ...msg, wallet_sent: sent }, progress: { done: true, sent, total: 1 } };
     }
-    const p = await pushWalletBatch(sid, { notice: body });
+    const p = await pushWalletBatch(sid, { notice: body, branchId: branch });
     await rest(`loyalty_messages?id=eq.${msg.id}`, { method: 'PATCH', body: { wallet_sent: p.sent } }).catch(() => {});
     return { message: { ...msg, wallet_sent: p.sent }, progress: p };
   }
   if (action === 'loyalty-message-push') {
-    const msg = (await rest(`loyalty_messages?id=eq.${int(b.message_id)}&client_id=eq.${sid}&card_id=is.null&select=id,body,wallet_sent`))[0];
+    const msg = (await rest(`loyalty_messages?id=eq.${int(b.message_id)}&client_id=eq.${sid}&card_id=is.null&select=id,body,wallet_sent,branch_id`))[0];
     if (!msg) throw new ApiError(404, 'الرسالة غير موجودة');
-    const p = await pushWalletBatch(sid, { notice: msg.body, afterId: int(b.after) || 0 });
+    const p = await pushWalletBatch(sid, { notice: msg.body, afterId: int(b.after) || 0, branchId: msg.branch_id });
     await rest(`loyalty_messages?id=eq.${msg.id}`, { method: 'PATCH', body: { wallet_sent: (msg.wallet_sent || 0) + p.sent } }).catch(() => {});
     return { progress: p };
   }

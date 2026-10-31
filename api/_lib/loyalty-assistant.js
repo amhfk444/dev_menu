@@ -93,12 +93,13 @@ async function pushWalletCards(storeId, { cardIds = null, notice = null, notices
 }
 
 // رسالة لكل الأعضاء على دفعات (عشان توصل للكل مهما كثروا): كل طلب يرسل دفعة ويرجع وين وقف
-async function pushWalletBatch(storeId, { notice, afterId = 0, limit = 40 } = {}) {
+// branchId: زبائن فرع واحد بس (سجّلوا فيه أو انختم لهم فيه)
+async function pushWalletBatch(storeId, { notice, afterId = 0, limit = 40, branchId = null } = {}) {
   if (!wallet.configured() || !(await storeHasFeature(storeId, 'loyalty'))) return { sent: 0, lastId: afterId, done: true, total: 0 };
   const store = (await rest(`clients?id=eq.${storeId}&select=${STORE_FIELDS}`))[0];
   if (!store) return { sent: 0, lastId: afterId, done: true, total: 0 };
   const settings = normalizeLoyalty(store.loyalty_settings);
-  const base = `loyalty_cards?client_id=eq.${storeId}&wallet_serial=not.is.null`;
+  const base = `loyalty_cards?client_id=eq.${storeId}&wallet_serial=not.is.null${branchId ? `&branch_ids=cs.{${Number(branchId)}}` : ''}`;
   const [cards, all] = await Promise.all([
     rest(`${base}&id=gt.${Number(afterId) || 0}&select=*&order=id.asc&limit=${limit}`),
     afterId ? Promise.resolve(null) : rest(`${base}&select=id`).catch(() => [])

@@ -11,7 +11,11 @@ const { topic, poke } = require('./live');
 // الفرع اللي صار فيه الختم أو الصرف (عشان عدد عملاء الولاء لكل فرع)
 async function tagBranch(cardId, branchId) {
   if (!branchId) return;
-  await rest(`loyalty_events?card_id=eq.${Number(cardId)}&branch_id=is.null&created_at=gte.${q(new Date(Date.now() - 120e3).toISOString())}`, { method: 'PATCH', body: { branch_id: Number(branchId) } }).catch(() => {});
+  await Promise.all([
+    rest(`loyalty_events?card_id=eq.${Number(cardId)}&branch_id=is.null&created_at=gte.${q(new Date(Date.now() - 120e3).toISOString())}`, { method: 'PATCH', body: { branch_id: Number(branchId) } }),
+    // البطاقة تعرف فروعها (رسائل لزبائن فرع واحد)
+    rpc('server_card_add_branch', { p_card: Number(cardId), p_branch: Number(branchId) })
+  ]).catch(() => {});
 }
 
 // ختم مع الشراء: يلتزم بإعداد "ختم واحد كل" عشان ما يتكرر مع كل رقم بيجر أو كود
