@@ -1621,6 +1621,15 @@
       </div>
       <div id="links-bg-prev" class="hidden"></div>
     </div>
+    <!-- ترتيب أقسام صفحة الروابط السريعة -->
+    <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <label class="text-[11px] font-bold text-ink/75"><i class="ph-bold ph-arrows-down-up"></i> ترتيب صفحة الروابط السريعة <span class="text-ink/50 font-semibold">(الأقسام الفاضية ما تظهر في الصفحة)</span></label>
+        <button type="button" onclick="resetLinksOrder()" class="text-[10px] font-bold text-ink/70 bg-white border border-brand/20 hover:bg-brand/10 px-2.5 py-1 rounded-lg transition">الترتيب الافتراضي</button>
+      </div>
+      <ol id="links-order" class="space-y-1.5"></ol>
+      <button onclick="saveLinksOrder()" class="w-full bg-brand text-cream hover:bg-brand-dark text-xs font-bold py-2 rounded-xl transition">حفظ الترتيب</button>
+    </div>
         </div>
         <!-- المظهر: الثيم ولون الهوية (للمنيو وصفحة الروابط، لكل الباقات) -->
         <div class="pro-card p-5 space-y-4">
@@ -2310,7 +2319,7 @@
     setWaInput(client.whatsapp_number);
     document.getElementById('social-whatsapp-cc').onchange = (e) => { document.getElementById('social-whatsapp').placeholder = e.target.value === '966' ? '05xxxxxxxx' : 'رقم الواتساب'; };
     document.getElementById('social-snap').value = client.snapchat_url || '';
-    setLogo(client.logo_url); renderBgPreview();
+    setLogo(client.logo_url); renderBgPreview(); renderLinksOrder();
 
     document.getElementById('info-hours').value = client.opening_hours || '';
     document.getElementById('info-location').value = client.location_url || '';
@@ -2896,6 +2905,45 @@
     document.getElementById('links-bg-status').innerHTML = lvid || limg
       ? `<span class="text-emerald-700"><i class="ph-bold ph-check-circle"></i> خلفية خاصة</span><button type="button" onclick="resetLinksBg()" class="bg-white hover:bg-brand/10 text-ink border border-brand/25 px-2.5 py-1 rounded-lg transition">استخدم خلفية المنيو</button>`
       : '<span>حالياً: نفس خلفية المنيو</span>';
+  }
+  // ─── ترتيب أقسام صفحة الروابط ───
+  const LINKS_SECTIONS = {
+    services: ['خدماتك', 'المنيو، خذ رقمك، بطاقة الولاء، قائمة الانتظار', 'ph-squares-four'],
+    contact:  ['الطلبات والتواصل', 'أرقام الطلبات وواتساب', 'ph-phone'],
+    delivery: ['تطبيقات التوصيل', 'روابط تطبيقات التوصيل', 'ph-moped'],
+    social:   ['تابعنا', 'انستجرام، تيك توك، سناب شات، الموقع', 'ph-instagram-logo'],
+    custom:   ['روابط أخرى', 'الروابط اللي أضفتها بنفسك', 'ph-link-simple'],
+    location: ['زورونا', 'موقعك على الخريطة', 'ph-map-pin']
+  };
+  let linksOrder = [];
+  function renderLinksOrder(fromClient = true) {
+    if (fromClient) {
+      const saved = Array.isArray(client.links_order) ? client.links_order.filter(k => LINKS_SECTIONS[k]) : [];
+      linksOrder = [...new Set([...saved, ...Object.keys(LINKS_SECTIONS)])];
+    }
+    const last = linksOrder.length - 1;
+    const arrow = (i, d, icon, off) => `<button type="button" onclick="moveLinksSection(${i}, ${d})" ${off ? 'disabled' : ''} aria-label="${d < 0 ? 'لفوق' : 'لتحت'}" class="w-8 h-8 rounded-lg bg-white border border-brand/20 hover:bg-brand/10 text-ink transition disabled:opacity-30 disabled:hover:bg-white"><i class="ph-bold ${icon}"></i></button>`;
+    document.getElementById('links-order').innerHTML = linksOrder.map((k, i) => {
+      const [name, hint, icon] = LINKS_SECTIONS[k];
+      return `<li class="flex items-center gap-2 bg-white rounded-xl border border-brand/15 px-3 py-2">
+        <span class="w-5 text-[11px] font-bold text-ink/50">${i + 1}</span>
+        <i class="ph-bold ${icon} text-ink/70"></i>
+        <span class="flex-1 min-w-0"><b class="block text-xs text-ink">${name}</b><span class="block text-[10px] text-ink/55 truncate">${hint}</span></span>
+        ${arrow(i, -1, 'ph-arrow-up', i === 0)}${arrow(i, 1, 'ph-arrow-down', i === last)}
+      </li>`;
+    }).join('');
+  }
+  function moveLinksSection(i, d) {
+    const j = i + d;
+    if (j < 0 || j >= linksOrder.length) return;
+    [linksOrder[i], linksOrder[j]] = [linksOrder[j], linksOrder[i]];
+    renderLinksOrder(false);
+  }
+  function resetLinksOrder() { linksOrder = Object.keys(LINKS_SECTIONS); renderLinksOrder(false); }
+  async function saveLinksOrder() {
+    const isDefault = linksOrder.join() === Object.keys(LINKS_SECTIONS).join();
+    if (await updateClient({ links_order: isDefault ? null : linksOrder })) showToast('تم حفظ ترتيب صفحة الروابط');
+    else showToast('تعذر حفظ الترتيب', true);
   }
   async function resetLinksBg() {
     if (await updateClient({ links_bg_image_url: null, links_bg_video_url: null })) { renderBgPreview(); showToast('صفحة الروابط رجعت تاخذ خلفية المنيو'); }

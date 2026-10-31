@@ -125,6 +125,8 @@
       </div>`;
   }
 
+  const LINKS_ORDER = ['services', 'contact', 'delivery', 'social', 'custom', 'location'];
+
   function render(p) {
     if (window.DMTheme) DMTheme.apply(p);
     document.title = `${p.name || 'روابطنا'} | روابطنا`;
@@ -147,6 +149,8 @@
       h.classList.remove('hidden');
     }
 
+    // كل قسم في مكانه، وبعدين نرتبها حسب ترتيب صاحب المحل
+    const sec = {};
     const out = [];
 
     // 1) المنيو و 2) قائمة الانتظار
@@ -163,7 +167,7 @@
       .map(n => linkBtn({ href: `tel:${n.phone}`, label: n.label || `اتصل بنا ${n.phone}`, icon: 'ph-bold ph-phone', external: false }));
     const wa = String(p.whatsapp_number || '').replace(/\D/g, '');
     if (wa) contact.push(linkBtn({ href: `https://wa.me/${wa}`, label: 'تواصل عبر واتساب', icon: 'ph-bold ph-whatsapp-logo' }));
-    out.push(group('الطلبات والتواصل', contact));
+    sec.contact = group('الطلبات والتواصل', contact);
 
     // 5) تطبيقات التوصيل بشعاراتها
     const delivery = (Array.isArray(p.delivery_apps) ? p.delivery_apps : []).map(d => {
@@ -176,7 +180,7 @@
       if (!domain) { try { domain = new URL(url).hostname; } catch {} }
       return linkBtn({ href: url, label: `اطلب عبر ${name}`, img: `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` });
     }).filter(Boolean);
-    out.push(group('تطبيقات التوصيل', delivery));
+    sec.delivery = group('تطبيقات التوصيل', delivery);
 
     // 6) روابط التواصل
     const social = [
@@ -185,20 +189,22 @@
       [safeUrl(p.snapchat_url), 'سناب شات', 'ph-bold ph-snapchat-logo'],
       [safeUrl(p.website_url), 'موقعنا الإلكتروني', 'ph-bold ph-globe']
     ].filter(([u]) => u).map(([href, label, icon]) => linkBtn({ href, label, icon }));
-    out.push(group('تابعنا', social));
+    sec.social = group('تابعنا', social);
 
     // 7) الروابط المخصصة
     const custom = (Array.isArray(p.custom_links) ? p.custom_links : [])
       .map(l => ({ title: String((l && l.title) || '').trim(), url: safeUrl(l && l.url) }))
       .filter(l => l.title && l.url)
       .map(l => linkBtn({ href: l.url, label: l.title, icon: 'ph-bold ph-link-simple' }));
-    out.push(group('روابط أخرى', custom));
+    sec.custom = group('روابط أخرى', custom);
 
     // 8) الموقع على الخريطة
     const loc = safeUrl(p.location_url);
-    if (loc) out.push(group('زورونا', [linkBtn({ href: loc, label: 'موقعنا على الخريطة', icon: 'ph-bold ph-map-pin' })]));
+    if (loc) sec.location = group('زورونا', [linkBtn({ href: loc, label: 'موقعنا على الخريطة', icon: 'ph-bold ph-map-pin' })]);
 
-    document.getElementById('links').innerHTML = out.join('');
+    sec.services = out.join('');
+    const order = [...(Array.isArray(p.links_order) ? p.links_order : []), ...LINKS_ORDER];
+    document.getElementById('links').innerHTML = [...new Set(order)].map(k => sec[k] || '').join('');
     document.getElementById('loading').remove();
     document.getElementById('page').classList.remove('hidden');
     if (window.DMOccasions && p.occasion) {
