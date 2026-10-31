@@ -1441,5 +1441,7 @@
   "زبائن {a}": "{a} customers",
   "{a} زبون أخذ رقم من {b}": "{a} customers took a number at {b}",
   "توصل إشعار لكل زبون حافظ بطاقة النداء ({a}): {b}": "Sends a notification to every customer who saved the pager card ({a}): {b}",
-  "توصل إشعار لزبائن {a} (اللي أخذوا رقم منه) ({b}): {c}": "Sends a notification to {a} customers (who took a number there) ({b}): {c}"
+  "توصل إشعار لزبائن {a} (اللي أخذوا رقم منه) ({b}): {c}": "Sends a notification to {a} customers (who took a number there) ({b}): {c}",
+  "الحين · {a} · وصلت لـ {b} جوال": "Just now · {a} · reached {b} phones",
+  "الحين · {a} · ما وصلت لأحد": "Just now · {a} · reached no one"
 }

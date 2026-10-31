@@ -3732,7 +3732,8 @@
         sent += p.sent; gone += p.gone || 0;
       }
       row.lastElementChild.className = 'text-[11px] text-ink/55 mt-0.5';
-      row.lastElementChild.textContent = sent ? `الحين · وصلت لـ ${sent} جوال` : 'الحين · ما وصلت لأحد';
+      const label = branches.length > 1 ? ` · ${to ? `زبائن ${toName}` : 'كل الفروع'}` : '';
+      row.lastElementChild.textContent = sent ? `الحين${label} · وصلت لـ ${sent} جوال` : `الحين${label} · ما وصلت لأحد`;
       if (!sent) showToast(gone ? `ما وصلت: الزبائن اللي عندهم البطاقة (${gone}) حذفوها من محفظتهم` : total ? 'ما قدرنا نوصلها الحين، جرّب بعد شوي' : 'انرسلت، بس ما فيه أحد حافظ البطاقة للحين', !!(gone || total));
       else if (gone) showToast(`وصلت لـ ${sent} جوال، و${gone} حذفوا البطاقة من محفظتهم`);
     } catch (e) {
