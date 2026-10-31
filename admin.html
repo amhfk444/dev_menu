@@ -27,10 +27,16 @@
 
 <style>
   /* ─── نظام التصميم: ألوان الشعار (أخضر + رملي)، والزعفراني للي يحتاج انتباه، والطوبي لـ"نفدت" ─── */
+  /* قيم Shopify Polaris (@shopify/polaris-tokens 9.4.2)، والأخضر لون DEV MENU للأزرار الأساسية */
   :root {
-    --page: #ece3d7; --paper: #fbf8f3; --ink: #22362a; --ink-2: #4d5e52; --ink-3: #6f7d72;
-    --brand: #384f3d; --brand-dark: #2a3e2f; --line: rgba(56, 79, 61, .13); --line-2: rgba(56, 79, 61, .22);
-    --saffron: #c9a227; --brick: #a8432e; --ok: #2f7a4b;
+    --page: #f1f1f1; --paper: #ffffff; --ink: #303030; --ink-2: #4a4a4a; --ink-3: #616161;
+    --brand: #384f3d; --brand-dark: #2a3e2f; --line: #e3e3e3; --line-2: #cccccc;
+    --saffron: #c9a227; --brick: #c70a24; --ok: #047b5d;
+    --input-border: #8a8a8a; --surface-hover: #f7f7f7;
+    --bevel: inset 1px 0 0 rgba(0, 0, 0, .13), inset -1px 0 0 rgba(0, 0, 0, .13), inset 0 -1px 0 rgba(0, 0, 0, .17), inset 0 1px 0 rgba(204, 204, 204, .5);
+    --shadow-card: 0 1px 0 rgba(26, 26, 26, .07), var(--bevel);
+    --shadow-button: inset 0 -1px 0 #b5b5b5, inset 0 0 0 1px rgba(0, 0, 0, .1), inset 0 .5px 0 1.5px #fff;
+    --shadow-primary: inset 0 -1px 0 1px rgba(0, 0, 0, .55), inset 0 0 0 1px var(--brand), inset 0 .5px 0 1.5px rgba(255, 255, 255, .25);
   }
   body {
     font-family: 'SaudiRiyal', 'IBM Plex Sans Arabic', system-ui, sans-serif; background-color: var(--page); color: var(--ink);
@@ -41,14 +47,14 @@
   .tnum { font-variant-numeric: tabular-nums; }
   ::selection { background: #384f3d; color: #faf6f1; }
   /* البطاقة: ورقة بيضاء دافية، حواف أنعم وظل خفيف يفصلها عن الخلفية الرملية */
-  .pro-card { background: var(--paper); border: 1px solid rgba(56, 79, 61, .08); border-radius: 18px; box-shadow: 0 1px 2px rgba(34, 54, 42, .04), 0 12px 30px -22px rgba(34, 54, 42, .3); }
+  .pro-card { background: var(--paper); border: 0; border-radius: 12px; box-shadow: var(--shadow-card); }
   /* عناوين بطاقات الرئيسية أوضح */
   [data-page="dashboard"] .pro-card h3 { font-size: 14.5px; }
   /* بطاقة خدمة لوحدها في آخر صف تاخذ العرض كامل بدل ما تترك فراغ */
   @media (min-width: 640px) { #svc-summary > :last-child:nth-child(odd) { grid-column: 1 / -1; } }
   /* بلاطات الأرقام: أيقونة في مربع ملوّن + رقم كبير + وصف (مثل لوحات المتابعة) */
-  .kpi { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 16px; border: 1.5px solid rgba(56, 79, 61, .13); background: #fff; text-align: right; transition: border-color .15s, box-shadow .15s; }
-  .kpi:hover { border-color: rgba(56, 79, 61, .35); box-shadow: 0 10px 22px -18px rgba(34, 54, 42, .5); }
+  .kpi { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 12px; border: 0; background: #fff; text-align: right; box-shadow: var(--shadow-card); transition: background-color .15s; }
+  .kpi:hover { background: var(--surface-hover); }
   .kpi-ic { width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center; font-size: 20px; background: rgba(56, 79, 61, .1); color: var(--brand); flex-shrink: 0; }
   .kpi b { display: block; font-size: 24px; line-height: 1; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
   .kpi small { display: block; font-size: 12.5px; color: var(--ink-3); margin-top: 6px; }
@@ -68,12 +74,13 @@
   #add-product-form details { background: #fff !important; border-color: var(--line) !important; }
   .form-actions { position: sticky; bottom: -20px; margin: 0 -20px -20px; padding: 14px 20px 20px; background: linear-gradient(180deg, rgba(251, 248, 243, 0), var(--paper) 30%); }
   .input-pro {
-    width: 100%; min-height: 44px; background-color: #ffffff;
-    border: 1px solid var(--line-2); border-radius: 10px;
-    padding: 0.6rem 0.8rem; font-size: 0.875rem; color: var(--ink); transition: border-color .15s, box-shadow .15s;
+    width: 100%; min-height: 40px; background-color: #fdfdfd;
+    border: 1px solid var(--input-border); border-radius: 8px;
+    padding: 0.45rem 0.75rem; font-size: 0.8125rem; color: var(--ink); transition: border-color .15s, box-shadow .15s;
   }
   .input-pro::placeholder { color: rgba(34, 54, 42, 0.35); }
-  .input-pro:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(56, 79, 61, 0.14); }
+  .input-pro:hover { border-color: #616161; }
+  .input-pro:focus { outline: 2px solid #005bd3; outline-offset: 1px; border-color: var(--input-border); box-shadow: none; }
   select.input-pro { background-color: #ffffff; }
   input[type="file"].input-pro::file-selector-button {
     background: #384f3d; color: #faf6f1; border: 0; border-radius: .5rem; padding: .3rem .7rem; margin-inline-end: .6rem; font-family: inherit; font-weight: 700; cursor: pointer;
@@ -86,7 +93,7 @@
   @media (max-width: 640px) {
     /* آيفون يكبّر الصفحة إذا كان خط الحقل أصغر من 16px */
     .input-pro, input.input-pro, select.input-pro, textarea.input-pro { font-size: 16px !important; }
-    .pro-card { border-radius: 16px; }
+    .pro-card { border-radius: 12px; }
     main { padding-left: 12px !important; padding-right: 12px !important; }
     .tab-btn { flex: 1; justify-content: center; padding-left: .5rem !important; padding-right: .5rem !important; }
   }
@@ -149,29 +156,38 @@
   .ly-act { width: 32px; height: 32px; border-radius: 10px; display: inline-grid; place-items: center; color: rgba(34,54,42,.55); }
   .ly-act:hover { background: rgba(56,79,61,.08); color: #22362a; }
   .ly-act.del:hover { background: rgba(168,67,46,.1); color: #a8432e; }
+  /* القائمة الجانبية بأسلوب Polaris: رمادية فاتحة، والصفحة الحالية سطر أبيض */
   .nav-item {
-    position: relative; display: flex; align-items: center; gap: .7rem; width: 100%; min-height: 42px; padding: .55rem .85rem;
-    border-radius: 10px; font-size: .875rem; font-weight: 500; color: rgba(251, 248, 243, 0.72); transition: background-color .15s, color .15s;
+    position: relative; display: flex; align-items: center; gap: .6rem; width: 100%; min-height: 34px; padding: .35rem .65rem;
+    border-radius: 8px; font-size: .8125rem; font-weight: 600; color: #303030; transition: background-color .12s;
   }
-  .nav-item i { width: 1.1rem; text-align: center; font-size: .85rem; opacity: .85; }
-  .nav-item:hover { background: rgba(251, 248, 243, 0.07); color: #fbf8f3; }
-  /* الصفحة الحالية: كبسولة بلون الصفحة تطلع من القائمة وتتصل بالمحتوى (حواف مقعرة فوق وتحت) */
-  .nav-item.nav-active { background: var(--page); color: var(--brand); font-weight: 700; border-radius: 0 999px 999px 0; margin-left: -12px; padding-left: calc(.85rem + 12px); width: calc(100% + 12px); }
-  .nav-item.nav-active::before, .nav-item.nav-active::after { content: ''; position: absolute; left: 0; width: 18px; height: 18px; pointer-events: none; }
-  .nav-item.nav-active::before { top: -18px; border-bottom-left-radius: 18px; box-shadow: -6px 6px 0 6px var(--page); }
-  .nav-item.nav-active::after { bottom: -18px; border-top-left-radius: 18px; box-shadow: -6px -6px 0 6px var(--page); }
-  .nav-item.nav-active i { opacity: 1; color: var(--brand); }
-  .nav-item.nav-active #nav-count { background: rgba(56, 79, 61, .12); }
-  #nav-count { background: rgba(251, 248, 243, 0.13); font-variant-numeric: tabular-nums; }
+  .nav-item i { width: 1.1rem; text-align: center; font-size: 1rem; color: #4a4a4a; }
+  .nav-item:hover { background: rgba(255, 255, 255, .6); }
+  .nav-item.nav-active { background: #fff; color: #303030; box-shadow: 0 1px 0 rgba(26, 26, 26, .07); }
+  .nav-item.nav-active i { color: var(--brand); }
+  .nav-item.nav-active #nav-count { background: #ebebeb; }
+  #nav-count, #lyt-count { background: rgba(0, 0, 0, .06); color: #4a4a4a; font-variant-numeric: tabular-nums; }
 
   /* شريط الجوال السفلي */
   .more-item { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 6px; border-radius: 16px; background: rgba(56,79,61,.06); font-size: 12px; font-weight: 700; color: #22362a; }
   .more-item i { font-size: 22px; }
   .more-item.nav-active { background: #384f3d; color: #f1e9de; }
-  .bnav { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 8px; font-size: 10px; font-weight: 700; color: rgba(34, 54, 42, 0.5); }
+  .bnav { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 8px; font-size: 10px; font-weight: 600; color: #616161; }
   .bnav i { font-size: 16px; }
   .bnav.nav-active { color: var(--brand); font-weight: 700; }
   .bnav.nav-active i { color: #384f3d; }
+  /* ─── أزرار Polaris: الأساسي أخضر بحافة مجسّمة، والثانوي أبيض بظل Polaris، وحواف 8 ─── */
+  main button.bg-brand, main a.bg-brand, .dmd-box button.bg-brand, header a.bg-brand { border-radius: 8px !important; box-shadow: var(--shadow-primary); font-weight: 600; }
+  main button.bg-brand:hover, main a.bg-brand:hover { background-color: var(--brand-dark); }
+  main button.bg-white, main a.bg-white, main button.bg-cream, main a.bg-cream, header button.bg-cream, header a.bg-cream,
+  main button[class*="bg-brand/10"], main a[class*="bg-brand/10"], main button[class*="bg-brand/5"], main a[class*="bg-brand/5"] {
+    background-color: #fff !important; border-color: transparent !important; box-shadow: var(--shadow-button); border-radius: 8px !important; color: #303030; font-weight: 600;
+  }
+  main button.bg-white:hover, main a.bg-white:hover, main button[class*="bg-brand/10"]:hover, main a[class*="bg-brand/10"]:hover, main button[class*="bg-brand/5"]:hover, header button.bg-cream:hover { background-color: #f7f7f7 !important; }
+  /* عناوين بأحجام Polaris: الصفحة 20، والبطاقة 14 */
+  #page-title { font-size: 20px; font-weight: 700; letter-spacing: 0; }
+  .pro-card h3 { font-size: 14px !important; font-weight: 600; color: #303030; }
+  [data-page="dashboard"] .pro-card h3 { font-size: 14px; }
   /* خلفية شطرنج توضح الشفافية في معاينة الملصقات */
   .bg-checker { background-color: #fff; background-image: linear-gradient(45deg, #e5e1d8 25%, transparent 25%), linear-gradient(-45deg, #e5e1d8 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e5e1d8 75%), linear-gradient(-45deg, transparent 75%, #e5e1d8 75%); background-size: 14px 14px; background-position: 0 0, 0 7px, 7px -7px, -7px 0; }
   /* ─── قائمة الأطباق: مثل المنيو المطبوع — الاسم، خط نقاط، السعر ─── */
@@ -304,18 +320,18 @@
 <div id="app" style="visibility:hidden">
 
   <!-- ═════════ القائمة الجانبية (كمبيوتر) ═════════ -->
-  <aside class="hidden lg:flex fixed inset-y-0 start-0 z-30 w-64 flex-col bg-brand text-cream">
+  <aside class="hidden lg:flex fixed inset-y-0 start-0 z-30 w-64 flex-col bg-[#ebebeb] text-ink border-e border-[#e3e3e3]">
     <!-- شعار المنصة -->
     <div class="px-6 pt-7 pb-5 text-center" dir="ltr">
-      <p class="font-logo text-[26px] leading-[0.95] text-cream">DEV<br>MENU</p>
+      <p class="font-logo text-[26px] leading-[0.95] text-brand">DEV<br>MENU</p>
     </div>
 
     <!-- المتجر الحالي -->
-    <div class="mx-3 p-3 rounded-2xl bg-cream/10 border border-cream/10 flex items-center gap-3">
-      <img id="sidebar-logo" src="images/logo.jpeg" alt="" class="w-11 h-11 rounded-xl object-cover bg-cream" onerror="this.onerror=null;this.src='images/logo.jpeg'">
+    <div class="mx-3 p-3 rounded-xl bg-white flex items-center gap-3" style="box-shadow: var(--shadow-card)">
+      <img id="sidebar-logo" src="images/logo.jpeg" alt="" class="w-10 h-10 rounded-lg object-cover bg-white border border-[#e3e3e3]" onerror="this.onerror=null;this.src='images/logo.jpeg'">
       <div class="min-w-0">
-        <p id="header-title" class="text-sm font-black truncate text-cream">متجري</p>
-        <span id="store-status" class="inline-flex items-center gap-1 text-[10px] font-bold text-cream/70"></span>
+        <p id="header-title" class="text-[13px] font-bold truncate text-ink">متجري</p>
+        <span id="store-status" class="inline-flex items-center gap-1 text-[11px] font-semibold text-ink/60"></span>
       </div>
     </div>
 
@@ -323,29 +339,29 @@
       <button data-nav="dashboard" class="nav-item"><i class="ph-bold ph-gauge"></i> الرئيسية</button>
       <button data-nav="customers" data-needs="loyalty" class="nav-item"><i class="ph-bold ph-users-three"></i> العملاء <span id="lyt-count" class="mr-auto text-[10px] px-2 py-0.5 rounded-full"></span></button>
       <button data-nav="messages" data-needs="pager|loyalty" class="nav-item"><i class="ph-bold ph-paper-plane-tilt"></i> الرسائل</button>
-      <p class="px-3 pt-4 pb-1 text-[10px] text-cream/45 font-bold">خدماتك</p>
+      <p class="px-3 pt-4 pb-1 text-[11px] text-ink/50 font-semibold">خدماتك</p>
       <button data-nav="menu" class="nav-item"><i class="ph-bold ph-fork-knife"></i> المنيو <span id="nav-count" class="mr-auto text-[10px] px-2 py-0.5 rounded-full">0</span></button>
       <a href="pager-desk.html" data-feature="pager" onclick="return openPagerDesk(this)" class="nav-item"><i class="ph-bold ph-bell"></i> <span id="nav-desk-label">شاشة البيجر</span></a>
       <button data-nav="waitlist" class="nav-item"><i class="ph-bold ph-hourglass-medium"></i> قائمة الانتظار <span id="nav-waitlist" class="mr-auto hidden text-[10px] bg-amber-400 text-black px-2 py-0.5 rounded-full font-black">0</span></button>
       <button data-nav="loyalty" class="nav-item"><i class="ph-bold ph-seal-check"></i> بطاقة الولاء</button>
-      <p class="px-3 pt-4 pb-1 text-[10px] text-cream/45 font-bold">منشأتك</p>
+      <p class="px-3 pt-4 pb-1 text-[11px] text-ink/50 font-semibold">منشأتك</p>
       <button data-nav="branches" class="nav-item"><i class="ph-bold ph-git-branch"></i> الفروع</button>
       <button data-nav="settings" class="nav-item"><i class="ph-bold ph-palette"></i> هوية المنشأة</button>
       <button data-nav="account" class="nav-item"><i class="ph-bold ph-identification-card"></i> الاشتراك</button>
-      <p class="px-3 pt-5 pb-1 text-[10px] text-cream/45 font-bold">اختصارات</p>
+      <p class="px-3 pt-5 pb-1 text-[11px] text-ink/50 font-semibold">اختصارات</p>
       <a id="sidebar-preview" data-needs="menu" href="#" target="_blank" rel="noopener" class="nav-item"><i class="ph-bold ph-arrow-square-out"></i> معاينة المنيو</a>
       <button onclick="copyMenuLink()" data-needs="menu" class="nav-item"><i class="ph-bold ph-link-simple"></i> نسخ رابط المنيو</button>
       <button onclick="downloadQrCard()" data-needs="menu" class="nav-item"><i class="ph-bold ph-printer"></i> بطاقة QR</button>
       <a href="kiosk.html" data-needs="menu|pager|waitlist|loyalty" onclick="this.href='kiosk.html'+location.search" target="_blank" class="nav-item"><i class="ph-bold ph-device-tablet"></i> شاشة الزبون</a>
-      <a id="sa-link" href="super-admin.html" class="nav-item hidden"><i class="ph-bold ph-crown text-amber-300"></i> لوحة المشتركين</a>
+      <a id="sa-link" href="super-admin.html" class="nav-item hidden"><i class="ph-bold ph-crown text-amber-600"></i> لوحة المشتركين</a>
     </nav>
 
-    <div class="p-4 border-t border-cream/10 space-y-2">
-      <button type="button" onclick="openAccount()" class="w-full text-right rounded-xl px-2 py-1.5 hover:bg-cream/10 transition">
-        <span class="block text-[11px] font-bold text-cream/80"><i class="ph-bold ph-identification-card"></i> معلومات الحساب</span>
-        <span id="user-email" class="block text-[10px] text-cream/50 truncate" dir="ltr"></span>
+    <div class="p-4 border-t border-[#dcdcdc] space-y-2">
+      <button type="button" onclick="openAccount()" class="w-full text-right rounded-lg px-2 py-1.5 hover:bg-white/60 transition">
+        <span class="block text-[12px] font-semibold text-ink"><i class="ph-bold ph-identification-card"></i> معلومات الحساب</span>
+        <span id="user-email" class="block text-[11px] text-ink/55 truncate" dir="ltr"></span>
       </button>
-      <button onclick="logout()" class="w-full bg-cream/10 hover:bg-cream/15 text-cream font-bold py-2 rounded-xl text-xs transition flex items-center justify-center gap-1.5">
+      <button onclick="logout()" class="w-full bg-white hover:bg-[#f7f7f7] text-ink font-semibold py-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5" style="box-shadow: var(--shadow-button)">
         <i class="ph-bold ph-sign-out text-[10px]"></i> تسجيل الخروج
       </button>
     </div>
@@ -354,7 +370,7 @@
   <div class="lg:ms-64 min-h-screen flex flex-col">
 
     <!-- ═════════ الشريط العلوي ═════════ -->
-    <header class="sticky top-0 z-20 bg-sand/85 backdrop-blur-xl border-b border-brand/15">
+    <header class="sticky top-0 z-20 bg-[#f1f1f1]/90 backdrop-blur-xl border-b border-[#e3e3e3]">
       <!-- الجوال: اسم الصفحة سطر كامل، والفرع والأزرار ينزلون سطر تحته لو ما وسعتهم المساحة -->
       <div class="px-4 md:px-8 py-2 md:py-0 md:h-16 flex flex-wrap md:flex-nowrap items-center justify-between gap-x-3 gap-y-2">
         <div class="flex items-center gap-3 min-w-[55%] flex-1 md:min-w-0">

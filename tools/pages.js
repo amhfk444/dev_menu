@@ -19,9 +19,10 @@ module.exports = {
   },
   admin: {
     colors: {
-      sand: '#ece3d7', cream: '#fbf8f3', ink: '#22362a', brand, saffron: '#c9a227',
+      // ألوان Shopify Polaris (@shopify/polaris-tokens 9.4.2): خلفية رمادية، أسطح بيضاء، نص #303030، والأخضر للأساسي
+      sand: '#f1f1f1', cream: '#ffffff', ink: '#303030', brand, saffron: '#c9a227',
       amber: { 300: '#e3c66b', 400: '#d6b13f', 500: '#c9a227' },
-      brick: '#a8432e'
+      brick: '#c70a24'
     },
     fontFamily: {
       sans: ['SaudiRiyal', '"IBM Plex Sans Arabic"', 'system-ui', 'sans-serif'],
