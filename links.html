@@ -116,6 +116,8 @@
     return `<a href="${esc(href)}" ${external ? 'target="_blank" rel="noopener"' : ''} class="lnk${primary ? ' primary' : ''}">
       ${ico}<span class="txt"><span class="block truncate">${esc(label)}</span>${sub ? `<span class="sub truncate">${esc(sub)}</span>` : ''}</span><i class="ph-bold ph-caret-left arrow"></i></a>`;
   }
+  // شعار التطبيق نفسه (مثل تطبيقات التوصيل)
+  const appLogo = (domain) => `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
   const group = (title, items) => items.length ? `<p class="group-title">${esc(title)}</p>${items.join('')}` : '';
 
   function showUnavailable(title, sub) {
@@ -169,7 +171,7 @@
       .filter(n => /^\+?\d{9,15}$/.test(n.phone))
       .map(n => linkBtn({ href: `tel:${n.phone}`, label: n.label || `اتصل بنا ${n.phone}`, sub: 'اتصل واطلب مباشرة', icon: 'ph-bold ph-phone', external: false }));
     const wa = String(p.whatsapp_number || '').replace(/\D/g, '');
-    if (wa) contact.push(linkBtn({ href: `https://wa.me/${wa}`, label: 'تواصل عبر واتساب', sub: 'راسلنا للطلب أو الاستفسار', icon: 'ph-bold ph-whatsapp-logo' }));
+    if (wa) contact.push(linkBtn({ href: `https://wa.me/${wa}`, label: 'تواصل عبر واتساب', sub: 'راسلنا للطلب أو الاستفسار', img: appLogo('whatsapp.com') }));
     sec.contact = group('الطلبات والتواصل', contact);
 
     // 5) تطبيقات التوصيل بشعاراتها
@@ -181,17 +183,18 @@
       if (!name) return '';
       let domain = meta ? meta[1] : '';
       if (!domain) { try { domain = new URL(url).hostname; } catch {} }
-      return linkBtn({ href: url, label: `اطلب عبر ${name}`, sub: 'يصلك طلبك إلى باب منزلك', img: `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` });
+      return linkBtn({ href: url, label: `اطلب عبر ${name}`, sub: 'يصلك طلبك إلى باب منزلك', img: appLogo(domain) });
     }).filter(Boolean);
     sec.delivery = group('تطبيقات التوصيل', delivery);
 
     // 6) روابط التواصل
     const social = [
-      [safeUrl(p.instagram_url), 'انستجرام', 'ph-bold ph-instagram-logo'],
-      [safeUrl(p.tiktok_url), 'تيك توك', 'ph-bold ph-tiktok-logo'],
-      [safeUrl(p.snapchat_url), 'سناب شات', 'ph-bold ph-snapchat-logo'],
-      [safeUrl(p.website_url), 'موقعنا الإلكتروني', 'ph-bold ph-globe']
-    ].filter(([u]) => u).map(([href, label, icon]) => linkBtn({ href, label, icon }));
+      [safeUrl(p.instagram_url), 'انستجرام', 'instagram.com'],
+      [safeUrl(p.tiktok_url), 'تيك توك', 'tiktok.com'],
+      [safeUrl(p.snapchat_url), 'سناب شات', 'snapchat.com']
+    ].filter(([u]) => u).map(([href, label, domain]) => linkBtn({ href, label, img: appLogo(domain) }));
+    const site = safeUrl(p.website_url);
+    if (site) social.push(linkBtn({ href: site, label: 'موقعنا الإلكتروني', icon: 'ph-bold ph-globe' }));
     sec.social = group('تابعنا', social);
 
     // 7) الروابط المخصصة
@@ -203,7 +206,7 @@
 
     // 8) الموقع على الخريطة
     const loc = safeUrl(p.location_url);
-    if (loc) sec.location = group('زورونا', [linkBtn({ href: loc, label: 'موقعنا على الخريطة', sub: 'الاتجاهات إلى المحل', icon: 'ph-bold ph-map-pin' })]);
+    if (loc) sec.location = group('زورونا', [linkBtn({ href: loc, label: 'موقعنا على الخريطة', sub: 'الاتجاهات إلى المحل', ...(/google\.|goo\.gl/i.test(loc) ? { img: appLogo('maps.google.com') } : /apple\.com/i.test(loc) ? { img: appLogo('maps.apple.com') } : { icon: 'ph-bold ph-map-pin' }) })]);
 
     sec.services = out.join('');
     const order = [...(Array.isArray(p.links_order) ? p.links_order : []), ...LINKS_ORDER];
