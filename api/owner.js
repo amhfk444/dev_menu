@@ -8,6 +8,7 @@ const {
   handler, rest, rpc, q, storage, publicUrl, ownsMediaUrl, SUPABASE_URL, BUCKET,
   ApiError, getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody, SLUG_RE, RESERVED_SLUGS, CURRENCIES, SITE, storeLink, loyaltyHome, later
 } = require('./_lib/core');
+const { followParentFeatures } = require('./_lib/branch-features');
 const { FIELDS, normalizeSettings, riyadhDayStart, positionOf, emailTemplate, statusUrlFor } = require('./_lib/waitlist');
 const { sendMail, mailConfigured } = require('./_lib/mail');
 const { sendPush, pushPublicKey, cleanSubscription } = require('./_lib/push');
@@ -1003,7 +1004,8 @@ async function main(req) {
     const main = (await rest(`clients?id=eq.${mainId}`, {
       method: 'PATCH', body: { ...live, requested_plan: plan, requested_features: features, plan_requested_at: new Date().toISOString() }, prefer: 'return=representation'
     }))[0];
-    if (live.plan_features) await rest(`clients?parent_id=eq.${mainId}`, { method: 'PATCH', body: live }).catch(() => {});
+    // الفروع: كل فرع يحتفظ بمميزاته الخاصة (فرع بدون منيو يبقى بدون منيو)، وياخذ من الحساب الولاء والرسائل
+    if (live.plan_features) await followParentFeatures(mainId, features);
     if (!main) throw new ApiError(404, 'المتجر غير موجود');
     console.log('PLAN_REQUEST', mainId, plan);
     // تنبيه للإدارة بالبريد

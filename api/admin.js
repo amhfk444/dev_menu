@@ -7,6 +7,7 @@ const {
   handler, rest, rpc, q, storage, storagePathFromUrl, BUCKET,
   ApiError, getUser, isSuperAdmin, str, int, readBody, waNumber, SLUG_RE, RESERVED_SLUGS, SITE, storeLink
 } = require('./_lib/core');
+const { followParentFeatures } = require('./_lib/branch-features');
 
 const { sendMail, mailConfigured } = require('./_lib/mail');
 const { PLAN_PRICE, invoiceNumber, invoiceEmail, branchProration } = require('./_lib/invoice');
@@ -42,14 +43,6 @@ async function syncBranchSubscriptions(parentId) {
 
 // الفروع القديمة (بدون مميزات خاصة) تاخذ مميزات الحساب، والفرع اللي له مميزاته يبقى عليها
 // والفرع اللي له مميزاته ياخذ معها مميزات الحساب كله (الولاء والرسائل)
-async function followParentFeatures(parentId, features) {
-  try { await rest(`clients?parent_id=eq.${parentId}&branch_features=is.null`, { method: 'PATCH', body: { plan_features: features, waitlist_enabled: features.includes('waitlist') } }); } catch {}
-  try {
-    const own = await rest(`clients?parent_id=eq.${parentId}&branch_features=not.is.null&select=id,branch_features`);
-    await Promise.all(own.map(br => rest(`clients?id=eq.${br.id}`, { method: 'PATCH', body: { plan_features: PLANS.branchFeatures(br.branch_features, features) } })));
-  } catch {}
-}
-
 module.exports = handler(['GET', 'POST'], async (req) => {
   const user = await getUser(req);
   if (!(await isSuperAdmin(user.email))) throw new ApiError(403, 'هذه الصفحة للمدير العام فقط', 'FORBIDDEN');
