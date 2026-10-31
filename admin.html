@@ -1570,23 +1570,23 @@
         <button onclick="uploadMedia('logo')" class="w-full bg-brand/10 hover:bg-brand/15 text-ink text-xs font-bold py-2 rounded-xl transition border border-brand/25">تحديث الشعار</button>
       </div>
 
-      <div data-needs="menu" class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
-        <label class="text-[11px] font-bold text-ink/75">صورة الخلفية للمنيو</label>
+      <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
+        <label class="text-[11px] font-bold text-ink/75">صورة الخلفية <span class="text-ink/50 font-semibold">(المنيو وصفحة الروابط)</span></label>
         <input type="file" id="bg-img-file" accept="image/*" class="input-pro text-[10px]">
         <button onclick="uploadMedia('bg_image')" class="w-full bg-brand/10 hover:bg-brand/15 text-ink text-xs font-bold py-2 rounded-xl transition border border-brand/25">تحديث الخلفية</button>
       </div>
 
-      <div data-needs="menu" class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
-        <label class="text-[11px] font-bold text-ink/75">فيديو الخلفية (MP4)</label>
+      <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
+        <label class="text-[11px] font-bold text-ink/75">فيديو الخلفية (MP4) <span class="text-ink/50 font-semibold">(المنيو وصفحة الروابط)</span></label>
         <input type="file" id="bg-video-file" accept="video/*" class="input-pro text-[10px]">
         <button onclick="uploadMedia('bg_video')" class="w-full bg-brand/10 hover:bg-brand/15 text-ink text-xs font-bold py-2 rounded-xl transition border border-brand/25">تحديث الفيديو</button>
       </div>
     </div>
         </div>
-        <!-- مظهر المنيو: الثيم ولون الهوية -->
-        <div data-needs="menu" class="pro-card p-5 space-y-4">
+        <!-- المظهر: الثيم ولون الهوية (للمنيو وصفحة الروابط، لكل الباقات) -->
+        <div class="pro-card p-5 space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-2 border-b border-brand/20 pb-2">
-            <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-swatches text-ink/75"></i> مظهر المنيو</h3>
+            <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-swatches text-ink/75"></i> المظهر</h3>
             <span class="text-[10px] text-ink/50">يتطبق على المنيو وصفحة الروابط</span>
           </div>
           <div id="theme-picker" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
@@ -1604,6 +1604,7 @@
           <div class="flex flex-col sm:flex-row gap-2">
             <button onclick="saveAppearance()" class="flex-1 bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition">حفظ المظهر</button>
             <a id="appearance-preview" href="#" target="_blank" rel="noopener" class="sm:w-40 text-center bg-brand/10 hover:bg-brand/15 text-ink font-bold py-2.5 rounded-xl text-xs border border-brand/25 transition"><i class="ph-bold ph-eye text-[10px]"></i> معاينة المنيو</a>
+            <a id="appearance-links-preview" href="#" target="_blank" rel="noopener" class="sm:w-44 text-center bg-brand/10 hover:bg-brand/15 text-ink font-bold py-2.5 rounded-xl text-xs border border-brand/25 transition"><i class="ph-bold ph-link-simple text-[10px]"></i> معاينة صفحة الروابط</a>
           </div>
         </div>
         <!-- المناسبات والزينة -->
@@ -4365,6 +4366,9 @@
       <button type="button" onclick="pickAccent('${c}')" aria-label="${c}" title="${c}"
         class="w-9 h-9 rounded-full border-2 transition ${accent === c ? 'border-ink scale-110' : 'border-white shadow'}" style="background:${c}"></button>`).join('');
     document.getElementById('appearance-preview').href = menuUrl();
+    document.getElementById('appearance-links-preview').href = linksUrl();
+    // بدون باقة المنيو: المعاينة لصفحة الروابط بس
+    document.getElementById('appearance-preview').classList.toggle('hidden', featureLocked('menu'));
   }
   function pickTheme(key) { themeDraft.theme = key; renderAppearance(false); }
   function pickAccent(c) { themeDraft.accent = DMTheme.isHex(c) ? c.toLowerCase() : null; renderAppearance(false); }
@@ -4372,7 +4376,7 @@
   async function saveAppearance() {
     if (await updateClient({ theme: themeDraft.theme, accent_color: themeDraft.accent })) {
       renderAppearance();
-      showToast('تم حفظ مظهر المنيو');
+      showToast('تم حفظ المظهر، ويظهر في المنيو وصفحة الروابط');
     } else showToast('تعذر حفظ المظهر', true);
   }
 

@@ -34,7 +34,7 @@
   html { -webkit-text-size-adjust: 100%; }
   body { font-family: 'IBM Plex Sans Arabic', sans-serif; background: var(--bg); color: var(--fg); min-height: 100vh; overflow-x: hidden; }
   #bg { position: fixed; inset: 0; z-index: -2; }
-  #bg img { width: 100%; height: 100%; object-fit: cover; filter: var(--media-filter); }
+  #bg img, #bg video { width: 100%; height: 100%; object-fit: cover; filter: var(--media-filter); }
   .overlay { position: fixed; inset: 0; z-index: -1; background: radial-gradient(circle at center, var(--ov-in) 0%, var(--ov-out) 100%); }
   .t-fg2 { color: var(--fg2); }
   .t-fg3 { color: var(--fg3); }
@@ -57,7 +57,7 @@
 </head>
 <body>
 
-<div id="bg" class="hidden"><img id="bg-img" alt=""></div>
+<div id="bg" class="hidden"><video id="bg-video" autoplay loop muted playsinline class="hidden"></video><img id="bg-img" alt=""></div>
 <div class="overlay"></div>
 
 <main class="w-full max-w-md mx-auto px-4 pt-10 pb-12">
@@ -132,8 +132,14 @@
     document.getElementById('type').textContent = TYPE_LABELS[p.business_type] || '';
     const logo = safeUrl(p.logo_url);
     if (logo) document.getElementById('logo').src = logo;
-    const bg = safeUrl(p.bg_image_url);
-    if (bg) { document.getElementById('bg-img').src = bg; document.getElementById('bg').classList.remove('hidden'); }
+    // الخلفية نفس المنيو: فيديو (لو موجود) أو صورة
+    const video = safeUrl(p.bg_video_url), bg = safeUrl(p.bg_image_url);
+    if (video) {
+      const v = document.getElementById('bg-video');
+      v.src = video; v.classList.remove('hidden'); document.getElementById('bg-img').classList.add('hidden');
+      v.play().catch(() => {});
+      document.getElementById('bg').classList.remove('hidden');
+    } else if (bg) { document.getElementById('bg-img').src = bg; document.getElementById('bg').classList.remove('hidden'); }
     if (p.opening_hours) {
       const h = document.getElementById('hours');
       h.querySelector('span').textContent = p.opening_hours;
