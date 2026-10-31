@@ -292,12 +292,11 @@
       if (t) try { localStorage.setItem(`dm_loyalty_${slug}`, t); } catch {}
       return t;
     },
-    // مفتاح الكاشير: من الرابط (?k=) ويتحفظ في الجهاز
-    // يبقى في الرابط: الآيفون لما يثبّت الشاشة كتطبيق يحفظ الرابط نفسه، وتخزين التطبيق منفصل عن المتصفح
+    // مفتاح الكاشير: من الرابط (?k=) أول مرة، وبعدها محفوظ في الجهاز
     deskMode() {
       try {
-        const k = new URL(location.href).searchParams.get('k');
-        if (k && /^[A-Za-z0-9_-]{24,64}$/.test(k)) localStorage.setItem('dm_desk_key', k);
+        const u = new URL(location.href), k = u.searchParams.get('k');
+        if (k && /^[A-Za-z0-9_-]{24,64}$/.test(k)) { localStorage.setItem('dm_desk_key', k); u.searchParams.delete('k'); history.replaceState(null, '', u.pathname + u.search + u.hash); }
         deskKey = localStorage.getItem('dm_desk_key') || '';
       } catch {}
       return !!deskKey;
