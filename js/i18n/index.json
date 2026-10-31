@@ -42,10 +42,7 @@
   "عربي وإنجليزي، ثيمات وخلفية صورة أو فيديو": "Arabic and English, themes, and a photo or video background",
   "من": "From",
   "البيجر في جوال زبونك": "The pager on your customer's phone",
-  "زبونك يمسح الكود وياخذ رقمه، ولما يجهز طلبه يرن جواله حتى لو قفل الشاشة. بدون أجهزة تضيع أو تخرب.": "Your customer scans the code and takes a number. When the order is ready their phone rings, even with the screen locked. No devices to lose or break.",
   "شاشة كاشير بسيطة على أي جوال أو تابلت": "A simple cashier screen on any phone or tablet",
-  "إحصائيات وقت الانتظار وأوقات الذروة": "Wait time and peak hour stats",
-  "تقييم بعد الاستلام، والراضي ينطلب منه تقييم قوقل": "A rating after pickup, and happy customers are asked for a Google review",
   "بطاقة أختام باسم زبونك في محفظة جواله. ينختم له بعد كل شراء، ولما يكمّل ياخذ مكافأته.": "A stamp card with your customer's name in their phone wallet. They get a stamp after each purchase and a reward when it's full.",
   "الكاشير يمسح كود الزبون، أو يختم تلقائياً مع البيجر": "The cashier scans the customer's code, or it stamps automatically with the pager",
   "مساعد ذكي يكتب لزبونك رسالة باسمه لما يغيب": "An AI assistant writes your customer a personal message when they've been away",
@@ -205,8 +202,6 @@
   "DEV MENU ديف منيو | أكثر من منيو": "DEV MENU | More than a menu",
   "أكثر من منيو": "More than a menu",
   "، لكل منشأة تخدم عملاء: مطعم، مقهى، عيادة، صالون، متجر": ", for any business that serves customers: restaurant, café, clinic, salon, shop",
-  "بطاقة نداء بشعارك في محفظة جواله، يوصله منها الإشعار حتى وهو في تطبيق ثاني": "A pager card with your logo in their phone wallet that notifies them even while in another app",
-  "شاشة كاشير على أي جوال أو تابلت، ولكل فرع رابطه بدون حسابك": "A cashier screen on any phone or tablet, with a link per branch that doesn't need your account",
   "بطاقة وحدة لكل فروعك: يختم ويصرف مكافأته من أي فرع": "One card for all your branches: stamp and redeem at any branch",
   "جواله يرن، وإشعار من محفظته حتى لو في تطبيق ثاني": "Their phone rings, plus a wallet notice even in another app",
   "أكثر من فرع": "More than one branch",
@@ -222,5 +217,10 @@
   "الشروط والأحكام": "Terms and conditions",
   "سياسة الاستخدام المقبول": "Acceptable use policy",
   "سياسة الإلغاء والاسترداد": "Cancellation and refund policy",
-  "و": "and"
+  "و": "and",
+  "يمسح العميل الرمز ويحصل على رقمه، وعند جاهزية طلبه يصله التنبيه على جواله حتى لو كانت الشاشة مقفلة، دون أجهزة معرّضة للتلف أو الضياع.": "The customer scans the code and gets a number. When the order is ready, they are alerted on their phone even with the screen locked, with no devices to break or lose.",
+  "بطاقة نداء مجانية بشعار منشأتك تُحفظ في محفظة جوال العميل، ويصله منها التنبيه حتى أثناء استخدام تطبيق آخر": "A free pager card with your logo saved in the customer's phone wallet, alerting them even while using another app",
+  "شاشة كاشير تعمل على أي جوال أو جهاز لوحي، مع رابط مستقل لكل فرع دون الحاجة إلى حسابك": "A cashier screen that works on any phone or tablet, with a separate link for each branch without needing your account",
+  "إحصائيات لمتوسط وقت الانتظار وأوقات الذروة": "Analytics for average waiting time and peak hours",
+  "تقييم بعد الاستلام، ودعوة العملاء الراضين لتقييم منشأتك على قوقل": "A rating after pickup, inviting satisfied customers to review your business on Google"
 }

@@ -6,11 +6,11 @@
 // =====================================================================
 (function (root) {
   const FEATURES = {
-    menu:     { name: 'المنيو الرقمي',  desc: 'المنيو بصوره وأسعاره، كود QR للطاولات، الطلب على الواتساب، الثيمات والإحصائيات', icon: 'ph-fork-knife', month: 39, year: 349 },
-    pager:    { name: 'البيجر',          desc: 'جوال الزبون يرن لما يجهز طلبه، بدون أجهزة', icon: 'ph-bell', month: 49, year: 449 },
-    notify:   { name: 'رسائل لزبائنك',  desc: 'إضافة للبيجر: ترسل إشعار لكل زبون حافظ بطاقة النداء، مثل عرض اليوم أو منتج جديد', icon: 'ph-megaphone', month: 19, year: 179, needs: 'pager', within: 'loyalty' },
-    waitlist: { name: 'قائمة الانتظار', desc: 'الزبون يسجل دوره ويجيه تنبيه لما يجي دوره', icon: 'ph-hourglass-medium', month: 29, year: 249 },
-    loyalty:  { name: 'بطاقة الولاء',    desc: 'أختام ومكافآت ومحفظة الجوال ومساعد ذكي يكلم زبائنك', icon: 'ph-seal-check', month: 69, year: 649 }
+    menu:     { name: 'المنيو الرقمي',  desc: 'منيو رقمي بالصور والأسعار، مع رمز QR للطاولات، واستقبال الطلبات عبر واتساب، وثيمات متعددة وإحصائيات للزيارات', icon: 'ph-fork-knife', month: 39, year: 349 },
+    pager:    { name: 'البيجر',          desc: 'تنبيه العميل على جواله عند جاهزية طلبه دون أجهزة إضافية، مع بطاقة نداء مجانية تُحفظ في محفظة جواله ويصله منها التنبيه حتى خارج الصفحة', icon: 'ph-bell', month: 49, year: 449 },
+    notify:   { name: 'رسائل لزبائنك',  desc: 'إضافة للبيجر: إرسال إشعارات للعملاء الذين يحتفظون ببطاقة النداء، مثل عروض اليوم أو المنتجات الجديدة', icon: 'ph-megaphone', month: 19, year: 179, needs: 'pager', within: 'loyalty' },
+    waitlist: { name: 'قائمة الانتظار', desc: 'تسجيل العملاء في قائمة الانتظار وتنبيههم تلقائياً عند حلول دورهم', icon: 'ph-hourglass-medium', month: 29, year: 249 },
+    loyalty:  { name: 'بطاقة الولاء',    desc: 'بطاقة أختام ومكافآت في محفظة جوال العميل، مع إرسال الرسائل ومساعد ذكي للتواصل مع العملاء', icon: 'ph-seal-check', month: 69, year: 649 }
   };
   const ORDER = ['menu', 'pager', 'notify', 'waitlist', 'loyalty'];
   const BRANCH = { month: 19, year: 199 };

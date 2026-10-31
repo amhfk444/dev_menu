@@ -241,13 +241,9 @@
   "دولار أمريكي": "US dollar",
   "يورو": "Euro",
   "المنيو الرقمي": "Digital menu",
-  "المنيو بصوره وأسعاره، كود QR للطاولات، الطلب على الواتساب، الثيمات والإحصائيات": "Your menu with photos and prices, table QR codes, WhatsApp ordering, themes and stats",
   "البيجر": "Pager",
-  "جوال الزبون يرن لما يجهز طلبه، بدون أجهزة": "The customer's phone rings when their order is ready. No devices needed",
   "قائمة الانتظار": "Waitlist",
-  "الزبون يسجل دوره ويجيه تنبيه لما يجي دوره": "Customers join the line and get notified when it's their turn",
   "بطاقة الولاء": "Loyalty card",
-  "أختام ومكافآت ومحفظة الجوال ومساعد ذكي يكلم زبائنك": "Stamps, rewards, phone wallet and an AI assistant that messages your customers",
   "خصم الباقة الكاملة": "Full bundle discount",
   "خصم المنيو مع البيجر": "Menu + pager discount",
   "خصم الولاء مع المنيو": "Loyalty + menu discount",
@@ -360,6 +356,10 @@
   "~⁧{n} {c}⁩": "⁦{c} {n}⁩",
   "~{n} ر.س": "{n} SAR",
   "رسائل لزبائنك": "Messages to your customers",
-  "إضافة للبيجر: ترسل إشعار لكل زبون حافظ بطاقة النداء، مثل عرض اليوم أو منتج جديد": "Pager add-on: send a notification to every customer who saved the pager card, like today's offer or a new product",
-  "مشمولة في {a}: ترسل منها رسائلك لكل زبائنك أو لزبون معيّن، فلا تحتاج إلى إضافتها": "Included in {a}: send your messages from it to all your customers or to one customer, so you don't need to add it"
+  "مشمولة في {a}: ترسل منها رسائلك لكل زبائنك أو لزبون معيّن، فلا تحتاج إلى إضافتها": "Included in {a}: send your messages from it to all your customers or to one customer, so you don't need to add it",
+  "منيو رقمي بالصور والأسعار، مع رمز QR للطاولات، واستقبال الطلبات عبر واتساب، وثيمات متعددة وإحصائيات للزيارات": "A digital menu with photos and prices, a QR code for tables, orders via WhatsApp, multiple themes and visit analytics",
+  "تنبيه العميل على جواله عند جاهزية طلبه دون أجهزة إضافية، مع بطاقة نداء مجانية تُحفظ في محفظة جواله ويصله منها التنبيه حتى خارج الصفحة": "Alerts the customer on their phone when the order is ready, with no extra devices, plus a free pager card saved in their phone wallet that notifies them even outside the page",
+  "إضافة للبيجر: إرسال إشعارات للعملاء الذين يحتفظون ببطاقة النداء، مثل عروض اليوم أو المنتجات الجديدة": "Pager add-on: send notifications to customers who keep the pager card, such as daily offers or new products",
+  "تسجيل العملاء في قائمة الانتظار وتنبيههم تلقائياً عند حلول دورهم": "Customers join the waitlist and are notified automatically when it is their turn",
+  "بطاقة أختام ومكافآت في محفظة جوال العميل، مع إرسال الرسائل ومساعد ذكي للتواصل مع العملاء": "A stamps and rewards card in the customer's phone wallet, with messaging and an AI assistant to engage customers"
 }
