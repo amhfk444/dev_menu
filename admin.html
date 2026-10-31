@@ -2351,7 +2351,9 @@
   // ─── جرس الإشعارات ───
   // يتحدث مع فتح اللوحة وكل دقيقة، ولما يفتح القائمة تصير كلها مقروءة
   let notifs = [], notifOpen = false;
-  const NOTIF_ICON = { reply: 'ph-chat-circle-text', branch: 'ph-git-branch', admin: 'ph-megaphone' };
+  // أيقونة ولون كل نوع: رد، فرع، تنبيه، تذكير، معلومة، أو إشعار من الإدارة
+  const NOTIF_ICON = { reply: 'ph-chat-circle-text', branch: 'ph-git-branch', admin: 'ph-megaphone', alert: 'ph-warning', reminder: 'ph-clock', info: 'ph-info' };
+  const NOTIF_TONE = { alert: 'bg-red-500/10 text-red-700', reminder: 'bg-amber-500/15 text-amber-800', info: 'bg-sky-500/10 text-sky-800' };
   async function loadNotifs() {
     try {
       // ما يحتاج تحديث الصفحة: يجي الإشعار لحظياً، وهذا احتياط كل دقيقة
@@ -2366,7 +2368,7 @@
     const when = (iso) => new Date(iso).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
     document.getElementById('notif-list').innerHTML = notifs.length ? notifs.map(n => `
       <button type="button" onclick="openNotif(${n.id})" class="w-full text-right flex gap-3 px-4 py-3 hover:bg-brand/[0.04] ${n.read_at ? '' : 'bg-amber-50/70'}">
-        <span class="w-9 h-9 rounded-xl bg-brand/10 text-brand grid place-items-center shrink-0"><i class="ph-bold ${NOTIF_ICON[n.kind] || 'ph-bell'}"></i></span>
+        <span class="w-9 h-9 rounded-xl ${NOTIF_TONE[n.kind] || 'bg-brand/10 text-brand'} grid place-items-center shrink-0"><i class="ph-bold ${NOTIF_ICON[n.kind] || 'ph-bell'}"></i></span>
         <span class="flex-1 min-w-0">
           <span class="flex items-center gap-2"><b class="text-[13px]">${esc(n.title)}</b>${n.read_at ? '' : '<span class="w-2 h-2 rounded-full bg-red-600 shrink-0" aria-label="جديد"></span>'}</span>
           ${n.body ? `<span class="block text-[12px] text-ink/70 leading-relaxed mt-0.5 whitespace-pre-line">${esc(n.body)}</span>` : ''}

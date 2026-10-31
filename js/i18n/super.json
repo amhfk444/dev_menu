@@ -196,5 +196,12 @@
   "ما فيه طلبات مفتوحة، كل شي تمام ✓": "No open requests, all good ✓",
   "إشعار للمشتركين": "Notify subscribers",
   "اكتب إشعار": "Write a notice",
-  "إشعار لمحل واحد": "Notify one store"
+  "إشعار لمحل واحد": "Notify one store",
+  "تنبيه": "Alert",
+  "تذكير": "Reminder",
+  "معلومة": "Info",
+  "أخرى": "Other",
+  "نوع الإشعار": "Notice type",
+  "نوع الإشعار أو عنوانه": "Notice type or title",
+  "اكتب نوع الإشعار أو عنوانه": "Write the notice type or title"
 }

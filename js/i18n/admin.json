@@ -1503,5 +1503,8 @@
   "ردّت الإدارة على طلبك": "Our team replied to your request",
   "تمت إضافة فرعك": "Your branch was added",
   "تفعّلت مميزات فرعك": "Your branch features are active",
-  "إشعار من الإدارة": "Notice from DEV MENU"
+  "إشعار من الإدارة": "Notice from DEV MENU",
+  "تنبيه": "Alert",
+  "تذكير": "Reminder",
+  "معلومة": "Info"
 }

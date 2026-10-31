@@ -99,13 +99,20 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     return { client: (await rest(`clients?id=eq.${row.id}&select=*`))[0] };
   }
 
+  // نوع إشعار الإدارة: تنبيه، تذكير، معلومة، أو أخرى (عنوانه يكتبه المدير)
+  const NOTICE_KINDS = { alert: 'تنبيه', reminder: 'تذكير', info: 'معلومة', admin: '' };
+  const notice = () => {
+    const kind = Object.prototype.hasOwnProperty.call(NOTICE_KINDS, b.kind) ? b.kind : 'admin';
+    const title = str(b.title, 120, 'العنوان') || NOTICE_KINDS[kind] || 'إشعار من الإدارة';
+    return { kind, title };
+  };
   // إشعار لكل المشتركين (أو اللي في التجربة، أو المشتركين المدفوعين): يطلع في جرس لوحاتهم
   if (action === 'notify-all') {
     const message = str(b.message, 1000, 'الإشعار');
     if (!message) throw new ApiError(400, 'اكتب الإشعار');
     const who = ['trial', 'active'].includes(b.audience) ? `&subscription_status=eq.${b.audience}` : '';
     const stores = await rest(`clients?parent_id=is.null&is_active=is.true&email=not.is.null&email=not.like.*%40prospect.invalid${who}&select=id`);
-    const sent = await notifyOwner(stores.map(c => c.id), { kind: 'admin', title: str(b.title, 120, 'العنوان') || 'إشعار من الإدارة', body: message });
+    const sent = await notifyOwner(stores.map(c => c.id), { ...notice(), body: message });
     return { sent };
   }
 
@@ -194,7 +201,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     if (!message) throw new ApiError(400, 'اكتب الإشعار');
     const target = (await rest(`clients?id=eq.${id}&select=id,parent_id`))[0];
     if (!target) throw new ApiError(404, 'المتجر غير موجود');
-    await notifyOwner(target.parent_id || target.id, { kind: 'admin', title: str(b.title, 120, 'العنوان') || 'إشعار من الإدارة', body: message });
+    await notifyOwner(target.parent_id || target.id, { ...notice(), body: message });
     return { ok: true };
   }
   if (action === 'featured') return patch({ is_featured: b.featured === true });
