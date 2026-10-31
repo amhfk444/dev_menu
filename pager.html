@@ -699,7 +699,9 @@
     $('w-demo').classList.toggle('hidden', !r.demo);
     const ly = r.loyalty || {};
     // بطاقة النداء للمحل اللي ما عنده ولاء بس (المحل المشترك في الولاء: النداء يوصل من بطاقة الولاء)
-    const passOk = r.wallet && st === 'waiting' && !ly.enabled && !r.in_wallet && !pagerCard();
+    // جواله يتذكر بطاقة بس انحذفت من محفظته (card_gone): نعرضها عليه من جديد
+    let readded = false; try { readded = localStorage.getItem('dm_pc_added') === loadToken(); } catch {}
+    const passOk = r.wallet && st === 'waiting' && !ly.enabled && !r.in_wallet && (!pagerCard() || (r.card_gone && !readded));
     lastPass = passOk;
     $('pw-box').classList.toggle('hidden', !passOk);
     $('pw-btn').querySelector('span').textContent = r.in_wallet ? 'بطاقة النداء في محفظتك، افتحها' : 'أضف بطاقة النداء';
@@ -861,6 +863,7 @@
     try {
       const r = await DM.post('/api/pager?action=wallet', { slug, t: loadToken(), pc: pagerCard() || undefined });
       if (r.card) savePagerCard(r.card);
+      try { localStorage.setItem('dm_pc_added', loadToken()); } catch {}   // أضافها لهالرقم: ما نعرضها عليه مرة ثانية
       if (r.url) location.href = r.url;
     } catch (err) { alert(err.message || 'تعذر الإضافة للمحفظة'); btn.querySelector('span').textContent = label; }
     btn.disabled = false;
