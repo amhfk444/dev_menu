@@ -1590,18 +1590,36 @@
       </div>
 
       <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
-        <label class="text-[11px] font-bold text-ink/75">صورة الخلفية <span class="text-ink/50 font-semibold">(المنيو وصفحة الروابط)</span></label>
+        <label class="text-[11px] font-bold text-ink/75">صورة خلفية المنيو</label>
         <input type="file" id="bg-img-file" accept="image/*" class="input-pro text-[10px]">
         <button id="upl-bg_image" onclick="uploadMedia('bg_image')" class="w-full bg-brand/10 hover:bg-brand/15 text-ink text-xs font-bold py-2 rounded-xl transition border border-brand/25">تحديث الخلفية</button>
         <div id="bg-img-prev" class="hidden"></div>
       </div>
 
       <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
-        <label class="text-[11px] font-bold text-ink/75">فيديو الخلفية (MP4) <span class="text-ink/50 font-semibold">(المنيو وصفحة الروابط)</span></label>
+        <label class="text-[11px] font-bold text-ink/75">فيديو خلفية المنيو (MP4)</label>
         <input type="file" id="bg-video-file" accept="video/*" class="input-pro text-[10px]">
         <button id="upl-bg_video" onclick="uploadMedia('bg_video')" class="w-full bg-brand/10 hover:bg-brand/15 text-ink text-xs font-bold py-2 rounded-xl transition border border-brand/25">تحديث الفيديو</button>
         <div id="bg-video-prev" class="hidden"></div>
       </div>
+    </div>
+    <!-- خلفية صفحة الروابط السريعة: خاصة فيها، ولو ما فيه تاخذ خلفية المنيو -->
+    <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <label class="text-[11px] font-bold text-ink/75"><i class="ph-bold ph-link-simple"></i> خلفية صفحة الروابط السريعة <span class="text-ink/50 font-semibold">(صورة أو فيديو مختلف عن خلفية المنيو)</span></label>
+        <div id="links-bg-status" class="flex items-center gap-2 text-[10px] font-bold text-ink/60"></div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div class="space-y-2">
+          <input type="file" id="links-bg-img-file" accept="image/*" class="input-pro text-[10px]">
+          <button id="upl-links_bg_image" onclick="uploadMedia('links_bg_image')" class="w-full bg-brand/10 hover:bg-brand/15 text-ink text-xs font-bold py-2 rounded-xl transition border border-brand/25">رفع صورة للخلفية</button>
+        </div>
+        <div class="space-y-2">
+          <input type="file" id="links-bg-video-file" accept="video/*" class="input-pro text-[10px]">
+          <button id="upl-links_bg_video" onclick="uploadMedia('links_bg_video')" class="w-full bg-brand/10 hover:bg-brand/15 text-ink text-xs font-bold py-2 rounded-xl transition border border-brand/25">رفع فيديو للخلفية (MP4)</button>
+        </div>
+      </div>
+      <div id="links-bg-prev" class="hidden"></div>
     </div>
         </div>
         <!-- المظهر: الثيم ولون الهوية (للمنيو وصفحة الروابط، لكل الباقات) -->
@@ -2872,12 +2890,23 @@
     const box = (id, html) => { const el = document.getElementById(id); el.classList.toggle('hidden', !html); el.innerHTML = html || ''; };
     box('bg-img-prev', img && !vid ? `<p class="text-[10px] font-bold text-emerald-700 mb-1"><i class="ph-bold ph-check-circle"></i> الخلفية الحالية</p><img src="${esc(img)}" alt="" class="w-full h-20 object-cover rounded-xl border border-brand/15">` : '');
     box('bg-video-prev', vid ? `<p class="text-[10px] font-bold text-emerald-700 mb-1"><i class="ph-bold ph-check-circle"></i> الفيديو الحالي</p><video src="${esc(vid)}" muted loop autoplay playsinline class="w-full h-20 object-cover rounded-xl border border-brand/15"></video>` : '');
+    const limg = safeUrl(client.links_bg_image_url), lvid = safeUrl(client.links_bg_video_url);
+    box('links-bg-prev', lvid ? `<p class="text-[10px] font-bold text-emerald-700 mb-1"><i class="ph-bold ph-check-circle"></i> فيديو صفحة الروابط الحالي</p><video src="${esc(lvid)}" muted loop autoplay playsinline class="w-full max-w-xs h-24 object-cover rounded-xl border border-brand/15"></video>`
+      : limg ? `<p class="text-[10px] font-bold text-emerald-700 mb-1"><i class="ph-bold ph-check-circle"></i> صورة صفحة الروابط الحالية</p><img src="${esc(limg)}" alt="" class="w-full max-w-xs h-24 object-cover rounded-xl border border-brand/15">` : '');
+    document.getElementById('links-bg-status').innerHTML = lvid || limg
+      ? `<span class="text-emerald-700"><i class="ph-bold ph-check-circle"></i> خلفية خاصة</span><button type="button" onclick="resetLinksBg()" class="bg-white hover:bg-brand/10 text-ink border border-brand/25 px-2.5 py-1 rounded-lg transition">استخدم خلفية المنيو</button>`
+      : '<span>حالياً: نفس خلفية المنيو</span>';
+  }
+  async function resetLinksBg() {
+    if (await updateClient({ links_bg_image_url: null, links_bg_video_url: null })) { renderBgPreview(); showToast('صفحة الروابط رجعت تاخذ خلفية المنيو'); }
   }
   async function uploadMedia(type) {
     const cfg = {
       logo:     { input: 'logo-file',     kind: 'image', maxDim: 800,  payload: url => ({ logo_url: url }), done: 'تم تحديث الشعار' },
       bg_image: { input: 'bg-img-file',   kind: 'image', maxDim: 1920, payload: url => ({ bg_image_url: url, bg_video_url: null }), done: 'تم رفع الخلفية' },
-      bg_video: { input: 'bg-video-file', kind: 'video', maxDim: 0,    payload: url => ({ bg_video_url: url, bg_image_url: null }), done: 'تم رفع الفيديو' }
+      bg_video: { input: 'bg-video-file', kind: 'video', maxDim: 0,    payload: url => ({ bg_video_url: url, bg_image_url: null }), done: 'تم رفع الفيديو' },
+      links_bg_image: { input: 'links-bg-img-file',   kind: 'image', maxDim: 1920, payload: url => ({ links_bg_image_url: url, links_bg_video_url: null }), done: 'تم رفع الخلفية', where: 'صفحة الروابط' },
+      links_bg_video: { input: 'links-bg-video-file', kind: 'video', maxDim: 0,    payload: url => ({ links_bg_video_url: url, links_bg_image_url: null }), done: 'تم رفع الفيديو', where: 'صفحة الروابط' }
     }[type];
     const fileInput = document.getElementById(cfg.input);
     const file = fileInput.files[0];
@@ -2895,7 +2924,7 @@
       fileInput.value = '';
       renderBgPreview();
       ui.done(cfg.done);
-      showToast(`${cfg.done}، ويظهر في المنيو وصفحة الروابط`);
+      showToast(`${cfg.done}، ويظهر في ${cfg.where || (type === 'logo' || !(client.links_bg_image_url || client.links_bg_video_url) ? 'المنيو وصفحة الروابط' : 'المنيو')}`);
     } else { ui.fail(); showToast('تم رفع الملف لكن تعذر حفظه في المتجر', true); }
   }
 

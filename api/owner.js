@@ -1268,7 +1268,7 @@ async function main(req) {
       if (has('business_label') || b.business_type !== 'other') p.business_label = b.business_type === 'other' ? (str(b.business_label, 60, 'اسم النشاط') || null) : null;
       p.business_type = b.business_type;
     }
-    for (const k of ['logo_url', 'bg_image_url', 'bg_video_url']) {
+    for (const k of ['logo_url', 'bg_image_url', 'bg_video_url', 'links_bg_image_url', 'links_bg_video_url']) {
       if (!has(k)) continue;
       if (b[k] === null || b[k] === '') { p[k] = null; continue; }
       if (!ownsMediaUrl(b[k], sid)) throw new ApiError(400, 'ملف غير تابع لمتجرك');
@@ -1420,8 +1420,8 @@ async function main(req) {
   // ─── رابط رفع ملف (الرفع يتم مباشرة للتخزين برابط موقّع صالح لملف واحد) ───
   if (action === 'upload-url') {
     const kind = b.kind;
-    if (!['logo', 'bg_image', 'bg_video', 'prod', 'sticker', 'stamp', 'card_bg'].includes(kind)) throw new ApiError(400, 'نوع ملف غير صحيح');
-    const isVideo = kind === 'bg_video';
+    if (!['logo', 'bg_image', 'bg_video', 'links_bg_image', 'links_bg_video', 'prod', 'sticker', 'stamp', 'card_bg'].includes(kind)) throw new ApiError(400, 'نوع ملف غير صحيح');
+    const isVideo = kind === 'bg_video' || kind === 'links_bg_video';
     const ext = (isVideo ? VIDEO_TYPES : IMAGE_TYPES)[b.type];
     if (!ext) throw new ApiError(400, isVideo ? 'الملف لازم يكون فيديو MP4' : 'صيغة الصورة غير مدعومة، استخدم JPG أو PNG أو WebP');
     const size = int(b.size);

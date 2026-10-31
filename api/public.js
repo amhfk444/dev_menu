@@ -19,9 +19,12 @@ const bySort = (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.i
 async function findStore(rawSlug) {
   // public_clients تعرض المتاجر السارية فقط: المنتهي أو الموقوف ما يرجع منه شي
   // عمود العملة من 23-currency.sql — لو ما انضاف للحين نكمل بدونه (الريال افتراضياً)
+  // وخلفية صفحة الروابط من 67-links-background.sql — قبل إضافتها تاخذ الصفحة خلفية المنيو
   let found;
-  try { found = await findPublicStore(rawSlug, `${STORE_FIELDS},currency`); }
-  catch { found = await findPublicStore(rawSlug, STORE_FIELDS); }
+  for (const extra of [',currency,links_bg_image_url,links_bg_video_url', ',currency', '']) {
+    try { found = await findPublicStore(rawSlug, STORE_FIELDS + extra); break; }
+    catch (e) { if (!extra) throw e; }
+  }
   const { store, bad } = found;
   if (bad) throw new ApiError(400, 'رابط المنيو غير صحيح', 'BAD_SLUG');
   if (!store) throw new ApiError(404, 'المنيو غير متاح حالياً', 'NOT_AVAILABLE');

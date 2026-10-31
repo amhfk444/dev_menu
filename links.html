@@ -132,8 +132,9 @@
     document.getElementById('type').textContent = TYPE_LABELS[p.business_type] || '';
     const logo = safeUrl(p.logo_url);
     if (logo) document.getElementById('logo').src = logo;
-    // الخلفية نفس المنيو: فيديو (لو موجود) أو صورة
-    const video = safeUrl(p.bg_video_url), bg = safeUrl(p.bg_image_url);
+    // خلفية الصفحة الخاصة (فيديو أو صورة)، ولو ما فيه تاخذ خلفية المنيو
+    const own = p.links_bg_video_url || p.links_bg_image_url;
+    const video = safeUrl(own ? p.links_bg_video_url : p.bg_video_url), bg = safeUrl(own ? p.links_bg_image_url : p.bg_image_url);
     if (video) {
       const v = document.getElementById('bg-video');
       v.src = video; v.classList.remove('hidden'); document.getElementById('bg-img').classList.add('hidden');

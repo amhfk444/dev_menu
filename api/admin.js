@@ -314,7 +314,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
   }
 
   if (action === 'delete') {
-    const client = (await rest(`clients?id=eq.${id}&select=logo_url,bg_image_url,bg_video_url`))[0];
+    const client = (await rest(`clients?id=eq.${id}&select=logo_url,bg_image_url,bg_video_url,links_bg_image_url,links_bg_video_url`))[0];
     if (!client) throw new ApiError(404, 'المتجر غير موجود');
     let branches = [];
     try { branches = await rest(`clients?parent_id=eq.${id}&select=id&limit=1`); } catch {}
@@ -323,7 +323,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const products = await rest(`products?client_id=eq.${id}&select=image_url`);
     const paths = new Set();
     // ملفات هذا المتجر فقط: الفرع يستخدم صور المتجر الرئيسي، فما نحذفها معه
-    [client.logo_url, client.bg_image_url, client.bg_video_url, ...products.map(p => p.image_url)]
+    [client.logo_url, client.bg_image_url, client.bg_video_url, client.links_bg_image_url, client.links_bg_video_url, ...products.map(p => p.image_url)]
       .forEach(u => { const p = storagePathFromUrl(u); if (p && p.startsWith(`${id}/`)) paths.add(p); });
     try {
       const listed = await storage(`object/list/${BUCKET}`, { body: { prefix: `${id}/`, limit: 1000 } });
