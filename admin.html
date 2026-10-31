@@ -2375,8 +2375,11 @@
   }
   async function toggleNotifs(on = !notifOpen) {
     notifOpen = on;
-    document.getElementById('notif-panel').classList.toggle('hidden', !on);
+    const panel = document.getElementById('notif-panel');
+    panel.classList.toggle('hidden', !on);
     if (!on) return;
+    // تحت الشريط العلوي مهما كان طوله (في الجوال سطرين)
+    panel.style.top = `${Math.round(document.querySelector('header.sticky').getBoundingClientRect().bottom) + 8}px`;
     renderNotifs();
     if (notifs.some(n => !n.read_at)) {
       document.getElementById('notif-badge').classList.add('hidden');
