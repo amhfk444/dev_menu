@@ -941,6 +941,8 @@
     // نتأكد إن المتجر موجود، ونجيب مفتاح الإشعارات
     try { const info = await DM.get(`/api/pager?action=info&slug=${encodeURIComponent(slug)}`); setStore(info.store); pushKey = info.push_key || ''; brand = Number(info.brand) || 0; }
     catch (e) { return unavailable('البيجر غير متاح حالياً', 'اسأل الموظف.'); }
+    // بطاقة النداء محفوظة في هالجوال (ولو من قبل تحديث الفروع): نجدد حفظها لكل devmenu.digital عشان كل فرع يعرفها
+    { const pc = pagerCard(); if (pc) savePagerCard(pc); }
     if ('serviceWorker' in navigator && pushKey) navigator.serviceWorker.register('/sw.js').catch(() => {});
     if (loadToken()) { await poll(); return offerPerm(); }   // رجع للصفحة: الصوت يحتاج ضغطة منه من جديد
     show('start');
