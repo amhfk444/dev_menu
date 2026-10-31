@@ -109,10 +109,10 @@
   const TYPE_LABELS = { restaurant: 'RESTAURANT', cafe: 'SPECIALTY COFFEE', mixed: 'RESTAURANT & CAFE', bakery: 'BAKERY & SWEETS' };
 
   // زر واحد: href لازم يكون آمن مسبقاً، والأيقونة إما class أو صورة
-  function linkBtn({ href, label, sub = '', icon, img, primary = false, external = true }) {
+  function linkBtn({ href, label, sub = '', icon, img, tile, primary = false, external = true }) {
     const ico = img
       ? `<span class="ico" style="background:#fff"><img src="${esc(img)}" alt="" data-l="${esc(label.charAt(0))}" class="w-6 h-6 object-contain" onerror="this.parentNode.textContent=this.dataset.l;this.parentNode.style.color='#000'"></span>`
-      : `<span class="ico"><i class="${icon}"></i></span>`;
+      : `<span class="ico"${tile ? ` style="background:${tile};color:#fff"` : ''}><i class="${icon}"></i></span>`;
     return `<a href="${esc(href)}" ${external ? 'target="_blank" rel="noopener"' : ''} class="lnk${primary ? ' primary' : ''}">
       ${ico}<span class="txt"><span class="block truncate">${esc(label)}</span>${sub ? `<span class="sub truncate">${esc(sub)}</span>` : ''}</span><i class="ph-bold ph-caret-left arrow"></i></a>`;
   }
@@ -169,7 +169,7 @@
     const contact = (Array.isArray(p.order_numbers) ? p.order_numbers : [])
       .map(n => ({ label: String((n && n.label) || '').trim(), phone: String((n && n.phone) || '').replace(/[^\d+]/g, '') }))
       .filter(n => /^\+?\d{9,15}$/.test(n.phone))
-      .map(n => linkBtn({ href: `tel:${n.phone}`, label: n.label || `اتصل بنا ${n.phone}`, sub: 'اتصل واطلب مباشرة', icon: 'ph-bold ph-phone', external: false }));
+      .map(n => linkBtn({ href: `tel:${n.phone}`, label: n.label || `اتصل بنا ${n.phone}`, sub: 'اتصل واطلب مباشرة', icon: 'ph-bold ph-phone', tile: '#34c759', external: false }));
     const wa = String(p.whatsapp_number || '').replace(/\D/g, '');
     if (wa) contact.push(linkBtn({ href: `https://wa.me/${wa}`, label: 'تواصل عبر واتساب', sub: 'راسلنا للطلب أو الاستفسار', img: appLogo('whatsapp.com') }));
     sec.contact = group('الطلبات والتواصل', contact);
@@ -194,7 +194,8 @@
       [safeUrl(p.snapchat_url), 'سناب شات', 'snapchat.com']
     ].filter(([u]) => u).map(([href, label, domain]) => linkBtn({ href, label, img: appLogo(domain) }));
     const site = safeUrl(p.website_url);
-    if (site) social.push(linkBtn({ href: site, label: 'موقعنا الإلكتروني', icon: 'ph-bold ph-globe' }));
+    // شعار الموقع نفسه (لو ما له شعار يطلع أول حرف)
+    if (site) { let host = ''; try { host = new URL(site).hostname; } catch {} social.push(linkBtn({ href: site, label: 'موقعنا الإلكتروني', ...(host ? { img: appLogo(host) } : { icon: 'ph-bold ph-globe' }) })); }
     sec.social = group('تابعنا', social);
 
     // 7) الروابط المخصصة
