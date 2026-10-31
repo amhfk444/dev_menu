@@ -162,10 +162,12 @@
     border-radius: 8px; font-size: .8125rem; font-weight: 600; color: #303030; transition: background-color .12s;
   }
   .nav-item i { width: 1.1rem; text-align: center; font-size: 1rem; color: #4a4a4a; }
-  .nav-item:hover { background: rgba(255, 255, 255, .6); }
-  .nav-item.nav-active { background: #fff; color: #303030; box-shadow: 0 1px 0 rgba(26, 26, 26, .07); }
-  .nav-item.nav-active i { color: var(--brand); }
-  .nav-item.nav-active #nav-count { background: #ebebeb; }
+  /* المرور بالماوس: لمسة خضراء، والصفحة الحالية أو الضغط: أخضر DEV MENU ونص أبيض */
+  .nav-item:hover { background: rgba(56, 79, 61, .12); color: var(--brand); }
+  .nav-item:hover i { color: var(--brand); }
+  .nav-item:active, .nav-item.nav-active { background: var(--brand); color: #fff; box-shadow: 0 1px 0 rgba(26, 26, 26, .12); }
+  .nav-item:active i, .nav-item.nav-active i { color: #fff; }
+  .nav-item.nav-active #nav-count, .nav-item.nav-active #lyt-count { background: rgba(255, 255, 255, .2); color: #fff; }
   #nav-count, #lyt-count { background: rgba(0, 0, 0, .06); color: #4a4a4a; font-variant-numeric: tabular-nums; }
 
   /* شريط الجوال السفلي */
