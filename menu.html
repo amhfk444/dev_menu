@@ -33,14 +33,17 @@
   /* زر المساعد: شخصية تلوّح وتقول "أنا مساعدك، اسألني" */
   #chatFab { position: fixed; left: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 41; padding: 0; background: none; border: 0; }
   #chatFab.hidden { display: none; }   /* يطلع بس لو صاحب المحل شغّل المساعد */
-  #chatFab .bot { position: relative; width: 70px; height: 70px; border-radius: 50%; background: #fff; border: 3px solid var(--accent); overflow: hidden; display: block;
+  #chatFab .bot { position: relative; width: 92px; height: 92px; border-radius: 50%; background: #fff; border: 3px solid var(--accent); overflow: hidden; display: block;
     box-shadow: 0 10px 30px -8px var(--accent-glow), 0 10px 24px -10px rgba(0,0,0,.55); animation: botBob 3.2s ease-in-out infinite; }
   /* الشخصية تطلع من أسفل الدائرة وتلوّح (تتمايل من تحت) */
-  #chatFab .bot img { position: absolute; left: 50%; bottom: -6px; width: 64px; height: auto; margin-left: -32px; transform-origin: 50% 100%; animation: botWave 3.2s ease-in-out infinite; }
-  #chatFab .say { position: absolute; left: 78px; bottom: 34px; white-space: nowrap; direction: rtl; background: #fff; color: #111; font-weight: 800; font-size: 14px;
+  #chatFab .bot img { position: absolute; left: 50%; bottom: -8px; width: 86px; height: auto; margin-left: -43px; transform-origin: 50% 100%; animation: botWave 3.2s ease-in-out infinite; }
+  #chatFab .say { position: absolute; left: 100px; bottom: 46px; white-space: nowrap; direction: rtl; background: #fff; color: #111; font-weight: 800; font-size: 14px;
     padding: 9px 14px; border-radius: 16px 16px 16px 4px; box-shadow: 0 10px 24px -10px rgba(0,0,0,.5); opacity: 0; transform: translateY(8px) scale(.85); transform-origin: left bottom; transition: opacity .3s, transform .35s cubic-bezier(.3,1.5,.6,1); pointer-events: none; }
   #chatFab.talk .say { opacity: 1; transform: none; }
-  #chatFab.mini .bot { width: 56px; height: 56px; } #chatFab.mini .bot img { width: 52px; margin-left: -26px; }
+  #chatFab.mini .bot { width: 64px; height: 64px; } #chatFab.mini .bot img { width: 60px; margin-left: -30px; }
+  /* الرسالة تتبدل: الجملة الجديدة تطلع من تحت */
+  #chatFab .say span { display: inline-block; animation: sayIn .35s ease-out; }
+  @keyframes sayIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   @keyframes botBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
   @keyframes botWave { 0%, 55%, 100% { rotate: 0deg; } 10% { rotate: -7deg; } 20% { rotate: 5deg; } 30% { rotate: -7deg; } 40% { rotate: 5deg; } }
   @media (prefers-reduced-motion: reduce) { #chatFab .bot, #chatFab .bot img { animation: none; } #chatFab .say { transition: none; } }
@@ -326,7 +329,7 @@
 <!-- مساعد المنيو الذكي: يظهر لو صاحب المحل شغّله -->
 <button id="chatFab" type="button" class="hidden" onclick="openChat()" aria-label="اسأل المساعد">
   <span class="bot"><img src="images/assistant.webp" alt="" width="321" height="360"></span>
-  <span class="say" id="chatFabText">اسألني! 👋</span>
+  <span class="say" id="chatFabText"><span>اسألني! 👋</span></span>
 </button>
 <div id="chatSheet" role="dialog" aria-modal="true" aria-labelledby="chatTitle">
   <div class="back" onclick="closeChat()"></div>
@@ -776,14 +779,21 @@
   }
   // الشخصية تقول "اسألني" بعد ثانيتين، وتعيدها كل 30 ثانية (3 مرات بالكثير)، وتسكت بعد ما يفتح المحادثة
   let fabTalkTimer = null;
+  // جمل تتبدل في الفقاعة، كل جملة 3 ثواني
+  const FAB_LINES = { ar: ['اسألني! 👋', 'أنا مساعدك الذكي 🤖', 'محتار وش تطلب؟ 🤔', 'أقولك الأسعار والسعرات 🔥', 'أقترح عليك حسب ميزانيتك 💸'],
+    en: ['Ask me! 👋', "I'm your smart assistant 🤖", "Can't decide? 🤔", 'Prices & calories? Ask 🔥', 'Picks for your budget 💸'] };
   function fabTalk(n) {
-    const fab = document.getElementById('chatFab');
+    const fab = document.getElementById('chatFab'), say = document.getElementById('chatFabText');
     fabTalkTimer = setTimeout(() => {
       if (fab.classList.contains('mini') || fab.classList.contains('hidden')) return;
-      fab.classList.add('talk');
-      setTimeout(() => fab.classList.remove('talk'), 5000);
+      const lines = FAB_LINES[currentLang === 'en' ? 'en' : 'ar'];
+      let i = n % lines.length;
+      const show = () => { say.innerHTML = `<span>${esc(lines[i % lines.length])}</span>`; i++; };
+      show(); fab.classList.add('talk');
+      const roll = setInterval(() => { if (fab.classList.contains('mini')) return clearInterval(roll); show(); }, 3000);
+      setTimeout(() => { clearInterval(roll); fab.classList.remove('talk'); }, 12000);
       if (n < 2) fabTalk(n + 1);
-    }, n ? 30000 : 2000);
+    }, n ? 30000 : 1500);
   }
   let chatFaq = [];
   const chatAsked = new Set();
@@ -835,7 +845,7 @@
     renderSocialLinks(p);
     renderCustomLinks();
     document.getElementById('chatFab').classList.toggle('hidden', p.menu_chat !== true);
-    document.getElementById('chatFabText').textContent = currentLang === 'en' ? 'Ask me! 👋' : 'اسألني! 👋';
+
     if (p.menu_chat === true && !fabTalkTimer) fabTalk(0);
     // زينة المناسبة الجارية: نعيد رسمها فقط لو تغيّرت (حتى ما تنعاد القصاصات مع كل تحديث)
     if (window.DMOccasions) {
