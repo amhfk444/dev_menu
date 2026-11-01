@@ -898,7 +898,7 @@
     location.replace(location.pathname + '#register');
   }
   async function registerSignedIn(data) {
-    await DM.post('/api/owner?action=register', { name: data.name, phone: data.phone, business_type: data.businessType, business_label: data.businessLabel, plan: data.plan, features: data.features }, true);
+    await DM.post('/api/owner?action=register', { name: data.name, phone: data.phone, business_type: data.businessType, business_label: data.businessLabel, plan: data.plan, features: data.features, ...(data.free ? { free: true } : {}) }, true);
     try { localStorage.removeItem(CHOICE_KEY); } catch {}
   }
   async function createSignedInStore() {
