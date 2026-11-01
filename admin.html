@@ -2629,8 +2629,8 @@
     else if (status === 'trial') { pill = 'تجربة مجانية'; pillCls = 'bg-sky-500/10 text-sky-800'; }
     else                         { pill = client.subscription_plan ? `الباقة ${planName(client.subscription_plan)}` : 'مشترك'; pillCls = 'bg-emerald-600/10 text-emerald-800'; }
 
-    // شريط المدة: التجربة 7 أيام، والشهري 30، والسنوي 365
-    const span = status === 'trial' ? 7 : client.subscription_plan === 'month' ? 30 : 365;
+    // شريط المدة: التجربة 14 يوم، والشهري 30، والسنوي 365
+    const span = status === 'trial' ? DMPlans.TRIAL_DAYS : client.subscription_plan === 'month' ? 30 : 365;
     const pct = live && left !== null ? Math.max(4, Math.min(100, Math.round(left / span * 100))) : 0;
     const endText = end ? new Date(end).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
     const showPlans = !suspended && (planOpen || !live || status === 'trial' || (left !== null && left <= 7));

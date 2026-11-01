@@ -374,7 +374,7 @@ async function main(req) {
       if (features.length) {
         // الخدمات اللي اختارها تشتغل على طول في التجربة، والإدارة يوصلها إشعار بس
         const main = (await rest(`clients?client_slug=eq.${q(slug)}`, { method: 'PATCH', prefer: 'return=representation',
-          body: { plan_features: features, waitlist_enabled: features.includes('waitlist'), loyalty_enabled: features.includes('loyalty'),
+          body: { plan_features: features, waitlist_enabled: features.includes('waitlist'), loyalty_enabled: features.includes('loyalty'), trial_ends_at: new Date(Date.now() + PLANS.TRIAL_DAYS * 864e5).toISOString(),
                   requested_plan: plan, requested_features: features, plan_requested_at: new Date().toISOString() } }).catch(e => { console.error('REGISTER_FEATURES', slug, e.message); return []; }))[0];
         if (main && mailConfigured()) {
           await sendMail({

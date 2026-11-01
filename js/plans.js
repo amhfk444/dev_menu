@@ -16,6 +16,8 @@
   const ORDER = ['menu', 'chat', 'pager', 'notify', 'waitlist', 'loyalty'];
   // رصيد المساعد الذكي: أسئلة الشهر للمشترك، وللتجربة، وحد كل جوال باليوم
   const CHAT = { month: 1000, trial: 100, day: 10 };
+  // مدة التجربة المجانية (أيام)
+  const TRIAL_DAYS = 14;
   const BRANCH = { month: 19, year: 199 };
   // الأسعار مبنية على السوق السعودي (2026-10): أرخص من المنافسين بـ 25% إلى 40% وفيها مميزات أكثر
   //   المنيو 39/349 (هلا أوردر 50/600)، البيجر 49/449 (بيجري 599 و699 بالهوية)، الولاء 69/649 (نقطتي 89/849)
@@ -97,7 +99,7 @@
   }
   const has = (store, key) => live(store) && featuresOf(store).includes(key);
 
-  const api = { FEATURES, ORDER, CHAT, BRANCH, BUNDLES, LEGACY, ACCOUNT_WIDE, BRANCH_KEYS, ownBranch, branchFeatures, price, branchPrice, featuresOf, has, live, clean, toggle, coveredBy, coveredNote };
+  const api = { FEATURES, ORDER, CHAT, TRIAL_DAYS, BRANCH, BUNDLES, LEGACY, ACCOUNT_WIDE, BRANCH_KEYS, ownBranch, branchFeatures, price, branchPrice, featuresOf, has, live, clean, toggle, coveredBy, coveredNote };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.DMPlans = api;
 })(typeof window !== 'undefined' ? window : globalThis);

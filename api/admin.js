@@ -176,8 +176,8 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     const taken = await rest(`clients?email=eq.${q(email)}&id=neq.${id}&select=id&limit=1`);
     if (taken.length) throw new ApiError(409, 'هذا البريد مرتبط بمتجر ثاني', 'EMAIL_TAKEN');
     const body = { email };
-    // التجربة المجانية (7 أيام) تبدأ من يوم استلامه للمتجر
-    if (target.subscription_status === 'trial') body.trial_ends_at = new Date(Date.now() + 7 * 86400e3).toISOString();
+    // التجربة المجانية (14 يوم) تبدأ من يوم استلامه للمتجر
+    if (target.subscription_status === 'trial') body.trial_ends_at = new Date(Date.now() + PLANS.TRIAL_DAYS * 86400e3).toISOString();
     const out = await patch(body);
     let mailed = false;
     if (mailConfigured()) {
@@ -185,12 +185,12 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       mailed = await sendMail({
         to: email, fromName: 'DEV MENU',
         subject: `منيو ${target.name} جاهز على DEV MENU`,
-        text: `مرحباً،\n\nجهّزنا منيو "${target.name}" الرقمي على DEV MENU:\n${url}\n\nلإدارته (تعديل الأسعار والأطباق): ادخل على ${SITE}/login.html بهذا البريد (${email}).\nتجربتك المجانية 7 أيام.\n\nفريق DEV MENU`,
+        text: `مرحباً،\n\nجهّزنا منيو "${target.name}" الرقمي على DEV MENU:\n${url}\n\nلإدارته (تعديل الأسعار والأطباق): ادخل على ${SITE}/login.html بهذا البريد (${email}).\nتجربتك المجانية 14 يوماً.\n\nفريق DEV MENU`,
         html: `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;line-height:1.9;color:#1b3022">
           <h2 style="margin:0 0 10px">منيو ${escHtml(target.name)} جاهز</h2>
           <p>جهّزنا منيو منشأتك الرقمي على DEV MENU: <a href="${url}">${url}</a></p>
           <p>لإدارته (تعديل الأسعار والأطباق والصور) ادخل على <a href="${SITE}/login.html">صفحة الدخول</a> بهذا البريد: <b dir="ltr">${escHtml(email)}</b></p>
-          <p>تجربتك المجانية 7 أيام.</p><p style="color:#6b7280">فريق DEV MENU</p></div>`
+          <p>تجربتك المجانية 14 يوماً.</p><p style="color:#6b7280">فريق DEV MENU</p></div>`
       }).catch(() => false);
     }
     return { ...out, mailed };

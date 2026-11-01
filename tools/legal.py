@@ -32,8 +32,8 @@ page('terms', ('الشروط والأحكام', 'Terms and conditions'),
       ]),
     ]),
     (('التجربة المجانية', 'Free trial'), [
-      ('p', 'تحصل كل منشأة جديدة على تجربة مجانية مدتها 7 أيام بالخدمات التي اختارتها، دون الحاجة إلى بيانات دفع. عند انتهاء التجربة تتوقف الخدمات عن العملاء إلى أن تشترك، وتبقى بياناتك محفوظة وفق سياسة الخصوصية.',
-            'Every new business gets a 7-day free trial of the services it chose, with no payment details needed. When the trial ends the services stop for customers until you subscribe, and your data is kept as described in the privacy policy.'),
+      ('p', 'تحصل كل منشأة جديدة على تجربة مجانية مدتها 14 يوماً بالخدمات التي اختارتها، دون الحاجة إلى بيانات دفع. عند انتهاء التجربة تتوقف الخدمات عن العملاء إلى أن تشترك، وتبقى بياناتك محفوظة وفق سياسة الخصوصية.',
+            'Every new business gets a 14-day free trial of the services it chose, with no payment details needed. When the trial ends the services stop for customers until you subscribe, and your data is kept as described in the privacy policy.'),
     ]),
     (('الاشتراك والأسعار والدفع', 'Subscription, prices and payment'), [
       ('ul', [
@@ -131,8 +131,8 @@ page('refund', ('سياسة الإلغاء والاسترداد', 'Cancellation 
    'This policy explains how to cancel your DEV MENU subscription and when you can get a refund. It is part of the terms and conditions.'),
   [
     (('التجربة المجانية', 'Free trial'), [
-      ('p', 'التجربة المجانية لمدة 7 أيام لا تتطلب أي دفع، فلا يوجد ما يُسترد عنها، ويمكنك التوقف عن الاستخدام متى شئت.',
-            'The 7-day free trial needs no payment, so there is nothing to refund, and you can stop using it at any time.'),
+      ('p', 'التجربة المجانية لمدة 14 يوماً لا تتطلب أي دفع، فلا يوجد ما يُسترد عنها، ويمكنك التوقف عن الاستخدام متى شئت.',
+            'The 14-day free trial needs no payment, so there is nothing to refund, and you can stop using it at any time.'),
     ]),
     (('إلغاء الاشتراك', 'Cancelling your subscription'), [
       ('ul', [
