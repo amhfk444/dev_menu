@@ -2441,9 +2441,11 @@
   const branchesTotal = (pr) => pr.lines.filter(l => l.key === 'branch').reduce((a, l) => a + l.amount, 0);
   const myFeatures = () => DMPlans.featuresOf(client);
   let pickFeatures = null;   // المميزات اللي يختارها الحين في البطاقة
+  let freeAllPlans = false;
   function chosenFeatures() {
     if (!pickFeatures) {
       const base = (client.requested_features && client.requested_features.length) ? client.requested_features
+        : DMPlans.isFree(client) ? ['pager']   // البيجر المجاني: الترقية الطبيعية اشتراك البيجر
         : client.subscription_status === 'active' ? myFeatures() : DMPlans.LEGACY;
       pickFeatures = new Set(base);
     }
@@ -2655,10 +2657,21 @@
           ${yearly && save > 0 ? `<span class="plan-save">توفّر ${sar(save)}</span>` : ''}
         </button>`;
     };
+    // البيجر المجاني: نعرض البيجر وإضافته بس، ووش يزيد مع الاشتراك، وباقي الخدمات بضغطة
+    const freeShort = DMPlans.isFree(client) && !freeAllPlans;
     return `
       <div class="space-y-3 pt-1">
-        <p class="text-[12px] font-bold text-ink/75">اختر اللي تحتاجه:</p>
-        <div class="space-y-2">${DMPlans.ORDER.map(row).join('')}</div>
+        ${freeShort ? `<div class="rounded-xl bg-brand/5 border border-brand/15 p-3">
+          <p class="text-[12px] font-bold text-ink">مع اشتراك البيجر تحصل على:</p>
+          <ul class="mt-1.5 space-y-1 text-[12px] text-ink/75">
+            <li><i class="ph-bold ph-check text-emerald-600"></i> أرقام بدون حد، والبيجر ما يتوقف</li>
+            <li><i class="ph-bold ph-check text-emerald-600"></i> بطاقة النداء بشعارك في محفظة جوال الزبون</li>
+            <li><i class="ph-bold ph-check text-emerald-600"></i> صفحة الروابط السريعة والمظهر وروابط التواصل</li>
+            <li><i class="ph-bold ph-check text-emerald-600"></i> إضافة فروع</li>
+          </ul>
+        </div>` : '<p class="text-[12px] font-bold text-ink/75">اختر اللي تحتاجه:</p>'}
+        <div class="space-y-2">${(freeShort ? ['pager', 'notify'] : DMPlans.ORDER).map(row).join('')}</div>
+        ${freeShort ? `<button type="button" onclick="freeAllPlans = true; renderSubscriptionStatus()" class="text-[12px] font-bold text-brand hover:underline"><i class="ph-bold ph-plus"></i> تبي المنيو أو الولاء؟ اعرض كل الخدمات</button>` : ''}
         ${pr.discounts.map(d => `<p class="text-[12px] font-bold text-emerald-800 flex justify-between"><span><i class="ph-bold ph-tag"></i> ${d.label}</span><span>- ${sar(d.amount)}</span></p>`).join('')}
         ${branchCount() ? `<p class="text-[11px] text-ink/60">يشمل ${branchCount()} ${branchCount() === 1 ? 'فرع' : 'فروع'} بـ ${sar(branchesTotal(pr))}</p>` : ''}
         <div role="radiogroup" aria-label="المدة" class="grid grid-cols-2 gap-2.5 pt-1">${tile('year')}${tile('month')}</div>
@@ -2671,7 +2684,7 @@
   // البيجر المجاني: كم رقم باقي هالشهر، ولو خلص يتوقف البيجر لين أول الشهر الجاي (ونوضح السبب)
   function renderFreeUsage(r) {
     const els = [document.getElementById('free-usage'), ...document.querySelectorAll('.free-usage-box')].filter(Boolean);
-    if (!els.length) return;
+    if (!els.length || !(r && r.limit)) return;
     const left = Math.max(0, r.limit - r.used), full = left === 0, low = !full && left <= r.limit * 0.2;
     const now = new Date(Date.now() + 3 * 3600e3);
     const reset = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long' });
