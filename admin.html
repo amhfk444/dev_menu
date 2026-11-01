@@ -1786,8 +1786,8 @@
       <label data-needs="pager" data-free-hide class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
         <input type="checkbox" id="info-kiosk-call" onchange="toggleKioskCall(this.checked)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
         <span class="text-xs">
-          <b class="text-ink"><i class="ph-bold ph-device-tablet text-amber-600"></i> شاشة الزبون: رقم الطلب الجاهز كبير</b>
-          <span class="block text-[10px] text-ink/60 mt-0.5">لما يجهز طلب، يطلع رقمه كبير على شاشة الزبون لثواني. لو شاشتك فيها كاميرا بطاقة الولاء يطلع شريط صغير فوق عشان ما يغطيها. وبدون التفعيل تبقى الأرقام الجاهزة ظاهرة أعلى الشاشة.</span>
+          <b class="text-ink"><i class="ph-bold ph-device-tablet text-amber-600"></i> شاشة الزبون: الأرقام الجاهزة</b>
+          <span class="block text-[10px] text-ink/60 mt-0.5">لما يجهز طلب، يطلع رقمه كبير على شاشة الزبون لثواني، وتبقى الأرقام الجاهزة ظاهرة أعلى الشاشة. لو شاشتك فيها كاميرا بطاقة الولاء يطلع الرقم شريط صغير فوق عشان ما يغطيها. وبدون التفعيل تعرض الشاشة الأكواد بس.</span>
         </span>
       </label>
       <label data-needs="menu" class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
@@ -4977,7 +4977,7 @@
     document.getElementById('calories-field').classList.toggle('hidden', !showCalories());
   }
   async function toggleKioskCall(on) {
-    if (await updateClient({ kiosk_call: on })) showToast(on ? 'الرقم الجاهز يطلع كبير على شاشة الزبون' : 'الأرقام الجاهزة تظهر أعلى الشاشة بس');
+    if (await updateClient({ kiosk_call: on })) showToast(on ? 'الأرقام الجاهزة تظهر على شاشة الزبون' : 'شاشة الزبون تعرض الأكواد بس');
     else { document.getElementById('info-kiosk-call').checked = !on; showToast('تعذر حفظ الإعداد', true); }
   }
   async function toggleCalories(on) {

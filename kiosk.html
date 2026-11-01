@@ -340,9 +340,10 @@
     $('cam').hidden = !info.enabled;
     $('wrap').classList.toggle('no-cam', !info.enabled);
     if (info.enabled) $('cam-sub').textContent = `قرّب كود بطاقتك من الكاميرا وينضاف ختمك. ${info.needed} أختام = ${info.reward}`;
-    else $('start-desc').textContent = ((info.services || []).includes('pager') ? 'تعرض الشاشة كل رقم يجهز بخط كبير. ' : '') + 'بعد التشغيل تصير الشاشة ثابتة وتعرض أكواد خدماتك للزبائن: يمسحها الزبون بكاميرا جواله ويفتح المنيو أو ياخذ رقمه.';
+    else $('start-desc').textContent = ((info.services || []).includes('pager') && info.kiosk_call ? 'تعرض الشاشة كل رقم يجهز بخط كبير. ' : '') + 'بعد التشغيل تصير الشاشة ثابتة وتعرض أكواد خدماتك للزبائن: يمسحها الزبون بكاميرا جواله ويفتح المنيو أو ياخذ رقمه.';
     renderCodes();
-    if ((info.services || []).includes('pager')) { pollReady(); setInterval(pollReady, 4000); }
+    // الأرقام الجاهزة (الشريط فوق والرقم الكبير): بس لو صاحب المحل مفعّلها من الإعدادات
+    if ((info.services || []).includes('pager') && info.kiosk_call) { pollReady(); setInterval(pollReady, 4000); }
   }
 
   $('cam').classList.toggle('back', BACK);
