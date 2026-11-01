@@ -292,8 +292,10 @@
   const announced = new Set();
   let firstPoll = true, callT = null;
   function callNumber(n) {
-    // مع كاميرا الولاء: شريط صغير فوق، وبدونها: الرقم يغطي الشاشة
-    $('call').classList.toggle('mini', !!(info && info.enabled));
+    // اختياري من إعدادات صاحب المحل (بدونه تكفي الأرقام الجاهزة فوق)
+    if (!info || !info.kiosk_call) return;
+    // مع كاميرا الولاء: شريط صغير فوق عشان ما يغطي الكاميرا، وبدونها: الرقم يغطي الشاشة
+    $('call').classList.toggle('mini', !!info.enabled);
     $('call-n').textContent = n; $('call').classList.add('on');
     clearTimeout(callT); callT = setTimeout(() => $('call').classList.remove('on'), 7000);
   }

@@ -632,7 +632,7 @@ async function main(req) {
       const start = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 7) + '-01T00:00:00+03:00';
       pager_full = (await rest(`pager_tickets?client_id=eq.${here.id}&created_at=gte.${q(start)}&select=id&limit=${PLANS.FREE.pager}`).catch(() => [])).length >= PLANS.FREE.pager;
     }
-    return { pager_full, name: here.name, logo_url: here.logo_url || store.logo_url || '', slug: here.client_slug, business_type: here.business_type, business_label: here.business_label, services, enabled: services.includes('loyalty'), needed: settings.needed, reward: settings.reward, reward_en: settings.reward_en };
+    return { pager_full, kiosk_call: here.kiosk_call === true, name: here.name, logo_url: here.logo_url || store.logo_url || '', slug: here.client_slug, business_type: here.business_type, business_label: here.business_label, services, enabled: services.includes('loyalty'), needed: settings.needed, reward: settings.reward, reward_en: settings.reward_en };
   }
   // ─── رابط الكاشير للفرع: يطلع (وينشأ أول مرة)، أو يتغيّر والقديم يوقف ───
   if (action === 'desk-link') {
@@ -1293,6 +1293,7 @@ async function main(req) {
     if (has('whatsapp_orders')) p.whatsapp_orders = b.whatsapp_orders === true;
     if (has('show_calories')) p.show_calories = b.show_calories !== false;
     if (has('menu_chat')) p.menu_chat = b.menu_chat === true;
+    if (has('kiosk_call')) p.kiosk_call = b.kiosk_call === true;
     if (has('menu_layout')) p.menu_layout = b.menu_layout === 'photos' ? 'photos' : 'list';
     if (has('google_review_url')) {
       const u = String(b.google_review_url || '').trim();
