@@ -100,8 +100,8 @@ async function loadStore(slug) {
   if (!store) throw new ApiError(404, 'البيجر غير متاح حالياً', 'NOT_AVAILABLE');
   if (!(await storeHasFeature(store.id, 'pager'))) throw new ApiError(404, 'البيجر غير متاح حالياً', 'NOT_AVAILABLE');
   // الباقة المجانية: البيجر الأساسي بس (بدون بطاقة النداء)
-  const plan = (await rest(`clients?id=eq.${store.id}&select=subscription_status,plan_features,parent_id,is_active,trial_ends_at`))[0];
-  store.free = PLANS.isFree(plan);
+  const plan = (await rest(`clients?id=eq.${store.id}&select=subscription_status,plan_features,parent_id,is_active,trial_ends_at,subscription_end_date`))[0];
+  store.free = PLANS.pagerLite(plan);   // الباقة المجانية، أو البيجر المجاني المضاف لمشترك
   return store;
 }
 // أرقام المحل هالشهر (بتوقيت الرياض)

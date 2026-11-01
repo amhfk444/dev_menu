@@ -359,7 +359,7 @@ async function main(req) {
     try { phone = waNumber(b.phone); } catch { throw new ApiError(400, 'رقم الجوال غير صحيح', 'INVALID_PHONE'); }
     const type = BUSINESS_TYPES.includes(b.business_type) ? b.business_type : 'restaurant';
     // الحساب يتفعل بالخدمات اللي اختارها بس (بدونها كانت التجربة تفتح كل الخدمات)
-    const chosen = PLANS.clean(Array.isArray(b.features) ? b.features : []);
+    const chosen = PLANS.clean(Array.isArray(b.features) ? b.features : []).filter(k => k !== 'freepager');   // البيجر المجاني المضاف تعطيه الإدارة بس
     if (!chosen.length) throw new ApiError(400, 'اختر الخدمات التي تحتاجها أولاً', 'NO_FEATURES');
     try {
       const slug = await rpc('server_register_client', { p_email: user.email, p_name: name, p_phone: phone, p_type: type });
@@ -617,7 +617,7 @@ async function main(req) {
     const services = ['menu', 'pager', 'waitlist', 'loyalty'].filter(k => PLANS.has(here, k) && (k !== 'waitlist' || here.waitlist_enabled) && (k !== 'loyalty' || x.loyalty_enabled));
     // البيجر المجاني خلّص عدده هالشهر: الشاشة تكمل تعرض الجاهزين، بس بدون كود أخذ رقم
     let pager_full = false;
-    if (PLANS.isFree(here)) {
+    if (PLANS.pagerLite(here)) {
       const start = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 7) + '-01T00:00:00+03:00';
       pager_full = (await rest(`pager_tickets?client_id=eq.${here.id}&created_at=gte.${q(start)}&select=id&limit=${PLANS.FREE.pager}`).catch(() => [])).length >= PLANS.FREE.pager;
     }

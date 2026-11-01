@@ -2225,7 +2225,7 @@
   function applyFreeHide() {
     const free = !!client && DMPlans.isFree(client);
     document.querySelectorAll('[data-free-hide]').forEach(el => { if (free) el.style.display = 'none'; else if (!el.dataset.needs) el.style.display = ''; });
-    document.getElementById('home-free').classList.toggle('hidden', !free);
+    document.getElementById('home-free').classList.toggle('hidden', !(client && DMPlans.pagerLite(client)));
   }
 
   function showPage(page) {
@@ -2446,7 +2446,7 @@
     if (!pickFeatures) {
       const base = (client.requested_features && client.requested_features.length) ? client.requested_features
         : DMPlans.isFree(client) ? ['pager']   // البيجر المجاني: الترقية الطبيعية اشتراك البيجر
-        : client.subscription_status === 'active' ? myFeatures() : DMPlans.LEGACY;
+        : client.subscription_status === 'active' ? (client.plan_features && client.plan_features.length ? DMPlans.clean(client.plan_features) : myFeatures()) : DMPlans.LEGACY;
       pickFeatures = new Set(base);
     }
     return DMPlans.clean([...pickFeatures]);
@@ -2787,7 +2787,7 @@
     const chipColor = inGrace ? 'bg-amber-400' : free ? 'bg-green-400' : live ? (status === 'trial' ? 'bg-blue-400' : 'bg-green-400') : 'bg-red-400';
     chip.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${chipColor}"></span> ${suspended ? 'موقوف' : free ? 'مجاني' : !live ? 'منتهي' : inGrace ? 'مهلة' : status === 'trial' ? 'تجريبي' : 'مشترك'}${live && left !== null && !inGrace && !free ? ` · ${daysText(left)}` : ''}`;
 
-    if (free) api('free-usage').then(renderFreeUsage).catch(() => {});
+    if (DMPlans.pagerLite(client)) api('free-usage').then(renderFreeUsage).catch(() => {});   // المجاني، أو مشترك مضاف له البيجر المجاني
 
     const notice = (client.admin_notification || '').trim();
     document.getElementById('admin-notice-text').textContent = notice;

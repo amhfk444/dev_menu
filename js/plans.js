@@ -11,7 +11,10 @@
     pager:    { name: 'البيجر',          desc: 'تنبيه العميل على جواله عند جاهزية طلبه دون أجهزة إضافية، مع بطاقة نداء مشمولة في الاشتراك تُحفظ في محفظة جواله ويصله منها التنبيه حتى خارج الصفحة، وشاشة للعملاء تعرض أرقام الطلبات الجاهزة', icon: 'ph-bell', month: 49, year: 449 },
     notify:   { name: 'رسائل لزبائنك',  desc: 'إضافة للبيجر: إرسال إشعارات للعملاء الذين يحتفظون ببطاقة النداء، مثل عروض اليوم أو المنتجات الجديدة', icon: 'ph-megaphone', month: 19, year: 179, needs: 'pager', within: 'loyalty' },
     waitlist: { name: 'قائمة الانتظار', desc: 'تسجيل العملاء في قائمة الانتظار وتنبيههم تلقائياً عند حلول دورهم', icon: 'ph-hourglass-medium', month: 29, year: 249 },
-    loyalty:  { name: 'بطاقة الولاء',    desc: 'بطاقة أختام ومكافآت في محفظة جوال العميل، مع إرسال الرسائل ومساعد ذكي للتواصل مع العملاء', icon: 'ph-seal-check', month: 69, year: 649 }
+    loyalty:  { name: 'بطاقة الولاء',    desc: 'بطاقة أختام ومكافآت في محفظة جوال العميل، مع إرسال الرسائل ومساعد ذكي للتواصل مع العملاء', icon: 'ph-seal-check', month: 69, year: 649 },
+    // هدية من الإدارة لمشترك (مثلاً مشترك المنيو): البيجر الأساسي مجاناً، بدون بطاقة النداء والرسائل، 200 رقم بالشهر
+    // ما يطلع في صفحات الاختيار (مو في ORDER)، تضيفه الإدارة بس
+    freepager: { name: 'البيجر المجاني', desc: 'البيجر الأساسي مجاناً: 200 رقم بالشهر للفرع الرئيسي، بدون بطاقة النداء والرسائل', icon: 'ph-gift', month: 0, year: 0 }
   };
   const ORDER = ['menu', 'chat', 'pager', 'notify', 'waitlist', 'loyalty'];
   // رصيد المساعد الذكي: أسئلة الشهر للمشترك، وللتجربة، وحد كل جوال باليوم
@@ -36,7 +39,7 @@
 
   // الإضافة ما تشتغل بدون الأساس حقها (رسائل لزبائنك تحتاج البيجر)، وتنشال لو فيه خدمة تشملها (الولاء فيه الرسائل)
   const coveredBy = (list, key) => { const w = FEATURES[key] && FEATURES[key].within; return w && (list || []).includes(w) ? w : null; };
-  const clean = (list) => { const l = list || []; return ORDER.filter(k => l.includes(k) && (!FEATURES[k].needs || l.includes(FEATURES[k].needs)) && !coveredBy(l, k)); };
+  const clean = (list) => { const l = list || []; return [...ORDER, 'freepager'].filter(k => l.includes(k) && (!FEATURES[k].needs || l.includes(FEATURES[k].needs)) && !coveredBy(l, k) && !(k === 'freepager' && l.includes('pager'))); };
   // تشغيل/إيقاف ميزة في الاختيار: الإضافة تجيب أساسها معها، وشيل الأساس يشيل إضافاته
   // والإضافة المشمولة في خدمة مختارة (الرسائل مع الولاء) ما تنضاف
   function toggle(list, key) {
@@ -93,10 +96,17 @@
       const f = [...store.plan_features];
       if (f.includes('pager')) f.push('notify');
       if (f.includes('menu')) f.push('chat');
-      return clean(f);
+      return withFreePager(clean(f));
     }
-    if (store.subscription_status === 'active') return Array.isArray(store.plan_features) && store.plan_features.length ? clean(store.plan_features) : LEGACY.slice();
+    if (store.subscription_status === 'active') return Array.isArray(store.plan_features) && store.plan_features.length ? withFreePager(clean(store.plan_features)) : LEGACY.slice();
     return [];
+  }
+  // البيجر المجاني المضاف لمشترك: يشتغل كبيجر (بحدود البيجر المجاني)
+  const withFreePager = (f) => f.includes('freepager') ? clean([...f.filter(k => k !== 'freepager'), 'pager']).filter(k => k !== 'notify') : f;
+  // البيجر بحدود المجاني (200 رقم، بدون بطاقة النداء): الباقة المجانية، أو مشترك مضاف له البيجر المجاني
+  function pagerLite(store) {
+    if (isFree(store)) return true;
+    return !!store && !store.parent_id && live(store) && Array.isArray(store.plan_features) && store.plan_features.includes('freepager') && !store.plan_features.includes('pager');
   }
   // الحساب شغال؟ موقوف من الإدارة، أو انتهت تجربته، أو انتهى اشتراكه (بعد مهلة 3 أيام) = كل المميزات تتوقف
   function live(store) {
@@ -108,7 +118,7 @@
   }
   const has = (store, key) => live(store) && featuresOf(store).includes(key);
 
-  const api = { FEATURES, ORDER, CHAT, TRIAL_DAYS, FREE, isFree, BRANCH, BUNDLES, LEGACY, ACCOUNT_WIDE, BRANCH_KEYS, ownBranch, branchFeatures, price, branchPrice, featuresOf, has, live, clean, toggle, coveredBy, coveredNote };
+  const api = { FEATURES, ORDER, CHAT, TRIAL_DAYS, FREE, isFree, pagerLite, BRANCH, BUNDLES, LEGACY, ACCOUNT_WIDE, BRANCH_KEYS, ownBranch, branchFeatures, price, branchPrice, featuresOf, has, live, clean, toggle, coveredBy, coveredNote };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.DMPlans = api;
 })(typeof window !== 'undefined' ? window : globalThis);
