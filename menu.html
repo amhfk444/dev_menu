@@ -30,44 +30,54 @@
     font-weight: 700 900; font-display: swap; unicode-range: U+20C1;
   }
   /* ─── مساعد المنيو الذكي ─── */
-  /* زر المساعد: شخصية تلوّح وتقول "أنا مساعدك، اسألني" */
+  /* زر المساعد: دائرة بلون المحل فيها أيقونة محادثة، وفقاعة تعريف تتبدل جملها */
   #chatFab { position: fixed; left: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 41; padding: 0; background: none; border: 0; }
   #chatFab.hidden { display: none; }   /* يطلع بس لو صاحب المحل شغّل المساعد */
-  #chatFab .bot { position: relative; width: 34px; height: 34px; border-radius: 50%; background: #fff; border: 2px solid var(--accent); overflow: hidden; display: block;
-    box-shadow: 0 10px 30px -8px var(--accent-glow), 0 10px 24px -10px rgba(0,0,0,.55); animation: botBob 3.2s ease-in-out infinite; }
-  /* الشخصية تطلع من أسفل الدائرة وتلوّح (تتمايل من تحت) */
-  #chatFab .bot img { position: absolute; left: 50%; bottom: -3px; width: 32px; height: auto; margin-left: -16px; transform-origin: 50% 100%; animation: botWave 3.2s ease-in-out infinite; }
-  #chatFab .say { position: absolute; left: 40px; bottom: 10px; white-space: nowrap; direction: rtl; background: #fff; color: #111; font-weight: 700; font-size: 10px;
-    padding: 5px 8px; border-radius: 16px 16px 16px 4px; box-shadow: 0 10px 24px -10px rgba(0,0,0,.5); opacity: 0; transform: translateY(8px) scale(.85); transform-origin: left bottom; transition: opacity .3s, transform .35s cubic-bezier(.3,1.5,.6,1); pointer-events: none; }
+  #chatFab .bot { position: relative; width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: var(--accent-fg); display: grid; place-items: center;
+    box-shadow: 0 10px 28px -8px var(--accent-glow), 0 8px 20px -10px rgba(0,0,0,.55); }
+  #chatFab .bot svg { width: 22px; height: 22px; }
+  /* نقطة "متصل" خضراء */
+  #chatFab .bot::after { content: ''; position: absolute; top: 1px; right: 1px; width: 10px; height: 10px; border-radius: 50%; background: #22c55e; border: 2px solid var(--bg, #111); }
+  #chatFab .say { position: absolute; left: 52px; bottom: 9px; white-space: nowrap; direction: rtl; background: #fff; color: #111; font-weight: 700; font-size: 11px;
+    padding: 6px 10px; border-radius: 14px 14px 14px 4px; box-shadow: 0 10px 24px -10px rgba(0,0,0,.5); opacity: 0; transform: translateY(6px) scale(.9); transform-origin: left bottom; transition: opacity .3s, transform .3s ease-out; pointer-events: none; }
   #chatFab.talk .say { opacity: 1; transform: none; }
-  #chatFab.mini .bot { width: 34px; height: 34px; } #chatFab.mini .bot img { width: 32px; margin-left: -16px; bottom: -3px; }
-  /* الزر صغير، بس منطقة الضغط أكبر منه عشان الإصبع يلقاه */
-  #chatFab::before { content: ''; position: absolute; inset: -8px; }
-  /* الرسالة تتبدل: الجملة الجديدة تطلع من تحت */
+  #chatFab::before { content: ''; position: absolute; inset: -6px; }
   #chatFab .say span { display: inline-block; animation: sayIn .35s ease-out; }
-  @keyframes sayIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-  @keyframes botBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-  @keyframes botWave { 0%, 55%, 100% { rotate: 0deg; } 10% { rotate: -7deg; } 20% { rotate: 5deg; } 30% { rotate: -7deg; } 40% { rotate: 5deg; } }
-  @media (prefers-reduced-motion: reduce) { #chatFab .bot, #chatFab .bot img { animation: none; } #chatFab .say { transition: none; } }
+  @keyframes sayIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { #chatFab .say { transition: none; } }
   #cartBar:not(.hidden) ~ #chatFab { bottom: calc(84px + env(safe-area-inset-bottom)); }
-  #chatSheet { position: fixed; inset: 0; z-index: 60; display: none; }
+  /* النافذة: تاخذ ارتفاع الشاشة الظاهر (visualViewport) عشان الكيبورد ما يغطي خانة الكتابة */
+  #chatSheet { position: fixed; left: 0; right: 0; top: 0; height: 100%; z-index: 60; display: none; }
   #chatSheet.open { display: block; }
   #chatSheet .back { position: absolute; inset: 0; background: rgba(0,0,0,.55); }
-  #chatSheet .panel { position: absolute; left: 0; right: 0; bottom: 0; max-width: 520px; margin: 0 auto; height: min(78vh, 640px); display: flex; flex-direction: column;
-    background: var(--modal); color: var(--fg); border-radius: 24px 24px 0 0; border: 1px solid var(--line); box-shadow: 0 -20px 60px rgba(0,0,0,.4); padding-bottom: env(safe-area-inset-bottom); }
-  #chatSheet .hd { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  #chatSheet .panel { position: absolute; left: 0; right: 0; bottom: 0; max-width: 520px; margin: 0 auto; height: min(78%, 640px); display: flex; flex-direction: column;
+    background: var(--modal); color: var(--fg); border-radius: 22px 22px 0 0; border: 1px solid var(--line); box-shadow: 0 -20px 60px rgba(0,0,0,.4); padding-bottom: env(safe-area-inset-bottom); overflow: hidden; }
+  #chatSheet.kb .panel { height: calc(100% - 8px); padding-bottom: 0; }
+  #chatSheet .hd { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); flex-shrink: 0; }
+  #chatSheet .av { position: relative; width: 40px; height: 40px; border-radius: 50%; background: var(--chip); display: grid; place-items: center; flex-shrink: 0; }
+  #chatSheet .av img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+  #chatSheet .av::after { content: ''; position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-radius: 50%; background: #22c55e; border: 2px solid var(--modal); }
   #chatSheet .hd b { font-size: 15px; } #chatSheet .hd small { display: block; font-size: 11px; color: var(--fg3); }
-  #chatLog { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
-  .cb { max-width: 85%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+  #chatSheet .x { width: 34px; height: 34px; border-radius: 50%; background: var(--chip); display: grid; place-items: center; flex-shrink: 0; }
+  #chatLog { flex: 1; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .cb { max-width: 85%; padding: 10px 14px; border-radius: 18px; font-size: 14.5px; line-height: 1.65; white-space: pre-wrap; word-break: break-word; }
   .cb.me { align-self: flex-start; background: var(--accent); color: var(--accent-fg); border-bottom-right-radius: 6px; }
   .cb.bot { align-self: flex-end; background: var(--chip); border-bottom-left-radius: 6px; }
-  .cb.wait { opacity: .7; }
-  #chatChips { display: flex; gap: 6px; overflow-x: auto; padding: 0 16px 8px; scrollbar-width: none; }
-  #chatChips button { flex-shrink: 0; padding: 7px 12px; border-radius: 999px; background: var(--chip); border: 1px solid var(--line); font-size: 12px; font-weight: 700; color: var(--fg); }
-  #chatForm { display: flex; gap: 8px; padding: 10px 16px 14px; border-top: 1px solid var(--line); }
-  #chatInput { flex: 1; min-width: 0; padding: 11px 14px; border-radius: 14px; background: var(--input-bg); color: var(--fg); border: 1px solid var(--line); font-size: 16px; outline: none; }
-  #chatForm button { padding: 0 16px; border-radius: 14px; background: var(--accent); color: var(--accent-fg); font-weight: 800; }
-  #chatForm button:disabled { opacity: .5; }
+  /* يكتب الحين: ثلاث نقاط تتحرك */
+  .cb.wait { display: inline-flex; gap: 4px; padding: 14px 16px; }
+  .cb.wait i { width: 7px; height: 7px; border-radius: 50%; background: var(--fg3); animation: dotUp 1.2s infinite ease-in-out; }
+  .cb.wait i:nth-child(2) { animation-delay: .15s; } .cb.wait i:nth-child(3) { animation-delay: .3s; }
+  @keyframes dotUp { 0%, 60%, 100% { transform: none; opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
+  #chatChips { display: flex; gap: 6px; overflow-x: auto; padding: 0 14px 10px; scrollbar-width: none; flex-shrink: 0; }
+  #chatChips:empty { display: none; }
+  #chatChips button { flex-shrink: 0; padding: 7px 12px; border-radius: 999px; background: transparent; border: 1px solid var(--line); font-size: 12.5px; font-weight: 700; color: var(--fg); }
+  #chatForm { display: flex; align-items: center; gap: 8px; margin: 0 12px 12px; padding: 5px 5px 5px 5px; border-radius: 999px; background: var(--input-bg); border: 1px solid var(--line); flex-shrink: 0; }
+  #chatForm:focus-within { border-color: var(--accent); }
+  #chatInput { flex: 1; min-width: 0; padding: 9px 12px; background: transparent; color: var(--fg); border: 0; font-size: 16px; outline: none; }
+  #chatForm button { width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%; background: var(--accent); color: var(--accent-fg); display: grid; place-items: center; }
+  #chatForm button:disabled { opacity: .45; }
+  /* وقت المحادثة: الصفحة وراها ما تتحرك */
+  html.chat-lock, html.chat-lock body { overflow: hidden; overscroll-behavior: none; }
   /* ─── الثيم: القيم الافتراضية هنا = الثيم الداكن الأصلي، و js/theme.js يغيّرها حسب اختيار المطعم ─── */
   :root {
     --bg: #0b0b0b; --body-fg: #f5f5f5; --fg: #ffffff; --fg2: #d1d5db; --fg3: #9ca3af;
@@ -330,22 +340,22 @@
 
 <!-- مساعد المنيو الذكي: يظهر لو صاحب المحل شغّله -->
 <button id="chatFab" type="button" class="hidden" onclick="openChat()" aria-label="اسأل المساعد">
-  <span class="bot"><img src="images/assistant.webp" alt="" width="321" height="360"></span>
+  <span class="bot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.9-.9L3 20.5l1.6-4.6A8.3 8.3 0 0 1 3 11.5 8.6 8.6 0 0 1 12 3a8.6 8.6 0 0 1 9 8.5z"/><path d="M12 8.2l.9 2 2 .9-2 .9-.9 2-.9-2-2-.9 2-.9z" fill="currentColor"/></svg></span>
   <span class="say" id="chatFabText"><span>اسألني! 👋</span></span>
 </button>
 <div id="chatSheet" role="dialog" aria-modal="true" aria-labelledby="chatTitle">
   <div class="back" onclick="closeChat()"></div>
   <div class="panel">
     <div class="hd">
-      <span style="width:36px;height:36px;border-radius:12px;background:var(--chip);display:grid;place-items:center"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+      <span class="av" id="chatAv"><i class="fa-solid fa-utensils"></i></span>
       <div style="flex:1;min-width:0"><b id="chatTitle">المساعد الذكي</b><small id="chatSub"></small></div>
-      <button type="button" onclick="closeChat()" aria-label="إغلاق" style="width:36px;height:36px;border-radius:12px;background:var(--chip)"><i class="fa-solid fa-xmark"></i></button>
+      <button type="button" class="x" onclick="closeChat()" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div id="chatLog" aria-live="polite"></div>
     <div id="chatChips"></div>
     <form id="chatForm" onsubmit="sendChat(event)">
-      <input id="chatInput" maxlength="300" autocomplete="off" placeholder="اسأل عن أي طبق…">
-      <button type="submit" id="chatSend" aria-label="إرسال"><i class="fa-solid fa-paper-plane"></i></button>
+      <input id="chatInput" maxlength="300" autocomplete="off" enterkeyhint="send" placeholder="اسأل عن أي طبق…">
+      <button type="submit" id="chatSend" aria-label="إرسال"><i class="fa-solid fa-arrow-up"></i></button>
     </form>
   </div>
 </div>
@@ -762,10 +772,22 @@
     const el = document.createElement('p'); el.className = `cb ${role === 'user' ? 'me' : 'bot'} ${cls}`; el.textContent = text;
     const log = document.getElementById('chatLog'); log.appendChild(el); log.scrollTop = log.scrollHeight; return el;
   }
+  // الكيبورد في الجوال: النافذة تاخذ الجزء الظاهر من الشاشة بس، فخانة الكتابة تبقى فوق الكيبورد
+  function fitChat() {
+    const sheet = document.getElementById('chatSheet'), vv = window.visualViewport;
+    if (!sheet.classList.contains('open') || !vv) return;
+    sheet.style.top = `${vv.offsetTop}px`; sheet.style.height = `${vv.height}px`;
+    sheet.classList.toggle('kb', vv.height < window.innerHeight * 0.75);
+    const log = document.getElementById('chatLog'); log.scrollTop = log.scrollHeight;
+  }
+  if (window.visualViewport) { visualViewport.addEventListener('resize', fitChat); visualViewport.addEventListener('scroll', fitChat); }
   function openChat() {
     document.getElementById('chatSheet').classList.add('open');
+    document.documentElement.classList.add('chat-lock'); fitChat();
     document.getElementById('chatTitle').textContent = chatT('المساعد الذكي', 'Smart assistant');
-    document.getElementById('chatSub').textContent = project ? project.name : '';
+    document.getElementById('chatSub').textContent = chatT(`${project ? project.name + ' · ' : ''}يرد خلال ثواني`, `${project ? project.name + ' · ' : ''}Replies in seconds`);
+    const av = document.getElementById('chatAv');
+    if (project && project.logo_url && !av.querySelector('img')) { const im = new Image(); im.alt = ''; im.onload = () => { av.innerHTML = ''; av.appendChild(im); }; im.src = project.logo_url; }
     document.getElementById('chatInput').placeholder = chatT('اسأل عن أي طبق…', 'Ask about any dish…');
     if (!document.getElementById('chatLog').children.length) {
       chatBubble('assistant', chatT(`يا هلا فيك في ${project.name} 👋 وش ودك تاكل اليوم؟ أقدر أقولك الأسعار والسعرات، وأقترح عليك حسب ذوقك وميزانيتك.`,
@@ -777,7 +799,8 @@
     }
     // بعد أول فتح يصغر الزر لأيقونة، والمحادثة تبقى محفوظة لو رجع لها
     document.getElementById('chatFab').classList.add('mini'); document.getElementById('chatFab').classList.remove('talk');
-    setTimeout(() => document.getElementById('chatInput').focus(), 50);
+    // في الكمبيوتر نحط المؤشر في الخانة، وفي الجوال لا (الكيبورد يغطي المحادثة قبل ما يقرأ الترحيب)
+    if (window.matchMedia('(pointer: fine)').matches) setTimeout(() => document.getElementById('chatInput').focus(), 50);
   }
   // الشخصية تقول "اسألني" بعد ثانيتين، وتعيدها كل 30 ثانية (3 مرات بالكثير)، وتسكت بعد ما يفتح المحادثة
   let fabTalkTimer = null;
@@ -805,7 +828,11 @@
     const list = [...chatFaq, ...base].filter((q, i, a) => a.indexOf(q) === i && !chatAsked.has(q)).slice(0, 4);
     document.getElementById('chatChips').innerHTML = list.map(c => `<button type="button">${esc(c)}</button>`).join('');
   }
-  function closeChat() { document.getElementById('chatSheet').classList.remove('open'); }
+  function closeChat() {
+    const sheet = document.getElementById('chatSheet');
+    sheet.classList.remove('open', 'kb'); sheet.style.top = ''; sheet.style.height = '';
+    document.documentElement.classList.remove('chat-lock'); document.getElementById('chatInput').blur();
+  }
   async function sendChat(e) {
     if (e) e.preventDefault();
     const input = document.getElementById('chatInput'), text = input.value.trim();
@@ -814,14 +841,14 @@
     document.getElementById('chatChips').innerHTML = '';
     chatAsked.add(text);
     chatBubble('user', text); chatMsgs.push({ role: 'user', content: text });
-    const wait = chatBubble('assistant', '…', 'wait');
+    const wait = chatBubble('assistant', '', 'wait'); wait.innerHTML = '<i></i><i></i><i></i>'; wait.setAttribute('aria-label', chatT('يكتب…', 'Typing…'));
     try {
       const r = await DM.post('/api/public?action=menu-chat', { slug: clientSlug, messages: chatMsgs.slice(-6) });
       wait.remove(); chatBubble('assistant', r.reply); chatMsgs.push({ role: 'assistant', content: r.reply });
     } catch (err) {
       wait.remove(); chatBubble('assistant', err.message || chatT('ما قدرت أرد الحين، جرّب مرة ثانية', "Couldn't answer right now, try again"));
       chatMsgs.pop();
-    } finally { chatBusy = false; document.getElementById('chatSend').disabled = false; showChatChips(); input.focus(); }
+    } finally { chatBusy = false; document.getElementById('chatSend').disabled = false; showChatChips(); if (document.activeElement === input || window.matchMedia('(pointer: fine)').matches) input.focus(); }
   }
 
   function applyMenu(menuData, first) {
