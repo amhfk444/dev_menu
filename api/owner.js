@@ -525,7 +525,7 @@ async function main(req) {
     if (PLANS.has(store, 'menu')) {
       try {
         const m = await rpc('server_menu_stats', { p_client_id: store.id, p_days: 30 });
-        data.menu = { totals: m.totals, busiest_hours: m.hours, weekdays_0_is_sunday: m.weekdays, top_dishes: (m.dishes || []).filter(d => d.views > 0).slice(0, 10).map(d => ({ name: d.name, views: d.views })),
+        data.menu = { period: 'last 30 days (not today only)', totals_last_30_days: m.totals, views_by_hour_last_30_days: m.hours, views_by_weekday_0_is_sunday: m.weekdays, top_dishes: (m.dishes || []).filter(d => d.views > 0).slice(0, 10).map(d => ({ name: d.name, views: d.views })),
           dishes_nobody_opened: (m.dishes || []).filter(d => !d.views).slice(0, 15).map(d => d.name) };
       } catch {}
     }
