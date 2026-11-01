@@ -2653,6 +2653,29 @@
       </div>`;
   }
 
+  // البيجر المجاني: كم رقم باقي هالشهر، ولو خلص يتوقف البيجر لين أول الشهر الجاي (ونوضح السبب)
+  function renderFreeUsage(r) {
+    const el = document.getElementById('free-usage'); if (!el) return;
+    const left = Math.max(0, r.limit - r.used), full = left === 0, low = !full && left <= r.limit * 0.2;
+    const now = new Date(Date.now() + 3 * 3600e3);
+    const reset = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long' });
+    const pct = Math.min(100, Math.round(r.used / r.limit * 100));
+    el.innerHTML = `
+      <div class="flex items-baseline justify-between gap-2">
+        <p class="text-[13px] text-ink"><b class="text-[18px]">${left}</b> رقم باقي لك هالشهر</p>
+        <p class="text-[11px] text-ink/55">استخدمت ${r.used} من ${r.limit}</p>
+      </div>
+      <div class="h-1.5 rounded-full bg-brand/10 mt-2 overflow-hidden"><div class="h-full rounded-full ${full ? 'bg-brick' : low ? 'bg-amber-500' : 'bg-brand'}" style="width:${Math.max(4, pct)}%"></div></div>
+      <p class="text-[11px] text-ink/55 mt-1.5">ترجع ${r.limit} رقم من جديد يوم ${reset}.</p>`;
+    const banner = document.getElementById('renew-banner');
+    if (!full && !low) return banner.classList.add('hidden');
+    const text = full
+      ? `البيجر متوقف: خلصت الـ ${r.limit} رقم المجانية لهالشهر، فالزبون اللي يمسح الرمز يطلع له إنه يطلب من الموظف. يرجع يشتغل يوم ${reset}، أو اشترك في البيجر ويرجع على طول بدون حد.`
+      : `باقي لك ${left} رقم بس من البيجر المجاني لهالشهر. إذا خلصت يتوقف البيجر لين ${reset}، واشترك عشان ما يوقف.`;
+    banner.className = `rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 border ${full ? 'bg-red-500/10 border-red-500/40' : 'bg-amber-500/10 border-amber-500/40'}`;
+    banner.innerHTML = `<p class="text-xs font-bold ${full ? 'text-red-800' : 'text-amber-800'} flex items-center gap-2"><i class="ph-bold ${full ? 'ph-warning-circle' : 'ph-clock'}"></i> ${esc(text)}</p>
+      <button type="button" onclick="openPlan()" class="${full ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-500 hover:bg-amber-600'} text-white px-4 py-2 rounded-xl text-xs font-bold transition">اشترك في البيجر</button>`;
+  }
   function renderSubscriptionStatus() {
     const box = document.getElementById('subscription-info');
     const status = client.subscription_status;
@@ -2693,7 +2716,7 @@
         <span class="text-[11px] text-ink/50" dir="ltr">${esc(client.client_slug)}</span>
       </div>
       ${note ? `<p class="text-[12px] font-bold ${free || staysFree ? 'text-emerald-800' : inGrace ? 'text-amber-900' : 'text-brick'}">${note}</p>` : ''}
-      ${free ? '<p id="free-usage" class="text-[12px] text-ink/70"></p>' : ''}
+      ${free ? '<div id="free-usage" class="text-[12px] text-ink/70"></div>' : ''}
       ${live && left !== null && !inGrace && !free ? `
         <div>
           <div class="flex items-baseline justify-between gap-2">
@@ -2734,7 +2757,7 @@
     const chipColor = inGrace ? 'bg-amber-400' : free ? 'bg-green-400' : live ? (status === 'trial' ? 'bg-blue-400' : 'bg-green-400') : 'bg-red-400';
     chip.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${chipColor}"></span> ${suspended ? 'موقوف' : free ? 'مجاني' : !live ? 'منتهي' : inGrace ? 'مهلة' : status === 'trial' ? 'تجريبي' : 'مشترك'}${live && left !== null && !inGrace && !free ? ` · ${daysText(left)}` : ''}`;
 
-    if (free) api('free-usage').then(r => { const el = document.getElementById('free-usage'); if (el) el.innerHTML = `<i class="ph-bold ph-bell"></i> أرقام البيجر هالشهر: <b>${r.used}</b> من ${r.limit}${r.used >= r.limit ? ' — وصلت الحد، الزبائن يطلبون من الموظف لين الشهر الجاي' : ''}`; }).catch(() => {});
+    if (free) api('free-usage').then(renderFreeUsage).catch(() => {});
 
     const notice = (client.admin_notification || '').trim();
     document.getElementById('admin-notice-text').textContent = notice;
