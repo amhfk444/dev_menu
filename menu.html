@@ -33,17 +33,17 @@
   /* زر المساعد: شخصية تلوّح وتقول "أنا مساعدك، اسألني" */
   #chatFab { position: fixed; left: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 41; padding: 0; background: none; border: 0; }
   #chatFab.hidden { display: none; }   /* يطلع بس لو صاحب المحل شغّل المساعد */
-  #chatFab .bot { width: 66px; height: 66px; border-radius: 50%; background: #fff; border: 3px solid var(--accent); display: grid; place-items: center;
+  #chatFab .bot { position: relative; width: 70px; height: 70px; border-radius: 50%; background: #fff; border: 3px solid var(--accent); overflow: hidden; display: block;
     box-shadow: 0 10px 30px -8px var(--accent-glow), 0 10px 24px -10px rgba(0,0,0,.55); animation: botBob 3.2s ease-in-out infinite; }
-  #chatFab .bot svg { width: 56px; height: 56px; overflow: visible; }
-  #chatFab .hand { transform-box: fill-box; transform-origin: 20% 90%; animation: botWave 3.2s ease-in-out infinite; }
-  #chatFab .say { position: absolute; left: 74px; bottom: 30px; white-space: nowrap; direction: rtl; background: #fff; color: #111; font-weight: 800; font-size: 13px;
-    padding: 9px 13px; border-radius: 16px 16px 16px 4px; box-shadow: 0 10px 24px -10px rgba(0,0,0,.5); opacity: 0; transform: translateY(8px) scale(.85); transform-origin: left bottom; transition: opacity .3s, transform .35s cubic-bezier(.3,1.5,.6,1); pointer-events: none; }
+  /* الشخصية تطلع من أسفل الدائرة وتلوّح (تتمايل من تحت) */
+  #chatFab .bot img { position: absolute; left: 50%; bottom: -6px; width: 64px; height: auto; margin-left: -32px; transform-origin: 50% 100%; animation: botWave 3.2s ease-in-out infinite; }
+  #chatFab .say { position: absolute; left: 78px; bottom: 34px; white-space: nowrap; direction: rtl; background: #fff; color: #111; font-weight: 800; font-size: 14px;
+    padding: 9px 14px; border-radius: 16px 16px 16px 4px; box-shadow: 0 10px 24px -10px rgba(0,0,0,.5); opacity: 0; transform: translateY(8px) scale(.85); transform-origin: left bottom; transition: opacity .3s, transform .35s cubic-bezier(.3,1.5,.6,1); pointer-events: none; }
   #chatFab.talk .say { opacity: 1; transform: none; }
-  #chatFab.mini .bot { width: 54px; height: 54px; } #chatFab.mini .bot svg { width: 46px; height: 46px; }
+  #chatFab.mini .bot { width: 56px; height: 56px; } #chatFab.mini .bot img { width: 52px; margin-left: -26px; }
   @keyframes botBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-  @keyframes botWave { 0%, 55%, 100% { rotate: 0deg; } 10% { rotate: -28deg; } 20% { rotate: 14deg; } 30% { rotate: -28deg; } 40% { rotate: 14deg; } }
-  @media (prefers-reduced-motion: reduce) { #chatFab .bot, #chatFab .hand { animation: none; } #chatFab .say { transition: none; } }
+  @keyframes botWave { 0%, 55%, 100% { rotate: 0deg; } 10% { rotate: -7deg; } 20% { rotate: 5deg; } 30% { rotate: -7deg; } 40% { rotate: 5deg; } }
+  @media (prefers-reduced-motion: reduce) { #chatFab .bot, #chatFab .bot img { animation: none; } #chatFab .say { transition: none; } }
   #cartBar:not(.hidden) ~ #chatFab { bottom: calc(88px + env(safe-area-inset-bottom)); }
   #chatSheet { position: fixed; inset: 0; z-index: 60; display: none; }
   #chatSheet.open { display: block; }
@@ -325,17 +325,8 @@
 
 <!-- مساعد المنيو الذكي: يظهر لو صاحب المحل شغّله -->
 <button id="chatFab" type="button" class="hidden" onclick="openChat()" aria-label="اسأل المساعد">
-  <span class="bot"><svg viewBox="0 0 64 64" aria-hidden="true">
-    <path d="M18 22c-5 0-8-4-6-8s7-5 9-2c1-5 6-7 11-7s10 2 11 7c2-3 7-2 9 2s-1 8-6 8z" fill="#fff" stroke="#d9d9d9" stroke-width="1.5"/>
-    <rect x="18" y="20" width="28" height="6" rx="2" fill="var(--accent)" stroke="rgba(0,0,0,.15)"/>
-    <circle cx="32" cy="38" r="15" fill="#ffd8b0"/>
-    <circle cx="26.5" cy="36" r="2.2" fill="#222"/><circle cx="37.5" cy="36" r="2.2" fill="#222"/>
-    <circle cx="27.2" cy="35.2" r=".7" fill="#fff"/><circle cx="38.2" cy="35.2" r=".7" fill="#fff"/>
-    <circle cx="23" cy="41" r="2.4" fill="#ff9a9a" opacity=".55"/><circle cx="41" cy="41" r="2.4" fill="#ff9a9a" opacity=".55"/>
-    <path d="M27 42.5q5 5 10 0" stroke="#222" stroke-width="2" fill="none" stroke-linecap="round"/>
-    <g class="hand"><path d="M46 46l7-9" stroke="#ffd8b0" stroke-width="5" stroke-linecap="round"/><circle cx="54" cy="35" r="4.5" fill="#ffd8b0"/></g>
-  </svg></span>
-  <span class="say" id="chatFabText">أنا مساعدك، اسألني! 👋</span>
+  <span class="bot"><img src="images/assistant.webp" alt="" width="321" height="360"></span>
+  <span class="say" id="chatFabText">اسألني! 👋</span>
 </button>
 <div id="chatSheet" role="dialog" aria-modal="true" aria-labelledby="chatTitle">
   <div class="back" onclick="closeChat()"></div>
@@ -844,7 +835,7 @@
     renderSocialLinks(p);
     renderCustomLinks();
     document.getElementById('chatFab').classList.toggle('hidden', p.menu_chat !== true);
-    document.getElementById('chatFabText').textContent = currentLang === 'en' ? "I'm your assistant, ask me! 👋" : 'أنا مساعدك، اسألني! 👋';
+    document.getElementById('chatFabText').textContent = currentLang === 'en' ? 'Ask me! 👋' : 'اسألني! 👋';
     if (p.menu_chat === true && !fabTalkTimer) fabTalk(0);
     // زينة المناسبة الجارية: نعيد رسمها فقط لو تغيّرت (حتى ما تنعاد القصاصات مع كل تحديث)
     if (window.DMOccasions) {
