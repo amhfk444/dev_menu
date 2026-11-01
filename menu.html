@@ -33,14 +33,14 @@
   /* زر المساعد: شخصية تلوّح وتقول "أنا مساعدك، اسألني" */
   #chatFab { position: fixed; left: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 41; padding: 0; background: none; border: 0; }
   #chatFab.hidden { display: none; }   /* يطلع بس لو صاحب المحل شغّل المساعد */
-  #chatFab .bot { position: relative; width: 60px; height: 60px; border-radius: 50%; background: #fff; border: 2px solid var(--accent); overflow: hidden; display: block;
+  #chatFab .bot { position: relative; width: 48px; height: 48px; border-radius: 50%; background: #fff; border: 2px solid var(--accent); overflow: hidden; display: block;
     box-shadow: 0 10px 30px -8px var(--accent-glow), 0 10px 24px -10px rgba(0,0,0,.55); animation: botBob 3.2s ease-in-out infinite; }
   /* الشخصية تطلع من أسفل الدائرة وتلوّح (تتمايل من تحت) */
-  #chatFab .bot img { position: absolute; left: 50%; bottom: -5px; width: 56px; height: auto; margin-left: -28px; transform-origin: 50% 100%; animation: botWave 3.2s ease-in-out infinite; }
-  #chatFab .say { position: absolute; left: 68px; bottom: 28px; white-space: nowrap; direction: rtl; background: #fff; color: #111; font-weight: 800; font-size: 13px;
-    padding: 8px 12px; border-radius: 16px 16px 16px 4px; box-shadow: 0 10px 24px -10px rgba(0,0,0,.5); opacity: 0; transform: translateY(8px) scale(.85); transform-origin: left bottom; transition: opacity .3s, transform .35s cubic-bezier(.3,1.5,.6,1); pointer-events: none; }
+  #chatFab .bot img { position: absolute; left: 50%; bottom: -4px; width: 45px; height: auto; margin-left: -22.5px; transform-origin: 50% 100%; animation: botWave 3.2s ease-in-out infinite; }
+  #chatFab .say { position: absolute; left: 56px; bottom: 22px; white-space: nowrap; direction: rtl; background: #fff; color: #111; font-weight: 800; font-size: 12px;
+    padding: 7px 11px; border-radius: 16px 16px 16px 4px; box-shadow: 0 10px 24px -10px rgba(0,0,0,.5); opacity: 0; transform: translateY(8px) scale(.85); transform-origin: left bottom; transition: opacity .3s, transform .35s cubic-bezier(.3,1.5,.6,1); pointer-events: none; }
   #chatFab.talk .say { opacity: 1; transform: none; }
-  #chatFab.mini .bot { width: 50px; height: 50px; } #chatFab.mini .bot img { width: 47px; margin-left: -23.5px; bottom: -4px; }
+  #chatFab.mini .bot { width: 44px; height: 44px; } #chatFab.mini .bot img { width: 41px; margin-left: -20.5px; bottom: -3px; }
   /* الرسالة تتبدل: الجملة الجديدة تطلع من تحت */
   #chatFab .say span { display: inline-block; animation: sayIn .35s ease-out; }
   @keyframes sayIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
