@@ -190,4 +190,53 @@ async function ownerInsights({ storeName, data, question }) {
   return text || 'ما قدرت أجاوب الحين، جرّب تسأل بطريقة ثانية.';
 }
 
-module.exports = { loyaltyMessages, loyaltyNearLines, menuChat, ownerInsights };
+// =====================================================================
+// المنيو من صورة: يقرأ صور المنيو الورقي ويطلّع الأقسام والأطباق والأسعار
+// =====================================================================
+const MENU_READ_MODEL = 'claude-sonnet-5-5';   // قراءة الصور تحتاج دقة أعلى، وهي مرة وحدة لكل محل
+const MENU_READ_SYSTEM = `You read photos or scans of a restaurant or café menu (usually Arabic, sometimes English or both) and extract every item into structured data.
+
+Rules:
+- Extract every dish/drink you can read, in the order they appear, grouped under the section heading they belong to (e.g. "المشروبات الساخنة", "Breakfast"). If there is no visible heading, use a sensible short Arabic section name.
+- name: the item name exactly as written (keep Arabic as Arabic). If both Arabic and English names are shown, put the Arabic in name and the English in name_en.
+- price: a number only (Western digits, no currency). Convert Arabic-Indic digits (٠-٩) to 0-9. If an item has several sizes/prices, use the smallest price and list the others in sizes as [{"name": "...", "price": n}].
+- description: the short description or ingredients if printed under the item, otherwise empty.
+- calories: number if printed, otherwise null.
+- Do not invent items, prices or descriptions. If a price is unreadable, use null.
+- Ignore logos, phone numbers, addresses, slogans and decoration.
+Answer with JSON only: {"items":[{"category":"","name":"","name_en":"","price":0,"description":"","calories":null,"sizes":[]}]}`;
+
+async function readMenuImages(images) {
+  let response;
+  try {
+    response = await ai().messages.create({
+      model: MENU_READ_MODEL, max_tokens: 16000,
+      system: MENU_READ_SYSTEM,
+      messages: [{ role: 'user', content: [
+        ...images.map(im => ({ type: 'image', source: { type: 'base64', media_type: im.type, data: im.data } })),
+        { type: 'text', text: 'استخرج كل أصناف المنيو من الصور.' }
+      ] }]
+    });
+  } catch (e) {
+    if (e instanceof ApiError) throw e;
+    if (e instanceof Anthropic.RateLimitError) throw new ApiError(429, 'ضغط على الخدمة، جرّب بعد دقيقة');
+    if (e instanceof Anthropic.APIError) { console.error('AI_ERROR', e.status, e.message); throw new ApiError(502, 'ما قدرنا نقرأ الصورة، جرّب صورة أوضح'); }
+    throw e;
+  }
+  const text = response.content.filter(b => b.type === 'text').map(b => b.text).join('');
+  const m = text.match(/\{[\s\S]*\}/);
+  let out = null;
+  try { out = m && JSON.parse(m[0]); } catch {}
+  if (!out || !Array.isArray(out.items)) throw new ApiError(502, 'ما قدرنا نقرأ المنيو من الصورة، جرّب صورة أوضح');
+  const num = (v) => { const n = Number(String(v ?? '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[^\d.]/g, '')); return Number.isFinite(n) && n > 0 ? n : null; };
+  return out.items.filter(it => it && String(it.name || '').trim()).slice(0, 400).map(it => ({
+    category: String(it.category || '').trim().slice(0, 60),
+    name: String(it.name).trim().slice(0, 80),
+    name_en: String(it.name_en || '').trim().slice(0, 80),
+    price: num(it.price),
+    description: String(it.description || '').trim().slice(0, 300),
+    calories: num(it.calories)
+  }));
+}
+
+module.exports = { loyaltyMessages, loyaltyNearLines, menuChat, ownerInsights, readMenuImages };

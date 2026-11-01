@@ -68,5 +68,10 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/owner.js": {
+      "maxDuration": 60
+    }
+  }
 }

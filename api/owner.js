@@ -1583,6 +1583,24 @@ async function main(req) {
 
   // ─── الأطباق ───
   // ─── استيراد الأطباق من Excel/CSV: الأقسام الناقصة تنضاف بأسمائها، والأطباق تنضاف تحتها (بدون صور) ───
+  // ─── المنيو من صورة: يقرأ صور المنيو الورقي ويرجّع الأطباق للمراجعة (ما يضيف شي لحاله) ───
+  if (action === 'menu-from-photo' && req.method === 'POST') {
+    const imgs = (Array.isArray(b.images) ? b.images : []).slice(0, 4).filter(im => im && /^image\/(jpeg|png|webp)$/.test(im.type) && typeof im.data === 'string' && im.data.length < 3_000_000);
+    if (!imgs.length) throw new ApiError(400, 'ارفع صورة المنيو');
+    // 10 قراءات باليوم لكل محل
+    const day = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10);
+    try {
+      const row = (await rest(`menu_chat_devices?client_id=eq.${sid}&device=eq.menu-photo&day=eq.${day}&select=used`))[0];
+      if (row && row.used >= 10) throw new ApiError(429, 'قرأت منيوهات كثير اليوم، كمّل بكرة', 'PHOTO_DAY');
+      if (row) await rest(`menu_chat_devices?client_id=eq.${sid}&device=eq.menu-photo&day=eq.${day}`, { method: 'PATCH', body: { used: row.used + 1 } });
+      else await rest('menu_chat_devices', { method: 'POST', body: { client_id: sid, device: 'menu-photo', day, used: 1 } });
+    } catch (e) { if (e.code === 'PHOTO_DAY') throw e; }
+    const { readMenuImages } = require('./_lib/ai');
+    const items = await readMenuImages(imgs);
+    if (!items.length) throw new ApiError(422, 'ما لقينا أطباق في الصورة، جرّب صورة أوضح للمنيو', 'NO_ITEMS');
+    return { items };
+  }
+
   if (action === 'products-import') {
     const rows = Array.isArray(b.rows) ? b.rows.slice(0, 500) : [];
     if (!rows.length) throw new ApiError(400, 'ما فيه أطباق في الملف');

@@ -699,6 +699,9 @@
           <!-- استيراد الأطباق من Excel: بدل ما يضيفها وحدة وحدة -->
           <button type="button" onclick="document.getElementById('pi-file').click()" class="bg-brand/10 hover:bg-brand/15 text-ink px-3.5 py-2.5 rounded-xl text-xs font-bold border border-brand/25 transition"><i class="ph-bold ph-microsoft-excel-logo"></i> استيراد من Excel</button>
           <input type="file" id="pi-file" accept=".xlsx,.xls,.csv" class="hidden" onchange="readProductImport(this)">
+          <!-- المنيو من صورة: الذكاء الاصطناعي يقرأ المنيو الورقي، وصاحب المحل يراجع قبل الإضافة -->
+          <button type="button" onclick="document.getElementById('mp-file').click()" class="bg-brand text-cream hover:bg-brand-dark px-3.5 py-2.5 rounded-xl text-xs font-bold transition"><i class="ph-bold ph-camera"></i> المنيو من صورة</button>
+          <input type="file" id="mp-file" accept="image/*" multiple class="hidden" onchange="readMenuPhoto(this)">
           <button type="button" onclick="downloadProductTemplate()" class="text-[11px] font-bold text-ink/60 hover:text-ink underline underline-offset-4">نموذج الملف</button>
         </div>
         <div class="pro-card px-4 sm:px-5 pt-4 pb-2">
@@ -1909,6 +1912,34 @@
 </div>
 
 <!-- JavaScript البرمجي المنظم -->
+<!-- المنيو من صورة: مراجعة الأطباق قبل إضافتها -->
+<div id="mp" class="fixed inset-0 z-[60] bg-ink/40 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-4" onclick="if (event.target === this && !mpBusy) closeMenuPhoto()">
+  <div class="pro-card w-full sm:max-w-3xl max-h-[92vh] overflow-y-auto rounded-b-none sm:rounded-2xl p-5 md:p-6 space-y-4" role="dialog" aria-modal="true" aria-labelledby="mp-title">
+    <div class="flex items-start justify-between gap-3">
+      <div><h3 id="mp-title" class="text-base font-bold"><i class="ph-bold ph-camera"></i> المنيو من صورة</h3><p id="mp-sub" class="text-xs text-ink/60 mt-0.5"></p></div>
+      <button type="button" onclick="closeMenuPhoto()" class="text-ink/50 hover:text-ink text-xl" aria-label="إغلاق"><i class="ph-bold ph-x"></i></button>
+    </div>
+    <div id="mp-wait" class="py-10 text-center space-y-3">
+      <i class="ph-bold ph-spinner-gap ph-spin text-3xl text-brand"></i>
+      <p class="text-sm font-bold">جاري قراءة المنيو…</p>
+      <p class="text-[12px] text-ink/60">ياخذ عادة 20 إلى 40 ثانية. لا تقفل الصفحة.</p>
+    </div>
+    <div id="mp-body" class="hidden space-y-3">
+      <p class="text-[12px] text-ink/65 leading-relaxed">راجع الأطباق قبل الإضافة: عدّل أي خانة، واحذف اللي انقرأ غلط. الأقسام اللي مو موجودة تنضاف لحالها.</p>
+      <div class="overflow-x-auto rounded-xl border border-brand/10">
+        <table class="w-full text-[12.5px] min-w-[640px]">
+          <thead class="bg-brand/[0.04] text-ink/60"><tr><th class="text-right p-2 w-36">القسم</th><th class="text-right p-2">اسم الطبق</th><th class="text-right p-2 w-24">السعر</th><th class="text-right p-2">الوصف</th><th class="w-10"></th></tr></thead>
+          <tbody id="mp-rows"></tbody>
+        </table>
+      </div>
+      <button type="button" onclick="mpAddRow()" class="text-[12px] font-bold text-ink/70 hover:text-ink"><i class="ph-bold ph-plus"></i> أضف طبق</button>
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+        <p id="mp-count" class="text-[12px] text-ink/60"></p>
+        <button type="button" id="mp-go" onclick="sendMenuPhoto()" class="bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition disabled:opacity-60"><i class="ph-bold ph-check"></i> أضف للمنيو</button>
+      </div>
+    </div>
+  </div>
+</div>
 <!-- استيراد الأطباق (خارج الصفحات عشان يطلع من صفحة المنيو) -->
 <!-- معلومات الحساب: الإيميل والباقة والسعر -->
 <div id="acct" class="fixed inset-0 z-[60] bg-ink/40 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-4" onclick="if (event.target === this) closeAccount()">
@@ -5431,6 +5462,65 @@
       await onLoyaltyPage();
     } catch (e) { showToast(e.message || 'تعذر الاستيراد', true); }
     btn.disabled = false; btn.innerHTML = '<i class="ph-bold ph-file-arrow-up"></i> استورد';
+  }
+
+  // ─── المنيو من صورة ───
+  let mpItems = [], mpBusy = false;
+  async function readMenuPhoto(input) {
+    const files = [...(input.files || [])].slice(0, 4); input.value = '';
+    if (!files.length) return;
+    const box = document.getElementById('mp');
+    box.classList.remove('hidden'); box.classList.add('flex');
+    document.getElementById('mp-wait').classList.remove('hidden'); document.getElementById('mp-body').classList.add('hidden');
+    document.getElementById('mp-sub').textContent = files.length === 1 ? 'صورة وحدة' : `${files.length} صور`;
+    mpBusy = true;
+    try {
+      const images = [];
+      for (const f of files) {
+        const small = await compressImage(f, 1800, .85);
+        if (!/^image\/(jpeg|png|webp)$/.test(small.type)) throw new Error('صيغة الصورة غير مدعومة، صوّرها JPG أو PNG');
+        const data = await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1]); r.onerror = no; r.readAsDataURL(small); });
+        images.push({ type: small.type, data });
+      }
+      const r = await api('menu-from-photo', { images });
+      mpItems = r.items.map(it => ({ ...it }));
+      renderMenuPhoto();
+      document.getElementById('mp-wait').classList.add('hidden'); document.getElementById('mp-body').classList.remove('hidden');
+    } catch (e) {
+      closeMenuPhoto();
+      showToast(e.message || 'ما قدرنا نقرأ المنيو، جرّب صورة أوضح', true);
+    } finally { mpBusy = false; }
+  }
+  function renderMenuPhoto() {
+    const cell = (i, k, cls = '', type = 'text') => `<input type="${type}" value="${esc(mpItems[i][k] ?? '')}" oninput="mpItems[${i}].${k}=this.value; mpCount()" class="input-pro text-[12px] !py-1.5 ${cls}"${type === 'number' ? ' dir="ltr" step="0.01" min="0"' : ''}>`;
+    document.getElementById('mp-rows').innerHTML = mpItems.map((it, i) => `<tr class="border-t border-brand/10 align-top">
+      <td class="p-1.5">${cell(i, 'category')}</td><td class="p-1.5">${cell(i, 'name')}</td><td class="p-1.5">${cell(i, 'price', '', 'number')}</td><td class="p-1.5">${cell(i, 'description')}</td>
+      <td class="p-1.5"><button type="button" onclick="mpItems.splice(${i}, 1); renderMenuPhoto()" aria-label="حذف" class="w-8 h-8 rounded-lg text-brick hover:bg-brick/10"><i class="ph-bold ph-trash"></i></button></td></tr>`).join('');
+    mpCount();
+  }
+  function mpCount() {
+    const ok = mpItems.filter(it => String(it.name || '').trim());
+    const noPrice = ok.filter(it => !(Number(it.price) > 0)).length;
+    const cats = new Set(ok.map(it => it.category || 'أطباق')).size;
+    document.getElementById('mp-count').textContent = `${ok.length} طبق في ${cats} ${cats === 1 ? 'قسم' : 'أقسام'}${noPrice ? ` · ${noPrice} بدون سعر، اكتبه قبل الإضافة` : ''}`;
+  }
+  function mpAddRow() { mpItems.push({ category: (mpItems[mpItems.length - 1] || {}).category || '', name: '', price: '', description: '' }); renderMenuPhoto(); }
+  function closeMenuPhoto() { const box = document.getElementById('mp'); box.classList.add('hidden'); box.classList.remove('flex'); }
+  async function sendMenuPhoto() {
+    const rows = mpItems.filter(it => String(it.name || '').trim()).map(it => ({ category: String(it.category || '').trim(), name: String(it.name).trim(), price: digitsEn(String(it.price ?? '')),
+      description: String(it.description || '').trim(), calories: it.calories ? String(it.calories) : '', name_en: String(it.name_en || '').trim() }));
+    if (!rows.length) return showToast('ما فيه أطباق', true);
+    if (rows.some(r => !(Number(r.price) > 0))) return showToast('فيه أطباق بدون سعر، اكتب سعرها أو احذفها', true);
+    const btn = document.getElementById('mp-go'); btn.disabled = true; btn.innerHTML = '<i class="ph-bold ph-spinner-gap ph-spin"></i> نضيف الأطباق…';
+    try {
+      const r = await api('products-import', { rows });
+      closeMenuPhoto();
+      const why = (r.skipped || []).map(x => `الصف ${x.row}: ${x.reason}`).join('\n');
+      await DMDialog.confirm({ title: 'تمت الإضافة', tone: '', icon: 'ph-check-circle', confirmText: 'تمام', cancelText: 'إغلاق',
+        message: `انضاف ${r.added} طبق${r.categories ? ` و${r.categories} قسم جديد` : ''}.${why ? `\n\nما انضاف:\n${why}` : ''}\n\nتقدر تضيف الصور لكل طبق من صفحة المنيو.` });
+      refreshAll();
+    } catch (e) { showToast(e.message || 'تعذر الإضافة', true); }
+    btn.disabled = false; btn.innerHTML = '<i class="ph-bold ph-check"></i> أضف للمنيو';
   }
 
   // ─── استيراد الأطباق من Excel/CSV ───
