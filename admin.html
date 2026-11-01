@@ -1545,7 +1545,7 @@
         <div class="pro-card p-5 space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-link-simple text-emerald-600"></i> رابط متجرك</h3>
-            <span class="text-[10px] text-ink/50">شاركه في البايو والرسائل، ويفتح المنيو مباشرة</span>
+            <span id="slug-hint" class="text-[10px] text-ink/50">شاركه في البايو والرسائل، ويفتح المنيو مباشرة</span>
           </div>
           <div class="flex items-stretch rounded-xl border border-brand/20 bg-white overflow-hidden focus-within:border-brand" dir="ltr">
             <span class="flex items-center px-3 bg-brand/5 text-ink/50 text-xs font-bold border-r border-brand/15 shrink-0">https://</span>
@@ -2078,6 +2078,8 @@
     // الباقة المجانية (البيجر بعد التجربة) ما فيها صفحة الروابط السريعة
     const free = DMPlans.isFree(client);
     ['links-bg-card', 'links-order-card', 'appearance-card'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = free ? 'none' : ''; });
+    const slugHint = document.getElementById('slug-hint');
+    if (slugHint) slugHint.textContent = free ? 'اسم رابط البيجر حقك، ويطلع في رمز QR. الروابط القديمة تبقى شغالة لو غيّرته' : 'شاركه في البايو والرسائل، ويفتح المنيو مباشرة';
     // هوية المنشأة في المجاني: الاسم والشعار ورابط قوقل ماب بس
     document.querySelectorAll('[data-free-hide]').forEach(el => { el.style.display = free ? 'none' : ''; });
     const rows = [...(free ? [] : [['home', 'الرابط الرئيسي', 'ph-house', DM.storeUrl(client.client_slug, 'links')]]), ...on.map(([k, page, name, icon]) => [k, name, icon, DM.storeUrl(client.client_slug, page)])];

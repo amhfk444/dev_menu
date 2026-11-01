@@ -314,7 +314,7 @@
       waitlist: { icon: 'ph-users-three', title: 'قائمة الانتظار', text: 'سجّل اسمك ونبلغك بدورك' },
       loyalty: { icon: 'ph-seal-check', title: 'بطاقة الولاء', text: `سجّل واجمع الأختام: ${info.needed} = ${info.reward}` }
     };
-    const list = (info.services || []).filter(k => all[k]).map(k => ({ key: k, ...all[k] }));
+    const list = (info.services || []).filter(k => all[k] && !(k === 'pager' && info.pager_full)).map(k => ({ key: k, ...all[k] }));
     const box = $('codes');
     box.className = `codes n${list.length}`; box.style.setProperty('--n', Math.max(1, list.length));
     box.innerHTML = list.map(c => `<div class="code"><div class="qr" id="qr-${c.key}"></div><div><div class="tt"><i class="ph-bold ${c.icon}"></i> ${esc(c.title)}</div><p>${esc(c.text)}</p></div></div>`).join('');

@@ -117,7 +117,8 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
   if (action === 'info' && req.method === 'GET') {
     const store = await loadStore(req.query.slug);
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=300');   // بيانات المحل العامة: تتخزن 30 ثانية في CDN
-    return { store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, push_key: pushPublicKey(), brand: await brandOf(store) };
+    const full = store.free && (await monthTickets(store.id, PLANS.FREE.pager)) >= PLANS.FREE.pager;   // البيجر المجاني خلّص عدده
+    return { store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, push_key: pushPublicKey(), brand: await brandOf(store), ...(full ? { full: true } : {}) };
   }
 
   if (action === 'take' && req.method === 'POST') {
