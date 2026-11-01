@@ -3374,14 +3374,48 @@
       </div>`;
   }
 
+  // شريط أفقي: يبدأ من اليمين، والرقم يلحق نهايته (بدون مسار رمادي يشتت)
   function barRow(label, value, max, color = 'bg-brand/50', extra = '') {
-    const w = max ? Math.max(2, (value / max) * 100) : 0;
+    const w = max && value ? Math.max(1.5, (value / max) * 88) : 0;
     return `
       <div class="flex items-center gap-2 text-[11px]">
-        <span class="w-24 shrink-0 truncate text-ink/75">${label}</span>
-        <div class="flex-1 h-2.5 bg-brand/5 rounded-full overflow-hidden"><div class="h-full ${color} rounded-full" style="width:${w}%"></div></div>
-        <b class="w-10 text-left text-ink shrink-0">${fmtNum(value)}</b>${extra}
+        <span class="w-20 shrink-0 truncate text-ink/70">${label}</span>
+        <div class="flex-1 flex items-center gap-1.5 min-w-0">${w ? `<div class="h-2.5 ${color} rounded-full" style="width:${w}%"></div>` : ''}<b class="text-ink tnum">${fmtNum(value)}</b></div>${extra}
       </div>`;
+  }
+  // أعمدة: خطوط مرجعية خفيفة، رقم فوق أعلى عمود، وتسميات تحت، وتلميح عند المرور أو اللمس (data-tip)
+  function colChart(vals, { h = 'h-28', tips, peak = -1, peakCls = 'bg-brand', baseCls = 'bg-brand/40', axis = [] }) {
+    const max = Math.max(1, ...vals), top = niceMax(max);
+    return `
+      <div class="relative ${h} mt-5" dir="ltr">
+        ${[1, 0.5].map(f => `<div class="absolute inset-x-0 border-t border-dashed border-brand/10" style="bottom:${f * 100}%"><span class="absolute -top-2 left-0 -translate-y-full text-[9px] text-ink/40 tnum">${fmtNum(Math.round(top * f))}</span></div>`).join('')}
+        <div class="absolute inset-x-0 bottom-0 border-t border-brand/20"></div>
+        <div class="absolute inset-0 flex items-end gap-[2px]">
+          ${vals.map((v, i) => `<div class="relative flex-1 h-full flex items-end cursor-default group" data-tip="${esc(tips[i])}">
+            <div class="w-full rounded-t-[4px] ${i === peak && v > 0 ? peakCls : baseCls} group-hover:opacity-80 transition" style="height:${v ? Math.max(2, (v / top) * 100) : 0}%"></div>
+            ${i === peak && v > 0 ? `<span class="absolute left-1/2 -translate-x-1/2 text-[10px] font-bold text-ink tnum whitespace-nowrap" style="bottom:calc(${(v / top) * 100}% + 3px)">${fmtNum(v)}</span>` : ''}
+          </div>`).join('')}
+        </div>
+      </div>
+      ${axis.length ? `<div class="flex justify-between text-[9.5px] text-ink/50 mt-1.5" dir="ltr">${axis.map(a => `<span dir="rtl">${esc(a)}</span>`).join('')}</div>` : ''}`;
+  }
+  // أعلى رقم مرتب للخط المرجعي، قريب من أعلى قيمة (12 ← 15، 22 ← 25، 81 ← 100)
+  function niceMax(v) {
+    if (v <= 4) return 4;
+    const p = Math.pow(10, Math.floor(Math.log10(v))), n = v / p;
+    return ([1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find(x => n <= x)) * p;
+  }
+  // تلميح واحد لكل الرسوم في الإحصائيات
+  function statsTips(box) {
+    let tip = document.getElementById('stats-tip');
+    if (!tip) { tip = document.createElement('div'); tip.id = 'stats-tip'; tip.className = 'fixed z-50 pointer-events-none hidden bg-ink text-cream text-[11px] font-bold rounded-lg px-2.5 py-1.5 shadow-lg whitespace-nowrap'; document.body.appendChild(tip); }
+    const show = (e) => {
+      const t = e.target.closest('[data-tip]'); if (!t || !box.contains(t)) return tip.classList.add('hidden');
+      tip.textContent = t.dataset.tip; tip.classList.remove('hidden');
+      const r = t.getBoundingClientRect(), w = tip.offsetWidth;
+      tip.style.left = `${Math.min(window.innerWidth - w - 8, Math.max(8, r.left + r.width / 2 - w / 2))}px`; tip.style.top = `${Math.max(8, r.top - tip.offsetHeight - 6)}px`;
+    };
+    box.onmouseover = show; box.ontouchstart = show; box.onmouseleave = () => tip.classList.add('hidden');
   }
 
   async function loadStats() {
@@ -3428,7 +3462,11 @@
         label: dt.toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { weekday: 'short', day: 'numeric', month: 'numeric', timeZone: 'Asia/Riyadh' })
       });
     }
+    // الأيام اللي قبل أول زيارة (محل جديد) ما نرسمها: تطلع خط فاضي طويل
+    const firstDay = series.findIndex(d => d.v > 0);
+    if (firstDay > 0) series.splice(0, Math.min(firstDay, series.length - 7));
     const maxDay = Math.max(1, ...series.map(d => d.v));
+    const peakDayIdx = series.findIndex(d => d.v === maxDay);
 
     // ── الساعات وأيام الأسبوع
     const hours = Array(24).fill(0);
@@ -3484,25 +3522,20 @@
           <p class="text-[11px] font-bold text-ink/75">الزيارات اليومية</p>
           <p class="text-[10px] text-ink/50">أعلى يوم: ${fmtNum(maxDay)} زيارة</p>
         </div>
-        <div class="flex items-end gap-[2px] h-28 bg-brand/[0.03] rounded-lg p-1.5" dir="ltr">
-          ${series.map(d => `<div class="flex-1 rounded-t ${d.v === maxDay && d.v > 0 ? 'bg-brand' : 'bg-brand/60'} hover:bg-brand-light transition" style="height:${Math.max(3, (d.v / maxDay) * 100)}%" title="${esc(d.label)}: ${d.v} زيارة"></div>`).join('')}
-        </div>
+        ${colChart(series.map(d => d.v), { h: 'h-32', tips: series.map(d => `${d.label}: ${fmtNum(d.v)} زيارة`), peak: peakDayIdx,
+          axis: [series[0].label, series[Math.floor(series.length / 2)].label, series[series.length - 1].label] })}
       </div>
 
       <div class="grid md:grid-cols-2 gap-5">
         <div>
           <p class="text-[11px] font-bold text-ink/75 mb-2">أوقات الذروة خلال اليوم</p>
-          <div class="flex items-end gap-[3px] h-24" dir="ltr">
-            ${hours.map((c, h) => `<div class="flex-1 rounded-t ${h === peakHour && c > 0 ? 'bg-amber-400' : 'bg-brand/15'} hover:bg-amber-300 transition" style="height:${Math.max(3, (c / maxHour) * 100)}%" title="${hourLabel(h)}: ${c} زيارة"></div>`).join('')}
-          </div>
-          <div class="flex justify-between text-[9px] text-ink/50 mt-1" dir="ltr">
-            <span>12 ص</span><span>6 ص</span><span>12 م</span><span>6 م</span><span>11 م</span>
-          </div>
+          ${colChart(hours, { h: 'h-24', tips: hours.map((c, h) => `${hourLabel(h)}: ${fmtNum(c)} زيارة`), peak: peakHour, peakCls: 'bg-amber-400', baseCls: 'bg-brand/25',
+            axis: ['12 ص', '6 ص', '12 م', '6 م', '11 م'] })}
         </div>
         <div>
           <p class="text-[11px] font-bold text-ink/75 mb-2">أيام الأسبوع</p>
           <div class="space-y-1.5">
-            ${[0, 1, 2, 3, 4, 5, 6].map(d => barRow(WEEKDAYS[d], week[d], maxWeek, d === peakDay && week[d] > 0 ? 'bg-amber-400' : 'bg-brand/25')).join('')}
+            ${[0, 1, 2, 3, 4, 5, 6].map(d => barRow(WEEKDAYS[d], week[d], maxWeek, d === peakDay && week[d] > 0 ? 'bg-amber-400' : 'bg-brand/30')).join('')}
           </div>
         </div>
       </div>
@@ -3520,17 +3553,17 @@
                   const img = safeUrl(d.image_url);
                   return `
                     <tr>
-                      <td class="py-2">
+                      <td class="py-2 pl-4">
                         <div class="flex items-center gap-2 min-w-0">
                           <span class="w-4 text-ink/50">${i + 1}</span>
                           ${img ? `<img src="${esc(img)}" alt="" loading="lazy" class="w-8 h-8 rounded-lg object-cover shrink-0">` : '<div class="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center shrink-0"><i class="ph-bold ph-fork-knife text-[10px] text-ink/50"></i></div>'}
-                          <span class="text-ink font-bold truncate">${esc(d.name)}</span>
+                          <span class="text-ink font-bold truncate max-w-[34vw] md:max-w-[280px]">${esc(d.name)}</span>
                         </div>
                       </td>
                       <td class="py-2">
                         <div class="flex items-center gap-2">
-                          <div class="flex-1 h-2 bg-brand/5 rounded-full overflow-hidden"><div class="h-full bg-brand/60 rounded-full" style="width:${(d.views / maxDish) * 100}%"></div></div>
-                          <b class="text-ink w-8 text-left">${fmtNum(d.views)}</b>
+                          <div class="h-2.5 ${i === 0 ? 'bg-brand' : 'bg-brand/45'} rounded-full" style="width:${Math.max(2, (d.views / maxDish) * 80)}%" data-tip="${esc(d.name)}: ${fmtNum(d.views)} مشاهدة"></div>
+                          <b class="text-ink tnum">${fmtNum(d.views)}</b>
                         </div>
                       </td>
                       <td class="py-2 text-center ${d.orders ? 'text-green-700 font-bold' : 'text-ink/40'}">${d.orders ? fmtNum(d.orders) : '—'}</td>
@@ -3576,6 +3609,7 @@
           </div>
         </div>` : ''}
     `;
+    statsTips(body);
   }
 
   // تصدير ملف يفتح في Excel (مع دعم العربي)
