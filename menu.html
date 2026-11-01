@@ -60,7 +60,8 @@
   #chatSheet .back { position: absolute; inset: 0; background: rgba(0,0,0,.55); }
   #chatSheet .panel { position: absolute; left: 0; right: 0; bottom: 0; max-width: 520px; margin: 0 auto; height: min(78%, 640px); display: flex; flex-direction: column;
     background: var(--modal); color: var(--fg); border-radius: 22px 22px 0 0; border: 1px solid var(--line); box-shadow: 0 -20px 60px rgba(0,0,0,.4); padding-bottom: env(safe-area-inset-bottom); overflow: hidden; }
-  #chatSheet.kb .panel { height: calc(100% - 8px); padding-bottom: 0; }
+  #chatSheet { will-change: transform; }
+  #chatSheet.kb .panel { padding-bottom: 0; }
   #chatSheet .hd { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); flex-shrink: 0; }
   #chatSheet .av { position: relative; width: 40px; height: 40px; border-radius: 50%; background: var(--chip); display: grid; place-items: center; flex-shrink: 0; }
   #chatSheet .av img { display: block; width: 40px; height: 40px; max-width: none; border-radius: 50%; object-fit: cover; }
@@ -85,7 +86,9 @@
   #chatForm button { width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%; background: var(--accent); color: var(--accent-fg); display: grid; place-items: center; }
   #chatForm button:disabled { opacity: .45; }
   /* وقت المحادثة: الصفحة وراها ما تتحرك */
+  /* وقت المحادثة: الصفحة مثبتة مكانها (Safari ما يوقف التمرير بـ overflow بس) */
   html.chat-lock, html.chat-lock body { overflow: hidden; overscroll-behavior: none; }
+  html.chat-lock body { position: fixed; left: 0; right: 0; width: 100%; }
   /* ─── الثيم: القيم الافتراضية هنا = الثيم الداكن الأصلي، و js/theme.js يغيّرها حسب اختيار المطعم ─── */
   :root {
     --bg: #0b0b0b; --body-fg: #f5f5f5; --fg: #ffffff; --fg2: #d1d5db; --fg3: #9ca3af;
@@ -786,17 +789,30 @@
       `Hey, welcome to ${project.name} 👋 Ask me anything about the menu: prices, calories, what's in a dish, or tell me what you're craving and I'll sort you out.`));
   }
   // الكيبورد في الجوال: النافذة تاخذ الجزء الظاهر من الشاشة بس، فخانة الكتابة تبقى فوق الكيبورد
+  // (تحديث وحد لكل إطار، ونحرّكها بـ transform، وارتفاعها يتحسب هنا بدل ما يقفز بين مقاسين = ما تهتز)
+  let fitFrame = 0, lockY = 0;
   function fitChat() {
-    const sheet = document.getElementById('chatSheet'), vv = window.visualViewport;
-    if (!sheet.classList.contains('open') || !vv) return;
-    sheet.style.top = `${vv.offsetTop}px`; sheet.style.height = `${vv.height}px`;
-    sheet.classList.toggle('kb', vv.height < window.innerHeight * 0.75);
-    const log = document.getElementById('chatLog'); log.scrollTop = log.scrollHeight;
+    if (fitFrame) return;
+    fitFrame = requestAnimationFrame(() => {
+      fitFrame = 0;
+      const sheet = document.getElementById('chatSheet'), vv = window.visualViewport;
+      if (!sheet.classList.contains('open') || !vv) return;
+      const kb = window.innerHeight - vv.height > 120;   // الكيبورد مفتوح
+      sheet.style.height = `${Math.round(vv.height)}px`;
+      sheet.style.transform = `translateY(${Math.round(vv.offsetTop)}px)`;
+      sheet.classList.toggle('kb', kb);
+      sheet.querySelector('.panel').style.height = kb ? `${Math.round(vv.height) - 6}px` : `${Math.min(640, Math.round(vv.height * 0.78))}px`;
+      const log = document.getElementById('chatLog'); log.scrollTop = log.scrollHeight;
+    });
   }
   if (window.visualViewport) { visualViewport.addEventListener('resize', fitChat); visualViewport.addEventListener('scroll', fitChat); }
+  // لما يضغط على الخانة: Safari يحاول يمرر الصفحة، نرجعها مكانها ونعيد الحساب بعد ما يخلص الكيبورد يطلع
+  document.getElementById('chatInput').addEventListener('focus', () => { [0, 120, 350].forEach(t => setTimeout(() => { window.scrollTo({ top: 0, behavior: 'instant' }); fitChat(); }, t)); });
+  document.getElementById('chatInput').addEventListener('blur', () => setTimeout(fitChat, 120));
   function openChat() {
     document.getElementById('chatSheet').classList.add('open');
-    document.documentElement.classList.add('chat-lock'); fitChat();
+    lockY = window.scrollY; document.body.style.top = `-${lockY}px`;
+    document.documentElement.classList.add('chat-lock'); window.scrollTo({ top: 0, behavior: 'instant' }); fitChat();
     document.getElementById('chatTitle').textContent = chatT('المساعد الذكي', 'Smart assistant');
     document.getElementById('chatSub').textContent = chatT(`${project ? project.name + ' · ' : ''}يرد خلال ثواني`, `${project ? project.name + ' · ' : ''}Replies in seconds`);
     const av = document.getElementById('chatAv');
@@ -836,8 +852,10 @@
   }
   function closeChat() {
     const sheet = document.getElementById('chatSheet');
-    sheet.classList.remove('open', 'kb'); sheet.style.top = ''; sheet.style.height = '';
-    document.documentElement.classList.remove('chat-lock'); document.getElementById('chatInput').blur();
+    document.getElementById('chatInput').blur();
+    sheet.classList.remove('open', 'kb'); sheet.style.transform = ''; sheet.style.height = ''; sheet.querySelector('.panel').style.height = '';
+    // نرجّع الصفحة لنفس مكانها قبل المحادثة
+    document.documentElement.classList.remove('chat-lock'); document.body.style.top = ''; window.scrollTo({ top: lockY, behavior: 'instant' });   // الصفحة فيها scroll-smooth، فنرجعها فوراً بدون حركة
   }
   async function sendChat(e) {
     if (e) e.preventDefault();
