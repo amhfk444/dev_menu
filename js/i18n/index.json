@@ -215,7 +215,6 @@
   "أي": "that's",
   "أدخل اسم المنشأة": "Enter the business name",
   "اختر الخدمات التي تحتاجها أولاً، ويتفعّل حسابك بها": "Choose the services you need first; your account is activated with them",
-  "هدية التجربة: \"رسائل لزبائنك\" مفعّلة مجاناً خلال الأيام السبعة، وتتوقف بعدها إلا إذا أضفتها لاشتراكك.": "Trial gift: \"Customer messages\" is free during the 7 days and stops afterwards unless you add it to your plan.",
   "منيو + بيجر": "Menu + pager",
   "أدخل اسم منشأتك ورقم جوالك وبريدك، ويصبح حسابك جاهزاً خلال دقيقة برابط خاص باسم منشأتك، مثل": "Your business name, phone and email, and your account is ready in a minute with its own link, like",
   "يشمل رابطاً خاصاً لمنشأتك:": "Includes your own business link:",
@@ -241,5 +240,12 @@
   "شاشة للعملاء على أي جهاز لوحي تعرض أرقام الطلبات الجاهزة بخط كبير": "A customer screen on any tablet showing ready order numbers in large type",
   "إحصائيات لمتوسط وقت الانتظار وأوقات الذروة، واسأل عن أرقامك بلغتك لتصلك الإجابة فوراً": "Stats for average wait time and peak hours, and ask about your numbers in your own words for an instant answer",
   "هل أحتاج إلى إدخال أطباقي واحداً تلو الآخر؟": "Do I have to add my dishes one by one?",
-  "لا. صوّر منيوك الورقي (حتى 4 صور)، ويقرأ الذكاء الاصطناعي الأقسام والأطباق والأسعار والأحجام خلال ثوانٍ، ثم تراجعها وتعدّلها وتضيف صورها قبل إضافتها بضغطة واحدة. ويمكنك أيضاً الاستيراد من ملف Excel.": "No. Snap your paper menu (up to 4 photos) and AI reads the sections, dishes, prices and sizes in seconds. Review, edit and add photos, then add them all in one tap. You can also import from an Excel file."
+  "لا. صوّر منيوك الورقي (حتى 4 صور)، ويقرأ الذكاء الاصطناعي الأقسام والأطباق والأسعار والأحجام خلال ثوانٍ، ثم تراجعها وتعدّلها وتضيف صورها قبل إضافتها بضغطة واحدة. ويمكنك أيضاً الاستيراد من ملف Excel.": "No. Snap your paper menu (up to 4 photos) and AI reads the sections, dishes, prices and sizes in seconds. Review, edit and add photos, then add them all in one tap. You can also import from an Excel file.",
+  "هدية التجربة: \"رسائل لزبائنك\" مفعّلة مجاناً خلال فترة التجربة، وتتوقف بعدها إلا إذا أضفتها لاشتراكك.": "Trial gift: \"Customer messages\" is free during the trial and stops afterwards unless you add it to your plan.",
+  "البيجر مجاناً": "Free pager",
+  "البيجر المجاني": "Free pager",
+  "دائماً": "forever",
+  "شاشة كاشير وشاشة للعملاء وإحصائيات الانتظار": "Cashier screen, customer screen and wait-time stats",
+  "مجاناً": "Free",
+  "{n} رقم شهرياً": "{n} numbers a month"
 }

@@ -380,7 +380,7 @@ async function main(req) {
           await sendMail({
             to: process.env.ADMIN_EMAIL || 'dmenu950@gmail.com', fromName: 'DEV MENU',
             subject: `متجر جديد مع طلب اشتراك: ${main.name}`,
-            text: `${main.name} (${main.client_slug}) سجّل وبدأ التجربة المجانية.\nاختار ${plan === 'month' ? 'الشهري' : 'السنوي'}: ${features.map(k => PLANS.FEATURES[k].name).join('، ')} = ${PLANS.price(features, plan).total} ر.س.\nجوال: ${main.phone || '-'}\nبريد: ${main.email || '-'}\nلوحة المشتركين: ${SITE}/super-admin.html`
+            text: `${main.name} (${main.client_slug}) سجّل وبدأ التجربة المجانية.\n${b.free === true && features.length === 1 && features[0] === 'pager' ? 'اختار البيجر المجاني (بعد التجربة يستمر مجاناً بحدود).' : `اختار ${plan === 'month' ? 'الشهري' : 'السنوي'}: ${features.map(k => PLANS.FEATURES[k].name).join('، ')} = ${PLANS.price(features, plan).total} ر.س.`}\nجوال: ${main.phone || '-'}\nبريد: ${main.email || '-'}\nلوحة المشتركين: ${SITE}/super-admin.html`
           }).catch(e => console.error('REGISTER_PLAN_MAIL', e.message));
         }
       }

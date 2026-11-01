@@ -383,7 +383,6 @@
         <button type="button" data-period="year" aria-pressed="false">سنوي <small>شهرين مجاناً</small></button>
       </div>
       <div id="presets" class="flex flex-wrap justify-center gap-2"></div>
-      <p class="mt-4 text-center text-[13.5px] font-semibold"><i class="ph-bold ph-gift text-[color:var(--gold-deep,#a07d14)]"></i> <b>البيجر مجاني دائماً:</b> إذا لم تشترك بعد التجربة، يستمر البيجر لديك مجاناً بـ 200 رقم شهرياً لفرع واحد.</p>
     </div>
     <div class="grid lg:grid-cols-[1.25fr_.75fr] gap-5 items-start">
       <div id="picks" class="grid sm:grid-cols-2 gap-3 reveal"></div>
@@ -649,23 +648,27 @@
 
   // ─── اختيار الباقة: يتحفظ ويروح مع التسجيل ───
   const CHOICE_KEY = 'dm_plan_choice';
+  function same0(a, b) { return a.length === b.length && a.every(x => b.includes(x)); }
+  const same = same0;
   let typeTouched = false;
   // بدون اختيار مسبق: الحساب يتفعل بالخدمات اللي يختارها هو بس
-  let choice = { period: 'month', features: [] };
-  try { const c = JSON.parse(localStorage.getItem(CHOICE_KEY) || 'null'); if (c && Array.isArray(c.features)) choice = { period: c.period === 'year' ? 'year' : 'month', features: DMPlans.clean(c.features) }; } catch {}
+  let choice = { period: 'month', features: [], free: false };
+  try { const c = JSON.parse(localStorage.getItem(CHOICE_KEY) || 'null'); if (c && Array.isArray(c.features)) choice = { period: c.period === 'year' ? 'year' : 'month', features: DMPlans.clean(c.features), free: c.free === true }; } catch {}
+  if (choice.free && !same0(choice.features, ['pager'])) choice.free = false;
+  // البيجر المجاني: نفس البيجر، وبعد التجربة يستمر بحدود (DMPlans.FREE) بدون بطاقة النداء والرسائل
   const PRESETS = [
+    ['البيجر مجاناً', ['pager'], true],
     ['الباقة الكاملة', ['menu', 'pager', 'loyalty']],
     ['منيو + بيجر', ['menu', 'pager']],
     ['منيو + ولاء', ['menu', 'loyalty']],
     ['الولاء فقط', ['loyalty']]
   ];
-  const same = (a, b) => a.length === b.length && a.every(x => b.includes(x));
   const per = () => choice.period === 'month' ? 'بالشهر' : 'بالسنة';
   function saveChoice() { try { localStorage.setItem(CHOICE_KEY, JSON.stringify(choice)); } catch {} }
   function renderPricing() {
     const P = DMPlans, p = choice.period;
     document.querySelectorAll('[data-period]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.period === p)));
-    $('presets').innerHTML = PRESETS.map(([name, f], i) => `<button type="button" class="preset" data-preset="${i}" aria-pressed="${same(choice.features, f)}">${name}</button>`).join('');
+    $('presets').innerHTML = PRESETS.map(([name, f], i) => `<button type="button" class="preset" data-preset="${i}" aria-pressed="${same(choice.features, f) && !!PRESETS[i][2] === !!choice.free}">${PRESETS[i][2] ? '<i class="ph-bold ph-gift"></i> ' : ''}${name}</button>`).join('');
     $('picks').innerHTML = P.ORDER.map(k => {
       const f = P.FEATURES[k], on = choice.features.includes(k), covered = P.coveredNote(choice.features, k);
       // الرسائل مع الولاء: مشمولة فيه، فتطلع معطّلة ومعها السبب بدل السعر
@@ -676,15 +679,32 @@
       return `<button type="button" role="checkbox" aria-checked="${on}" data-feat="${k}" class="feat-pick">
         <span class="box">${on ? '<i class="ph-bold ph-check"></i>' : ''}</span>
         <span class="min-w-0"><b><i class="ph-bold ${f.icon}"></i> ${f.name}</b><p>${f.desc}</p></span>
-        <span class="pr" dir="ltr">${money(f[p])}<small>${per()}</small></span>
+        <span class="pr" dir="ltr">${choice.free && k === 'pager' ? 'مجاناً' : money(f[p])}<small>${choice.free && k === 'pager' ? `${DMPlans.FREE.pager} رقم شهرياً` : per()}</small></span>
       </button>`;
     }).join('');
     const pr = P.price(choice.features, p);
+    if (choice.free) {
+      $('sum-lines').innerHTML = `<div class="line"><span>البيجر المجاني</span><span dir="ltr">${money(0)}</span></div>
+        <ul class="mt-2 space-y-1.5 text-[13px] font-semibold text-[color:var(--muted)]">
+          <li><i class="ph-bold ph-check"></i> ${P.FREE.pager} رقم شهرياً لفرع واحد</li>
+          <li><i class="ph-bold ph-check"></i> شاشة كاشير وشاشة للعملاء وإحصائيات الانتظار</li>
+          <li><i class="ph-bold ph-gift"></i> أول ${P.TRIAL_DAYS} يوماً: البيجر كامل مع بطاقة النداء والرسائل</li>
+        </ul>
+        <p class="disc-note"><i class="ph-bold ph-info"></i> بطاقة النداء في المحفظة والرسائل متاحة في اشتراك البيجر بـ <span dir="ltr">${money(P.FEATURES.pager.month)}</span> بالشهر، وتستطيع الاشتراك في أي وقت.</p>`;
+      $('sum-total').textContent = money(0);
+      $('sum-per').innerHTML = 'دائماً';
+      $('sum-go').classList.remove('pointer-events-none', 'opacity-50');
+      $('chosen-name').textContent = 'البيجر المجاني';
+      $('chosen-price').textContent = money(0);
+      const more = document.querySelector('[name="reg-type"][value="more"]');
+      if (more && !more.checked && !typeTouched) { more.checked = true; more.dispatchEvent(new Event('change')); }
+      return;
+    }
     $('sum-lines').innerHTML = pr.features.length
       ? pr.lines.map(l => `<div class="line"><span>${esc(l.label)}</span><span dir="ltr">${money(l.amount)}</span></div>`).join('') + pr.discounts.map(d => `<div class="line disc"><span>${esc(d.label)}</span><span dir="ltr">- ${money(d.amount)}</span></div>`).join('')
         + (pr.discounts.length ? '<p class="disc-note"><i class="ph-bold ph-clock-countdown"></i> خصومات الباقات عرض لفترة محدودة</p>' : '')
         // البيجر بدون الرسائل: يجربها مجاناً خلال التجربة، وتتوقف بعدها إلا إذا أضافها
-        + (pr.features.includes('pager') && !pr.features.includes('notify') && !pr.features.includes('loyalty') ? '<p class="disc-note"><i class="ph-bold ph-gift"></i> هدية التجربة: "رسائل لزبائنك" مفعّلة مجاناً خلال الأيام السبعة، وتتوقف بعدها إلا إذا أضفتها لاشتراكك.</p>' : '')
+        + (pr.features.includes('pager') && !pr.features.includes('notify') && !pr.features.includes('loyalty') ? '<p class="disc-note"><i class="ph-bold ph-gift"></i> هدية التجربة: "رسائل لزبائنك" مفعّلة مجاناً خلال فترة التجربة، وتتوقف بعدها إلا إذا أضفتها لاشتراكك.</p>' : '')
       : '<p class="text-[14px] font-semibold text-[color:var(--muted)] py-2">اختر أداة واحدة على الأقل</p>';
     $('sum-total').textContent = money(pr.total);
     $('sum-per').innerHTML = p === 'year' && pr.total ? `بالسنة<br>أي <span dir="ltr">${money(Math.round(pr.total / 12))}</span> بالشهر` : 'بالشهر';
@@ -699,11 +719,12 @@
   }
   $('picks').addEventListener('click', (e) => {
     const b = e.target.closest('[data-feat]'); if (!b) return;
-    choice.features = DMPlans.toggle(choice.features, b.dataset.feat); saveChoice(); renderPricing();
+    choice.features = DMPlans.toggle(choice.features, b.dataset.feat); choice.free = false; saveChoice(); renderPricing();
   });
   $('presets').addEventListener('click', (e) => {
     const b = e.target.closest('[data-preset]'); if (!b) return;
-    choice.features = PRESETS[+b.dataset.preset][1].slice(); saveChoice(); renderPricing();
+    const pre = PRESETS[+b.dataset.preset];
+    choice.features = pre[1].slice(); choice.free = !!pre[2]; saveChoice(); renderPricing();
   });
   document.querySelector('.period').addEventListener('click', (e) => {
     const b = e.target.closest('[data-period]'); if (!b) return;
@@ -711,7 +732,7 @@
   });
   $('sum-go').addEventListener('click', () => setTimeout(() => $('reg-name').focus({ preventScroll: true }), 600));
   renderPricing();
-  const planPayload = () => choice.features.length ? { plan: choice.period, features: choice.features } : {};
+  const planPayload = () => choice.features.length ? { plan: choice.period, features: choice.features, ...(choice.free ? { free: true } : {}) } : {};
 
   // ─── نوع المنشأة: مطعم/مقهى، أو "أخرى" وتطلع المنشآت اللي تحتاج البيجر والانتظار والولاء ───
   let sector = 'clinic';
