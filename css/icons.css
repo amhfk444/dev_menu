@@ -1,9 +1,10 @@
 /* DEV MENU — أيقونات (Phosphor, MIT). مولّد بـ tools/icons.js، لا تعدّله يدوياً */
-@font-face { font-family: "Phosphor-Bold"; src: url("/fonts/Phosphor-Bold.woff2") format("woff2"); font-display: block; }
-@font-face { font-family: "Phosphor-Fill"; src: url("/fonts/Phosphor-Fill.woff2") format("woff2"); font-display: block; }
+@font-face { font-family: "Phosphor-Bold"; src: url("/fonts/Phosphor-Bold.woff2?v=c4512d9b") format("woff2"); font-display: block; }
+@font-face { font-family: "Phosphor-Fill"; src: url("/fonts/Phosphor-Fill.woff2?v=a6a3d5e6") format("woff2"); font-display: block; }
 .ph-bold { font-family: "Phosphor-Bold" !important; font-style: normal; font-weight: normal; font-variant: normal; text-transform: none; line-height: 1; display: inline-block; vertical-align: -.125em; speak: never; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 .ph-bold.ph-star, .ph-bold.ph-star-half, .ph-bold.ph-circle { font-family: "Phosphor-Fill" !important; }
 .ph-address-book:before { content: "\e6f8"; }
+.ph-arrow-circle-up:before { content: "\e030"; }
 .ph-arrow-clockwise:before { content: "\e036"; }
 .ph-arrow-counter-clockwise:before { content: "\e038"; }
 .ph-arrow-down:before { content: "\e03e"; }
@@ -11,6 +12,7 @@
 .ph-arrow-square-out:before { content: "\e5de"; }
 .ph-arrow-up:before { content: "\e08e"; }
 .ph-arrows-clockwise:before { content: "\e094"; }
+.ph-arrows-down-up:before { content: "\e098"; }
 .ph-arrows-left-right:before { content: "\e0a0"; }
 .ph-arrows-out:before { content: "\e0a2"; }
 .ph-bell:before { content: "\e0ce"; }
@@ -36,6 +38,7 @@
 .ph-chat-circle-text:before { content: "\e16e"; }
 .ph-check:before { content: "\e182"; }
 .ph-check-circle:before { content: "\e184"; }
+.ph-checks:before { content: "\e53a"; }
 .ph-circle:before { content: "\e18a"; }
 .ph-clock:before { content: "\e19a"; }
 .ph-clock-countdown:before { content: "\ed2c"; }
@@ -53,6 +56,7 @@
 .ph-dots-six-vertical:before { content: "\eae2"; }
 .ph-dots-three:before { content: "\e1fe"; }
 .ph-dots-three-circle:before { content: "\e200"; }
+.ph-dots-three-outline:before { content: "\e204"; }
 .ph-dots-three-vertical:before { content: "\e208"; }
 .ph-download-simple:before { content: "\e20c"; }
 .ph-envelope-simple:before { content: "\e218"; }
@@ -132,7 +136,6 @@
 .ph-sign-in:before { content: "\e428"; }
 .ph-sign-out:before { content: "\e42a"; }
 .ph-sliders-horizontal:before { content: "\e434"; }
-.ph-snapchat-logo:before { content: "\e668"; }
 .ph-sparkle:before { content: "\e6a2"; }
 .ph-speaker-high:before { content: "\e44a"; }
 .ph-spinner-gap:before { content: "\e66c"; }
@@ -145,7 +148,6 @@
 .ph-t-shirt:before { content: "\e670"; }
 .ph-tag:before { content: "\e478"; }
 .ph-ticket:before { content: "\e490"; }
-.ph-tiktok-logo:before { content: "\eaf2"; }
 .ph-timer:before { content: "\e492"; }
 .ph-translate:before { content: "\e4a2"; }
 .ph-trash:before { content: "\e4a6"; }

@@ -34,9 +34,11 @@ for (const [w, file] of [['bold', 'Phosphor-Bold'], ['fill', 'Phosphor-Fill']]) 
   } catch { fs.copyFileSync(from, to); }
 }
 
+// الخطوط تتخزن أسبوع في المتصفح: بصمة الملف في الرابط عشان الأيقونات الجديدة توصل على طول
+const ver = (file) => require('crypto').createHash('sha1').update(fs.readFileSync(path.join(out, `${file}.woff2`))).digest('hex').slice(0, 8);
 const css = `/* DEV MENU — أيقونات (Phosphor, MIT). مولّد بـ tools/icons.js، لا تعدّله يدوياً */
-@font-face { font-family: "Phosphor-Bold"; src: url("/fonts/Phosphor-Bold.woff2") format("woff2"); font-display: block; }
-@font-face { font-family: "Phosphor-Fill"; src: url("/fonts/Phosphor-Fill.woff2") format("woff2"); font-display: block; }
+@font-face { font-family: "Phosphor-Bold"; src: url("/fonts/Phosphor-Bold.woff2?v=${ver('Phosphor-Bold')}") format("woff2"); font-display: block; }
+@font-face { font-family: "Phosphor-Fill"; src: url("/fonts/Phosphor-Fill.woff2?v=${ver('Phosphor-Fill')}") format("woff2"); font-display: block; }
 .ph-bold { font-family: "Phosphor-Bold" !important; font-style: normal; font-weight: normal; font-variant: normal; text-transform: none; line-height: 1; display: inline-block; vertical-align: -.125em; speak: never; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 ${FILLED.map(n => `.ph-bold.ph-${n}`).join(', ')} { font-family: "Phosphor-Fill" !important; }
 ${names.map(n => `.ph-${n}:before { content: "\\${codes[n]}"; }`).join('\n')}
