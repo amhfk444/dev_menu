@@ -356,7 +356,7 @@
     if (c.subscription_status === 'active' && end && Date.now() < new Date(end).getTime() + 3 * 86400000) return { key: 'grace', live: true, label: 'مهلة', cls: 'bg-amber-400/20 text-amber-900 border-amber-500/40', endText, left };
     return { key: 'expired', live: false, label: 'منتهي', cls: 'bg-amber-500/15 text-amber-800 border-amber-500/30', endText, left };
   }
-  const isSoon = (c) => { const s = statusOf(c); return s.live && s.left !== null && s.left <= 3; };
+  const isSoon = (c) => { const s = statusOf(c); return s.key !== 'free' && s.live && s.left !== null && s.left <= 3; };
 
   // ─── الدخول ───
   async function logout() { await DM.logout(); location.replace('login.html'); }
@@ -485,6 +485,7 @@
       all: accounts.length,
       paid: st.filter(s => s.key === 'paid').length,
       trial: st.filter(s => s.key === 'trial').length,
+      free: st.filter(s => s.key === 'free').length,
       soon: accounts.filter(isSoon).length,
       expired: st.filter(s => s.key === 'expired').length,
       suspended: st.filter(s => s.key === 'suspended').length,
@@ -549,7 +550,7 @@
 
   // ─── الفلاتر والبحث ───
   const FILTERS = [
-    ['all', 'الكل'], ['requests', 'طلبات اشتراك'], ['paid', 'مشتركون'], ['trial', 'تجريبي'], ['soon', 'ينتهي قريباً'], ['expired', 'منتهي'],
+    ['all', 'الكل'], ['requests', 'طلبات اشتراك'], ['paid', 'مشتركون'], ['trial', 'تجريبي'], ['free', 'البيجر المجاني'], ['soon', 'ينتهي قريباً'], ['expired', 'منتهي'],
     ['suspended', 'موقوف'], ...DMPlans.ORDER.map(k => ['f_' + k, DMPlans.FEATURES[k].name]), ['featured', 'أمثلة الرئيسية'], ['noEmail', 'بدون بريد']
   ];
   // أرقام "الأرقام والدخل" تفتح المشتركين بنفس الفلتر
@@ -574,7 +575,7 @@
     const q = document.getElementById('search').value.trim().toLowerCase();
     const match = {
       all: () => true, requests: c => !!c.requested_plan, soon: isSoon, waitlist: c => c.waitlist_enabled, featured: c => c.is_featured, noEmail: c => !c.email,
-      paid: c => statusOf(c).key === 'paid', trial: c => statusOf(c).key === 'trial',
+      paid: c => statusOf(c).key === 'paid', trial: c => statusOf(c).key === 'trial', free: c => statusOf(c).key === 'free',
       expired: c => statusOf(c).key === 'expired', suspended: c => statusOf(c).key === 'suspended',
       ...Object.fromEntries(DMPlans.ORDER.map(k => ['f_' + k, c => statusOf(c).key === 'paid' && planFeats(c).includes(k)]))
     }[filter] || (() => true);
@@ -631,15 +632,18 @@
         </div>
 
         <div class="text-[11px] space-y-1 bg-brand/[0.04] border border-brand/10 rounded-xl p-3">
-          <p class="flex justify-between gap-2"><span class="text-ink/55">الاشتراك</span><b class="${isSoon(c) ? 'text-amber-700' : ''}">${esc(s.endText)}${days}</b></p>
+          ${s.key === 'free' ? `<p class="flex justify-between gap-2"><span class="text-ink/55">الاشتراك</span><b class="text-emerald-700">البيجر المجاني · ${DMPlans.FREE.pager} رقم بالشهر</b></p>
+          <p class="flex justify-between gap-2"><span class="text-ink/55">سجّل</span><span>${c.created_at ? new Date(c.created_at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn') : '—'}</span></p>`
+          : `<p class="flex justify-between gap-2"><span class="text-ink/55">الاشتراك</span><b class="${isSoon(c) ? 'text-amber-700' : ''}">${esc(s.endText)}${days}</b></p>`}
           <p class="flex justify-between gap-2"><span class="text-ink/55">البريد</span><span class="truncate" dir="ltr">${isProspect(c) ? '<span class="text-purple-700 font-bold">ما تسلّمه صاحبه بعد</span>' : c.email ? esc(c.email) : c.parent_id ? '<span class="text-ink/50">يديره صاحب المتجر الرئيسي</span>' : '<span class="text-red-600 font-bold">— بدون بريد —</span>'}</span></p>
           <p class="flex justify-between gap-2"><span class="text-ink/55">الجوال</span>${c.phone ? (phone ? `<a href="https://wa.me/${phone}" target="_blank" rel="noopener" class="text-green-700 font-bold" dir="ltr"><i class="ph-bold ph-whatsapp-logo"></i> ${esc(c.phone)}</a>` : `<span dir="ltr">${esc(c.phone)}</span>`) : '<span class="text-ink/40">—</span>'}</p>
         </div>
 
         ${branchesOf(c).length ? branchesBox(c) : ''}
 
-        <div class="grid grid-cols-[1fr_auto_auto] gap-1.5 mt-auto">
-          <button onclick="activate(${id}, '${c.requested_plan || c.subscription_plan || 'year'}')" class="bg-brand hover:bg-brand-dark text-cream rounded-xl py-2.5 text-[12px] font-black ${c.requested_plan ? 'ring-4 ring-amber-400' : ''}">${s.key === 'paid' ? 'تجديد' : 'تفعيل'} · ${money(totalFor(c, c.requested_plan || c.subscription_plan || 'year'))}</button>
+        ${!c.parent_id && !isProspect(c) ? `<button onclick="sendInvoiceDlg(${id})" class="w-full rounded-xl border border-dashed border-brand/30 hover:bg-brand/5 py-2 text-[12px] font-black text-ink/80 mt-auto"><i class="ph-bold ph-receipt"></i> إرسال فاتورة</button>` : ''}
+        <div class="grid grid-cols-[1fr_auto_auto] gap-1.5 ${!c.parent_id && !isProspect(c) ? '' : 'mt-auto'}">
+          <button onclick="activate(${id}, '${c.requested_plan || c.subscription_plan || 'year'}')" class="bg-brand hover:bg-brand-dark text-cream rounded-xl py-2.5 text-[12px] font-black ${c.requested_plan ? 'ring-4 ring-amber-400' : ''}">${s.key === 'paid' ? 'تجديد' : s.key === 'free' ? 'ترقية' : 'تفعيل'} · ${money(totalFor(c, c.requested_plan || c.subscription_plan || 'year'))}</button>
           <button onclick="openFeatures(${id})" class="bg-brand/10 hover:bg-brand/15 border border-brand/15 text-ink rounded-xl px-3 py-2.5 text-[12px] font-black"><i class="ph-bold ph-sliders-horizontal"></i> المميزات</button>
           <div class="relative">
             <button onclick="toggleMenu(event, ${id})" aria-label="المزيد" class="w-10 h-full rounded-xl bg-brand/10 hover:bg-brand/15 border border-brand/15"><i class="ph-bold ph-dots-three"></i></button>
@@ -877,6 +881,35 @@
   // نافذة المميزات: mode = activate (تفعيل/تجديد مع فاتورة) أو features (تعديل الباقة بدون تمديد)
   const fd = { id: null, mode: 'activate', period: 'year', feats: new Set(), requestId: null };
   function activate(id, period) { openFeat(id, 'activate', period); }
+
+  // فاتورة مستحقة: تختار الباقة والمدة، وتنرسل لبريده، وبعدها تقدر ترسلها له واتساب
+  async function sendInvoiceDlg(id) {
+    const c = find(id); if (!c) return;
+    const base = reqFeats(c).length ? reqFeats(c) : planFeats(c);
+    const r = await DMDialog.form({
+      title: 'إرسال فاتورة', subtitle: `${c.name} · ${c.email || 'بدون بريد'}`, icon: 'ph-receipt', confirmText: c.email ? 'أرسل الفاتورة' : 'جهّز رسالة واتساب',
+      fields: [
+        { name: 'features', label: 'الباقة', type: 'multi', value: base, required: true, requiredText: 'اختر ميزة وحدة على الأقل',
+          options: DMPlans.ORDER.map(k => ({ value: k, label: DMPlans.FEATURES[k].name, icon: DMPlans.FEATURES[k].icon })) },
+        { name: 'period', label: 'المدة', type: 'choice', value: c.requested_plan || c.subscription_plan || 'year', options: [
+          { value: 'year', label: 'سنوي', icon: 'ph-calendar' }, { value: 'month', label: 'شهري', icon: 'ph-calendar-blank' }] }
+      ],
+      live: (v) => { const f = DMPlans.clean(v.features); return f.length ? `<b>المبلغ المستحق: ${money(totalFor(c, v.period, f))} ${v.period === 'month' ? 'بالشهر' : 'بالسنة'}</b>${branchesOf(c).length ? `<br><span style="font-size:11px">يشمل الفروع</span>` : ''}` : ''; },
+      note: c.email ? 'تنرسل فاتورة "مستحقة الدفع" لبريده، وما يتغير اشتراكه لين تضغط تفعيل بعد ما يدفع.' : 'ما عنده بريد، فبنجهّز لك رسالة واتساب بالمبلغ.'
+    });
+    if (!r) return;
+    const feats = DMPlans.clean(r.features), total = totalFor(c, r.period, feats);
+    let sentTo = '';
+    if (c.email) {
+      try { const res = await DM.post(A('send-invoice'), { id, period: r.period, features: feats }, true); if (res.invoice && res.invoice.sent) sentTo = res.invoice.to; else showToast(`ما انرسلت بالبريد${invoiceNote(res.invoice).replace(/^،? ?/, ': ')}`, true); }
+      catch (e) { return showToast(`تعذر إرسال الفاتورة: ${e.message}`, true); }
+    }
+    const phone = waPhone(c.phone);
+    const msg = `مرحباً، معك فريق DEV MENU 👋\nفاتورة اشتراك "${c.name}":\n${featNames(feats)} (${r.period === 'month' ? 'شهري' : 'سنوي'})\nالمبلغ المستحق: ${total} ر.س${sentTo ? `\n\nأرسلنا الفاتورة على بريدك ${sentTo}.` : ''}\n\nبعد الدفع يتفعّل اشتراكك في نفس اليوم.`;
+    const go = await DMDialog.confirm({ title: sentTo ? 'انرسلت الفاتورة' : 'الفاتورة جاهزة', tone: '', icon: 'ph-receipt',
+      message: `${sentTo ? `انرسلت على ${sentTo}.\n\n` : ''}المبلغ: ${money(total)}`, confirmText: phone ? 'أرسلها واتساب' : 'تم', cancelText: 'إغلاق' });
+    if (go && phone) window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
+  }
   function openFeatures(id, pre = {}) {
     const c = find(id), main = c && c.parent_id ? find(c.parent_id) : c;
     openFeat(id, 'features', (main && main.subscription_plan) || 'year');

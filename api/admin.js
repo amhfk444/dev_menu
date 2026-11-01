@@ -155,6 +155,28 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     });
     return { ok: true, invoice };
   }
+  // فاتورة مستحقة الدفع: تنرسل لبريد صاحب الحساب بالباقة اللي تختارها، بدون ما يتغير اشتراكه
+  if (action === 'send-invoice') {
+    if (!['month', 'year'].includes(b.period)) throw new ApiError(400, 'مدة غير صحيحة');
+    const main = (await rest(`clients?id=eq.${id}&select=id,name,email,parent_id`))[0];
+    if (!main) throw new ApiError(404, 'المتجر غير موجود');
+    if (main.parent_id) throw new ApiError(400, 'الفاتورة تنرسل للمتجر الرئيسي', 'BRANCH_FOLLOWS_PARENT');
+    const features = PLANS.clean(Array.isArray(b.features) ? b.features : []);
+    if (!features.length) throw new ApiError(400, 'اختر ميزة وحدة على الأقل');
+    let branches = [];
+    try { branches = await rest(`clients?parent_id=eq.${id}&select=name,client_slug,branch_features&order=id.asc`); } catch {}
+    const span = b.period === 'year' ? 'سنة' : 'شهر';
+    const pr = PLANS.price(features, b.period, branches);
+    const invoice = await sendInvoice(main, {
+      status: 'due',
+      note: 'للدفع تواصل معنا عبر واتساب، ويتفعّل اشتراكك في نفس اليوم.',
+      lines: [
+        ...pr.lines.map(l => ({ label: l.label, detail: `${l.key === 'branch' ? (l.detail || l.branches.map(br => br.name || br.client_slug).join('، ')) : main.name} لمدة ${span}`, amount: l.amount })),
+        ...pr.discounts.map(d => ({ label: d.label, detail: '', amount: -d.amount }))
+      ]
+    });
+    return { ok: true, invoice, total: pr.total };
+  }
   // إيقاف/تشغيل المتجر الرئيسي يشمل فروعه، والفرع يقدر ينوقف لحاله
   if (action === 'set-active') {
     const out = await patch({ is_active: b.active === true });
