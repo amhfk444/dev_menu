@@ -18,6 +18,8 @@
   const CHAT = { month: 1000, trial: 100, day: 10 };
   // مدة التجربة المجانية (أيام)
   const TRIAL_DAYS = 14;
+  // الباقة المجانية: البيجر الأساسي بس (بدون بطاقة النداء والرسائل)، 200 رقم بالشهر، للمحل الرئيسي
+  const FREE = { pager: 200 };
   const BRANCH = { month: 19, year: 199 };
   // الأسعار مبنية على السوق السعودي (2026-10): أرخص من المنافسين بـ 25% إلى 40% وفيها مميزات أكثر
   //   المنيو 39/349 (هلا أوردر 50/600)، البيجر 49/449 (بيجري 599 و699 بالهوية)، الولاء 69/649 (نقطتي 89/849)
@@ -74,9 +76,16 @@
     return { features: f, period: p, lines, discounts, subtotal, discount, total: Math.max(0, subtotal - discount) };
   }
 
+  // الباقة المجانية: انتهت تجربته وما اشترك، وكان مختار البيجر، فيكمل على البيجر المجاني
+  function isFree(store) {
+    if (!store || store.is_active === false || store.parent_id || store.subscription_status !== 'trial') return false;
+    if (!(store.trial_ends_at && Date.parse(store.trial_ends_at) <= Date.now())) return false;
+    return Array.isArray(store.plan_features) && store.plan_features.includes('pager');
+  }
   // المميزات المتاحة للمحل الحين: التجربة فيها كل شي، والمشترك حسب باقته
   function featuresOf(store) {
     if (!store) return [];
+    if (isFree(store)) return ['pager'];
     // التجربة: الخدمات اللي اختارها عند التسجيل (المسجلين قبل نظام الاختيار: كل شي)
     // (اللي اختار البيجر يجرب معه "رسائل لزبائنك"، واللي اختار المنيو يجرب "المساعد الذكي")
     if (store.subscription_status === 'trial') {
@@ -93,13 +102,13 @@
   function live(store) {
     if (!store || store.is_active === false) return false;
     const now = Date.now(), t = (v) => (v ? Date.parse(v) : NaN);
-    if (store.subscription_status === 'trial') return !(t(store.trial_ends_at) <= now);
+    if (store.subscription_status === 'trial') return !(t(store.trial_ends_at) <= now) || isFree(store);
     if (store.subscription_status === 'active') return !(t(store.subscription_end_date) + 3 * 864e5 <= now);
     return false;
   }
   const has = (store, key) => live(store) && featuresOf(store).includes(key);
 
-  const api = { FEATURES, ORDER, CHAT, TRIAL_DAYS, BRANCH, BUNDLES, LEGACY, ACCOUNT_WIDE, BRANCH_KEYS, ownBranch, branchFeatures, price, branchPrice, featuresOf, has, live, clean, toggle, coveredBy, coveredNote };
+  const api = { FEATURES, ORDER, CHAT, TRIAL_DAYS, FREE, isFree, BRANCH, BUNDLES, LEGACY, ACCOUNT_WIDE, BRANCH_KEYS, ownBranch, branchFeatures, price, branchPrice, featuresOf, has, live, clean, toggle, coveredBy, coveredNote };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.DMPlans = api;
 })(typeof window !== 'undefined' ? window : globalThis);

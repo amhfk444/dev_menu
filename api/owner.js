@@ -533,6 +533,14 @@ async function main(req) {
     return { reply: await ownerInsights({ storeName: store.name, data, question }) };
   }
 
+  // ─── الباقة المجانية: أرقام البيجر هالشهر ───
+  if (action === 'free-usage') {
+    const { store } = await context(req);
+    const start = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 7) + '-01T00:00:00+03:00';
+    const used = (await rest(`pager_tickets?client_id=eq.${store.id}&created_at=gte.${q(start)}&select=id&limit=${PLANS.FREE.pager}`).catch(() => [])).length;
+    return { used, limit: PLANS.FREE.pager };
+  }
+
   // ─── رصيد المساعد الذكي هالشهر ───
   if (action === 'chat-usage') {
     const { store } = await context(req);

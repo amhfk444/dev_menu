@@ -10,6 +10,7 @@
 // الكاشير يغيّر الحالة من /api/owner?action=pager-update
 // =====================================================================
 const crypto = require('crypto');
+const PLANS = require('./_lib/plans');
 const { reqLang, handler, rest, rpc, q, ApiError, readBody, findPublicStore, storeHasFeature, loyaltyHome, later } = require('./_lib/core');
 const { pushPublicKey, cleanSubscription, sendPush } = require('./_lib/push');
 const { topic, poke } = require('./_lib/live');
@@ -87,12 +88,26 @@ async function demoRing(store, token) {
   await poke([topic('pager', store.id), topic('ticket', token)]);
 }
 
+const SLUG_OK = /^[a-z0-9-]{2,63}$/i;
 async function loadStore(slug) {
-  const { store, bad } = await findPublicStore(slug, 'id,name,client_slug,logo_url,business_type,accent_color');
+  let { store, bad } = await findPublicStore(slug, 'id,name,client_slug,logo_url,business_type,accent_color');
   if (bad) throw new ApiError(400, 'الرابط غير صحيح');
+  // المحل اللي انتهت تجربته ما يطلع في public_clients، بس لو هو على البيجر المجاني يكمل يشتغل
+  if (!store && SLUG_OK.test(String(slug || ''))) {
+    const row = (await rest(`clients?client_slug=eq.${q(String(slug).toLowerCase())}&select=id,name,client_slug,logo_url,business_type,accent_color,subscription_status,plan_features,parent_id,is_active,trial_ends_at`).catch(() => []))[0];
+    if (row && PLANS.isFree(row)) store = row;
+  }
   if (!store) throw new ApiError(404, 'البيجر غير متاح حالياً', 'NOT_AVAILABLE');
   if (!(await storeHasFeature(store.id, 'pager'))) throw new ApiError(404, 'البيجر غير متاح حالياً', 'NOT_AVAILABLE');
+  // الباقة المجانية: البيجر الأساسي بس (بدون بطاقة النداء)
+  const plan = (await rest(`clients?id=eq.${store.id}&select=subscription_status,plan_features,parent_id,is_active,trial_ends_at`))[0];
+  store.free = PLANS.isFree(plan);
   return store;
+}
+// أرقام المحل هالشهر (بتوقيت الرياض)
+async function monthTickets(storeId, limit) {
+  const start = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 7) + '-01T00:00:00+03:00';
+  return (await rest(`pager_tickets?client_id=eq.${storeId}&created_at=gte.${q(start)}&select=id&limit=${limit}`).catch(() => [])).length;
 }
 
 module.exports = handler(['GET', 'POST'], async (req, res) => {
@@ -107,6 +122,8 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
 
   if (action === 'take' && req.method === 'POST') {
     const store = await loadStore(b.slug);
+    // المجانية: 200 رقم بالشهر. الزبون ما يشوف إن فيه حد، بس يطلب من الموظف
+    if (store.free && (await monthTickets(store.id, PLANS.FREE.pager)) >= PLANS.FREE.pager) throw new ApiError(409, 'البيجر مو متاح الحين، اطلب من الموظف 😊', 'FREE_FULL');
     const token = crypto.randomBytes(18).toString('base64url');
     try {
       const res = await rpc('server_pager_take', { p_client_id: store.id, p_token: token });
@@ -142,7 +159,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const review = ['ready', 'done'].includes(t.status) ? await reviewUrl(store.id) : null;
     // البطاقة المربوطة انحذفت من محفظته (آخر تحديث وصل لـ 0 جوال): نعرض عليه يضيفها من جديد
     const card_gone = !!t.wallet_url && /devices=0\b/.test(String(t.wallet_error || '').split('|').pop());
-    return { demo: DEMO.has(store.client_slug), wallet: wallet.configured(), in_wallet: !!t.wallet_url && !card_gone, card_gone, review_url: review, store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
+    return { demo: DEMO.has(store.client_slug), wallet: wallet.configured() && !store.free, in_wallet: !!t.wallet_url && !card_gone, card_gone, review_url: review, store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
       loyalty: { ...(await loyaltyOf(store.id)), linked: !!t.loyalty_card_id, stamped: !!t.loyalty_stamped,
         ...(await linkedCard(store.id, t.loyalty_card_id)) } };
   }
@@ -180,6 +197,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (!t) throw new ApiError(404, 'الرقم غير موجود أو انتهى', 'NOT_FOUND');
     // المحل المشترك في الولاء: النداء يوصل من بطاقة الولاء، فما فيه بطاقة نداء
     if ((await loyaltyOf(store.id)).enabled) throw new ApiError(409, 'سجّل في بطاقة الولاء ويوصلك النداء منها', 'USE_LOYALTY');
+    if (store.free) throw new ApiError(409, 'بطاقة النداء مو متاحة الحين', 'NO_CARD');
     const pc = TOKEN_RE.test(String(b.pc || '')) ? await linkPagerCard(store, token, b.pc) : null;
     if (pc && DEMO.has(store.client_slug)) await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { created_at: new Date().toISOString() } }).catch(() => {});
     if (pc) return { url: pc.wallet_url, card: b.pc };

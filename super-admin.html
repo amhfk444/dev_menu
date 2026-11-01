@@ -349,6 +349,7 @@
     const left = end ? Math.ceil((new Date(end) - Date.now()) / 86400000) : null;
     const endText = end ? new Date(end).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn') : '—';
     if (c.is_active === false) return { key: 'suspended', live: false, label: 'موقوف', cls: 'bg-red-500/10 text-red-700 border-red-500/20', endText, left };
+    if (DMPlans.isFree(c)) return { key: 'free', live: true, label: 'مجاني (بيجر)', cls: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20', endText, left };
     if (c.subscription_status === 'trial' && (left === null || left > 0)) return { key: 'trial', live: true, label: 'تجريبي', cls: 'bg-blue-500/10 text-blue-700 border-blue-500/20', endText, left };
     if (c.subscription_status === 'active' && (left === null || left > 0)) return { key: 'paid', live: true, label: 'مشترك', cls: 'bg-green-500/10 text-green-700 border-green-500/20', endText, left };
     // مهلة 3 أيام بعد انتهاء المدفوع: المنيو شغال للزبائن
