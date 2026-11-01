@@ -32,6 +32,7 @@
   /* ─── مساعد المنيو الذكي ─── */
   #chatFab { position: fixed; left: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 41; display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 999px;
     background: var(--accent); color: var(--accent-fg); font-weight: 800; font-size: 14px; box-shadow: 0 10px 30px -8px var(--accent-glow), 0 8px 24px -10px rgba(0,0,0,.5); }
+  #chatFab.hidden { display: none; }   /* يطلع بس لو صاحب المحل شغّل المساعد */
   #cartBar:not(.hidden) ~ #chatFab { bottom: calc(88px + env(safe-area-inset-bottom)); }
   #chatSheet { position: fixed; inset: 0; z-index: 60; display: none; }
   #chatSheet.open { display: block; }
