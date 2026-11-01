@@ -4834,12 +4834,10 @@
     // المساعد إضافة مدفوعة على المنيو: لو مو في الباقة، الخيار مقفول ونوضح كيف يضيفه
     const locked = featureLocked('chat');
     box.disabled = locked;
-    if (locked) { info.innerHTML = '<i class="ph-bold ph-lock-simple"></i> أضف "المساعد الذكي" لباقتك من صفحة الاشتراك (19 ر.س بالشهر، 1000 سؤال)'; return; }
+    if (locked) { info.innerHTML = '<i class="ph-bold ph-lock-simple"></i> أضف "المساعد الذكي" لباقتك من صفحة الاشتراك (19 ر.س بالشهر)'; return; }
     try {
       const r = await api('chat-usage');
-      const left = Math.max(0, r.limit - r.used);
-      info.innerHTML = `<i class="ph-bold ph-chat-circle-dots"></i> استخدم زبائنك ${r.used.toLocaleString('en')} من ${r.limit.toLocaleString('en')} سؤال هالشهر${left ? '' : ' (خلص الرصيد، والزر مختفي لين الشهر الجاي)'}`;
-      info.classList.toggle('text-rose-700', !left);
+      info.innerHTML = `<i class="ph-bold ph-chat-circle-dots"></i> أسئلة زبائنك للمساعد هالشهر: ${r.used.toLocaleString('en')}`;
     } catch { info.textContent = ''; }
   }
   async function toggleMenuChat(on) {

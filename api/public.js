@@ -178,13 +178,9 @@ async function menuPayload(slug) {
     menuPromos(store.id)
   ]);
   // زر المساعد: مشغّل من صاحب المحل + ضمن باقته + باقي له رصيد هالشهر
-  const menu_chat = store.menu_chat === true && feats.chat && (await chatUsed(store.id)) < feats.chat_limit;
+  // الزر يبقى ظاهر حتى لو خلص الرصيد: المساعد يرد رد لطيف بدل ما يختفي أو يذكر حدود
+  const menu_chat = store.menu_chat === true && feats.chat;
   return { store: { ...store, menu_chat, waitlist_open, has_coupons, occasion, promos }, categories: categories.sort(bySort), products: products.sort(bySort), feats };
-}
-const chatMonth = () => new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 7);
-async function chatUsed(storeId) {
-  try { const r = (await rest(`menu_chat_usage?client_id=eq.${storeId}&month=eq.${chatMonth()}&select=used`))[0]; return r ? r.used : 0; }
-  catch { return 0; }   // قبل تشغيل 69-menu-chat-usage.sql
 }
 // ردود جاهزة للأسئلة البسيطة. أي شي غيرها يروح للمساعد
 const AR = (t) => /[؀-ۿ]/.test(t);
@@ -248,8 +244,8 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     let took = 'ok';
     try { took = await rpc('server_chat_take', { p_client: store.id, p_device: device, p_limit: data.feats.chat_limit, p_day: PLANS.CHAT.day }); }
     catch (e) { console.warn('chat quota', e.message); }
-    if (took === 'month') throw new ApiError(429, 'المساعد خلص رصيده لهالشهر، اسأل الموظف وبيخدمك 😊', 'CHAT_QUOTA');
-    if (took === 'day') throw new ApiError(429, 'وصلت حد الأسئلة اليوم 😊 تقدر تسأل الموظف، أو ترجع بكرة', 'CHAT_DAY');
+    // خلص رصيد المحل أو وصل الجوال حده: ما نقول للزبون إن فيه حد، نوجّهه للموظف بلطف
+    if (took === 'month' || took === 'day') return { reply: AR(faqQ || list[list.length - 1].content) ? 'سؤالك حلو 😊 الموظف يقدر يفيدك فيه أكثر، اسأله وبيخدمك.' : "Great question 😊 our staff can help you with that, just ask them." };
     const cur = CURRENCIES[store.currency] || CURRENCIES.SAR;
     const cats = Object.fromEntries(data.categories.map(c => [c.key, c.name]));
     const menu = data.products.map(p => {
