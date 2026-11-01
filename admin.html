@@ -5489,15 +5489,28 @@
   function renderMenuPhoto() {
     // كل طبق بطاقة: الاسم والسعر فوق، والقسم والوصف تحت (تشتغل زين على الجوال)
     const cell = (i, k, ph, cls = '', type = 'text') => `<label class="block ${cls}"><span class="block text-[10px] font-bold text-ink/55 mb-0.5">${ph}</span><input type="${type}" value="${esc(mpItems[i][k] ?? '')}" oninput="mpItems[${i}].${k}=this.value; mpCount()" class="input-pro text-[12.5px] !py-1.5"${type === 'number' ? ' dir="ltr" step="0.01" min="0" inputmode="decimal"' : ''}></label>`;
-    document.getElementById('mp-rows').innerHTML = mpItems.map((it, i) => `<div class="relative rounded-xl border ${Number(it.price) > 0 ? 'border-brand/15' : 'border-amber-500/50 bg-amber-50/40'} p-2.5 pe-[4.5rem] grid grid-cols-4 sm:grid-cols-12 gap-2">
-      ${cell(i, 'name', 'اسم الطبق', 'col-span-3 sm:col-span-4')}${cell(i, 'price', 'السعر', 'col-span-1 sm:col-span-2', 'number')}
+    document.getElementById('mp-rows').innerHTML = mpItems.map((it, i) => `<div class="relative rounded-xl border ${mpPriced(it) ? 'border-brand/15' : 'border-amber-500/50 bg-amber-50/40'} p-2.5 pe-[4.5rem] grid grid-cols-4 sm:grid-cols-12 gap-2">
+      ${cell(i, 'name', 'اسم الطبق', (it.sizes || []).length ? 'col-span-4 sm:col-span-6' : 'col-span-3 sm:col-span-4')}${(it.sizes || []).length ? '' : cell(i, 'price', 'السعر', 'col-span-1 sm:col-span-2', 'number')}
       ${cell(i, 'category', 'القسم', 'col-span-2 sm:col-span-2')}${cell(i, 'description', 'الوصف', 'col-span-2 sm:col-span-4')}
+      <div class="col-span-4 sm:col-span-12 flex flex-wrap items-end gap-1.5">${(it.sizes || []).map((z, j) => `<div class="flex items-end gap-1 rounded-lg bg-brand/5 p-1.5">
+        <label><span class="block text-[10px] font-bold text-ink/55 mb-0.5">الحجم</span><input value="${esc(z.name)}" oninput="mpItems[${i}].sizes[${j}].name=this.value" class="input-pro text-[12px] !py-1 w-20"></label>
+        <label><span class="block text-[10px] font-bold text-ink/55 mb-0.5">السعر</span><input type="number" dir="ltr" step="0.01" min="0" inputmode="decimal" value="${esc(z.price ?? '')}" oninput="mpItems[${i}].sizes[${j}].price=this.value; mpCount()" class="input-pro text-[12px] !py-1 w-16"></label>
+        <button type="button" onclick="mpItems[${i}].sizes.splice(${j}, 1); renderMenuPhoto()" aria-label="حذف الحجم" class="w-7 h-7 rounded-md text-brick hover:bg-brick/10"><i class="ph-bold ph-x"></i></button></div>`).join('')}
+        <button type="button" onclick="mpAddSize(${i})" class="text-[11px] font-bold text-brand hover:underline px-1 py-1.5"><i class="ph-bold ph-plus"></i> ${(it.sizes || []).length ? 'حجم' : 'أحجام'}</button></div>
       <div class="absolute top-2.5 left-2.5 flex flex-col items-center gap-1">
         <label class="w-14 h-14 rounded-lg border border-dashed border-brand/30 bg-white grid place-items-center overflow-hidden cursor-pointer hover:border-brand/60" title="صورة الطبق">
           ${it.uploading ? '<i class="ph-bold ph-spinner-gap ph-spin text-brand"></i>' : it.image_url ? `<img src="${esc(it.image_url)}" alt="" class="w-full h-full object-cover">` : '<span class="grid place-items-center text-brand/70 leading-tight"><i class="ph-bold ph-image text-[18px]"></i><span class="text-[9.5px] font-bold">أضف صورة</span></span>'}
           <input type="file" accept="image/*" class="hidden" onchange="mpPhoto(${i}, this)"></label>
         <button type="button" onclick="mpItems.splice(${i}, 1); renderMenuPhoto()" aria-label="حذف الطبق" class="w-8 h-8 rounded-lg text-brick hover:bg-brick/10"><i class="ph-bold ph-trash"></i></button></div></div>`).join('');
     mpCount();
+  }
+  // الطبق مسعّر: له سعر، أو كل أحجامه لها سعر
+  const mpPriced = (it) => (it.sizes || []).length ? it.sizes.every(z => String(z.name || '').trim() && Number(z.price) > 0) : Number(it.price) > 0;
+  function mpAddSize(i) {
+    const it = mpItems[i]; it.sizes = it.sizes || [];
+    if (it.sizes.length >= 6) return showToast('الأحجام حدها 6', true);
+    if (!it.sizes.length && Number(it.price) > 0) it.sizes.push({ name: 'صغير', price: it.price });
+    it.sizes.push({ name: '', price: '' }); renderMenuPhoto();
   }
   // صورة لكل طبق قبل الإضافة (اختيارية)
   async function mpPhoto(i, input) {
@@ -5511,17 +5524,19 @@
   }
   function mpCount() {
     const ok = mpItems.filter(it => String(it.name || '').trim());
-    const noPrice = ok.filter(it => !(Number(it.price) > 0)).length;
+    const noPrice = ok.filter(it => !mpPriced(it)).length;
     const cats = new Set(ok.map(it => it.category || 'أطباق')).size;
     document.getElementById('mp-count').textContent = `${ok.length} طبق في ${cats} ${cats === 1 ? 'قسم' : 'أقسام'}${noPrice ? ` · ${noPrice} بدون سعر، اكتبه قبل الإضافة` : ''}`;
   }
   function mpAddRow() { mpItems.push({ category: (mpItems[mpItems.length - 1] || {}).category || '', name: '', price: '', description: '' }); renderMenuPhoto(); }
   function closeMenuPhoto() { const box = document.getElementById('mp'); box.classList.add('hidden'); box.classList.remove('flex'); }
   async function sendMenuPhoto() {
-    const rows = mpItems.filter(it => String(it.name || '').trim()).map(it => ({ category: String(it.category || '').trim(), name: String(it.name).trim(), price: digitsEn(String(it.price ?? '')),
+    const named = mpItems.filter(it => String(it.name || '').trim());
+    if (named.some(it => !mpPriced(it))) return showToast('فيه أطباق بدون سعر، اكتب سعرها أو احذفها', true);
+    const rows = named.map(it => ({ category: String(it.category || '').trim(), name: String(it.name).trim(), price: digitsEn(String(it.price ?? '')),
+      sizes: (it.sizes || []).map(z => ({ name: String(z.name).trim(), price: Number(digitsEn(String(z.price))) })),
       description: String(it.description || '').trim(), calories: it.calories ? String(it.calories) : '', name_en: String(it.name_en || '').trim(), image_url: it.image_url || '' }));
     if (!rows.length) return showToast('ما فيه أطباق', true);
-    if (rows.some(r => !(Number(r.price) > 0))) return showToast('فيه أطباق بدون سعر، اكتب سعرها أو احذفها', true);
     if (mpItems.some(it => it.uploading)) return showToast('انتظر لين تخلص الصور تنرفع', true);
     const btn = document.getElementById('mp-go'); btn.disabled = true; btn.innerHTML = '<i class="ph-bold ph-spinner-gap ph-spin"></i> نضيف الأطباق…';
     try {

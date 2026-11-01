@@ -1618,7 +1618,8 @@ async function main(req) {
       try {
         const name = str(r.name, 100, 'اسم الطبق');
         const catName = str(r.category, 60, 'القسم') || 'أطباق';
-        const price = Number(String(r.price ?? '').replace(/[\u0660-\u0669]/g, d => d.charCodeAt(0) - 0x660).replace(/[^\d.]/g, ''));
+        const sizes = cleanSizes(r.sizes);   // من "المنيو من صورة"، وملف Excel ما يرسلها
+        const price = sizes.length ? Math.min(...sizes.map(z => z.price)) : Number(String(r.price ?? '').replace(/[\u0660-\u0669]/g, d => d.charCodeAt(0) - 0x660).replace(/[^\d.]/g, ''));
         if (!name) throw new ApiError(400, 'بدون اسم');
         if (!validPrice(price)) throw new ApiError(400, 'سعر غير صحيح');
         let cat = byName.get(catName);
@@ -1628,7 +1629,7 @@ async function main(req) {
         }
         const cal = r.calories === '' || r.calories == null ? null : int(r.calories);
         const image = typeof r.image_url === 'string' && r.image_url && ownsMediaUrl(r.image_url, sid) ? r.image_url : '';
-        out.push({ client_id: sid, name, price, category: cat.key, is_available: true, image_url: image, sizes: [],
+        out.push({ client_id: sid, name, price, category: cat.key, is_available: true, image_url: image, sizes,
           description: str(r.description, 500, 'الوصف') || '', name_en: str(r.name_en, 100, 'الاسم الإنجليزي') || null, description_en: str(r.description_en, 500, 'الوصف الإنجليزي') || null,
           ...(Number.isInteger(cal) && cal >= 0 && cal <= 10000 ? { calories: cal } : {}), sort_order: await nextIn(cat.key) });
       } catch (e) { skipped.push({ row: i + 2, reason: e.message }); }   // رقم الصف في الملف (الأول عناوين)

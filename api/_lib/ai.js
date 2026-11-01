@@ -199,7 +199,9 @@ const MENU_READ_SYSTEM = `You read photos or scans of a restaurant or café menu
 Rules:
 - Extract every dish/drink you can read, in the order they appear, grouped under the section heading they belong to (e.g. "المشروبات الساخنة", "Breakfast"). If there is no visible heading, use a sensible short Arabic section name.
 - name: the item name exactly as written (keep Arabic as Arabic). If both Arabic and English names are shown, put the Arabic in name and the English in name_en.
-- price: a number only (Western digits, no currency). Convert Arabic-Indic digits (٠-٩) to 0-9. If an item has several sizes/prices, use the smallest price and list the others in sizes as [{"name": "...", "price": n}].
+- price: a number only (Western digits, no currency). Convert Arabic-Indic digits (٠-٩) to 0-9.
+- Sizes: when one dish has several prices (sizes like صغير/وسط/كبير, S/M/L, نص/كامل, سفري/محلي, or a price grid whose column headers are sizes), output ONE item for the dish with all of them in sizes as [{"name": "صغير", "price": 12}, ...] in the printed order, and price = the smallest of them. Never repeat the dish once per size and never put the size word in the name.
+- Price grids: read each row across to its own prices; match each price to the column header above it. Take care not to shift a price to the neighbouring row.
 - description: the short description or ingredients if printed under the item, otherwise empty.
 - calories: number if printed, otherwise null.
 - Do not invent items, prices or descriptions. If a price is unreadable, use null.
@@ -233,6 +235,7 @@ async function readMenuImages(images) {
     category: String(it.category || '').trim().slice(0, 60),
     name: String(it.name).trim().slice(0, 80),
     name_en: String(it.name_en || '').trim().slice(0, 80),
+    sizes: (Array.isArray(it.sizes) ? it.sizes : []).map(z => ({ name: String((z && z.name) || '').trim().slice(0, 30), price: num(z && z.price) })).filter(z => z.name).slice(0, 6),
     price: num(it.price),
     description: String(it.description || '').trim().slice(0, 300),
     calories: num(it.calories)
