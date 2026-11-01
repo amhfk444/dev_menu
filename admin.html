@@ -422,6 +422,16 @@
           </div>
         </div>
 
+        <!-- أكثر أسئلة الزبائن لمساعد المنيو (يطلع لو المساعد مفعّل) -->
+        <div id="chat-top-card" class="hidden pro-card p-5 space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-chats-circle text-violet-600"></i> وش يسأل زبائنك المساعد؟</h3>
+            <span id="chat-top-count" class="text-[11px] text-ink/55"></span>
+          </div>
+          <p class="text-[11px] text-ink/60">أكثر الأسئلة تكراراً من زبائنك في مساعد المنيو. اضغط على السؤال تشوف وش جاوب المساعد.</p>
+          <div id="chat-top-list" class="space-y-1.5"></div>
+        </div>
+
         <!-- اسأل عن أرقامك: مساعد ذكي يقرأ أرقام المحل (البيجر، المنيو، آراء الزبائن) ويجاوب. مو في البيجر المجاني -->
         <div id="insights-card" class="pro-card p-5 space-y-3">
           <div class="flex items-center justify-between gap-2">
@@ -2408,7 +2418,7 @@
     document.getElementById('info-wa-orders').checked = client.whatsapp_orders === true;
     renderWaOrderState();
     renderBusinessType();
-    applyCaloriesSetting(); applyMenuChatSetting(); renderInsightChips();
+    applyCaloriesSetting(); applyMenuChatSetting(); renderInsightChips(); loadChatTop();
     renderMenuLayout();
     applyCurrencySetting();
     deliveryApps = (Array.isArray(client.delivery_apps) ? client.delivery_apps : []).map(d => ({ ...d }));
@@ -4936,6 +4946,26 @@
   }
 
   // ─── اسأل عن أرقامك ───
+  // أكثر أسئلة الزبائن للمساعد
+  async function loadChatTop() {
+    const card = document.getElementById('chat-top-card');
+    const on = client && client.menu_chat === true && !featureLocked('chat') && !DMPlans.isFree(client);
+    card.classList.toggle('hidden', !on);
+    if (!on) return;
+    let r;
+    try { r = await api('chat-top'); } catch { return card.classList.add('hidden'); }
+    document.getElementById('chat-top-count').textContent = r.month_used ? `${r.month_used} سؤال هالشهر` : '';
+    const list = document.getElementById('chat-top-list');
+    list.innerHTML = r.questions.length ? r.questions.map(x => `
+      <details class="group rounded-xl border border-brand/15 bg-white">
+        <summary class="flex items-center justify-between gap-2 px-3 py-2.5 cursor-pointer list-none">
+          <span class="text-[12.5px] font-bold text-ink min-w-0">${esc(x.q)}</span>
+          <span class="shrink-0 flex items-center gap-2"><span class="text-[10.5px] font-bold text-violet-700 bg-violet-500/10 rounded-full px-2 py-0.5">${x.n === 1 ? 'مرة' : x.n === 2 ? 'مرتين' : `${x.n} مرات`}</span><i class="ph-bold ph-caret-down text-ink/40 group-open:rotate-180 transition"></i></span>
+        </summary>
+        ${x.a ? `<p class="px-3 pb-3 text-[12px] text-ink/70 leading-relaxed whitespace-pre-line">${esc(x.a)}</p>` : ''}
+      </details>`).join('')
+      : '<p class="text-[12px] text-ink/50 py-2">لسا ما سأل أحد. أول ما يسألون المساعد تطلع أسئلتهم هنا.</p>';
+  }
   function renderInsightChips() {
     document.getElementById('insights-card').style.display = DMPlans.isFree(client) ? 'none' : '';
     const qs = [];

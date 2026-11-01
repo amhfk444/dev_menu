@@ -545,6 +545,17 @@ async function main(req) {
   }
 
   // ─── رصيد المساعد الذكي هالشهر ───
+  // أكثر أسئلة زبائن المحل لمساعد المنيو (من ذاكرة الأسئلة: أول سؤال في كل محادثة، بدون أي بيانات عن الزبون)
+  if (action === 'chat-top') {
+    const { store } = await context(req);
+    const month = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 7);
+    const [rows, use] = await Promise.all([
+      rest(`menu_chat_faq?client_id=eq.${store.id}&hits=gte.1&select=question,answer,hits&order=hits.desc,updated_at.desc&limit=8`).catch(() => []),
+      rest(`menu_chat_usage?client_id=eq.${store.id}&month=eq.${month}&select=used`).catch(() => [])
+    ]);
+    return { questions: rows.map(r => ({ q: r.question, a: r.answer || '', n: r.hits })), month_used: use[0] ? use[0].used : 0 };
+  }
+
   if (action === 'chat-usage') {
     const { store } = await context(req);
     const month = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 7);

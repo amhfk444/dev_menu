@@ -1,6 +1,6 @@
 /* DEV MENU — أيقونات (Phosphor, MIT). مولّد بـ tools/icons.js، لا تعدّله يدوياً */
-@font-face { font-family: "Phosphor-Bold"; src: url("/fonts/Phosphor-Bold.woff2?v=866f60c7") format("woff2"); font-display: block; }
-@font-face { font-family: "Phosphor-Fill"; src: url("/fonts/Phosphor-Fill.woff2?v=7b0105ff") format("woff2"); font-display: block; }
+@font-face { font-family: "Phosphor-Bold"; src: url("/fonts/Phosphor-Bold.woff2?v=c76f2758") format("woff2"); font-display: block; }
+@font-face { font-family: "Phosphor-Fill"; src: url("/fonts/Phosphor-Fill.woff2?v=10d2dd43") format("woff2"); font-display: block; }
 .ph-bold { font-family: "Phosphor-Bold" !important; font-style: normal; font-weight: normal; font-variant: normal; text-transform: none; line-height: 1; display: inline-block; vertical-align: -.125em; speak: never; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 .ph-bold.ph-star, .ph-bold.ph-star-half, .ph-bold.ph-circle { font-family: "Phosphor-Fill" !important; }
 .ph-address-book:before { content: "\e6f8"; }
@@ -39,6 +39,7 @@
 .ph-chart-line-up:before { content: "\e156"; }
 .ph-chat-circle-dots:before { content: "\e16c"; }
 .ph-chat-circle-text:before { content: "\e16e"; }
+.ph-chats-circle:before { content: "\e17e"; }
 .ph-check:before { content: "\e182"; }
 .ph-check-circle:before { content: "\e184"; }
 .ph-checks:before { content: "\e53a"; }
