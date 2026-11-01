@@ -422,8 +422,8 @@
           </div>
         </div>
 
-        <!-- اسأل عن أرقامك: مساعد ذكي يقرأ أرقام المحل (البيجر، المنيو، آراء الزبائن) ويجاوب -->
-        <div class="pro-card p-5 space-y-3">
+        <!-- اسأل عن أرقامك: مساعد ذكي يقرأ أرقام المحل (البيجر، المنيو، آراء الزبائن) ويجاوب. مو في البيجر المجاني -->
+        <div id="insights-card" class="pro-card p-5 space-y-3">
           <div class="flex items-center justify-between gap-2">
             <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-sparkle text-amber-600"></i> اسأل عن أرقامك</h3>
             <span class="text-[10px] text-ink/50">يقرأ أرقام محلك ويجاوبك</span>
@@ -4884,6 +4884,7 @@
 
   // ─── اسأل عن أرقامك ───
   function renderInsightChips() {
+    document.getElementById('insights-card').style.display = DMPlans.isFree(client) ? 'none' : '';
     const qs = [];
     if (!featureLocked('pager')) qs.push('كم متوسط الانتظار اليوم؟', 'وش أزحم ساعة عندي؟', 'لخص لي آراء الزبائن');
     if (!featureLocked('menu')) qs.push('وش أكثر طبق ينشاف؟', 'وش الأطباق اللي محد يفتحها؟');

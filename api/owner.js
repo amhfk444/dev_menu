@@ -490,6 +490,7 @@ async function main(req) {
   // ─── اسأل عن أرقامك: مساعد صاحب المحل (البيجر، المنيو، آراء الزبائن) ───
   if (action === 'insights' && req.method === 'POST') {
     const { store } = await context(req);
+    if (PLANS.isFree(store)) throw new ApiError(403, 'اسأل عن أرقامك متاح مع الاشتراك', 'FREE_PLAN');
     const question = str(b.question, 300, 'السؤال');
     if (!question) throw new ApiError(400, 'اكتب سؤالك');
     // 30 سؤال باليوم لكل محل (يكفي صاحب المحل، ويحمي التكلفة)
@@ -1588,6 +1589,7 @@ async function main(req) {
   // ─── المنيو من صورة: يقرأ صور المنيو الورقي ويرجّع الأطباق للمراجعة (ما يضيف شي لحاله) ───
   if (action === 'menu-from-photo' && req.method === 'POST') {
     const imgs = (Array.isArray(b.images) ? b.images : []).slice(0, 4).filter(im => im && /^image\/(jpeg|png|webp)$/.test(im.type) && typeof im.data === 'string' && im.data.length < 3_000_000);
+    if (PLANS.isFree(store)) throw new ApiError(403, 'المنيو من صورة متاح مع اشتراك المنيو', 'FREE_PLAN');
     if (!imgs.length) throw new ApiError(400, 'ارفع صورة المنيو');
     // 10 قراءات باليوم لكل محل
     const day = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10);
