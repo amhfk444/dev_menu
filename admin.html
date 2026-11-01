@@ -422,6 +422,19 @@
           </div>
         </div>
 
+        <!-- اسأل عن أرقامك: مساعد ذكي يقرأ أرقام المحل (البيجر، المنيو، آراء الزبائن) ويجاوب -->
+        <div class="pro-card p-5 space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-sparkle text-amber-600"></i> اسأل عن أرقامك</h3>
+            <span class="text-[10px] text-ink/50">يقرأ أرقام محلك ويجاوبك</span>
+          </div>
+          <div id="ins-chips" class="flex flex-wrap gap-1.5"></div>
+          <form onsubmit="askInsights(event)" class="flex gap-2">
+            <input id="ins-q" maxlength="300" placeholder="مثلاً: وش أزحم ساعة عندي؟" class="input-pro text-xs flex-1 min-w-0">
+            <button id="ins-send" class="bg-brand text-cream hover:bg-brand-dark px-4 rounded-xl text-xs font-bold transition disabled:opacity-60">اسأل</button>
+          </form>
+          <div id="ins-out" class="hidden text-[13px] leading-7 text-ink bg-brand/5 border border-brand/15 rounded-xl p-3.5 whitespace-pre-wrap"></div>
+        </div>
         <div id="renew-banner" class="hidden rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 border"></div>
 
         <div id="quick-counts" data-needs="menu" class="pro-card p-5"></div>
@@ -2349,7 +2362,7 @@
     document.getElementById('info-wa-orders').checked = client.whatsapp_orders === true;
     renderWaOrderState();
     renderBusinessType();
-    applyCaloriesSetting(); applyMenuChatSetting();
+    applyCaloriesSetting(); applyMenuChatSetting(); renderInsightChips();
     renderMenuLayout();
     applyCurrencySetting();
     deliveryApps = (Array.isArray(client.delivery_apps) ? client.delivery_apps : []).map(d => ({ ...d }));
@@ -4825,6 +4838,25 @@
       document.getElementById('info-show-calories').checked = !on;
       showToast('تعذر حفظ الإعداد', true);
     }
+  }
+
+  // ─── اسأل عن أرقامك ───
+  function renderInsightChips() {
+    const qs = [];
+    if (!featureLocked('pager')) qs.push('كم متوسط الانتظار اليوم؟', 'وش أزحم ساعة عندي؟', 'لخص لي آراء الزبائن');
+    if (!featureLocked('menu')) qs.push('وش أكثر طبق ينشاف؟', 'وش الأطباق اللي محد يفتحها؟');
+    document.getElementById('ins-chips').innerHTML = qs.slice(0, 5).map(q => `<button type="button" class="text-[11px] font-bold px-3 py-1.5 rounded-full bg-white border border-brand/20 hover:bg-brand/10 text-ink transition">${esc(q)}</button>`).join('');
+    document.getElementById('ins-chips').onclick = (e) => { const b = e.target.closest('button'); if (b) { document.getElementById('ins-q').value = b.textContent; askInsights(); } };
+  }
+  async function askInsights(e) {
+    if (e) e.preventDefault();
+    const input = document.getElementById('ins-q'), q = input.value.trim(), out = document.getElementById('ins-out'), btn = document.getElementById('ins-send');
+    if (!q) return input.focus();
+    btn.disabled = true; out.classList.remove('hidden');
+    out.innerHTML = '<i class="ph-bold ph-spinner-gap ph-spin"></i> أقرأ أرقامك…';
+    try { const r = await api('insights', { question: q }); out.textContent = r.reply; }
+    catch (err) { out.textContent = err.message || 'ما قدرت أجاوب الحين، جرّب مرة ثانية'; }
+    finally { btn.disabled = false; }
   }
 
   // ─── مساعد المنيو الذكي ───

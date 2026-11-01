@@ -485,6 +485,54 @@ async function main(req) {
   }
 
   // ─── الإحصائيات ───
+  // ─── اسأل عن أرقامك: مساعد صاحب المحل (البيجر، المنيو، آراء الزبائن) ───
+  if (action === 'insights' && req.method === 'POST') {
+    const { store } = await context(req);
+    const question = str(b.question, 300, 'السؤال');
+    if (!question) throw new ApiError(400, 'اكتب سؤالك');
+    // 30 سؤال باليوم لكل محل (يكفي صاحب المحل، ويحمي التكلفة)
+    const day = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10);
+    try {
+      const row = (await rest(`menu_chat_devices?client_id=eq.${store.id}&device=eq.owner-insights&day=eq.${day}&select=used`))[0];
+      if (row && row.used >= 30) throw new ApiError(429, 'سألت كثير اليوم 😅 كمّل بكرة', 'INSIGHTS_DAY');
+      if (row) await rest(`menu_chat_devices?client_id=eq.${store.id}&device=eq.owner-insights&day=eq.${day}`, { method: 'PATCH', body: { used: row.used + 1 } });
+      else await rest('menu_chat_devices', { method: 'POST', body: { client_id: store.id, device: 'owner-insights', day, used: 1 } });
+    } catch (e) { if (e.code === 'INSIGHTS_DAY') throw e; }
+    const hourOf = (iso) => new Date(Date.parse(iso) + 3 * 3600e3).getUTCHours();
+    const dayOf = (iso) => new Date(Date.parse(iso) + 3 * 3600e3).toISOString().slice(0, 10);
+    const minsBetween = (a, b) => (Date.parse(b) - Date.parse(a)) / 6e4;
+    const avg = (l) => l.length ? Math.round(l.reduce((x, y) => x + y, 0) / l.length * 10) / 10 : null;
+    const data = { today: day, services: PLANS.featuresOf(store) };
+    // البيجر: آخر 30 يوم، واليوم وأمس لحالهم
+    if (PLANS.has(store, 'pager')) {
+      const since = new Date(Date.now() - 30 * 864e5).toISOString();
+      const base = `pager_tickets?client_id=eq.${store.id}&created_at=gte.${q(since)}&order=id.asc&limit=20000&select=created_at,ready_at,closed_at,status`;
+      const rows = await rest(`${base},rating,rating_note`).catch(() => rest(base).catch(() => []));
+      const sum = (list) => {
+        const waits = list.filter(t => t.ready_at).map(t => minsBetween(t.created_at, t.ready_at)).filter(m => m >= 0 && m < 240);
+        const hours = {}; list.forEach(t => { const h = hourOf(t.created_at); hours[h] = (hours[h] || 0) + 1; });
+        const hw = {}; list.forEach(t => { if (!t.ready_at) return; const m = minsBetween(t.created_at, t.ready_at); if (m < 0 || m > 240) return; const h = hourOf(t.created_at); (hw[h] = hw[h] || []).push(m); });
+        return { numbers: list.length, picked_up: list.filter(t => t.status === 'done').length, avg_wait_min: avg(waits), longest_wait_min: waits.length ? Math.round(Math.max(...waits)) : null,
+          numbers_by_hour: hours, avg_wait_by_hour: Object.fromEntries(Object.entries(hw).map(([h, l]) => [h, avg(l)])) };
+      };
+      const yest = new Date(Date.parse(day) - 864e5).toISOString().slice(0, 10);
+      const byDay = {}; rows.forEach(t => { const d = dayOf(t.created_at); byDay[d] = (byDay[d] || 0) + 1; });
+      const rated = rows.filter(t => t.rating);
+      data.pager = { last_30_days: sum(rows), today: sum(rows.filter(t => dayOf(t.created_at) === day)), yesterday: sum(rows.filter(t => dayOf(t.created_at) === yest)), numbers_per_day: byDay,
+        ratings: { avg: avg(rated.map(t => t.rating)), count: rated.length, notes: rated.filter(t => t.rating_note).slice(-25).map(t => ({ stars: t.rating, note: String(t.rating_note).slice(0, 200), day: dayOf(t.created_at) })) } };
+    }
+    // المنيو: الزيارات وأكثر الأطباق مشاهدة (آخر 30 يوم)
+    if (PLANS.has(store, 'menu')) {
+      try {
+        const m = await rpc('server_menu_stats', { p_client_id: store.id, p_days: 30 });
+        data.menu = { totals: m.totals, busiest_hours: m.hours, weekdays_0_is_sunday: m.weekdays, top_dishes: (m.dishes || []).filter(d => d.views > 0).slice(0, 10).map(d => ({ name: d.name, views: d.views })),
+          dishes_nobody_opened: (m.dishes || []).filter(d => !d.views).slice(0, 15).map(d => d.name) };
+      } catch {}
+    }
+    const { ownerInsights } = require('./_lib/ai');
+    return { reply: await ownerInsights({ storeName: store.name, data, question }) };
+  }
+
   // ─── رصيد المساعد الذكي هالشهر ───
   if (action === 'chat-usage') {
     const { store } = await context(req);
