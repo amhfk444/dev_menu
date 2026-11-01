@@ -694,7 +694,6 @@
         <button onclick="renameStore(${id})"><i class="ph-bold ph-pencil-simple"></i> تعديل الاسم</button>
         ${!c.parent_id ? `<button onclick="openTypeDlg(${id})"><i class="ph-bold ph-storefront"></i> نوع النشاط: ${esc(DMSectors.label(c))}</button>` : ''}
         <button onclick="openNotify(${id})"><i class="ph-bold ph-bell"></i> إرسال إشعار</button>
-        ${!c.parent_id && statusOf(c).key !== 'free' && !isProspect(c) ? `<button onclick="setFree(${id})"><i class="ph-bold ph-gift" style="color:#047857"></i> تحويله للبيجر المجاني</button>` : ''}
         <div class="h-px bg-brand/10 my-1"></div>
         ${c.parent_id ? '' : `<button onclick="setFeatured(${id}, ${!c.is_featured})"><i class="ph-bold ph-star" ${c.is_featured ? 'style="color:#d97706"' : ''}></i> ${c.is_featured ? 'إزالة من أمثلة الرئيسية' : 'عرضه في أمثلة الرئيسية'}</button>`}
         <button onclick="setActive(${id}, ${c.is_active === false})"><i class="ph-bold ${c.is_active === false ? 'ph-play' : 'ph-pause'}"></i> ${c.is_active === false ? (c.parent_id ? 'إعادة تشغيل الفرع' : 'إعادة تشغيل المتجر') : (c.parent_id ? 'إيقاف الفرع' : 'إيقاف المتجر')}</button>
@@ -880,7 +879,7 @@
   }
 
   // نافذة المميزات: mode = activate (تفعيل/تجديد مع فاتورة) أو features (تعديل الباقة بدون تمديد)
-  const fd = { id: null, mode: 'activate', period: 'year', feats: new Set(), requestId: null };
+  const fd = { id: null, mode: 'activate', period: 'year', feats: new Set(), requestId: null, free: false };
   function activate(id, period) { openFeat(id, 'activate', period); }
 
   // فاتورة مستحقة: تختار الباقة والمدة، وتنرسل لبريده، وبعدها تقدر ترسلها له واتساب
@@ -920,14 +919,15 @@
   function openFeat(id, mode, period) {
     openMenu = null; renderStores();
     const c = find(id);
-    Object.assign(fd, { id, mode, requestId: null, period: period === 'month' ? 'month' : 'year', feats: new Set(mode === 'activate' ? reqFeats(c) : c.parent_id ? DMPlans.ownBranch(c.branch_features || planFeats(c)) : planFeats(c)) });
+    Object.assign(fd, { id, mode, requestId: null, free: mode === 'features' && statusOf(c).key === 'free', period: period === 'month' ? 'month' : 'year', feats: new Set(mode === 'activate' ? reqFeats(c) : c.parent_id ? DMPlans.ownBranch(c.branch_features || planFeats(c)) : planFeats(c)) });
     document.getElementById('feat-title').innerHTML = mode === 'activate' ? '<i class="ph-bold ph-check-circle text-green-700"></i> تفعيل الاشتراك' : '<i class="ph-bold ph-sliders-horizontal"></i> مميزات الباقة';
     document.getElementById('feat-store').textContent = `${c.name || c.client_slug}${c.requested_plan ? ` · طلب: ${featNames(reqFeats(c))} (${c.requested_plan === 'month' ? 'شهري' : 'سنوي'})` : ''}`;
     renderFeat();
     const d = document.getElementById('feat-dlg'); d.classList.remove('hidden'); d.classList.add('flex');
   }
   function closeFeat() { const d = document.getElementById('feat-dlg'); d.classList.add('hidden'); d.classList.remove('flex'); }
-  function toggleFeat(k) { fd.feats = new Set(DMPlans.toggle([...fd.feats], k)); renderFeat(); }
+  function toggleFeat(k) { if (fd.free) { fd.free = false; fd.feats = new Set(); } fd.feats = new Set(DMPlans.toggle([...fd.feats], k)); renderFeat(); }
+  function pickFree() { fd.free = !fd.free; renderFeat(); }
   function setFeatPeriod(p) { fd.period = p; renderFeat(); }
   function renderFeat() {
     const c = find(fd.id), feats = DMPlans.clean([...fd.feats]);
@@ -935,7 +935,20 @@
     // الفرع: رسوم الفرع + مميزاته، بنوع اشتراك الحساب
     if (isBranch) { const fee = DMPlans.BRANCH[fd.period]; pr.lines.unshift({ key: 'fee', label: 'ربط الفرع', amount: fee }); pr.total += fee; }
     // الفرع: مميزاته الخاصة بس (الولاء والرسائل للحساب كله)
-    document.getElementById('feat-list').innerHTML = (isBranch ? DMPlans.BRANCH_KEYS : DMPlans.ORDER).map(k => {
+    // البيجر المجاني: ميزة لحالها (للمتجر الرئيسي في نافذة المميزات): البيجر الأساسي بدون بطاقة النداء والرسائل
+    const freeRow = !isBranch && fd.mode === 'features' ? `<label class="flex items-center gap-3 rounded-xl border ${fd.free ? 'border-emerald-600 bg-emerald-500/[0.06]' : 'border-dashed border-emerald-600/40'} px-3 py-2.5 cursor-pointer">
+        <input type="checkbox" ${fd.free ? 'checked' : ''} onchange="pickFree()" class="w-4 h-4 accent-[#047857]">
+        <span class="flex-1 text-[13px] font-bold"><i class="ph-bold ph-gift text-emerald-700"></i> البيجر المجاني<span class="block text-[11px] font-medium text-ink/60">${DMPlans.FREE.pager} رقم بالشهر لفرع واحد، بدون بطاقة النداء والرسائل</span></span>
+        <span class="text-[11px] font-bold text-emerald-700">مجاناً</span></label>` : '';
+    if (fd.free) {
+      document.getElementById('feat-list').innerHTML = freeRow + '<p class="text-[11px] text-ink/55 pt-1">لو تبي باقة مدفوعة، شيل الصح واختر المميزات.</p>';
+      document.getElementById('feat-period').innerHTML = '';
+      document.getElementById('feat-sum').innerHTML = `<p class="flex justify-between font-black"><span>البيجر المجاني</span><span>${money(0)}</span></p>`;
+      document.getElementById('feat-note').textContent = `يصير عنده البيجر الأساسي بس من الحين. تتوقف بطاقة النداء والرسائل وباقي الخدمات${branchesOf(c).length ? ' وفروعه' : ''}${statusOf(c).key === 'paid' ? '، وينتهي اشتراكه المدفوع' : ''}. ما تنحذف أي بيانات.`;
+      const fb = document.getElementById('feat-save'); fb.disabled = false; fb.textContent = statusOf(c).key === 'free' ? 'تم' : 'حفظ: البيجر المجاني';
+      return;
+    }
+    document.getElementById('feat-list').innerHTML = freeRow + (isBranch ? DMPlans.BRANCH_KEYS : DMPlans.ORDER).map(k => {
       const f = DMPlans.FEATURES[k], on = feats.includes(k), covered = DMPlans.coveredNote(feats, k);
       if (covered) return `<div class="flex items-center gap-3 rounded-xl border border-dashed border-brand/20 px-3 py-2.5 opacity-70">
         <input type="checkbox" disabled class="w-4 h-4">
@@ -968,6 +981,13 @@
     return due > 0 ? `تنرسل له فاتورة بالفرق: ${money(due)} عن ${now.days} يوم الباقية لين تجديد الحساب، وبعدها يتجدد الفرع بـ ${money(now.price)} ${now.per}.` : `ما عليه مبلغ الحين، وبعد التجديد يصير الفرع بـ ${money(now.price)} ${now.per}.`;
   }
   async function saveFeat() {
+    if (fd.free) {
+      const c = find(fd.id);
+      if (statusOf(c).key === 'free') return closeFeat();
+      const error = await post('set-free', { id: fd.id });
+      if (error) return showToast(`تعذر الحفظ: ${error.message}`, true);
+      showToast('صار على البيجر المجاني'); closeFeat(); return loadClients();
+    }
     const features = DMPlans.clean([...fd.feats]);
     if (!features.length && !(find(fd.id) || {}).parent_id) return;
     const btn = document.getElementById('feat-save'); btn.disabled = true;
@@ -999,18 +1019,6 @@
     const error = await post('set-active', { id, active });
     if (error) return showToast('ما اكتملت العملية. حاول مرة ثانية', true);
     showToast(active ? 'تمت إعادة تشغيل المتجر' : 'تم إيقاف المتجر'); loadClients();
-  }
-
-  async function setFree(id) {
-    openMenu = null;
-    const c = find(id), name = c ? (c.name || c.client_slug) : id;
-    const s = c ? statusOf(c) : {};
-    const ok = await confirmDialog({ title: 'تحويله للبيجر المجاني', message: `"${name}" ينتقل للبيجر المجاني من الحين.`, tone: 'warning', confirmText: 'حوّله',
-      items: [`البيجر الأساسي بس: ${DMPlans.FREE.pager} رقم بالشهر لفرع واحد`, 'تتوقف بطاقة النداء والرسائل والمنيو والولاء والانتظار', ...(branchesOf(c).length ? ['تتوقف فروعه'] : []), ...(s.key === 'paid' ? ['ينتهي اشتراكه المدفوع الحالي'] : []), 'ما تنحذف أي بيانات، وترجع كلها لو اشترك'] });
-    if (!ok) return renderStores();
-    const error = await post('set-free', { id });
-    if (error) return showToast(`تعذر التحويل: ${error.message}`, true);
-    showToast('تحوّل للبيجر المجاني'); loadClients();
   }
 
   async function setFeatured(id, featured) {
