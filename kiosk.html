@@ -39,6 +39,19 @@
   header b { font-size: 4.4vmin; font-weight: 800; display: block; line-height: 1.2; }
   header span { font-size: 2.4vmin; opacity: .6; font-weight: 600; }
 
+  /* الأرقام الجاهزة: شريط في الأعلى، ونداء كبير بالصوت لما يجهز رقم جديد */
+  .ready { margin-inline-start: auto; display: flex; align-items: center; gap: 1.6vmin; background: #fff; border-radius: 2.4vmin; padding: 1.4vmin 2.2vmin; box-shadow: var(--shadow-card, 0 1px 0 rgba(0,0,0,.08)); }
+  .ready[hidden] { display: none; }
+  .ready > b { font-size: 2.4vmin; font-weight: 800; color: var(--brand); white-space: nowrap; }
+  .ready .nums { display: flex; gap: 1.2vmin; flex-wrap: wrap; }
+  .ready .nums span { min-width: 7vmin; text-align: center; font-size: 4.2vmin; font-weight: 900; color: #1b3022; background: #fff8db; box-shadow: inset 0 0 0 .4vmin #c9a227; border-radius: 1.6vmin; padding: .4vmin 1.6vmin; }
+  .ready .nums em { font-style: normal; font-size: 2.2vmin; opacity: .5; font-weight: 700; }
+  .call { position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 2vmin; background: rgba(27,48,34,.92); color: #fff; text-align: center; }
+  .call.on { display: flex; animation: callIn .4s ease-out; }
+  .call .n { font-size: 34vmin; font-weight: 900; line-height: 1; color: #f3d77a; text-shadow: 0 2vmin 6vmin rgba(0,0,0,.35); }
+  .call .t { font-size: 6vmin; font-weight: 800; }
+  @keyframes callIn { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+
   /* أكواد الخدمات */
   .codes { grid-area: codes; display: grid; gap: 2.4vmin; grid-template-columns: repeat(2, 1fr); align-content: center; min-height: 0; }
   .codes.n1 { grid-template-columns: 1fr; }
@@ -125,13 +138,15 @@
 <div class="start" id="start">
   <i class="ph-bold ph-device-tablet" style="font-size:14vmin"></i>
   <b>شاشة الزبون</b>
-  <p id="start-desc">بعد التشغيل تصير الشاشة ثابتة: تعرض أكواد خدماتك، والزبون يقرّب كود بطاقة الولاء من الكاميرا وينضاف ختمه تلقائياً.</p>
+  <p id="start-desc">بعد التشغيل تصير الشاشة ثابتة: تعرض أكواد خدماتك وتنادي بالصوت على الأرقام الجاهزة، والزبون يقرّب كود بطاقة الولاء من الكاميرا وينضاف ختمه تلقائياً.</p>
   <span class="go">ابدأ الشاشة</span>
   <p id="start-err" style="color:#ffb4a6"></p>
 </div>
 
 <div class="wrap" id="wrap">
-  <header><img id="logo" alt="" hidden><div><b id="store">...</b><span>امسح الكود بكاميرا جوالك</span></div></header>
+  <header><img id="logo" alt="" hidden><div><b id="store">...</b><span>امسح الكود بكاميرا جوالك</span></div>
+    <div class="ready" id="ready" hidden><b><i class="ph-bold ph-bell-ringing"></i> جاهز للاستلام</b><div class="nums" id="ready-nums"></div></div></header>
+  <div class="call" id="call" aria-live="assertive"><div class="t">رقم</div><div class="n" id="call-n"></div><div class="t">طلبك جاهز، تفضّل استلمه ✅</div></div>
   <div class="codes" id="codes"></div>
   <div class="cam" id="cam" hidden>
     <video id="video" playsinline muted autoplay></video>
@@ -267,12 +282,46 @@
     }
   }
 
+
+  // ─── نداء الأرقام الجاهزة بالصوت (لو المحل عنده البيجر) ───
+  // كل كم ثانية نشوف الأرقام الجاهزة: الرقم الجديد يطلع كبير على الشاشة وتنادي عليه الشاشة بالصوت
+  const announced = new Set();
+  let firstPoll = true, callT = null;
+  function speak(n) {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      const u = new SpeechSynthesisUtterance(`رقم ${n}، طلبك جاهز`);
+      u.lang = 'ar-SA'; u.rate = .92;
+      const v = speechSynthesis.getVoices().find(x => /^ar/i.test(x.lang)); if (v) u.voice = v;
+      speechSynthesis.speak(u);
+    } catch {}
+  }
+  function callNumber(n) {
+    $('call-n').textContent = n; $('call').classList.add('on');
+    beep(true); setTimeout(() => beep(true), 220);
+    speak(n); setTimeout(() => speak(n), 3500);   // مرتين عشان اللي ما انتبه
+    clearTimeout(callT); callT = setTimeout(() => $('call').classList.remove('on'), 7000);
+  }
+  async function pollReady() {
+    try {
+      const r = await call('pager');
+      const ready = (r.tickets || []).filter(t => t.status === 'ready').sort((a, b) => Date.parse(b.ready_at || 0) - Date.parse(a.ready_at || 0));
+      $('ready').hidden = !ready.length;
+      $('ready-nums').innerHTML = ready.slice(0, 6).map(t => `<span>${esc(t.number)}</span>`).join('') + (ready.length > 6 ? `<em>+${ready.length - 6}</em>` : '');
+      // أول مرة: نحفظ الجاهزين بدون نداء (عشان ما ينادي على أرقام قديمة لما تنفتح الشاشة)
+      const fresh = ready.filter(t => !announced.has(t.id));
+      fresh.forEach(t => announced.add(t.id));
+      if (!firstPoll && started) fresh.slice(0, 2).reverse().forEach((t, i) => setTimeout(() => callNumber(t.number), i * 8000));
+      firstPoll = false;
+    } catch {}
+  }
+
   // ─── أكواد الخدمات: المنيو، البيجر، الانتظار، التسجيل في الولاء (حسب اشتراك المحل) ───
   function renderCodes() {
     const T = DMSectors.terms(info);
     const all = {
       menu: { icon: 'ph-book-open-text', title: 'المنيو', text: 'تصفّح الأصناف والأسعار' },
-      pager: { icon: 'ph-bell-ringing', title: 'خذ رقمك', text: `ويرن جوالك ${T.ringWhen}` },
+      pager: { icon: 'ph-bell-ringing', title: 'البيجر', text: `ويرن جوالك ${T.ringWhen}` },
       waitlist: { icon: 'ph-users-three', title: 'قائمة الانتظار', text: 'سجّل اسمك ونبلغك بدورك' },
       loyalty: { icon: 'ph-seal-check', title: 'بطاقة الولاء', text: `سجّل واجمع الأختام: ${info.needed} = ${info.reward}` }
     };
@@ -294,8 +343,9 @@
     $('cam').hidden = !info.enabled;
     $('wrap').classList.toggle('no-cam', !info.enabled);
     if (info.enabled) $('cam-sub').textContent = `قرّب كود بطاقتك من الكاميرا وينضاف ختمك. ${info.needed} أختام = ${info.reward}`;
-    else $('start-desc').textContent = 'بعد التشغيل تصير الشاشة ثابتة وتعرض أكواد خدماتك للزبائن: يمسحها الزبون بكاميرا جواله ويفتح المنيو أو ياخذ رقمه.';
+    else $('start-desc').textContent = ((info.services || []).includes('pager') ? 'تنادي الشاشة بالصوت على كل رقم يجهز. ' : '') + 'بعد التشغيل تصير الشاشة ثابتة وتعرض أكواد خدماتك للزبائن: يمسحها الزبون بكاميرا جواله ويفتح المنيو أو ياخذ رقمه.';
     renderCodes();
+    if ((info.services || []).includes('pager')) { pollReady(); setInterval(pollReady, 4000); }
   }
 
   $('cam').classList.toggle('back', BACK);
@@ -308,6 +358,7 @@
       beep(true);
       try { await openCam(); } catch { $('start-err').textContent = 'ما قدرنا نفتح الكاميرا، اسمح للمتصفح يستخدمها وحاول مرة ثانية'; return; }
     }
+    try { if ('speechSynthesis' in window) { speechSynthesis.getVoices(); speechSynthesis.speak(new SpeechSynthesisUtterance('')); } } catch {}
     keepAwake(); started = true;
     $('start').remove();
   });
