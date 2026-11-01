@@ -784,16 +784,25 @@
     if (p.is_available === false) parts.push(chatT('⚠️ خلصان الحين', '⚠️ Sold out right now'));
     return parts.join('\n');
   }
-  function suggest({ budget = null, cat = null, light = null }) {
+  function pickDishes({ budget = null, cat = null, light = null }) {
     let list = available();
     if (cat) list = list.filter(p => p.category === cat);
     if (budget) list = list.filter(p => Number(p.price) <= budget);
-    if (light === 'light') list = list.filter(p => p.calories).sort((a, b) => a.calories - b.calories);
-    else if (light === 'full') list = list.filter(p => p.calories).sort((a, b) => b.calories - a.calories);
+    // خفيف/مشبع: نرتب بالسعرات (الأطباق بدون سعرات تجي آخر)، وما نشيلها
+    const cal = (p) => Number(p.calories) || null;
+    if (light === 'light') list = list.slice().sort((a, b) => (cal(a) ?? 1e9) - (cal(b) ?? 1e9));
+    else if (light === 'full') list = list.slice().sort((a, b) => (cal(b) ?? -1) - (cal(a) ?? -1));
     else list = list.slice().sort((a, b) => (b.is_bestseller ? 1 : 0) - (a.is_bestseller ? 1 : 0) || Number(b.price) - Number(a.price));
-    list = list.slice(0, 3);
-    if (!list.length) return chatT('ما لقيت طبق يناسب هالاختيار 😅 جرب ميزانية أو نوع ثاني.', "I couldn't find a dish for that 😅 Try another budget or type.");
-    return chatT('هذي اقتراحاتي لك:\n', 'Here are my picks:\n') + list.map(dishLine).join('\n');
+    return list.slice(0, 3);
+  }
+  function suggest(pick) {
+    let list = pickDishes(pick), note = '';
+    // ما فيه شي بالضبط؟ نخفف الشروط بدل "ما لقيت": أول النوع، وبعدها الميزانية
+    if (!list.length && pick.cat) { list = pickDishes({ ...pick, cat: null }); note = chatT('ما لقيت في هالقسم، بس هذي قريبة من طلبك:\n', 'Nothing in that section, but these are close:\n'); }
+    if (!list.length && pick.budget) { list = pickDishes({ ...pick, cat: null, budget: null }).sort((a, b) => a.price - b.price); note = chatT('ما فيه شي بهالميزانية، هذي أرخص الخيارات:\n', 'Nothing within that budget, here are the cheapest options:\n'); }
+    if (!list.length) return chatT('ما لقيت طبق متوفر الحين 😅 اسأل الموظف.', "I couldn't find an available dish right now 😅 Please ask the staff.");
+    const total = list.reduce((a, p) => a + Number(p.price), 0);
+    return (note || chatT('هذي اقتراحاتي لك:\n', 'Here are my picks:\n')) + list.map(dishLine).join('\n');
   }
   // يحاول يجاوب من المنيو. يرجّع الرد، أو null لو ما فهم
   function quickAnswer(q) {
