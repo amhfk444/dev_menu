@@ -2666,7 +2666,7 @@
     const suspended = client.is_active === false;
     const live = !suspended && !expired;
     // في التجربة ومعه البيجر: بعد التجربة يكمل على البيجر المجاني بدل ما يتوقف كل شي
-    const staysFree = status === 'trial' && !client.parent_id && Array.isArray(client.plan_features) && client.plan_features.includes('pager');
+    const staysFree = !free && status === 'trial' && !client.parent_id && Array.isArray(client.plan_features) && client.plan_features.includes('pager');
     const onlyPager = staysFree && client.plan_features.length === 1;
     const graceText = graceEnd ? new Date(graceEnd).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long' }) : '';
 
@@ -2694,7 +2694,7 @@
       </div>
       ${note ? `<p class="text-[12px] font-bold ${free || staysFree ? 'text-emerald-800' : inGrace ? 'text-amber-900' : 'text-brick'}">${note}</p>` : ''}
       ${free ? '<p id="free-usage" class="text-[12px] text-ink/70"></p>' : ''}
-      ${live && left !== null && !inGrace ? `
+      ${live && left !== null && !inGrace && !free ? `
         <div>
           <div class="flex items-baseline justify-between gap-2">
             <p class="text-[13px] text-ink"><b class="text-[18px]">${left}</b> ${left === 1 ? 'يوم باقي' : left <= 10 ? 'أيام باقية' : 'يوم باقي'}</p>
@@ -2710,7 +2710,7 @@
 
     // شريط تنبيه بارز أعلى اللوحة
     const banner = document.getElementById('renew-banner');
-    if (!live || (left !== null && left <= 3)) {
+    if (!free && (!live || (left !== null && left <= 3))) {
       const danger = !live || inGrace;
       const text = suspended ? 'متجرك موقوف من الإدارة، والمنيو لا يظهر للزبائن حالياً.'
         : !live ? 'انتهى اشتراكك، والمنيو لا يظهر للزبائن حالياً. جدّد الآن ليعود فوراً.'
@@ -2732,7 +2732,7 @@
 
     const chip = document.getElementById('store-status');
     const chipColor = inGrace ? 'bg-amber-400' : free ? 'bg-green-400' : live ? (status === 'trial' ? 'bg-blue-400' : 'bg-green-400') : 'bg-red-400';
-    chip.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${chipColor}"></span> ${suspended ? 'موقوف' : free ? 'مجاني' : !live ? 'منتهي' : inGrace ? 'مهلة' : status === 'trial' ? 'تجريبي' : 'مشترك'}${live && left !== null && !inGrace ? ` · ${daysText(left)}` : ''}`;
+    chip.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${chipColor}"></span> ${suspended ? 'موقوف' : free ? 'مجاني' : !live ? 'منتهي' : inGrace ? 'مهلة' : status === 'trial' ? 'تجريبي' : 'مشترك'}${live && left !== null && !inGrace && !free ? ` · ${daysText(left)}` : ''}`;
 
     if (free) api('free-usage').then(r => { const el = document.getElementById('free-usage'); if (el) el.innerHTML = `<i class="ph-bold ph-bell"></i> أرقام البيجر هالشهر: <b>${r.used}</b> من ${r.limit}${r.used >= r.limit ? ' — وصلت الحد، الزبائن يطلبون من الموظف لين الشهر الجاي' : ''}`; }).catch(() => {});
 
@@ -5626,6 +5626,7 @@
     const feats = status === 'active' ? myFeatures() : chosenFeatures(), period = status === 'active' ? (monthly ? 'month' : 'year') : (client.requested_plan === 'month' ? 'month' : 'year');
     const pr = DMPlans.price(feats, period, branchList()), per = period === 'month' ? 'بالشهر' : 'بالسنة';
     const state = client.is_active === false ? 'موقوف'
+      : DMPlans.isFree(client) ? `الباقة المجانية: البيجر (${DMPlans.FREE.pager} رقم بالشهر)`
       : status === 'trial' ? `تجربة مجانية، تنتهي ${day(client.trial_ends_at)}`
       : status === 'active' ? (Date.parse(client.subscription_end_date) > Date.now() ? `مشترك، يتجدد ${day(client.subscription_end_date)}` : `منتهي من ${day(client.subscription_end_date)}`)
       : 'غير مشترك';
