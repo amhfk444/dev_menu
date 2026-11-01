@@ -949,7 +949,7 @@
     { const pc = pagerCard(); if (pc) savePagerCard(pc); }
     if ('serviceWorker' in navigator && pushKey) navigator.serviceWorker.register('/sw.js').catch(() => {});
     if (loadToken()) { await poll(); return offerPerm(); }   // رجع للصفحة: الصوت يحتاج ضغطة منه من جديد
-    if (fullNow) return unavailable('البيجر مو متاح الحين', 'اطلب من الموظف 😊');
+    if (fullNow) return unavailable('البيجر متوقف مؤقتاً', 'تفضّل عند الكاشير وبيبلغك أول ما يجهز طلبك.');
     show('start');
   })();
 </script>

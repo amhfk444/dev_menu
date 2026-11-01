@@ -124,7 +124,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
   if (action === 'take' && req.method === 'POST') {
     const store = await loadStore(b.slug);
     // المجانية: 200 رقم بالشهر. الزبون ما يشوف إن فيه حد، بس يطلب من الموظف
-    if (store.free && (await monthTickets(store.id, PLANS.FREE.pager)) >= PLANS.FREE.pager) throw new ApiError(409, 'البيجر مو متاح الحين، اطلب من الموظف 😊', 'FREE_FULL');
+    if (store.free && (await monthTickets(store.id, PLANS.FREE.pager)) >= PLANS.FREE.pager) throw new ApiError(409, 'البيجر متوقف مؤقتاً، تفضّل عند الكاشير وبيبلغك أول ما يجهز طلبك.', 'FREE_FULL');
     const token = crypto.randomBytes(18).toString('base64url');
     try {
       const res = await rpc('server_pager_take', { p_client_id: store.id, p_token: token });
