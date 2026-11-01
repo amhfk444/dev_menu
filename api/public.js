@@ -189,7 +189,7 @@ function quickChat(text, store, first) {
   const ar = AR(text), name = store.name;
   const words = t.split(' ');
   if (words.length <= 3 && /^(السلام عليكم|سلام عليكم|السلام|هلا|اهلا|أهلا|مرحبا|هاي|hi|hello|hey|salam)( .*)?$/.test(t)) {
-    return ar ? `وعليكم السلام، يا هلا فيك في ${name} 👋 وش ودك تاكل اليوم؟` : `Hi, welcome to ${name} 👋 What are you in the mood for?`;
+    return ar ? `وعليكم السلام، يا هلا والله في ${name} 👋 وش ودك تاكل اليوم؟` : `Hi, welcome to ${name} 👋 What are you in the mood for?`;
   }
   if (words.length <= 4 && /^(شكرا|شكراً|مشكور|يعطيك العافيه|يعطيك العافية|تسلم|thanks|thank you|thx)( .*)?$/.test(t)) {
     return ar ? 'العفو، بالعافية مقدماً 😊' : "You're welcome, enjoy your meal 😊";
@@ -208,7 +208,8 @@ function quickChat(text, store, first) {
 const faqKey = (t) => String(t).toLowerCase().replace(/[ً-ْـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي')
   .replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
 // بصمة المنيو للأجوبة المحفوظة: الأطباق والأقسام والأوقات والموقع (تغيّر أي شي منها = الجواب يتجدد)
-const menuFingerprint = (d) => crypto.createHash('sha1').update(JSON.stringify([d.products, d.categories, d.store.opening_hours, d.store.location_url, d.store.currency, d.store.show_calories])).digest('hex').slice(0, 16);
+// أي تغيير في أسلوب الردود: غيّر "tone2" عشان الإجابات المحفوظة القديمة ما تنستخدم
+const menuFingerprint = (d) => crypto.createHash('sha1').update(JSON.stringify(['tone2', d.products, d.categories, d.store.opening_hours, d.store.location_url, d.store.currency, d.store.show_calories])).digest('hex').slice(0, 16);
 const versionOf = (data) => crypto.createHash('sha1').update(JSON.stringify(data)).digest('hex').slice(0, 16);
 
 module.exports = handler(['GET', 'POST'], async (req, res) => {
