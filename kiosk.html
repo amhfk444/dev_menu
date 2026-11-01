@@ -287,7 +287,21 @@
   // كل كم ثانية نشوف الأرقام الجاهزة: الرقم الجديد يطلع كبير على الشاشة وتنادي عليه الشاشة بالصوت
   const announced = new Set();
   let firstPoll = true, callT = null;
+  // صوت المعلّق المسجّل لكل رقم من 1 لين 300 (audio/call/N.mp3)، وفوق كذا صوت الجهاز
+  let callAudio = null;
   function speak(n) {
+    const num = Number(n);
+    if (Number.isInteger(num) && num >= 1 && num <= 300) {
+      try {
+        callAudio = callAudio || new Audio();
+        callAudio.src = `/audio/call/${num}.mp3`; callAudio.currentTime = 0;
+        callAudio.play().catch(() => speakDevice(n));
+        return;
+      } catch {}
+    }
+    speakDevice(n);
+  }
+  function speakDevice(n) {
     try {
       if (!('speechSynthesis' in window)) return;
       const u = new SpeechSynthesisUtterance(`رقم ${n}، طلبك جاهز`);
@@ -299,7 +313,7 @@
   function callNumber(n) {
     $('call-n').textContent = n; $('call').classList.add('on');
     beep(true); setTimeout(() => beep(true), 220);
-    speak(n); setTimeout(() => speak(n), 3500);   // مرتين عشان اللي ما انتبه
+    setTimeout(() => speak(n), 600); setTimeout(() => speak(n), 4600);   // مرتين عشان اللي ما انتبه
     clearTimeout(callT); callT = setTimeout(() => $('call').classList.remove('on'), 7000);
   }
   async function pollReady() {
@@ -358,6 +372,8 @@
       beep(true);
       try { await openCam(); } catch { $('start-err').textContent = 'ما قدرنا نفتح الكاميرا، اسمح للمتصفح يستخدمها وحاول مرة ثانية'; return; }
     }
+    // المتصفح ما يشغّل صوت إلا بعد ضغطة: نجهّز مشغّل الأصوات هنا
+    try { callAudio = new Audio('/audio/call/1.mp3'); callAudio.volume = 0; callAudio.play().then(() => { callAudio.pause(); callAudio.volume = 1; }).catch(() => { callAudio.volume = 1; }); } catch {}
     try { if ('speechSynthesis' in window) { speechSynthesis.getVoices(); speechSynthesis.speak(new SpeechSynthesisUtterance('')); } } catch {}
     keepAwake(); started = true;
     $('start').remove();
