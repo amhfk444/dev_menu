@@ -322,14 +322,14 @@
     <nav class="p-3 pt-4 space-y-1 flex-1 overflow-y-auto">
       <button data-nav="dashboard" class="nav-item"><i class="ph-bold ph-gauge"></i> الرئيسية</button>
       <button data-nav="customers" data-needs="loyalty" class="nav-item"><i class="ph-bold ph-users-three"></i> العملاء <span id="lyt-count" class="mr-auto text-[10px] px-2 py-0.5 rounded-full"></span></button>
-      <button data-nav="messages" data-needs="pager|loyalty" class="nav-item"><i class="ph-bold ph-paper-plane-tilt"></i> الرسائل</button>
+      <button data-nav="messages" data-needs="pager|loyalty" data-free-hide class="nav-item"><i class="ph-bold ph-paper-plane-tilt"></i> الرسائل</button>
       <p class="px-3 pt-4 pb-1 text-[11px] text-ink/50 font-semibold">خدماتك</p>
       <button data-nav="menu" class="nav-item"><i class="ph-bold ph-fork-knife"></i> المنيو <span id="nav-count" class="mr-auto text-[10px] px-2 py-0.5 rounded-full">0</span></button>
       <a href="pager-desk.html" data-feature="pager" onclick="return openPagerDesk(this)" class="nav-item"><i class="ph-bold ph-bell"></i> <span id="nav-desk-label">شاشة البيجر</span></a>
       <button data-nav="waitlist" class="nav-item"><i class="ph-bold ph-hourglass-medium"></i> قائمة الانتظار <span id="nav-waitlist" class="mr-auto hidden text-[10px] bg-amber-400 text-black px-2 py-0.5 rounded-full font-black">0</span></button>
       <button data-nav="loyalty" class="nav-item"><i class="ph-bold ph-seal-check"></i> بطاقة الولاء</button>
       <p class="px-3 pt-4 pb-1 text-[11px] text-ink/50 font-semibold">منشأتك</p>
-      <button data-nav="branches" class="nav-item"><i class="ph-bold ph-git-branch"></i> الفروع</button>
+      <button data-nav="branches" data-free-hide class="nav-item"><i class="ph-bold ph-git-branch"></i> الفروع</button>
       <button data-nav="settings" class="nav-item"><i class="ph-bold ph-palette"></i> هوية المنشأة</button>
       <button data-nav="account" class="nav-item"><i class="ph-bold ph-identification-card"></i> الاشتراك</button>
       <p class="px-3 pt-5 pb-1 text-[11px] text-ink/50 font-semibold">اختصارات</p>
@@ -435,6 +435,10 @@
           </form>
           <div id="ins-out" class="hidden text-[13px] leading-7 text-ink bg-brand/5 border border-brand/15 rounded-xl p-3.5 whitespace-pre-wrap"></div>
         </div>
+        <div id="home-free" class="hidden pro-card p-5 space-y-2">
+          <h3 class="text-[13px] font-bold flex items-center gap-2"><i class="ph-bold ph-gift text-emerald-600"></i> البيجر المجاني</h3>
+          <div class="free-usage-box text-[12px] text-ink/70"></div>
+        </div>
         <div id="renew-banner" class="hidden rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 border"></div>
 
         <div id="quick-counts" data-needs="menu" class="pro-card p-5"></div>
@@ -464,8 +468,8 @@
             </div>
         <!-- أدواتك: صفوف مرتبة، عدد الأعمدة حسب عرض الشاشة، وكروت الصف الواحد بنفس الطول مهما كانت المميزات -->
         <div class="grid gap-6 items-stretch [grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr))]">
-    <!-- روابط الخدمات: رابط لكل خدمة مفعّلة -->
-            <div class="pro-card p-5 space-y-3">
+    <!-- روابط الخدمات: رابط لكل خدمة مفعّلة (مو في البيجر المجاني) -->
+            <div data-free-hide class="pro-card p-5 space-y-3">
               <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-link-simple text-emerald-600"></i> روابطك</h3>
               <p id="svc-links-hint" class="text-[11px] text-ink/60">الرابط الرئيسي يفتح صفحة الروابط السريعة اللي فيها كل خدماتك، حطه في بايو انستجرام وتيك توك. وتحته رابط كل خدمة لحالها.</p>
               <div id="svc-links" class="space-y-2"></div>
@@ -1896,7 +1900,7 @@
     <button data-nav="menu" class="bnav"><i class="ph-bold ph-fork-knife"></i><span>المنيو</span></button>
     <a href="pager-desk.html" data-feature="pager" onclick="return openPagerDesk(this)" class="bnav"><i class="ph-bold ph-bell"></i><span id="bnav-desk-label">البيجر</span></a>
     <button data-nav="loyalty" class="bnav"><i class="ph-bold ph-seal-check"></i><span>الولاء</span></button>
-    <button data-nav="messages" data-needs="pager|loyalty" class="bnav"><i class="ph-bold ph-paper-plane-tilt"></i><span>الرسائل</span></button>
+    <button data-nav="messages" data-needs="pager|loyalty" data-free-hide class="bnav"><i class="ph-bold ph-paper-plane-tilt"></i><span>الرسائل</span></button>
     <button type="button" onclick="toggleMore(true)" class="bnav relative"><i class="ph-bold ph-dots-three-outline"></i><span>المزيد</span><span id="bnav-waitlist" class="hidden absolute top-1.5 left-1/2 ml-2 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-400 text-black text-[10px] font-black leading-[18px]">0</span></button>
   </nav>
   <!-- المزيد (جوال): باقي الصفحات -->
@@ -1904,7 +1908,7 @@
     <div class="w-full bg-cream rounded-t-3xl p-4 pb-8 grid grid-cols-3 gap-2" style="padding-bottom: calc(2rem + env(safe-area-inset-bottom))" onclick="if (event.target.closest('[data-nav]')) toggleMore(false)">
       <button data-nav="customers" data-needs="loyalty" class="more-item"><i class="ph-bold ph-users-three"></i><span>العملاء</span></button>
       <button data-nav="waitlist" class="more-item"><i class="ph-bold ph-hourglass-medium"></i><span>قائمة الانتظار</span></button>
-      <button data-nav="branches" class="more-item"><i class="ph-bold ph-git-branch"></i><span>الفروع</span></button>
+      <button data-nav="branches" data-free-hide class="more-item"><i class="ph-bold ph-git-branch"></i><span>الفروع</span></button>
       <button data-nav="settings" class="more-item"><i class="ph-bold ph-palette"></i><span>هوية المنشأة</span></button>
       <button data-nav="account" class="more-item"><i class="ph-bold ph-identification-card"></i><span>الاشتراك</span></button>
     </div>
@@ -2081,7 +2085,7 @@
     const slugHint = document.getElementById('slug-hint');
     if (slugHint) slugHint.textContent = free ? 'اسم رابط البيجر حقك، ويطلع في رمز QR. الروابط القديمة تبقى شغالة لو غيّرته' : 'شاركه في البايو والرسائل، ويفتح المنيو مباشرة';
     // هوية المنشأة في المجاني: الاسم والشعار ورابط قوقل ماب بس
-    document.querySelectorAll('[data-free-hide]').forEach(el => { el.style.display = free ? 'none' : ''; });
+    applyFreeHide();
     const rows = [...(free ? [] : [['home', 'الرابط الرئيسي', 'ph-house', DM.storeUrl(client.client_slug, 'links')]]), ...on.map(([k, page, name, icon]) => [k, name, icon, DM.storeUrl(client.client_slug, page)])];
     // روابط الشاشات: تفتح بدون حساب المالك (نفس مفتاح رابط الكاشير)
     if (!deskLocked()) {
@@ -2215,6 +2219,13 @@
     // data-needs="menu|pager": يطلع لو عنده وحدة منها على الأقل
     document.querySelectorAll('[data-needs]').forEach(el => { el.style.display = el.dataset.needs.split('|').every(featureLocked) ? 'none' : ''; });
     document.querySelectorAll('[data-hide-always]').forEach(el => { el.style.display = 'none'; });
+    applyFreeHide();
+  }
+  // البيجر المجاني: نخفي اللي ما يخصه (data-free-hide)، ونطلع عدّاد الأرقام في الرئيسية
+  function applyFreeHide() {
+    const free = !!client && DMPlans.isFree(client);
+    document.querySelectorAll('[data-free-hide]').forEach(el => { if (free) el.style.display = 'none'; else if (!el.dataset.needs) el.style.display = ''; });
+    document.getElementById('home-free').classList.toggle('hidden', !free);
   }
 
   function showPage(page) {
@@ -2659,18 +2670,20 @@
 
   // البيجر المجاني: كم رقم باقي هالشهر، ولو خلص يتوقف البيجر لين أول الشهر الجاي (ونوضح السبب)
   function renderFreeUsage(r) {
-    const el = document.getElementById('free-usage'); if (!el) return;
+    const els = [document.getElementById('free-usage'), ...document.querySelectorAll('.free-usage-box')].filter(Boolean);
+    if (!els.length) return;
     const left = Math.max(0, r.limit - r.used), full = left === 0, low = !full && left <= r.limit * 0.2;
     const now = new Date(Date.now() + 3 * 3600e3);
     const reset = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long' });
     const pct = Math.min(100, Math.round(r.used / r.limit * 100));
-    el.innerHTML = `
+    const html = `
       <div class="flex items-baseline justify-between gap-2">
         <p class="text-[13px] text-ink"><b class="text-[18px]">${left}</b> رقم باقي لك هالشهر</p>
         <p class="text-[11px] text-ink/55">استخدمت ${r.used} من ${r.limit}</p>
       </div>
       <div class="h-1.5 rounded-full bg-brand/10 mt-2 overflow-hidden"><div class="h-full rounded-full ${full ? 'bg-brick' : low ? 'bg-amber-500' : 'bg-brand'}" style="width:${Math.max(4, pct)}%"></div></div>
       <p class="text-[11px] text-ink/55 mt-1.5">ترجع ${r.limit} رقم من جديد يوم ${reset}.</p>`;
+    els.forEach(el => { el.innerHTML = html; });
     const banner = document.getElementById('renew-banner');
     if (!full && !low) return banner.classList.add('hidden');
     const text = full
