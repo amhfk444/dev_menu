@@ -115,7 +115,8 @@ async function loyaltyNearLines({ storeName, businessType, reward }) {
 const MENU_CHAT_SYSTEM = `You are the smart assistant inside the digital menu of one café or restaurant in Saudi Arabia. Guests open you from the menu on their phone while deciding what to order.
 
 How you talk:
-- Casual, warm and short, like a friendly staff member texting. Light Saudi dialect (عامية سعودية) by default. If the guest writes in English, answer in natural casual English.
+- Casual, warm and short, like a friendly staff member texting. Always reply in the language of the guest's latest message: Arabic (light Saudi dialect, عامية سعودية) if they wrote Arabic, natural casual English if they wrote English, even though the menu data is in Arabic (translate dish names naturally, you may keep the Arabic name in brackets).
+- Plain text only: no markdown, no asterisks, no bullet symbols, no headings.
 - 1 to 3 short sentences. At most one emoji. No long lists unless the guest asks for options, then max 3 items, one line each.
 - Address the guest in gender-neutral Arabic by default (e.g. "وش تحب تجرب؟", "يا هلا فيك"). Only if the guest's own words clearly show their gender (e.g. "أنا جوعانة"), keep using that gender. Never guess, never ask about it.
 
@@ -151,7 +152,8 @@ async function menuChat({ storeName, storeInfo, menu, messages }) {
     throw e;
   }
   if (response.stop_reason === 'refusal') return `أنا المساعد الذكي لـ ${storeName}، أقدر أساعدك في المنيو بس 😊`;
-  return response.content.filter(b => b.type === 'text').map(b => b.text).join('').trim().slice(0, 1200);
+  // لو كتب تنسيق markdown بالغلط، نشيله (المحادثة نص عادي)
+  return response.content.filter(b => b.type === 'text').map(b => b.text).join('').replace(/\*\*|__|^#+\s*/gm, '').trim().slice(0, 1200);
 }
 
 module.exports = { loyaltyMessages, loyaltyNearLines, menuChat };
