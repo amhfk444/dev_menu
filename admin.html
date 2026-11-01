@@ -1592,14 +1592,14 @@
         <button id="upl-logo" onclick="uploadMedia('logo')" class="w-full bg-brand text-cream hover:bg-brand-dark text-xs font-bold py-2 rounded-xl transition">تحديث الشعار</button>
       </div>
 
-      <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
+      <div data-free-hide class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
         <label class="text-[11px] font-bold text-ink/75">صورة خلفية المنيو</label>
         <input type="file" id="bg-img-file" accept="image/*" class="input-pro text-[10px]">
         <button id="upl-bg_image" onclick="uploadMedia('bg_image')" class="w-full bg-brand text-cream hover:bg-brand-dark text-xs font-bold py-2 rounded-xl transition">تحديث الخلفية</button>
         <div id="bg-img-prev" class="hidden"></div>
       </div>
 
-      <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
+      <div data-free-hide class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
         <label class="text-[11px] font-bold text-ink/75">فيديو خلفية المنيو (MP4)</label>
         <input type="file" id="bg-video-file" accept="video/*" class="input-pro text-[10px]">
         <button id="upl-bg_video" onclick="uploadMedia('bg_video')" class="w-full bg-brand text-cream hover:bg-brand-dark text-xs font-bold py-2 rounded-xl transition">تحديث الفيديو</button>
@@ -1755,7 +1755,7 @@
         <i class="ph-bold ph-storefront text-emerald-600"></i> معلومات المنشأة
       </h4>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
+        <div data-free-hide>
           <label class="text-[10px] text-ink/75 block mb-1">ساعات العمل</label>
           <input type="text" id="info-hours" maxlength="80" placeholder="مثال: يومياً من 1 ظهراً حتى 1 فجراً" class="input-pro text-xs">
         </div>
@@ -1763,7 +1763,7 @@
           <label class="text-[10px] text-ink/75 block mb-1">رابط الموقع على خرائط Google</label>
           <input type="url" id="info-location" placeholder="https://maps.app.goo.gl/..." class="input-pro text-xs" dir="ltr">
         </div>
-        <div class="md:col-span-2">
+        <div data-free-hide class="md:col-span-2">
           <label class="text-[10px] text-ink/75 block mb-1"><i class="ph-bold ph-star text-amber-500"></i> رابط التقييم في قوقل ماب</label>
           <input type="url" id="info-review" placeholder="https://g.page/r/.../review" class="input-pro text-xs" dir="ltr">
           <p class="text-[10px] text-ink/55 mt-1">لما يرن البيجر يطلع للزبون زر "قيّمنا على قوقل ماب" يفتح هالرابط. تلقاه في Google Business ← "اطلب تقييمات". لو ما حطيته نستخدم رابط موقعك في قوقل ماب اللي فوق.</p>
@@ -1823,8 +1823,8 @@
       </div>
     </div>
         </div>
-    <!-- روابط التواصل الاجتماعي -->
-    <div class="pro-card p-5 space-y-3">
+    <!-- روابط التواصل الاجتماعي (مو في البيجر المجاني) -->
+    <div data-free-hide class="pro-card p-5 space-y-3">
       <h4 class="text-xs font-bold text-ink flex items-center gap-1.5">
         <i class="ph-bold ph-share-network text-blue-600"></i> روابط منصات التواصل الاجتماعي وموقع المنشأة
       </h4>
@@ -1874,8 +1874,8 @@
             <button type="button" id="order-numbers-add" onclick="addOrderNumber()" class="w-full bg-brand/5 hover:bg-brand/10 text-ink border border-dashed border-brand/30 font-bold py-2 rounded-xl text-xs transition disabled:opacity-40 disabled:cursor-not-allowed"><i class="ph-bold ph-plus text-[10px]"></i> إضافة رقم</button>
             <button onclick="saveOrderNumbers()" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition">حفظ أرقام الطلبات</button>
           </div>
-          <!-- الروابط المخصصة -->
-          <div class="pro-card p-5 space-y-4">
+          <!-- الروابط المخصصة (مو في البيجر المجاني) -->
+          <div data-free-hide class="pro-card p-5 space-y-4">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-link-simple text-blue-600"></i> روابط إضافية</h3>
               <span id="custom-links-count" class="text-[10px] text-ink/50"></span>
@@ -2078,6 +2078,8 @@
     // الباقة المجانية (البيجر بعد التجربة) ما فيها صفحة الروابط السريعة
     const free = DMPlans.isFree(client);
     ['links-bg-card', 'links-order-card', 'appearance-card'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = free ? 'none' : ''; });
+    // هوية المنشأة في المجاني: الاسم والشعار ورابط قوقل ماب بس
+    document.querySelectorAll('[data-free-hide]').forEach(el => { el.style.display = free ? 'none' : ''; });
     const rows = [...(free ? [] : [['home', 'الرابط الرئيسي', 'ph-house', DM.storeUrl(client.client_slug, 'links')]]), ...on.map(([k, page, name, icon]) => [k, name, icon, DM.storeUrl(client.client_slug, page)])];
     // روابط الشاشات: تفتح بدون حساب المالك (نفس مفتاح رابط الكاشير)
     if (!deskLocked()) {
