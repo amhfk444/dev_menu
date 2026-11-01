@@ -2660,6 +2660,9 @@
     const expired = !free && !inGrace && ((status !== 'active' && status !== 'trial') || (left !== null && left <= 0));
     const suspended = client.is_active === false;
     const live = !suspended && !expired;
+    // في التجربة ومعه البيجر: بعد التجربة يكمل على البيجر المجاني بدل ما يتوقف كل شي
+    const staysFree = status === 'trial' && !client.parent_id && Array.isArray(client.plan_features) && client.plan_features.includes('pager');
+    const onlyPager = staysFree && client.plan_features.length === 1;
     const graceText = graceEnd ? new Date(graceEnd).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long' }) : '';
 
     let pill, pillCls, note = '';
@@ -2667,7 +2670,9 @@
     else if (expired)            { pill = 'منتهي'; pillCls = 'bg-brick/10 text-brick'; note = 'انتهى اشتراكك، والمنيو ما يظهر للزبائن. اختر باقتك ويرجع على طول.'; }
     else if (free)               { pill = 'الباقة المجانية'; pillCls = 'bg-emerald-600/10 text-emerald-800'; note = 'انتهت تجربتك، والبيجر شغال لك مجاناً (200 رقم بالشهر). اشترك عشان ترجع باقي خدماتك وبطاقة النداء.'; }
     else if (inGrace)            { pill = 'مهلة'; pillCls = 'bg-amber-400/20 text-amber-900'; note = `انتهى اشتراكك، وأعطيناك مهلة: المنيو شغال لزبائنك لين ${graceText}. جدّد قبلها عشان ما يوقف.`; }
-    else if (status === 'trial') { pill = 'تجربة مجانية'; pillCls = 'bg-sky-500/10 text-sky-800'; }
+    else if (status === 'trial') { pill = 'تجربة مجانية'; pillCls = 'bg-sky-500/10 text-sky-800';
+      if (staysFree) note = onlyPager ? `بعد التجربة يكمل البيجر لك مجاناً (${DMPlans.FREE.pager} رقم بالشهر لفرع واحد)، وتتوقف بطاقة النداء والرسائل إلا إذا اشتركت.`
+        : `بعد التجربة يكمل البيجر لك مجاناً (${DMPlans.FREE.pager} رقم بالشهر)، وتتوقف باقي خدماتك وبطاقة النداء إلا إذا اشتركت.`; }
     else                         { pill = client.subscription_plan ? `الباقة ${planName(client.subscription_plan)}` : 'مشترك'; pillCls = 'bg-emerald-600/10 text-emerald-800'; }
 
     // شريط المدة: التجربة 14 يوم، والشهري 30، والسنوي 365
@@ -2682,7 +2687,7 @@
         <span class="text-[11px] font-bold px-2.5 py-1 rounded-full ${pillCls}">${pill}</span>
         <span class="text-[11px] text-ink/50" dir="ltr">${esc(client.client_slug)}</span>
       </div>
-      ${note ? `<p class="text-[12px] font-bold ${free ? 'text-emerald-800' : inGrace ? 'text-amber-900' : 'text-brick'}">${note}</p>` : ''}
+      ${note ? `<p class="text-[12px] font-bold ${free || staysFree ? 'text-emerald-800' : inGrace ? 'text-amber-900' : 'text-brick'}">${note}</p>` : ''}
       ${free ? '<p id="free-usage" class="text-[12px] text-ink/70"></p>' : ''}
       ${live && left !== null && !inGrace ? `
         <div>
@@ -2705,6 +2710,7 @@
       const text = suspended ? 'متجرك موقوف من الإدارة، والمنيو لا يظهر للزبائن حالياً.'
         : !live ? 'انتهى اشتراكك، والمنيو لا يظهر للزبائن حالياً. جدّد الآن ليعود فوراً.'
         : inGrace ? `انتهى اشتراكك. المنيو شغال لزبائنك لين ${graceText} بس، جدّد الحين عشان ما يوقف.`
+        : staysFree ? `تنتهي تجربتك المجانية خلال ${daysText(left)}. بعدها يكمل البيجر مجاناً، واشترك عشان ما تتوقف ${onlyPager ? 'بطاقة النداء والرسائل' : 'باقي خدماتك'}.`
         : `${status === 'trial' ? 'تنتهي تجربتك المجانية' : 'ينتهي اشتراكك'} خلال ${daysText(left)}. جدّد الآن حتى لا يتوقف المنيو.`;
       banner.className = `rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 border ${danger ? 'bg-red-500/10 border-red-500/40' : 'bg-amber-500/10 border-amber-500/40'}`;
       banner.innerHTML = `
