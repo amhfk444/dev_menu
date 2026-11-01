@@ -736,24 +736,137 @@
   // يعرض بيانات المنيو. first = أول تحميل، وغيره = تحديث تلقائي (نحافظ على السلة والبحث والتمرير)
   let menuVersion = null;
 
-  // ─── مساعد المنيو الذكي ───
-  let chatMsgs = [], chatBusy = false;
+  // ─── مساعد المنيو ───
+  // السريع: يجاوب من بيانات المنيو نفسها (أسعار، سعرات، ميزانية، حساسية، أوقات) ببلاش وفوري
+  // والذكي (Claude، إضافة مدفوعة): يتولى الأسئلة اللي ما فهمها السريع، لو صاحب المحل مشغّله
+  let chatMsgs = [], chatBusy = false, chatFlow = null;
   const chatT = (ar, en) => currentLang === 'en' ? en : ar;
+  // توحيد الكتابة العربية: الهمزات والتاء المربوطة والياء والتشكيل وال التعريف
+  const normAr = (t) => String(t || '').toLowerCase().replace(/[ً-ْـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي')
+    .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+  const stemAr = (w) => w.length > 4 && w.startsWith('ال') ? w.slice(2) : w.length > 4 && /^(بال|وال|لل)/.test(w) ? w.slice(3) : w;
+  const wordsOf = (t) => normAr(t).split(' ').filter(Boolean).map(stemAr);
+  function near(a, b) {   // كلمتين متقاربة (غلطة حرف وحدة مسموحة في الكلمات الطويلة)
+    if (a === b) return true;
+    if (Math.min(a.length, b.length) < 4 || Math.abs(a.length - b.length) > 1) return false;
+    let i = 0, j = 0, diff = 0;
+    while (i < a.length && j < b.length) { if (a[i] === b[j]) { i++; j++; continue; } if (++diff > 1) return false; if (a.length > b.length) i++; else if (b.length > a.length) j++; else { i++; j++; } }
+    return diff + (a.length - i) + (b.length - j) <= 1;
+  }
+  const STOP = new Set(['طبق', 'وجبه', 'عندكم', 'كم', 'بكم', 'سعر', 'سعره', 'سعرات', 'فيه', 'وش', 'ايش', 'هل', 'متوفر', 'the', 'a', 'of', 'with', 'how', 'much', 'price', 'is']);
+  // الأطباق اللي اسمها مذكور في السؤال (لازم أغلب كلمات الاسم تكون موجودة)
+  function findDishes(q) {
+    const qw = wordsOf(q);
+    const scored = allProducts.map(p => {
+      const names = [p.name, p.name_en].filter(Boolean).map(n => wordsOf(n).filter(w => w.length >= 3 && !STOP.has(w)));
+      let best = 0;
+      names.forEach(nw => { if (!nw.length) return; const hit = nw.filter(w => qw.some(x => near(x, w))).length; best = Math.max(best, hit / nw.length + hit * .01); });
+      return { p, best };
+    }).filter(x => x.best >= .5).sort((a, b) => b.best - a.best);
+    if (!scored.length) return [];
+    const top = scored[0].best;
+    return scored.filter(x => x.best >= top - .001).map(x => x.p).slice(0, 3);
+  }
+  const has = (q, re) => re.test(normAr(q));
+  const numIn = (q) => { const m = normAr(q).match(/\d+(\.\d+)?/); return m ? Number(m[0]) : null; };
+  const allergensOf = (p) => String(p.allergens || '').split(',').filter(k => ALLERGEN_LABELS[k]);
+  const available = () => allProducts.filter(p => p.is_available !== false);
+  const dishLine = (p) => `• ${productName(p)}: ${money(p.price)}${p.calories && project.show_calories !== false ? ` · ${p.calories} ${chatT('سعرة', 'kcal')}` : ''}`;
+  function dishInfo(p, q) {
+    const parts = [];
+    const askCal = has(q, /سعرات|سعره حراري|كالوري|calor|kcal/), askIng = has(q, /مكونات|وش فيه|ايش فيه|يتكون|ingredient|what.s in/);
+    parts.push(`${productName(p)}: ${money(p.price)}`);
+    if (Array.isArray(p.sizes) && p.sizes.length) parts.push(chatT('الأحجام: ', 'Sizes: ') + p.sizes.map(z => `${sizeName(z)} ${money(z.price)}`).join('، '));
+    if (p.calories && project.show_calories !== false) parts.push(`${p.calories} ${chatT('سعرة حرارية', 'calories')}`);
+    else if (askCal) parts.push(chatT('السعرات مو مكتوبة لهالطبق', 'Calories aren\'t listed for this dish'));
+    const d = productDesc(p); if (d && (askIng || !askCal)) parts.push(d);
+    const al = allergensOf(p); if (al.length) parts.push(chatT('يحتوي على: ', 'Contains: ') + al.map(k => ALLERGEN_LABELS[k][currentLang === 'en' ? 1 : 0]).join('، '));
+    if (p.is_available === false) parts.push(chatT('⚠️ خلصان الحين', '⚠️ Sold out right now'));
+    return parts.join('\n');
+  }
+  function suggest({ budget = null, cat = null, light = null }) {
+    let list = available();
+    if (cat) list = list.filter(p => p.category === cat);
+    if (budget) list = list.filter(p => Number(p.price) <= budget);
+    if (light === 'light') list = list.filter(p => p.calories).sort((a, b) => a.calories - b.calories);
+    else if (light === 'full') list = list.filter(p => p.calories).sort((a, b) => b.calories - a.calories);
+    else list = list.slice().sort((a, b) => (b.is_bestseller ? 1 : 0) - (a.is_bestseller ? 1 : 0) || Number(b.price) - Number(a.price));
+    list = list.slice(0, 3);
+    if (!list.length) return chatT('ما لقيت طبق يناسب هالاختيار 😅 جرب ميزانية أو نوع ثاني.', "I couldn't find a dish for that 😅 Try another budget or type.");
+    return chatT('هذي اقتراحاتي لك:\n', 'Here are my picks:\n') + list.map(dishLine).join('\n');
+  }
+  // يحاول يجاوب من المنيو. يرجّع الرد، أو null لو ما فهم
+  function quickAnswer(q) {
+    if (has(q, /^(السلام عليكم|سلام عليكم|هلا|اهلا|مرحبا|هاي|hi|hello|hey)( .*)?$/) && wordsOf(q).length <= 3) return chatT('يا هلا فيك 👋 وش ودك تاكل اليوم؟', 'Hi there 👋 What are you in the mood for?');
+    if (has(q, /^(شكرا|مشكور|يعطيك العافيه|تسلم|thanks|thank you)/)) return chatT('العفو، بالعافية مقدماً 😊', "You're welcome, enjoy your meal 😊");
+    if (has(q, /(اوقات|الدوام|دوامكم|تفتحون|تسكرون|مفتوحين|opening|hours)/)) return project.opening_hours ? chatT(`أوقاتنا: ${project.opening_hours}`, `Our hours: ${project.opening_hours}`) : null;
+    if (has(q, /(موقعكم|وينكم|العنوان|اللوكيشن|location|address|where are you)/)) return project.location_url ? chatT(`موقعنا هنا: ${project.location_url}`, `Here's our location: ${project.location_url}`) : null;
+    const dishes = findDishes(q);
+    if (dishes.length === 1) return dishInfo(dishes[0], q);
+    if (dishes.length > 1) return chatT('لقيت أكثر من طبق:\n', 'I found a few dishes:\n') + dishes.map(dishLine).join('\n');
+    // ميزانية: "أقل من 30"، "ميزانيتي 40"، "under 25"
+    const n = numIn(q);
+    if (n && has(q, /(اقل|تحت|ميزانيت|بحدود|ما يتعدي|ما يزيد|under|less|budget|below|ريال|sar)/)) {
+      const cat = allCategories.find(c => wordsOf(q).some(w => w.length >= 3 && wordsOf(catName(c)).some(x => near(x, w))));
+      return suggest({ budget: n, cat: cat ? cat.key : null, light: has(q, /خفيف|light/) ? 'light' : has(q, /مشبع|جوعان|hungry|filling/) ? 'full' : null });
+    }
+    return null;
+  }
+
   function chatBubble(role, text, cls = '') {
     const el = document.createElement('p'); el.className = `cb ${role === 'user' ? 'me' : 'bot'} ${cls}`; el.textContent = text;
     const log = document.getElementById('chatLog'); log.appendChild(el); log.scrollTop = log.scrollHeight; return el;
   }
+  // أزرار تحت المحادثة: [نص، دالة]
+  function chatChips(list) {
+    const box = document.getElementById('chatChips');
+    box.innerHTML = list.map(([t], i) => `<button type="button" data-i="${i}">${esc(t)}</button>`).join('');
+    box.onclick = (e) => { const b = e.target.closest('button'); if (!b) return; const [t, fn] = list[+b.dataset.i]; chatBubble('user', t); fn(); };
+  }
+  const MAIN_CHIPS = () => [
+    [chatT('اقترح لي ✨', 'Suggest something ✨'), flowSuggest],
+    [chatT('بكم طبق…؟', 'Price of a dish…?'), () => { chatBubble('assistant', chatT('اكتب اسم الطبق وأقولك سعره وسعراته 👇', "Type the dish name and I'll tell you its price and calories 👇")); chatChips(MAIN_CHIPS()); document.getElementById('chatInput').focus(); }],
+    [chatT('عندي حساسية', 'I have an allergy'), flowAllergy],
+    [chatT('أوقاتكم وموقعكم', 'Hours & location'), () => { chatBubble('assistant', [project.opening_hours ? chatT(`أوقاتنا: ${project.opening_hours}`, `Our hours: ${project.opening_hours}`) : chatT('الأوقات مو مكتوبة، اسأل الموظف 😊', 'Hours aren\'t listed, please ask the staff 😊'), project.location_url ? chatT(`موقعنا: ${project.location_url}`, `Location: ${project.location_url}`) : ''].filter(Boolean).join('\n')); chatChips(MAIN_CHIPS()); }]
+  ];
+  // "اقترح لي": الميزانية، النوع، خفيف أو مشبع
+  function flowSuggest() {
+    const pick = {};
+    chatBubble('assistant', chatT('كم ميزانيتك تقريباً؟', "What's your budget?"));
+    const b = (label, v) => [label, () => { pick.budget = v; askCat(); }];
+    chatChips([b(chatT('أقل من 20', 'Under 20'), 20), b(chatT('أقل من 40', 'Under 40'), 40), b(chatT('أقل من 70', 'Under 70'), 70), b(chatT('ما يهم', "Doesn't matter"), null)]);
+    function askCat() {
+      chatBubble('assistant', chatT('وش تبي؟', 'What would you like?'));
+      const cats = allCategories.filter(c => available().some(p => p.category === c.key)).slice(0, 6);
+      chatChips([...cats.map(c => [catName(c), () => { pick.cat = c.key; askLight(); }]), [chatT('أي شي', 'Anything'), () => { pick.cat = null; askLight(); }]]);
+    }
+    function askLight() {
+      if (!allProducts.some(p => p.calories) || project.show_calories === false) return done();
+      chatBubble('assistant', chatT('خفيف ولا مشبع؟', 'Light or filling?'));
+      chatChips([[chatT('خفيف', 'Light'), () => { pick.light = 'light'; done(); }], [chatT('مشبع', 'Filling'), () => { pick.light = 'full'; done(); }], [chatT('ما يهم', "Doesn't matter"), () => done()]]);
+    }
+    function done() { chatBubble('assistant', suggest(pick)); chatChips(MAIN_CHIPS()); }
+  }
+  function flowAllergy() {
+    const keys = Object.keys(ALLERGEN_LABELS).filter(k => allProducts.some(p => allergensOf(p).includes(k)));
+    if (!keys.length) { chatBubble('assistant', chatT('ما فيه حساسيات مكتوبة في المنيو، اسأل الموظف عشان يتأكد لك 🙏', 'No allergens are listed on the menu, please check with the staff 🙏')); return chatChips(MAIN_CHIPS()); }
+    chatBubble('assistant', chatT('من أي شي عندك حساسية؟', 'Which allergy?'));
+    chatChips(keys.map(k => [ALLERGEN_LABELS[k][currentLang === 'en' ? 1 : 0], () => {
+      const ok = available().filter(p => !allergensOf(p).includes(k)).slice(0, 5);
+      chatBubble('assistant', ok.length ? chatT('هذي ما فيها ' + ALLERGEN_LABELS[k][0] + ' حسب المنيو:\n', 'These have no ' + ALLERGEN_LABELS[k][1] + ' according to the menu:\n') + ok.map(dishLine).join('\n') + chatT('\nوتأكد من الموظف قبل الطلب 🙏', '\nPlease confirm with the staff 🙏') : chatT('ما لقيت أطباق بدونها، اسأل الموظف 🙏', "I couldn't find dishes without it, please ask the staff 🙏"));
+      chatChips(MAIN_CHIPS());
+    }]));
+  }
+
   function openChat() {
     document.getElementById('chatSheet').classList.add('open');
-    document.getElementById('chatTitle').textContent = chatT('المساعد الذكي', 'Smart assistant');
+    document.getElementById('chatTitle').textContent = project.menu_chat ? chatT('المساعد الذكي', 'Smart assistant') : chatT('المساعد', 'Assistant');
     document.getElementById('chatSub').textContent = project ? project.name : '';
     document.getElementById('chatInput').placeholder = chatT('اسأل عن أي طبق…', 'Ask about any dish…');
     if (!document.getElementById('chatLog').children.length) {
-      chatBubble('assistant', chatT(`يا هلا فيك في ${project.name} 👋 وش ودك تاكل اليوم؟ أقدر أقولك الأسعار والسعرات، وأقترح عليك حسب ذوقك وميزانيتك.`,
-        `Welcome to ${project.name} 👋 What are you in the mood for? I can tell you prices and calories, and suggest dishes for your taste and budget.`));
-      const chips = currentLang === 'en' ? ['What do you recommend?', 'Something under 30', 'Opening hours?'] : ['وش تنصحني؟', 'أبي شي أقل من 30', 'وش أوقاتكم؟'];
-      document.getElementById('chatChips').innerHTML = chips.map(c => `<button type="button">${esc(c)}</button>`).join('');
-      document.getElementById('chatChips').onclick = (e) => { const b = e.target.closest('button'); if (b) { document.getElementById('chatInput').value = b.textContent; sendChat(); } };
+      chatBubble('assistant', chatT(`يا هلا فيك في ${project.name} 👋 اختر من تحت، أو اكتب اسم أي طبق وأقولك سعره وسعراته.`,
+        `Welcome to ${project.name} 👋 Pick an option below, or type any dish name for its price and calories.`));
+      chatChips(MAIN_CHIPS());
     }
     setTimeout(() => document.getElementById('chatInput').focus(), 50);
   }
@@ -762,17 +875,25 @@
     if (e) e.preventDefault();
     const input = document.getElementById('chatInput'), text = input.value.trim();
     if (!text || chatBusy) return;
-    input.value = ''; chatBusy = true; document.getElementById('chatSend').disabled = true;
+    input.value = '';
+    chatBubble('user', text);
+    // 1) من المنيو مباشرة
+    const quick = quickAnswer(text);
+    if (quick) { chatBubble('assistant', quick); chatMsgs.push({ role: 'user', content: text }, { role: 'assistant', content: quick }); chatChips(MAIN_CHIPS()); return; }
+    // 2) ما فهمه: للمساعد الذكي لو مشغّل، وإلا نوجّهه للأزرار
+    if (!project.menu_chat) { chatBubble('assistant', chatT('ما فهمت سؤالك 😅 اكتب اسم الطبق، أو اختر من الأزرار.', "I didn't get that 😅 Type a dish name, or pick an option.")); chatChips(MAIN_CHIPS()); return; }
+    chatBusy = true; document.getElementById('chatSend').disabled = true;
     document.getElementById('chatChips').innerHTML = '';
-    chatBubble('user', text); chatMsgs.push({ role: 'user', content: text });
+    chatMsgs.push({ role: 'user', content: text });
     const wait = chatBubble('assistant', '…', 'wait');
     try {
-      const r = await DM.post('/api/public?action=menu-chat', { slug: clientSlug, messages: chatMsgs.slice(-12) });
+      const r = await DM.post('/api/public?action=menu-chat', { slug: clientSlug, messages: chatMsgs.slice(-6) });
       wait.remove(); chatBubble('assistant', r.reply); chatMsgs.push({ role: 'assistant', content: r.reply });
     } catch (err) {
-      wait.remove(); chatBubble('assistant', err.message || chatT('ما قدرت أرد الحين، جرّب مرة ثانية', "Couldn't answer right now, try again"));
-      chatMsgs.pop();
-    } finally { chatBusy = false; document.getElementById('chatSend').disabled = false; input.focus(); }
+      wait.remove(); chatMsgs.pop();
+      chatBubble('assistant', err.message || chatT('ما قدرت أرد الحين، جرّب مرة ثانية', "Couldn't answer right now, try again"));
+      if (err.code === 'CHAT_DAY' || err.code === 'CHAT_QUOTA') { input.disabled = true; input.placeholder = chatT('اختر من الأزرار 👆', 'Pick an option 👆'); project.menu_chat = false; }
+    } finally { chatBusy = false; document.getElementById('chatSend').disabled = false; chatChips(MAIN_CHIPS()); }
   }
 
   function applyMenu(menuData, first) {
@@ -797,7 +918,8 @@
 
     renderSocialLinks(p);
     renderCustomLinks();
-    document.getElementById('chatFab').classList.toggle('hidden', p.menu_chat !== true);
+    // المساعد السريع مجاني لكل منيو فيه أطباق، والذكي يشتغل فوقه لو صاحب المحل مشغّله
+    document.getElementById('chatFab').classList.toggle('hidden', !(menuData.products || []).length);
     document.getElementById('chatFabText').textContent = currentLang === 'en' ? 'Ask the assistant' : 'اسأل المساعد';
     // زينة المناسبة الجارية: نعيد رسمها فقط لو تغيّرت (حتى ما تنعاد القصاصات مع كل تحديث)
     if (window.DMOccasions) {

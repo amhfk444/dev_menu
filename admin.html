@@ -1764,7 +1764,7 @@
         <input type="checkbox" id="info-menu-chat" onchange="toggleMenuChat(this.checked)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
         <span class="text-xs">
           <b class="text-ink"><i class="ph-bold ph-sparkle text-amber-600"></i> المساعد الذكي في المنيو <span class="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">تجريبي</span></b>
-          <span class="block text-[10px] text-ink/60 mt-0.5">زر "اسأل المساعد" في المنيو: يجاوب زبونك عن الأسعار والسعرات والمكونات، ويقترح عليه حسب ذوقه وميزانيته، ويعرف أوقات عملك. يجاوب من منيو محلك بس، وأي سؤال ثاني يعتذر عنه.</span>
+          <span class="block text-[10px] text-ink/60 mt-0.5">زر "اسأل المساعد" موجود في منيوك مجاناً: يجاوب زبونك عن أسعار الأطباق وسعراتها، ويقترح حسب ميزانيته، ويفلتر الحساسية. شغّل الذكي عشان يفهم أي سؤال بكلام طبيعي ويرد بعفوية. يجاوب من منيو محلك بس، وأي سؤال ثاني يعتذر عنه.</span>
           <span id="chat-usage" class="block text-[10px] font-bold text-ink/70 mt-1.5"></span>
         </span>
       </label>
@@ -4834,7 +4834,7 @@
     // المساعد إضافة مدفوعة على المنيو: لو مو في الباقة، الخيار مقفول ونوضح كيف يضيفه
     const locked = featureLocked('chat');
     box.disabled = locked;
-    if (locked) { info.innerHTML = '<i class="ph-bold ph-lock-simple"></i> أضف "المساعد الذكي" لباقتك من صفحة الاشتراك (39 ر.س بالشهر، 2000 سؤال)'; return; }
+    if (locked) { info.innerHTML = '<i class="ph-bold ph-lock-simple"></i> أضف "المساعد الذكي" لباقتك من صفحة الاشتراك (19 ر.س بالشهر، 1000 سؤال). المساعد السريع شغال مجاناً في منيوك'; return; }
     try {
       const r = await api('chat-usage');
       const left = Math.max(0, r.limit - r.used);

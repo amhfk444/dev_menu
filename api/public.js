@@ -219,13 +219,12 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const data = await menuPayload(b.slug);
     const store = data.store;
     if (store.menu_chat !== true) throw new ApiError(403, 'المساعد غير متاح الحين، اسأل الموظف 😊', 'CHAT_OFF');
-    // المحادثة قصيرة: آخر 12 رسالة، وكل رسالة 300 حرف
-    const list = (Array.isArray(b.messages) ? b.messages : []).slice(-12)
+    // المحادثة قصيرة: آخر 6 رسائل، وكل رسالة 300 حرف (الحد الفعلي: أسئلة الجوال باليوم)
+    const list = (Array.isArray(b.messages) ? b.messages : []).slice(-6)
       .map(m => ({ role: m && m.role === 'assistant' ? 'assistant' : 'user', content: String((m && m.content) || '').trim().slice(0, 300) }))
       .filter(m => m.content);
     if (!list.length || list[list.length - 1].role !== 'user') throw new ApiError(400, 'اكتب سؤالك');
     while (list.length && list[0].role !== 'user') list.shift();
-    if (list.filter(m => m.role === 'user').length > 8) throw new ApiError(429, 'وصلت حد الأسئلة في هالمحادثة، ابدأ محادثة جديدة', 'CHAT_LIMIT');
     // الأسئلة البسيطة (سلام، شكر، الأوقات، الموقع) نرد عليها من بيانات المحل بدون ذكاء اصطناعي: ببلاش وفوري
     const quick = quickChat(list[list.length - 1].content, store, list.length === 1);
     if (quick) return { reply: quick };
