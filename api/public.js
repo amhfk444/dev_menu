@@ -22,7 +22,8 @@ async function findStore(rawSlug) {
   // وخلفية صفحة الروابط من 67-links-background.sql — قبل إضافتها تاخذ الصفحة خلفية المنيو
   let found;
   const LINKS = ',links_bg_image_url,links_bg_video_url,links_order,links_hidden';
-  for (const extra of [',currency' + LINKS, LINKS, ',currency', '']) {
+  // ومساعد المنيو من 68-menu-chat.sql
+  for (const extra of [',currency' + LINKS + ',menu_chat', ',currency' + LINKS, LINKS, ',currency', '']) {
     try { found = await findPublicStore(rawSlug, STORE_FIELDS + extra); break; }
     catch (e) { if (!extra) throw e; }
   }
@@ -178,6 +179,37 @@ const versionOf = (data) => crypto.createHash('sha1').update(JSON.stringify(data
 
 module.exports = handler(['GET', 'POST'], async (req, res) => {
   const action = req.query.action;
+
+  // ─── مساعد المنيو: الزبون يسأل عن الأطباق ───
+  if (action === 'menu-chat' && req.method === 'POST') {
+    const b = await readBody(req);
+    const data = await menuPayload(b.slug);
+    const store = data.store;
+    if (store.menu_chat !== true) throw new ApiError(403, 'المساعد غير مفعّل في هذا المنيو', 'CHAT_OFF');
+    // المحادثة قصيرة: آخر 12 رسالة، وكل رسالة 300 حرف
+    const list = (Array.isArray(b.messages) ? b.messages : []).slice(-12)
+      .map(m => ({ role: m && m.role === 'assistant' ? 'assistant' : 'user', content: String((m && m.content) || '').trim().slice(0, 300) }))
+      .filter(m => m.content);
+    if (!list.length || list[list.length - 1].role !== 'user') throw new ApiError(400, 'اكتب سؤالك');
+    while (list.length && list[0].role !== 'user') list.shift();
+    if (list.filter(m => m.role === 'user').length > 8) throw new ApiError(429, 'وصلت حد الأسئلة في هالمحادثة، ابدأ محادثة جديدة', 'CHAT_LIMIT');
+    const cur = CURRENCIES[store.currency] || CURRENCIES.SAR;
+    const cats = Object.fromEntries(data.categories.map(c => [c.key, c.name]));
+    const menu = data.products.map(p => {
+      const parts = [`- ${p.name}${p.name_en ? ` (${p.name_en})` : ''}`, `section: ${cats[p.category] || p.category || ''}`, `price: ${p.price} ${cur}`];
+      if (Array.isArray(p.sizes) && p.sizes.length) parts.push(`sizes: ${p.sizes.map(z => `${z.name || z.label || ''} ${z.price} ${cur}`).join(', ')}`);
+      if (p.calories && store.show_calories !== false) parts.push(`calories: ${p.calories}`);
+      if (p.description) parts.push(`about: ${String(p.description).slice(0, 160)}`);
+      if (p.allergens && (Array.isArray(p.allergens) ? p.allergens.length : true)) parts.push(`allergens: ${Array.isArray(p.allergens) ? p.allergens.join(', ') : p.allergens}`);
+      if (p.is_bestseller) parts.push('bestseller');
+      parts.push(`available="${p.is_available === false ? 'no' : 'yes'}"`);
+      return parts.join(' | ');
+    }).join('\n');
+    const info = [`name: ${store.name}`, store.opening_hours ? `hours: ${store.opening_hours}` : 'hours: not given', store.location_url ? `location: ${store.location_url}` : '',
+      `currency: ${cur}`, `today (Riyadh): ${new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 16).replace('T', ' ')}`].filter(Boolean).join('\n');
+    const { menuChat } = require('./_lib/ai');
+    return { reply: await menuChat({ storeName: store.name, storeInfo: info, menu, messages: list }) };
+  }
 
   if (action === 'menu' && req.method === 'GET') {
     const data = await menuPayload(req.query.slug);

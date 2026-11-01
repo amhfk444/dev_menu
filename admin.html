@@ -1760,6 +1760,13 @@
           <span class="block text-[10px] text-ink/60 mt-0.5">عند الإيقاف: يختفي حقل السعرات من نموذج الأطباق، ولا تظهر السعرات للزبائن. السعرات المحفوظة تبقى ولا تنحذف.</span>
         </span>
       </label>
+      <label data-needs="menu" class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
+        <input type="checkbox" id="info-menu-chat" onchange="toggleMenuChat(this.checked)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
+        <span class="text-xs">
+          <b class="text-ink"><i class="ph-bold ph-sparkle text-amber-600"></i> المساعد الذكي في المنيو <span class="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">تجريبي</span></b>
+          <span class="block text-[10px] text-ink/60 mt-0.5">زر "اسأل المساعد" في المنيو: يجاوب زبونك عن الأسعار والسعرات والمكونات، ويقترح عليه حسب ذوقه وميزانيته، ويعرف أوقات عملك. يجاوب من منيو محلك بس، وأي سؤال ثاني يعتذر عنه.</span>
+        </span>
+      </label>
       <div data-needs="menu" class="bg-brand/5 p-3 rounded-xl border border-brand/15">
         <label for="info-currency" class="text-xs font-bold text-ink block mb-1.5"><i class="ph-bold ph-coins text-amber-600"></i> عملة المنيو</label>
         <select id="info-currency" onchange="changeCurrency(this.value)" class="input-pro text-xs cursor-pointer"></select>
@@ -2341,7 +2348,7 @@
     document.getElementById('info-wa-orders').checked = client.whatsapp_orders === true;
     renderWaOrderState();
     renderBusinessType();
-    applyCaloriesSetting();
+    applyCaloriesSetting(); applyMenuChatSetting();
     renderMenuLayout();
     applyCurrencySetting();
     deliveryApps = (Array.isArray(client.delivery_apps) ? client.delivery_apps : []).map(d => ({ ...d }));
@@ -4817,6 +4824,13 @@
       document.getElementById('info-show-calories').checked = !on;
       showToast('تعذر حفظ الإعداد', true);
     }
+  }
+
+  // ─── مساعد المنيو الذكي ───
+  function applyMenuChatSetting() { document.getElementById('info-menu-chat').checked = !!(client && client.menu_chat); }
+  async function toggleMenuChat(on) {
+    if (await updateClient({ menu_chat: on })) showToast(on ? 'المساعد الذكي صار في منيو محلك' : 'تم إيقاف المساعد الذكي');
+    else { document.getElementById('info-menu-chat').checked = !on; showToast('تعذر حفظ الإعداد', true); }
   }
 
   // ─── بطاقة الولاء ───

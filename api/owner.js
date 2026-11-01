@@ -1207,6 +1207,7 @@ async function main(req) {
     if (has('opening_hours')) p.opening_hours = str(b.opening_hours, 80, 'ساعات العمل');
     if (has('whatsapp_orders')) p.whatsapp_orders = b.whatsapp_orders === true;
     if (has('show_calories')) p.show_calories = b.show_calories !== false;
+    if (has('menu_chat')) p.menu_chat = b.menu_chat === true;
     if (has('menu_layout')) p.menu_layout = b.menu_layout === 'photos' ? 'photos' : 'list';
     if (has('google_review_url')) {
       const u = String(b.google_review_url || '').trim();
