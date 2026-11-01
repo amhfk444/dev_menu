@@ -1765,6 +1765,7 @@
         <span class="text-xs">
           <b class="text-ink"><i class="ph-bold ph-sparkle text-amber-600"></i> المساعد الذكي في المنيو <span class="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">تجريبي</span></b>
           <span class="block text-[10px] text-ink/60 mt-0.5">زر "اسأل المساعد" في المنيو: يجاوب زبونك عن الأسعار والسعرات والمكونات، ويقترح عليه حسب ذوقه وميزانيته، ويعرف أوقات عملك. يجاوب من منيو محلك بس، وأي سؤال ثاني يعتذر عنه.</span>
+          <span id="chat-usage" class="block text-[10px] font-bold text-ink/70 mt-1.5"></span>
         </span>
       </label>
       <div data-needs="menu" class="bg-brand/5 p-3 rounded-xl border border-brand/15">
@@ -4827,7 +4828,20 @@
   }
 
   // ─── مساعد المنيو الذكي ───
-  function applyMenuChatSetting() { document.getElementById('info-menu-chat').checked = !!(client && client.menu_chat); }
+  async function applyMenuChatSetting() {
+    const box = document.getElementById('info-menu-chat'), info = document.getElementById('chat-usage');
+    box.checked = !!(client && client.menu_chat);
+    // المساعد إضافة مدفوعة على المنيو: لو مو في الباقة، الخيار مقفول ونوضح كيف يضيفه
+    const locked = featureLocked('chat');
+    box.disabled = locked;
+    if (locked) { info.innerHTML = '<i class="ph-bold ph-lock-simple"></i> أضف "المساعد الذكي" لباقتك من صفحة الاشتراك (39 ر.س بالشهر، 2000 سؤال)'; return; }
+    try {
+      const r = await api('chat-usage');
+      const left = Math.max(0, r.limit - r.used);
+      info.innerHTML = `<i class="ph-bold ph-chat-circle-dots"></i> استخدم زبائنك ${r.used.toLocaleString('en')} من ${r.limit.toLocaleString('en')} سؤال هالشهر${left ? '' : ' (خلص الرصيد، والزر مختفي لين الشهر الجاي)'}`;
+      info.classList.toggle('text-rose-700', !left);
+    } catch { info.textContent = ''; }
+  }
   async function toggleMenuChat(on) {
     if (await updateClient({ menu_chat: on })) showToast(on ? 'المساعد الذكي صار في منيو محلك' : 'تم إيقاف المساعد الذكي');
     else { document.getElementById('info-menu-chat').checked = !on; showToast('تعذر حفظ الإعداد', true); }

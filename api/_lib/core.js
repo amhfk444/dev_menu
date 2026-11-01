@@ -136,7 +136,10 @@ async function findPublicStore(rawSlug, fields) {
 async function storeFeatures(storeId) {
   const PLANS = require('./plans');
   const s = (await rest(`clients?id=eq.${storeId}&select=subscription_status,plan_features,parent_id,is_active,trial_ends_at,subscription_end_date`))[0];
-  return Object.fromEntries(['menu', 'pager', 'waitlist', 'loyalty'].map(k => [k, !!s && PLANS.has(s, k)]));
+  const out = Object.fromEntries(['menu', 'chat', 'pager', 'waitlist', 'loyalty'].map(k => [k, !!s && PLANS.has(s, k)]));
+  // رصيد المساعد الذكي الشهري: التجربة أقل
+  out.chat_limit = s && s.subscription_status === 'trial' ? PLANS.CHAT.trial : PLANS.CHAT.month;
+  return out;
 }
 
 // عنوان الموقع: الإنتاج www.devmenu.digital، ونسخة التجربة تحط SITE_URL حقها (روابط الإيميلات والمحفظة والإشعارات)

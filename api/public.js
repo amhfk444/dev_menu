@@ -9,6 +9,7 @@
 //   POST /api/public?action=track           تسجيل زيارة/مشاهدة (مجهولة)
 // =====================================================================
 const crypto = require('crypto');
+const PLANS = require('./_lib/plans');
 const { handler, rest, rpc, q, ApiError, readBody, int, findPublicStore, CURRENCIES, storeHasFeature, storeFeatures } = require('./_lib/core');
 const { topic } = require('./_lib/live');
 
@@ -176,7 +177,36 @@ async function menuPayload(slug) {
     activeOccasion(store.id),
     menuPromos(store.id)
   ]);
-  return { store: { ...store, waitlist_open, has_coupons, occasion, promos }, categories: categories.sort(bySort), products: products.sort(bySort) };
+  // زر المساعد: مشغّل من صاحب المحل + ضمن باقته + باقي له رصيد هالشهر
+  const menu_chat = store.menu_chat === true && feats.chat && (await chatUsed(store.id)) < feats.chat_limit;
+  return { store: { ...store, menu_chat, waitlist_open, has_coupons, occasion, promos }, categories: categories.sort(bySort), products: products.sort(bySort), feats };
+}
+const chatMonth = () => new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 7);
+async function chatUsed(storeId) {
+  try { const r = (await rest(`menu_chat_usage?client_id=eq.${storeId}&month=eq.${chatMonth()}&select=used`))[0]; return r ? r.used : 0; }
+  catch { return 0; }   // قبل تشغيل 69-menu-chat-usage.sql
+}
+// ردود جاهزة للأسئلة البسيطة. أي شي غيرها يروح للمساعد
+const AR = (t) => /[؀-ۿ]/.test(t);
+function quickChat(text, store, first) {
+  const t = String(text).trim().toLowerCase().replace(/[؟?!.،,]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const ar = AR(text), name = store.name;
+  const words = t.split(' ');
+  if (words.length <= 3 && /^(السلام عليكم|سلام عليكم|السلام|هلا|اهلا|أهلا|مرحبا|هاي|hi|hello|hey|salam)( .*)?$/.test(t)) {
+    return ar ? `وعليكم السلام، يا هلا فيك في ${name} 👋 وش ودك تاكل اليوم؟` : `Hi, welcome to ${name} 👋 What are you in the mood for?`;
+  }
+  if (words.length <= 4 && /^(شكرا|شكراً|مشكور|يعطيك العافيه|يعطيك العافية|تسلم|thanks|thank you|thx)( .*)?$/.test(t)) {
+    return ar ? 'العفو، بالعافية مقدماً 😊' : "You're welcome, enjoy your meal 😊";
+  }
+  if (words.length <= 6 && /(اوقات|أوقات|الدوام|دوامكم|تفتحون|تسكرون|متى تفتح|مفتوحين|opening hours|open|hours|close)/.test(t)) {
+    if (store.opening_hours) return ar ? `أوقاتنا: ${store.opening_hours}` : `Our hours: ${store.opening_hours}`;
+    return null;   // ما فيه أوقات مكتوبة: المساعد يقول للزبون يسأل الموظف
+  }
+  if (words.length <= 6 && /(موقعكم|وين مكانكم|وينكم|العنوان|اللوكيشن|location|where are you|address)/.test(t)) {
+    if (store.location_url) return ar ? `موقعنا هنا: ${store.location_url}` : `Here's our location: ${store.location_url}`;
+    return null;
+  }
+  return null;
 }
 const versionOf = (data) => crypto.createHash('sha1').update(JSON.stringify(data)).digest('hex').slice(0, 16);
 
@@ -188,7 +218,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const b = await readBody(req);
     const data = await menuPayload(b.slug);
     const store = data.store;
-    if (store.menu_chat !== true) throw new ApiError(403, 'المساعد غير مفعّل في هذا المنيو', 'CHAT_OFF');
+    if (store.menu_chat !== true) throw new ApiError(403, 'المساعد غير متاح الحين، اسأل الموظف 😊', 'CHAT_OFF');
     // المحادثة قصيرة: آخر 12 رسالة، وكل رسالة 300 حرف
     const list = (Array.isArray(b.messages) ? b.messages : []).slice(-12)
       .map(m => ({ role: m && m.role === 'assistant' ? 'assistant' : 'user', content: String((m && m.content) || '').trim().slice(0, 300) }))
@@ -196,6 +226,17 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (!list.length || list[list.length - 1].role !== 'user') throw new ApiError(400, 'اكتب سؤالك');
     while (list.length && list[0].role !== 'user') list.shift();
     if (list.filter(m => m.role === 'user').length > 8) throw new ApiError(429, 'وصلت حد الأسئلة في هالمحادثة، ابدأ محادثة جديدة', 'CHAT_LIMIT');
+    // الأسئلة البسيطة (سلام، شكر، الأوقات، الموقع) نرد عليها من بيانات المحل بدون ذكاء اصطناعي: ببلاش وفوري
+    const quick = quickChat(list[list.length - 1].content, store, list.length === 1);
+    if (quick) return { reply: quick };
+    // الرصيد: سؤال من رصيد المحل الشهري، وحد يومي لكل جوال (بصمة من الـ IP والمتصفح، ما نحفظهم)
+    const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+    const device = crypto.createHash('sha256').update(`${ip}|${req.headers['user-agent'] || ''}`).digest('hex').slice(0, 32);
+    let took = 'ok';
+    try { took = await rpc('server_chat_take', { p_client: store.id, p_device: device, p_limit: data.feats.chat_limit, p_day: PLANS.CHAT.day }); }
+    catch (e) { console.warn('chat quota', e.message); }
+    if (took === 'month') throw new ApiError(429, 'المساعد خلص رصيده لهالشهر، اسأل الموظف وبيخدمك 😊', 'CHAT_QUOTA');
+    if (took === 'day') throw new ApiError(429, 'وصلت حد الأسئلة اليوم 😊 تقدر تسأل الموظف، أو ترجع بكرة', 'CHAT_DAY');
     const cur = CURRENCIES[store.currency] || CURRENCIES.SAR;
     const cats = Object.fromEntries(data.categories.map(c => [c.key, c.name]));
     const menu = data.products.map(p => {
@@ -215,7 +256,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
   }
 
   if (action === 'menu' && req.method === 'GET') {
-    const data = await menuPayload(req.query.slug);
+    const { feats, ...data } = await menuPayload(req.query.slug);
     // المنيو يتخزن في شبكة Vercel القريبة من الزبون 15 ثانية (ويتجدد بالخلفية): يفتح فوراً بدل ما يروح للخادم كل مرة.
     // التحديث اللحظي يطلب المنيو برقم نسخته (&v=) فيتجاوز المخزن
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=15, stale-while-revalidate=300');
@@ -226,7 +267,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
   // الرد يتخزن 5 ثواني في CDN، فمهما كثر الزبائن ما ينفذ الخادم إلا مرة كل 5 ثواني لكل متجر
   if (action === 'menu-version' && req.method === 'GET') {
     let v;
-    try { v = versionOf(await menuPayload(req.query.slug)); }
+    try { const { feats, ...d } = await menuPayload(req.query.slug); v = versionOf(d); }
     catch (e) { if (e.status === 404 || e.status === 400) v = 'off'; else throw e; }
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=5, stale-while-revalidate=10');
     return { v };

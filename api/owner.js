@@ -485,6 +485,15 @@ async function main(req) {
   }
 
   // ─── الإحصائيات ───
+  // ─── رصيد المساعد الذكي هالشهر ───
+  if (action === 'chat-usage') {
+    const { store } = await context(req);
+    const month = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 7);
+    let used = 0;
+    try { const r = (await rest(`menu_chat_usage?client_id=eq.${store.id}&month=eq.${month}&select=used`))[0]; used = r ? r.used : 0; } catch {}
+    return { used, limit: store.subscription_status === 'trial' ? PLANS.CHAT.trial : PLANS.CHAT.month };
+  }
+
   if (action === 'stats') {
     const { store } = await context(req);
     const days = Math.min(365, Math.max(1, int(req.query.days) || 30));
