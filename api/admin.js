@@ -155,6 +155,16 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     });
     return { ok: true, invoice };
   }
+  // تحويل الحساب للبيجر المجاني: البيجر الأساسي بس (بدون بطاقة النداء والرسائل)، والفروع تتوقف لأن المجاني لفرع واحد
+  if (action === 'set-free') {
+    const target = (await rest(`clients?id=eq.${id}&select=id,parent_id`))[0];
+    if (!target) throw new ApiError(404, 'المتجر غير موجود');
+    if (target.parent_id) throw new ApiError(400, 'البيجر المجاني للمتجر الرئيسي بس', 'BRANCH_FOLLOWS_PARENT');
+    const out = await patch({ subscription_status: 'trial', trial_ends_at: new Date(Date.now() - 1000).toISOString(),
+      plan_features: ['pager'], waitlist_enabled: false, loyalty_enabled: false, requested_plan: null, requested_features: null, plan_requested_at: null });
+    await syncBranchSubscriptions(id);
+    return out;
+  }
   // فاتورة مستحقة الدفع: تنرسل لبريد صاحب الحساب بالباقة اللي تختارها، بدون ما يتغير اشتراكه
   if (action === 'send-invoice') {
     if (!['month', 'year'].includes(b.period)) throw new ApiError(400, 'مدة غير صحيحة');

@@ -694,6 +694,7 @@
         <button onclick="renameStore(${id})"><i class="ph-bold ph-pencil-simple"></i> تعديل الاسم</button>
         ${!c.parent_id ? `<button onclick="openTypeDlg(${id})"><i class="ph-bold ph-storefront"></i> نوع النشاط: ${esc(DMSectors.label(c))}</button>` : ''}
         <button onclick="openNotify(${id})"><i class="ph-bold ph-bell"></i> إرسال إشعار</button>
+        ${!c.parent_id && statusOf(c).key !== 'free' && !isProspect(c) ? `<button onclick="setFree(${id})"><i class="ph-bold ph-gift" style="color:#047857"></i> تحويله للبيجر المجاني</button>` : ''}
         <div class="h-px bg-brand/10 my-1"></div>
         ${c.parent_id ? '' : `<button onclick="setFeatured(${id}, ${!c.is_featured})"><i class="ph-bold ph-star" ${c.is_featured ? 'style="color:#d97706"' : ''}></i> ${c.is_featured ? 'إزالة من أمثلة الرئيسية' : 'عرضه في أمثلة الرئيسية'}</button>`}
         <button onclick="setActive(${id}, ${c.is_active === false})"><i class="ph-bold ${c.is_active === false ? 'ph-play' : 'ph-pause'}"></i> ${c.is_active === false ? (c.parent_id ? 'إعادة تشغيل الفرع' : 'إعادة تشغيل المتجر') : (c.parent_id ? 'إيقاف الفرع' : 'إيقاف المتجر')}</button>
@@ -998,6 +999,18 @@
     const error = await post('set-active', { id, active });
     if (error) return showToast('ما اكتملت العملية. حاول مرة ثانية', true);
     showToast(active ? 'تمت إعادة تشغيل المتجر' : 'تم إيقاف المتجر'); loadClients();
+  }
+
+  async function setFree(id) {
+    openMenu = null;
+    const c = find(id), name = c ? (c.name || c.client_slug) : id;
+    const s = c ? statusOf(c) : {};
+    const ok = await confirmDialog({ title: 'تحويله للبيجر المجاني', message: `"${name}" ينتقل للبيجر المجاني من الحين.`, tone: 'warning', confirmText: 'حوّله',
+      items: [`البيجر الأساسي بس: ${DMPlans.FREE.pager} رقم بالشهر لفرع واحد`, 'تتوقف بطاقة النداء والرسائل والمنيو والولاء والانتظار', ...(branchesOf(c).length ? ['تتوقف فروعه'] : []), ...(s.key === 'paid' ? ['ينتهي اشتراكه المدفوع الحالي'] : []), 'ما تنحذف أي بيانات، وترجع كلها لو اشترك'] });
+    if (!ok) return renderStores();
+    const error = await post('set-free', { id });
+    if (error) return showToast(`تعذر التحويل: ${error.message}`, true);
+    showToast('تحوّل للبيجر المجاني'); loadClients();
   }
 
   async function setFeatured(id, featured) {
