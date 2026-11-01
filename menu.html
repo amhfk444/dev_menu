@@ -806,8 +806,15 @@
     });
   }
   if (window.visualViewport) { visualViewport.addEventListener('resize', fitChat); visualViewport.addEventListener('scroll', fitChat); }
-  // لما يضغط على الخانة: Safari يحاول يمرر الصفحة، نرجعها مكانها ونعيد الحساب بعد ما يخلص الكيبورد يطلع
-  document.getElementById('chatInput').addEventListener('focus', () => { [0, 120, 350].forEach(t => setTimeout(() => { window.scrollTo({ top: 0, behavior: 'instant' }); fitChat(); }, t)); });
+  // لما يضغط على الخانة: نخلي Safari يطلع الكيبورد براحته، ونلحقه بالمحادثة (بدون ما نرجّع التمرير ونتعارك معه)
+  document.getElementById('chatInput').addEventListener('focus', () => { [60, 250, 500].forEach(t => setTimeout(fitChat, t)); });
+  // وقت المحادثة: السحب برّا الرسائل ما يحرك الشاشة (عشان المحادثة تبقى ثابتة والرد ظاهر)
+  document.addEventListener('touchmove', (e) => {
+    if (!document.getElementById('chatSheet').classList.contains('open')) return;
+    const box = e.target.closest('#chatLog, #chatChips');
+    if (box && box.scrollHeight > box.clientHeight + 1 || box && box.id === 'chatChips') return;
+    e.preventDefault();
+  }, { passive: false });
   document.getElementById('chatInput').addEventListener('blur', () => setTimeout(fitChat, 120));
   function openChat() {
     document.getElementById('chatSheet').classList.add('open');
@@ -849,6 +856,8 @@
     const base = currentLang === 'en' ? ['What do you recommend?', 'Something under 30', "What's your most popular dish?"] : ['وش تنصحني؟', 'أبي شي أقل من 30', 'وش أشهر طبق عندكم؟'];
     const list = [...chatFaq, ...base].filter((q, i, a) => a.indexOf(q) === i && !chatAsked.has(q)).slice(0, 4);
     document.getElementById('chatChips').innerHTML = list.map(c => `<button type="button">${esc(c)}</button>`).join('');
+    // الأزرار تاخذ مكان تحت الرسائل: ننزل لآخر رد عشان ما يتغطى
+    const log = document.getElementById('chatLog'); log.scrollTop = log.scrollHeight;
   }
   function closeChat() {
     const sheet = document.getElementById('chatSheet');
@@ -868,7 +877,7 @@
     const wait = chatBubble('assistant', '', 'wait'); wait.innerHTML = '<i></i><i></i><i></i>'; wait.setAttribute('aria-label', chatT('يكتب…', 'Typing…'));
     try {
       const r = await DM.post('/api/public?action=menu-chat', { slug: clientSlug, messages: chatMsgs.slice(-6) });
-      wait.remove(); chatBubble('assistant', r.reply); chatMsgs.push({ role: 'assistant', content: r.reply });
+      wait.remove(); chatBubble('assistant', r.reply); chatMsgs.push({ role: 'assistant', content: r.reply }); fitChat();
     } catch (err) {
       wait.remove(); chatBubble('assistant', err.message || chatT('ما قدرت أرد الحين، جرّب مرة ثانية', "Couldn't answer right now, try again"));
       chatMsgs.pop();
