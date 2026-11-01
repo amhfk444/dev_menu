@@ -248,5 +248,8 @@
   "مجاناً": "Free",
   "{n} رقم شهرياً": "{n} numbers a month",
   "نعم. اختر \"البيجر مجاناً\" عند التسجيل، ويعمل البيجر لديك مجاناً دائماً بـ 200 رقم شهرياً لفرع واحد، دون بطاقة النداء والرسائل وصفحة الروابط. أما الباقات المدفوعة فتبدأ بتجربة مجانية لمدة 14 يوماً بكامل مميزاتها، وإذا لم تشترك بعدها يستمر البيجر لديك مجاناً. وتستطيع الاشتراك في أي وقت.": "Yes. Pick \"Free pager\" when you sign up and the pager works for free forever with 200 numbers a month for one branch, without the pager card, messages or the links page. Paid plans start with a 14-day free trial with every feature, and if you don't subscribe afterwards the pager keeps working for free. You can subscribe at any time.",
-  "لا تشمل بطاقة النداء في المحفظة والرسائل وصفحة الروابط. وللتجربة الكاملة لمدة {n} يوماً اختر باقة مدفوعة، أو اشترك في البيجر بـ {price} بالشهر في أي وقت.": "Doesn't include the wallet pager card, messages or the links page. For the full 14-day trial pick a paid plan, or subscribe to the pager at any time."
+  "لا تشمل بطاقة النداء في المحفظة والرسائل وصفحة الروابط. ولتجربة كل المميزات مجاناً لمدة {n} يوماً اختر باقة مدفوعة.": "Doesn't include the wallet pager card, messages or the links page. To try every feature free for {n} days, pick a paid plan.",
+  "{n} رقم شهرياً لفرع واحد": "{n} numbers a month for one branch",
+  "لا يلزمك الدفع الآن. الفرع الإضافي: رسوم": "No payment needed now. Extra branch:",
+  "بالشهر + سعر مميزاته.": "/month + its features."
 }
