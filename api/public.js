@@ -208,6 +208,11 @@ function quickChat(text, store, first) {
   }
   return null;
 }
+// مفتاح السؤال: نفس السؤال بكتابات مختلفة (همزات، تاء مربوطة، علامات) يصير واحد
+const faqKey = (t) => String(t).toLowerCase().replace(/[ً-ْـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي')
+  .replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
+// بصمة المنيو للأجوبة المحفوظة: الأطباق والأقسام والأوقات والموقع (تغيّر أي شي منها = الجواب يتجدد)
+const menuFingerprint = (d) => crypto.createHash('sha1').update(JSON.stringify([d.products, d.categories, d.store.opening_hours, d.store.location_url, d.store.currency, d.store.show_calories])).digest('hex').slice(0, 16);
 const versionOf = (data) => crypto.createHash('sha1').update(JSON.stringify(data)).digest('hex').slice(0, 16);
 
 module.exports = handler(['GET', 'POST'], async (req, res) => {
@@ -228,6 +233,15 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     // الأسئلة البسيطة (سلام، شكر، الأوقات، الموقع) نرد عليها من بيانات المحل بدون ذكاء اصطناعي: ببلاش وفوري
     const quick = quickChat(list[list.length - 1].content, store, list.length === 1);
     if (quick) return { reply: quick };
+    // السؤال الأول في المحادثة (ما يعتمد على كلام قبله): لو انسأل قبل وجوابه محفوظ والمنيو ما تغيّر، يرجع ببلاش
+    const faqQ = list.length === 1 ? list[0].content : null, qkey = faqQ ? faqKey(faqQ) : null;
+    const ver = menuFingerprint(data);
+    if (qkey) {
+      try {
+        const hit = (await rpc('server_faq_get', { p_client: store.id, p_qkey: qkey, p_question: faqQ }))[0];
+        if (hit && hit.answer && hit.version === ver) return { reply: hit.answer, cached: true };
+      } catch (e) { console.warn('faq get', e.message); }
+    }
     // الرصيد: سؤال من رصيد المحل الشهري، وحد يومي لكل جوال (بصمة من الـ IP والمتصفح، ما نحفظهم)
     const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
     const device = crypto.createHash('sha256').update(`${ip}|${req.headers['user-agent'] || ''}`).digest('hex').slice(0, 32);
@@ -251,7 +265,23 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const info = [`name: ${store.name}`, store.opening_hours ? `hours: ${store.opening_hours}` : 'hours: not given', store.location_url ? `location: ${store.location_url}` : '',
       `currency: ${cur}`, `today (Riyadh): ${new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 16).replace('T', ' ')}`].filter(Boolean).join('\n');
     const { menuChat } = require('./_lib/ai');
-    return { reply: await menuChat({ storeName: store.name, storeInfo: info, menu, messages: list }) };
+    const reply = await menuChat({ storeName: store.name, storeInfo: info, menu, messages: list });
+    // نحفظ الجواب للمرة الجاية. الأسئلة البرّانية أو الطويلة ما تطلع كأزرار للزبائن
+    if (qkey) {
+      const ok = faqQ.length <= 80 && !/المساعد الذكي ل|only the smart assistant|smart assistant for/i.test(reply);
+      rpc('server_faq_set', { p_client: store.id, p_qkey: qkey, p_answer: reply, p_version: ver, p_ok: ok }).catch(e => console.warn('faq set', e.message));
+    }
+    return { reply };
+  }
+
+  // ─── أكثر أسئلة زبائن المحل (أزرار جاهزة في المساعد) ───
+  if (action === 'chat-faq' && req.method === 'GET') {
+    const { store } = await findStore(req.query.slug).then(store => ({ store })).catch(() => ({ store: null }));
+    if (!store || store.menu_chat !== true) return { questions: [] };
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=60, stale-while-revalidate=300');
+    let rows = [];
+    try { rows = await rest(`menu_chat_faq?client_id=eq.${store.id}&ok=is.true&hits=gte.3&select=question&order=hits.desc&limit=4`); } catch {}
+    return { questions: rows.map(r => r.question) };
   }
 
   if (action === 'menu' && req.method === 'GET') {

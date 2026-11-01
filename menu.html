@@ -33,6 +33,7 @@
   #chatFab { position: fixed; left: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 41; display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 999px;
     background: var(--accent); color: var(--accent-fg); font-weight: 800; font-size: 14px; box-shadow: 0 10px 30px -8px var(--accent-glow), 0 8px 24px -10px rgba(0,0,0,.5); }
   #chatFab.hidden { display: none; }   /* يطلع بس لو صاحب المحل شغّل المساعد */
+  #chatFab.mini { padding: 14px; } #chatFab.mini span { display: none; }
   #cartBar:not(.hidden) ~ #chatFab { bottom: calc(88px + env(safe-area-inset-bottom)); }
   #chatSheet { position: fixed; inset: 0; z-index: 60; display: none; }
   #chatSheet.open { display: block; }
@@ -751,11 +752,22 @@
     if (!document.getElementById('chatLog').children.length) {
       chatBubble('assistant', chatT(`يا هلا فيك في ${project.name} 👋 وش ودك تاكل اليوم؟ أقدر أقولك الأسعار والسعرات، وأقترح عليك حسب ذوقك وميزانيتك.`,
         `Welcome to ${project.name} 👋 What are you in the mood for? I can tell you prices and calories, and suggest dishes for your taste and budget.`));
-      const chips = currentLang === 'en' ? ['What do you recommend?', 'Something under 30', 'Opening hours?'] : ['وش تنصحني؟', 'أبي شي أقل من 30', 'وش أوقاتكم؟'];
-      document.getElementById('chatChips').innerHTML = chips.map(c => `<button type="button">${esc(c)}</button>`).join('');
       document.getElementById('chatChips').onclick = (e) => { const b = e.target.closest('button'); if (b) { document.getElementById('chatInput').value = b.textContent; sendChat(); } };
+      showChatChips();
+      // أكثر أسئلة زبائن المحل تصير أزرار (لو فيه أسئلة كافية)
+      DM.get(`/api/public?action=chat-faq&slug=${encodeURIComponent(clientSlug)}`).then(r => { chatFaq = (r.questions || []).filter(Boolean); if (!chatAsked.size) showChatChips(); }).catch(() => {});
     }
+    // بعد أول فتح يصغر الزر لأيقونة، والمحادثة تبقى محفوظة لو رجع لها
+    document.getElementById('chatFab').classList.add('mini');
     setTimeout(() => document.getElementById('chatInput').focus(), 50);
+  }
+  let chatFaq = [];
+  const chatAsked = new Set();
+  // الأزرار: الأسئلة الشائعة اللي ما انسألت في هالمحادثة، وإلا أسئلة جاهزة
+  function showChatChips() {
+    const base = currentLang === 'en' ? ['What do you recommend?', 'Something under 30', "What's your most popular dish?"] : ['وش تنصحني؟', 'أبي شي أقل من 30', 'وش أشهر طبق عندكم؟'];
+    const list = [...chatFaq, ...base].filter((q, i, a) => a.indexOf(q) === i && !chatAsked.has(q)).slice(0, 4);
+    document.getElementById('chatChips').innerHTML = list.map(c => `<button type="button">${esc(c)}</button>`).join('');
   }
   function closeChat() { document.getElementById('chatSheet').classList.remove('open'); }
   async function sendChat(e) {
@@ -764,15 +776,16 @@
     if (!text || chatBusy) return;
     input.value = ''; chatBusy = true; document.getElementById('chatSend').disabled = true;
     document.getElementById('chatChips').innerHTML = '';
+    chatAsked.add(text);
     chatBubble('user', text); chatMsgs.push({ role: 'user', content: text });
     const wait = chatBubble('assistant', '…', 'wait');
     try {
-      const r = await DM.post('/api/public?action=menu-chat', { slug: clientSlug, messages: chatMsgs.slice(-12) });
+      const r = await DM.post('/api/public?action=menu-chat', { slug: clientSlug, messages: chatMsgs.slice(-6) });
       wait.remove(); chatBubble('assistant', r.reply); chatMsgs.push({ role: 'assistant', content: r.reply });
     } catch (err) {
       wait.remove(); chatBubble('assistant', err.message || chatT('ما قدرت أرد الحين، جرّب مرة ثانية', "Couldn't answer right now, try again"));
       chatMsgs.pop();
-    } finally { chatBusy = false; document.getElementById('chatSend').disabled = false; input.focus(); }
+    } finally { chatBusy = false; document.getElementById('chatSend').disabled = false; showChatChips(); input.focus(); }
   }
 
   function applyMenu(menuData, first) {
