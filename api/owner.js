@@ -1627,7 +1627,8 @@ async function main(req) {
           byName.set(catName, cat); newCats++;
         }
         const cal = r.calories === '' || r.calories == null ? null : int(r.calories);
-        out.push({ client_id: sid, name, price, category: cat.key, is_available: true, image_url: '', sizes: [],
+        const image = typeof r.image_url === 'string' && r.image_url && ownsMediaUrl(r.image_url, sid) ? r.image_url : '';
+        out.push({ client_id: sid, name, price, category: cat.key, is_available: true, image_url: image, sizes: [],
           description: str(r.description, 500, 'الوصف') || '', name_en: str(r.name_en, 100, 'الاسم الإنجليزي') || null, description_en: str(r.description_en, 500, 'الوصف الإنجليزي') || null,
           ...(Number.isInteger(cal) && cal >= 0 && cal <= 10000 ? { calories: cal } : {}), sort_order: await nextIn(cat.key) });
       } catch (e) { skipped.push({ row: i + 2, reason: e.message }); }   // رقم الصف في الملف (الأول عناوين)
