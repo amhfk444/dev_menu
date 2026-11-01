@@ -312,20 +312,20 @@
 </button>
 
 <!-- مساعد المنيو الذكي: يظهر لو صاحب المحل شغّله -->
-<button id="chatFab" type="button" class="hidden" onclick="openChat()"><i class="ph-bold ph-sparkle"></i> <span id="chatFabText">اسأل المساعد</span></button>
+<button id="chatFab" type="button" class="hidden" onclick="openChat()"><i class="fa-solid fa-wand-magic-sparkles"></i> <span id="chatFabText">اسأل المساعد</span></button>
 <div id="chatSheet" role="dialog" aria-modal="true" aria-labelledby="chatTitle">
   <div class="back" onclick="closeChat()"></div>
   <div class="panel">
     <div class="hd">
-      <span style="width:36px;height:36px;border-radius:12px;background:var(--chip);display:grid;place-items:center"><i class="ph-bold ph-sparkle"></i></span>
+      <span style="width:36px;height:36px;border-radius:12px;background:var(--chip);display:grid;place-items:center"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
       <div style="flex:1;min-width:0"><b id="chatTitle">المساعد الذكي</b><small id="chatSub"></small></div>
-      <button type="button" onclick="closeChat()" aria-label="إغلاق" style="width:36px;height:36px;border-radius:12px;background:var(--chip)"><i class="ph-bold ph-x"></i></button>
+      <button type="button" onclick="closeChat()" aria-label="إغلاق" style="width:36px;height:36px;border-radius:12px;background:var(--chip)"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div id="chatLog" aria-live="polite"></div>
     <div id="chatChips"></div>
     <form id="chatForm" onsubmit="sendChat(event)">
       <input id="chatInput" maxlength="300" autocomplete="off" placeholder="اسأل عن أي طبق…">
-      <button type="submit" id="chatSend"><i class="ph-bold ph-paper-plane-tilt"></i></button>
+      <button type="submit" id="chatSend" aria-label="إرسال"><i class="fa-solid fa-paper-plane"></i></button>
     </form>
   </div>
 </div>
