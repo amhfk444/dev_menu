@@ -138,7 +138,7 @@
 <div class="start" id="start">
   <i class="ph-bold ph-device-tablet" style="font-size:14vmin"></i>
   <b>شاشة الزبون</b>
-  <p id="start-desc">بعد التشغيل تصير الشاشة ثابتة: تعرض أكواد خدماتك وتنادي بالصوت على الأرقام الجاهزة، والزبون يقرّب كود بطاقة الولاء من الكاميرا وينضاف ختمه تلقائياً.</p>
+  <p id="start-desc">بعد التشغيل تصير الشاشة ثابتة: تعرض أكواد خدماتك والأرقام الجاهزة، والزبون يقرّب كود بطاقة الولاء من الكاميرا وينضاف ختمه تلقائياً.</p>
   <span class="go">ابدأ الشاشة</span>
   <p id="start-err" style="color:#ffb4a6"></p>
 </div>
@@ -146,7 +146,7 @@
 <div class="wrap" id="wrap">
   <header><img id="logo" alt="" hidden><div><b id="store">...</b><span>امسح الكود بكاميرا جوالك</span></div>
     <div class="ready" id="ready" hidden><b><i class="ph-bold ph-bell-ringing"></i> جاهز للاستلام</b><div class="nums" id="ready-nums"></div></div></header>
-  <div class="call" id="call" aria-live="assertive"><div class="t">رقم</div><div class="n" id="call-n"></div><div class="t">طلبك جاهز، تفضّل استلمه ✅</div></div>
+  <div class="call" id="call" aria-live="polite"><div class="t">رقم</div><div class="n" id="call-n"></div><div class="t">طلبك جاهز، تفضّل استلمه ✅</div></div>
   <div class="codes" id="codes"></div>
   <div class="cam" id="cam" hidden>
     <video id="video" playsinline muted autoplay></video>
@@ -283,37 +283,12 @@
   }
 
 
-  // ─── نداء الأرقام الجاهزة بالصوت (لو المحل عنده البيجر) ───
-  // كل كم ثانية نشوف الأرقام الجاهزة: الرقم الجديد يطلع كبير على الشاشة وتنادي عليه الشاشة بالصوت
+  // ─── الأرقام الجاهزة على الشاشة (لو المحل عنده البيجر) ───
+  // كل كم ثانية نشوف الأرقام الجاهزة: الرقم الجديد يطلع كبير على الشاشة (بدون صوت، المحلات هادية)
   const announced = new Set();
   let firstPoll = true, callT = null;
-  // صوت المعلّق المسجّل لكل رقم من 1 لين 300 (audio/call/N.mp3)، وفوق كذا صوت الجهاز
-  let callAudio = null;
-  function speak(n) {
-    const num = Number(n);
-    if (Number.isInteger(num) && num >= 1 && num <= 300) {
-      try {
-        callAudio = callAudio || new Audio();
-        callAudio.src = `/audio/call/${num}.mp3`; callAudio.currentTime = 0;
-        callAudio.play().catch(() => speakDevice(n));
-        return;
-      } catch {}
-    }
-    speakDevice(n);
-  }
-  function speakDevice(n) {
-    try {
-      if (!('speechSynthesis' in window)) return;
-      const u = new SpeechSynthesisUtterance(`رقم ${n}، طلبك جاهز`);
-      u.lang = 'ar-SA'; u.rate = .92;
-      const v = speechSynthesis.getVoices().find(x => /^ar/i.test(x.lang)); if (v) u.voice = v;
-      speechSynthesis.speak(u);
-    } catch {}
-  }
   function callNumber(n) {
     $('call-n').textContent = n; $('call').classList.add('on');
-    beep(true); setTimeout(() => beep(true), 220);
-    setTimeout(() => speak(n), 600); setTimeout(() => speak(n), 4600);   // مرتين عشان اللي ما انتبه
     clearTimeout(callT); callT = setTimeout(() => $('call').classList.remove('on'), 7000);
   }
   async function pollReady() {
@@ -357,7 +332,7 @@
     $('cam').hidden = !info.enabled;
     $('wrap').classList.toggle('no-cam', !info.enabled);
     if (info.enabled) $('cam-sub').textContent = `قرّب كود بطاقتك من الكاميرا وينضاف ختمك. ${info.needed} أختام = ${info.reward}`;
-    else $('start-desc').textContent = ((info.services || []).includes('pager') ? 'تنادي الشاشة بالصوت على كل رقم يجهز. ' : '') + 'بعد التشغيل تصير الشاشة ثابتة وتعرض أكواد خدماتك للزبائن: يمسحها الزبون بكاميرا جواله ويفتح المنيو أو ياخذ رقمه.';
+    else $('start-desc').textContent = ((info.services || []).includes('pager') ? 'تعرض الشاشة كل رقم يجهز بخط كبير. ' : '') + 'بعد التشغيل تصير الشاشة ثابتة وتعرض أكواد خدماتك للزبائن: يمسحها الزبون بكاميرا جواله ويفتح المنيو أو ياخذ رقمه.';
     renderCodes();
     if ((info.services || []).includes('pager')) { pollReady(); setInterval(pollReady, 4000); }
   }
@@ -372,9 +347,6 @@
       beep(true);
       try { await openCam(); } catch { $('start-err').textContent = 'ما قدرنا نفتح الكاميرا، اسمح للمتصفح يستخدمها وحاول مرة ثانية'; return; }
     }
-    // المتصفح ما يشغّل صوت إلا بعد ضغطة: نجهّز مشغّل الأصوات هنا
-    try { callAudio = new Audio('/audio/call/1.mp3'); callAudio.volume = 0; callAudio.play().then(() => { callAudio.pause(); callAudio.volume = 1; }).catch(() => { callAudio.volume = 1; }); } catch {}
-    try { if ('speechSynthesis' in window) { speechSynthesis.getVoices(); speechSynthesis.speak(new SpeechSynthesisUtterance('')); } } catch {}
     keepAwake(); started = true;
     $('start').remove();
   });
