@@ -30,24 +30,28 @@
     font-weight: 700 900; font-display: swap; unicode-range: U+20C1;
   }
   /* ─── مساعد المنيو الذكي ─── */
-  /* زر المساعد: دائرة بلون المحل فيها أيقونة محادثة، وفقاعة تعريف تتبدل جملها */
-  #chatFab { position: fixed; left: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 41; padding: 0; background: none; border: 0; }
+  /* زر المساعد: كبسولة فيها شعار المحل و"اسأل المساعد"، وتحتها سطر صغير يتبدل (وش يقدر يجاوب) */
+  #chatFab { position: fixed; left: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 41; display: flex; align-items: center; gap: 9px; direction: rtl;
+    padding: 4px 14px 4px 4px; border-radius: 999px; background: #fff; color: #111; border: 0; text-align: right;
+    box-shadow: 0 12px 30px -10px rgba(0,0,0,.6), 0 0 0 1px rgba(0,0,0,.06); transition: padding .25s, gap .25s; }
   #chatFab.hidden { display: none; }   /* يطلع بس لو صاحب المحل شغّل المساعد */
-  #chatFab .bot { position: relative; width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: var(--accent-fg); display: grid; place-items: center;
-    box-shadow: 0 10px 28px -8px var(--accent-glow), 0 8px 20px -10px rgba(0,0,0,.55); }
-  #chatFab .bot svg { width: 22px; height: 22px; }
-  /* شعار المحل في الزر: كأن المطعم نفسه هو اللي يرد */
-  #chatFab .bot.logo { background: #fff; border: 2px solid var(--accent); }
+  #chatFab .bot { position: relative; width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%; background: var(--accent); color: var(--accent-fg); display: grid; place-items: center; }
+  #chatFab .bot svg { width: 20px; height: 20px; }
+  #chatFab .bot.logo { background: #fff; box-shadow: 0 0 0 2px var(--accent); }
   #chatFab .bot.logo img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-  /* نقطة "متصل" خضراء */
-  #chatFab .bot::after { content: ''; position: absolute; top: 1px; right: 1px; width: 10px; height: 10px; border-radius: 50%; background: #22c55e; border: 2px solid var(--bg, #111); }
-  #chatFab .say { position: absolute; left: 52px; bottom: 9px; white-space: nowrap; direction: rtl; background: #fff; color: #111; font-weight: 700; font-size: 11px;
-    padding: 6px 10px; border-radius: 14px 14px 14px 4px; box-shadow: 0 10px 24px -10px rgba(0,0,0,.5); opacity: 0; transform: translateY(6px) scale(.9); transform-origin: left bottom; transition: opacity .3s, transform .3s ease-out; pointer-events: none; }
-  #chatFab.talk .say { opacity: 1; transform: none; }
+  /* نقطة "متصل" */
+  #chatFab .bot::after { content: ''; position: absolute; bottom: 0; left: 0; width: 10px; height: 10px; border-radius: 50%; background: #22c55e; border: 2px solid #fff; }
+  #chatFab .lbl { display: flex; flex-direction: column; line-height: 1.25; overflow: hidden; max-width: 170px; transition: max-width .25s, opacity .2s; }
+  #chatFab .lbl b { font-size: 12.5px; font-weight: 800; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
+  #chatFab .lbl b em { font-style: normal; font-size: 9px; font-weight: 800; color: #6d28d9; background: rgba(109,40,217,.1); padding: 1px 5px; border-radius: 6px; }
+  #chatFab .lbl small { font-size: 10.5px; color: #555; white-space: nowrap; }
+  #chatFab .lbl small span { display: inline-block; animation: sayIn .35s ease-out; }
+  /* بعد أول محادثة: يصغر للشعار بس عشان ما يغطي المنيو */
+  #chatFab.mini { padding: 4px; gap: 0; }
+  #chatFab.mini .lbl { max-width: 0; opacity: 0; }
   #chatFab::before { content: ''; position: absolute; inset: -6px; }
-  #chatFab .say span { display: inline-block; animation: sayIn .35s ease-out; }
-  @keyframes sayIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-  @media (prefers-reduced-motion: reduce) { #chatFab .say { transition: none; } }
+  @keyframes sayIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { #chatFab, #chatFab .lbl { transition: none; } #chatFab .lbl small span { animation: none; } }
   #cartBar:not(.hidden) ~ #chatFab { bottom: calc(84px + env(safe-area-inset-bottom)); }
   /* النافذة: تاخذ ارتفاع الشاشة الظاهر (visualViewport) عشان الكيبورد ما يغطي خانة الكتابة */
   #chatSheet { position: fixed; left: 0; right: 0; top: 0; height: 100%; z-index: 60; display: none; }
@@ -71,6 +75,10 @@
   .cb.wait i { width: 7px; height: 7px; border-radius: 50%; background: var(--fg3); animation: dotUp 1.2s infinite ease-in-out; }
   .cb.wait i:nth-child(2) { animation-delay: .15s; } .cb.wait i:nth-child(3) { animation-delay: .3s; }
   @keyframes dotUp { 0%, 60%, 100% { transform: none; opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
+  #chatLog .intro { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+  #chatLog .can { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 85%; }
+  #chatLog .can button { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); background: transparent; color: var(--fg); font-size: 13px; font-weight: 700; text-align: right; }
+  #chatLog .can button span { font-size: 16px; }
   #chatChips { display: flex; gap: 6px; overflow-x: auto; padding: 0 14px 10px; scrollbar-width: none; flex-shrink: 0; }
   #chatChips:empty { display: none; }
   #chatChips button { flex-shrink: 0; padding: 7px 12px; border-radius: 999px; background: transparent; border: 1px solid var(--line); font-size: 12.5px; font-weight: 700; color: var(--fg); }
@@ -342,9 +350,9 @@
 </button>
 
 <!-- مساعد المنيو الذكي: يظهر لو صاحب المحل شغّله -->
-<button id="chatFab" type="button" class="hidden" onclick="openChat()" aria-label="اسأل المساعد">
+<button id="chatFab" type="button" class="hidden" onclick="openChat()" aria-label="اسأل المساعد الذكي عن المنيو">
   <span class="bot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.9-.9L3 20.5l1.6-4.6A8.3 8.3 0 0 1 3 11.5 8.6 8.6 0 0 1 12 3a8.6 8.6 0 0 1 9 8.5z"/><path d="M12 8.2l.9 2 2 .9-2 .9-.9 2-.9-2-2-.9 2-.9z" fill="currentColor"/></svg></span>
-  <span class="say" id="chatFabText"><span>اسألني! 👋</span></span>
+  <span class="lbl"><b><span id="chatFabTitle">اسأل المساعد</span> <em>AI</em></b><small id="chatFabText"><span>عن الأسعار والسعرات</span></small></span>
 </button>
 <div id="chatSheet" role="dialog" aria-modal="true" aria-labelledby="chatTitle">
   <div class="back" onclick="closeChat()"></div>
@@ -775,6 +783,16 @@
     const el = document.createElement('p'); el.className = `cb ${role === 'user' ? 'me' : 'bot'} ${cls}`; el.textContent = text;
     const log = document.getElementById('chatLog'); log.appendChild(el); log.scrollTop = log.scrollHeight; return el;
   }
+  // أول ما تنفتح: تعريف قصير، ووش يقدر يسأل عنه (كل بطاقة ترسل سؤال جاهز)
+  const CHAT_CAN = [['💰', 'الأسعار', 'Prices', 'كم أسعار الأطباق عندكم؟', 'What are your prices?'], ['🔥', 'السعرات', 'Calories', 'وش الأطباق الخفيفة وقليلة السعرات؟', 'Which dishes are light and low in calories?'],
+    ['🥗', 'المكونات', 'Ingredients', 'وش مكونات أشهر طبق عندكم؟', 'What is in your most popular dish?'], ['✨', 'اقترح لي', 'Suggest', 'اقترح لي شي حسب ذوقي', 'Suggest something for me']];
+  function chatIntro() {
+    const box = document.createElement('div'); box.className = 'intro';
+    box.innerHTML = `<p class="cb bot">${esc(chatT(`أهلاً فيك في ${project.name} 👋 أنا المساعد الذكي، أعرف المنيو كامل. اسألني أي شي عنه:`, `Welcome to ${project.name} 👋 I'm the smart assistant and I know the whole menu. Ask me anything about it:`))}</p>
+      <div class="can">${CHAT_CAN.map(c => `<button type="button" data-q="${esc(chatT(c[3], c[4]))}"><span>${c[0]}</span>${esc(chatT(c[1], c[2]))}</button>`).join('')}</div>`;
+    box.querySelector('.can').onclick = (e) => { const b = e.target.closest('button'); if (b) { document.getElementById('chatInput').value = b.dataset.q; sendChat(); } };
+    document.getElementById('chatLog').appendChild(box);
+  }
   // الكيبورد في الجوال: النافذة تاخذ الجزء الظاهر من الشاشة بس، فخانة الكتابة تبقى فوق الكيبورد
   function fitChat() {
     const sheet = document.getElementById('chatSheet'), vv = window.visualViewport;
@@ -793,42 +811,36 @@
     if (project && project.logo_url && !av.querySelector('img')) { const im = new Image(); im.alt = ''; im.onload = () => { av.innerHTML = ''; av.appendChild(im); }; im.src = project.logo_url; }
     document.getElementById('chatInput').placeholder = chatT('اسأل عن أي طبق…', 'Ask about any dish…');
     if (!document.getElementById('chatLog').children.length) {
-      chatBubble('assistant', chatT(`يا هلا فيك في ${project.name} 👋 وش ودك تاكل اليوم؟ أقدر أقولك الأسعار والسعرات، وأقترح عليك حسب ذوقك وميزانيتك.`,
-        `Welcome to ${project.name} 👋 What are you in the mood for? I can tell you prices and calories, and suggest dishes for your taste and budget.`));
+      chatIntro();
       document.getElementById('chatChips').onclick = (e) => { const b = e.target.closest('button'); if (b) { document.getElementById('chatInput').value = b.textContent; sendChat(); } };
       showChatChips();
       // أكثر أسئلة زبائن المحل تصير أزرار (لو فيه أسئلة كافية)
       DM.get(`/api/public?action=chat-faq&slug=${encodeURIComponent(clientSlug)}`).then(r => { chatFaq = (r.questions || []).filter(Boolean); if (!chatAsked.size) showChatChips(); }).catch(() => {});
     }
     // بعد أول فتح يصغر الزر لأيقونة، والمحادثة تبقى محفوظة لو رجع لها
-    document.getElementById('chatFab').classList.add('mini'); document.getElementById('chatFab').classList.remove('talk');
+    document.getElementById('chatFab').classList.add('mini');
     // في الكمبيوتر نحط المؤشر في الخانة، وفي الجوال لا (الكيبورد يغطي المحادثة قبل ما يقرأ الترحيب)
     if (window.matchMedia('(pointer: fine)').matches) setTimeout(() => document.getElementById('chatInput').focus(), 50);
   }
-  // الشخصية تقول "اسألني" بعد ثانيتين، وتعيدها كل 30 ثانية (3 مرات بالكثير)، وتسكت بعد ما يفتح المحادثة
+  // السطر الصغير تحت "اسأل المساعد" يتبدل كل 3 ثواني: وش يقدر يجاوب عنه
   let fabTalkTimer = null;
-  // جمل تتبدل في الفقاعة، كل جملة 3 ثواني
-  const FAB_LINES = { ar: ['اسألني! 👋', 'أنا مساعدك الذكي 🤖', 'محتار وش تطلب؟ 🤔', 'أقولك الأسعار والسعرات 🔥', 'أقترح عليك حسب ميزانيتك 💸'],
-    en: ['Ask me! 👋', "I'm your smart assistant 🤖", "Can't decide? 🤔", 'Prices & calories? Ask 🔥', 'Picks for your budget 💸'] };
-  function fabTalk(n) {
+  const FAB_LINES = { ar: ['عن الأسعار والسعرات', 'محتار وش تطلب؟', 'يقترح لك حسب ميزانيتك', 'عن المكونات والحساسية', 'يرد خلال ثواني'],
+    en: ['Prices & calories', "Can't decide?", 'Picks for your budget', 'Ingredients & allergies', 'Replies in seconds'] };
+  function fabTalk() {
     const fab = document.getElementById('chatFab'), say = document.getElementById('chatFabText');
-    fabTalkTimer = setTimeout(() => {
-      if (fab.classList.contains('mini') || fab.classList.contains('hidden')) return;
-      const lines = FAB_LINES[currentLang === 'en' ? 'en' : 'ar'];
-      let i = n % lines.length;
-      const show = () => { say.innerHTML = `<span>${esc(lines[i % lines.length])}</span>`; i++; };
-      show(); fab.classList.add('talk');
-      const roll = setInterval(() => { if (fab.classList.contains('mini')) return clearInterval(roll); show(); }, 3000);
-      setTimeout(() => { clearInterval(roll); fab.classList.remove('talk'); }, 12000);
-      if (n < 2) fabTalk(n + 1);
-    }, n ? 30000 : 1500);
+    document.getElementById('chatFabTitle').textContent = currentLang === 'en' ? 'Ask the assistant' : 'اسأل المساعد';
+    let i = 0;
+    const show = () => { const lines = FAB_LINES[currentLang === 'en' ? 'en' : 'ar']; say.innerHTML = `<span>${esc(lines[i % lines.length])}</span>`; i++; };
+    show();
+    fabTalkTimer = setInterval(() => { if (fab.classList.contains('mini')) return clearInterval(fabTalkTimer); show(); }, 3000);
   }
   let chatFaq = [];
   const chatAsked = new Set();
   // الأزرار: الأسئلة الشائعة اللي ما انسألت في هالمحادثة، وإلا أسئلة جاهزة
   function showChatChips() {
     const base = currentLang === 'en' ? ['What do you recommend?', 'Something under 30', "What's your most popular dish?"] : ['وش تنصحني؟', 'أبي شي أقل من 30', 'وش أشهر طبق عندكم؟'];
-    const list = [...chatFaq, ...base].filter((q, i, a) => a.indexOf(q) === i && !chatAsked.has(q)).slice(0, 4);
+    // قبل أول سؤال تكفي بطاقات التعريف، فنعرض بس أكثر أسئلة زبائن المحل (لو فيه)
+    const list = [...chatFaq, ...(chatAsked.size ? base : [])].filter((q, i, a) => a.indexOf(q) === i && !chatAsked.has(q)).slice(0, 4);
     document.getElementById('chatChips').innerHTML = list.map(c => `<button type="button">${esc(c)}</button>`).join('');
   }
   function closeChat() {
@@ -883,7 +895,7 @@
       if (bot.dataset.logo !== p.logo_url) { const im = new Image(); im.alt = ''; im.onload = () => { bot.innerHTML = ''; bot.appendChild(im); bot.classList.add('logo'); bot.dataset.logo = p.logo_url; }; im.src = p.logo_url; }
     }
 
-    if (p.menu_chat === true && !fabTalkTimer) fabTalk(0);
+    if (p.menu_chat === true && !fabTalkTimer) fabTalk();
     // زينة المناسبة الجارية: نعيد رسمها فقط لو تغيّرت (حتى ما تنعاد القصاصات مع كل تحديث)
     if (window.DMOccasions) {
       const header = document.getElementById('menu-header'), greet = document.getElementById('occasion-greeting');
