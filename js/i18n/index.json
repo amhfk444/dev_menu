@@ -127,7 +127,6 @@
   "سياسة الإلغاء والاسترداد": "Cancellation and refund policy",
   "و": "and",
   "يمسح العميل الرمز ويحصل على رقمه، وعند جاهزية طلبه يصله التنبيه على جواله حتى لو كانت الشاشة مقفلة، دون أجهزة معرّضة للتلف أو الضياع.": "The customer scans the code and gets a number. When the order is ready, they are alerted on their phone even with the screen locked, with no devices to break or lose.",
-  "بطاقة نداء مجانية بشعار منشأتك تُحفظ في محفظة جوال العميل، ويصله منها التنبيه حتى أثناء استخدام تطبيق آخر": "A free pager card with your logo saved in the customer's phone wallet, alerting them even while using another app",
   "شاشة كاشير تعمل على أي جوال أو جهاز لوحي، مع رابط مستقل لكل فرع دون الحاجة إلى حسابك": "A cashier screen that works on any phone or tablet, with a separate link for each branch without needing your account",
   "إحصائيات لمتوسط وقت الانتظار وأوقات الذروة": "Analytics for average waiting time and peak hours",
   "تقييم بعد الاستلام، ودعوة العملاء الراضين لتقييم منشأتك على قوقل": "A rating after pickup, inviting satisfied customers to review your business on Google",
@@ -236,5 +235,6 @@
   "البيجر مجاني دائماً:": "The pager is free forever:",
   "إذا لم تشترك بعد التجربة، يستمر البيجر لديك مجاناً بـ 200 رقم شهرياً لفرع واحد.": "if you don't subscribe after the trial, your pager keeps working for free with 200 numbers a month for one branch.",
   "هل يوجد اشتراك مجاني؟": "Is there a free plan?",
-  "نعم. تبدأ بتجربة مجانية لمدة 14 يوماً بكل الخدمات التي تختارها، وإذا لم تشترك بعدها يستمر البيجر لديك مجاناً بـ 200 رقم شهرياً لفرع واحد، دون بطاقة النداء والرسائل. وتستطيع الاشتراك في أي وقت لتعود بقية خدماتك.": "Yes. You start with a 14-day free trial of every service you choose. If you don't subscribe afterwards, your pager keeps working for free with 200 numbers a month for one branch, without the pager card and messages. You can subscribe any time to bring back the rest of your services."
+  "نعم. تبدأ بتجربة مجانية لمدة 14 يوماً بكل الخدمات التي تختارها، وإذا لم تشترك بعدها يستمر البيجر لديك مجاناً بـ 200 رقم شهرياً لفرع واحد، دون بطاقة النداء والرسائل. وتستطيع الاشتراك في أي وقت لتعود بقية خدماتك.": "Yes. You start with a 14-day free trial of every service you choose. If you don't subscribe afterwards, your pager keeps working for free with 200 numbers a month for one branch, without the pager card and messages. You can subscribe any time to bring back the rest of your services.",
+  "بطاقة نداء بشعار منشأتك مشمولة في اشتراك البيجر دون رسوم إضافية، تُحفظ في محفظة جوال العميل، ويصله منها التنبيه حتى أثناء استخدام تطبيق آخر": "A pager card with your logo, included in the pager plan at no extra cost. It's saved in the customer's phone wallet and alerts them even while using another app"
 }
