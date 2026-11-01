@@ -22,8 +22,11 @@ async function findStore(rawSlug) {
   // وخلفية صفحة الروابط من 67-links-background.sql — قبل إضافتها تاخذ الصفحة خلفية المنيو
   let found;
   const LINKS = ',links_bg_image_url,links_bg_video_url,links_order,links_hidden';
-  // ومساعد المنيو من 68-menu-chat.sql
-  for (const extra of [',currency' + LINKS + ',menu_chat', ',currency' + LINKS, LINKS, ',currency', '']) {
+  // ومساعد المنيو من 68-menu-chat.sql. كل عمود اختياري لحاله، فعمود ناقص ما يشيل الباقي معه
+  const OPT = [',currency', LINKS, ',menu_chat'];
+  const combos = [];
+  for (let m = 7; m >= 0; m--) combos.push(OPT.filter((_, i) => m & (1 << i)).join(''));
+  for (const extra of combos) {
     try { found = await findPublicStore(rawSlug, STORE_FIELDS + extra); break; }
     catch (e) { if (!extra) throw e; }
   }
