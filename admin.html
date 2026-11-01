@@ -467,7 +467,7 @@
     <!-- روابط الخدمات: رابط لكل خدمة مفعّلة -->
             <div class="pro-card p-5 space-y-3">
               <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-link-simple text-emerald-600"></i> روابطك</h3>
-              <p class="text-[11px] text-ink/60">الرابط الرئيسي يفتح صفحة الروابط السريعة اللي فيها كل خدماتك، حطه في بايو انستجرام وتيك توك. وتحته رابط كل خدمة لحالها.</p>
+              <p id="svc-links-hint" class="text-[11px] text-ink/60">الرابط الرئيسي يفتح صفحة الروابط السريعة اللي فيها كل خدماتك، حطه في بايو انستجرام وتيك توك. وتحته رابط كل خدمة لحالها.</p>
               <div id="svc-links" class="space-y-2"></div>
             </div>
     <!-- تنبيهات الإدارة -->
@@ -2075,13 +2075,18 @@
     if (!box || !client) return;
     const on = SVC_PAGES.filter(([k]) => !featureLocked(k));
     // الرابط الرئيسي = صفحة الروابط السريعة (فيها كل الخدمات)، وتحته رابط كل خدمة
-    const rows = [['home', 'الرابط الرئيسي', 'ph-house', DM.storeUrl(client.client_slug, 'links')], ...on.map(([k, page, name, icon]) => [k, name, icon, DM.storeUrl(client.client_slug, page)])];
+    // الباقة المجانية (البيجر بعد التجربة) ما فيها صفحة الروابط السريعة
+    const free = DMPlans.isFree(client);
+    ['links-bg-card', 'links-order-card'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = free ? 'none' : ''; });
+    const rows = [...(free ? [] : [['home', 'الرابط الرئيسي', 'ph-house', DM.storeUrl(client.client_slug, 'links')]]), ...on.map(([k, page, name, icon]) => [k, name, icon, DM.storeUrl(client.client_slug, page)])];
     // روابط الشاشات: تفتح بدون حساب المالك (نفس مفتاح رابط الكاشير)
     if (!deskLocked()) {
       const key = client.desk_key ? encodeURIComponent(client.desk_key) : '';
       rows.push(['kiosk', 'شاشة الزبون (للتابلت)', 'ph-device-tablet', key && `${location.origin}/kiosk.html?k=${key}`, 'تفتح بدون حسابك، وتعرض أكواد خدماتك']);
       rows.push(['desk', 'شاشة الكاشير', 'ph-cash-register', key && `${location.origin}/pager-desk.html?k=${key}`, 'للموظف، بدون حسابك']);
     }
+    const hint = document.getElementById('svc-links-hint');
+    if (hint) hint.textContent = free ? 'صفحة الروابط السريعة متاحة مع الاشتراك. وهذي روابط البيجر وشاشاته.' : 'الرابط الرئيسي يفتح صفحة الروابط السريعة اللي فيها كل خدماتك، حطه في بايو انستجرام وتيك توك. وتحته رابط كل خدمة لحالها.';
     const btn = 'text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-white border border-brand/15';
     box.innerHTML = rows.map(([k, name, icon, url, sub]) => !url ? `
       <div class="flex flex-wrap items-center gap-2 bg-brand/5 border-brand/15 border rounded-xl px-3 py-2">
