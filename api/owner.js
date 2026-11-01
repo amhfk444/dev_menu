@@ -374,14 +374,15 @@ async function main(req) {
       const freeChoice = b.free === true && features.length === 1 && features[0] === 'pager';   // اختار "البيجر مجاناً": ما هو طلب اشتراك
       if (features.length) {
         // الخدمات اللي اختارها تشتغل على طول في التجربة، والإدارة يوصلها إشعار بس
+        // "البيجر مجاناً": يبدأ على الباقة المجانية من أول يوم (بدون تجربة، فما فيه بطاقة نداء ولا رسائل)
         const main = (await rest(`clients?client_slug=eq.${q(slug)}`, { method: 'PATCH', prefer: 'return=representation',
-          body: { plan_features: features, waitlist_enabled: features.includes('waitlist'), loyalty_enabled: features.includes('loyalty'), trial_ends_at: new Date(Date.now() + PLANS.TRIAL_DAYS * 864e5).toISOString(),
+          body: { plan_features: features, waitlist_enabled: features.includes('waitlist'), loyalty_enabled: features.includes('loyalty'), trial_ends_at: new Date(freeChoice ? Date.now() - 1000 : Date.now() + PLANS.TRIAL_DAYS * 864e5).toISOString(),
                   ...(freeChoice ? {} : { requested_plan: plan, requested_features: features, plan_requested_at: new Date().toISOString() }) } }).catch(e => { console.error('REGISTER_FEATURES', slug, e.message); return []; }))[0];
         if (main && mailConfigured()) {
           await sendMail({
             to: process.env.ADMIN_EMAIL || 'dmenu950@gmail.com', fromName: 'DEV MENU',
-            subject: `متجر جديد مع طلب اشتراك: ${main.name}`,
-            text: `${main.name} (${main.client_slug}) سجّل وبدأ التجربة المجانية.\n${freeChoice ? 'اختار البيجر المجاني (بعد التجربة يستمر مجاناً بحدود).' : `اختار ${plan === 'month' ? 'الشهري' : 'السنوي'}: ${features.map(k => PLANS.FEATURES[k].name).join('، ')} = ${PLANS.price(features, plan).total} ر.س.`}\nجوال: ${main.phone || '-'}\nبريد: ${main.email || '-'}\nلوحة المشتركين: ${SITE}/super-admin.html`
+            subject: freeChoice ? `متجر جديد على البيجر المجاني: ${main.name}` : `متجر جديد مع طلب اشتراك: ${main.name}`,
+            text: `${main.name} (${main.client_slug}) سجّل و${freeChoice ? 'بدأ على البيجر المجاني' : 'بدأ التجربة المجانية'}.\n${freeChoice ? `البيجر الأساسي: ${PLANS.FREE.pager} رقم بالشهر، بدون بطاقة النداء والرسائل.` : `اختار ${plan === 'month' ? 'الشهري' : 'السنوي'}: ${features.map(k => PLANS.FEATURES[k].name).join('، ')} = ${PLANS.price(features, plan).total} ر.س.`}\nجوال: ${main.phone || '-'}\nبريد: ${main.email || '-'}\nلوحة المشتركين: ${SITE}/super-admin.html`
           }).catch(e => console.error('REGISTER_PLAN_MAIL', e.message));
         }
       }

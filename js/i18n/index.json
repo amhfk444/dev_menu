@@ -234,7 +234,6 @@
   "البيجر مجاني دائماً:": "The pager is free forever:",
   "إذا لم تشترك بعد التجربة، يستمر البيجر لديك مجاناً بـ 200 رقم شهرياً لفرع واحد.": "if you don't subscribe after the trial, your pager keeps working for free with 200 numbers a month for one branch.",
   "هل يوجد اشتراك مجاني؟": "Is there a free plan?",
-  "نعم. تبدأ بتجربة مجانية لمدة 14 يوماً بكل الخدمات التي تختارها، وإذا لم تشترك بعدها يستمر البيجر لديك مجاناً بـ 200 رقم شهرياً لفرع واحد، دون بطاقة النداء والرسائل. وتستطيع الاشتراك في أي وقت لتعود بقية خدماتك.": "Yes. You start with a 14-day free trial of every service you choose. If you don't subscribe afterwards, your pager keeps working for free with 200 numbers a month for one branch, without the pager card and messages. You can subscribe any time to bring back the rest of your services.",
   "بطاقة نداء بشعار منشأتك مشمولة في اشتراك البيجر دون رسوم إضافية، تُحفظ في محفظة جوال العميل، ويصله منها التنبيه حتى أثناء استخدام تطبيق آخر": "A pager card with your logo, included in the pager plan at no extra cost. It's saved in the customer's phone wallet and alerts them even while using another app",
   "صوّر منيوك الورقي، ويقرأ الذكاء الاصطناعي الأقسام والأطباق والأسعار والأحجام، فتراجعها ثم تضيفها بضغطة واحدة": "Snap your paper menu and AI reads the sections, dishes, prices and sizes. Review them, then add them in one tap",
   "شاشة للعملاء على أي جهاز لوحي تعرض أرقام الطلبات الجاهزة بخط كبير": "A customer screen on any tablet showing ready order numbers in large type",
@@ -247,5 +246,7 @@
   "دائماً": "forever",
   "شاشة كاشير وشاشة للعملاء وإحصائيات الانتظار": "Cashier screen, customer screen and wait-time stats",
   "مجاناً": "Free",
-  "{n} رقم شهرياً": "{n} numbers a month"
+  "{n} رقم شهرياً": "{n} numbers a month",
+  "نعم. اختر \"البيجر مجاناً\" عند التسجيل، ويعمل البيجر لديك مجاناً دائماً بـ 200 رقم شهرياً لفرع واحد، دون بطاقة النداء والرسائل وصفحة الروابط. أما الباقات المدفوعة فتبدأ بتجربة مجانية لمدة 14 يوماً بكامل مميزاتها، وإذا لم تشترك بعدها يستمر البيجر لديك مجاناً. وتستطيع الاشتراك في أي وقت.": "Yes. Pick \"Free pager\" when you sign up and the pager works for free forever with 200 numbers a month for one branch, without the pager card, messages or the links page. Paid plans start with a 14-day free trial with every feature, and if you don't subscribe afterwards the pager keeps working for free. You can subscribe at any time.",
+  "لا تشمل بطاقة النداء في المحفظة والرسائل وصفحة الروابط. وللتجربة الكاملة لمدة {n} يوماً اختر باقة مدفوعة، أو اشترك في البيجر بـ {price} بالشهر في أي وقت.": "Doesn't include the wallet pager card, messages or the links page. For the full 14-day trial pick a paid plan, or subscribe to the pager at any time."
 }

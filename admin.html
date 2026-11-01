@@ -2673,7 +2673,7 @@
     let pill, pillCls, note = '';
     if (suspended)               { pill = 'موقوف'; pillCls = 'bg-brick/10 text-brick'; note = 'المتجر موقوف من الإدارة، والمنيو ما يظهر للزبائن.'; }
     else if (expired)            { pill = 'منتهي'; pillCls = 'bg-brick/10 text-brick'; note = 'انتهى اشتراكك، والمنيو ما يظهر للزبائن. اختر باقتك ويرجع على طول.'; }
-    else if (free)               { pill = 'الباقة المجانية'; pillCls = 'bg-emerald-600/10 text-emerald-800'; note = 'انتهت تجربتك، والبيجر شغال لك مجاناً (200 رقم بالشهر). اشترك عشان ترجع باقي خدماتك وبطاقة النداء.'; }
+    else if (free)               { pill = 'الباقة المجانية'; pillCls = 'bg-emerald-600/10 text-emerald-800'; note = `البيجر شغال لك مجاناً (${DMPlans.FREE.pager} رقم بالشهر لفرع واحد). اشترك عشان تضيف بطاقة النداء والرسائل وباقي الخدمات.`; }
     else if (inGrace)            { pill = 'مهلة'; pillCls = 'bg-amber-400/20 text-amber-900'; note = `انتهى اشتراكك، وأعطيناك مهلة: المنيو شغال لزبائنك لين ${graceText}. جدّد قبلها عشان ما يوقف.`; }
     else if (status === 'trial') { pill = 'تجربة مجانية'; pillCls = 'bg-sky-500/10 text-sky-800';
       if (staysFree) note = onlyPager ? `بعد التجربة يكمل البيجر لك مجاناً (${DMPlans.FREE.pager} رقم بالشهر لفرع واحد)، وتتوقف بطاقة النداء والرسائل إلا إذا اشتركت.`
