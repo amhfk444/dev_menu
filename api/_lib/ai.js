@@ -242,42 +242,4 @@ async function readMenuImages(images) {
   }));
 }
 
-// =====================================================================
-// حسّن المنيو: وصف عربي للأطباق اللي بدون وصف، وأسماء ووصف بالإنجليزي
-// =====================================================================
-const ENHANCE_SYSTEM = `You polish a Saudi restaurant or café digital menu. For each dish you get its Arabic name, its section, and any text it already has.
-
-Fill ONLY the fields listed in "need" for that dish:
-- description: a short appetising Arabic description (6 to 14 words, Modern Standard Arabic, no emojis, no prices, no exaggeration like "الأفضل في العالم"). Describe what the dish most likely is from its name and section; do not invent specific claims (origin, brand, organic, homemade) and do not guess sizes or calories. If the name is too unclear to describe honestly, return "".
-- name_en: the natural English menu name. Translate meaning (فتة حمص → Hummus Fatteh, سبانش لاتيه → Spanish Latte); keep proper names and well-known Arabic dish names transliterated the way menus in Saudi Arabia write them (Kabsa, Mutabbal, Shawarma).
-- description_en: natural English version of the Arabic description (the existing one, or the one you wrote).
-For each section listed in "sections", give its English name.
-
-Answer with JSON only: {"items":[{"id":0,"description":"","name_en":"","description_en":""}],"sections":[{"key":"","name_en":""}]}. Omit fields that were not requested.`;
-async function enhanceMenu({ storeName, businessType, items, sections }) {
-  let response;
-  try {
-    response = await ai().messages.create({
-      model: MENU_CHAT_MODEL, max_tokens: 16000,
-      system: ENHANCE_SYSTEM,
-      messages: [{ role: 'user', content: `<store>${storeName}${businessType ? ` (${businessType})` : ''}</store>\n<sections>${JSON.stringify(sections)}</sections>\n<dishes>${JSON.stringify(items)}</dishes>` }]
-    });
-  } catch (e) {
-    if (e instanceof ApiError) throw e;
-    if (e instanceof Anthropic.RateLimitError) throw new ApiError(429, 'ضغط على الخدمة، جرّب بعد دقيقة');
-    if (e instanceof Anthropic.APIError) { console.error('AI_ERROR', e.status, e.message); throw new ApiError(502, 'ما قدرنا نجهّز الاقتراحات الحين، جرّب مرة ثانية'); }
-    throw e;
-  }
-  const text = response.content.filter(b => b.type === 'text').map(b => b.text).join('');
-  const m = text.match(/\{[\s\S]*\}/);
-  let out = null;
-  try { out = m && JSON.parse(m[0]); } catch {}
-  if (!out || !Array.isArray(out.items)) throw new ApiError(502, 'ما قدرنا نجهّز الاقتراحات الحين، جرّب مرة ثانية');
-  const s = (v, n) => String(v || '').replace(/\s+/g, ' ').trim().slice(0, n);
-  return {
-    items: out.items.filter(it => it && Number.isFinite(Number(it.id))).map(it => ({ id: Number(it.id), description: s(it.description, 300), name_en: s(it.name_en, 100), description_en: s(it.description_en, 300) })),
-    sections: (Array.isArray(out.sections) ? out.sections : []).filter(c => c && c.key).map(c => ({ key: String(c.key), name_en: s(c.name_en, 60) }))
-  };
-}
-
-module.exports = { loyaltyMessages, loyaltyNearLines, menuChat, ownerInsights, readMenuImages, enhanceMenu };
+module.exports = { loyaltyMessages, loyaltyNearLines, menuChat, ownerInsights, readMenuImages };

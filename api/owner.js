@@ -1584,65 +1584,6 @@ async function main(req) {
   // ─── الأطباق ───
   // ─── استيراد الأطباق من Excel/CSV: الأقسام الناقصة تنضاف بأسمائها، والأطباق تنضاف تحتها (بدون صور) ───
   // ─── المنيو من صورة: يقرأ صور المنيو الورقي ويرجّع الأطباق للمراجعة (ما يضيف شي لحاله) ───
-  // حسّن المنيو: الذكاء يقترح وصف للأطباق اللي بدونه، والإنجليزي للأسماء والوصف والأقسام. ما يحفظ شي، صاحب المحل يراجع
-  if (action === 'menu-enhance' && req.method === 'POST') {
-    const has = (v) => String(v || '').trim().length > 0;
-    const [prods, cats] = await Promise.all([
-      rest(`products?client_id=eq.${sid}&select=id,name,description,name_en,description_en,category,sort_order&order=sort_order.asc&limit=1000`),
-      rest(`categories?client_id=eq.${sid}&select=key,name,name_en,sort_order&order=sort_order.asc`)
-    ]);
-    const catName = new Map(cats.map(c => [c.key, c.name]));
-    const todo = prods.map(p => ({ p, need: [!has(p.description) && 'description', !has(p.name_en) && 'name_en', !has(p.description_en) && 'description_en'].filter(Boolean) }))
-      .filter(x => x.need.length);
-    const sections = cats.filter(c => !has(c.name_en)).map(c => ({ key: c.key, name: c.name }));
-    if (!todo.length && !sections.length) return { items: [], sections: [], left: 0 };
-    // 10 مرات باليوم لكل محل
-    const day = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10);
-    try {
-      const row = (await rest(`menu_chat_devices?client_id=eq.${sid}&device=eq.menu-enhance&day=eq.${day}&select=used`))[0];
-      if (row && row.used >= 10) throw new ApiError(429, 'استخدمت التحسين كثير اليوم، كمّل بكرة', 'ENH_DAY');
-      if (row) await rest(`menu_chat_devices?client_id=eq.${sid}&device=eq.menu-enhance&day=eq.${day}`, { method: 'PATCH', body: { used: row.used + 1 } });
-      else await rest('menu_chat_devices', { method: 'POST', body: { client_id: sid, device: 'menu-enhance', day, used: 1 } });
-    } catch (e) { if (e.code === 'ENH_DAY') throw e; }
-    const batch = todo.slice(0, 40);   // دفعة وحدة تخلص في وقت معقول، والباقي بضغطة ثانية
-    const { enhanceMenu } = require('./_lib/ai');
-    const r = await enhanceMenu({ storeName: store.name, businessType: store.business_type, sections,
-      items: batch.map(({ p, need }) => ({ id: p.id, name: p.name, section: catName.get(p.category) || '', ...(has(p.description) ? { description: p.description } : {}), need })) });
-    // نرجّع بس الحقول الفاضية فعلاً (ما نغيّر شي كتبه صاحب المحل)
-    const byId = new Map(batch.map(x => [x.p.id, x]));
-    const items = r.items.filter(it => byId.has(it.id)).map(it => {
-      const { p, need } = byId.get(it.id), o = { id: p.id, name: p.name, section: catName.get(p.category) || '', description_old: p.description || '' };
-      need.forEach(k => { if (it[k]) o[k] = it[k]; });
-      return o;
-    }).filter(o => o.description || o.name_en || o.description_en);
-    const secOut = r.sections.filter(c => sections.some(x => x.key === c.key) && c.name_en).map(c => ({ key: c.key, name: catName.get(c.key), name_en: c.name_en }));
-    return { items, sections: secOut, left: Math.max(0, todo.length - batch.length) };
-  }
-
-  if (action === 'menu-enhance-save' && req.method === 'POST') {
-    const items = (Array.isArray(b.items) ? b.items : []).slice(0, 200), sections = (Array.isArray(b.sections) ? b.sections : []).slice(0, 100);
-    const others = (await familyOf(store)).map(f => f.id).filter(x => x !== sid);
-    let saved = 0;
-    for (const it of items) {
-      const id = int(it.id); if (!Number.isInteger(id)) continue;
-      const patch = {};
-      if (it.description !== undefined) patch.description = str(it.description, 500, 'الوصف') || '';
-      if (it.name_en !== undefined) patch.name_en = str(it.name_en, 100, 'الاسم الإنجليزي') || null;
-      if (it.description_en !== undefined) patch.description_en = str(it.description_en, 500, 'الوصف الإنجليزي') || null;
-      if (!Object.keys(patch).length) continue;
-      const row = (await rest(`products?id=eq.${id}&client_id=eq.${sid}`, { method: 'PATCH', body: patch, prefer: 'return=representation' }))[0];
-      if (!row) continue;
-      saved++;
-      // نفس الطبق في الفروع (الوصف والإنجليزي مشتركة)
-      if (row.link_id && others.length) await rest(`products?link_id=eq.${q(row.link_id)}&client_id=in.(${others.join(',')})`, { method: 'PATCH', body: patch });
-    }
-    for (const c of sections) {
-      const name_en = str(c.name_en, 60, 'اسم القسم بالإنجليزي');
-      if (c.key && name_en) await rest(`categories?client_id=eq.${sid}&key=eq.${q(String(c.key))}`, { method: 'PATCH', body: { name_en } });
-    }
-    return { saved };
-  }
-
   if (action === 'menu-from-photo' && req.method === 'POST') {
     const imgs = (Array.isArray(b.images) ? b.images : []).slice(0, 4).filter(im => im && /^image\/(jpeg|png|webp)$/.test(im.type) && typeof im.data === 'string' && im.data.length < 3_000_000);
     if (!imgs.length) throw new ApiError(400, 'ارفع صورة المنيو');
@@ -1816,7 +1757,7 @@ async function main(req) {
 const MENU_ACTIONS = new Set([
   'update-store', 'occasions-save', 'branch-rename', 'coupon-save', 'coupon-toggle', 'coupon-delete', 'update-slug',
   'category-add', 'category-group', 'category-rename', 'category-delete', 'reorder',
-  'product-save', 'product-toggle', 'product-delete', 'products-import', 'menu-enhance-save', 'waitlist-settings'
+  'product-save', 'product-toggle', 'product-delete', 'products-import', 'waitlist-settings'
 ]);
 
 module.exports = handler(['GET', 'POST'], async (req) => {
