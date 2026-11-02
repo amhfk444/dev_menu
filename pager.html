@@ -777,6 +777,7 @@
       if (e.status === 404 || e.status === 400) return unavailable('البيجر غير متاح حالياً', 'اسأل الموظف.');
       pollTimer = setTimeout(poll, 5000); return;   // انقطاع مؤقت: نعيد المحاولة
     }
+    if (loadToken() !== token) return;   // تغيّر الرقم وهو ينتظر الرد (ضغط "استلمت" أو أخذ رقم جديد): الرد قديم
     setStore(r.store);
     watchTicket(r.live);
     const st = r.ticket.status;
