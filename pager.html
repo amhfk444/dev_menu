@@ -120,17 +120,20 @@
   .track li.done { color: #fff; } .track li.done i { background: #fff; color: color-mix(in srgb, var(--brand) 85%, #000); border-color: #fff; }
   .track li.now { color: #fff; } .track li.now i { border-color: #fff; color: #fff; box-shadow: 0 0 0 0 rgba(255,255,255,.5); animation: pd 1.8s infinite; }
   .track li.gold i { background: #e9c95a; border-color: #e9c95a; color: #2b2104; }
-  /* خطوات أخذ الرقم: تطلع وحدة وحدة في بطاقة بيضاء */
-  .stp { border-radius: 22px; padding: 14px 16px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18); color: #fff; }
-  .stp-h { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 900; width: 100%; text-align: start; }
-  .stp-b { display: none; margin-top: 12px; }
-  .stp.on { background: #fff; color: #15271b; border-color: #fff; box-shadow: 0 24px 48px -28px rgba(0,0,0,.7); }
-  .stp.on .stp-b { display: block; }
-  .stp .field { background: #f5f2eb !important; color: #15271b !important; border: 1.5px solid rgba(21,39,27,.2) !important; }
+  /* خطوات أخذ الرقم: خطوة وحدة تملأ الشاشة، بخط كبير واضح */
+  #v-start:not(.hidden) { display: flex; flex-direction: column; min-height: calc(100dvh - 190px); }
+  .stp { flex: 1; display: none; flex-direction: column; justify-content: center; text-align: center; border-radius: 30px; padding: 30px 22px; background: #fff; color: #15271b; box-shadow: 0 30px 60px -30px rgba(0,0,0,.7); }
+  .stp.on { display: flex; }
+  .stp-ic { width: 76px; height: 76px; margin: 0 auto 16px; border-radius: 24px; display: grid; place-items: center; font-size: 38px; color: #fff; background: color-mix(in srgb, var(--brand) 85%, #000); }
+  .stp-h { font-size: 27px; font-weight: 900; line-height: 1.3; }
+  .stp-b { margin-top: 10px; }
+  .stp-sub { font-size: 16px; font-weight: 600; line-height: 1.75; color: #3b4a40; margin-bottom: 22px; }
+  .stp .btn { padding: 20px; font-size: 18px; }
+  .stp .field { background: #f5f2eb !important; color: #15271b !important; border: 2px solid rgba(21,39,27,.2) !important; }
   .stp .field:focus { background: #fff !important; border-color: #15271b !important; }
-  .stp .field::placeholder { color: rgba(21,39,27,.35); }
-  .stp-sub { font-size: 13.5px; font-weight: 600; line-height: 1.7; color: #3b4a40; margin-bottom: 12px; }
-  .stp-skip { display: block; margin: 10px auto 0; font-size: 13px; font-weight: 800; color: #3b4a40; text-decoration: underline; }
+  .stp .field::placeholder { color: rgba(21,39,27,.3); }
+  .stp-in { text-align: center; font-size: 34px !important; font-weight: 900 !important; letter-spacing: .12em; padding: 16px !important; border-radius: 18px !important; }
+  .stp-skip { display: block; margin: 16px auto 0; font-size: 15px; font-weight: 800; color: #3b4a40; text-decoration: underline; }
   .note { text-align: center; font-size: 13.5px; font-weight: 700; opacity: .8; }
   .btn-ghost { background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.28); }
   .btn-brand { background: #fff; color: color-mix(in srgb, var(--brand) 85%, #000); }
@@ -182,31 +185,32 @@
   </section>
 
   <!-- أخذ رقم -->
-  <section id="v-start" class="hidden space-y-3">
-    <div class="text-center pb-1">
-      <h2 class="text-[28px] font-black">خذ رقمك</h2>
-      <p id="t-start" class="text-[14px] font-bold opacity-75 mt-1 leading-relaxed"></p>
-    </div>
+  <section id="v-start" class="hidden">
     <div id="s-card" class="stp hidden">
+      <div class="stp-ic"><i class="ph-bold ph-wallet"></i></div>
       <h3 class="stp-h">أضف بطاقة النداء</h3>
       <div class="stp-b">
         <p class="stp-sub">يوصلك منها إشعار <span class="t-when"></span> حتى لو قفلت الجوال. تضيفها مرة وحدة وتنفعك كل مرة.</p>
-        <button type="button" id="s-card-btn" class="btn btn-wallet !py-3.5 !text-base"><i class="ph-bold ph-wallet"></i> <span>أضف للمحفظة</span></button>
+        <button type="button" id="s-card-btn" class="btn btn-wallet"><i class="ph-bold ph-wallet"></i> <span>أضف للمحفظة</span></button>
         <button type="button" id="s-card-skip" class="stp-skip">تخطي</button>
       </div>
     </div>
     <div id="s-inv" class="stp">
+      <div class="stp-ic"><i class="ph-bold ph-receipt"></i></div>
       <h3 class="stp-h">رقم الفاتورة</h3>
       <form id="s-inv-form" class="stp-b" novalidate>
         <p class="stp-sub">تلقاه في فاتورتك. يساعد الموظف يعرف طلبك.</p>
-        <input id="s-inv-in" class="field text-center !text-lg !font-black tracking-widest" inputmode="numeric" autocomplete="off" maxlength="20" dir="ltr" placeholder="1045">
-        <p id="s-inv-err" class="hidden text-[12.5px] font-bold text-rose-700 mt-2"></p>
-        <button id="s-inv-next" class="btn btn-wallet !py-3.5 !text-base mt-2.5">التالي</button>
+        <input id="s-inv-in" class="field stp-in" inputmode="numeric" autocomplete="off" maxlength="20" dir="ltr" placeholder="1045">
+        <p id="s-inv-err" class="hidden text-[14px] font-bold text-rose-700 mt-2"></p>
+        <button id="s-inv-next" class="btn btn-wallet mt-3">التالي</button>
         <button type="button" id="s-inv-skip" class="stp-skip">ما عندي فاتورة</button>
       </form>
     </div>
     <div id="s-take" class="stp">
-      <div class="stp-b !mt-0">
+      <div class="stp-ic"><i class="ph-bold ph-ticket"></i></div>
+      <h3 class="stp-h">خذ رقمك</h3>
+      <div class="stp-b">
+        <p id="t-start" class="stp-sub"></p>
         <button id="take-btn" class="btn btn-wallet"><i class="ph-bold ph-ticket"></i> خذ رقمي وفعّل التنبيه</button>
         <button type="button" id="s-take-inv" class="stp-skip !no-underline hidden">🧾 فاتورة <span dir="ltr"></span> <i class="ph-bold ph-pencil-simple text-xs"></i></button>
       </div>
