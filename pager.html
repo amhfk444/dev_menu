@@ -42,10 +42,11 @@
   .mm-card { position: relative; aspect-ratio: 1; border-radius: 14px; transform-style: preserve-3d; transition: transform .35s ease; cursor: pointer; }
   .mm-card.up, .mm-card.done { transform: rotateY(180deg); }
   .mm-face { position: absolute; inset: 0; border-radius: 14px; display: grid; place-items: center; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-  .mm-back { background: #233d2c radial-gradient(circle at 50% 50%, rgba(201,162,39,.55) 0 3px, transparent 4px) 0 0 / 14px 14px; border: 2px solid #2f5139; }
+  .mm-back { background: linear-gradient(145deg, color-mix(in srgb, var(--brand) 82%, #fff), var(--brand)); border: 1px solid rgba(255,255,255,.18); box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 6px 14px -8px rgba(0,0,0,.6); }
+  .mm-back::after { content: ''; width: 34%; aspect-ratio: 1; border-radius: 10px; border: 2px solid rgba(255,255,255,.35); }
   .mm-front { background: #fff; border: 1.5px solid rgba(35,61,44,.15); transform: rotateY(180deg); color: #233d2c; font-size: 24px; }
-  .mm-card.done .mm-front { background: #f3ecd6; border-color: #c9a227; color: #9a7a14; }
-  .mm-card:focus-visible { outline: 3px solid #c9a227; outline-offset: 2px; }
+  .mm-card.done .mm-front { background: #ecfdf5; border-color: #10b981; color: #047857; }
+  .mm-card:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
   @keyframes mmPop { 50% { transform: rotateY(180deg) scale(1.08); } }
   .mm-card.pop { animation: mmPop .35s ease; }
   .ticket { position: relative; background: linear-gradient(160deg, #2c4a36 0%, #233d2c 45%, #15271b 100%); color: #fff; border-radius: 30px; padding: 28px 22px; box-shadow: 0 30px 60px -30px rgba(21,39,27,.75); overflow: hidden; }
