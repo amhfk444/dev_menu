@@ -1810,6 +1810,14 @@
           <span id="info-pin-status" class="block text-[10px] text-ink/60 mt-0.5"></span>
         </span>
         <button type="button" id="info-pin-btn" onclick="setStorePin()" class="bg-white hover:bg-brand/10 border border-brand/20 text-ink px-3 py-2 rounded-xl text-xs font-bold transition"><i class="ph-bold ph-crosshair"></i> حدد الموقع من هنا</button>
+        <div class="w-full">
+          <label for="info-near" class="text-[10px] text-ink/75 block mb-1">الرسالة اللي تطلع على شاشة القفل <span id="info-near-count" class="text-ink/45">0/80</span></label>
+          <div class="flex gap-2">
+            <input type="text" id="info-near" maxlength="80" class="input-pro text-xs flex-1" oninput="document.getElementById('info-near-count').textContent = this.value.length + '/80'">
+            <button type="button" onclick="saveNearText()" class="bg-white hover:bg-brand/10 border border-brand/20 text-ink px-3 py-2 rounded-xl text-xs font-bold transition"><i class="ph-bold ph-floppy-disk"></i> احفظ</button>
+          </div>
+          <p class="text-[10px] text-ink/55 mt-1">لو تركتها فاضية تطلع الرسالة الرمادية اللي في الخانة. تتغير في بطاقات زبائنك مع أول رقم ياخذونه.</p>
+        </div>
       </div>
       <label data-needs="pager" data-free-hide class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
         <input type="checkbox" id="info-kiosk-call" onchange="toggleKioskCall(this.checked)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
@@ -5944,6 +5952,14 @@
     document.getElementById('info-pin-status').innerHTML = set
       ? '<span class="text-emerald-700 font-semibold"><i class="ph-bold ph-check-circle"></i> محدد: البطاقة تطلع على شاشة قفل زبونك لما يقرب من المحل</span>'
       : 'اختياري: حدده وأنت داخل المحل، وتطلع بطاقة النداء على شاشة قفل زبونك لما يقرب منه.';
+    const near = document.getElementById('info-near');
+    near.placeholder = `أنت قريب من ${client.name || 'المحل'}، تفضّل 👋`;
+    near.value = client.pager_near_text || '';
+    document.getElementById('info-near-count').textContent = `${near.value.length}/80`;
+  }
+  async function saveNearText() {
+    const v = document.getElementById('info-near').value.replace(/\s+/g, ' ').trim();
+    if (await updateClient({ pager_near_text: v })) { client.pager_near_text = v || null; showToast(v ? 'تم حفظ الرسالة' : 'رجعت الرسالة الافتراضية'); }
   }
   async function setStorePin() {
     const btn = document.getElementById('info-pin-btn'), html = btn.innerHTML;

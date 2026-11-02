@@ -120,7 +120,7 @@ async function pagerBody({ store, number, step, status, notice, url, lang }) {
   const { pagerStrip, brandColor } = require('./strip');
   const { rest, googleReviewLink } = require('./core');
   const [color, x] = await Promise.all([brandColor(store),
-    store.id ? rest(`clients?id=eq.${Number(store.id)}&select=google_review_url,location_url,loyalty_lat,loyalty_lng`).then(r => r[0] || {}).catch(() => ({})) : {}]);
+    store.id ? rest(`clients?id=eq.${Number(store.id)}&select=google_review_url,location_url,loyalty_lat,loyalty_lng,pager_near_text`).then(r => r[0] || {}).catch(() => ({})) : {}]);
   const review = googleReviewLink(x);
   // بعد الاستلام: "بالعافية" ومعها طلب التقييم لو المحل حط رابطه
   if (step === 'idle' && review && notice === L('بالعافية! نتشرف بزيارتك')) notice = L('بالعافية! عجبك طلبك؟ قيّمنا في قوقل ⭐');
@@ -142,9 +142,10 @@ async function pagerBody({ store, number, step, status, notice, url, lang }) {
   const strip = await pagerStrip(color, step);
   if (strip) body.stripURL = strip;
   if (store.logo_url && /^https:\/\//.test(store.logo_url)) { body.logoURL = store.logo_url; body.iconURL = store.logo_url; }
-  // موقع المحل: البطاقة تطلع على شاشة القفل لما يقرب منه
+  // موقع المحل: البطاقة تطلع على شاشة القفل لما يقرب منه، بنص صاحب المحل أو النص الافتراضي
   const lat = Number(x.loyalty_lat), lng = Number(x.loyalty_lng);
-  if (x.loyalty_lat != null && Number.isFinite(lat) && Number.isFinite(lng)) body.locations = [{ latitude: lat, longitude: lng, relevantText: L(`أنت قريب من ${store.name || 'المحل'}، تفضّل 👋`).slice(0, 80) }];
+  const near = String(x.pager_near_text || '').trim() || L(`أنت قريب من ${store.name || 'المحل'}، تفضّل 👋`);
+  if (x.loyalty_lat != null && Number.isFinite(lat) && Number.isFinite(lng)) body.locations = [{ latitude: lat, longitude: lng, relevantText: near.slice(0, 80) }];
   return body;
 }
 async function createPagerPass(ctx) {
