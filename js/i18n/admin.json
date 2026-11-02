@@ -1577,5 +1577,13 @@
   "{n} حسابات": "{n} accounts",
   "تم حفظ رابط التقييم": "Review link saved",
   "انحذف رابط التقييم": "Review link removed",
-  "تعذر حفظ الرابط": "Couldn't save the link"
+  "تعذر حفظ الرابط": "Couldn't save the link",
+  "أي رابط تبيه: حجز، استبيان، فرع ثاني، توظيف...": "Any link you want: bookings, a survey, another branch, jobs...",
+  "تطلع لزبائنك في صفحة روابطك (الرابط الرئيسي). حطه في البايو عشان يشوفونها.": "Customers see them on your links page (main link). Put it in your bio so they can find them.",
+  "تطلع لزبائنك أسفل المنيو وفي صفحة روابطك (الرابط الرئيسي).": "Customers see them at the bottom of your menu and on your links page (main link).",
+  "شوف صفحة روابطك": "View your links page",
+  "رابط واحد": "1 link",
+  "رابطين": "2 links",
+  "{n} روابط": "{n} links",
+  "ما فيه": "None"
 }

@@ -1997,9 +1997,9 @@
           <div data-free-hide class="pro-card p-5 space-y-4">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-link-simple text-blue-600"></i> روابط إضافية</h3>
-              <span id="custom-links-count" class="text-[11px] text-ink"></span>
+              <span class="flex items-center gap-2"><span id="custom-links-count" class="text-[11px] text-ink"></span><span id="cl-st"></span></span>
             </div>
-            <p class="text-[11px] text-ink -mt-2">أي رابط تبيه: حجز، استبيان، فرع ثاني، برنامج ولاء... تظهر أسفل المنيو وفي صفحة الروابط.</p>
+            <p class="text-[11px] text-ink -mt-2 leading-relaxed">أي رابط تبيه: حجز، استبيان، فرع ثاني، توظيف... <span id="custom-links-where"></span> <a id="custom-links-open" target="_blank" rel="noopener" class="font-bold underline">شوف صفحة روابطك</a></p>
             <div id="custom-links-list" class="space-y-2"></div>
             <button type="button" id="custom-links-add" onclick="addCustomLink()" class="w-full bg-brand/5 hover:bg-brand/10 text-ink border border-dashed border-brand/30 font-bold py-2 rounded-xl text-xs transition disabled:opacity-40 disabled:cursor-not-allowed"><i class="ph-bold ph-plus text-[11px]"></i> إضافة رابط</button>
             <button onclick="saveCustomLinks()" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition">حفظ الروابط</button>
@@ -5050,6 +5050,12 @@
       </div>`).join('')
       : '<p class="text-[11px] text-ink text-center py-2">ما أضفت أي رابط بعد.</p>';
     document.getElementById('custom-links-count').textContent = `${customLinks.length}/${MAX_CUSTOM_LINKS}`;
+    // وين تطلع: اللي بدون منيو تطلع له في صفحة الروابط بس، فننبهه يحطها في البايو
+    document.getElementById('custom-links-where').textContent = featureLocked('menu')
+      ? 'تطلع لزبائنك في صفحة روابطك (الرابط الرئيسي). حطه في البايو عشان يشوفونها.'
+      : 'تطلع لزبائنك أسفل المنيو وفي صفحة روابطك (الرابط الرئيسي).';
+    if (client) document.getElementById('custom-links-open').href = DM.storeUrl(client.client_slug, 'links');
+    renderPagerStatus();
     document.getElementById('custom-links-add').disabled = customLinks.length >= MAX_CUSTOM_LINKS;
   }
   function addCustomLink() {
@@ -5131,6 +5137,8 @@
     else pgChip('pg-st-review', 'warn', 'ناقص: زبائنك ما يقدرون يقيّمونك');
     const n = ['instagram_url', 'tiktok_url', 'snapchat_url', 'website_url'].filter(k => client[k]).length;
     pgChip('pg-st-social', n ? 'ok' : 'warn', n ? `${n} ${n === 1 ? 'حساب' : 'حسابات'}` : 'ناقص');
+    const cl = (client.custom_links || []).filter(l => l && l.title && l.url).length;
+    pgChip('cl-st', cl ? 'ok' : 'off', cl === 1 ? 'رابط واحد' : cl === 2 ? 'رابطين' : cl ? `${cl} روابط` : 'ما فيه');
   }
   async function saveReviewLink() {
     const review = document.getElementById('info-review').value.trim();
