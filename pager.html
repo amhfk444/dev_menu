@@ -62,6 +62,15 @@
   .ringing-ic { animation: shake .5s infinite; }
   .btn-gold { background: #c9a227; color: #15271b; box-shadow: 0 16px 30px -14px rgba(138,109,15,.7); }
   .btn-wallet { background: #000; color: #fff; }
+  /* بطاقة المحفظة: بيضاء فوق الخلفية الغامقة عشان تبان، وفيها شكل بطاقة صغيرة */
+  .pw { background: #fff; color: #15271b; border-radius: 24px; padding: 16px; box-shadow: 0 24px 48px -28px rgba(0,0,0,.7); }
+  .pw-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px; }
+  .pw-pass { width: 46px; height: 58px; border-radius: 10px; flex-shrink: 0; display: grid; place-items: center; font-size: 22px; color: #fff;
+    background: linear-gradient(180deg, var(--brand) 0 62%, color-mix(in srgb, var(--brand) 78%, #000) 62%); box-shadow: 0 8px 16px -8px rgba(0,0,0,.5); }
+  .pw-title { font-size: 16px; font-weight: 900; line-height: 1.4; }
+  .pw-sub { font-size: 13px; font-weight: 600; line-height: 1.65; color: #3b4a40; margin-top: 3px; }
+  .pw-link { display: flex !important; align-items: center; gap: 12px; background: #fff !important; color: #15271b !important; border-radius: 20px !important; padding: 14px !important; box-shadow: 0 24px 48px -28px rgba(0,0,0,.7); }
+  .pw-link .pw-pass { width: 40px; height: 50px; font-size: 19px; }
   .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 800; padding: 8px 12px; border-radius: 999px; background: #fff; border: 1.5px solid rgba(35,61,44,.12); }
   .chip.ok { color: #047857; border-color: rgba(4,120,87,.25); background: #ecfdf5; }
   .steps { display: grid; gap: 8px; }
@@ -184,9 +193,14 @@
       </div>
     </div>
     <!-- بطاقة المحفظة: أهم شي بعد الرقم، تطلع فوق دايم لين يضيفها (النداء يوصله منها حتى لو قفل الصفحة) -->
-    <div id="pw-box" class="card p-4 space-y-2.5 hidden !border-2 !border-[#c9a227]">
-      <p class="font-black text-[15px]"><i class="ph-bold ph-wallet"></i> أضف بطاقة النداء عشان يوصلك النداء</p>
-      <p class="text-[13px] font-bold opacity-85 leading-relaxed">بدونها لازم تخلي هالصفحة مفتوحة. مع البطاقة يوصلك إشعار <span class="t-when"></span> حتى لو قفلت الجوال أو كنت في تطبيق ثاني. تضيفها مرة وحدة وتنفعك كل مرة.</p>
+    <div id="pw-box" class="pw hidden">
+      <div class="pw-head">
+        <span class="pw-pass" aria-hidden="true"><i class="ph-bold ph-bell-ringing"></i></span>
+        <div class="min-w-0">
+          <p class="pw-title">خلّ النداء يوصلك على جوالك</p>
+          <p class="pw-sub">أضف بطاقة النداء للمحفظة، ويوصلك إشعار <span class="t-when"></span> حتى لو قفلت الجوال. تضيفها مرة وحدة وتنفعك كل مرة.</p>
+        </div>
+      </div>
       <button id="pw-btn" class="btn btn-wallet !py-3.5 !text-base"><i class="ph-bold ph-wallet"></i> <span>أضف بطاقة النداء</span></button>
     </div>
     <a id="w-loyalty" class="hidden block text-[13px] font-black rounded-2xl py-3 px-3"></a>
@@ -619,7 +633,7 @@
       show('r-loyalty', html, 'text-white bg-[#c9a227]/25 border border-[#c9a227]/60');
     } else if (l.linked) {
       if (l.wallet) show('w-loyalty', `<i class="ph-bold ph-wallet"></i> بطاقتك مربوطة: يوصلك إشعار من المحفظة ${T.ringWhen}، وينضاف لك ختم`, 'text-white bg-white/10 border border-white/25');
-      else show('w-loyalty', `<span class="block text-[15px]"><i class="ph-bold ph-wallet"></i> أضف بطاقة الولاء لمحفظتك عشان يوصلك النداء</span><span class="block text-[12.5px] font-bold opacity-85 mt-1">بطاقتك مربوطة برقمك بس مو في محفظتك، فما بيوصلك إشعار ${T.ringWhen}. اضغط هنا وأضفها، وأختامك فيها.</span>`, 'text-white bg-[#c9a227]/25 border-2 border-[#c9a227] !py-4', `${DM.storePage('loyalty', slug)}`);
+      else show('w-loyalty', `<span class="pw-pass" aria-hidden="true"><i class="ph-bold ph-seal-check"></i></span><span class="min-w-0 flex-1"><span class="pw-title block">أضف بطاقة الولاء للمحفظة</span><span class="pw-sub block">بطاقتك مربوطة برقمك، وبعد ما تضيفها يوصلك منها إشعار ${T.ringWhen}. أختامك محفوظة فيها.</span></span><i class="ph-bold ph-caret-left text-lg shrink-0"></i>`, 'pw-link', `${DM.storePage('loyalty', slug)}`);
       show('r-loyalty', l.stamped ? '<i class="ph-bold ph-seal-check"></i> انضاف لك ختم في بطاقة الولاء' : '', 'text-white bg-white/10 border border-white/25', `${DM.storePage('loyalty', slug)}`);
     } else {
       const html = `<i class="ph-bold ph-wallet"></i> سجّل في بطاقة الولاء وأضفها للمحفظة: يوصلك إشعار ${T.ringWhen}، وتاخذ ختم`;
