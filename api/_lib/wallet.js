@@ -127,7 +127,7 @@ async function pagerBody({ store, number, step, status, notice, url, lang }) {
     headerFields: [{ label: L('رقمك'), value: number ? String(number) : '—' }],
     secondaryFields: [{ label: L('الحالة'), value: L(String(status)).slice(0, 40) }],   // الإشعار من حقل notification (فيه الوقت، فيطلع كل مرة)
     backFields: [
-      { label: L('بطاقة النداء'), value: L('كل ما تاخذ رقم من البيجر تتحدث هالبطاقة برقمك، ويوصلك منها إشعار لما يجهز طلبك.') },
+      { label: L('بطاقة النداء'), value: L('بطاقة وحدة لكل المحلات المشتركة في DEV MENU: كل ما تاخذ رقم من البيجر تتحدث برقمك واسم المحل، ويوصلك منها إشعار لما يجهز طلبك.') },
       { label: L('صفحة رقمك'), value: url }
     ],
     sharingProhibited: true,

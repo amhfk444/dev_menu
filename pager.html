@@ -347,7 +347,7 @@
     <div class="w-16 h-16 rounded-2xl bg-white/15 text-[#e9c95a] grid place-items-center mx-auto text-3xl"><i class="ph-bold ph-bell-ringing"></i></div>
     <h2 id="pc-ask-title" class="text-xl font-black">أضف بطاقة النداء</h2>
     <p class="text-sm font-bold opacity-70 leading-relaxed">يوصلك إشعار <span class="t-when"></span> حتى لو كنت في تطبيق ثاني أو سكّرت المتصفح.</p>
-    <p class="text-[12.5px] font-bold opacity-70 leading-relaxed bg-white/10 border border-white/20 rounded-2xl p-3"><i class="ph-bold ph-wallet"></i> تضيفها مرة وحدة، وكل ما تاخذ رقم تتحدث برقمك.</p>
+    <p class="text-[12.5px] font-bold opacity-70 leading-relaxed bg-white/10 border border-white/20 rounded-2xl p-3"><i class="ph-bold ph-wallet"></i> تضيفها مرة وحدة، وتشتغل في كل المحلات اللي عندها بيجر DEV MENU.</p>
     <button id="pc-ask-yes" class="btn btn-wallet"><i class="ph-bold ph-wallet"></i> أضف بطاقة النداء</button>
     <button id="pc-ask-no" class="text-xs font-black opacity-50 underline">لاحقاً</button>
   </div>
@@ -842,19 +842,20 @@
   $('pc-ask-no').onclick = () => $('pc-ask').classList.replace('flex', 'hidden');
   $('pc-ask-yes').onclick = () => { $('pc-ask').classList.replace('flex', 'hidden'); addPagerPass(); };
   // رمز بطاقة النداء في هالجوال: يرسل مع كل رقم جديد عشان تتحدث نفس البطاقة.
-  // وحدة للمحل بكل فروعه (brand = المحل الرئيسي)، وتنحفظ على devmenu.digital كله عشان كل فرع له رابط مختلف
+  // وحدة لكل المحلات المشتركة، وتنحفظ على devmenu.digital كله عشان كل محل له رابط مختلف
+  // (dm_pc_<brand> من قبل ما تصير موحدة: نقراها لو ما فيه الموحدة)
   let brand = 0;
-  const PC_NAME = () => `dm_pc_${brand}`;
+  const PC_NAME = 'dm_pc';
   const SHARED = /(^|\.)devmenu\.digital$/.test(location.hostname) ? '; domain=.devmenu.digital' : '';
+  const cookieOf = (name) => (document.cookie.match(new RegExp(`(?:^|; )${name}=([A-Za-z0-9_-]+)`)) || [])[1] || '';
   function pagerCard() {
-    const m = brand && document.cookie.match(new RegExp(`(?:^|; )${PC_NAME()}=([A-Za-z0-9_-]+)`));
-    if (m) return m[1];
-    try { return localStorage.getItem(PC_NAME()) || localStorage.getItem(`dm_pcard_${slug}`) || ''; } catch { return ''; }
+    const c = cookieOf(PC_NAME) || (brand && cookieOf(`dm_pc_${brand}`));
+    if (c) return c;
+    try { return localStorage.getItem(PC_NAME) || (brand && localStorage.getItem(`dm_pc_${brand}`)) || localStorage.getItem(`dm_pcard_${slug}`) || ''; } catch { return ''; }
   }
   function savePagerCard(t) {
-    if (!brand) return;
-    document.cookie = `${PC_NAME()}=${t}; max-age=31536000; path=/; secure; samesite=lax${SHARED}`;
-    try { localStorage.setItem(PC_NAME(), t); } catch {}
+    document.cookie = `${PC_NAME}=${t}; max-age=31536000; path=/; secure; samesite=lax${SHARED}`;
+    try { localStorage.setItem(PC_NAME, t); } catch {}
   }
   async function addPagerPass() {
     const btn = $('pw-btn'); btn.disabled = true;
@@ -945,7 +946,7 @@
     let fullNow = false;
     try { const info = await DM.get(`/api/pager?action=info&slug=${encodeURIComponent(slug)}`); setStore(info.store); pushKey = info.push_key || ''; brand = Number(info.brand) || 0; fullNow = info.full === true; }
     catch (e) { return unavailable('البيجر غير متاح حالياً', 'اسأل الموظف.'); }
-    // بطاقة النداء محفوظة في هالجوال (ولو من قبل تحديث الفروع): نجدد حفظها لكل devmenu.digital عشان كل فرع يعرفها
+    // بطاقة النداء محفوظة في هالجوال (ولو من قبل ما تصير موحدة): نجدد حفظها لكل devmenu.digital عشان كل محل يعرفها
     { const pc = pagerCard(); if (pc) savePagerCard(pc); }
     if ('serviceWorker' in navigator && pushKey) navigator.serviceWorker.register('/sw.js').catch(() => {});
     if (loadToken()) { await poll(); return offerPerm(); }   // رجع للصفحة: الصوت يحتاج ضغطة منه من جديد

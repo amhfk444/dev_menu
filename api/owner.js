@@ -261,12 +261,13 @@ async function ringTicket(store, t) {
   return result;
 }
 
-// هوية المحل تغيّرت: نحدّث بطاقات المحفظة. البطاقات على المحل الرئيسي، فتغيير شعار فرع يبان في بطاقة النداء مع رقمه الجاي من الفرع
+// هوية المحل تغيّرت: نحدّث بطاقات المحفظة. تغيير شعار فرع يبان في بطاقة النداء مع رقمه الجاي من الفرع
 async function refreshWalletCards(store) {
   if (store.parent_id) return;
   const loyalty = await pushWalletCards(store.id).catch(e => `error ${e.message}`);
-  // بطاقات النداء اللي ما عندها طلب شغّال الحين ترجع "بالعافية" بالشكل الجديد (اللي عندها طلب تتحدث مع "جاهز")
-  const cards = await rest(`pager_cards?client_id=eq.${store.id}&wallet_serial=not.is.null&select=wallet_serial,lang&limit=2000`).catch(() => []);
+  // بطاقة النداء موحدة لكل المحلات: نحدّث بس اللي آخر رقم أخذه صاحبها كان من هالمحل (تلبس شكل آخر محل)
+  // واللي ما عندها طلب شغّال الحين ترجع "بالعافية" بالشكل الجديد (اللي عندها طلب تتحدث مع "جاهز")
+  const cards = await rest(`pager_cards?last_store_id=eq.${store.id}&wallet_serial=not.is.null&select=wallet_serial,lang&limit=2000`).catch(() => []);
   const family = (await familyOf(store, 'id').catch(() => [store])).map(f => f.id).join(',');   // الأرقام من كل الفروع
   const busy = new Set((await rest(`pager_tickets?client_id=in.(${family})&status=in.(waiting,ready)&created_at=gte.${q(riyadhDayStart())}&wallet_serial=not.is.null&select=wallet_serial`).catch(() => [])).map(t => t.wallet_serial));
   let pager = 0;
@@ -281,8 +282,10 @@ async function refreshWalletCards(store) {
 const PAGER_MSG_GAP = 2 * 60e3;
 // يرسل دفعة (40 بطاقة) ويرجع وين وقف، ولوحة التحكم تكمّل الباقي
 // branchId: زبائن فرع واحد بس (اللي أخذوا منه رقم)، وبدونه كل الفروع
+// البطاقة موحدة لكل المحلات، فالرسالة توصل بس للي أخذوا رقم من هالمحل أو فروعه
 async function pushPagerMessage(homeId, body, afterId, limit = 40, branchId = null) {
-  const base = `pager_cards?client_id=eq.${homeId}&wallet_serial=not.is.null${branchId ? `&branch_ids=cs.{${Number(branchId)}}` : ''}`;
+  const ids = branchId ? [Number(branchId)] : await familyIds({ id: homeId });
+  const base = `pager_cards?branch_ids=ov.{${ids.join(',')}}&wallet_serial=not.is.null`;
   const [store, cards, all] = await Promise.all([
     rest(`clients?id=eq.${homeId}&select=id,name,client_slug,logo_url,accent_color,business_type`).then(r => r[0]),
     rest(`${base}&id=gt.${Number(afterId) || 0}&select=id,wallet_serial,lang&order=id.asc&limit=${limit}`),
@@ -886,16 +889,18 @@ async function main(req) {
   }
 
   // ─── رسائل لزبائنك: إشعار على بطاقة النداء لكل زبون حافظها (إضافة على البيجر) ───
-  // البطاقات للمحل الرئيسي (كل الفروع). اللي عنده رقم شغّال الحين ما نغيّر بطاقته عشان ما يضيع رقمه
+  // توصل للي أخذوا رقم من المحل أو فروعه. اللي عنده رقم شغّال الحين ما نغيّر بطاقته عشان ما يضيع رقمه
   // صاحب المحل يختار: كل الفروع، أو زبائن فرع واحد (اللي أخذوا منه رقم)
   if (action === 'pager-messages') {
     const home = await loyaltyHome(sid);
     const [list, cards] = await Promise.all([
       rest(`pager_messages?client_id=eq.${home}&select=id,body,sent,created_at,branch_id&order=id.desc&limit=10`).catch(() => []),
-      rest(`pager_cards?client_id=eq.${home}&wallet_serial=not.is.null&select=branch_ids&limit=20000`).catch(() => [])
+      familyIds({ id: home }).then(ids => rest(`pager_cards?branch_ids=ov.{${ids.join(',')}}&wallet_serial=not.is.null&select=branch_ids&limit=20000`)).catch(() => [])
     ]);
+    // البطاقة فيها محلات ثانية زارها الزبون: نعدّ فروع هالمحل بس
+    const mine = new Set(await familyIds({ id: home }));
     const by_branch = {};
-    cards.forEach(c => (c.branch_ids || []).forEach(id => { by_branch[id] = (by_branch[id] || 0) + 1; }));
+    cards.forEach(c => (c.branch_ids || []).filter(id => mine.has(Number(id))).forEach(id => { by_branch[id] = (by_branch[id] || 0) + 1; }));
     return { messages: list, cards: cards.length, by_branch };
   }
   if (action === 'pager-message') {
