@@ -1086,8 +1086,10 @@
               <div class="space-y-2 pt-3">
                 <h4 class="text-xs font-bold text-ink border-b border-ink/10 pb-1.5">طريقة الختم: مع الشراء بس</h4>
                 <p class="text-[12px] text-ink leading-relaxed">الكاشير يضغط <b>"كود ختم"</b> في شاشة الكاشير بعد الدفع، والزبون يمسحه. والختم يلتزم بإعداد "ختم واحد كل" فوق.</p>
-                <label class="flex items-center justify-between gap-3 pt-1"><span class="text-[12px] text-ink"><i class="ph-bold ph-bell"></i> اللي ياخذ رقم بيجر ينختم له تلقائياً لما يجهز طلبه</span>
+                <label class="flex items-center justify-between gap-3 pt-1"><span class="text-[12px] text-ink"><i class="ph-bold ph-bell"></i> اللي ياخذ رقم بيجر ينختم له تلقائياً لما يستلم طلبه</span>
                   <input type="checkbox" id="ly-pager-stamp" class="w-4 h-4 accent-[#384f3d]"></label>
+                <label class="flex items-center justify-between gap-3 ps-5"><span class="text-[12px] text-ink">الختم بس للرقم اللي عليه رقم فاتورة <span class="block text-[11px]">يمنع الختم لأحد أخذ رقم وهو ما طلب. الكاشير يسجّل الفاتورة على الرقم، أو الزبون يكتبها في صفحته.</span></span>
+                  <input type="checkbox" id="ly-pager-invoice" class="w-4 h-4 accent-[#384f3d]"></label>
                 <a href="pager-desk.html" onclick="this.href='pager-desk.html'+location.search" class="inline-block text-[12px] font-bold text-brand underline underline-offset-4">افتح شاشة الكاشير (فيها زر "كود ختم")</a>
                 <div class="rounded-xl border border-brand/15 bg-brand/5 p-3 mt-2 space-y-1.5">
                   <p class="text-[12px] font-bold"><i class="ph-bold ph-device-tablet"></i> شاشة الختم للزبون</p>
@@ -5190,6 +5192,7 @@
     document.getElementById('ly-cooldown').value = String(st.cooldown_hours);
     document.getElementById('ly-radius').value = String(st.radius_m);
     document.getElementById('ly-pager-stamp').checked = st.pager_stamp !== false;
+    document.getElementById('ly-pager-invoice').checked = st.pager_invoice === true;
     const wm = (st.welcome && st.welcome.mode) || 'ai';
     document.querySelectorAll('[name="ly-welcome"]').forEach(r => { r.checked = r.value === wm; });
     document.getElementById('ly-welcome-text').value = (st.welcome && st.welcome.text) || '';
@@ -5963,7 +5966,8 @@
         happy: { enabled: document.getElementById('ly-happy').checked, from: +document.getElementById('ly-happy-from').value, to: +document.getElementById('ly-happy-to').value, days: [...(ly.happyDays || [])] },
         feedback: { enabled: document.getElementById('ly-fb').checked, gift: document.getElementById('ly-fb-gift').checked, days: +document.getElementById('ly-fb-days').value || 30 },
         gifts: { enabled: document.getElementById('ly-gifts').checked },
-        pager_stamp: document.getElementById('ly-pager-stamp').checked
+        pager_stamp: document.getElementById('ly-pager-stamp').checked,
+        pager_invoice: document.getElementById('ly-pager-invoice').checked
       } });
       ly.data.settings = r.settings; renderLoyalty(); showToast('تم حفظ إعدادات البطاقة');
     } catch (e) { showToast(e.message || 'ما انحفظ التعديل. تأكد من الإنترنت وحاول مرة ثانية', true); }

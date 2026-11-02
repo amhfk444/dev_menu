@@ -13,7 +13,7 @@
 // =====================================================================
 const crypto = require('crypto');
 const { reqLang, handler, rest, rpc, q, ApiError, readBody, findPublicStore, waNumber, storeHasFeature, loyaltyHome } = require('./_lib/core');
-const { normalizeLoyalty, distanceM, validPoint, isHappyNow, staleAi } = require('./_lib/loyalty');
+const { normalizeLoyalty, distanceM, validPoint, isHappyNow, staleAi, pagerStampDue } = require('./_lib/loyalty');
 const wallet = require('./_lib/wallet');
 const { nearLineFor, pushWalletCards } = require('./_lib/loyalty-assistant');
 const { tr } = require('./_lib/i18n');
@@ -247,10 +247,10 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
         const r = await purchaseStamp(ctx.store.id, card.id, ctx.settings, ctx.branch.id);
         out = { ...r, card: cardView((await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0]) };
       } else if (ticket) {
-        // نربط البطاقة برقم البيجر: ينختم لما يجهز الطلب (أو الحين لو جاهز)
+        // نربط البطاقة برقم البيجر: ينختم لما يستلم طلبه (أو الحين لو استلم)
         await rest(`pager_tickets?id=eq.${ticket.id}`, { method: 'PATCH', body: { loyalty_card_id: card.id } });
         let r = { stamped: false, count: 0, reason: 'PAGER_PENDING' };
-        if (['ready', 'done'].includes(ticket.status) && !ticket.loyalty_stamped) {
+        if (pagerStampDue(ticket, ctx.settings)) {
           r = await purchaseStamp(ctx.store.id, card.id, ctx.settings, ctx.branch.id);
           await rest(`pager_tickets?id=eq.${ticket.id}`, { method: 'PATCH', body: { loyalty_stamped: true } });
         }
@@ -335,7 +335,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       if (ticket.loyalty_card_id && ticket.loyalty_card_id !== card.id) throw new ApiError(409, 'هذا الطلب مربوط ببطاقة ثانية', 'TICKET_TAKEN');
       await rest(`pager_tickets?id=eq.${ticket.id}`, { method: 'PATCH', body: { loyalty_card_id: card.id } });
       let r = { stamped: false, count: 0, reason: 'PAGER_PENDING' };
-      if (['ready', 'done'].includes(ticket.status) && !ticket.loyalty_stamped) {
+      if (pagerStampDue(ticket, ctx.settings)) {
         await rest(`pager_tickets?id=eq.${ticket.id}`, { method: 'PATCH', body: { loyalty_stamped: true } });
         r = await purchaseStamp(ctx.store.id, card.id, ctx.settings, ctx.branch.id);
       }

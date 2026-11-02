@@ -236,7 +236,7 @@
         <button id="jn-btn" class="btn btn-brand !py-3.5 !text-base"><i class="ph-bold ph-user-plus"></i> سجّلني وخذ ختم</button>
       </form>
       <div id="jn-done" class="hidden text-center space-y-3">
-        <p class="font-black text-emerald-800"><i class="ph-bold ph-check-circle"></i> صرت عضو! بينضاف لك ختم <span class="t-when"></span></p>
+        <p class="font-black text-emerald-800"><i class="ph-bold ph-check-circle"></i> صرت عضو! بينضاف لك ختم لما تستلم طلبك</p>
         <button id="jn-wallet" class="btn btn-wallet !py-3.5 !text-base"><i class="ph-bold ph-wallet"></i> أضف البطاقة للمحفظة</button>
       </div>
     </section>
@@ -645,7 +645,7 @@
     lastLoyalty = l || null;
     const showJoin = !!(l && l.enabled && !l.linked && st === 'waiting' && !joined);
     $('v-join').classList.toggle('hidden', !showJoin && !joined);
-    if (showJoin) $('jn-sub').textContent = `بعد ${l.needed} أختام تاخذ ${l.reward}. وأول ختم على هالزيارة، ويوصلك إشعار من المحفظة ${T.ringWhen}.`;
+    if (showJoin) $('jn-sub').textContent = `بعد ${l.needed} أختام تاخذ ${l.reward}. وأول ختم على هالزيارة لما تستلم، ويوصلك إشعار من المحفظة ${T.ringWhen}.`;
     if (!l || !l.enabled) { show('w-loyalty', ''); show('r-loyalty', ''); return; }
     const join = `${DM.storePage('loyalty', slug)}${DM.hostSlug() ? '?' : '&'}pt=${encodeURIComponent(token)}`;
     if (l.linked && l.reward_ready) {
@@ -653,7 +653,7 @@
       show('w-loyalty', html, 'text-white bg-[#c9a227]/25 border border-[#c9a227]/60');
       show('r-loyalty', html, 'text-white bg-[#c9a227]/25 border border-[#c9a227]/60');
     } else if (l.linked) {
-      if (l.wallet) show('w-loyalty', `<i class="ph-bold ph-wallet"></i> بطاقتك مربوطة: يوصلك إشعار من المحفظة ${T.ringWhen}، وينضاف لك ختم`, 'text-white bg-white/10 border border-white/25');
+      if (l.wallet) show('w-loyalty', `<i class="ph-bold ph-wallet"></i> بطاقتك مربوطة: يوصلك إشعار من المحفظة ${T.ringWhen}، وينضاف لك ختم لما تستلمه`, 'text-white bg-white/10 border border-white/25');
       else show('w-loyalty', `<span class="pw-pass" aria-hidden="true"><i class="ph-bold ph-seal-check"></i></span><span class="min-w-0 flex-1"><span class="pw-title block">أضف بطاقة الولاء للمحفظة</span><span class="pw-sub block">بطاقتك مربوطة برقمك، وبعد ما تضيفها يوصلك منها إشعار ${T.ringWhen}. أختامك محفوظة فيها.</span></span><i class="ph-bold ph-caret-left text-lg shrink-0"></i>`, 'pw-link', `${DM.storePage('loyalty', slug)}`);
       show('r-loyalty', l.stamped ? '<i class="ph-bold ph-seal-check"></i> انضاف لك ختم في بطاقة الولاء' : '', 'text-white bg-white/10 border border-white/25', `${DM.storePage('loyalty', slug)}`);
     } else {

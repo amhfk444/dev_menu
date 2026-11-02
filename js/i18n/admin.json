@@ -1542,5 +1542,8 @@
   "تسليم الطلب للسيارة": "Hand the order to the car",
   "للمحل اللي عنده شباك سيارات أو يوصّل الطلب للسيارة. بعد ما ياخذ الزبون رقم يختار لون سيارته ويكتب نوعها، وتطلع للموظف تحت الرقم في شاشة البيجر.": "For stores with a drive-through window or curbside delivery. After taking a number the customer picks their car colour and model, and staff see it under the number on the pager screen.",
   "الزبون يقدر يحدد سيارته بعد ما ياخذ رقم": "Customers can add their car after taking a number",
-  "تم إيقاف تسليم الطلب للسيارة": "Hand-to-car turned off"
+  "تم إيقاف تسليم الطلب للسيارة": "Hand-to-car turned off",
+  "اللي ياخذ رقم بيجر ينختم له تلقائياً لما يستلم طلبه": "Pager customers get a stamp automatically when they pick up their order",
+  "الختم بس للرقم اللي عليه رقم فاتورة": "Only stamp numbers that have an invoice number",
+  "يمنع الختم لأحد أخذ رقم وهو ما طلب. الكاشير يسجّل الفاتورة على الرقم، أو الزبون يكتبها في صفحته.": "Stops stamps for someone who took a number without ordering. The cashier adds the invoice to the number, or the customer types it on their page."
 }

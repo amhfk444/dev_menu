@@ -4,7 +4,7 @@
 // =====================================================================
 const crypto = require('crypto');
 const { rest, rpc, q, ApiError } = require('./core');
-const { normalizeLoyalty, isHappyNow } = require('./loyalty');
+const { normalizeLoyalty, isHappyNow, pagerStampDue } = require('./loyalty');
 const { pushWalletCards } = require('./loyalty-assistant');
 const { topic, poke } = require('./live');
 
@@ -65,7 +65,7 @@ async function consumeStampCode(storeId, code, cardId) {
 // رقم البيجر كإثبات شراء (للتسجيل من صفحة البيجر)
 async function pagerTicket(storeId, token) {
   if (!/^[A-Za-z0-9_-]{10,64}$/.test(String(token || ''))) return null;
-  return (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${storeId}&select=id,status,created_at,loyalty_card_id,loyalty_stamped`).catch(() => []))[0] || null;
+  return (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${storeId}&select=id,status,created_at,loyalty_card_id,loyalty_stamped,invoice_no`).catch(() => []))[0] || null;
 }
 
 // كود العضوية اللي يعرضه الزبون للكاشير: DMV1.<رقم العضوية>.<توقيع>
@@ -81,4 +81,16 @@ function parseMemberQr(storeIds, value) {
   return [].concat(storeIds).some(s => crypto.timingSafeEqual(Buffer.from(m[2]), Buffer.from(sign(s, id)))) ? id : null;
 }
 
-module.exports = { purchaseStamp, tagBranch, newStampCode, consumeStampCode, pagerTicket, cooldownLeft, leftText, memberQr, parseMemberQr };
+// رقم بيجر انقفل (الكاشير ضغط "استلم" أو الزبون ضغط "استلمت"): ختم لبطاقة الولاء المربوطة فيه، مرة وحدة
+async function stampPagerTicket(homeId, branchId, t) {
+  if (!t || !t.loyalty_card_id || t.loyalty_stamped || t.status !== 'done') return null;
+  const x = (await rest(`clients?id=eq.${homeId}&select=loyalty_enabled,loyalty_settings`))[0] || {};
+  const ls = normalizeLoyalty(x.loyalty_settings);
+  if (!x.loyalty_enabled || !ls.pager_stamp || !pagerStampDue(t, ls)) return null;
+  // نعلّمه مختوم أول (لو انقفل من الكاشير والزبون بنفس اللحظة ما ينختم مرتين)
+  const claimed = await rest(`pager_tickets?id=eq.${t.id}&loyalty_stamped=not.is.true`, { method: 'PATCH', body: { loyalty_stamped: true }, prefer: 'return=representation' });
+  if (!claimed.length) return null;
+  return purchaseStamp(homeId, t.loyalty_card_id, ls, branchId);
+}
+
+module.exports = { stampPagerTicket, purchaseStamp, tagBranch, newStampCode, consumeStampCode, pagerTicket, cooldownLeft, leftText, memberQr, parseMemberQr };

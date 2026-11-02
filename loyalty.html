@@ -418,7 +418,7 @@
       if (params.get('s')) { params.delete('s'); history.replaceState(null, '', location.pathname + (params.toString() ? `?${params}` : '')); }
       settings = enReward(r.settings); walletOn = !!r.wallet; justJoined = !!r.is_new; happyNow = !!r.happy_now; gifts = r.gifts || [];
       afterStamp(r);
-      if (r.reason === 'PAGER_PENDING') msg('ok', 'ph-bell', 'سجّلت! ينضاف لك ختم أول ما يجهز طلبك');
+      if (r.reason === 'PAGER_PENDING') msg('ok', 'ph-bell', 'سجّلت! ينضاف لك ختم أول ما تستلم طلبك');
       if (r.reason === 'REGISTERED') msg('ok', 'ph-check-circle', 'سجّلت! بعد ما تدفع، اعرض الكود اللي تحت للكاشير وينضاف ختمك');
       if (r.gift_error) msg('warn', 'ph-gift', r.gift_error);
       if (giftCode) { params.delete('gift'); history.replaceState(null, '', location.pathname + (params.toString() ? `?${params}` : '')); }
@@ -628,7 +628,7 @@
               ? await DM.post('/api/loyalty?action=stamp-code', { slug, t: token, code: stampCodeParam })
               : await DM.post('/api/loyalty?action=pager-link', { slug, t: token, pt: ptParam });
             afterStamp(sr);
-            if (sr.reason === 'PAGER_PENDING') msg('ok', 'ph-bell', 'ربطنا طلبك ببطاقتك: ينضاف لك ختم أول ما يجهز');
+            if (sr.reason === 'PAGER_PENDING') msg('ok', 'ph-bell', 'ربطنا طلبك ببطاقتك: ينضاف لك ختم أول ما تستلمه');
           } catch (e) { msg('warn', 'ph-receipt', e.message || 'تعذر إضافة الختم'); }
           dropParams('c', 'pt');
           return;

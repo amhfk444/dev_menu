@@ -19,7 +19,7 @@ const { tr } = require('./_lib/i18n');
 const wallet = require('./_lib/wallet');
 const { pushWalletCards, pushWalletBatch, runAssistant, pagerReadyNotice, walletNotice } = require('./_lib/loyalty-assistant');
 const { loyaltyMessages, loyaltyNearLines } = require('./_lib/ai');
-const { purchaseStamp, tagBranch, newStampCode, parseMemberQr, cooldownLeft, leftText } = require('./_lib/loyalty-stamp');
+const { stampPagerTicket, purchaseStamp, tagBranch, newStampCode, parseMemberQr, cooldownLeft, leftText } = require('./_lib/loyalty-stamp');
 
 const bySort = (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id;
 const COFFEE_TYPES = ['cafe', 'mixed'];
@@ -1207,21 +1207,14 @@ async function main(req) {
         return rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_error: `${t.wallet_error || ''} | end ${er}`.slice(0, 300) } });
       }));
     }
-    // بطاقة ولاء مربوطة بالرقم: إشعار "طلبك جاهز" من بطاقة المحفظة أول، وبعده الختم (مرة وحدة)
-    if (status === 'ready' && t.loyalty_card_id) {
+    // بطاقة ولاء مربوطة بالرقم: "جاهز" = إشعار من بطاقة المحفظة، و"استلم" = الختم (مرة وحدة)
+    // الختم مع الاستلام مو الجاهز: اللي أخذ رقم من بعيد وما طلب ما يجي يستلم، فما ينختم له لو انضغط "جاهز" بالغلط
+    if (status === 'ready' && t.loyalty_card_id && PLANS.has(store, 'loyalty')) {
+      later((async () => console.log('PAGER_WALLET', sid, t.id, await pagerReadyNotice(await loyaltyHome(sid), t.loyalty_card_id, t.number, store.name, SECTORS.terms(store))))());
+    }
+    if (status === 'done' && t.loyalty_card_id && !t.loyalty_stamped) {
       later((async () => {
-        const lhome = await loyaltyHome(sid);
-        if (PLANS.has(store, 'loyalty')) console.log('PAGER_WALLET', sid, t.id, await pagerReadyNotice(lhome, t.loyalty_card_id, t.number, store.name, SECTORS.terms(store)));
-        if (!t.loyalty_stamped) {
-          try {
-            const x = (await rest(`clients?id=eq.${lhome}&select=loyalty_enabled,loyalty_settings`))[0] || {};
-            const ls = normalizeLoyalty(x.loyalty_settings);
-            if (x.loyalty_enabled && ls.pager_stamp) {
-              await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { loyalty_stamped: true } });
-              await purchaseStamp(lhome, t.loyalty_card_id, ls, sid);
-            }
-          } catch (e) { console.error('PAGER_STAMP', e.message); }
-        }
+        try { await stampPagerTicket(await loyaltyHome(sid), sid, t); } catch (e) { console.error('PAGER_STAMP', e.message); }
         await poke([topic('pager', sid), topic('ticket', t.token)]);   // صفحة الزبون تشوف الختم
       })());
     }

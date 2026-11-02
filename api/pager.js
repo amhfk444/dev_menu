@@ -15,6 +15,7 @@ const { reqLang, handler, rest, rpc, q, ApiError, readBody, findPublicStore, sto
 const { pushPublicKey, cleanSubscription, sendPush } = require('./_lib/push');
 const { topic, poke } = require('./_lib/live');
 const { normalizeLoyalty } = require('./_lib/loyalty');
+const { stampPagerTicket } = require('./_lib/loyalty-stamp');
 const { pagerReadyNotice, walletNotice } = require('./_lib/loyalty-assistant');
 const SECTORS = require('./_lib/sectors');
 const { riyadhDayStart } = require('./_lib/waitlist');
@@ -263,7 +264,9 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const rows = await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=in.(ready,done)${filter}`, { method: 'PATCH', body, prefer: 'return=representation' }).catch(() => []);
     if (!rows.length) return { ok: false };
     // لو الزبون ضغط "استلمت" قبل الكاشير، نقفل الرقم
-    await rest(`pager_tickets?id=eq.${rows[0].id}&status=eq.ready`, { method: 'PATCH', body: { status: 'done', closed_at: new Date().toISOString(), push_sub: null } }).catch(() => {});
+    const closed = await rest(`pager_tickets?id=eq.${rows[0].id}&status=eq.ready`, { method: 'PATCH', body: { status: 'done', closed_at: new Date().toISOString(), push_sub: null }, prefer: 'return=representation' }).catch(() => []);
+    // استلم قبل ما يضغطها الكاشير: ختم الولاء هنا
+    if (closed[0] && closed[0].loyalty_card_id) later(stampPagerTicket(await loyaltyHome(store.id), store.id, closed[0]).catch(e => console.error('PAGER_STAMP', e.message)));
     // ضغط "استلمت" قبل الكاشير: بطاقة النداء ترجع "بالعافية"
     if (rows[0].wallet_serial && rows[0].status === 'ready') later(wallet.endPagerPass(rows[0].wallet_serial, rows[0].id, wallet.pagerStep({ store, step: 'idle', lang: rows[0].lang })));
     await poke(topic('pager', store.id));
