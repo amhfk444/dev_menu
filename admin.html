@@ -422,6 +422,12 @@
           </div>
         </div>
 
+        <!-- المساعد الذكي في التجربة: إنه شغّال، وقبل نهاية التجربة إنه بيتوقف -->
+        <div id="chat-trial-note" class="hidden pro-card p-4 flex flex-wrap items-center justify-between gap-3 border-s-4 border-violet-500">
+          <p id="chat-trial-text" class="text-[13px] text-ink leading-relaxed flex-1 min-w-[220px]"></p>
+          <button type="button" id="chat-trial-btn" class="bg-brand text-cream hover:bg-brand-dark px-4 py-2 rounded-xl text-xs font-bold transition"></button>
+        </div>
+
         <!-- أكثر أسئلة الزبائن لمساعد المنيو (يطلع لو المساعد مفعّل) -->
         <div id="chat-top-card" class="hidden pro-card p-5 space-y-3">
           <div class="flex items-center justify-between gap-2">
@@ -2482,7 +2488,8 @@
     document.getElementById('info-wa-orders').checked = client.whatsapp_orders === true;
     renderWaOrderState();
     renderBusinessType();
-    applyCaloriesSetting(); applyMenuChatSetting(); renderInsightChips(); loadChatTop();
+    applyCaloriesSetting(); renderInsightChips();
+    autoEnableChat().catch(() => {}).then(() => { applyMenuChatSetting(); loadChatTop(); renderChatTrialNote(); });
     renderMenuLayout();
     applyCurrencySetting();
     deliveryApps = (Array.isArray(client.delivery_apps) ? client.delivery_apps : []).map(d => ({ ...d }));
@@ -5122,8 +5129,36 @@
       info.innerHTML = `<i class="ph-bold ph-chat-circle-dots"></i> أسئلة زبائنك للمساعد هالشهر: ${r.used.toLocaleString('en')}`;
     } catch { info.textContent = ''; }
   }
+  // التجربة: المساعد يشتغل تلقائياً مرة وحدة لما يصير في المنيو 5 أصناف بأسعارها (لو طفاه صاحب المحل ما نرجعه)
+  const CHAT_AUTO_MIN = 5;
+  const chatInTrial = () => client && client.subscription_status === 'trial' && !client.parent_id && !featureLocked('chat') && !DMPlans.isFree(client);
+  async function autoEnableChat() {
+    if (!chatInTrial() || client.menu_chat === true || client.menu_chat_auto_at) return;
+    const priced = loadedProducts.filter(p => Number(p.price) > 0 || (Array.isArray(p.sizes) && p.sizes.some(z => Number(z && z.price) > 0))).length;
+    if (priced < CHAT_AUTO_MIN) return;
+    if (await updateClient({ menu_chat: true, menu_chat_auto_at: true })) { client.menu_chat = true; client.menu_chat_auto_at = new Date().toISOString(); }
+  }
+  // المساعد مو ضمن طلبه: يتوقف مع نهاية التجربة
+  const chatPaid = () => [client.plan_features, client.requested_features].some(f => Array.isArray(f) && f.includes('chat'));
+  async function renderChatTrialNote() {
+    const card = document.getElementById('chat-trial-note');
+    if (!chatInTrial() || client.menu_chat !== true || chatPaid()) return card.classList.add('hidden');
+    const left = Math.ceil((Date.parse(client.trial_ends_at) - Date.now()) / 864e5);
+    const text = document.getElementById('chat-trial-text'), btn = document.getElementById('chat-trial-btn');
+    if (left <= 3) {
+      let used = 0; try { used = (await api('chat-usage')).used || 0; } catch {}
+      text.innerHTML = `<b><i class="ph-bold ph-sparkle text-violet-600"></i> المساعد الذكي يتوقف مع نهاية التجربة${left > 0 ? ` بعد ${left === 1 ? 'يوم' : left === 2 ? 'يومين' : `${left} أيام`}` : ''}.</b> ${used ? `زبائنك سألوه ${used.toLocaleString('en')} سؤال هالشهر. ` : ''}أضفه لباقتك بـ ${DMPlans.FEATURES.chat.month} ر.س بالشهر أو ${DMPlans.FEATURES.chat.year} ر.س بالسنة عشان يكمل.`;
+      btn.innerHTML = '<i class="ph-bold ph-plus"></i> أضفه لباقتي';
+      btn.onclick = () => { location.hash = 'account'; changePlan(); };
+    } else {
+      text.innerHTML = '<b><i class="ph-bold ph-sparkle text-violet-600"></i> شغّلنا لك المساعد الذكي في منيوك مجاناً طول التجربة.</b> يجاوب زبائنك عن الأطباق والأسعار من منيو محلك، وتشوف أسئلتهم هنا. تقدر تطفيه من «هوية المنشأة».';
+      btn.innerHTML = '<i class="ph-bold ph-gear"></i> إعدادات المساعد';
+      btn.onclick = () => { location.hash = 'settings'; setTimeout(() => document.getElementById('info-menu-chat').scrollIntoView({ block: 'center' }), 200); };
+    }
+    card.classList.remove('hidden');
+  }
   async function toggleMenuChat(on) {
-    if (await updateClient({ menu_chat: on })) showToast(on ? 'المساعد الذكي صار في منيو محلك' : 'تم إيقاف المساعد الذكي');
+    if (await updateClient({ menu_chat: on })) { client.menu_chat = on; renderChatTrialNote(); showToast(on ? 'المساعد الذكي صار في منيو محلك' : 'تم إيقاف المساعد الذكي'); }
     else { document.getElementById('info-menu-chat').checked = !on; showToast('تعذر حفظ الإعداد', true); }
   }
 

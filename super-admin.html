@@ -934,6 +934,12 @@
     fd.feats = new Set(DMPlans.clean([...f])); renderFeat();
   }
   function setFeatPeriod(p) { fd.period = p; renderFeat(); }
+  // المساعد الذكي مجاني في التجربة (للي اختار المنيو): حالته عند صاحب المحل
+  function chatTrialNote(c) {
+    if (c.parent_id || c.subscription_status !== 'trial' || !DMPlans.featuresOf(c).includes('chat')) return '';
+    const on = c.menu_chat === true;
+    return `<span class="block text-[11px] font-semibold ${on ? 'text-emerald-700' : 'text-ink/70'}">مجاناً في التجربة · ${on ? 'شغّال عنده' : 'مطفّي عنده'}</span>`;
+  }
   function renderFeat() {
     const c = find(fd.id), feats = DMPlans.clean([...fd.feats]);
     const isBranch = !!c.parent_id, pr = DMPlans.price(feats, fd.period, isBranch ? 0 : branchesOf(c));
@@ -964,7 +970,7 @@
         <span class="flex-1 text-[13px] font-bold"><i class="ph-bold ${f.icon} ${FEAT_COLOR[k]}"></i> ${f.name}<span class="block text-[11px] font-medium text-ink/60">${covered}</span></span></div>`;
       return `<label class="flex items-center gap-3 rounded-xl border ${on ? 'border-brand bg-brand/[0.04]' : 'border-brand/15'} px-3 py-2.5 cursor-pointer">
         <input type="checkbox" ${on ? 'checked' : ''} onchange="toggleFeat('${k}')" class="w-4 h-4 accent-[#384f3d]">
-        <span class="flex-1 text-[13px] font-bold"><i class="ph-bold ${f.icon} ${FEAT_COLOR[k]}"></i> ${f.name}</span>
+        <span class="flex-1 text-[13px] font-bold"><i class="ph-bold ${f.icon} ${FEAT_COLOR[k]}"></i> ${f.name}${k === 'chat' && !on ? chatTrialNote(c) : ''}</span>
         <span class="text-[11px] text-ink/60">${money(f[fd.period])}</span></label>`;
     }).join('');
     const per = document.getElementById('feat-period');

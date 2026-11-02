@@ -1313,6 +1313,7 @@ async function main(req) {
     if (has('whatsapp_orders')) p.whatsapp_orders = b.whatsapp_orders === true;
     if (has('show_calories')) p.show_calories = b.show_calories !== false;
     if (has('menu_chat')) p.menu_chat = b.menu_chat === true;
+    if (has('menu_chat_auto_at')) p.menu_chat_auto_at = new Date().toISOString();
     if (has('kiosk_call')) p.kiosk_call = b.kiosk_call === true;
     if (has('pager_near_text')) p.pager_near_text = String(b.pager_near_text || '').replace(/\s+/g, ' ').trim().slice(0, 80) || null;
     if (has('menu_layout')) p.menu_layout = b.menu_layout === 'photos' ? 'photos' : 'list';
