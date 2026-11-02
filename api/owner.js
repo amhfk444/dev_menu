@@ -279,6 +279,7 @@ async function refreshWalletCards(store) {
 // "رسائل لزبائنك": رسالتين بالأسبوع بالكثير (الإزعاج يخلي الزبون يحذف البطاقة، وبعدها ما يوصله حتى "طلبك جاهز")
 // رسائل لزبائنك بدون حد: صاحب المحل يقرر. بس دقيقتين بين كل رسالة والثانية (عشان ضغطة مكررة ما ترسلها مرتين)
 const PAGER_MSG_GAP = 2 * 60e3;
+const { winbackSettings } = require('./_lib/winback');
 // يرسل دفعة (40 بطاقة) ويرجع وين وقف، ولوحة التحكم تكمّل الباقي
 // branchId: زبائن فرع واحد بس (اللي أخذوا منه رقم)، وبدونه كل الفروع
 async function pushPagerMessage(homeId, body, afterId, limit = 40, branchId = null) {
@@ -812,7 +813,7 @@ async function main(req) {
   };
   // المميزات حسب باقة المحل
   if (['pager-update', 'pager-invoice', 'pager-ring'].includes(action) && !PLANS.has(store, 'pager')) throw new ApiError(403, 'البيجر مو ضمن باقتك', 'ADDON_OFF');
-  if (['pager-message', 'pager-message-push'].includes(action) && !PLANS.has(store, 'notify')) throw new ApiError(403, '"رسائل لزبائنك" مو ضمن باقتك. أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
+  if (['pager-message', 'pager-message-push', 'pager-winback'].includes(action) && !PLANS.has(store, 'notify')) throw new ApiError(403, '"رسائل لزبائنك" مو ضمن باقتك. أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
   if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-member-delete', 'loyalty-import', 'loyalty-redeem', 'loyalty-message', 'loyalty-message-push', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء متوقفة: مو ضمن باقتك أو انتهى اشتراكك. جدّد من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
 
 
@@ -894,13 +895,14 @@ async function main(req) {
   // صاحب المحل يختار: كل الفروع، أو زبائن فرع واحد (اللي أخذوا منه رقم)
   if (action === 'pager-messages') {
     const home = await loyaltyHome(sid);
-    const [list, cards] = await Promise.all([
+    const [list, cards, wb] = await Promise.all([
       rest(`pager_messages?client_id=eq.${home}&select=id,body,sent,created_at,branch_id&order=id.desc&limit=10`).catch(() => []),
-      rest(`pager_cards?client_id=eq.${home}&wallet_serial=not.is.null&select=branch_ids&limit=20000`).catch(() => [])
+      rest(`pager_cards?client_id=eq.${home}&wallet_serial=not.is.null&select=branch_ids&limit=20000`).catch(() => []),
+      rest(`clients?id=eq.${home}&select=pager_winback`).then(r => (r[0] || {}).pager_winback).catch(() => null)
     ]);
     const by_branch = {};
     cards.forEach(c => (c.branch_ids || []).forEach(id => { by_branch[id] = (by_branch[id] || 0) + 1; }));
-    return { messages: list, cards: cards.length, by_branch };
+    return { messages: list, cards: cards.length, by_branch, winback: { ...winbackSettings(wb), last: (wb && wb.last) || null } };
   }
   if (action === 'pager-message') {
     const body = str(b.body, 150, 'الرسالة');
@@ -914,6 +916,15 @@ async function main(req) {
     const p = await pushPagerMessage(home, body, 0, 40, branch);
     await rest(`pager_messages?id=eq.${msg.id}`, { method: 'PATCH', body: { sent: p.sent } }).catch(() => {});
     return { message: { ...msg, sent: p.sent }, progress: p };
+  }
+  // "وحشتنا" التلقائية: تنحفظ على المحل الرئيسي، ويرسلها loyalty-cron كل يوم
+  if (action === 'pager-winback') {
+    const home = await loyaltyHome(sid);
+    const w = winbackSettings({ enabled: b.enabled === true, days: b.days, text: b.text });
+    if (w.enabled && w.text.length < 2) throw new ApiError(400, 'اكتب رسالة "وحشتنا"');
+    const old = (await rest(`clients?id=eq.${home}&select=pager_winback`))[0] || {};
+    await rest(`clients?id=eq.${home}`, { method: 'PATCH', body: { pager_winback: { ...(old.pager_winback || {}), ...w } } });
+    return { winback: w };
   }
   if (action === 'pager-message-push') {
     const home = await loyaltyHome(sid);

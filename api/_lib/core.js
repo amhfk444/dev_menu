@@ -217,8 +217,12 @@ function handler(methods, fn) {
 // لغة الزائر من المتصفح (js/api.js يرسلها): عربي افتراضياً
 const reqLang = (req) => String((req && req.headers && req.headers['x-dm-lang']) || '').toLowerCase() === 'en' ? 'en' : 'ar';
 
+// رابط تقييم المحل في قوقل ماب: رابط "اكتب تقييم" لو حطه، وإلا رابط موقعه في قوقل ماب
+const GOOGLE_RE = /^https:\/\/(g\.page|search\.google\.com|www\.google\.com|maps\.app\.goo\.gl|goo\.gl|maps\.google\.com|g\.co)\//i;
+const googleReviewLink = (x) => [x && x.google_review_url, x && x.location_url].find(u => u && GOOGLE_RE.test(u) && u.length < 500) || null;
+
 module.exports = {
-  reqLang, SUPABASE_URL, BUCKET, ApiError, rest, rpc, q, storage, publicUrl, ownsMediaUrl, storagePathFromUrl,
+  googleReviewLink, reqLang, SUPABASE_URL, BUCKET, ApiError, rest, rpc, q, storage, publicUrl, ownsMediaUrl, storagePathFromUrl,
   getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody, handler,
   SLUG_RE, RESERVED_SLUGS, findPublicStore, CURRENCIES, storeHasFeature, storeFeatures, SITE, storeLink, loyaltyHome, later
 };

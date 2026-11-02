@@ -1395,6 +1395,27 @@
                 <button type="button" id="nt-send" onclick="sendNotify()" class="w-full bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition"><i class="ph-bold ph-paper-plane-tilt"></i> <span id="nt-send-label">أرسل</span></button>
                 <p class="text-[10px] text-ink/50">نصيحة: لا تكثر الرسائل، عشان زبائنك ما ينزعجون ويحذفون البطاقة من محفظتهم.</p>
                 <div id="nt-list" class="text-[12px]"></div>
+                <div class="border-t border-brand/10 pt-3 space-y-2">
+                  <label class="flex items-start gap-2.5 cursor-pointer">
+                    <input type="checkbox" id="nt-wb-on" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
+                    <span class="text-xs">
+                      <b class="text-ink"><i class="ph-bold ph-hand-waving text-amber-600"></i> رسالة «وحشتنا» تلقائية</b>
+                      <span class="block text-[10px] text-ink/60 mt-0.5">توصل لحالها للزبون اللي غاب، مرة وحدة لكل غيبة. ما تنعاد عليه لين يرجع لك ويغيب من جديد.</span>
+                    </span>
+                  </label>
+                  <div class="flex flex-wrap items-center gap-2 text-xs">
+                    <span class="text-ink/70">بعد</span>
+                    <select id="nt-wb-days" class="input-pro !w-auto !py-1.5 text-xs">
+                      <option value="7">7 أيام</option><option value="14">14 يوم</option><option value="21">21 يوم</option><option value="30">30 يوم</option>
+                    </select>
+                    <span class="text-ink/70">من آخر رقم أخذه</span>
+                  </div>
+                  <textarea id="nt-wb-text" rows="2" maxlength="150" placeholder="مثلاً: وحشتنا! قهوتك اليوم بنص السعر، وريها للكاشير" class="input-pro text-sm resize-none"></textarea>
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <p id="nt-wb-last" class="text-[10px] text-ink/55"></p>
+                    <button type="button" id="nt-wb-save" onclick="saveWinback()" class="bg-brand/5 hover:bg-brand/10 border border-brand/20 text-ink px-4 py-2 rounded-xl text-xs font-bold transition"><i class="ph-bold ph-floppy-disk"></i> احفظ</button>
+                  </div>
+                </div>
               </div>
             </div>
           <div data-needs="loyalty" class="contents">
@@ -1782,6 +1803,13 @@
           <input type="url" id="info-review" placeholder="https://g.page/r/.../review" class="input-pro text-xs" dir="ltr">
           <p class="text-[10px] text-ink/55 mt-1">لما يرن البيجر يطلع للزبون زر "قيّمنا على قوقل ماب" يفتح هالرابط. تلقاه في Google Business ← "اطلب تقييمات". لو ما حطيته نستخدم رابط موقعك في قوقل ماب اللي فوق.</p>
         </div>
+      </div>
+      <div data-needs="pager" data-free-hide class="flex flex-wrap items-center justify-between gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15">
+        <span class="text-xs">
+          <b class="text-ink"><i class="ph-bold ph-map-pin text-amber-600"></i> موقع المحل لبطاقة النداء</b>
+          <span id="info-pin-status" class="block text-[10px] text-ink/60 mt-0.5"></span>
+        </span>
+        <button type="button" id="info-pin-btn" onclick="setStorePin()" class="bg-white hover:bg-brand/10 border border-brand/20 text-ink px-3 py-2 rounded-xl text-xs font-bold transition"><i class="ph-bold ph-crosshair"></i> حدد الموقع من هنا</button>
       </div>
       <label data-needs="pager" data-free-hide class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
         <input type="checkbox" id="info-kiosk-call" onchange="toggleKioskCall(this.checked)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
@@ -2422,6 +2450,7 @@
     document.getElementById('info-hours').value = client.opening_hours || '';
     document.getElementById('info-location').value = client.location_url || '';
     document.getElementById('info-review').value = client.google_review_url || '';
+    renderStorePin();
     document.getElementById('info-wa-orders').checked = client.whatsapp_orders === true;
     renderWaOrderState();
     renderBusinessType();
@@ -4243,12 +4272,33 @@
         sel.innerHTML = `<option value="">كل الفروع (${r.cards} زبون)</option>` + branches.map(x => `<option value="${x.id}">${esc(x.name || '')} (${(r.by_branch || {})[x.id] || 0} زبون)</option>`).join('');
         sel.value = prev && sel.querySelector(`option[value="${prev}"]`) ? prev : client.parent_id ? String(client.id) : '';
       } else sel.innerHTML = '';
-      ntToChanged(); ntPreview();
+      ntToChanged(); ntPreview(); renderWinback(r.winback);
       document.getElementById('nt-send').disabled = false;
       const branchName = (id) => (branches.find(x => x.id === id) || {}).name;
       document.getElementById('nt-list').innerHTML = r.messages.length ? `<p class="text-[11px] font-bold text-ink/60 mb-1">آخر الرسائل</p><div class="divide-y divide-brand/10">${r.messages.map(m => `
         <div class="py-2"><p class="leading-relaxed">${esc(m.body)}</p><p class="text-[11px] text-ink/55 mt-0.5">${when(m.created_at)}${many ? ` · ${m.branch_id ? `زبائن ${esc(branchName(m.branch_id) || 'فرع')}` : 'كل الفروع'}` : ''}${m.sent ? ` · وصلت لـ ${m.sent} جوال` : ''}</p></div>`).join('')}</div>` : '';
     } catch { document.getElementById('nt-send-label').textContent = 'أرسل'; }
+  }
+  // "وحشتنا" التلقائية: تنرسل كل يوم العصر للي غاب من عدد الأيام المختار
+  function renderWinback(w) {
+    w = w || {};
+    document.getElementById('nt-wb-on').checked = w.enabled === true;
+    document.getElementById('nt-wb-days').value = String(w.days || 14);
+    document.getElementById('nt-wb-text').value = w.text || '';
+    const when = (iso) => new Date(iso).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short' });
+    document.getElementById('nt-wb-last').textContent = w.last && w.last.sent ? `آخر مرة: ${when(w.last.at)} · وصلت لـ ${w.last.sent} زبون` : w.enabled ? 'تنرسل كل يوم العصر للي غابوا' : '';
+  }
+  async function saveWinback() {
+    const btn = document.getElementById('nt-wb-save'), html = btn.innerHTML;
+    const body = { enabled: document.getElementById('nt-wb-on').checked, days: Number(document.getElementById('nt-wb-days').value), text: document.getElementById('nt-wb-text').value.trim() };
+    if (body.enabled && body.text.length < 2) return showToast('اكتب رسالة «وحشتنا»', true);
+    btn.disabled = true; btn.innerHTML = '<i class="ph-bold ph-spinner-gap ph-spin"></i> يحفظ...';
+    try {
+      const r = await api('pager-winback', body);
+      renderWinback({ ...(ntQuota && ntQuota.winback), ...r.winback });
+      showToast(body.enabled ? 'تم، «وحشتنا» شغالة وتوصل للي يغيبون' : 'تم إيقاف «وحشتنا»');
+    } catch (e) { showToast(e.message || 'تعذر الحفظ', true); }
+    btn.disabled = false; btn.innerHTML = html;
   }
   // عدد الزبائن اللي بتوصلهم الرسالة حسب الاختيار
   const ntTarget = () => { const v = document.getElementById('nt-to').value; return v ? Number(v) : null; };
@@ -5884,6 +5934,25 @@
       const pos = await bestPosition();
       const r = await api('loyalty-location', pos);
       ly.data.location_set = true; renderLoyalty();
+      showToast(`تم حفظ موقع المحل (الدقة ${r.accuracy} متر)`);
+    } catch (e) { showToast(e.message || 'تعذر تحديد الموقع', true); }
+    btn.disabled = false; btn.innerHTML = html;
+  }
+  // موقع المحل لبطاقة النداء (نفس موقع بطاقة الولاء): البطاقة تطلع على شاشة قفل الزبون لما يقرب من المحل
+  function renderStorePin() {
+    const set = client.loyalty_lat != null && client.loyalty_lng != null;
+    document.getElementById('info-pin-status').innerHTML = set
+      ? '<span class="text-emerald-700 font-semibold"><i class="ph-bold ph-check-circle"></i> محدد: البطاقة تطلع على شاشة قفل زبونك لما يقرب من المحل</span>'
+      : 'اختياري: حدده وأنت داخل المحل، وتطلع بطاقة النداء على شاشة قفل زبونك لما يقرب منه.';
+  }
+  async function setStorePin() {
+    const btn = document.getElementById('info-pin-btn'), html = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = '<i class="ph-bold ph-spinner-gap ph-spin"></i> نحدد الموقع...';
+    try {
+      const pos = await bestPosition();
+      const r = await api('loyalty-location', pos);
+      client.loyalty_lat = pos.lat; client.loyalty_lng = pos.lng; renderStorePin();
+      if (ly.data) { ly.data.location_set = true; renderLoyalty(); }
       showToast(`تم حفظ موقع المحل (الدقة ${r.accuracy} متر)`);
     } catch (e) { showToast(e.message || 'تعذر تحديد الموقع', true); }
     btn.disabled = false; btn.innerHTML = html;

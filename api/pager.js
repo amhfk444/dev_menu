@@ -11,7 +11,7 @@
 // =====================================================================
 const crypto = require('crypto');
 const PLANS = require('./_lib/plans');
-const { reqLang, handler, rest, rpc, q, ApiError, readBody, findPublicStore, storeHasFeature, loyaltyHome, later } = require('./_lib/core');
+const { reqLang, handler, rest, rpc, q, ApiError, readBody, findPublicStore, storeHasFeature, loyaltyHome, later, googleReviewLink } = require('./_lib/core');
 const { pushPublicKey, cleanSubscription, sendPush } = require('./_lib/push');
 const { topic, poke } = require('./_lib/live');
 const { normalizeLoyalty } = require('./_lib/loyalty');
@@ -66,11 +66,9 @@ async function linkedCard(branchId, cardId) {
   const gifts = await rest(`loyalty_gifts?to_card=eq.${cardId}&status=eq.claimed&expires_at=gt.${q(new Date().toISOString())}&select=code&limit=1`).catch(() => []);
   return { wallet: !!c.wallet_serial, reward_ready: (c.stamps || 0) >= normalizeLoyalty(x.loyalty_settings).needed || gifts.length > 0 };
 }
-// رابط تقييم المحل في قوقل ماب: رابط "اكتب تقييم" لو حطه، وإلا رابط موقعه في قوقل ماب
-const GOOGLE_RE = /^https:\/\/(g\.page|search\.google\.com|www\.google\.com|maps\.app\.goo\.gl|goo\.gl|maps\.google\.com|g\.co)\//i;
+// رابط تقييم المحل في قوقل ماب
 async function reviewUrl(storeId) {
-  const x = (await rest(`clients?id=eq.${storeId}&select=google_review_url,location_url`).catch(() => []))[0] || {};
-  return [x.google_review_url, x.location_url].find(u => u && GOOGLE_RE.test(u) && u.length < 500) || null;
+  return googleReviewLink((await rest(`clients?id=eq.${storeId}&select=google_review_url,location_url`).catch(() => []))[0]);
 }
 // محل التجربة في الصفحة التعريفية: الرقم يجهز تلقائياً بعد ثواني عشان الزائر يجرب الرنّة بنفسه
 const DEMO = new Set(['bistrobella']);

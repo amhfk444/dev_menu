@@ -118,7 +118,12 @@ async function revokePass(serial) {
 async function pagerBody({ store, number, step, status, notice, url, lang }) {
   const L = (t) => tr(lang, t);
   const { pagerStrip, brandColor } = require('./strip');
-  const color = await brandColor(store);
+  const { rest, googleReviewLink } = require('./core');
+  const [color, x] = await Promise.all([brandColor(store),
+    store.id ? rest(`clients?id=eq.${Number(store.id)}&select=google_review_url,location_url,loyalty_lat,loyalty_lng`).then(r => r[0] || {}).catch(() => ({})) : {}]);
+  const review = googleReviewLink(x);
+  // بعد الاستلام: "بالعافية" ومعها طلب التقييم لو المحل حط رابطه
+  if (step === 'idle' && review && notice === L('بالعافية! نتشرف بزيارتك')) notice = L('بالعافية! عجبك طلبك؟ قيّمنا في قوقل ⭐');
   const body = {
     logoText: String(store.name || 'DEV MENU').slice(0, 40),
     organizationName: String(store.name || 'DEV MENU').slice(0, 64),
@@ -128,7 +133,8 @@ async function pagerBody({ store, number, step, status, notice, url, lang }) {
     secondaryFields: [{ label: L('الحالة'), value: L(String(status)).slice(0, 40) }],   // الإشعار من حقل notification (فيه الوقت، فيطلع كل مرة)
     backFields: [
       { label: L('بطاقة النداء'), value: L('كل ما تاخذ رقم من البيجر تتحدث هالبطاقة برقمك، ويوصلك منها إشعار لما يجهز طلبك.') },
-      { label: L('صفحة رقمك'), value: url }
+      { label: L('صفحة رقمك'), value: url },
+      ...(review ? [{ label: L('قيّمنا في قوقل'), value: review }] : [])
     ],
     sharingProhibited: true,
     notification: String(notice || ' ').slice(0, 250)
@@ -136,6 +142,9 @@ async function pagerBody({ store, number, step, status, notice, url, lang }) {
   const strip = await pagerStrip(color, step);
   if (strip) body.stripURL = strip;
   if (store.logo_url && /^https:\/\//.test(store.logo_url)) { body.logoURL = store.logo_url; body.iconURL = store.logo_url; }
+  // موقع المحل: البطاقة تطلع على شاشة القفل لما يقرب منه
+  const lat = Number(x.loyalty_lat), lng = Number(x.loyalty_lng);
+  if (x.loyalty_lat != null && Number.isFinite(lat) && Number.isFinite(lng)) body.locations = [{ latitude: lat, longitude: lng, relevantText: L(`أنت قريب من ${store.name || 'المحل'}، تفضّل 👋`).slice(0, 80) }];
   return body;
 }
 async function createPagerPass(ctx) {
