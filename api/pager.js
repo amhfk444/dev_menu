@@ -100,6 +100,14 @@ async function demoRing(store, token) {
 
 const SLUG_OK = /^[a-z0-9-]{2,63}$/i;
 const CAR_COLORS = ['أبيض', 'أسود', 'فضي', 'رمادي', 'أحمر', 'أزرق', 'بني', 'بيج', 'أخضر', 'ذهبي'];
+// سيارة الزبون: اللون من القائمة، والنوع نص قصير، وآخر 4 أرقام من اللوحة (اختيارية). null لو ما فيها لون ولا نوع
+function cleanCar(b) {
+  b = b || {};
+  const color = CAR_COLORS.includes(b.color) ? b.color : null;
+  const model = String(b.model || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 24) || null;
+  const plate = String(b.plate || '').replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15)).replace(/\D/g, '').slice(0, 4) || null;
+  return color || model ? { color, model, plate } : null;
+}
 
 async function loadStore(slug) {
   let { store, bad } = await findPublicStore(slug, 'id,name,client_slug,logo_url,business_type,accent_color');
@@ -132,7 +140,8 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const full = store.free && (await monthTickets(store.id, PLANS.FREE.pager)) >= PLANS.FREE.pager;   // البيجر المجاني خلّص عدده
     // بطاقة النداء تنعرض قبل أخذ الرقم (المحل اللي ما عنده ولاء)
     const card = wallet.configured() && !store.free && !(await loyaltyOf(store.id)).enabled;
-    return { store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, push_key: pushPublicKey(), brand: await brandOf(store), card, ...(full ? { full: true } : {}) };
+    const car = (await rest(`clients?id=eq.${store.id}&select=pager_car`).catch(() => []))[0]?.pager_car === true;   // خطوة السيارة قبل الرقم
+    return { store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, push_key: pushPublicKey(), brand: await brandOf(store), card, car, ...(full ? { full: true } : {}) };
   }
 
   if (action === 'take' && req.method === 'POST') {
@@ -144,7 +153,8 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const token = crypto.randomBytes(18).toString('base64url');
     try {
       const res = await rpc('server_pager_take', { p_client_id: store.id, p_token: token });
-      if (invoice) await rest(`pager_tickets?token=eq.${q(res.token)}&client_id=eq.${store.id}`, { method: 'PATCH', body: { invoice_no: invoice } }).catch(() => {});
+      const car = cleanCar(b.car);
+      if (invoice || car) await rest(`pager_tickets?token=eq.${q(res.token)}&client_id=eq.${store.id}`, { method: 'PATCH', body: { ...(invoice ? { invoice_no: invoice } : {}), ...(car ? { car } : {}) } }).catch(() => {});
       if (reqLang(req) === 'en') await rest(`pager_tickets?token=eq.${q(res.token)}&client_id=eq.${store.id}`, { method: 'PATCH', body: { lang: 'en' } }).catch(() => {});
       // عنده بطاقة ولاء في نفس الجوال: نربطها برقم البيجر، وينختم لما يجهز الطلب
       if (/^[A-Za-z0-9_-]{10,64}$/.test(String(b.lt || ''))) {
@@ -250,13 +260,10 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const store = await loadStore(b.slug);
     const token = String(b.t || '');
     if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
-    const color = CAR_COLORS.includes(b.color) ? b.color : null;
-    const model = String(b.model || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 24) || null;
-    const plate = String(b.plate || '').replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15)).replace(/\D/g, '').slice(0, 4) || null;
-    if (!color && !model) throw new ApiError(400, 'اختر لون سيارتك أو اكتب نوعها');
+    const car = cleanCar(b);
+    if (!car) throw new ApiError(400, 'اختر لون سيارتك أو اكتب نوعها');
     const t = (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=in.(waiting,ready)&select=id`))[0];
     if (!t) throw new ApiError(404, 'الرقم غير موجود أو انتهى', 'NOT_FOUND');
-    const car = { color, model, plate };
     await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { car } });
     await poke([topic('pager', store.id), topic('ticket', token)]);
     return { car };

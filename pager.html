@@ -133,6 +133,13 @@
   .stp .field:focus { background: #fff !important; border-color: #15271b !important; }
   .stp .field::placeholder { color: rgba(21,39,27,.3); }
   #s-inv-in.stp-in { text-align: center; font-size: 34px !important; font-weight: 900 !important; letter-spacing: .12em; padding: 16px !important; border-radius: 18px !important; }
+  .stp-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 12px; }
+  .stp-dots span { width: 8px; height: 8px; border-radius: 99px; background: rgba(255,255,255,.3); transition: width .25s; }
+  .stp-dots span.done { background: rgba(255,255,255,.75); }
+  .stp-dots span.on { width: 26px; background: #fff; }
+  .stp-note { text-align: center; font-size: 14px; font-weight: 800; color: #d1fae5; margin-bottom: 10px; }
+  .car-c { display: flex; align-items: center; gap: 6px; border-radius: 99px; padding: 8px 12px; font-size: 14px; font-weight: 800; border: 2px solid rgba(21,39,27,.15); background: #fff; }
+  .car-c[aria-checked="true"] { border-color: #15271b; background: #15271b; color: #fff; }
   .stp-skip { display: block; margin: 16px auto 0; font-size: 15px; font-weight: 800; color: #3b4a40; text-decoration: underline; }
   .note { text-align: center; font-size: 13.5px; font-weight: 700; opacity: .8; }
   .btn-ghost { background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.28); }
@@ -186,6 +193,8 @@
 
   <!-- أخذ رقم -->
   <section id="v-start" class="hidden">
+    <div id="s-dots" class="stp-dots" aria-hidden="true"></div>
+    <p id="s-note" class="stp-note hidden"><i class="ph-bold ph-check-circle"></i> أضفت بطاقة النداء</p>
     <div id="s-card" class="stp hidden">
       <div class="stp-ic"><i class="ph-bold ph-wallet"></i></div>
       <h3 class="stp-h">أضف بطاقة النداء</h3>
@@ -206,13 +215,31 @@
         <button type="button" id="s-inv-skip" class="stp-skip">ما عندي فاتورة</button>
       </form>
     </div>
+    <div id="s-car" class="stp">
+      <div class="stp-ic"><i class="ph-bold ph-car"></i></div>
+      <h3 class="stp-h">وش سيارتك؟</h3>
+      <form id="s-car-form" class="stp-b" novalidate>
+        <p class="stp-sub">عشان نجيب لك طلبك لسيارتك.</p>
+        <div id="s-car-colors" class="flex flex-wrap justify-center gap-2" role="radiogroup" aria-label="لون السيارة"></div>
+        <div class="flex gap-2 mt-3">
+          <input id="s-car-model" class="field flex-1 min-w-0 !text-[17px]" maxlength="24" autocomplete="off" placeholder="نوعها، مثل: كامري">
+          <input id="s-car-plate" class="field !w-28 text-center !text-[17px] tracking-widest" inputmode="numeric" maxlength="4" autocomplete="off" dir="ltr" placeholder="اللوحة" aria-label="آخر أرقام اللوحة (اختياري)">
+        </div>
+        <p id="s-car-err" class="hidden text-[14px] font-bold text-rose-700 mt-2"></p>
+        <button id="s-car-next" class="btn btn-wallet mt-3">التالي</button>
+        <button type="button" id="s-car-skip" class="stp-skip">بستلمه من الكاشير</button>
+      </form>
+    </div>
     <div id="s-take" class="stp">
       <div class="stp-ic"><i class="ph-bold ph-ticket"></i></div>
       <h3 class="stp-h">خذ رقمك</h3>
       <div class="stp-b">
         <p id="t-start" class="stp-sub"></p>
         <button id="take-btn" class="btn btn-wallet"><i class="ph-bold ph-ticket"></i> خذ رقمي وفعّل التنبيه</button>
-        <button type="button" id="s-take-inv" class="stp-skip !no-underline hidden">🧾 فاتورة <span dir="ltr"></span> <i class="ph-bold ph-pencil-simple text-xs"></i></button>
+        <div class="flex flex-wrap justify-center gap-x-4">
+          <button type="button" id="s-take-inv" class="stp-skip !no-underline hidden">🧾 فاتورة <span dir="ltr"></span> <i class="ph-bold ph-pencil-simple text-xs"></i></button>
+          <button type="button" id="s-take-car" class="stp-skip !no-underline hidden">🚗 <span></span> <i class="ph-bold ph-pencil-simple text-xs"></i></button>
+        </div>
       </div>
     </div>
   </section>
@@ -588,8 +615,9 @@
     const on = pushDone(), supported = pushSupported();
     const denied = supported && Notification.permission === 'denied';
     const kept = keeperOn();
-    $('push-on').classList.toggle('hidden', !on);
-    $('keep-on').classList.toggle('hidden', !kept);
+    // "كل شي شغّال" ما نعرضه (زحمة)، نعرض بس اللي يحتاج منه شي
+    $('push-on').classList.add('hidden');
+    $('keep-on').classList.add('hidden');
     $('push-btn').classList.toggle('hidden', on || denied || !supported);
     $('keep-btn').classList.toggle('hidden', kept);
     $('push-denied').classList.toggle('hidden', !denied);
@@ -704,9 +732,10 @@
   }
   function renderCar(r, st) {
     const ask = !!r.car_ask && st === 'waiting', has = !!(r.car && (r.car.color || r.car.model));
-    $('car-form').classList.toggle('hidden', !ask || (has && !carEditing));
-    $('car-chip').classList.toggle('hidden', !ask || !has || carEditing);
-    if (has) $('car-chip').querySelector('span').textContent = `🚗 ${carText(r.car)}`;
+    // الفورم يطلع بس لما يضغط على السيارة (حددها قبل الرقم أو تخطاها)
+    $('car-form').classList.toggle('hidden', !ask || !carEditing);
+    $('car-chip').classList.toggle('hidden', !ask || carEditing);
+    $('car-chip').querySelector('span').textContent = has ? `🚗 ${carText(r.car)}` : '🚗 حدد سيارتك عشان نجيب طلبك لها';
     if (ask && !$('car-colors').children.length) paintCarColors();
   }
   $('car-colors').onclick = (e) => { const b = e.target.closest('[data-c]'); if (!b) return; carColor = carColor === b.dataset.c ? '' : b.dataset.c; paintCarColors(); };
@@ -844,37 +873,67 @@
   let cardOffer = false, stepInv = '', stepAt = '', invSkipped = false;
   const SKIP_KEY = `${KEY}_pcskip`;
   const cardSkipped = () => { try { return sessionStorage.getItem(SKIP_KEY) === '1'; } catch { return false; } };
-  // خطوة وحدة بس قدّامه: البطاقة (لو ما عنده) ← رقم الفاتورة ← خذ رقمك
+  // خطوة وحدة بس قدّامه: البطاقة (لو ما عنده) ← رقم الفاتورة ← السيارة (لو المحل يوصّل للسيارة) ← خذ رقمك
+  let carOffer = false, stepCar = null, carSkipped = false, sCarColor = '', hadCard = false;
+  const JUST_KEY = `${KEY}_pcjust`;   // أضاف البطاقة الحين: نأكد له في الخطوة اللي بعدها
   function renderSteps() {
-    const cardDone = !cardOffer || !!pagerCard() || cardSkipped(), invDone = !!stepInv || invSkipped;
-    const cur = stepAt || (!cardDone ? 'card' : !invDone ? 'inv' : 'take');
-    ['card', 'inv', 'take'].forEach(k => { const el = $(`s-${k}`); el.classList.toggle('hidden', k !== cur); el.classList.toggle('on', k === cur); });
+    const cardDone = !cardOffer || !!pagerCard() || cardSkipped(), invDone = !!stepInv || invSkipped, carDone = !carOffer || !!stepCar || carSkipped;
+    const cur = stepAt || (!cardDone ? 'card' : !invDone ? 'inv' : !carDone ? 'car' : 'take');
+    ['card', 'inv', 'car', 'take'].forEach(k => { const el = $(`s-${k}`); el.classList.toggle('hidden', k !== cur); el.classList.toggle('on', k === cur); });
+    // نقاط التقدم (بدون أرقام): الخطوات اللي بيمر عليها في هالزيارة
+    const steps = [...(cardOffer && !hadCard ? ['card'] : []), 'inv', ...(carOffer ? ['car'] : []), 'take'], at = steps.indexOf(cur);
+    $('s-dots').innerHTML = steps.length > 1 ? steps.map((k, i) => `<span class="${i === at ? 'on' : i < at ? 'done' : ''}"></span>`).join('') : '';
+    let just = false; try { just = sessionStorage.getItem(JUST_KEY) === '1'; } catch {}
+    $('s-note').classList.toggle('hidden', !(just && pagerCard() && cur !== 'card'));
     $('s-take-inv').classList.toggle('hidden', !stepInv);
     $('s-take-inv').querySelector('span').textContent = stepInv;
+    $('s-take-car').classList.toggle('hidden', !stepCar);
+    if (stepCar) $('s-take-car').querySelector('span').textContent = carText(stepCar);
+    if (cur === 'car' && !$('s-car-colors').children.length) paintStepColors();
   }
-  // يعدّل رقم الفاتورة قبل ما ياخذ الرقم
-  $('s-take-inv').onclick = () => { stepAt = 'inv'; renderSteps(); $('s-inv-in').value = stepInv; $('s-inv-in').focus(); };
+  // ننقله للخطوة ونفتح الكيبورد على طول لو هي رقم الفاتورة (لازم من ضغطة الزبون عشان الآيفون يفتحه)
+  function goStep(k) {
+    stepAt = k || ''; renderSteps();
+    const cur = $('v-start').querySelector('.stp.on');
+    if (cur && cur.id === 's-inv') { $('s-inv-in').value = stepInv; $('s-inv-in').focus(); }
+  }
+  // يعدّل رقم الفاتورة أو السيارة قبل ما ياخذ الرقم
+  $('s-take-inv').onclick = () => goStep('inv');
+  $('s-take-car').onclick = () => goStep('car');
+  function paintStepColors() {
+    $('s-car-colors').innerHTML = CAR_COLORS.map(([n, hex]) => `<button type="button" role="radio" aria-checked="${sCarColor === n}" data-c="${n}" class="car-c"><span class="w-4 h-4 rounded-full border border-black/20" style="background:${hex}"></span>${n}</button>`).join('');
+  }
+  $('s-car-colors').onclick = (e) => { const b = e.target.closest('[data-c]'); if (!b) return; sCarColor = sCarColor === b.dataset.c ? '' : b.dataset.c; paintStepColors(); };
+  $('s-car-form').onsubmit = (e) => {
+    e.preventDefault();
+    const model = $('s-car-model').value.replace(/\s+/g, ' ').trim(), plate = $('s-car-plate').value.replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15)).replace(/\D/g, '').slice(0, 4);
+    if (!sCarColor && !model) { $('s-car-err').textContent = 'اختر لون سيارتك أو اكتب نوعها'; return $('s-car-err').classList.remove('hidden'); }
+    $('s-car-err').classList.add('hidden');
+    stepCar = { color: sCarColor || null, model: model || null, plate: plate || null }; carSkipped = false;
+    document.activeElement && document.activeElement.blur(); goStep('');
+  };
+  $('s-car-skip').onclick = () => { stepCar = null; carSkipped = true; $('s-car-err').classList.add('hidden'); goStep(''); };
   $('s-card-btn').onclick = async () => {
     const btn = $('s-card-btn'), label = btn.querySelector('span'); btn.disabled = true; label.textContent = 'جاري التجهيز…';
     try {
       const r = await DM.post('/api/pager?action=wallet', { slug, pre: true, pc: pagerCard() || undefined });
       if (r.card) savePagerCard(r.card);
-      try { sessionStorage.removeItem(SKIP_KEY); } catch {}
+      try { sessionStorage.removeItem(SKIP_KEY); sessionStorage.setItem(JUST_KEY, '1'); } catch {}
       stepAt = ''; renderSteps();
       if (r.url) location.href = walletHref(r.url);
     } catch (err) { alert(err.message || 'تعذر الإضافة للمحفظة'); renderSteps(); }
     btn.disabled = false;
   };
-  $('s-card-skip').onclick = () => { try { sessionStorage.setItem(SKIP_KEY, '1'); } catch {} stepAt = ''; renderSteps(); };
+  $('s-card-skip').onclick = () => { try { sessionStorage.setItem(SKIP_KEY, '1'); } catch {} goStep(''); };
   $('s-inv-form').onsubmit = (e) => {
     e.preventDefault();
     const v = $('s-inv-in').value.trim().replace(/\s+/g, '').replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15));
     $('s-inv-err').classList.add('hidden');
     if (!v) return $('s-inv-in').focus();
     if (!/^[A-Za-z0-9#\-_/]{1,20}$/.test(v)) { $('s-inv-err').textContent = 'رقم الفاتورة: أرقام وحروف إنجليزية فقط'; return $('s-inv-err').classList.remove('hidden'); }
-    stepInv = v; invSkipped = false; stepAt = ''; $('s-inv-in').blur(); renderSteps();
+    stepInv = v; invSkipped = false; $('s-inv-in').blur(); goStep('');
   };
-  $('s-inv-skip').onclick = () => { stepInv = ''; invSkipped = true; stepAt = ''; $('s-inv-err').classList.add('hidden'); renderSteps(); };
+  $('s-inv-skip').onclick = () => { stepInv = ''; invSkipped = true; $('s-inv-err').classList.add('hidden'); $('s-inv-in').blur(); goStep(''); };
   // رجع من صفحة المحفظة: نحدّث الخطوات
   window.addEventListener('pageshow', () => { if (!$('v-start').classList.contains('hidden')) renderSteps(); });
 
@@ -885,13 +944,13 @@
     const btn = $('take-btn'); btn.disabled = true; btn.innerHTML = '<i class="ph-bold ph-spinner-gap ph-spin"></i>';
     try {
       const lt = await DM.loyaltyToken(slug);   // بطاقة الولاء (ولو انسجّلت من فرع ثاني)
-      const r = await DM.post('/api/pager?action=take', { slug, lt: lt || undefined, pc: pagerCard() || undefined, invoice: stepInv || undefined });
-      stepInv = ''; stepAt = '';
+      const r = await DM.post('/api/pager?action=take', { slug, lt: lt || undefined, pc: pagerCard() || undefined, invoice: stepInv || undefined, car: stepCar || undefined });
+      stepInv = ''; stepAt = ''; stepCar = null; carSkipped = false; try { sessionStorage.removeItem(JUST_KEY); } catch {}
       saveToken(r.token); setStore(r.store); dismissed = false;
       if (perm) await perm;
       await subscribePush();
       await poll();
-      offerPerm(true);   // بعد أخذ الرقم تطلع دايماً: يا يوافق، يا يتأكد إن كل شي مفعّل
+      offerPerm();   // تطلع بس لو التنبيه أو الصوت ناقص
     } catch (e) {
       stopKeeper();
       if (e.code === 'DUPLICATE' || e.status === 400) { stepAt = 'inv'; renderSteps(); $('s-inv-err').textContent = e.message; $('s-inv-err').classList.remove('hidden'); return; }
@@ -1081,7 +1140,7 @@
     $('rate-thanks').textContent = 'وصلت ملاحظتك، شكراً لأنك ساعدتنا نتحسّن';
     $('rate-thanks').classList.remove('hidden');
   };
-  $('new-btn').onclick = () => { saveToken(''); hideRating(); stepInv = ''; invSkipped = false; stepAt = ''; $('s-inv-in').value = ''; show('start'); };
+  $('new-btn').onclick = () => { saveToken(''); hideRating(); stepInv = ''; invSkipped = false; stepAt = ''; stepCar = null; carSkipped = false; $('s-inv-in').value = ''; show('start'); };
   // ─── يرجع يشتغل لوحده: رجع للصفحة، رجع النت، أو المتصفح جمّد الصفحة وهو بتطبيق ثاني ───
   function revive() {
     if (document.hidden || !loadToken()) return;
@@ -1107,10 +1166,10 @@
     if (!slug) return unavailable('الرابط غير صحيح', 'امسح رمز QR من عند الموظف.');
     // نتأكد إن المتجر موجود، ونجيب مفتاح الإشعارات
     let fullNow = false;
-    try { const info = await DM.get(`/api/pager?action=info&slug=${encodeURIComponent(slug)}`); setStore(info.store); pushKey = info.push_key || ''; brand = Number(info.brand) || 0; fullNow = info.full === true; cardOffer = info.card === true; }
+    try { const info = await DM.get(`/api/pager?action=info&slug=${encodeURIComponent(slug)}`); setStore(info.store); pushKey = info.push_key || ''; brand = Number(info.brand) || 0; fullNow = info.full === true; cardOffer = info.card === true; carOffer = info.car === true; }
     catch (e) { return unavailable('البيجر غير متاح حالياً', 'اسأل الموظف.'); }
     // بطاقة النداء محفوظة في هالجوال (ولو من قبل تحديث الفروع): نجدد حفظها لكل devmenu.digital عشان كل فرع يعرفها
-    { const pc = pagerCard(); if (pc) savePagerCard(pc); }
+    { const pc = pagerCard(); if (pc) savePagerCard(pc); hadCard = !!pc; }
     if ('serviceWorker' in navigator && pushKey) navigator.serviceWorker.register('/sw.js').catch(() => {});
     if (loadToken()) { await poll(); return offerPerm(); }   // رجع للصفحة: الصوت يحتاج ضغطة منه من جديد
     if (fullNow) return unavailable('البيجر متوقف مؤقتاً', 'تفضّل عند الكاشير وبيبلغك أول ما يجهز طلبك.');
