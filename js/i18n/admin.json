@@ -1515,5 +1515,14 @@
   "تنحذف كل الإشعارات من القائمة، وما ترجع.": "All notifications are removed and can't be restored.",
   "احذف الكل": "Delete all",
   "ما انحفظ، تأكد من الإنترنت": "Not saved, check your connection",
-  "ما انحذف، تأكد من الإنترنت": "Not deleted, check your connection"
+  "ما انحذف، تأكد من الإنترنت": "Not deleted, check your connection",
+  "بيانات المحل": "Store details",
+  "حفظ بيانات المحل": "Save store details",
+  "بطاقة النداء": "Call card",
+  "حدد الموقع من هنا": "Use my current location",
+  "الرسالة اللي تطلع على شاشة القفل": "Lock-screen message",
+  "احفظ": "Save",
+  "لو تركتها فاضية تطلع الرسالة الرمادية اللي في الخانة. تتغير في بطاقات زبائنك مع أول رقم ياخذونه.": "Leave it empty to use the grey text shown in the box. Your customers' cards update with their next number.",
+  "إعدادات المنيو": "Menu settings",
+  "(تنحفظ تلقائياً)": "(saved automatically)"
 }
