@@ -15,7 +15,7 @@ const { reqLang, handler, rest, rpc, q, ApiError, readBody, findPublicStore, sto
 const { pushPublicKey, cleanSubscription, sendPush } = require('./_lib/push');
 const { topic, poke } = require('./_lib/live');
 const { normalizeLoyalty } = require('./_lib/loyalty');
-const { pagerReadyNotice } = require('./_lib/loyalty-assistant');
+const { pagerReadyNotice, walletNotice } = require('./_lib/loyalty-assistant');
 const SECTORS = require('./_lib/sectors');
 const { riyadhDayStart } = require('./_lib/waitlist');
 const wallet = require('./_lib/wallet');
@@ -61,10 +61,10 @@ const TOKEN_RE = /^[A-Za-z0-9_-]{10,64}$/;
 async function linkedCard(branchId, cardId) {
   if (!cardId) return { wallet: false, reward_ready: false };
   const storeId = await loyaltyHome(branchId);
-  const c = (await rest(`loyalty_cards?id=eq.${cardId}&select=stamps,wallet_serial`).catch(() => []))[0] || {};
+  const c = (await rest(`loyalty_cards?id=eq.${cardId}&select=stamps,wallet_serial,wallet_error`).catch(() => []))[0] || {};
   const x = (await rest(`clients?id=eq.${storeId}&select=loyalty_settings`).catch(() => []))[0] || {};
   const gifts = await rest(`loyalty_gifts?to_card=eq.${cardId}&status=eq.claimed&expires_at=gt.${q(new Date().toISOString())}&select=code&limit=1`).catch(() => []);
-  return { wallet: !!c.wallet_serial, reward_ready: (c.stamps || 0) >= normalizeLoyalty(x.loyalty_settings).needed || gifts.length > 0 };
+  return { wallet: !!c.wallet_serial && !wallet.passRemoved(c.wallet_error), wallet_removed: !!c.wallet_serial && wallet.passRemoved(c.wallet_error), reward_ready: (c.stamps || 0) >= normalizeLoyalty(x.loyalty_settings).needed || gifts.length > 0 };
 }
 // رابط تقييم المحل في قوقل ماب
 async function reviewUrl(storeId) {
@@ -129,8 +129,11 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       if (reqLang(req) === 'en') await rest(`pager_tickets?token=eq.${q(res.token)}&client_id=eq.${store.id}`, { method: 'PATCH', body: { lang: 'en' } }).catch(() => {});
       // عنده بطاقة ولاء في نفس الجوال: نربطها برقم البيجر، وينختم لما يجهز الطلب
       if (/^[A-Za-z0-9_-]{10,64}$/.test(String(b.lt || ''))) {
-        const card = (await rest(`loyalty_cards?token=eq.${q(b.lt)}&client_id=eq.${await loyaltyHome(store.id)}&select=id`).catch(() => []))[0];
+        const home = await loyaltyHome(store.id);
+        const card = (await rest(`loyalty_cards?token=eq.${q(b.lt)}&client_id=eq.${home}&select=id,wallet_serial`).catch(() => []))[0];
         if (card) await rest(`pager_tickets?token=eq.${q(res.token)}&client_id=eq.${store.id}`, { method: 'PATCH', body: { loyalty_card_id: card.id } }).catch(() => {});
+        // إشعار برقمه على بطاقة الولاء: يأكد له إن النداء بيوصله، ونعرف منه لو البطاقة انحذفت من محفظته
+        if (card && card.wallet_serial && (await loyaltyOf(store.id)).enabled) later(walletNotice(home, card.id, `رقمك ${res.number} في ${store.name}. يوصلك إشعار هنا لما يجي دورك`));
       }
       // عنده بطاقة نداء من زيارة سابقة: نربطها بالرقم الجديد وتتحدث برقمه
       if (TOKEN_RE.test(String(b.pc || ''))) await linkPagerCard(store, res.token, b.pc).catch(e => console.error('PAGER_CARD', e.message));
@@ -157,7 +160,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const stale = t.status === 'waiting' && Date.now() - Date.parse(t.created_at) > 18 * 3600e3;
     const review = ['ready', 'done'].includes(t.status) ? await reviewUrl(store.id) : null;
     // البطاقة المربوطة انحذفت من محفظته (آخر تحديث وصل لـ 0 جوال): نعرض عليه يضيفها من جديد
-    const card_gone = !!t.wallet_url && /devices=0\b/.test(String(t.wallet_error || '').split('|').pop());
+    const card_gone = !!t.wallet_url && wallet.passRemoved(t.wallet_error);
     return { demo: DEMO.has(store.client_slug), wallet: wallet.configured() && !store.free, in_wallet: !!t.wallet_url && !card_gone, card_gone, review_url: review, store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
       loyalty: { ...(await loyaltyOf(store.id)), linked: !!t.loyalty_card_id, stamped: !!t.loyalty_stamped,
         ...(await linkedCard(store.id, t.loyalty_card_id)) } };

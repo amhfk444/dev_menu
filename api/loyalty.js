@@ -56,7 +56,7 @@ function checkPresence(ctx, b) {
   return d;
 }
 
-const cardView = (c) => ({ no: c.member_no, qr: c.client_id ? memberQr(c) : null, name: c.name || null, gender: c.gender || null, stamps: c.stamps, visits: c.visits, rewards: c.rewards, last_stamp_at: c.last_stamp_at, in_wallet: !!c.wallet_url, has_phone: !!c.phone, has_profile: !!(c.name && c.phone && c.gender) });
+const cardView = (c) => ({ no: c.member_no, qr: c.client_id ? memberQr(c) : null, name: c.name || null, gender: c.gender || null, stamps: c.stamps, visits: c.visits, rewards: c.rewards, last_stamp_at: c.last_stamp_at, in_wallet: !!c.wallet_url && !wallet.passRemoved(c.wallet_error), has_phone: !!c.phone, has_profile: !!(c.name && c.phone && c.gender) });
 
 // بيانات التسجيل: الاسم والجوال والنوع (كلها إجبارية)
 function readProfile(b) {

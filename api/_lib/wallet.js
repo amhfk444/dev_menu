@@ -189,4 +189,11 @@ async function endPagerPass(serial, ticketId, ctx) {
   return `back ${await updatePagerPass(serial, { ...step, notice: ' ' })}`;
 }
 
-module.exports = { configured, createPass, updatePass, revokePass, buildCtx, cardUrl, createPagerPass, updatePagerPass, endPagerPass, pagerStep };
+// الزبون حذف البطاقة من محفظته: آخر تحديث تغيّر محتواه وما وصل لأي جهاز
+// (لو المحتوى ما تغيّر الخدمة ما ترسل لأحد، فـ devices=0 وقتها ما تعني شي)
+const passRemoved = (err) => {
+  const last = String(err || '').split('|').pop();
+  return /devices=0\b/.test(last) && !/unchanged=true\b/.test(last);
+};
+
+module.exports = { passRemoved, configured, createPass, updatePass, revokePass, buildCtx, cardUrl, createPagerPass, updatePagerPass, endPagerPass, pagerStep };

@@ -778,7 +778,7 @@ async function main(req) {
 
   // البطاقة في المحفظة: لو آخر تحديث لها ما وصل لأي جهاز، الزبون حذفها (ما نعرف إلا بعد أول تحديث: ختم أو رسالة)
   const walletState = (serial, err) => {
-    const removed = !!serial && /devices=0\b/.test(String(err || ''));
+    const removed = !!serial && wallet.passRemoved(err);
     return { in_wallet: !!serial && !removed, wallet_removed: removed };
   };
   // ─── بطاقة الولاء: كل الأعضاء (للقائمة والداشبورد وملف CSV) ───
