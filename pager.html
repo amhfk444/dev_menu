@@ -1031,15 +1031,12 @@
   $('got-btn').onclick = () => { clearTimeout(pollTimer); ack(); offerRating(loadToken()); dismissed = true; stopRinging(); $('d-title').textContent = 'بالعافية!'; $('d-sub').textContent = 'نتشرف بزيارتك مرة ثانية.'; saveToken(''); show('done'); };
 
   // ─── حسابات المحل في التواصل: تطلع في شاشة "بالعافية" تحت التقييم ───
-  const SOCIAL = [['instagram', 'انستقرام', 'instagram.com'], ['tiktok', 'تيك توك', 'tiktok.com'], ['snapchat', 'سناب شات', 'snapchat.com'], ['website', 'موقعنا', '']];
+  const SOCIAL = [['instagram', 'انستقرام', 'ph-instagram-logo'], ['tiktok', 'تيك توك', 'ph-tiktok-logo'], ['snapchat', 'سناب شات', 'ph-snapchat-logo'], ['website', 'موقعنا', 'ph-globe']];
   const esc = (v) => String(v).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
   function renderSocial(so) {
     const items = SOCIAL.filter(([k]) => /^https:\/\//i.test(so[k] || ''));
     $('d-social').classList.toggle('hidden', !items.length);
-    $('d-social-list').innerHTML = items.map(([k, label, domain]) => {
-      let host = domain; if (!host) try { host = new URL(so[k]).hostname; } catch {}
-      return `<a class="chip" target="_blank" rel="noopener" href="${esc(so[k])}"><img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64" alt="" class="w-4 h-4 rounded"> ${label}</a>`;
-    }).join('');
+    $('d-social-list').innerHTML = items.map(([k, label, icon]) => `<a class="chip !text-[13.5px] !py-2.5 !px-3.5" target="_blank" rel="noopener" href="${esc(so[k])}"><i class="ph-bold ${icon} text-[17px]"></i> ${label}</a>`).join('');
   }
 
   // ─── تقييم التجربة بعد الاستلام (مرة وحدة لكل رقم) ───
