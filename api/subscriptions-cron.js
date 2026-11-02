@@ -32,7 +32,10 @@ function message(store, stage, end, branches) {
     body = `اختر باقتك من لوحة التحكم عشان يبقى المنيو شغال لزبائنك بدون توقف.`;
   } else if (trial) {
     title = `انتهت التجربة المجانية لـ ${store.name}`;
-    body = 'المنيو متوقف عن الزبائن حالياً. اختر باقتك من لوحة التحكم ويرجع على طول.';
+    // اللي تجربته فيها البيجر ينتقل للبيجر المجاني تلقائياً، والباقي يتوقف
+    body = (store.plan_features || []).includes('pager')
+      ? `البيجر يكمل معك مجاناً (${PLANS.FREE.pager} رقم بالشهر)، وباقي المميزات متوقفة. اختر باقتك من لوحة التحكم وترجع على طول.`
+      : 'المنيو متوقف عن الزبائن حالياً. اختر باقتك من لوحة التحكم ويرجع على طول.';
   } else {
     title = `انتهى اشتراك ${store.name}`;
     body = `أعطيناك مهلة، والمنيو بيبقى شغال لزبائنك لين ${dateText(graceEnd)}. جدّد قبلها عشان ما يوقف.`;
@@ -55,9 +58,11 @@ module.exports = handler(['GET', 'POST'], async (req) => {
   await assertCronKey(req);
   const now = Date.now();
   // المتاجر الرئيسية فقط (الفروع تتبعها)، والموقوفة من الإدارة ما نذكّرها
-  const stores = await rest('clients?parent_id=is.null&is_active=is.true&subscription_status=in.(active,trial)&select=id,name,email,subscription_status,subscription_end_date,trial_ends_at,reminder_key,plan_features');
+  const stores = await rest('clients?parent_id=is.null&is_active=is.true&subscription_status=in.(active,trial)&select=id,name,email,subscription_status,subscription_end_date,trial_ends_at,reminder_key,plan_features,requested_plan');
   const results = [];
   for (const s of stores) {
+    // اللي اختار البيجر المجاني من البداية (أو حوّلته الإدارة له) ما عنده تجربة تنتهي: لا نرسل له "انتهت التجربة"
+    if (PLANS.isFree({ ...s, parent_id: null, is_active: true }) && !s.requested_plan) continue;
     const end = s.subscription_status === 'active' ? s.subscription_end_date : s.trial_ends_at;
     if (!end) continue;
     const left = (Date.parse(end) - now) / DAY;
