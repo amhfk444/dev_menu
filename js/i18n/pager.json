@@ -133,5 +133,19 @@
   "بيج": "Beige",
   "أخضر": "Green",
   "ذهبي": "Gold",
-  "صرت عضو! بينضاف لك ختم لما تستلم طلبك": "You're a member! You'll get a stamp when you pick up your order"
+  "صرت عضو! بينضاف لك ختم لما تستلم طلبك": "You're a member! You'll get a stamp when you pick up your order",
+  "أضف للمحفظة": "Add to wallet",
+  "افتح البطاقة في المحفظة": "Open the card in your wallet",
+  "يوصلك منها إشعار": "You'll get a notification from it",
+  "حتى لو قفلت الجوال. تضيفها مرة وحدة وتنفعك كل مرة.": "even if your phone is locked. Add it once and it works every time.",
+  "تخطي": "Skip",
+  "رقم الفاتورة": "Invoice number",
+  "تلقاه في فاتورتك. يساعد الموظف يعرف طلبك.": "It's on your receipt. It helps the staff find your order.",
+  "التالي": "Next",
+  "ما عندي فاتورة": "I don't have an invoice",
+  "في محفظتك": "In your wallet",
+  "تخطيتها": "Skipped",
+  "بدون": "None",
+  "بنرن جوالك {s}، حتى لو كان على الصامت.": "We'll ring your phone {s}, even on silent.",
+  "خذ رقمك من البيجر": "Take your number from the pager"
 }

@@ -121,6 +121,19 @@
   .track li.done { color: #fff; } .track li.done i { background: #fff; color: color-mix(in srgb, var(--brand) 85%, #000); border-color: #fff; }
   .track li.now { color: #fff; } .track li.now i { border-color: #fff; color: #fff; box-shadow: 0 0 0 0 rgba(255,255,255,.5); animation: pd 1.8s infinite; }
   .track li.gold i { background: #e9c95a; border-color: #e9c95a; color: #2b2104; }
+  /* خطوات أخذ الرقم: الخطوة الحالية مفتوحة بيضاء، واللي خلصت أو جاية سطر صغير */
+  .stp { border-radius: 22px; padding: 14px 16px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18); color: #fff; }
+  .stp-h { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 900; width: 100%; text-align: start; }
+  .stp-h b { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; flex-shrink: 0; border: 2px solid rgba(255,255,255,.35); }
+  .stp-h em { font-style: normal; font-size: 13px; font-weight: 700; opacity: .75; margin-inline-start: auto; direction: ltr; }
+  .stp-b { display: none; margin-top: 12px; }
+  .stp.on { background: #fff; color: #15271b; border-color: #fff; box-shadow: 0 24px 48px -28px rgba(0,0,0,.7); }
+  .stp.on .stp-h b { background: color-mix(in srgb, var(--brand) 85%, #000); color: #fff; border-color: transparent; }
+  .stp.on .stp-b { display: block; }
+  .stp.ok .stp-h b { background: #10b981; border-color: #10b981; color: #fff; }
+  .stp.next { opacity: .55; }
+  .stp-sub { font-size: 13.5px; font-weight: 600; line-height: 1.7; color: #3b4a40; margin-bottom: 12px; }
+  .stp-skip { display: block; margin: 10px auto 0; font-size: 13px; font-weight: 800; color: #3b4a40; text-decoration: underline; }
   .note { text-align: center; font-size: 13.5px; font-weight: 700; opacity: .8; }
   .btn-ghost { background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.28); }
   .btn-brand { background: #fff; color: color-mix(in srgb, var(--brand) 85%, #000); }
@@ -172,18 +185,35 @@
   </section>
 
   <!-- أخذ رقم -->
-  <section id="v-start" class="hidden space-y-3.5">
-    <div class="ticket plain text-center">
-      <div class="ring-ic mx-auto"><i class="ph-bold ph-bell-ringing"></i></div>
-      <h2 class="text-[28px] font-black mt-4">خذ رقمك</h2>
-      <p id="t-start" class="text-[14px] font-bold opacity-75 mt-2 leading-relaxed"></p>
+  <section id="v-start" class="hidden space-y-3">
+    <div class="text-center pb-1">
+      <h2 class="text-[28px] font-black">خذ رقمك</h2>
+      <p id="t-start" class="text-[14px] font-bold opacity-75 mt-1 leading-relaxed"></p>
     </div>
-    <button id="take-btn" class="btn btn-take"><i class="ph-bold ph-ticket"></i> خذ رقمي وفعّل التنبيه</button>
-    <ul class="steps">
-      <li><b>1</b> اضغط الزر واسمح بالإشعارات</li>
-      <li><b>2</b> قل رقمك للموظف</li>
-      <li><b>3</b> <span id="t-step3">يرن جوالك وقت ما يجي دورك</span></li>
-    </ul>
+    <div id="s-card" class="stp hidden">
+      <button type="button" class="stp-h" data-step="card"><b>1</b> أضف بطاقة النداء <em></em></button>
+      <div class="stp-b">
+        <p class="stp-sub">يوصلك منها إشعار <span class="t-when"></span> حتى لو قفلت الجوال. تضيفها مرة وحدة وتنفعك كل مرة.</p>
+        <button type="button" id="s-card-btn" class="btn btn-wallet !py-3.5 !text-base"><i class="ph-bold ph-wallet"></i> <span>أضف للمحفظة</span></button>
+        <button type="button" id="s-card-skip" class="stp-skip">تخطي</button>
+      </div>
+    </div>
+    <div id="s-inv" class="stp">
+      <button type="button" class="stp-h" data-step="inv"><b>2</b> رقم الفاتورة <em></em></button>
+      <form id="s-inv-form" class="stp-b" novalidate>
+        <p class="stp-sub">تلقاه في فاتورتك. يساعد الموظف يعرف طلبك.</p>
+        <input id="s-inv-in" class="field text-center !text-lg !font-black tracking-widest" inputmode="numeric" autocomplete="off" maxlength="20" dir="ltr" placeholder="1045">
+        <p id="s-inv-err" class="hidden text-[12.5px] font-bold text-rose-700 mt-2"></p>
+        <button id="s-inv-next" class="btn btn-wallet !py-3.5 !text-base mt-2.5">التالي</button>
+        <button type="button" id="s-inv-skip" class="stp-skip">ما عندي فاتورة</button>
+      </form>
+    </div>
+    <div id="s-take" class="stp">
+      <div class="stp-h"><b>3</b> خذ رقمك</div>
+      <div class="stp-b">
+        <button id="take-btn" class="btn btn-wallet"><i class="ph-bold ph-ticket"></i> خذ رقمي وفعّل التنبيه</button>
+      </div>
+    </div>
   </section>
 
   <!-- ينتظر -->
@@ -393,7 +423,7 @@
   const KEY = `dm_pager_${slug}`;
   const VIEWS = ['loading', 'unavailable', 'start', 'waiting', 'ready', 'done'];
   const $ = (id) => document.getElementById(id);
-  const show = (v) => { VIEWS.forEach(x => $(`v-${x}`).classList.toggle('hidden', x !== v)); $('v-game').classList.toggle('hidden', v !== 'waiting'); };
+  const show = (v) => { VIEWS.forEach(x => $(`v-${x}`).classList.toggle('hidden', x !== v)); $('v-game').classList.toggle('hidden', v !== 'waiting'); if (v === 'start') renderSteps(); };
   const saveToken = (t) => { try { t ? localStorage.setItem(KEY, t) : localStorage.removeItem(KEY); } catch {} };
   const loadToken = () => { try { return localStorage.getItem(KEY) || ''; } catch { return ''; } };
 
@@ -565,7 +595,7 @@
   // مصطلحات حسب مجال المنشأة (مطعم: "طلبك جاهز"، عيادة: "جاء دورك"، مغسلة: "سيارتك جاهزة")
   let T = DMSectors.terms(null);
   function applyTerms() {
-    $('t-start').textContent = `اضغط الزر واسمح بالإشعارات، و${T.tell.replace('ورّ هذا الرقم', 'قل رقمك')}. ${T.ringWhen.replace('لما', 'لما')} يرن جوالك ويوصلك إشعار، حتى لو كان على الصامت.`;
+    $('t-start').textContent = `بنرن جوالك ${T.ringWhen}، حتى لو كان على الصامت.`;
     $('w-tell').textContent = T.tell;
     $('t-waiting').textContent = `${T.waiting} بنرن جوالك ${T.ringWhen}`;
     $('mm-title').textContent = T.game;
@@ -573,7 +603,6 @@
     $('d-wait').textContent = /دور/.test(T.ringWhen) ? 'بالانتظار' : 'قيد التحضير';
     $('d-ready').textContent = 'قيد التحضير';
     $('r-body').textContent = `${T.readyBody} من ${storeInfo.name || 'الموظف'}`;
-    $('t-step3').textContent = `يرن جوالك ${T.ringWhen}`;
     $('t-got').textContent = T.got;
     document.querySelectorAll('.t-when').forEach(el => { el.textContent = T.ringWhen; });
   }
@@ -757,7 +786,7 @@
     const inv = r.ticket.invoice_no || '';
     ['w-invoice', 'r-invoice'].forEach(id => { $(id).classList.toggle('hidden', !inv); $(id).querySelector('span').textContent = inv; });
     $('w-tell').classList.toggle('hidden', !!inv);
-    if (!invEditing) $('inv-form').classList.toggle('hidden', !!inv || st !== 'waiting');
+    if (!invEditing) $('inv-form').classList.add('hidden');   // الفاتورة تنكتب قبل أخذ الرقم، وهنا تعديل بس
     renderCar(r, st);
     $('w-demo').classList.toggle('hidden', !r.demo);
     const ly = r.loyalty || {};
@@ -795,6 +824,54 @@
     acked = t;
     DM.post('/api/pager?action=ack', { slug, t }).catch(() => { acked = ''; });
   }
+  // ─── خطوات أخذ الرقم: بطاقة النداء ← رقم الفاتورة ← خذ رقمك ───
+  let cardOffer = false, stepInv = '', stepAt = '', invSkipped = false;
+  const SKIP_KEY = `${KEY}_pcskip`;
+  const cardSkipped = () => { try { return sessionStorage.getItem(SKIP_KEY) === '1'; } catch { return false; } };
+  function renderSteps() {
+    const cardOn = cardOffer, cardDone = !cardOn || !!pagerCard() || cardSkipped(), invDone = !!stepInv || invSkipped;
+    const cur = stepAt || (!cardDone ? 'card' : !invDone ? 'inv' : 'take');
+    let n = 0;
+    [['card', cardOn, cardDone], ['inv', true, invDone], ['take', true, false]].forEach(([k, on, done]) => {
+      const el = $(`s-${k}`); el.classList.toggle('hidden', !on); if (!on) return;
+      n++; const open = k === cur;
+      el.classList.toggle('on', open); el.classList.toggle('ok', done && !open); el.classList.toggle('next', !open && !done);
+      el.querySelector('.stp-h b').innerHTML = done && !open ? '<i class="ph-bold ph-check"></i>' : n;
+    });
+    $('s-card').querySelector('em').textContent = cardOn && pagerCard() ? 'في محفظتك' : cardSkipped() ? 'تخطيتها' : '';
+    $('s-inv').querySelector('em').textContent = stepInv ? `#${stepInv}` : invSkipped ? 'بدون' : '';
+    $('s-card-btn').querySelector('span').textContent = pagerCard() ? 'افتح البطاقة في المحفظة' : 'أضف للمحفظة';
+  }
+  // نضغط على خطوة خلصت عشان نعدّلها
+  document.querySelectorAll('[data-step]').forEach(h => h.onclick = () => {
+    const k = h.dataset.step; if ($(`s-${k}`).classList.contains('next')) return;
+    stepAt = k; renderSteps();
+    if (k === 'inv') { $('s-inv-in').value = stepInv; $('s-inv-in').focus(); }
+  });
+  $('s-card-btn').onclick = async () => {
+    const btn = $('s-card-btn'), label = btn.querySelector('span'); btn.disabled = true; label.textContent = 'جاري التجهيز…';
+    try {
+      const r = await DM.post('/api/pager?action=wallet', { slug, pre: true, pc: pagerCard() || undefined });
+      if (r.card) savePagerCard(r.card);
+      try { sessionStorage.removeItem(SKIP_KEY); } catch {}
+      stepAt = ''; renderSteps();
+      if (r.url) location.href = r.url;
+    } catch (err) { alert(err.message || 'تعذر الإضافة للمحفظة'); renderSteps(); }
+    btn.disabled = false;
+  };
+  $('s-card-skip').onclick = () => { try { sessionStorage.setItem(SKIP_KEY, '1'); } catch {} stepAt = ''; renderSteps(); };
+  $('s-inv-form').onsubmit = (e) => {
+    e.preventDefault();
+    const v = $('s-inv-in').value.trim().replace(/\s+/g, '').replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15));
+    $('s-inv-err').classList.add('hidden');
+    if (!v) return $('s-inv-in').focus();
+    if (!/^[A-Za-z0-9#\-_/]{1,20}$/.test(v)) { $('s-inv-err').textContent = 'رقم الفاتورة: أرقام وحروف إنجليزية فقط'; return $('s-inv-err').classList.remove('hidden'); }
+    stepInv = v; invSkipped = false; stepAt = ''; $('s-inv-in').blur(); renderSteps();
+  };
+  $('s-inv-skip').onclick = () => { stepInv = ''; invSkipped = true; stepAt = ''; $('s-inv-err').classList.add('hidden'); renderSteps(); };
+  // رجع من صفحة المحفظة: نحدّث الخطوات
+  window.addEventListener('pageshow', () => { if (!$('v-start').classList.contains('hidden')) renderSteps(); });
+
   $('take-btn').onclick = async () => {
     unlockAudio(); startKeeper();
     // طلب الإذن لازم يبدأ من ضغطة العميل نفسها
@@ -802,7 +879,8 @@
     const btn = $('take-btn'); btn.disabled = true; btn.innerHTML = '<i class="ph-bold ph-spinner-gap ph-spin"></i>';
     try {
       const lt = await DM.loyaltyToken(slug);   // بطاقة الولاء (ولو انسجّلت من فرع ثاني)
-      const r = await DM.post('/api/pager?action=take', { slug, lt: lt || undefined, pc: pagerCard() || undefined });
+      const r = await DM.post('/api/pager?action=take', { slug, lt: lt || undefined, pc: pagerCard() || undefined, invoice: stepInv || undefined });
+      stepInv = ''; stepAt = '';
       saveToken(r.token); setStore(r.store); dismissed = false;
       if (perm) await perm;
       await subscribePush();
@@ -810,6 +888,7 @@
       offerPerm(true);   // بعد أخذ الرقم تطلع دايماً: يا يوافق، يا يتأكد إن كل شي مفعّل
     } catch (e) {
       stopKeeper();
+      if (e.code === 'DUPLICATE' || e.status === 400) { stepAt = 'inv'; renderSteps(); $('s-inv-err').textContent = e.message; $('s-inv-err').classList.remove('hidden'); return; }
       unavailable(e.code === 'FULL' ? 'وصلنا الحد اليومي للأرقام' : 'تعذر أخذ رقم', 'اسأل الموظف.');
     } finally { btn.disabled = false; btn.innerHTML = '<i class="ph-bold ph-ticket"></i> خذ رقمي وفعّل التنبيه'; }
   };
@@ -901,6 +980,7 @@
   $('ly-ask-no').onclick = () => $('ly-ask').classList.replace('flex', 'hidden');
   // دعوة بطاقة النداء: مرة لكل رقم، وما تطلع لو البطاقة محفوظة في الجوال
   function offerPagerCard(t) {
+    if (cardSkipped()) return;   // تخطاها قبل أخذ الرقم: تبقى في الصفحة بس، بدون نافذة
     try { if (localStorage.getItem(ASK_KEY) === t) return; localStorage.setItem(ASK_KEY, t); } catch {}
     $('pc-ask').classList.replace('hidden', 'flex');
   }
@@ -982,7 +1062,7 @@
     $('rate-thanks').textContent = 'وصلت ملاحظتك، شكراً لأنك ساعدتنا نتحسّن';
     $('rate-thanks').classList.remove('hidden');
   };
-  $('new-btn').onclick = () => { saveToken(''); hideRating(); show('start'); };
+  $('new-btn').onclick = () => { saveToken(''); hideRating(); stepInv = ''; invSkipped = false; stepAt = ''; $('s-inv-in').value = ''; show('start'); };
   // ─── يرجع يشتغل لوحده: رجع للصفحة، رجع النت، أو المتصفح جمّد الصفحة وهو بتطبيق ثاني ───
   function revive() {
     if (document.hidden || !loadToken()) return;
@@ -1008,7 +1088,7 @@
     if (!slug) return unavailable('الرابط غير صحيح', 'امسح رمز QR من عند الموظف.');
     // نتأكد إن المتجر موجود، ونجيب مفتاح الإشعارات
     let fullNow = false;
-    try { const info = await DM.get(`/api/pager?action=info&slug=${encodeURIComponent(slug)}`); setStore(info.store); pushKey = info.push_key || ''; brand = Number(info.brand) || 0; fullNow = info.full === true; }
+    try { const info = await DM.get(`/api/pager?action=info&slug=${encodeURIComponent(slug)}`); setStore(info.store); pushKey = info.push_key || ''; brand = Number(info.brand) || 0; fullNow = info.full === true; cardOffer = info.card === true; }
     catch (e) { return unavailable('البيجر غير متاح حالياً', 'اسأل الموظف.'); }
     // بطاقة النداء محفوظة في هالجوال (ولو من قبل تحديث الفروع): نجدد حفظها لكل devmenu.digital عشان كل فرع يعرفها
     { const pc = pagerCard(); if (pc) savePagerCard(pc); }

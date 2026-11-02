@@ -57,6 +57,12 @@ async function loyaltyOf(branchId) {
 }
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{10,64}$/;
+// رقم الفاتورة: الأرقام العربية تتحول، والمسموح أرقام وحروف إنجليزية
+function cleanInvoice(v) {
+  const invoice = String(v ?? '').trim().replace(/\s+/g, '').replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15));
+  if (invoice && !/^[A-Za-z0-9#\-_/]{1,20}$/.test(invoice)) throw new ApiError(400, 'رقم الفاتورة: أرقام وحروف إنجليزية فقط');
+  return invoice;
+}
 // بطاقة الولاء المربوطة بالرقم: في المحفظة؟ وعنده مكافأة جاهزة؟ (تطلع للعميل وللموظف)
 async function linkedCard(branchId, cardId) {
   if (!cardId) return { wallet: false, reward_ready: false };
@@ -118,16 +124,21 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const store = await loadStore(req.query.slug);
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=300');   // بيانات المحل العامة: تتخزن 30 ثانية في CDN
     const full = store.free && (await monthTickets(store.id, PLANS.FREE.pager)) >= PLANS.FREE.pager;   // البيجر المجاني خلّص عدده
-    return { store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, push_key: pushPublicKey(), brand: await brandOf(store), ...(full ? { full: true } : {}) };
+    // بطاقة النداء تنعرض قبل أخذ الرقم (المحل اللي ما عنده ولاء)
+    const card = wallet.configured() && !store.free && !(await loyaltyOf(store.id)).enabled;
+    return { store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, push_key: pushPublicKey(), brand: await brandOf(store), card, ...(full ? { full: true } : {}) };
   }
 
   if (action === 'take' && req.method === 'POST') {
     const store = await loadStore(b.slug);
     // المجانية: 200 رقم بالشهر. الزبون ما يشوف إن فيه حد، بس يطلب من الموظف
     if (store.free && (await monthTickets(store.id, PLANS.FREE.pager)) >= PLANS.FREE.pager) throw new ApiError(409, 'البيجر متوقف مؤقتاً، تفضّل عند الكاشير وبيبلغك أول ما يجهز طلبك.', 'FREE_FULL');
+    const invoice = cleanInvoice(b.invoice);
+    if (invoice && (await rest(`pager_tickets?client_id=eq.${store.id}&invoice_no=eq.${q(invoice)}&created_at=gte.${q(riyadhDayStart())}&status=in.(waiting,ready)&select=number&limit=1`)).length) throw new ApiError(409, 'هذي الفاتورة مسجلة على رقم ثاني، تأكد من الرقم', 'DUPLICATE');
     const token = crypto.randomBytes(18).toString('base64url');
     try {
       const res = await rpc('server_pager_take', { p_client_id: store.id, p_token: token });
+      if (invoice) await rest(`pager_tickets?token=eq.${q(res.token)}&client_id=eq.${store.id}`, { method: 'PATCH', body: { invoice_no: invoice } }).catch(() => {});
       if (reqLang(req) === 'en') await rest(`pager_tickets?token=eq.${q(res.token)}&client_id=eq.${store.id}`, { method: 'PATCH', body: { lang: 'en' } }).catch(() => {});
       // عنده بطاقة ولاء في نفس الجوال: نربطها برقم البيجر، وينختم لما يجهز الطلب
       if (/^[A-Za-z0-9_-]{10,64}$/.test(String(b.lt || ''))) {
@@ -198,6 +209,18 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
   if (action === 'wallet' && req.method === 'POST') {
     const store = await loadStore(b.slug);
     const token = String(b.t || '');
+    // قبل أخذ الرقم: بطاقة فاضية ("—")، وتتحدث برقمه أول ما ياخذه
+    if (!token && b.pre) {
+      if ((await loyaltyOf(store.id)).enabled) throw new ApiError(409, 'سجّل في بطاقة الولاء ويوصلك النداء منها', 'USE_LOYALTY');
+      if (store.free) throw new ApiError(409, 'بطاقة النداء مو متاحة الحين', 'NO_CARD');
+      const lang = reqLang(req) === 'en' ? 'en' : null;
+      const pc = TOKEN_RE.test(String(b.pc || '')) ? (await rest(`pager_cards?token=eq.${q(b.pc)}&client_id=eq.${await brandOf(store)}&select=wallet_url`).catch(() => []))[0] : null;
+      if (pc && pc.wallet_url) return { url: pc.wallet_url, card: b.pc };
+      const pass = await wallet.createPagerPass({ ...wallet.pagerStep({ store, step: 'idle', lang }), status: 'خذ رقمك من البيجر', notice: ' ' });
+      const card = crypto.randomBytes(18).toString('base64url');
+      await rest('pager_cards', { method: 'POST', body: { client_id: await brandOf(store), token: card, wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, lang, branch_ids: [store.id] } });
+      return { url: pass.shareUrl, card };
+    }
     if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
     const t = (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=in.(waiting,ready)&select=id,number,status,wallet_url,lang`))[0];
     if (!t) throw new ApiError(404, 'الرقم غير موجود أو انتهى', 'NOT_FOUND');
@@ -237,8 +260,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const store = await loadStore(b.slug);
     const token = String(b.t || '');
     if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
-    const invoice = String(b.invoice ?? '').trim().replace(/\s+/g, '').replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15));
-    if (invoice && !/^[A-Za-z0-9#\-_/]{1,20}$/.test(invoice)) throw new ApiError(400, 'رقم الفاتورة: أرقام وحروف إنجليزية فقط');
+    const invoice = cleanInvoice(b.invoice);
     const t = (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=in.(waiting,ready)&select=id,number`))[0];
     if (!t) throw new ApiError(404, 'الرقم غير موجود أو انتهى', 'NOT_FOUND');
     if (invoice) {
