@@ -555,16 +555,16 @@
           </div>
           <p class="f-sec"><i class="ph-bold ph-tag"></i> الأساسيات</p>
           <div>
-            <label class="text-[11px] text-ink block mb-1">اسم الطبق / المنتج *</label>
+            <label class="text-xs font-semibold text-ink block mb-1">اسم الطبق / المنتج *</label>
             <input type="text" id="prod-name" placeholder="مثال: ستيك لحم فاخر" required class="input-pro">
           </div>
           <div class="grid grid-cols-2 gap-2.5">
             <div>
-              <label class="text-[11px] text-ink block mb-1">القسم *</label>
+              <label class="text-xs font-semibold text-ink block mb-1">القسم *</label>
               <select id="prod-category" required class="input-pro bg-cream"></select>
             </div>
             <div id="price-field">
-              <label class="text-[11px] text-ink block mb-1">السعر (<span class="cur-sign">&#x20C1;</span>) *</label>
+              <label class="text-xs font-semibold text-ink block mb-1">السعر (<span class="cur-sign">&#x20C1;</span>) *</label>
               <input type="number" step="any" min="0" id="prod-price" placeholder="0.00" class="input-pro">
             </div>
           </div>
@@ -588,19 +588,19 @@
           </div>
           <p class="f-sec"><i class="ph-bold ph-note-pencil"></i> التفاصيل</p>
           <div>
-            <label class="text-[11px] text-ink block mb-1">وصف المكونات</label>
+            <label class="text-xs font-semibold text-ink block mb-1">وصف المكونات</label>
             <textarea id="prod-desc" placeholder="وصف موجز للمكونات..." class="input-pro h-16 resize-none"></textarea>
           </div>
           <div>
-            <label class="text-[11px] text-ink block mb-1">معلومات إضافية <span class="text-ink">(اختياري)</span></label>
+            <label class="text-xs font-semibold text-ink block mb-1">معلومات إضافية <span class="text-ink">(اختياري)</span></label>
             <input type="text" id="prod-extra" maxlength="200" placeholder="مثال: 40g بروتين — 50g كارب" class="input-pro">
           </div>
           <div>
-            <label class="text-[11px] text-ink block mb-1">ملاحظة <span class="text-ink">(اختياري)</span></label>
+            <label class="text-xs font-semibold text-ink block mb-1">ملاحظة <span class="text-ink">(اختياري)</span></label>
             <input type="text" id="prod-note" maxlength="200" placeholder="مثال: يتوفر من 6 صباحاً إلى 2 مساءً" class="input-pro">
           </div>
           <div id="calories-field">
-            <label class="text-[11px] text-ink block mb-1">السعرات الحرارية <span class="text-ink">(مطلوبة من هيئة الغذاء والدواء)</span></label>
+            <label class="text-xs font-semibold text-ink block mb-1">السعرات الحرارية <span class="text-ink">(مطلوبة من هيئة الغذاء والدواء)</span></label>
             <div class="relative">
               <input type="number" min="0" step="1" id="prod-calories" placeholder="مثال: 450" class="input-pro pl-14" dir="ltr">
               <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-ink">سعرة</span>
@@ -615,7 +615,7 @@
             <div class="p-2.5 pt-0 space-y-3">
               <div class="grid grid-cols-2 gap-2">
                 <div>
-                  <label class="text-[11px] text-ink block mb-1">الأصل (الدولة)</label>
+                  <label class="text-xs font-semibold text-ink block mb-1">الأصل (الدولة)</label>
                   <input type="text" id="coffee-origin" list="coffee-origins" placeholder="إثيوبيا" class="input-pro text-xs">
                   <datalist id="coffee-origins">
                     <option value="إثيوبيا"><option value="كولومبيا"><option value="البرازيل"><option value="كينيا">
@@ -625,39 +625,39 @@
                   </datalist>
                 </div>
                 <div>
-                  <label class="text-[11px] text-ink block mb-1">المنطقة / المزرعة</label>
+                  <label class="text-xs font-semibold text-ink block mb-1">المنطقة / المزرعة</label>
                   <input type="text" id="coffee-region" placeholder="يرقاتشيفي" class="input-pro text-xs">
                 </div>
                 <div>
-                  <label class="text-[11px] text-ink block mb-1">المعالجة</label>
+                  <label class="text-xs font-semibold text-ink block mb-1">المعالجة</label>
                   <select id="coffee-process" onchange="toggleProcessOther()" class="input-pro bg-cream text-xs"></select>
                   <input type="text" id="coffee-process-other" maxlength="40" placeholder="اكتب المعالجة، مثل: مخمّرة بالقرفة" class="input-pro text-xs mt-2 hidden">
                 </div>
                 <div>
-                  <label class="text-[11px] text-ink block mb-1">السلالة</label>
+                  <label class="text-xs font-semibold text-ink block mb-1">السلالة</label>
                   <input type="text" id="coffee-variety" placeholder="Heirloom" class="input-pro text-xs">
                 </div>
                 <div>
-                  <label class="text-[11px] text-ink block mb-1">الارتفاع</label>
+                  <label class="text-xs font-semibold text-ink block mb-1">الارتفاع</label>
                   <div class="relative">
                     <input type="number" min="0" max="3500" step="50" id="coffee-altitude" placeholder="2000" class="input-pro text-xs pl-10" dir="ltr">
                     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-ink">متر</span>
                   </div>
                 </div>
                 <div>
-                  <label class="text-[11px] text-ink block mb-1">درجة التحميص</label>
+                  <label class="text-xs font-semibold text-ink block mb-1">درجة التحميص</label>
                   <div id="coffee-roast" class="grid grid-cols-3 gap-1"></div>
                 </div>
               </div>
               <div>
-                <label class="text-[11px] text-ink block mb-1">الإيحاءات (النكهات)</label>
+                <label class="text-xs font-semibold text-ink block mb-1">الإيحاءات (النكهات)</label>
                 <div id="notes-box" class="input-pro flex flex-wrap gap-1.5 items-center min-h-[42px] cursor-text">
                   <input type="text" id="notes-input" placeholder="اكتب إيحاء واضغط Enter" class="bg-transparent outline-none flex-1 min-w-[110px] text-xs">
                 </div>
                 <div id="notes-suggest" class="flex flex-wrap gap-1 mt-1.5"></div>
               </div>
               <div>
-                <label class="text-[11px] text-ink block mb-1">طرق التحضير المتاحة</label>
+                <label class="text-xs font-semibold text-ink block mb-1">طرق التحضير المتاحة</label>
                 <div id="coffee-methods" class="flex flex-wrap gap-1.5"></div>
               </div>
             </div>
@@ -740,11 +740,11 @@
     </div>
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
       <form id="coupon-form" class="pro-card p-5 space-y-3.5 lg:col-span-5">
-        <h3 class="text-xs font-bold text-ink border-b border-brand/20 pb-2 flex items-center gap-2">
+        <h3 class="text-sm font-bold text-ink border-b border-brand/20 pb-2 flex items-center gap-2">
           <i class="ph-bold ph-ticket text-emerald-600"></i> <span id="coupon-form-title">كوبون جديد</span>
         </h3>
         <div>
-          <label class="text-[11px] text-ink block mb-1">نوع العرض</label>
+          <label class="text-xs font-semibold text-ink block mb-1">نوع العرض</label>
           <div class="grid grid-cols-2 gap-2">
             <label class="flex items-start gap-2 bg-brand/5 border border-brand/15 rounded-xl p-2.5 cursor-pointer"><input type="radio" name="cp-kind" value="code" checked onchange="renderCouponForm()" class="accent-[#384f3d] mt-0.5">
               <span class="text-xs font-bold">كوبون بكود<span class="block text-[11px] font-normal text-ink">الزبون يكتبه في سلة الطلب</span></span></label>
@@ -753,7 +753,7 @@
           </div>
         </div>
         <div id="cp-code-wrap">
-          <label class="text-[11px] text-ink block mb-1">رمز الكوبون *</label>
+          <label class="text-xs font-semibold text-ink block mb-1">رمز الكوبون *</label>
           <input type="text" id="cp-code" maxlength="20" dir="ltr" autocomplete="off" placeholder="WELCOME10"
             oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9-]/g,'')" class="input-pro font-bold tracking-wider">
           <p class="text-[11px] text-ink mt-1">حروف إنجليزية وأرقام وشرطة، من 3 إلى 20 حرف.</p>
@@ -764,19 +764,19 @@
         </div>
         <div class="grid grid-cols-2 gap-2.5">
           <div>
-            <label class="text-[11px] text-ink block mb-1">نوع الخصم</label>
+            <label class="text-xs font-semibold text-ink block mb-1">نوع الخصم</label>
             <select id="cp-type" onchange="renderCouponForm()" class="input-pro bg-cream">
               <option value="percent">نسبة %</option>
               <option value="fixed" id="cp-fixed-opt">مبلغ ثابت &#x20C1;</option>
             </select>
           </div>
           <div>
-            <label id="cp-value-label" class="text-[11px] text-ink block mb-1">النسبة *</label>
+            <label id="cp-value-label" class="text-xs font-semibold text-ink block mb-1">النسبة *</label>
             <input type="number" id="cp-value" min="0" step="any" placeholder="10" class="input-pro" dir="ltr">
           </div>
         </div>
         <div>
-          <label class="text-[11px] text-ink block mb-1">يشمل</label>
+          <label class="text-xs font-semibold text-ink block mb-1">يشمل</label>
           <div class="grid grid-cols-2 gap-2">
             <label class="flex items-center gap-2 bg-brand/5 border border-brand/15 rounded-xl p-2.5 text-xs font-bold cursor-pointer"><input type="radio" name="cp-scope" value="all" checked onchange="renderCouponForm()" class="accent-[#384f3d]"> كل الأصناف</label>
             <label class="flex items-center gap-2 bg-brand/5 border border-brand/15 rounded-xl p-2.5 text-xs font-bold cursor-pointer"><input type="radio" name="cp-scope" value="selected" onchange="renderCouponForm()" class="accent-[#384f3d]"> أقسام وأصناف محددة</label>
@@ -794,19 +794,19 @@
         </div>
         <div class="grid grid-cols-2 gap-2.5">
           <div class="cp-code-only">
-            <label class="text-[11px] text-ink block mb-1">الحد الأدنى للطلب <span class="text-ink">(اختياري)</span></label>
+            <label class="text-xs font-semibold text-ink block mb-1">الحد الأدنى للطلب <span class="text-ink">(اختياري)</span></label>
             <input type="number" id="cp-min" min="0" step="any" placeholder="&#x20C1;" class="input-pro" dir="ltr">
           </div>
           <div class="cp-code-only">
-            <label class="text-[11px] text-ink block mb-1">عدد مرات الاستخدام <span class="text-ink">(اختياري)</span></label>
+            <label class="text-xs font-semibold text-ink block mb-1">عدد مرات الاستخدام <span class="text-ink">(اختياري)</span></label>
             <input type="number" id="cp-max" min="1" step="1" placeholder="بلا حد" class="input-pro" dir="ltr">
           </div>
           <div>
-            <label class="text-[11px] text-ink block mb-1">يبدأ من <span class="text-ink">(اختياري)</span></label>
+            <label class="text-xs font-semibold text-ink block mb-1">يبدأ من <span class="text-ink">(اختياري)</span></label>
             <input type="date" id="cp-start" class="input-pro" dir="ltr">
           </div>
           <div>
-            <label class="text-[11px] text-ink block mb-1">ينتهي في <span class="text-ink">(اختياري)</span></label>
+            <label class="text-xs font-semibold text-ink block mb-1">ينتهي في <span class="text-ink">(اختياري)</span></label>
             <input type="date" id="cp-end" class="input-pro" dir="ltr">
           </div>
         </div>
@@ -819,7 +819,7 @@
       </form>
       <div class="pro-card p-5 space-y-3 lg:col-span-7">
         <div class="flex items-center justify-between border-b border-brand/20 pb-2">
-          <h3 class="text-xs font-bold text-ink">كوبوناتك</h3>
+          <h3 class="text-sm font-bold text-ink">كوبوناتك</h3>
           <span id="coupons-count" class="text-[11px] font-bold text-cream bg-brand px-2.5 py-0.5 rounded-full">0</span>
         </div>
         <div id="coupons-list" class="space-y-2.5"><p class="text-xs text-ink text-center py-6">جاري التحميل...</p></div>
@@ -832,17 +832,17 @@
     <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
       <div class="md:col-span-5">
         <form id="add-category-form" class="pro-card p-5 space-y-3.5">
-          <h3 class="text-xs font-bold text-ink border-b border-brand/20 pb-2">إضافة قسم جديد للمنيو</h3>
+          <h3 class="text-sm font-bold text-ink border-b border-brand/20 pb-2">إضافة قسم جديد للمنيو</h3>
           <div>
-            <label class="text-[11px] text-ink block mb-1">اسم القسم (عربي) *</label>
+            <label class="text-xs font-semibold text-ink block mb-1">اسم القسم (عربي) *</label>
             <input type="text" id="cat-name" placeholder="مثال: المقبلات الساخنة" required class="input-pro">
           </div>
           <div>
-            <label class="text-[11px] text-ink block mb-1">اسم القسم بالإنجليزي <span class="text-ink">(اختياري)</span></label>
+            <label class="text-xs font-semibold text-ink block mb-1">اسم القسم بالإنجليزي <span class="text-ink">(اختياري)</span></label>
             <input type="text" id="cat-name-en" placeholder="Hot Appetizers" class="input-pro" dir="ltr">
           </div>
           <div>
-            <label class="text-[11px] text-ink block mb-1">الفئة الرئيسية <span class="text-ink">(اختياري)</span></label>
+            <label class="text-xs font-semibold text-ink block mb-1">الفئة الرئيسية <span class="text-ink">(اختياري)</span></label>
             <input type="text" id="cat-group" list="cat-groups" maxlength="40" placeholder="مثال: فطور، غداء، عشاء" class="input-pro">
             <datalist id="cat-groups"></datalist>
             <p class="text-[11px] text-ink mt-1">الأقسام اللي لها نفس الفئة تظهر تحت تبويب واحد أعلى المنيو.</p>
@@ -1367,7 +1367,7 @@
     <!-- رسائل لزبائنك: إشعار على بطاقة النداء (إضافة على البيجر، للمحل اللي ما عنده ولاء) -->
             <div id="nt-card" class="hidden pro-card p-5 space-y-4">
               <div class="space-y-1">
-                <h3 class="text-xs font-bold text-ink"><i class="ph-bold ph-megaphone text-emerald-600"></i> رسائل لزبائنك</h3>
+                <h3 class="text-sm font-bold text-ink"><i class="ph-bold ph-megaphone text-emerald-600"></i> رسائل لزبائنك</h3>
                 <p class="text-[11px] text-ink leading-relaxed">اكتب عرضك، ويوصل إشعار على شاشة القفل لزبائنك الحافظين بطاقة النداء.</p>
               </div>
               <div id="nt-locked" class="hidden space-y-2">
@@ -1376,6 +1376,7 @@
               </div>
               <p id="nt-trial" class="hidden text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-300/60 rounded-lg px-2.5 py-1.5"></p>
               <div id="nt-box" class="hidden space-y-3">
+                <h4 class="text-xs font-bold text-ink border-b border-ink/10 pb-1.5">أرسل رسالة الحين</h4>
                 <label id="nt-to-box" class="hidden block space-y-1">
                   <span class="text-[11px] font-bold text-ink">لمين ترسل؟</span>
                   <select id="nt-to" onchange="ntToChanged()" class="input-pro bg-cream text-xs"></select>
@@ -1397,12 +1398,13 @@
                 </div>
                 <button type="button" id="nt-send" onclick="sendNotify()" class="w-full bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition"><i class="ph-bold ph-paper-plane-tilt"></i> <span id="nt-send-label">أرسل</span></button>
                 <p class="text-[11px] text-ink">نصيحة: لا تكثر الرسائل، عشان زبائنك ما ينزعجون ويحذفون البطاقة من محفظتهم.</p>
-                <div id="nt-list" class="text-[12px]"></div>
-                <div class="border-t border-brand/10 pt-3 space-y-2">
+                <div id="nt-list" class="text-[12px] pt-2"></div>
+                <div class="pt-3 space-y-2">
+                  <h4 class="text-xs font-bold text-ink border-b border-ink/10 pb-1.5">رسالة «وحشتنا» التلقائية</h4>
                   <label class="flex items-start gap-2.5 cursor-pointer">
                     <input type="checkbox" id="nt-wb-on" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
                     <span class="text-xs">
-                      <b class="text-ink"><i class="ph-bold ph-hand-waving text-amber-600"></i> رسالة «وحشتنا» تلقائية</b>
+                      <b class="text-ink"><i class="ph-bold ph-hand-waving text-amber-600"></i> شغّلها</b>
                       <span class="block text-[11px] text-ink mt-0.5">توصل لحالها للزبون اللي غاب، مرة وحدة لكل غيبة. ما تنعاد عليه لين يرجع لك ويغيب من جديد.</span>
                     </span>
                   </label>
@@ -1416,7 +1418,7 @@
                   <textarea id="nt-wb-text" rows="2" maxlength="150" placeholder="مثلاً: وحشتنا! قهوتك اليوم بنص السعر، وريها للكاشير" class="input-pro text-sm resize-none"></textarea>
                   <div class="flex flex-wrap items-center justify-between gap-2">
                     <p id="nt-wb-last" class="text-[11px] text-ink"></p>
-                    <button type="button" id="nt-wb-save" onclick="saveWinback()" class="bg-brand/10 hover:bg-brand/10 border border-brand/45 text-ink px-4 py-2 rounded-xl text-xs font-bold transition"><i class="ph-bold ph-floppy-disk"></i> احفظ</button>
+                    <button type="button" id="nt-wb-save" onclick="saveWinback()" class="bg-brand hover:bg-brand-dark text-cream px-4 py-2 rounded-xl text-xs font-bold transition"><i class="ph-bold ph-floppy-disk"></i> احفظ</button>
                   </div>
                 </div>
               </div>
@@ -1519,13 +1521,13 @@
         <div class="max-w-2xl">
     <!-- حالة الاشتراك -->
             <div id="subscription-card" class="pro-card p-5 space-y-3">
-              <h3 class="text-[13px] font-bold text-ink flex items-center gap-1.5"><i class="ph-bold ph-identification-card text-ink"></i> اشتراكك</h3>
+              <h3 class="text-sm font-bold text-ink flex items-center gap-1.5"><i class="ph-bold ph-identification-card text-ink"></i> اشتراكك</h3>
               <div id="subscription-info" class="space-y-4 text-ink/90">
                 <p>جاري التحقق من الاشتراك...</p>
               </div>
-              <!-- طلباتك للإدارة: التجديد وتغيير الباقة والتواصل، بدون واتساب -->
-              <div id="support-box" class="pt-3 mt-1 border-t border-brand/10 space-y-2.5"></div>
             </div>
+            <!-- طلباتك للإدارة: التجديد وتغيير الباقة والتواصل، بدون واتساب -->
+            <div id="support-box" class="pro-card p-5 space-y-2.5 mt-5"></div>
         </div>
       </section>
 
@@ -1719,20 +1721,20 @@
                 <button type="button" onclick="closeOccasionEditor()" class="text-[11px] font-bold text-ink hover:text-ink">إغلاق <i class="ph-bold ph-x"></i></button>
               </div>
               <div>
-                <label class="text-[11px] text-ink block mb-1">اسم المناسبة *</label>
+                <label class="text-xs font-semibold text-ink block mb-1">اسم المناسبة *</label>
                 <input type="text" id="occ-title" maxlength="40" oninput="occDraft().title=this.value; renderOccasionList()" class="input-pro text-xs">
               </div>
               <div>
-                <label class="text-[11px] text-ink block mb-1">نص التهنئة <span class="text-ink">(اختياري)</span></label>
+                <label class="text-xs font-semibold text-ink block mb-1">نص التهنئة <span class="text-ink">(اختياري)</span></label>
                 <input type="text" id="occ-greeting" maxlength="60" oninput="occDraft().greeting=this.value; renderOccasionPreview()" class="input-pro text-xs">
               </div>
               <div class="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label class="text-[11px] text-ink block mb-1">من</label>
+                  <label class="text-xs font-semibold text-ink block mb-1">من</label>
                   <input type="date" id="occ-start" onchange="occDraft().starts_on=this.value; renderOccasionList()" class="input-pro text-xs" dir="ltr">
                 </div>
                 <div>
-                  <label class="text-[11px] text-ink block mb-1">إلى</label>
+                  <label class="text-xs font-semibold text-ink block mb-1">إلى</label>
                   <input type="date" id="occ-end" onchange="occDraft().ends_on=this.value; renderOccasionList()" class="input-pro text-xs" dir="ltr">
                 </div>
               </div>
@@ -1907,23 +1909,23 @@
       </h4>
       <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <div>
-          <label class="text-[11px] text-ink block mb-1">الموقع الإلكتروني</label>
+          <label class="text-xs font-semibold text-ink block mb-1">الموقع الإلكتروني</label>
           <input type="url" id="social-web" placeholder="https://..." class="input-pro text-xs">
         </div>
         <div>
-          <label class="text-[11px] text-ink block mb-1">رابط تيك توك</label>
+          <label class="text-xs font-semibold text-ink block mb-1">رابط تيك توك</label>
           <input type="url" id="social-tiktok" placeholder="https://tiktok.com/@..." class="input-pro text-xs">
         </div>
         <div>
-          <label class="text-[11px] text-ink block mb-1">رابط انستجرام</label>
+          <label class="text-xs font-semibold text-ink block mb-1">رابط انستجرام</label>
           <input type="url" id="social-insta" placeholder="https://instagram.com/..." class="input-pro text-xs">
         </div>
         <div>
-          <label class="text-[11px] text-ink block mb-1">رقم الواتساب</label>
+          <label class="text-xs font-semibold text-ink block mb-1">رقم الواتساب</label>
           <div class="flex gap-1.5" dir="ltr"><select id="social-whatsapp-cc" aria-label="رمز الدولة" class="input-pro text-xs !w-auto shrink-0 !px-2 cursor-pointer"></select><input type="tel" id="social-whatsapp" placeholder="05xxxxxxxx" class="input-pro text-xs flex-1 min-w-0"></div>
         </div>
         <div>
-          <label class="text-[11px] text-ink block mb-1">رابط سناب شات</label>
+          <label class="text-xs font-semibold text-ink block mb-1">رابط سناب شات</label>
           <input type="url" id="social-snap" placeholder="https://snapchat.com/..." class="input-pro text-xs">
         </div>
       </div>
@@ -2644,7 +2646,7 @@
     const when = (iso) => new Date(iso).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short' });
     box.innerHTML = `
       <div class="flex items-center justify-between gap-2">
-        <p class="text-[12px] font-bold text-ink"><i class="ph-bold ph-chat-circle-text"></i> طلباتك للإدارة</p>
+        <h3 class="text-sm font-bold text-ink"><i class="ph-bold ph-chat-circle-text"></i> طلباتك للإدارة</h3>
         <button type="button" onclick="contactAdmin()" class="text-[12px] font-bold px-3 py-1.5 rounded-lg bg-brand text-cream">راسل الإدارة</button>
       </div>
       ${(r.requests || []).slice(0, 5).map(x => `
@@ -2685,6 +2687,16 @@
     if (location.hash !== '#account') location.hash = 'account';
   }
 
+  // تفصيل حسبة الطلب: كل ميزة بسعرها، والفروع، والخصم، والمجموع
+  function reqBreakdown(plan, feats) {
+    const pr = DMPlans.price(feats, plan, branchList());
+    const line = (label, amount, cls = '') => `<p class="flex justify-between gap-3 ${cls}"><span>${esc(label)}</span><span class="tnum">${amount}</span></p>`;
+    return `<div class="mt-2 rounded-xl bg-white border border-brand/15 p-3 space-y-1 text-[12.5px] text-ink">
+      ${pr.lines.map(l => line(l.label, sar(l.amount))).join('')}
+      ${pr.discounts.map(d => line(d.label, `- ${sar(d.amount)}`, 'text-emerald-800')).join('')}
+      ${line(`المجموع ${plan === 'month' ? 'بالشهر' : 'بالسنة'}`, sar(pr.total), 'border-t border-brand/10 pt-1.5 font-bold')}
+    </div>`;
+  }
   function planPicker(verb) {
     const req = requestedPlan();
     if (req) {
@@ -2694,7 +2706,8 @@
           <span class="plan-done-ic"><i class="ph-bold ph-check"></i></span>
           <div class="min-w-0">
             <p class="font-bold text-[13px] text-ink">وصلنا طلبك للباقة ${planName(req)}</p>
-            <p class="text-[12px] text-ink mt-0.5">${feats.map(k => DMPlans.FEATURES[k].name).join('، ')}: ${sar(planTotal(req, feats))} ${req === 'month' ? 'بالشهر' : 'بالسنة'}. بنتواصل معك على جوالك للدفع، وبعدها يتفعّل اشتراكك على طول.</p>
+            ${reqBreakdown(req, feats)}
+            <p class="text-[12px] text-ink mt-2">بنتواصل معك على جوالك للدفع، وبعدها يتفعّل اشتراكك على طول.</p>
             <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2.5 text-[12px] font-bold">
               <button type="button" onclick="contactAdmin('renew', renewMsg('${req}'))" class="text-brand hover:underline"><i class="ph-bold ph-chat-circle-text"></i> راسل الإدارة</button>
               <button type="button" onclick="changePlan()" class="text-ink hover:text-ink">غيّر الباقة</button>
@@ -4303,7 +4316,7 @@
       ntToChanged(); ntPreview(); renderWinback(r.winback);
       document.getElementById('nt-send').disabled = false;
       const branchName = (id) => (branches.find(x => x.id === id) || {}).name;
-      document.getElementById('nt-list').innerHTML = r.messages.length ? `<p class="text-[11px] font-bold text-ink mb-1">آخر الرسائل</p><div class="divide-y divide-brand/10">${r.messages.map(m => `
+      document.getElementById('nt-list').innerHTML = r.messages.length ? `<h4 class="text-xs font-bold text-ink border-b border-ink/10 pb-1.5">آخر الرسائل</h4><div class="divide-y divide-brand/10">${r.messages.map(m => `
         <div class="py-2"><p class="leading-relaxed">${esc(m.body)}</p><p class="text-[11px] text-ink mt-0.5">${when(m.created_at)}${many ? ` · ${m.branch_id ? `زبائن ${esc(branchName(m.branch_id) || 'فرع')}` : 'كل الفروع'}` : ''}${m.sent ? ` · وصلت لـ ${m.sent} جوال` : ''}</p></div>`).join('')}</div>` : '';
     } catch { document.getElementById('nt-send-label').textContent = 'أرسل'; }
   }
@@ -4363,7 +4376,7 @@
     input.value = ''; document.getElementById('nt-count').textContent = '0/150'; ntPreview();
     const list = document.getElementById('nt-list'), row = document.createElement('div');
     row.className = 'py-2'; row.innerHTML = `<p class="leading-relaxed">${esc(body)}</p><p class="text-[11px] text-emerald-700 font-bold mt-0.5"><i class="ph-bold ph-spinner-gap ph-spin"></i> يرسل لزبائنك…</p>`;
-    if (!list.querySelector('.divide-y')) list.innerHTML = '<p class="text-[11px] font-bold text-ink mb-1">آخر الرسائل</p><div class="divide-y divide-brand/10"></div>';
+    if (!list.querySelector('.divide-y')) list.innerHTML = '<h4 class="text-xs font-bold text-ink border-b border-ink/10 pb-1.5">آخر الرسائل</h4><div class="divide-y divide-brand/10"></div>';
     list.querySelector('.divide-y').prepend(row);
     showToast('انرسلت، وبتوصل لزبائنك خلال ثواني');
     try {
