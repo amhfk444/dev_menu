@@ -1828,8 +1828,10 @@
 
       <!-- بطاقة النداء -->
       <section data-needs="pager" data-free-hide class="space-y-3">
-        <h5 class="text-xs font-bold text-ink border-b border-ink/10 pb-1.5">بطاقة النداء</h5>
-        <div class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-3">
+        <h5 class="text-xs font-bold text-ink border-b border-ink/10 pb-1.5">البيجر</h5>
+        <!-- بطاقة النداء: تختفي لو الولاء شغّال ويختم مع البيجر (النداء يوصل من بطاقة الولاء) -->
+        <div id="info-pager-card" class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-3">
+          <p class="text-xs font-bold text-ink"><i class="ph-bold ph-wallet text-amber-600"></i> بطاقة النداء</p>
           <div class="flex flex-wrap items-center justify-between gap-2.5">
             <span class="text-xs">
               <b class="text-ink"><i class="ph-bold ph-map-pin text-amber-600"></i> موقع المحل</b>
@@ -5163,6 +5165,7 @@
   }
   function renderLoyalty() {
     const d = ly.data, st = d.settings;
+    syncPagerCardBox(d);
     if (!ly.dirty) ly.design = { ...st.design };
     renderDesign();
     renderLyMessages();
@@ -5981,7 +5984,13 @@
     btn.disabled = false; btn.innerHTML = html;
   }
   // موقع المحل لبطاقة النداء (نفس موقع بطاقة الولاء): البطاقة تطلع على شاشة قفل الزبون لما يقرب من المحل
+  // الولاء شغّال ويختم مع البيجر: الزبون يوصله النداء من بطاقة الولاء، فإعدادات بطاقة النداء ما لها داعي
+  function syncPagerCardBox(d) {
+    const viaLoyalty = !!(d && d.enabled && d.settings && d.settings.pager_stamp !== false);
+    document.getElementById('info-pager-card').classList.toggle('hidden', viaLoyalty);
+  }
   function renderStorePin() {
+    if (!featureLocked('loyalty')) (ly.data ? Promise.resolve(ly.data) : api('loyalty').catch(() => null)).then(syncPagerCardBox);
     const set = client.loyalty_lat != null && client.loyalty_lng != null;
     document.getElementById('info-pin-status').innerHTML = set
       ? '<span class="text-emerald-700 font-semibold"><i class="ph-bold ph-check-circle"></i> محدد: البطاقة تطلع على شاشة قفل زبونك لما يقرب من المحل</span>'
