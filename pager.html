@@ -183,6 +183,13 @@
         <button type="button" id="w-invoice" class="hidden text-[12.5px] font-black bg-white/15 rounded-lg py-1 px-3">🧾 <span dir="ltr"></span> <i class="ph-bold ph-pencil-simple text-xs opacity-70"></i></button>
       </div>
     </div>
+    <!-- بطاقة المحفظة: أهم شي بعد الرقم، تطلع فوق دايم لين يضيفها (النداء يوصله منها حتى لو قفل الصفحة) -->
+    <div id="pw-box" class="card p-4 space-y-2.5 hidden !border-2 !border-[#c9a227]">
+      <p class="font-black text-[15px]"><i class="ph-bold ph-wallet"></i> أضف بطاقة النداء عشان يوصلك النداء</p>
+      <p class="text-[13px] font-bold opacity-85 leading-relaxed">بدونها لازم تخلي هالصفحة مفتوحة. مع البطاقة يوصلك إشعار <span class="t-when"></span> حتى لو قفلت الجوال أو كنت في تطبيق ثاني. تضيفها مرة وحدة وتنفعك كل مرة.</p>
+      <button id="pw-btn" class="btn btn-wallet !py-3.5 !text-base"><i class="ph-bold ph-wallet"></i> <span>أضف بطاقة النداء</span></button>
+    </div>
+    <a id="w-loyalty" class="hidden block text-[13px] font-black rounded-2xl py-3 px-3"></a>
     <ul class="track">
       <li class="done"><i class="ph-bold ph-check"></i>استلمنا طلبك</li>
       <li class="now"><i class="ph-bold ph-cooking-pot"></i><span id="d-wait"></span></li>
@@ -220,12 +227,6 @@
       <span id="push-on" class="chip ok hidden"><i class="ph-bold ph-bell"></i> الإشعارات مفعّلة</span>
       <span id="keep-on" class="chip ok hidden"><i class="ph-bold ph-speaker-high"></i> الرنين شغّال حتى على الصامت</span>
     </div>
-    <!-- محل بدون ولاء: بطاقة النداء، يوصله منها إشعار حتى لو في تطبيق ثاني، وتنتهي بعد الاستلام -->
-    <div id="pw-box" class="card p-4 space-y-2.5 hidden">
-      <p class="font-black text-[14px]"><i class="ph-bold ph-wallet"></i> بطاقة النداء</p>
-      <p class="text-[12.5px] font-bold opacity-65 leading-relaxed">أضفها للمحفظة مرة وحدة، وكل ما تاخذ رقم يوصلك منها إشعار <span class="t-when"></span> حتى لو كنت في تطبيق ثاني.</p>
-      <button id="pw-btn" class="btn btn-wallet !py-3.5 !text-base"><i class="ph-bold ph-wallet"></i> <span>أضف بطاقة النداء</span></button>
-    </div>
     <button id="push-btn" class="btn btn-brand hidden"><i class="ph-bold ph-bell"></i> فعّل الإشعارات</button>
     <button id="keep-btn" class="btn btn-ghost hidden"><i class="ph-bold ph-speaker-high"></i> فعّل الرنين حتى لو جوالك صامت</button>
     <button id="unlock-btn" class="btn btn-ghost hidden"><i class="ph-bold ph-speaker-high"></i> فعّل صوت التنبيه</button>
@@ -240,7 +241,6 @@
       </div>
       <p id="inv-err" class="hidden text-[12px] font-bold text-rose-700"></p>
     </form>
-    <a id="w-loyalty" class="hidden block text-[13px] font-black rounded-2xl py-3 px-3"></a>
 
 
     <details class="tips">
@@ -619,7 +619,7 @@
       show('r-loyalty', html, 'text-white bg-[#c9a227]/25 border border-[#c9a227]/60');
     } else if (l.linked) {
       if (l.wallet) show('w-loyalty', `<i class="ph-bold ph-wallet"></i> بطاقتك مربوطة: يوصلك إشعار من المحفظة ${T.ringWhen}، وينضاف لك ختم`, 'text-white bg-white/10 border border-white/25');
-      else show('w-loyalty', `<i class="ph-bold ph-wallet"></i> بطاقتك مربوطة. أضفها للمحفظة عشان يوصلك إشعار ${T.ringWhen}`, 'text-white bg-white/10 border border-white/25', `${DM.storePage('loyalty', slug)}`);
+      else show('w-loyalty', `<span class="block text-[15px]"><i class="ph-bold ph-wallet"></i> أضف بطاقة الولاء لمحفظتك عشان يوصلك النداء</span><span class="block text-[12.5px] font-bold opacity-85 mt-1">بطاقتك مربوطة برقمك بس مو في محفظتك، فما بيوصلك إشعار ${T.ringWhen}. اضغط هنا وأضفها، وأختامك فيها.</span>`, 'text-white bg-[#c9a227]/25 border-2 border-[#c9a227] !py-4', `${DM.storePage('loyalty', slug)}`);
       show('r-loyalty', l.stamped ? '<i class="ph-bold ph-seal-check"></i> انضاف لك ختم في بطاقة الولاء' : '', 'text-white bg-white/10 border border-white/25', `${DM.storePage('loyalty', slug)}`);
     } else {
       const html = `<i class="ph-bold ph-wallet"></i> سجّل في بطاقة الولاء وأضفها للمحفظة: يوصلك إشعار ${T.ringWhen}، وتاخذ ختم`;
