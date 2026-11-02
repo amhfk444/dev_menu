@@ -44,6 +44,7 @@
   .mm-face { position: absolute; inset: 0; border-radius: 14px; display: grid; place-items: center; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
   .mm-back { background: linear-gradient(145deg, color-mix(in srgb, var(--brand) 82%, #fff), var(--brand)); border: 1px solid rgba(255,255,255,.18); box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 6px 14px -8px rgba(0,0,0,.6); }
   .mm-back::after { content: ''; width: 34%; aspect-ratio: 1; border-radius: 10px; border: 2px solid rgba(255,255,255,.35); }
+  .has-logo .mm-back::after { width: 62%; border: 0; border-radius: 12px; background: #fff var(--mm-logo) center / contain no-repeat; background-origin: content-box; padding: 8%; box-shadow: 0 2px 6px -2px rgba(0,0,0,.35); }
   .mm-front { background: #fff; border: 1.5px solid rgba(35,61,44,.15); transform: rotateY(180deg); color: #233d2c; font-size: 24px; }
   .mm-card.done .mm-front { background: #ecfdf5; border-color: #10b981; color: #047857; }
   .mm-card:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
@@ -568,6 +569,8 @@
     if (s.logo_url) { $('logo').src = s.logo_url; $('logo').classList.remove('hidden'); }
     // هوية المحل: شعاره واسمه، والصفحة كلها بألوان شعاره (أو اللون اللي اختاره لو الشعار بدون ألوان)
     if (s.logo_url) { $('foot-logo').src = s.logo_url; $('foot-logo').classList.remove('hidden'); }
+    // شعار المنشأة على ظهر بطاقات اللعبة
+    if (s.logo_url) { const g = $('mm-grid'); g.style.setProperty('--mm-logo', `url("${String(s.logo_url).replace(/["\\\n]/g, '')}")`); g.classList.add('has-logo'); }
     $('foot-name').textContent = s.name || 'DEV MENU';
     if (/^#[0-9a-f]{6}$/i.test(s.accent_color || '')) setBrand(s.accent_color);
     if (s.logo_url && s.logo_url !== setStore.logo) { setStore.logo = s.logo_url; logoColor(s.logo_url).then(c => { if (c) setBrand(c); }); }
