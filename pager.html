@@ -595,12 +595,12 @@
   }
   function unavailable(title, sub) { $('u-title').textContent = title; $('u-sub').textContent = sub; show('unavailable'); }
 
-  let pollTimer = null, lastStatus = '';
+  let pollTimer = null, lastStatus = '', goneChecks = 0, goneTimer = null;
   // تحديث لحظي: أول ما الكاشير يضغط "جاهز" توصل الحالة هنا (والتحديث الدوري يبقى احتياط)
   let liveTopic = '', liveOff = () => {};
   function watchTicket(t) {
     if (t === liveTopic) return;
-    liveOff(); liveTopic = t || '';
+    liveOff(); liveTopic = t || ''; goneChecks = 0;
     liveOff = t ? DM.live(t, () => poll()) : () => {};
   }
   // ─── بطاقة الولاء: ختم مع الطلب ───
@@ -703,6 +703,8 @@
     let readded = false; try { readded = localStorage.getItem('dm_pc_added') === loadToken(); } catch {}
     const passOk = r.wallet && st === 'waiting' && !ly.enabled && !r.in_wallet && (!pagerCard() || (r.card_gone && !readded));
     lastPass = passOk;
+    // تحديث البطاقة يوصل للمحفظة بعد ما ياخذ الرقم بثواني، ووقتها بس نعرف إنها انحذفت: نعيد الفحص مرتين
+    if (st === 'waiting' && r.in_wallet && pagerCard() && goneChecks < 2) { goneChecks++; clearTimeout(goneTimer); goneTimer = setTimeout(poll, goneChecks === 1 ? 4000 : 10000); }
     $('pw-box').classList.toggle('hidden', !passOk);
     $('pw-btn').querySelector('span').textContent = r.in_wallet ? 'بطاقة النداء في محفظتك، افتحها' : 'أضف بطاقة النداء';
     reviewLink = r.review_url || reviewLink;
