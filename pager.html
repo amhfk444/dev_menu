@@ -354,7 +354,6 @@
       <li class="gold now"><i class="ph-bold ph-bell-ringing"></i>جاهز</li>
     </ul>
     <p id="r-body" class="note !text-[15px]"></p>
-    <p id="r-got" class="hidden note !text-[15px] !opacity-100">تمام، وقّفنا الرنين 👍</p>
     <button id="got-btn" class="btn btn-brand"><i class="ph-bold ph-check"></i> <span id="t-got"></span></button>
     <a id="r-loyalty" class="hidden block text-[13px] font-black rounded-2xl py-3 px-3"></a>
   </section>
@@ -805,8 +804,6 @@
     if (reviewLink) $('rate-google').href = reviewLink;
     if (st === 'waiting') { show('waiting'); keepAwake(); renderPush(); if (keeperMode === 'silent') setMedia(`رقمك ${curNumber}: ${T.waiting}`); }
     else if (st === 'ready') {
-      if (!dismissed) try { dismissed = localStorage.getItem(GOT_KEY) === token; } catch {}
-      $('got-btn').classList.toggle('hidden', dismissed); $('r-got').classList.toggle('hidden', !dismissed);
       show('ready'); if (!dismissed) startRinging(); if (!document.hidden) ack();
     }
     else {
@@ -822,7 +819,6 @@
   }
 
   let dismissed = false, acked = '';
-  const GOT_KEY = `${KEY}_got`;   // ضغط "استلمت": ما يرن مرة ثانية ولو حدّث الصفحة
   // العميل شاف التنبيه (الصفحة ظاهرة قدامه) ← نوقف تكرار الإشعارات من الخادم
   function ack() {
     const t = loadToken();
@@ -1039,12 +1035,9 @@
   $('keep-btn').onclick = () => { unlockAudio(); startKeeper(); };
   $('push-btn').onclick = askPush;
   $('test-btn').onclick = () => { unlockAudio(); ringOnce(); };
-  // "استلمت": يوقف الرنين بس. التقييم (النجوم وقوقل ماب) يطلع بعد ما يضغط الكاشير "استلم"
-  $('got-btn').onclick = () => {
-    ack(); dismissed = true; stopRinging();
-    try { localStorage.setItem(GOT_KEY, loadToken()); } catch {}
-    $('got-btn').classList.add('hidden'); $('r-got').classList.remove('hidden');
-  };
+  // "استلمت طلبي": التقييم (النجوم وقوقل ماب) يطلع على طول، لأن الزبون يقفل الصفحة بعد ما يستلم.
+  // الرقم يظل عند الكاشير لين يضغط "استلم" (وهو اللي يعطي ختم الولاء)
+  $('got-btn').onclick = () => { clearTimeout(pollTimer); ack(); offerRating(loadToken()); dismissed = true; stopRinging(); $('d-title').textContent = 'بالعافية!'; $('d-sub').textContent = 'نتشرف بزيارتك مرة ثانية.'; saveToken(''); show('done'); };
 
   // ─── تقييم التجربة بعد الاستلام (مرة وحدة لكل رقم) ───
   let rateTok = '', rated = 0, reviewLink = '', lastLoyalty = null;
