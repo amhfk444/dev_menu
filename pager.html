@@ -89,7 +89,6 @@
   .tips ul { margin-top: 10px; display: grid; gap: 6px; opacity: .75; }
   .tips li i { margin-left: 6px; }
   body.ringing #got-btn { background: #fff; color: #15271b; }
-  body.ringing #r-review { background: rgba(255,255,255,.95); color: #15271b; border-color: rgba(21,39,27,.15); }
 
   /* ═══ البيجر بهوية المحل: خلفية بلون المحل، والرقم داخل حلقة تقدم، ومراحل الطلب تحته ═══ */
   body { color: #fff; background:
@@ -355,9 +354,9 @@
       <li class="gold now"><i class="ph-bold ph-bell-ringing"></i>جاهز</li>
     </ul>
     <p id="r-body" class="note !text-[15px]"></p>
+    <p id="r-got" class="hidden note !text-[15px] !opacity-100">تفضّل عند الكاشير واستلم طلبك 👋</p>
     <button id="got-btn" class="btn btn-brand"><i class="ph-bold ph-check"></i> <span id="t-got"></span></button>
     <a id="r-loyalty" class="hidden block text-[13px] font-black rounded-2xl py-3 px-3"></a>
-    <a id="r-review" target="_blank" rel="noopener" class="hidden btn btn-ghost !py-3.5 !text-base"><i class="ph-bold ph-star text-[#c9a227]"></i> قيّمنا على قوقل ماب</a>
   </section>
 
   <!-- انتهى -->
@@ -803,10 +802,13 @@
     $('pw-box').classList.toggle('hidden', !passOk);
     $('pw-btn').querySelector('span').textContent = r.in_wallet ? 'بطاقة النداء في محفظتك، افتحها' : 'أضف بطاقة النداء';
     reviewLink = r.review_url || reviewLink;
-    $('r-review').classList.toggle('hidden', !reviewLink);
-    if (reviewLink) { $('r-review').href = reviewLink; $('rate-google').href = reviewLink; }
+    if (reviewLink) $('rate-google').href = reviewLink;
     if (st === 'waiting') { show('waiting'); keepAwake(); renderPush(); if (keeperMode === 'silent') setMedia(`رقمك ${curNumber}: ${T.waiting}`); }
-    else if (st === 'ready') { show('ready'); if (!dismissed) startRinging(); if (!document.hidden) ack(); }
+    else if (st === 'ready') {
+      if (!dismissed) try { dismissed = localStorage.getItem(GOT_KEY) === token; } catch {}
+      $('got-btn').classList.toggle('hidden', dismissed); $('r-got').classList.toggle('hidden', !dismissed);
+      show('ready'); if (!dismissed) startRinging(); if (!document.hidden) ack();
+    }
     else {
       if (st === 'done') offerRating(token);
       else hideRating();
@@ -820,6 +822,7 @@
   }
 
   let dismissed = false, acked = '';
+  const GOT_KEY = `${KEY}_got`;   // ضغط "استلمت": ما يرن مرة ثانية ولو حدّث الصفحة
   // العميل شاف التنبيه (الصفحة ظاهرة قدامه) ← نوقف تكرار الإشعارات من الخادم
   function ack() {
     const t = loadToken();
@@ -1036,7 +1039,12 @@
   $('keep-btn').onclick = () => { unlockAudio(); startKeeper(); };
   $('push-btn').onclick = askPush;
   $('test-btn').onclick = () => { unlockAudio(); ringOnce(); };
-  $('got-btn').onclick = () => { clearTimeout(pollTimer); ack(); offerRating(loadToken()); dismissed = true; stopRinging(); $('d-title').textContent = 'بالعافية!'; $('d-sub').textContent = 'نتشرف بزيارتك مرة ثانية.'; saveToken(''); show('done'); };
+  // "استلمت": يوقف الرنين بس. التقييم (النجوم وقوقل ماب) يطلع بعد ما يضغط الكاشير "استلم"
+  $('got-btn').onclick = () => {
+    ack(); dismissed = true; stopRinging();
+    try { localStorage.setItem(GOT_KEY, loadToken()); } catch {}
+    $('got-btn').classList.add('hidden'); $('r-got').classList.remove('hidden');
+  };
 
   // ─── تقييم التجربة بعد الاستلام (مرة وحدة لكل رقم) ───
   let rateTok = '', rated = 0, reviewLink = '', lastLoyalty = null;
