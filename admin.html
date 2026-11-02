@@ -5151,7 +5151,7 @@
       btn.innerHTML = '<i class="ph-bold ph-plus"></i> أضفه لباقتي';
       btn.onclick = () => { location.hash = 'account'; changePlan(); };
     } else {
-      text.innerHTML = '<b><i class="ph-bold ph-sparkle text-violet-600"></i> شغّلنا لك المساعد الذكي في منيوك مجاناً طول التجربة.</b> يجاوب زبائنك عن الأطباق والأسعار من منيو محلك، وتشوف أسئلتهم هنا. تقدر تطفيه من «هوية المنشأة».';
+      text.innerHTML = '<b><i class="ph-bold ph-sparkle text-violet-600"></i> ${client.menu_chat_auto_at ? 'شغّلنا لك المساعد الذكي في منيوك مجاناً طول التجربة.' : 'المساعد الذكي شغّال في منيوك مجاناً طول التجربة.'}</b> يجاوب زبائنك عن الأطباق والأسعار من منيو محلك، وتشوف أسئلتهم هنا. تقدر تطفيه من «هوية المنشأة».';
       btn.innerHTML = '<i class="ph-bold ph-gear"></i> إعدادات المساعد';
       btn.onclick = () => { location.hash = 'settings'; setTimeout(() => document.getElementById('info-menu-chat').scrollIntoView({ block: 'center' }), 200); };
     }
