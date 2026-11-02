@@ -1048,7 +1048,9 @@
     let done = ''; try { done = localStorage.getItem(RATED_KEY) || ''; } catch {}
     if (done === tok) return hideRating();
     rateTok = tok; rated = 0;
-    ['rate-low', 'rate-thanks', 'rate-google'].forEach(id => $(id).classList.add('hidden'));
+    ['rate-low', 'rate-thanks'].forEach(id => $(id).classList.add('hidden'));
+    // زر قوقل ماب يطلع على طول، مو شرط يقيّم بالنجوم قبله
+    $('rate-google').classList.toggle('hidden', !reviewLink);
     $('rate-stars').classList.remove('hidden');
     paintStars(0);
     $('rate-box').classList.remove('hidden');
