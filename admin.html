@@ -146,7 +146,7 @@
   @media (prefers-reduced-motion: reduce) { .ly-phone { transition: none; } }
   .ly-kpi { background: #fff; border: 1px solid rgba(56,79,61,.12); border-radius: 18px; padding: 16px; }
   .ly-kpi .k-ic { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: rgba(56,79,61,.08); color: #384f3d; }
-  .ly-table th { text-align: right; font-size: 11px; font-weight: 700; color: rgba(34,54,42,.5); padding: 10px 12px; border-bottom: 1px solid rgba(56,79,61,.1); }
+  .ly-table th { text-align: right; font-size: 12px; font-weight: 700; color: var(--ink); padding: 10px 12px; border-bottom: 1px solid rgba(56,79,61,.1); }
   .ly-table td { padding: 12px; border-bottom: 1px solid rgba(56,79,61,.06); vertical-align: middle; }
   .ly-table tbody tr { cursor: pointer; transition: background .12s; }
   .ly-table tbody tr:hover { background: rgba(56,79,61,.035); }
@@ -5412,6 +5412,7 @@
     ['away', 'غايبين أكثر من 30 يوم', c => daysAgo(c.last_stamp_at) > 30],
     ['ready', 'مكافأتهم جاهزة', c => ly.data && c.stamps >= ly.data.settings.needed],
     ['wallet', 'حافظينها في المحفظة', c => c.in_wallet],
+    ['removed', 'حذفوا البطاقة', c => c.wallet_removed],
     ['m', 'رجال', c => c.gender === 'm'],
     ['f', 'نساء', c => c.gender === 'f']
   ];
@@ -5496,7 +5497,7 @@
     bf.innerHTML = fam.length ? chip(null, 'كل الفروع', M.length) + fam.map(x => chip(x.id, esc(x.name || ''), M.filter(c => inBranch(c, x.id)).length)).join('') + (noBranch ? chip('none', 'ما انعرف فرعهم', noBranch) : '') : '';
     if (fam.length && ly.branch != null) document.getElementById('ly-members-sub').textContent = ly.branch === 'none' ? `${MB.length} عضو قديم ما انختم لهم من وقت ما بدينا نسجّل الفروع` : `${MB.length} عضو في ${(fam.find(x => x.id === ly.branch) || {}).name || ''}، منهم ${MB.filter(c => c.in_wallet).length} حافظين البطاقة في المحفظة`;
     const branchNames = (c) => fam.length ? (c.branch_ids || []).map(id => (fam.find(x => x.id === Number(id)) || {}).name).filter(Boolean).join('، ') : '';
-    document.getElementById('ly-filters').innerHTML = LY_FILTERS.map(([k, label, fn]) => `<button type="button" onclick="ly.filter='${k}'; renderLyMembers()" class="text-[12px] font-bold px-3 py-1.5 rounded-full border transition ${ly.filter === k ? 'bg-brand text-cream border-brand' : 'border-brand/20 hover:border-brand/40'}">${label} <span class="opacity-60">${MB.filter(fn).length}</span></button>`).join('');
+    document.getElementById('ly-filters').innerHTML = LY_FILTERS.map(([k, label, fn]) => `<button type="button" onclick="ly.filter='${k}'; renderLyMembers()" class="text-[12px] font-bold px-3 py-1.5 rounded-full border transition ${ly.filter === k ? 'bg-brand text-cream border-brand' : 'text-ink border-brand/40 hover:border-brand/60'}">${label} <span class="font-black">${MB.filter(fn).length}</span></button>`).join('');
     const q = (document.getElementById('ly-q').value || '').trim().toLowerCase();
     const fn = (LY_FILTERS.find(f => f[0] === ly.filter) || LY_FILTERS[0])[2];
     const list = MB.filter(fn).filter(c => !q || memberName(c).toLowerCase().includes(q) || String(c.phone || '').includes(q) || String(c.member_no) === q);
@@ -5505,7 +5506,7 @@
       const st = Math.min(c.stamps, n), ready = c.stamps >= n;
       return `
       <tr onclick="openLyMember(${c.id})">
-        <td><div class="flex items-center gap-3"><span class="ly-av ${AV[c.id % AV.length]}">${esc(memberName(c).trim().charAt(0))}</span><div class="min-w-0"><p class="font-semibold truncate">${esc(memberName(c))}</p><p class="text-[11px] text-ink"><span dir="ltr">#${c.member_no}</span>${c.gender ? ` <span class="mx-1 text-ink/25">|</span> ${c.gender === 'f' ? 'أنثى' : 'ذكر'}` : ''}${c.in_wallet ? ` <span class="mx-1 text-ink/25">|</span> <i class="ph-bold ph-wallet" title="في المحفظة"></i>` : ''}${branchNames(c) ? ` <span class="mx-1 text-ink/25">|</span> <i class="ph-bold ph-git-branch"></i> ${esc(branchNames(c))}` : ''}</p></div></div></td>
+        <td><div class="flex items-center gap-3"><span class="ly-av ${AV[c.id % AV.length]}">${esc(memberName(c).trim().charAt(0))}</span><div class="min-w-0"><p class="font-semibold truncate">${esc(memberName(c))}</p><p class="text-[11px] text-ink"><span dir="ltr">#${c.member_no}</span>${c.gender ? ` <span class="mx-1 text-ink/25">|</span> ${c.gender === 'f' ? 'أنثى' : 'ذكر'}` : ''}${c.in_wallet ? ` <span class="mx-1 text-ink/25">|</span> <i class="ph-bold ph-wallet" title="في المحفظة"></i>` : c.wallet_removed ? ` <span class="mx-1 text-ink/25">|</span> <span class="text-brick font-semibold"><i class="ph-bold ph-wallet"></i> حذف البطاقة</span>` : ''}${branchNames(c) ? ` <span class="mx-1 text-ink/25">|</span> <i class="ph-bold ph-git-branch"></i> ${esc(branchNames(c))}` : ''}</p></div></div></td>
         <td class="text-ink" dir="ltr">${esc(c.phone || '—')}</td>
         <td><div class="flex items-center gap-2"><div class="ly-prog"><span style="width:${st / n * 100}%;${ready ? 'background:#c9a227' : ''}"></span></div><span class="text-[12px] font-bold tnum" dir="ltr">${st}/${n}</span>${ready ? '<span class="text-[11px] font-bold bg-amber-100 text-amber-800 rounded-full px-2 py-0.5">مكافأة جاهزة</span>' : ''}</div></td>
         <td class="font-semibold tnum">${c.visits}</td>
@@ -5523,7 +5524,7 @@
     const d = (iso) => iso ? new Date(iso).toISOString().slice(0, 16).replace('T', ' ') : '';
     const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const rows = [['رقم العضو', 'الاسم', 'الجوال', 'النوع', 'الأختام', 'المطلوب', 'الزيارات', 'المكافآت المستخدمة', 'آخر زيارة', 'أول زيارة', 'في المحفظة']]
-      .concat(M.map(c => [c.member_no, c.name || '', c.phone || '', c.gender === 'f' ? 'أنثى' : c.gender === 'm' ? 'ذكر' : '', Math.min(c.stamps, n), n, c.visits, c.rewards, d(c.last_stamp_at), d(c.created_at), c.in_wallet ? 'نعم' : 'لا']));
+      .concat(M.map(c => [c.member_no, c.name || '', c.phone || '', c.gender === 'f' ? 'أنثى' : c.gender === 'm' ? 'ذكر' : '', Math.min(c.stamps, n), n, c.visits, c.rewards, d(c.last_stamp_at), d(c.created_at), c.in_wallet ? 'نعم' : c.wallet_removed ? 'حذفها' : 'لا']));
     const blob = new Blob(['﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `loyalty-members-${client.client_slug}-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
@@ -5576,7 +5577,7 @@
   function renderLyMember(r) {
     const m = r.member, n = ly.data.settings.needed;
     document.getElementById('lm-title').textContent = memberName(m);
-    document.getElementById('lm-sub').textContent = `رقم العضوية #${m.member_no} · ${m.gender === 'f' ? 'أنثى · ' : m.gender === 'm' ? 'ذكر · ' : ''}${m.phone ? `${m.phone} · ` : ''}عضو من ${new Date(m.created_at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' })}${m.in_wallet ? ' · البطاقة في محفظته' : ''}`;
+    document.getElementById('lm-sub').textContent = `رقم العضوية #${m.member_no} · ${m.gender === 'f' ? 'أنثى · ' : m.gender === 'm' ? 'ذكر · ' : ''}${m.phone ? `${m.phone} · ` : ''}عضو من ${new Date(m.created_at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' })}${m.in_wallet ? ' · البطاقة في محفظته' : m.wallet_removed ? ' · حذف البطاقة من محفظته' : ''}`;
     const st = (label, v, ltr = false) => `<div class="rounded-xl bg-brand/[0.04] border border-brand/10 py-2"><p class="text-lg font-bold" ${ltr ? 'dir="ltr"' : ''}>${v}</p><p class="text-[11px] text-ink">${label}</p></div>`;
     const dates = r.events.filter(e => e.kind === 'stamp').map(e => Date.parse(e.created_at)).sort((a, b) => a - b);
     const gap = dates.length > 1 ? Math.round((dates[dates.length - 1] - dates[0]) / DAYMS / (dates.length - 1)) : null;

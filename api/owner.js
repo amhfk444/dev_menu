@@ -776,29 +776,34 @@ async function main(req) {
     return { used: !!row.used_at, expired: !row.used_at && Date.parse(row.expires_at) < Date.now(), who, note: row.used_at ? null : row.note || null };
   }
 
+  // البطاقة في المحفظة: لو آخر تحديث لها ما وصل لأي جهاز، الزبون حذفها (ما نعرف إلا بعد أول تحديث: ختم أو رسالة)
+  const walletState = (serial, err) => {
+    const removed = !!serial && /devices=0\b/.test(String(err || ''));
+    return { in_wallet: !!serial && !removed, wallet_removed: removed };
+  };
   // ─── بطاقة الولاء: كل الأعضاء (للقائمة والداشبورد وملف CSV) ───
   if (action === 'loyalty-members' && req.method === 'GET') {
     const { store } = await context(req);
-    const cards = await rest(`loyalty_cards?client_id=eq.${store.id}&select=id,member_no,name,phone,gender,stamps,visits,rewards,last_stamp_at,created_at,wallet_serial,ai_last_at,branch_ids&order=last_stamp_at.desc.nullslast&limit=5000`);
-    return { members: cards.map(({ wallet_serial, ...c }) => ({ ...c, in_wallet: !!wallet_serial })) };
+    const cards = await rest(`loyalty_cards?client_id=eq.${store.id}&select=id,member_no,name,phone,gender,stamps,visits,rewards,last_stamp_at,created_at,wallet_serial,wallet_error,ai_last_at,branch_ids&order=last_stamp_at.desc.nullslast&limit=5000`);
+    return { members: cards.map(({ wallet_serial, wallet_error, ...c }) => ({ ...c, ...walletState(wallet_serial, wallet_error) })) };
   }
 
   // ─── بطاقة الولاء: تفاصيل عضو (زياراته ورسائله) ───
   if (action === 'loyalty-member' && req.method === 'GET') {
     const { store } = await context(req);
     const id = int(req.query.id);
-    const card = (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${store.id}&select=id,member_no,name,phone,gender,stamps,visits,rewards,last_stamp_at,created_at,wallet_serial,ai_last_at,transferred,transferred_at,token`))[0];
+    const card = (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${store.id}&select=id,member_no,name,phone,gender,stamps,visits,rewards,last_stamp_at,created_at,wallet_serial,wallet_error,ai_last_at,transferred,transferred_at,token`))[0];
     if (!card) throw new ApiError(404, 'العضو غير موجود');
     const [events, messages, feedback] = await Promise.all([
       rest(`loyalty_events?card_id=eq.${id}&select=kind,created_at,distance_m&order=id.desc&limit=200`),
       rest(`loyalty_messages?client_id=eq.${store.id}&card_id=eq.${id}&or=${q('(kind.is.null,kind.neq.pager)')}&select=id,body,source,kind,created_at&order=id.desc&limit=30`).catch(() => []),
       rest(`loyalty_feedback?client_id=eq.${store.id}&card_id=eq.${id}&select=reason,note,created_at&order=id.desc&limit=10`).catch(() => [])
     ]);
-    const { wallet_serial, token, ...rest_ } = card;
+    const { wallet_serial, wallet_error, token, ...rest_ } = card;
     // رابط استرجاع البطاقة: صاحب المحل يرسله للعضو بعد ما يتأكد إنه هو (لو غيّر جواله)
     const base = wallet.cardUrl(store.client_slug);
     const restore_url = `${base}${base.includes('?') ? '&' : '?'}t=${encodeURIComponent(token)}`;
-    return { member: { ...rest_, in_wallet: !!wallet_serial, restore_url }, events, messages, feedback };
+    return { member: { ...rest_, ...walletState(wallet_serial, wallet_error), restore_url }, events, messages, feedback };
   }
 
   if (req.method !== 'POST') throw new ApiError(404, 'هذا الطلب غير معروف، حدّث الصفحة وحاول مرة ثانية', 'UNKNOWN');
