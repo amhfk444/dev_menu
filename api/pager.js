@@ -163,7 +163,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const review = ['ready', 'done'].includes(t.status) ? await reviewUrl(store.id) : null;
     // البطاقة المربوطة انحذفت من محفظته (آخر تحديث وصل لـ 0 جوال): نعرض عليه يضيفها من جديد
     const card_gone = !!t.wallet_url && wallet.passRemoved(t.wallet_error);
-    // الطلب من السيارة: صاحب المحل مشغّله، فنسأل الزبون عن سيارته
+    // تسليم الطلب للسيارة: صاحب المحل مشغّله، فنسأل الزبون عن سيارته
     const car_ask = t.status === 'waiting' && ((await rest(`clients?id=eq.${store.id}&select=pager_car`).catch(() => []))[0] || {}).pager_car === true;
     return { demo: DEMO.has(store.client_slug), wallet: wallet.configured() && !store.free, in_wallet: !!t.wallet_url && !card_gone, card_gone, car_ask, car: t.car || null, review_url: review, store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
       loyalty: { ...(await loyaltyOf(store.id)), linked: !!t.loyalty_card_id, stamped: !!t.loyalty_stamped,
@@ -216,7 +216,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
   }
 
   // ─── العميل يكتب رقم فاتورته (الموظف يشوفه على شاشته على طول) ───
-  // ─── الطلب من السيارة: لون السيارة ونوعها وآخر أرقام اللوحة ───
+  // ─── تسليم الطلب للسيارة: لون السيارة ونوعها وآخر أرقام اللوحة ───
   if (action === 'car' && req.method === 'POST') {
     const store = await loadStore(b.slug);
     const token = String(b.t || '');

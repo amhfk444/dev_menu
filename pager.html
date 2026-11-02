@@ -248,7 +248,7 @@
     <button id="keep-btn" class="btn btn-ghost hidden"><i class="ph-bold ph-speaker-high"></i> فعّل الرنين حتى لو جوالك صامت</button>
     <button id="unlock-btn" class="btn btn-ghost hidden"><i class="ph-bold ph-speaker-high"></i> فعّل صوت التنبيه</button>
     <p id="push-denied" class="hidden text-[12px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-2xl py-2.5 px-3">الإشعارات مقفلة لهذا الموقع في متصفحك. الرنين يشتغل عادي، ولو تبي الإشعار فعّله من إعدادات المتصفح.</p>
-    <!-- الطلب من السيارة: الزبون يحدد سيارته عشان يجيبون له الطلب -->
+    <!-- تسليم الطلب للسيارة: الزبون يحدد سيارته عشان يجيبون له الطلب -->
     <form id="car-form" class="card p-4 space-y-3 hidden" novalidate>
       <div>
         <p class="font-black text-[15px]"><i class="ph-bold ph-car"></i> وش سيارتك؟</p>
@@ -661,7 +661,7 @@
       show('w-loyalty', '');
       show('r-loyalty', html, 'text-white bg-white/10 border border-white/25', join);
     }
-  }  // ─── الطلب من السيارة ───
+  }  // ─── تسليم الطلب للسيارة ───
   const CAR_COLORS = [['أبيض', '#ffffff'], ['أسود', '#111111'], ['فضي', '#c0c4c8'], ['رمادي', '#7a7f85'], ['أحمر', '#c62828'], ['أزرق', '#1e4fa3'], ['بني', '#6d4c41'], ['بيج', '#d9c4a1'], ['أخضر', '#2e7d32'], ['ذهبي', '#c9a227']];
   let carEditing = false, carColor = '';
   const carText = (c) => [c.model, c.color].filter(Boolean).join(' · ') + (c.plate ? ` · ${c.plate}` : '');

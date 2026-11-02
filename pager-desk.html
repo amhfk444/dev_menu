@@ -273,7 +273,7 @@
   }
 
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  // الطلب من السيارة: نوع السيارة ولونها وآخر أرقام اللوحة تحت الرقم
+  // تسليم الطلب للسيارة: نوع السيارة ولونها وآخر أرقام اللوحة تحت الرقم
   const carLine = (t) => {
     const c = t.car; if (!c || !(c.color || c.model)) return '';
     return `<div class="text-[12.5px] font-black mt-1 leading-snug">🚗 ${esc([c.model, c.color].filter(Boolean).join(' · '))}${c.plate ? ` · <span dir="ltr">${esc(c.plate)}</span>` : ''}</div>`;

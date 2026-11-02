@@ -1851,7 +1851,7 @@
         <label class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
           <input type="checkbox" id="info-pager-car" onchange="togglePagerCar(this.checked)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
           <span class="text-xs">
-            <b class="text-ink"><i class="ph-bold ph-car text-amber-600"></i> الطلب من السيارة</b>
+            <b class="text-ink"><i class="ph-bold ph-car text-amber-600"></i> تسليم الطلب للسيارة</b>
             <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">للمحل اللي عنده شباك سيارات أو يوصّل الطلب للسيارة. بعد ما ياخذ الزبون رقم يختار لون سيارته ويكتب نوعها، وتطلع للموظف تحت الرقم في شاشة البيجر.</span>
           </span>
         </label>
@@ -5078,7 +5078,7 @@
     document.getElementById('calories-field').classList.toggle('hidden', !showCalories());
   }
   async function togglePagerCar(on) {
-    if (await updateClient({ pager_car: on })) showToast(on ? 'الزبون يقدر يحدد سيارته بعد ما ياخذ رقم' : 'تم إيقاف الطلب من السيارة');
+    if (await updateClient({ pager_car: on })) showToast(on ? 'الزبون يقدر يحدد سيارته بعد ما ياخذ رقم' : 'تم إيقاف تسليم الطلب للسيارة');
     else { document.getElementById('info-pager-car').checked = !on; showToast('تعذر حفظ الإعداد', true); }
   }
   async function toggleKioskCall(on) {
