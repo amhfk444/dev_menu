@@ -120,17 +120,12 @@
   .track li.done { color: #fff; } .track li.done i { background: #fff; color: color-mix(in srgb, var(--brand) 85%, #000); border-color: #fff; }
   .track li.now { color: #fff; } .track li.now i { border-color: #fff; color: #fff; box-shadow: 0 0 0 0 rgba(255,255,255,.5); animation: pd 1.8s infinite; }
   .track li.gold i { background: #e9c95a; border-color: #e9c95a; color: #2b2104; }
-  /* خطوات أخذ الرقم: الخطوة الحالية مفتوحة بيضاء، واللي خلصت أو جاية سطر صغير */
+  /* خطوات أخذ الرقم: تطلع وحدة وحدة في بطاقة بيضاء */
   .stp { border-radius: 22px; padding: 14px 16px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18); color: #fff; }
-  .stp-h { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 900; width: 100%; text-align: start; }
-  .stp-h b { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; flex-shrink: 0; border: 2px solid rgba(255,255,255,.35); }
-  .stp-h em { font-style: normal; font-size: 13px; font-weight: 700; opacity: .75; margin-inline-start: auto; direction: ltr; }
+  .stp-h { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 900; width: 100%; text-align: start; }
   .stp-b { display: none; margin-top: 12px; }
   .stp.on { background: #fff; color: #15271b; border-color: #fff; box-shadow: 0 24px 48px -28px rgba(0,0,0,.7); }
-  .stp.on .stp-h b { background: color-mix(in srgb, var(--brand) 85%, #000); color: #fff; border-color: transparent; }
   .stp.on .stp-b { display: block; }
-  .stp.ok .stp-h b { background: #10b981; border-color: #10b981; color: #fff; }
-  .stp.next { opacity: .55; }
   .stp .field { background: #f5f2eb !important; color: #15271b !important; border: 1.5px solid rgba(21,39,27,.2) !important; }
   .stp .field:focus { background: #fff !important; border-color: #15271b !important; }
   .stp .field::placeholder { color: rgba(21,39,27,.35); }
@@ -193,7 +188,7 @@
       <p id="t-start" class="text-[14px] font-bold opacity-75 mt-1 leading-relaxed"></p>
     </div>
     <div id="s-card" class="stp hidden">
-      <button type="button" class="stp-h" data-step="card"><b>1</b> أضف بطاقة النداء <em></em></button>
+      <h3 class="stp-h">أضف بطاقة النداء</h3>
       <div class="stp-b">
         <p class="stp-sub">يوصلك منها إشعار <span class="t-when"></span> حتى لو قفلت الجوال. تضيفها مرة وحدة وتنفعك كل مرة.</p>
         <button type="button" id="s-card-btn" class="btn btn-wallet !py-3.5 !text-base"><i class="ph-bold ph-wallet"></i> <span>أضف للمحفظة</span></button>
@@ -201,7 +196,7 @@
       </div>
     </div>
     <div id="s-inv" class="stp">
-      <button type="button" class="stp-h" data-step="inv"><b>2</b> رقم الفاتورة <em></em></button>
+      <h3 class="stp-h">رقم الفاتورة</h3>
       <form id="s-inv-form" class="stp-b" novalidate>
         <p class="stp-sub">تلقاه في فاتورتك. يساعد الموظف يعرف طلبك.</p>
         <input id="s-inv-in" class="field text-center !text-lg !font-black tracking-widest" inputmode="numeric" autocomplete="off" maxlength="20" dir="ltr" placeholder="1045">
@@ -211,9 +206,9 @@
       </form>
     </div>
     <div id="s-take" class="stp">
-      <div class="stp-h"><b>3</b> خذ رقمك</div>
-      <div class="stp-b">
+      <div class="stp-b !mt-0">
         <button id="take-btn" class="btn btn-wallet"><i class="ph-bold ph-ticket"></i> خذ رقمي وفعّل التنبيه</button>
+        <button type="button" id="s-take-inv" class="stp-skip !no-underline hidden">🧾 فاتورة <span dir="ltr"></span> <i class="ph-bold ph-pencil-simple text-xs"></i></button>
       </div>
     </div>
   </section>
@@ -840,26 +835,16 @@
   let cardOffer = false, stepInv = '', stepAt = '', invSkipped = false;
   const SKIP_KEY = `${KEY}_pcskip`;
   const cardSkipped = () => { try { return sessionStorage.getItem(SKIP_KEY) === '1'; } catch { return false; } };
+  // خطوة وحدة بس قدّامه: البطاقة (لو ما عنده) ← رقم الفاتورة ← خذ رقمك
   function renderSteps() {
-    const cardOn = cardOffer, cardDone = !cardOn || !!pagerCard() || cardSkipped(), invDone = !!stepInv || invSkipped;
+    const cardDone = !cardOffer || !!pagerCard() || cardSkipped(), invDone = !!stepInv || invSkipped;
     const cur = stepAt || (!cardDone ? 'card' : !invDone ? 'inv' : 'take');
-    let n = 0;
-    [['card', cardOn, cardDone], ['inv', true, invDone], ['take', true, false]].forEach(([k, on, done]) => {
-      const el = $(`s-${k}`); el.classList.toggle('hidden', !on); if (!on) return;
-      n++; const open = k === cur;
-      el.classList.toggle('on', open); el.classList.toggle('ok', done && !open); el.classList.toggle('next', !open && !done);
-      el.querySelector('.stp-h b').innerHTML = done && !open ? '<i class="ph-bold ph-check"></i>' : n;
-    });
-    $('s-card').querySelector('em').textContent = cardOn && pagerCard() ? 'في محفظتك' : cardSkipped() ? 'تخطيتها' : '';
-    $('s-inv').querySelector('em').textContent = stepInv ? `#${stepInv}` : invSkipped ? 'بدون' : '';
-    $('s-card-btn').querySelector('span').textContent = pagerCard() ? 'افتح البطاقة في المحفظة' : 'أضف للمحفظة';
+    ['card', 'inv', 'take'].forEach(k => { const el = $(`s-${k}`); el.classList.toggle('hidden', k !== cur); el.classList.toggle('on', k === cur); });
+    $('s-take-inv').classList.toggle('hidden', !stepInv);
+    $('s-take-inv').querySelector('span').textContent = stepInv;
   }
-  // نضغط على خطوة خلصت عشان نعدّلها
-  document.querySelectorAll('[data-step]').forEach(h => h.onclick = () => {
-    const k = h.dataset.step; if ($(`s-${k}`).classList.contains('next')) return;
-    stepAt = k; renderSteps();
-    if (k === 'inv') { $('s-inv-in').value = stepInv; $('s-inv-in').focus(); }
-  });
+  // يعدّل رقم الفاتورة قبل ما ياخذ الرقم
+  $('s-take-inv').onclick = () => { stepAt = 'inv'; renderSteps(); $('s-inv-in').value = stepInv; $('s-inv-in').focus(); };
   $('s-card-btn').onclick = async () => {
     const btn = $('s-card-btn'), label = btn.querySelector('span'); btn.disabled = true; label.textContent = 'جاري التجهيز…';
     try {
