@@ -5114,7 +5114,7 @@
   function pgChip(id, kind, text) {
     const el = document.getElementById(id); if (!el) return;
     const cls = { ok: 'bg-emerald-50 text-emerald-800 border-emerald-200', off: 'bg-ink/5 text-ink border-ink/15', warn: 'bg-amber-50 text-amber-800 border-amber-300' }[kind];
-    const icon = { ok: 'ph-check-circle', off: 'ph-minus-circle', warn: 'ph-warning-circle' }[kind];
+    const icon = { ok: 'ph-check-circle', off: 'ph-circle', warn: 'ph-warning-circle' }[kind];
     el.className = `shrink-0 inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg border ${cls}`;
     el.innerHTML = `<i class="ph-bold ${icon}"></i> ${text}`;
   }
