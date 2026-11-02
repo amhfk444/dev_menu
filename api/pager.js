@@ -72,7 +72,13 @@ async function linkedCard(branchId, cardId) {
   const gifts = await rest(`loyalty_gifts?to_card=eq.${cardId}&status=eq.claimed&expires_at=gt.${q(new Date().toISOString())}&select=code&limit=1`).catch(() => []);
   return { wallet: !!c.wallet_serial && !wallet.passRemoved(c.wallet_error), wallet_removed: !!c.wallet_serial && wallet.passRemoved(c.wallet_error), reward_ready: (c.stamps || 0) >= normalizeLoyalty(x.loyalty_settings).needed || gifts.length > 0 };
 }
-// رابط تقييم المحل في قوقل ماب
+// رابط تقييم المحل في قوقل ماب، وحساباته في التواصل (تطلع للزبون بعد ما يستلم)
+async function afterPickup(store) {
+  const x = (await rest(`clients?id=eq.${store.id}&select=google_review_url,location_url,instagram_url,tiktok_url,snapchat_url,website_url`).catch(() => []))[0] || {};
+  const https = (u) => /^https:\/\/[^\s"'<>]+$/i.test(String(u || '')) ? u : null;
+  const social = store.free ? {} : Object.fromEntries(['instagram', 'tiktok', 'snapchat', 'website'].map(k => [k, https(x[`${k}_url`])]).filter(([, u]) => u));
+  return { review: googleReviewLink(x), social };
+}
 async function reviewUrl(storeId) {
   return googleReviewLink((await rest(`clients?id=eq.${storeId}&select=google_review_url,location_url`).catch(() => []))[0]);
 }
@@ -171,12 +177,12 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     }
     // رقم من يوم سابق ما زال ينتظر = منتهي
     const stale = t.status === 'waiting' && Date.now() - Date.parse(t.created_at) > 18 * 3600e3;
-    const review = ['ready', 'done'].includes(t.status) ? await reviewUrl(store.id) : null;
+    const { review = null, social = {} } = ['ready', 'done'].includes(t.status) ? await afterPickup(store) : {};
     // البطاقة المربوطة انحذفت من محفظته (آخر تحديث وصل لـ 0 جوال): نعرض عليه يضيفها من جديد
     const card_gone = !!t.wallet_url && wallet.passRemoved(t.wallet_error);
     // تسليم الطلب للسيارة: صاحب المحل مشغّله، فنسأل الزبون عن سيارته
     const car_ask = t.status === 'waiting' && ((await rest(`clients?id=eq.${store.id}&select=pager_car`).catch(() => []))[0] || {}).pager_car === true;
-    return { demo: DEMO.has(store.client_slug), wallet: wallet.configured() && !store.free, in_wallet: !!t.wallet_url && !card_gone, card_gone, car_ask, car: t.car || null, review_url: review, store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
+    return { demo: DEMO.has(store.client_slug), wallet: wallet.configured() && !store.free, in_wallet: !!t.wallet_url && !card_gone, card_gone, car_ask, car: t.car || null, review_url: review, social, store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
       loyalty: { ...(await loyaltyOf(store.id)), linked: !!t.loyalty_card_id, stamped: !!t.loyalty_stamped,
         ...(await linkedCard(store.id, t.loyalty_card_id)) } };
   }

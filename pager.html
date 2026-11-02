@@ -368,6 +368,10 @@
       <p id="rate-thanks" class="hidden text-sm font-black text-emerald-800"></p>
       <a id="rate-google" target="_blank" rel="noopener" class="hidden btn btn-brand !py-3 !text-base"><i class="ph-bold ph-star"></i> قيّمنا على قوقل ماب</a>
     </div>
+    <div id="d-social" class="hidden space-y-2.5">
+      <p class="text-sm font-black">تابعنا</p>
+      <div id="d-social-list" class="flex flex-wrap justify-center gap-2"></div>
+    </div>
     <button id="new-btn" class="btn btn-ghost"><i class="ph-bold ph-ticket"></i> خذ رقم جديد</button>
   </section>
 </main>
@@ -797,6 +801,7 @@
     $('pw-box').classList.toggle('hidden', !passOk);
     $('pw-btn').querySelector('span').textContent = r.in_wallet ? 'بطاقة النداء في محفظتك، افتحها' : 'أضف بطاقة النداء';
     reviewLink = r.review_url || reviewLink;
+    if (r.social) renderSocial(r.social);
     if (reviewLink) $('rate-google').href = reviewLink;
     if (st === 'waiting') { show('waiting'); keepAwake(); renderPush(); if (keeperMode === 'silent') setMedia(`رقمك ${curNumber}: ${T.waiting}`); }
     else if (st === 'ready') {
@@ -1024,6 +1029,18 @@
   // "استلمت طلبي": التقييم (النجوم وقوقل ماب) يطلع على طول، لأن الزبون يقفل الصفحة بعد ما يستلم.
   // الرقم يظل عند الكاشير لين يضغط "استلم" (وهو اللي يعطي ختم الولاء)
   $('got-btn').onclick = () => { clearTimeout(pollTimer); ack(); offerRating(loadToken()); dismissed = true; stopRinging(); $('d-title').textContent = 'بالعافية!'; $('d-sub').textContent = 'نتشرف بزيارتك مرة ثانية.'; saveToken(''); show('done'); };
+
+  // ─── حسابات المحل في التواصل: تطلع في شاشة "بالعافية" تحت التقييم ───
+  const SOCIAL = [['instagram', 'انستقرام', 'instagram.com'], ['tiktok', 'تيك توك', 'tiktok.com'], ['snapchat', 'سناب شات', 'snapchat.com'], ['website', 'موقعنا', '']];
+  const esc = (v) => String(v).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+  function renderSocial(so) {
+    const items = SOCIAL.filter(([k]) => /^https:\/\//i.test(so[k] || ''));
+    $('d-social').classList.toggle('hidden', !items.length);
+    $('d-social-list').innerHTML = items.map(([k, label, domain]) => {
+      let host = domain; if (!host) try { host = new URL(so[k]).hostname; } catch {}
+      return `<a class="chip" target="_blank" rel="noopener" href="${esc(so[k])}"><img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64" alt="" class="w-4 h-4 rounded"> ${label}</a>`;
+    }).join('');
+  }
 
   // ─── تقييم التجربة بعد الاستلام (مرة وحدة لكل رقم) ───
   let rateTok = '', rated = 0, reviewLink = '', lastLoyalty = null;

@@ -1808,11 +1808,6 @@
             <label for="info-location" class="text-xs font-semibold text-ink block mb-1">رابط الموقع على خرائط Google</label>
             <input type="url" id="info-location" placeholder="https://maps.app.goo.gl/..." class="input-pro text-xs" dir="ltr">
           </div>
-          <div data-free-hide class="md:col-span-2">
-            <label for="info-review" class="text-xs font-semibold text-ink block mb-1"><i class="ph-bold ph-star text-amber-500"></i> رابط التقييم في قوقل ماب</label>
-            <input type="url" id="info-review" placeholder="https://g.page/r/.../review" class="input-pro text-xs" dir="ltr">
-            <p class="text-[11px] text-ink mt-1 leading-relaxed">لما يرن البيجر يطلع للزبون زر "قيّمنا على قوقل ماب" يفتح هالرابط. تلقاه في Google Business ← "اطلب تقييمات". لو ما حطيته نستخدم رابط موقعك في قوقل ماب اللي فوق.</p>
-          </div>
         </div>
         <div data-needs="menu" id="wa-orders-box" class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2.5">
           <label id="wa-orders-label" class="flex items-start gap-2.5 cursor-pointer">
@@ -1827,42 +1822,74 @@
         <button onclick="updateRestaurantInfo()" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-sm transition shadow-md"><i class="ph-bold ph-floppy-disk"></i> حفظ بيانات المحل</button>
       </section>
 
-      <!-- بطاقة النداء -->
+      <!-- البيجر: مرتبة حسب رحلة الزبون، وكل إعداد عليه حالته ووين يطلع للزبون -->
       <section data-needs="pager" data-free-hide class="space-y-3">
-        <h5 class="text-xs font-bold text-ink border-b border-ink/10 pb-1.5">البيجر</h5>
+        <div class="flex items-center justify-between gap-2 border-b border-ink/10 pb-1.5">
+          <h5 class="text-xs font-bold text-ink">البيجر</h5>
+          <a id="pg-preview" target="_blank" rel="noopener" class="text-[11px] font-bold text-ink underline"><i class="ph-bold ph-arrow-square-out"></i> شوف كيف يطلع للزبون</a>
+        </div>
+
+        <p class="text-[11px] font-black text-ink/70">قبل ما ياخذ رقم</p>
         <!-- بطاقة النداء: تختفي لو الولاء شغّال ويختم مع البيجر (النداء يوصل من بطاقة الولاء) -->
         <div id="info-pager-card" class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-3">
-          <p class="text-xs font-bold text-ink"><i class="ph-bold ph-wallet text-amber-600"></i> بطاقة النداء</p>
-          <div class="flex flex-wrap items-center justify-between gap-2.5">
+          <div class="flex flex-wrap items-start justify-between gap-2">
             <span class="text-xs">
               <b class="text-ink"><i class="ph-bold ph-map-pin text-amber-600"></i> موقع المحل</b>
-              <span id="info-pin-status" class="block text-[11px] text-ink mt-0.5 leading-relaxed"></span>
+              <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يطلع للزبون في: شاشة القفل، لما يقرب من محلك تطلع له بطاقة النداء.</span>
             </span>
-            <button type="button" id="info-pin-btn" onclick="setStorePin()" class="bg-brand text-cream hover:bg-brand-dark px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-sm"><i class="ph-bold ph-crosshair"></i> حدد الموقع من هنا</button>
+            <span id="pg-st-pin"></span>
           </div>
+          <button type="button" id="info-pin-btn" onclick="setStorePin()" class="bg-brand text-cream hover:bg-brand-dark px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-sm"><i class="ph-bold ph-crosshair"></i> حدد الموقع وأنت داخل المحل</button>
           <div>
-            <label for="info-near" class="text-xs font-semibold text-ink block mb-1">الرسالة اللي تطلع على شاشة القفل <span id="info-near-count" class="text-ink font-normal">0/80</span></label>
+            <label for="info-near" class="text-xs font-semibold text-ink block mb-1">رسالة شاشة القفل <span id="info-near-count" class="text-ink font-normal">0/80</span></label>
             <div class="flex gap-2">
               <input type="text" id="info-near" maxlength="80" class="input-pro text-xs flex-1" oninput="document.getElementById('info-near-count').textContent = this.value.length + '/80'">
               <button type="button" onclick="saveNearText()" class="bg-brand text-cream hover:bg-brand-dark px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-sm"><i class="ph-bold ph-floppy-disk"></i> احفظ</button>
             </div>
-            <p class="text-[11px] text-ink mt-1 leading-relaxed">لو تركتها فاضية تطلع الرسالة الرمادية اللي في الخانة. تتغير في بطاقات زبائنك مع أول رقم ياخذونه.</p>
+            <p class="text-[11px] text-ink mt-1 leading-relaxed">لو تركتها فاضية تطلع الرسالة الرمادية اللي في الخانة.</p>
           </div>
         </div>
+
+        <p class="text-[11px] font-black text-ink/70 pt-1">وهو ينتظر طلبه</p>
         <label class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
           <input type="checkbox" id="info-pager-car" onchange="togglePagerCar(this.checked)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
-          <span class="text-xs">
+          <span class="text-xs flex-1">
             <b class="text-ink"><i class="ph-bold ph-car text-amber-600"></i> تسليم الطلب للسيارة</b>
-            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">للمحل اللي عنده شباك سيارات أو يوصّل الطلب للسيارة. بعد ما ياخذ الزبون رقم يختار لون سيارته ويكتب نوعها، وتطلع للموظف تحت الرقم في شاشة البيجر.</span>
+            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يطلع للزبون في: صفحة رقمه، يختار لون سيارته ونوعها. وتطلع للموظف تحت الرقم في شاشة الكاشير.</span>
           </span>
+          <span id="pg-st-car"></span>
         </label>
         <label class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
           <input type="checkbox" id="info-kiosk-call" onchange="toggleKioskCall(this.checked)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
-          <span class="text-xs">
-            <b class="text-ink"><i class="ph-bold ph-device-tablet text-amber-600"></i> شاشة الزبون: الأرقام الجاهزة</b>
-            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">لما يجهز طلب، يطلع رقمه كبير على شاشة الزبون لثواني، وتبقى الأرقام الجاهزة ظاهرة أعلى الشاشة. لو شاشتك فيها كاميرا بطاقة الولاء يطلع الرقم شريط صغير فوق عشان ما يغطيها. وبدون التفعيل تعرض الشاشة الأكواد بس.</span>
+          <span class="text-xs flex-1">
+            <b class="text-ink"><i class="ph-bold ph-device-tablet text-amber-600"></i> الأرقام الجاهزة على شاشة الزبون</b>
+            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يطلع للزبون في: شاشة التابلت عندك، رقمه كبير لما يجهز طلبه.</span>
           </span>
+          <span id="pg-st-kiosk"></span>
         </label>
+
+        <p class="text-[11px] font-black text-ink/70 pt-1">بعد ما يستلم طلبه</p>
+        <div class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2.5">
+          <div class="flex flex-wrap items-start justify-between gap-2">
+            <span class="text-xs">
+              <b class="text-ink"><i class="ph-bold ph-star text-amber-600"></i> تقييمك في قوقل ماب</b>
+              <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يطلع للزبون في: شاشة "بالعافية"، زر "قيّمنا على قوقل ماب". تلقى الرابط في Google Business ← "اطلب تقييمات".</span>
+            </span>
+            <span id="pg-st-review"></span>
+          </div>
+          <div class="flex gap-2">
+            <input type="url" id="info-review" placeholder="https://g.page/r/.../review" class="input-pro text-xs flex-1" dir="ltr">
+            <button type="button" onclick="saveReviewLink()" class="bg-brand text-cream hover:bg-brand-dark px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-sm"><i class="ph-bold ph-floppy-disk"></i> احفظ</button>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-start justify-between gap-2 bg-brand/5 p-3 rounded-xl border border-brand/15">
+          <span class="text-xs flex-1">
+            <b class="text-ink"><i class="ph-bold ph-share-network text-amber-600"></i> حساباتك في التواصل</b>
+            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يطلع للزبون في: شاشة "بالعافية" تحت التقييم، "تابعنا" بانستقرام وتيك توك وسناب وموقعك.</span>
+            <button type="button" onclick="document.getElementById('social-card').scrollIntoView({ behavior: 'smooth', block: 'center' })" class="mt-2 text-[11px] font-bold text-ink underline">عدّل حساباتك</button>
+          </span>
+          <span id="pg-st-social"></span>
+        </div>
       </section>
 
       <!-- إعدادات المنيو: تنحفظ مباشرة -->
@@ -1913,10 +1940,13 @@
     </div>
         </div>
     <!-- روابط التواصل الاجتماعي (مو في البيجر المجاني) -->
-    <div data-free-hide class="pro-card p-5 space-y-3">
-      <h4 class="text-xs font-bold text-ink flex items-center gap-1.5">
-        <i class="ph-bold ph-share-network text-blue-600"></i> روابط منصات التواصل الاجتماعي وموقع المنشأة
-      </h4>
+    <div id="social-card" data-free-hide class="pro-card p-5 space-y-3">
+      <div>
+        <h4 class="text-xs font-bold text-ink flex items-center gap-1.5">
+          <i class="ph-bold ph-share-network text-blue-600"></i> حساباتك في التواصل
+        </h4>
+        <p class="text-[11px] text-ink mt-1 leading-relaxed">تطلع للزبون في صفحة روابطك (الرابط الرئيسي)، وفي البيجر بعد ما يستلم طلبه، وفي المنيو لو عندك.</p>
+      </div>
       <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <div>
           <label class="text-xs font-semibold text-ink block mb-1">الموقع الإلكتروني</label>
@@ -2903,6 +2933,7 @@
       const res = await api('update-store', payload);
       Object.assign(client, res.store || payload);
       renderDashboardSummary();
+      renderPagerStatus();
       if (linksOrder.length) renderLinksOrder(false);
       return true;
     } catch (e) {
@@ -5076,7 +5107,36 @@
     document.getElementById('info-show-calories').checked = showCalories();
     document.getElementById('info-kiosk-call').checked = !!client && client.kiosk_call === true;
     document.getElementById('info-pager-car').checked = !!client && client.pager_car === true;
+    renderPagerStatus();
     document.getElementById('calories-field').classList.toggle('hidden', !showCalories());
+  }
+  // حالة كل إعداد في البيجر: جاهز / مو مفعّل / ناقص
+  function pgChip(id, kind, text) {
+    const el = document.getElementById(id); if (!el) return;
+    const cls = { ok: 'bg-emerald-50 text-emerald-800 border-emerald-200', off: 'bg-ink/5 text-ink border-ink/15', warn: 'bg-amber-50 text-amber-800 border-amber-300' }[kind];
+    const icon = { ok: 'ph-check-circle', off: 'ph-minus-circle', warn: 'ph-warning-circle' }[kind];
+    el.className = `shrink-0 inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg border ${cls}`;
+    el.innerHTML = `<i class="ph-bold ${icon}"></i> ${text}`;
+  }
+  function renderPagerStatus() {
+    if (!client) return;
+    const prev = document.getElementById('pg-preview');
+    if (prev) prev.href = DM.storeUrl(client.client_slug, 'pager');
+    const pin = client.loyalty_lat != null && client.loyalty_lng != null;
+    pgChip('pg-st-pin', pin ? 'ok' : 'off', pin ? 'محدد' : 'اختياري');
+    pgChip('pg-st-car', client.pager_car ? 'ok' : 'off', client.pager_car ? 'مفعّل' : 'مو مفعّل');
+    pgChip('pg-st-kiosk', client.kiosk_call ? 'ok' : 'off', client.kiosk_call ? 'مفعّل' : 'مو مفعّل');
+    if (client.google_review_url) pgChip('pg-st-review', 'ok', 'جاهز');
+    else if (client.location_url) pgChip('pg-st-review', 'ok', 'يفتح موقعك في الخريطة');
+    else pgChip('pg-st-review', 'warn', 'ناقص: زبائنك ما يقدرون يقيّمونك');
+    const n = ['instagram_url', 'tiktok_url', 'snapchat_url', 'website_url'].filter(k => client[k]).length;
+    pgChip('pg-st-social', n ? 'ok' : 'warn', n ? `${n} ${n === 1 ? 'حساب' : 'حسابات'}` : 'ناقص');
+  }
+  async function saveReviewLink() {
+    const review = document.getElementById('info-review').value.trim();
+    if (review && !/^https:\/\/(g\.page|search\.google\.com|www\.google\.com|maps\.app\.goo\.gl|goo\.gl|maps\.google\.com|g\.co)\//i.test(review)) return showToast('رابط التقييم لازم يكون من قوقل، مثل g.page/r/.../review', true);
+    if (await updateClient({ google_review_url: review })) showToast(review ? 'تم حفظ رابط التقييم' : 'انحذف رابط التقييم');
+    else showToast('تعذر حفظ الرابط', true);
   }
   async function togglePagerCar(on) {
     if (await updateClient({ pager_car: on })) showToast(on ? 'الزبون يقدر يحدد سيارته بعد ما ياخذ رقم' : 'تم إيقاف تسليم الطلب للسيارة');
@@ -6004,10 +6064,7 @@
   }
   function renderStorePin() {
     if (!featureLocked('loyalty')) (ly.data ? Promise.resolve(ly.data) : api('loyalty').catch(() => null)).then(syncPagerCardBox);
-    const set = client.loyalty_lat != null && client.loyalty_lng != null;
-    document.getElementById('info-pin-status').innerHTML = set
-      ? '<span class="text-emerald-700 font-semibold"><i class="ph-bold ph-check-circle"></i> محدد: البطاقة تطلع على شاشة قفل زبونك لما يقرب من المحل</span>'
-      : 'اختياري: حدده وأنت داخل المحل، وتطلع بطاقة النداء على شاشة قفل زبونك لما يقرب منه.';
+    renderPagerStatus();
     const near = document.getElementById('info-near');
     near.placeholder = `أنت قريب من ${client.name || 'المحل'}، تفضّل 👋`;
     near.value = client.pager_near_text || '';
