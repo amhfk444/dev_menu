@@ -167,4 +167,16 @@ async function updatePagerPass(serial, ctx) {
   catch (e) { return `${e.status || ''} ${e.message || ''}`.trim().slice(0, 200); }
 }
 
-module.exports = { configured, createPass, updatePass, revokePass, buildCtx, cardUrl, createPagerPass, updatePagerPass, pagerStep };
+// البطاقة موحدة لكل المحلات: استلم أو انلغى رقمه هنا، وعنده رقم شغّال اليوم على نفس البطاقة في محل ثاني؟
+// لو فيه، البطاقة ترجع لرقمه هناك وحالته (بدون إشعار جديد)، وإلا "بالعافية"
+async function endPagerPass(serial, ticketId, ctx) {
+  if (!configured() || !serial) return 'off';
+  const { rest, q } = require('./core'), { riyadhDayStart } = require('./waitlist');
+  const t = (await rest(`pager_tickets?wallet_serial=eq.${q(serial)}&id=neq.${Number(ticketId) || 0}&status=in.(waiting,ready)&created_at=gte.${q(riyadhDayStart())}&select=client_id,number,status,lang&order=id.desc&limit=1`).catch(() => []))[0];
+  const at = t && (await rest(`clients?id=eq.${t.client_id}&select=id,name,client_slug,logo_url,accent_color,business_type`).catch(() => []))[0];
+  if (!at) return updatePagerPass(serial, ctx);
+  const step = pagerStep({ store: at, number: t.number, step: t.status === 'ready' ? 'ready' : 'waiting', lang: t.lang || ctx.lang });
+  return `back ${await updatePagerPass(serial, { ...step, notice: ' ' })}`;
+}
+
+module.exports = { configured, createPass, updatePass, revokePass, buildCtx, cardUrl, createPagerPass, updatePagerPass, endPagerPass, pagerStep };

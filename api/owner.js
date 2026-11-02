@@ -293,14 +293,18 @@ async function pushPagerMessage(homeId, body, afterId, limit = 40, branchId = nu
   ]);
   if (!store || !wallet.configured() || !cards.length) return { sent: 0, gone: 0, lastId: afterId, done: true, total: all ? all.length : 0 };
   // الزبون اللي عنده رقم شغّال اليوم: توصله الرسالة وبطاقته تبقى على رقمه وحالته (ما ننزله لـ "بالعافية")
+  // ولو رقمه في محل ثاني، البطاقة تبقى باسم ذاك المحل ورقمه، والرسالة تطلع باسم هالمحل
   const serials = cards.map(c => q(c.wallet_serial)).join(',');
-  const live = new Map((await rest(`pager_tickets?wallet_serial=in.(${serials})&status=in.(waiting,ready)&created_at=gte.${q(riyadhDayStart())}&select=wallet_serial,number,status&order=id.asc`).catch(() => [])).map(t => [t.wallet_serial, t]));
+  const live = new Map((await rest(`pager_tickets?wallet_serial=in.(${serials})&status=in.(waiting,ready)&created_at=gte.${q(riyadhDayStart())}&select=wallet_serial,number,status,client_id&order=id.asc`).catch(() => [])).map(t => [t.wallet_serial, t]));
+  const otherIds = [...new Set([...live.values()].map(t => t.client_id).filter(id => id !== store.id))];
+  const others = new Map(otherIds.length ? (await rest(`clients?id=in.(${otherIds.join(',')})&select=id,name,client_slug,logo_url,accent_color,business_type`).catch(() => [])).map(s => [s.id, s]) : []);
   let sent = 0, gone = 0;
   // كل الدفعة مع بعض (40 بالكثير) عشان ما ينتظر صاحب المحل
   await Promise.all(cards.map(async (c) => {
     const t = live.get(c.wallet_serial);
-    const step = t ? wallet.pagerStep({ store, number: t.number, step: t.status === 'ready' ? 'ready' : 'waiting', lang: c.lang }) : wallet.pagerStep({ store, step: 'idle', lang: c.lang });
-    const r = await wallet.updatePagerPass(c.wallet_serial, { ...step, notice: body });
+    const at = t && others.get(t.client_id);   // رقمه الشغّال في محل ثاني (أو فرع)
+    const step = t ? wallet.pagerStep({ store: at || store, number: t.number, step: t.status === 'ready' ? 'ready' : 'waiting', lang: c.lang }) : wallet.pagerStep({ store, step: 'idle', lang: c.lang });
+    const r = await wallet.updatePagerPass(c.wallet_serial, { ...step, notice: at ? `${store.name}: ${body}` : body });
     // devices=0: البطاقة انحذفت من محفظة الزبون، فما يوصله إشعار
     if (r.startsWith('ok') && !/devices=0\b/.test(r)) sent++;
     else if (r.startsWith('ok')) gone++;
@@ -1187,7 +1191,7 @@ async function main(req) {
     }
     // استلم أو انلغى: بطاقة النداء ترجع "بالعافية" (إشعار) وتنتظر الزيارة الجاية
     if ((status === 'done' || status === 'cancelled') && t.wallet_serial) {
-      later(wallet.updatePagerPass(t.wallet_serial, wallet.pagerStep({ store, step: 'idle', lang: t.lang })).then(er => {
+      later(wallet.endPagerPass(t.wallet_serial, t.id, wallet.pagerStep({ store, step: 'idle', lang: t.lang })).then(er => {
         console.log('PAGER_PASS_END', sid, t.id, er);
         return rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_error: `${t.wallet_error || ''} | end ${er}`.slice(0, 300) } });
       }));
