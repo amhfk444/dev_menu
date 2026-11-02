@@ -141,7 +141,7 @@ async function pagerBody({ store, number, step, status, notice, url, lang }) {
   };
   const strip = await pagerStrip(color, step);
   if (strip) body.stripURL = strip;
-  if (store.logo_url && /^https:\/\//.test(store.logo_url)) { body.logoURL = store.logo_url; body.iconURL = store.logo_url; }
+  if (store.logo_url && /^https:\/\//.test(store.logo_url)) body.logoURL = body.iconURL = await require('./strip').smallLogo(store.logo_url);
   // موقع المحل: البطاقة تطلع على شاشة القفل لما يقرب منه، بنص صاحب المحل أو النص الافتراضي
   const lat = Number(x.loyalty_lat), lng = Number(x.loyalty_lng);
   const near = String(x.pager_near_text || '').trim() || L(`أنت قريب من ${store.name || 'المحل'}، تفضّل 👋`);

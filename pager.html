@@ -761,7 +761,7 @@
   };
   $('jn-wallet').onclick = async () => {
     const btn = $('jn-wallet'); btn.disabled = true;
-    try { const r = await DM.post('/api/loyalty?action=wallet', { slug, t: lyToken || localStorage.getItem(`dm_loyalty_${slug}`) }); if (r.url) location.href = r.url; }
+    try { const r = await DM.post('/api/loyalty?action=wallet', { slug, t: lyToken || localStorage.getItem(`dm_loyalty_${slug}`) }); if (r.url) location.href = walletHref(r.url); }
     catch (err) { alert(err.message || 'تعذر إضافة البطاقة'); }
     btn.disabled = false;
   };
@@ -827,6 +827,15 @@
     acked = t;
     DM.post('/api/pager?action=ack', { slug, t }).catch(() => { acked = ''; });
   }
+  // رابط المحفظة مباشرة: آيفون يفتح نافذة "إضافة" على طول، وأندرويد يفتح قوقل والت، بدون صفحة وسيطة
+  function walletHref(url) {
+    const m = String(url).match(/^https:\/\/pass\.walletwallet\.dev\/p\/([0-9a-f-]{36})$/i);
+    if (!m) return url;
+    const ua = navigator.userAgent;
+    if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return `https://api.walletwallet.dev/p/${m[1]}/apple.pkpass`;
+    if (/Android/.test(ua)) return `https://api.walletwallet.dev/api/passes/${m[1]}/google`;
+    return url;
+  }
   // ─── خطوات أخذ الرقم: بطاقة النداء ← رقم الفاتورة ← خذ رقمك ───
   let cardOffer = false, stepInv = '', stepAt = '', invSkipped = false;
   const SKIP_KEY = `${KEY}_pcskip`;
@@ -858,7 +867,7 @@
       if (r.card) savePagerCard(r.card);
       try { sessionStorage.removeItem(SKIP_KEY); } catch {}
       stepAt = ''; renderSteps();
-      if (r.url) location.href = r.url;
+      if (r.url) location.href = walletHref(r.url);
     } catch (err) { alert(err.message || 'تعذر الإضافة للمحفظة'); renderSteps(); }
     btn.disabled = false;
   };
@@ -1012,7 +1021,7 @@
       const r = await DM.post('/api/pager?action=wallet', { slug, t: loadToken(), pc: pagerCard() || undefined });
       if (r.card) savePagerCard(r.card);
       try { localStorage.setItem('dm_pc_added', loadToken()); } catch {}   // أضافها لهالرقم: ما نعرضها عليه مرة ثانية
-      if (r.url) location.href = r.url;
+      if (r.url) location.href = walletHref(r.url);
     } catch (err) { alert(err.message || 'تعذر الإضافة للمحفظة'); btn.querySelector('span').textContent = label; }
     btn.disabled = false;
   }
