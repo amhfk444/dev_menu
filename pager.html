@@ -248,6 +248,22 @@
     <button id="keep-btn" class="btn btn-ghost hidden"><i class="ph-bold ph-speaker-high"></i> فعّل الرنين حتى لو جوالك صامت</button>
     <button id="unlock-btn" class="btn btn-ghost hidden"><i class="ph-bold ph-speaker-high"></i> فعّل صوت التنبيه</button>
     <p id="push-denied" class="hidden text-[12px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-2xl py-2.5 px-3">الإشعارات مقفلة لهذا الموقع في متصفحك. الرنين يشتغل عادي، ولو تبي الإشعار فعّله من إعدادات المتصفح.</p>
+    <!-- الطلب من السيارة: الزبون يحدد سيارته عشان يجيبون له الطلب -->
+    <form id="car-form" class="card p-4 space-y-3 hidden" novalidate>
+      <div>
+        <p class="font-black text-[15px]"><i class="ph-bold ph-car"></i> وش سيارتك؟</p>
+        <p class="text-[12.5px] font-bold opacity-85">عشان نجيب لك طلبك لسيارتك</p>
+      </div>
+      <div id="car-colors" class="flex flex-wrap gap-2" role="radiogroup" aria-label="لون السيارة"></div>
+      <div class="flex gap-2">
+        <input id="car-model" class="field flex-1 min-w-0" maxlength="24" autocomplete="off" placeholder="نوعها، مثل: كامري">
+        <input id="car-plate" class="field !w-28 text-center tracking-widest" inputmode="numeric" maxlength="4" autocomplete="off" dir="ltr" placeholder="اللوحة" aria-label="آخر أرقام اللوحة (اختياري)">
+      </div>
+      <p class="text-[11.5px] font-bold opacity-75 -mt-1">أرقام اللوحة اختيارية</p>
+      <button id="car-save" class="btn btn-brand !py-3 !text-base">تم</button>
+      <p id="car-err" class="hidden text-[12px] font-bold text-rose-700"></p>
+    </form>
+    <button type="button" id="car-chip" class="hidden chip mx-auto"><span></span> <i class="ph-bold ph-pencil-simple"></i></button>
     <!-- العميل يكتب رقم فاتورته -->
     <form id="inv-form" class="card p-4 space-y-2.5 hidden" novalidate>
       <label for="inv-in" class="block font-black text-[14px]"><i class="ph-bold ph-receipt"></i> رقم فاتورتك <span class="font-bold opacity-55 text-[12px]">(اختياري)</span></label>
@@ -645,7 +661,33 @@
       show('w-loyalty', '');
       show('r-loyalty', html, 'text-white bg-white/10 border border-white/25', join);
     }
-  }  // ─── رقم الفاتورة من العميل ───
+  }  // ─── الطلب من السيارة ───
+  const CAR_COLORS = [['أبيض', '#ffffff'], ['أسود', '#111111'], ['فضي', '#c0c4c8'], ['رمادي', '#7a7f85'], ['أحمر', '#c62828'], ['أزرق', '#1e4fa3'], ['بني', '#6d4c41'], ['بيج', '#d9c4a1'], ['أخضر', '#2e7d32'], ['ذهبي', '#c9a227']];
+  let carEditing = false, carColor = '';
+  const carText = (c) => [c.model, c.color].filter(Boolean).join(' · ') + (c.plate ? ` · ${c.plate}` : '');
+  function paintCarColors() {
+    $('car-colors').innerHTML = CAR_COLORS.map(([n, hex]) => `<button type="button" role="radio" aria-checked="${carColor === n}" data-c="${n}" class="flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12.5px] font-bold border ${carColor === n ? 'bg-white text-[#15271b] border-white' : 'border-white/30'}"><span class="w-4 h-4 rounded-full border border-black/20" style="background:${hex}"></span>${n}</button>`).join('');
+  }
+  function renderCar(r, st) {
+    const ask = !!r.car_ask && st === 'waiting', has = !!(r.car && (r.car.color || r.car.model));
+    $('car-form').classList.toggle('hidden', !ask || (has && !carEditing));
+    $('car-chip').classList.toggle('hidden', !ask || !has || carEditing);
+    if (has) $('car-chip').querySelector('span').textContent = `🚗 ${carText(r.car)}`;
+    if (ask && !$('car-colors').children.length) paintCarColors();
+  }
+  $('car-colors').onclick = (e) => { const b = e.target.closest('[data-c]'); if (!b) return; carColor = carColor === b.dataset.c ? '' : b.dataset.c; paintCarColors(); };
+  $('car-chip').onclick = () => { carEditing = true; $('car-chip').classList.add('hidden'); $('car-form').classList.remove('hidden'); };
+  $('car-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const btn = $('car-save'); btn.disabled = true; $('car-err').classList.add('hidden');
+    try {
+      const r = await DM.post('/api/pager?action=car', { slug, t: loadToken(), color: carColor, model: $('car-model').value.trim(), plate: $('car-plate').value.trim() });
+      carEditing = false;
+      renderCar({ car_ask: true, car: r.car }, 'waiting');
+    } catch (err) { $('car-err').textContent = err.message || 'ما انحفظت. تأكد من الإنترنت وحاول مرة ثانية'; $('car-err').classList.remove('hidden'); }
+    btn.disabled = false;
+  };
+  // ─── رقم الفاتورة من العميل ───
   let invEditing = false;
   $('w-invoice').onclick = () => { invEditing = true; $('inv-in').value = $('w-invoice').querySelector('span').textContent; $('inv-form').classList.remove('hidden'); $('inv-in').focus(); };
   $('inv-form').onsubmit = async (e) => {
@@ -715,6 +757,7 @@
     ['w-invoice', 'r-invoice'].forEach(id => { $(id).classList.toggle('hidden', !inv); $(id).querySelector('span').textContent = inv; });
     $('w-tell').classList.toggle('hidden', !!inv);
     if (!invEditing) $('inv-form').classList.toggle('hidden', !!inv || st !== 'waiting');
+    renderCar(r, st);
     $('w-demo').classList.toggle('hidden', !r.demo);
     const ly = r.loyalty || {};
     // بطاقة النداء للمحل اللي ما عنده ولاء بس (المحل المشترك في الولاء: النداء يوصل من بطاقة الولاء)

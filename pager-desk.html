@@ -273,6 +273,11 @@
   }
 
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // الطلب من السيارة: نوع السيارة ولونها وآخر أرقام اللوحة تحت الرقم
+  const carLine = (t) => {
+    const c = t.car; if (!c || !(c.color || c.model)) return '';
+    return `<div class="text-[12.5px] font-black mt-1 leading-snug">🚗 ${esc([c.model, c.color].filter(Boolean).join(' · '))}${c.plate ? ` · <span dir="ltr">${esc(c.plate)}</span>` : ''}</div>`;
+  };
   const normDigits = (v) => String(v).replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15));
 
   // ─── رقم الفاتورة ───
@@ -328,6 +333,7 @@
       <div class="tile tile-wait${freshIds.has(t.id) ? ' tile-new' : ''}">
         <div class="text-[11px] opacity-85">بيجر</div>
         <div class="n">${t.number}</div>
+        ${carLine(t)}
         <button class="mini w-full mt-2 ${t.invoice_no ? 'bg-white/15 text-white' : 'bg-[#c9a227] text-[#15271b]'}" data-invoice="${t.id}">
           ${t.invoice_no ? `🧾 ${esc(t.invoice_no)}` : '🧾 أضف الفاتورة'}
         </button>
@@ -340,6 +346,7 @@
     $('ready-grid').innerHTML = ready.map(t => `
       <div class="tile tile-ready">
         <div class="n">${t.number}</div>
+        ${carLine(t)}
         ${t.invoice_no ? `<div class="text-[12px] font-black mt-1">🧾 ${esc(t.invoice_no)}</div>` : ''}
         <div class="text-[11px] mt-1 opacity-85">${ringLabel(t)}</div>
         ${t.reward ? `<button class="mini w-full mt-1.5 bg-[#c9a227] text-[#15271b] rw-pulse" data-reward="${t.id}"><i class="ph-bold ph-gift"></i> عنده مكافأة</button>` : ''}

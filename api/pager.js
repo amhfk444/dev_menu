@@ -87,6 +87,8 @@ async function demoRing(store, token) {
 }
 
 const SLUG_OK = /^[a-z0-9-]{2,63}$/i;
+const CAR_COLORS = ['أبيض', 'أسود', 'فضي', 'رمادي', 'أحمر', 'أزرق', 'بني', 'بيج', 'أخضر', 'ذهبي'];
+
 async function loadStore(slug) {
   let { store, bad } = await findPublicStore(slug, 'id,name,client_slug,logo_url,business_type,accent_color');
   if (bad) throw new ApiError(400, 'الرابط غير صحيح');
@@ -150,7 +152,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const token = String(req.query.t || '');
     if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
     const sel = `pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&select=number,status,created_at,ready_at`;
-    const t = (await rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url,wallet_error`).catch(() => rest(`${sel},invoice_no`)).catch(() => rest(sel)))[0];
+    const t = (await rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url,wallet_error,car`).catch(() => rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url,wallet_error`)).catch(() => rest(`${sel},invoice_no`)).catch(() => rest(sel)))[0];
     if (!t) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
     if (DEMO.has(store.client_slug) && t.status === 'waiting' && Date.now() - Date.parse(t.created_at) > (t.wallet_url ? DEMO_AFTER_CARD : DEMO_AFTER)) {
       await demoRing(store, token);
@@ -161,7 +163,9 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const review = ['ready', 'done'].includes(t.status) ? await reviewUrl(store.id) : null;
     // البطاقة المربوطة انحذفت من محفظته (آخر تحديث وصل لـ 0 جوال): نعرض عليه يضيفها من جديد
     const card_gone = !!t.wallet_url && wallet.passRemoved(t.wallet_error);
-    return { demo: DEMO.has(store.client_slug), wallet: wallet.configured() && !store.free, in_wallet: !!t.wallet_url && !card_gone, card_gone, review_url: review, store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
+    // الطلب من السيارة: صاحب المحل مشغّله، فنسأل الزبون عن سيارته
+    const car_ask = t.status === 'waiting' && ((await rest(`clients?id=eq.${store.id}&select=pager_car`).catch(() => []))[0] || {}).pager_car === true;
+    return { demo: DEMO.has(store.client_slug), wallet: wallet.configured() && !store.free, in_wallet: !!t.wallet_url && !card_gone, card_gone, car_ask, car: t.car || null, review_url: review, store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
       loyalty: { ...(await loyaltyOf(store.id)), linked: !!t.loyalty_card_id, stamped: !!t.loyalty_stamped,
         ...(await linkedCard(store.id, t.loyalty_card_id)) } };
   }
@@ -212,6 +216,23 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
   }
 
   // ─── العميل يكتب رقم فاتورته (الموظف يشوفه على شاشته على طول) ───
+  // ─── الطلب من السيارة: لون السيارة ونوعها وآخر أرقام اللوحة ───
+  if (action === 'car' && req.method === 'POST') {
+    const store = await loadStore(b.slug);
+    const token = String(b.t || '');
+    if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
+    const color = CAR_COLORS.includes(b.color) ? b.color : null;
+    const model = String(b.model || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 24) || null;
+    const plate = String(b.plate || '').replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15)).replace(/\D/g, '').slice(0, 4) || null;
+    if (!color && !model) throw new ApiError(400, 'اختر لون سيارتك أو اكتب نوعها');
+    const t = (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=in.(waiting,ready)&select=id`))[0];
+    if (!t) throw new ApiError(404, 'الرقم غير موجود أو انتهى', 'NOT_FOUND');
+    const car = { color, model, plate };
+    await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { car } });
+    await poke([topic('pager', store.id), topic('ticket', token)]);
+    return { car };
+  }
+
   if (action === 'invoice' && req.method === 'POST') {
     const store = await loadStore(b.slug);
     const token = String(b.t || '');

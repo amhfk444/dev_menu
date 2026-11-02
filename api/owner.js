@@ -659,7 +659,7 @@ async function main(req) {
     if (!hasPager && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'البيجر مو ضمن باقتك، أضفه من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
     const base = `pager_tickets?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&order=number.asc&select=id,number,status,created_at,ready_at,closed_at,push_sub`;
     // أعمدة التكرار من 21-pager-repeat.sql — لو ما انضافت نكمل بدونها
-    const tickets = !hasPager ? [] : await rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id`).catch(() => rest(`${base},ring_count,acked_at,invoice_no`)).catch(() => rest(`${base},ring_count,acked_at`)).catch(() => rest(base));
+    const tickets = !hasPager ? [] : await rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id,car`).catch(() => rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id`)).catch(() => rest(`${base},ring_count,acked_at,invoice_no`)).catch(() => rest(`${base},ring_count,acked_at`)).catch(() => rest(base));
     const lhome = await loyaltyHome(store.id);   // الولاء على المحل الرئيسي
     const lx = (await rest(`clients?id=eq.${lhome}&select=loyalty_enabled`).catch(() => []))[0] || {};
     lx.loyalty_enabled = lx.loyalty_enabled && PLANS.has(store, 'loyalty');
@@ -1314,6 +1314,7 @@ async function main(req) {
     if (has('show_calories')) p.show_calories = b.show_calories !== false;
     if (has('menu_chat')) p.menu_chat = b.menu_chat === true;
     if (has('kiosk_call')) p.kiosk_call = b.kiosk_call === true;
+    if (has('pager_car')) p.pager_car = b.pager_car === true;
     if (has('pager_near_text')) p.pager_near_text = String(b.pager_near_text || '').replace(/\s+/g, ' ').trim().slice(0, 80) || null;
     if (has('menu_layout')) p.menu_layout = b.menu_layout === 'photos' ? 'photos' : 'list';
     if (has('google_review_url')) {

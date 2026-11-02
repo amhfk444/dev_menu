@@ -116,5 +116,21 @@
   "يوصلك إشعار": "You'll be notified",
   "حتى لو كنت في تطبيق ثاني أو سكّرت المتصفح.": "even if you're in another app or closed the browser.",
   "تضيفها مرة وحدة، وكل ما تاخذ رقم تتحدث برقمك.": "Add it once, and it updates with every number you take.",
-  "هذي تجربة: خلال ثواني يرن جوالك 🔔 وإذا أضفت بطاقة النداء، يوصلك منها إشعار \"طلبك جاهز\" حتى لو طلعت من الصفحة": "This is a demo: your phone rings in a few seconds 🔔 Add the pager card and it will notify you \"your order is ready\" even if you leave the page"
+  "هذي تجربة: خلال ثواني يرن جوالك 🔔 وإذا أضفت بطاقة النداء، يوصلك منها إشعار \"طلبك جاهز\" حتى لو طلعت من الصفحة": "This is a demo: your phone rings in a few seconds 🔔 Add the pager card and it will notify you \"your order is ready\" even if you leave the page",
+  "وش سيارتك؟": "What's your car?",
+  "عشان نجيب لك طلبك لسيارتك": "So we can bring your order to your car",
+  "نوعها، مثل: كامري": "Model, e.g. Camry",
+  "اللوحة": "Plate",
+  "أرقام اللوحة اختيارية": "Plate digits are optional",
+  "تم": "Done",
+  "أبيض": "White",
+  "أسود": "Black",
+  "فضي": "Silver",
+  "رمادي": "Grey",
+  "أحمر": "Red",
+  "أزرق": "Blue",
+  "بني": "Brown",
+  "بيج": "Beige",
+  "أخضر": "Green",
+  "ذهبي": "Gold"
 }

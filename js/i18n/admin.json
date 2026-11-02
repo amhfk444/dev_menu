@@ -1538,5 +1538,9 @@
   "شغّلها": "Turn it on",
   "المجموع بالشهر": "Total per month",
   "المجموع بالسنة": "Total per year",
-  "بنتواصل معك على جوالك للدفع، وبعدها يتفعّل اشتراكك على طول.": "We'll contact you by phone for payment, and your subscription activates right after."
+  "بنتواصل معك على جوالك للدفع، وبعدها يتفعّل اشتراكك على طول.": "We'll contact you by phone for payment, and your subscription activates right after.",
+  "الطلب من السيارة": "Car orders",
+  "للمحل اللي عنده شباك سيارات أو يوصّل الطلب للسيارة. بعد ما ياخذ الزبون رقم يختار لون سيارته ويكتب نوعها، وتطلع للموظف تحت الرقم في شاشة البيجر.": "For stores with a drive-through window or curbside delivery. After taking a number the customer picks their car colour and model, and staff see it under the number on the pager screen.",
+  "الزبون يقدر يحدد سيارته بعد ما ياخذ رقم": "Customers can add their car after taking a number",
+  "تم إيقاف الطلب من السيارة": "Car orders turned off"
 }
