@@ -1524,5 +1524,10 @@
   "احفظ": "Save",
   "لو تركتها فاضية تطلع الرسالة الرمادية اللي في الخانة. تتغير في بطاقات زبائنك مع أول رقم ياخذونه.": "Leave it empty to use the grey text shown in the box. Your customers' cards update with their next number.",
   "إعدادات المنيو": "Menu settings",
-  "(تنحفظ تلقائياً)": "(saved automatically)"
+  "(تنحفظ تلقائياً)": "(saved automatically)",
+  "أساسيات البطاقة": "Card basics",
+  "طريقة الختم: مع الشراء بس": "Stamping: with a purchase only",
+  "رسائل للزبون": "Messages to the customer",
+  "مميزات إضافية": "Extras",
+  "حفظ إعدادات البطاقة": "Save card settings"
 }

@@ -1066,6 +1066,7 @@
             <!-- الإعدادات -->
             <form data-lytab="settings" id="ly-form" class="pro-card p-5 md:p-6 space-y-4" onsubmit="saveLoyalty(event)">
               <h3 class="text-sm font-bold">إعدادات البطاقة</h3>
+              <h4 class="text-xs font-bold text-ink border-b border-ink/10 pb-1.5">أساسيات البطاقة</h4>
               <div class="grid sm:grid-cols-2 gap-4">
                 <label class="block"><span class="text-xs font-semibold text-ink block mb-1.5">عدد الأختام للمكافأة</span>
                   <select id="ly-needed" class="input-pro"></select></label>
@@ -1082,8 +1083,8 @@
                     <option value="25">25 متر</option><option value="50">50 متر</option><option value="100">100 متر (مول أو مبنى كبير)</option><option value="200">200 متر</option>
                   </select></label>
               </div>
-              <div class="space-y-2 pt-1">
-                <p class="text-xs font-semibold text-ink">الختم مع الشراء بس</p>
+              <div class="space-y-2 pt-3">
+                <h4 class="text-xs font-bold text-ink border-b border-ink/10 pb-1.5">طريقة الختم: مع الشراء بس</h4>
                 <p class="text-[12px] text-ink leading-relaxed">الكاشير يضغط <b>"كود ختم"</b> في شاشة الكاشير بعد الدفع، والزبون يمسحه. والختم يلتزم بإعداد "ختم واحد كل" فوق.</p>
                 <label class="flex items-center justify-between gap-3 pt-1"><span class="text-[12px] text-ink"><i class="ph-bold ph-bell"></i> اللي ياخذ رقم بيجر ينختم له تلقائياً لما يجهز طلبه</span>
                   <input type="checkbox" id="ly-pager-stamp" class="w-4 h-4 accent-[#384f3d]"></label>
@@ -1094,7 +1095,8 @@
                   <a href="kiosk.html" onclick="this.href='kiosk.html'+location.search" target="_blank" class="inline-block text-[12px] font-bold text-brand underline underline-offset-4">افتح شاشة الختم</a>
                 </div>
               </div>
-              <div class="space-y-2 pt-1">
+              <div class="space-y-2 pt-3">
+                <h4 class="text-xs font-bold text-ink border-b border-ink/10 pb-1.5">رسائل للزبون</h4>
                 <p class="text-xs font-semibold text-ink">رسالة الترحيب (توصل للزبون أول ما يسجل)</p>
                 <div class="grid sm:grid-cols-3 gap-2" id="ly-welcome-modes">
                   <label class="cursor-pointer"><input type="radio" name="ly-welcome" value="ai" class="peer sr-only"><span class="block rounded-xl border border-brand/20 p-3 text-[13px] peer-checked:border-brand peer-checked:bg-brand/5"><b class="block"><i class="ph-bold ph-sparkle"></i> المساعد يكتبها</b><span class="text-[11px] text-ink">كل زبون تجيه رسالة مختلفة باسمه</span></span></label>
@@ -1112,8 +1114,9 @@
                 </div>
                 <textarea id="ly-redeem-text" rows="2" maxlength="200" class="input-pro hidden" placeholder="مثلاً: بالعافية عليك! شكراً لوفائك، وبطاقتك الجديدة بدأت"></textarea>
               </div>
-              <div class="space-y-3 pt-2 border-t border-brand/10">
-                <label class="flex items-center justify-between gap-3 pt-3"><span><b class="text-[13px] block"><i class="ph-bold ph-clock"></i> ساعات الهدوء: الختم فيها دبل</b><span class="text-[11px] text-ink">املأ الوقت اللي يكون فيه المحل فاضي، بدل ما تعطي خصم للكل</span></span>
+              <div class="space-y-3 pt-3">
+                <h4 class="text-xs font-bold text-ink border-b border-ink/10 pb-1.5">مميزات إضافية</h4>
+                <label class="flex items-center justify-between gap-3"><span><b class="text-[13px] block"><i class="ph-bold ph-clock"></i> ساعات الهدوء: الختم فيها دبل</b><span class="text-[11px] text-ink">املأ الوقت اللي يكون فيه المحل فاضي، بدل ما تعطي خصم للكل</span></span>
                   <input type="checkbox" id="ly-happy" class="w-5 h-5 accent-[#384f3d]"></label>
                 <div id="ly-happy-box" class="space-y-2 hidden">
                   <div class="flex flex-wrap items-center gap-2 text-[13px]">من <select id="ly-happy-from" class="input-pro !w-auto !min-h-0 !py-1.5"></select> إلى <select id="ly-happy-to" class="input-pro !w-auto !min-h-0 !py-1.5"></select></div>
@@ -1128,7 +1131,7 @@
                 <label class="flex items-center justify-between gap-3"><span><b class="text-[13px] block"><i class="ph-bold ph-heart"></i> "أهدها لصديق"</b><span class="text-[11px] text-ink">اللي يكمّل بطاقته يهدي مكافأته برابط، وصديقه يجيك زبون جديد</span></span>
                   <input type="checkbox" id="ly-gifts" class="w-5 h-5 accent-[#384f3d]"></label>
               </div>
-              <button type="submit" id="ly-save" class="bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition">حفظ</button>
+              <button type="submit" id="ly-save" class="w-full bg-brand hover:bg-brand-dark text-cream px-5 py-2.5 rounded-xl text-sm font-bold transition shadow-md"><i class="ph-bold ph-floppy-disk"></i> حفظ إعدادات البطاقة</button>
             </form>
 
             <!-- موقع المحل -->

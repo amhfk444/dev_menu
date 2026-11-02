@@ -88,7 +88,7 @@
       <a href="admin.html" class="owner-only w-10 h-10 rounded-xl bg-white border border-[#233d2c]/15 grid place-items-center text-[#233d2c]" title="لوحة التحكم"><i class="ph-bold ph-arrow-right"></i></a>
       <div class="min-w-0">
         <h1 class="text-base font-black truncate"><i class="ph-bold ph-bell text-[#c9a227]"></i> <span id="desk-title">شاشة البيجر</span> — <span id="store-name">…</span></h1>
-        <p id="desk-sub" class="hidden md:block text-[11px] font-bold opacity-55">اضغط على الرقم لما يجي دوره، ويرن جوال العميل</p>
+        <p id="desk-sub" class="hidden md:block text-[11px] font-bold opacity-85">اضغط على الرقم لما يجي دوره، ويرن جوال العميل</p>
       </div>
     </div>
     <div class="flex gap-2 overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0 pb-0.5 [&>*]:shrink-0 [&>*]:whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -110,32 +110,32 @@
   <!-- مشترك الولاء بدون البيجر: الشاشة للأختام بس -->
   <section id="loyalty-desk" class="panel p-6 hidden">
     <h2 class="text-lg font-black mb-1">بطاقة الولاء</h2>
-    <p class="text-sm font-bold opacity-60 mb-5">بعد ما يدفع الزبون: اطلب منه يفتح بطاقته وامسح الكود اللي فيها.</p>
+    <p class="text-sm font-bold opacity-85 mb-5">بعد ما يدفع الزبون: اطلب منه يفتح بطاقته وامسح الكود اللي فيها.</p>
     <div class="grid sm:grid-cols-3 gap-3">
-      <button data-open="scan-btn" class="bg-[#384f3d] text-white rounded-2xl p-5 text-right"><i class="ph-bold ph-camera text-3xl text-[#c9a227]"></i><b class="block text-lg mt-2">امسح بطاقة زبون</b><span class="text-xs opacity-70">بالكاميرا أو برقم العضوية</span></button>
-      <button data-open="stamp-btn" class="bg-[#c9a227] text-[#15271b] rounded-2xl p-5 text-right"><i class="ph-bold ph-seal-check text-3xl"></i><b class="block text-lg mt-2">كود ختم</b><span class="text-xs opacity-70">الزبون يمسحه من جواله</span></button>
-      <button data-open="join-btn" class="bg-white border border-[#233d2c]/15 rounded-2xl p-5 text-right"><i class="ph-bold ph-user-plus text-3xl"></i><b class="block text-lg mt-2">QR تسجيل الولاء</b><span class="text-xs opacity-70">للزبون الجديد يسجل في البطاقة</span></button>
-      <a href="kiosk.html" onclick="this.href='kiosk.html'+location.search" class="sm:col-span-3 bg-white border border-[#233d2c]/15 rounded-2xl p-4 text-right flex items-center gap-3"><i class="ph-bold ph-device-tablet text-3xl"></i><span><b class="block">شاشة الختم للزبون</b><span class="text-xs opacity-70">تابلت ثابت: الزبون يقرّب كوده من الكاميرا وينختم تلقائياً</span></span></a>
+      <button data-open="scan-btn" class="bg-[#384f3d] text-white rounded-2xl p-5 text-right"><i class="ph-bold ph-camera text-3xl text-[#c9a227]"></i><b class="block text-lg mt-2">امسح بطاقة زبون</b><span class="text-xs opacity-85">بالكاميرا أو برقم العضوية</span></button>
+      <button data-open="stamp-btn" class="bg-[#c9a227] text-[#15271b] rounded-2xl p-5 text-right"><i class="ph-bold ph-seal-check text-3xl"></i><b class="block text-lg mt-2">كود ختم</b><span class="text-xs opacity-85">الزبون يمسحه من جواله</span></button>
+      <button data-open="join-btn" class="bg-white border border-[#233d2c]/15 rounded-2xl p-5 text-right"><i class="ph-bold ph-user-plus text-3xl"></i><b class="block text-lg mt-2">QR تسجيل الولاء</b><span class="text-xs opacity-85">للزبون الجديد يسجل في البطاقة</span></button>
+      <a href="kiosk.html" onclick="this.href='kiosk.html'+location.search" class="sm:col-span-3 bg-white border border-[#233d2c]/15 rounded-2xl p-4 text-right flex items-center gap-3"><i class="ph-bold ph-device-tablet text-3xl"></i><span><b class="block">شاشة الختم للزبون</b><span class="text-xs opacity-85">تابلت ثابت: الزبون يقرّب كوده من الكاميرا وينختم تلقائياً</span></span></a>
     </div>
   </section>
 
   <section class="panel p-5" data-pager>
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-black"><span id="t-dwait">بالانتظار</span> <span id="wait-count" class="text-sm opacity-50"></span></h2>
-      <span class="text-[11px] font-bold opacity-50"><i class="ph-bold ph-arrows-clockwise"></i> يتحدث تلقائياً</span>
+      <h2 class="text-lg font-black"><span id="t-dwait">بالانتظار</span> <span id="wait-count" class="text-sm opacity-85"></span></h2>
+      <span class="text-[11px] font-bold opacity-85"><i class="ph-bold ph-arrows-clockwise"></i> يتحدث تلقائياً</span>
     </div>
     <div class="relative mb-4">
       <i class="ph-bold ph-magnifying-glass absolute start-4 top-1/2 -translate-y-1/2 opacity-40"></i>
       <input id="search" type="text" inputmode="numeric" autocomplete="off" placeholder="ابحث برقم الفاتورة أو رقم البيجر…" class="w-full bg-[#fdfdfd] border border-[#8a8a8a] hover:border-[#616161] rounded-lg py-3 ps-11 pe-4 text-base font-semibold focus:outline focus:outline-2 focus:outline-[#005bd3] focus:outline-offset-1">
     </div>
     <div id="wait-grid" class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-7 gap-3"></div>
-    <p id="wait-empty" class="text-center text-sm font-bold opacity-50 py-8 hidden">ما فيه أرقام تنتظر. أول ما يمسح العميل الـ QR يطلع رقمه هنا.</p>
+    <p id="wait-empty" class="text-center text-sm font-bold opacity-85 py-8 hidden">ما فيه أرقام تنتظر. أول ما يمسح العميل الـ QR يطلع رقمه هنا.</p>
   </section>
 
   <section class="panel p-5" data-pager>
-    <h2 class="text-lg font-black mb-4"><span id="t-dready">تم النداء، بانتظار الحضور</span> <span id="ready-count" class="text-sm opacity-50"></span></h2>
+    <h2 class="text-lg font-black mb-4"><span id="t-dready">تم النداء، بانتظار الحضور</span> <span id="ready-count" class="text-sm opacity-85"></span></h2>
     <div id="ready-grid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3"></div>
-    <p id="ready-empty" class="text-center text-sm font-bold opacity-50 py-6 hidden">ما فيه أحد تم نداؤه.</p>
+    <p id="ready-empty" class="text-center text-sm font-bold opacity-85 py-6 hidden">ما فيه أحد تم نداؤه.</p>
   </section>
 </main>
 
@@ -157,7 +157,7 @@
 <div id="rw-modal" class="fixed inset-0 z-[60] bg-black/60 hidden items-center justify-center p-5">
   <div class="bg-white rounded-[28px] w-full max-w-sm p-6 text-center space-y-4">
     <div class="w-16 h-16 rounded-2xl bg-[#c9a227]/20 text-[#8a6d0f] grid place-items-center mx-auto text-3xl"><i class="ph-bold ph-gift"></i></div>
-    <div><p class="text-xl font-black">عنده مكافأة جاهزة</p><p id="rw-who" class="text-sm font-bold opacity-60 mt-1"></p></div>
+    <div><p class="text-xl font-black">عنده مكافأة جاهزة</p><p id="rw-who" class="text-sm font-bold opacity-85 mt-1"></p></div>
     <div id="rw-list" class="space-y-2"></div>
     <button id="rw-later" class="w-full bg-[#f5f2eb] font-black rounded-2xl py-3">خلّها لبعدين</button>
   </div>
@@ -167,11 +167,11 @@
 <div id="stats-modal" class="fixed inset-0 z-50 bg-black/60 hidden items-start justify-center p-4 overflow-y-auto">
   <div class="bg-[#fbf8f3] rounded-[28px] w-full max-w-3xl p-5 md:p-7 space-y-5 my-6">
     <div class="flex items-center justify-between gap-3">
-      <div><p class="text-xl font-black">إحصائيات البيجر</p><p class="text-xs font-bold opacity-60">آخر <span id="st-days">30</span> يوم</p></div>
+      <div><p class="text-xl font-black">إحصائيات البيجر</p><p class="text-xs font-bold opacity-85">آخر <span id="st-days">30</span> يوم</p></div>
       <div class="flex gap-1.5" id="st-range"></div>
       <button id="stats-close" class="w-10 h-10 rounded-xl bg-white border border-[#233d2c]/15" aria-label="إغلاق"><i class="ph-bold ph-x"></i></button>
     </div>
-    <div id="st-body" class="space-y-5"><p class="text-center opacity-60 font-bold py-10"><i class="ph-bold ph-spinner-gap ph-spin"></i></p></div>
+    <div id="st-body" class="space-y-5"><p class="text-center opacity-85 font-bold py-10"><i class="ph-bold ph-spinner-gap ph-spin"></i></p></div>
   </div>
 </div>
 
@@ -192,13 +192,13 @@
     <!-- آخر عضو انمسح: نقل رصيد بطاقته القديمة -->
     <div id="tr-box" class="hidden rounded-2xl border-2 border-[#c9a227] bg-[#fbf6e6] p-3 text-right">
       <div class="flex items-center gap-2">
-        <div class="flex-1 min-w-0"><p class="text-[11px] font-bold opacity-60">آخر عضو</p><p id="tr-who" class="font-black truncate"></p></div>
+        <div class="flex-1 min-w-0"><p class="text-[11px] font-bold opacity-85">آخر عضو</p><p id="tr-who" class="font-black truncate"></p></div>
         <button id="tr-open" class="shrink-0 bg-[#384f3d] text-white font-black rounded-xl px-3 py-2.5 text-sm"><i class="ph-bold ph-arrows-left-right"></i> نقل رصيد قديم</button>
       </div>
       <div id="tr-pick" class="hidden mt-3">
         <p class="text-sm font-bold mb-2">كم ختم في بطاقته القديمة؟</p>
         <div id="tr-nums" class="grid grid-cols-6 gap-1.5"></div>
-        <p class="text-[11px] opacity-60 mt-2">شوف البطاقة القديمة في جواله أو الورقة. النقل مرة وحدة بس لكل عضو.</p>
+        <p class="text-[11px] opacity-85 mt-2">شوف البطاقة القديمة في جواله أو الورقة. النقل مرة وحدة بس لكل عضو.</p>
       </div>
     </div>
     <button id="scan-close" class="w-full bg-[#f5f2eb] font-black rounded-2xl py-3">إغلاق</button>
@@ -210,12 +210,12 @@
   <div class="bg-white rounded-[28px] w-full max-w-sm p-6 text-center space-y-4">
     <p class="text-lg font-black"><i class="ph-bold ph-seal-check text-[#c9a227]"></i> خلّ الزبون يمسح الكود</p>
     <div id="stamp-qr" class="w-64 h-64 mx-auto grid place-items-center"></div>
-    <p id="stamp-state" class="text-sm font-bold opacity-70"></p>
+    <p id="stamp-state" class="text-sm font-bold opacity-85"></p>
     <div class="flex gap-2">
       <button id="stamp-new" class="flex-1 bg-[#384f3d] text-white font-black rounded-2xl py-3"><i class="ph-bold ph-arrow-clockwise"></i> كود جديد</button>
       <button id="stamp-close" class="flex-1 bg-[#f5f2eb] font-black rounded-2xl py-3">إغلاق</button>
     </div>
-    <p class="text-[11px] opacity-50">الكود يصلح لزبون واحد ولمدة 90 ثانية</p>
+    <p class="text-[11px] opacity-85">الكود يصلح لزبون واحد ولمدة 90 ثانية</p>
   </div>
 </div>
 
@@ -326,7 +326,7 @@
     $('ready-empty').classList.toggle('hidden', ready.length > 0);
     $('wait-grid').innerHTML = waiting.map(t => `
       <div class="tile tile-wait${freshIds.has(t.id) ? ' tile-new' : ''}">
-        <div class="text-[10px] opacity-60">بيجر</div>
+        <div class="text-[11px] opacity-85">بيجر</div>
         <div class="n">${t.number}</div>
         <button class="mini w-full mt-2 ${t.invoice_no ? 'bg-white/15 text-white' : 'bg-[#c9a227] text-[#15271b]'}" data-invoice="${t.id}">
           ${t.invoice_no ? `🧾 ${esc(t.invoice_no)}` : '🧾 أضف الفاتورة'}
@@ -335,13 +335,13 @@
           ${busy.has(t.id) ? '<i class="ph-bold ph-spinner-gap ph-spin"></i>' : `<i class="ph-bold ph-bell"></i> ${T.deskCall}`}
         </button>
         ${t.reward ? `<button class="mini w-full mt-1.5 bg-[#c9a227] text-[#15271b] rw-pulse" data-reward="${t.id}"><i class="ph-bold ph-gift"></i> عنده مكافأة</button>` : ''}
-        <div class="text-[10px] mt-1.5 opacity-50">${ago(t.created_at)}${t.has_push ? ' · <i class="ph-bold ph-device-mobile" title="الإشعارات مفعّلة"></i>' : ''}</div>
+        <div class="text-[11px] mt-1.5 opacity-85">${ago(t.created_at)}${t.has_push ? ' · <i class="ph-bold ph-device-mobile" title="الإشعارات مفعّلة"></i>' : ''}</div>
       </div>`).join('');
     $('ready-grid').innerHTML = ready.map(t => `
       <div class="tile tile-ready">
         <div class="n">${t.number}</div>
         ${t.invoice_no ? `<div class="text-[12px] font-black mt-1">🧾 ${esc(t.invoice_no)}</div>` : ''}
-        <div class="text-[11px] mt-1 opacity-70">${ringLabel(t)}</div>
+        <div class="text-[11px] mt-1 opacity-85">${ringLabel(t)}</div>
         ${t.reward ? `<button class="mini w-full mt-1.5 bg-[#c9a227] text-[#15271b] rw-pulse" data-reward="${t.id}"><i class="ph-bold ph-gift"></i> عنده مكافأة</button>` : ''}
         <div class="flex gap-1.5 mt-3">
           <button class="mini flex-1 bg-[#384f3d] text-white" data-done="${t.id}"><i class="ph-bold ph-check"></i> ${T.deskDone}</button>
@@ -481,7 +481,7 @@
       setTransfer(r);
       const who = esc(r.who.name), n = Math.min(r.stamps, r.needed);
       const dots = `<span class="flex flex-wrap justify-center gap-1.5 mt-1">${Array.from({ length: r.needed }, (_, i) => `<span class="w-4 h-4 rounded-full ${i < n ? 'bg-[#c9a227]' : 'bg-white/25'}"></span>`).join('')}</span>`;
-      const no = `<span class="text-xs font-bold opacity-75" dir="ltr">#${esc(r.who.no)}</span>`;
+      const no = `<span class="text-xs font-bold opacity-85" dir="ltr">#${esc(r.who.no)}</span>`;
       if (r.stamped) {
         scanShow(true, `<i class="ph-bold ph-check-circle text-7xl"></i><b class="text-2xl">تم ${r.count > 1 ? 'الختم دبل' : 'الختم'}</b><b class="text-lg">${who}</b>${no}${dots}<span class="font-bold">${n} من ${r.needed}${n >= r.needed ? ' · المكافأة جاهزة' : ''}</span>`);
         if (navigator.vibrate) navigator.vibrate(80);
@@ -622,11 +622,11 @@
   async function loadStats() {
     $('st-days').textContent = stDays;
     $('st-range').innerHTML = [7, 30, 90].map(d => `<button data-d="${d}" class="px-3 py-1.5 rounded-xl text-xs font-black ${d === stDays ? 'bg-[#384f3d] text-white' : 'bg-white border border-[#233d2c]/15'}">${d} يوم</button>`).join('');
-    $('st-body').innerHTML = '<p class="text-center opacity-60 font-bold py-10"><i class="ph-bold ph-spinner-gap ph-spin"></i></p>';
+    $('st-body').innerHTML = '<p class="text-center opacity-85 font-bold py-10"><i class="ph-bold ph-spinner-gap ph-spin"></i></p>';
     let r;
     try { r = await call(`pager-stats&days=${stDays}`); } catch (e) { $('st-body').innerHTML = `<p class="text-center font-bold text-rose-700 py-8">${esc(e.message || 'ما قدرنا نحمّل الصفحة. تأكد من الإنترنت وحدّثها')}</p>`; return; }
-    if (!r.total) { $('st-body').innerHTML = '<p class="text-center opacity-60 font-bold py-10">ما فيه أرقام في هالفترة للحين.</p>'; return; }
-    const tile = (v, l, sub = '') => `<div class="bg-white rounded-2xl border border-[#233d2c]/10 p-4"><p class="text-2xl font-black">${v}</p><p class="text-xs font-bold opacity-60 mt-1">${l}</p>${sub ? `<p class="text-[11px] font-bold opacity-45 mt-0.5">${sub}</p>` : ''}</div>`;
+    if (!r.total) { $('st-body').innerHTML = '<p class="text-center opacity-85 font-bold py-10">ما فيه أرقام في هالفترة للحين.</p>'; return; }
+    const tile = (v, l, sub = '') => `<div class="bg-white rounded-2xl border border-[#233d2c]/10 p-4"><p class="text-2xl font-black">${v}</p><p class="text-xs font-bold opacity-85 mt-1">${l}</p>${sub ? `<p class="text-[11px] font-bold opacity-85 mt-0.5">${sub}</p>` : ''}</div>`;
     const rate = Math.round(r.done / r.total * 100);
     const hrs = r.hours.filter(h => h.n), maxN = Math.max(1, ...r.hours.map(h => h.n));
     const peak = hrs.slice().sort((a, b) => b.n - a.n)[0];
@@ -642,17 +642,17 @@
       </div>
       <div class="bg-white rounded-2xl border border-[#233d2c]/10 p-4">
         <div class="flex flex-wrap items-baseline justify-between gap-2"><p class="font-black">الزحمة حسب الساعة</p>
-          <p class="text-xs font-bold opacity-60">${peak ? `الذروة ${hl(peak.h)} (${peak.n} رقم)` : ''}${slow ? ` · أبطأ ساعة ${hl(slow.h)} (${mins(slow.wait)} انتظار)` : ''}</p></div>
+          <p class="text-xs font-bold opacity-85">${peak ? `الذروة ${hl(peak.h)} (${peak.n} رقم)` : ''}${slow ? ` · أبطأ ساعة ${hl(slow.h)} (${mins(slow.wait)} انتظار)` : ''}</p></div>
         <div class="flex items-end gap-1 h-36 mt-4" dir="ltr">${r.hours.map(h => `<div class="flex-1 flex flex-col items-center justify-end h-full" title="${hl(h.h)}: ${h.n} رقم${h.wait != null ? `، انتظار ${mins(h.wait)}` : ''}"><div class="w-full rounded-t ${h.wait != null && h.wait > (r.wait.avg || 0) * 1.4 ? 'bg-[#c9a227]' : 'bg-[#384f3d]/75'}" style="height:${h.n ? Math.max(4, h.n / maxN * 100) : 0}%"></div></div>`).join('')}</div>
-        <div class="flex justify-between text-[10px] font-bold opacity-50 mt-1" dir="ltr"><span>12 ص</span><span>6 ص</span><span>12 م</span><span>6 م</span><span>11 م</span></div>
-        <p class="text-[11px] font-bold opacity-55 mt-2"><span class="inline-block w-2.5 h-2.5 rounded-sm bg-[#c9a227] align-middle"></span> ساعات انتظارها أطول من المعتاد</p>
+        <div class="flex justify-between text-[11px] font-bold opacity-85 mt-1" dir="ltr"><span>12 ص</span><span>6 ص</span><span>12 م</span><span>6 م</span><span>11 م</span></div>
+        <p class="text-[11px] font-bold opacity-85 mt-2"><span class="inline-block w-2.5 h-2.5 rounded-sm bg-[#c9a227] align-middle"></span> ساعات انتظارها أطول من المعتاد</p>
       </div>
       ${R.n ? `<div class="bg-white rounded-2xl border border-[#233d2c]/10 p-4 space-y-3">
         <p class="font-black">تقييمات الزبائن</p>
         ${[5, 4, 3, 2, 1].map(k => `<div class="flex items-center gap-2 text-xs font-bold"><span class="w-8" dir="ltr">${k} ★</span><div class="flex-1 h-2.5 rounded-full bg-[#384f3d]/10 overflow-hidden"><div class="h-full ${k >= 4 ? 'bg-emerald-600' : k === 3 ? 'bg-[#c9a227]' : 'bg-rose-600'}" style="width:${R.dist[k - 1] / R.n * 100}%"></div></div><span class="w-8 text-left">${R.dist[k - 1]}</span></div>`).join('')}
         ${R.notes.length ? `<div class="divide-y divide-[#233d2c]/10 text-sm">${R.notes.map(x => `<p class="py-2"><b class="${x.r >= 4 ? 'text-emerald-700' : 'text-rose-700'}" dir="ltr">${x.r} ★</b> ${esc(x.note)}</p>`).join('')}</div>` : ''}
       </div>` : ''}
-      <p class="text-[11px] font-bold opacity-50">متوسط الخدمة (من أخذ الرقم لين الاستلام): ${mins(r.service.avg)} · ألغيت ${r.cancelled}</p>`;
+      <p class="text-[11px] font-bold opacity-85">متوسط الخدمة (من أخذ الرقم لين الاستلام): ${mins(r.service.avg)} · ألغيت ${r.cancelled}</p>`;
   }
   $('stats-btn').onclick = () => { $('stats-modal').classList.replace('hidden', 'flex'); loadStats(); };
   $('stats-close').onclick = () => $('stats-modal').classList.replace('flex', 'hidden');
