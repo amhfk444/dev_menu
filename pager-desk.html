@@ -16,6 +16,7 @@
 <script src="/js/vendor/qr-code-styling.js"></script>
 <script src="/js/vendor/jsqr.js"></script>
 <script src="js/api.js"></script>
+<script src="js/dialog.js"></script>
 <script src="/js/sectors.js"></script>
 <style>
   :root { --brand: #233d2c; --sand: #f5f2eb; --gold: #c9a227; }
@@ -337,9 +338,12 @@
         <button class="mini w-full mt-2 ${t.invoice_no ? 'bg-white/15 text-white' : 'bg-[#c9a227] text-[#15271b]'}" data-invoice="${t.id}">
           ${t.invoice_no ? `🧾 ${esc(t.invoice_no)}` : '🧾 أضف الفاتورة'}
         </button>
-        <button class="mini w-full mt-1.5 bg-white text-[#233d2c]" data-ready="${t.id}" ${busy.has(t.id) ? 'disabled' : ''}>
-          ${busy.has(t.id) ? '<i class="ph-bold ph-spinner-gap ph-spin"></i>' : `<i class="ph-bold ph-bell"></i> ${T.deskCall}`}
-        </button>
+        <div class="flex gap-1.5 mt-1.5">
+          <button class="mini flex-1 bg-white text-[#233d2c]" data-ready="${t.id}" ${busy.has(t.id) ? 'disabled' : ''}>
+            ${busy.has(t.id) ? '<i class="ph-bold ph-spinner-gap ph-spin"></i>' : `<i class="ph-bold ph-bell"></i> ${T.deskCall}`}
+          </button>
+          <button class="mini bg-white/15 text-white" data-del="${t.id}" title="حذف الرقم" aria-label="حذف الرقم"><i class="ph-bold ph-trash"></i></button>
+        </div>
         ${t.reward ? `<button class="mini w-full mt-1.5 bg-[#c9a227] text-[#15271b] rw-pulse" data-reward="${t.id}"><i class="ph-bold ph-gift"></i> عنده مكافأة</button>` : ''}
         <div class="text-[11px] mt-1.5 opacity-85">${ago(t.created_at)}${t.has_push ? ' · <i class="ph-bold ph-device-mobile" title="الإشعارات مفعّلة"></i>' : ''}</div>
       </div>`).join('');
@@ -353,6 +357,7 @@
         <div class="flex gap-1.5 mt-3">
           <button class="mini flex-1 bg-[#384f3d] text-white" data-done="${t.id}"><i class="ph-bold ph-check"></i> ${T.deskDone}</button>
           <button class="mini bg-white border border-[#c9a227]/40" data-undo="${t.id}" title="إرجاع للتجهيز"><i class="ph-bold ph-arrow-counter-clockwise"></i></button>
+          <button class="mini bg-white border border-[#c9a227]/40" data-del="${t.id}" title="حذف الرقم" aria-label="حذف الرقم"><i class="ph-bold ph-trash"></i></button>
         </div>
       </div>`).join('');
   }
@@ -375,7 +380,15 @@
     if (r) setStatus(+r.dataset.ready, 'ready', '🔔 جوال رقم # يرن الحين');
     if (d) setStatus(+d.dataset.done, 'done', `✓ رقم # ${T.deskDone}`);
     if (u) setStatus(+u.dataset.undo, 'waiting', 'رقم # رجع للانتظار');
+    const del = e.target.closest('[data-del]');
+    if (del) deleteTicket(+del.dataset.del);
   });
+  // حذف الرقم: الزبون مو موجود، أو أخذ رقم وما طلب. ما ينختم له شي
+  async function deleteTicket(id) {
+    const t = tickets.find(x => x.id === id); if (!t) return;
+    const ok = await DMDialog.confirm({ title: `حذف رقم ${t.number}؟`, message: 'استخدمه لو الزبون مو موجود أو ما طلب شي. الرقم ينشال من القائمة وما ينضاف له ختم.', confirmText: 'حذف', cancelText: 'تراجع' });
+    if (ok) setStatus(id, 'cancelled', 'انحذف رقم #');
+  }
 
   // ─── جهاز الكاشير: الشاشة ما تطفي، صوت ووميض للأرقام الجديدة، شريط انقطاع الاتصال ───
   const SVG = (d) => `<svg width="15" height="15" viewBox="0 0 256 256" fill="currentColor" style="display:inline;vertical-align:-2px"><path d="${d}"/></svg>`;

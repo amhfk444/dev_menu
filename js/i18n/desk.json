@@ -131,5 +131,10 @@
   "خروج": "Exit",
   "صوت تنبيه الأرقام الجديدة": "Sound alert for new numbers",
   "انقطع الاتصال بالإنترنت. قد لا تكون الأرقام محدّثة، ونعيد المحاولة تلقائياً…": "Internet connection lost. Numbers may be out of date; reconnecting automatically…",
-  "رجع الاتصال، والأرقام محدّثة": "Back online, numbers are up to date"
+  "رجع الاتصال، والأرقام محدّثة": "Back online, numbers are up to date",
+  "حذف الرقم": "Delete number",
+  "حذف": "Delete",
+  "تراجع": "Cancel",
+  "استخدمه لو الزبون مو موجود أو ما طلب شي. الرقم ينشال من القائمة وما ينضاف له ختم.": "Use this if the customer isn't here or didn't order. The number is removed and gets no stamp.",
+  "انحذف رقم {n}": "Number {n} deleted"
 }

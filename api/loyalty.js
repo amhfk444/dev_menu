@@ -250,7 +250,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
         // نربط البطاقة برقم البيجر: ينختم لما يستلم طلبه (أو الحين لو استلم)
         await rest(`pager_tickets?id=eq.${ticket.id}`, { method: 'PATCH', body: { loyalty_card_id: card.id } });
         let r = { stamped: false, count: 0, reason: 'PAGER_PENDING' };
-        if (pagerStampDue(ticket, ctx.settings)) {
+        if (pagerStampDue(ticket)) {
           r = await purchaseStamp(ctx.store.id, card.id, ctx.settings, ctx.branch.id);
           await rest(`pager_tickets?id=eq.${ticket.id}`, { method: 'PATCH', body: { loyalty_stamped: true } });
         }
@@ -335,7 +335,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       if (ticket.loyalty_card_id && ticket.loyalty_card_id !== card.id) throw new ApiError(409, 'هذا الطلب مربوط ببطاقة ثانية', 'TICKET_TAKEN');
       await rest(`pager_tickets?id=eq.${ticket.id}`, { method: 'PATCH', body: { loyalty_card_id: card.id } });
       let r = { stamped: false, count: 0, reason: 'PAGER_PENDING' };
-      if (pagerStampDue(ticket, ctx.settings)) {
+      if (pagerStampDue(ticket)) {
         await rest(`pager_tickets?id=eq.${ticket.id}`, { method: 'PATCH', body: { loyalty_stamped: true } });
         r = await purchaseStamp(ctx.store.id, card.id, ctx.settings, ctx.branch.id);
       }

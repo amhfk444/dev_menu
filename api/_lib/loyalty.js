@@ -79,8 +79,6 @@ function normalizeLoyalty(raw) {
     // الختم بعد الشراء بس: كود الكاشير أو البيجر (الزبون ما يختم بنفسه)
     stamp_mode: 'purchase',
     pager_stamp: s.pager_stamp !== false,
-    // الختم مع البيجر بس للرقم اللي عليه رقم فاتورة (حماية من رقم ياخذه أحد ما طلب)
-    pager_invoice: s.pager_invoice === true,
     // آخر مرة تغيّرت فيها شروط البطاقة (عدد الأختام، المكافأة، ساعات الهدوء): رسائل الذكاء الأقدم منها ما تطلع
     rules_at: typeof s.rules_at === 'string' && !isNaN(Date.parse(s.rules_at)) ? s.rules_at : null
   };
@@ -98,7 +96,7 @@ function distanceM(lat1, lng1, lat2, lng2) {
 // موقع صالح؟
 const validPoint = (lat, lng) => Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && !(lat === 0 && lng === 0);
 
-// رقم البيجر يستاهل ختم؟ لما يستلم طلبه (مو لما يجهز: اللي أخذ رقم من بعيد وما طلب ما يجي يستلم)
-const pagerStampDue = (t, settings) => !!t && t.status === 'done' && !t.loyalty_stamped && (!settings.pager_invoice || !!t.invoice_no);
+// رقم البيجر يستاهل ختم؟ لما الكاشير يضغط "استلم" (مو "جاهز"، واللي ما طلب يحذفه الكاشير)
+const pagerStampDue = (t) => !!t && t.status === 'done' && !t.loyalty_stamped;
 
 module.exports = { pagerStampDue, normalizeLoyalty, normalizeDesign, isHappyNow, distanceM, validPoint, COOLDOWNS, STYLES, ICONS, staleAi };

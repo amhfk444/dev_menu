@@ -81,12 +81,12 @@ function parseMemberQr(storeIds, value) {
   return [].concat(storeIds).some(s => crypto.timingSafeEqual(Buffer.from(m[2]), Buffer.from(sign(s, id)))) ? id : null;
 }
 
-// رقم بيجر انقفل (الكاشير ضغط "استلم" أو الزبون ضغط "استلمت"): ختم لبطاقة الولاء المربوطة فيه، مرة وحدة
+// الكاشير ضغط "استلم": ختم لبطاقة الولاء المربوطة بالرقم، مرة وحدة
 async function stampPagerTicket(homeId, branchId, t) {
   if (!t || !t.loyalty_card_id || t.loyalty_stamped || t.status !== 'done') return null;
   const x = (await rest(`clients?id=eq.${homeId}&select=loyalty_enabled,loyalty_settings`))[0] || {};
   const ls = normalizeLoyalty(x.loyalty_settings);
-  if (!x.loyalty_enabled || !ls.pager_stamp || !pagerStampDue(t, ls)) return null;
+  if (!x.loyalty_enabled || !ls.pager_stamp || !pagerStampDue(t)) return null;
   // نعلّمه مختوم أول (لو انقفل من الكاشير والزبون بنفس اللحظة ما ينختم مرتين)
   const claimed = await rest(`pager_tickets?id=eq.${t.id}&loyalty_stamped=not.is.true`, { method: 'PATCH', body: { loyalty_stamped: true }, prefer: 'return=representation' });
   if (!claimed.length) return null;

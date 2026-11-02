@@ -1545,5 +1545,6 @@
   "تم إيقاف تسليم الطلب للسيارة": "Hand-to-car turned off",
   "اللي ياخذ رقم بيجر ينختم له تلقائياً لما يستلم طلبه": "Pager customers get a stamp automatically when they pick up their order",
   "الختم بس للرقم اللي عليه رقم فاتورة": "Only stamp numbers that have an invoice number",
-  "يمنع الختم لأحد أخذ رقم وهو ما طلب. الكاشير يسجّل الفاتورة على الرقم، أو الزبون يكتبها في صفحته.": "Stops stamps for someone who took a number without ordering. The cashier adds the invoice to the number, or the customer types it on their page."
+  "يمنع الختم لأحد أخذ رقم وهو ما طلب. الكاشير يسجّل الفاتورة على الرقم، أو الزبون يكتبها في صفحته.": "Stops stamps for someone who took a number without ordering. The cashier adds the invoice to the number, or the customer types it on their page.",
+  "الختم ينضاف لما الكاشير يضغط «استلم» في شاشة البيجر. واللي أخذ رقم وما طلب، يحذفه الكاشير وما ينختم له.": "The stamp is added when the cashier taps \"Picked up\" on the pager screen. Anyone who took a number without ordering is deleted by the cashier and gets no stamp."
 }
