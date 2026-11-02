@@ -171,10 +171,21 @@ function pagerStep({ store, number, step, lang }) {
   const waiting = T.waiting.replace('…', '');
   return { store, number, step: 'waiting', lang, url, status: waiting, notice: `${L(`رقمك ${number}: ${waiting}`)} (${at})` };
 }
+// silent: نحدّث البطاقة (الرقم والحالة) بدون إشعار: نخلي نص الإشعار مثل ما هو (الآيفون يطلع إشعار بس لما يتغير)
+// ونحفظ آخر نص على البطاقة عشان نعرفه في التحديث الصامت الجاي
 async function updatePagerPass(serial, ctx) {
   if (!configured() || !serial) return 'off';
-  try { const r = await call('PUT', `/${encodeURIComponent(serial)}`, await pagerBody(ctx)); return `ok devices=${r.notifiedDevices ?? '?'}`; }
-  catch (e) { return `${e.status || ''} ${e.message || ''}`.trim().slice(0, 200); }
+  const { rest, q } = require('./core');
+  try {
+    const body = await pagerBody(ctx);
+    if (ctx.silent) {
+      const prev = (await rest(`pager_cards?wallet_serial=eq.${q(serial)}&select=last_notice`).catch(() => []))[0];
+      if (prev && prev.last_notice != null) body.notification = prev.last_notice;   // بطاقة قديمة ما نعرف نصها: تحديث عادي
+    }
+    const r = await call('PUT', `/${encodeURIComponent(serial)}`, body);
+    if (!ctx.silent) await rest(`pager_cards?wallet_serial=eq.${q(serial)}`, { method: 'PATCH', body: { last_notice: body.notification } }).catch(() => {});
+    return `ok devices=${r.notifiedDevices ?? '?'}`;
+  } catch (e) { return `${e.status || ''} ${e.message || ''}`.trim().slice(0, 200); }
 }
 
 // البطاقة موحدة لكل المحلات: استلم أو انلغى رقمه هنا، وعنده رقم شغّال اليوم على نفس البطاقة في محل ثاني؟
