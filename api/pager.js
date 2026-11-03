@@ -15,7 +15,7 @@ const { reqLang, handler, rest, rpc, q, ApiError, readBody, findPublicStore, sto
 const { pushPublicKey, cleanSubscription, sendPush } = require('./_lib/push');
 const { topic, poke } = require('./_lib/live');
 const { normalizeLoyalty } = require('./_lib/loyalty');
-const { pagerReadyNotice, walletNotice } = require('./_lib/loyalty-assistant');
+const { pagerReadyNotice } = require('./_lib/loyalty-assistant');
 const SECTORS = require('./_lib/sectors');
 const { riyadhDayStart } = require('./_lib/waitlist');
 const wallet = require('./_lib/wallet');
@@ -43,7 +43,7 @@ async function linkPagerCard(store, ticketToken, cardToken) {
   // الفرع ينضاف لفروع البطاقة (عشان رسائل زبائن الفرع توصله)
   const branches = (pc.branch_ids || []).map(Number);
   await rest(`pager_cards?id=eq.${pc.id}`, { method: 'PATCH', body: { last_used_at: new Date().toISOString(), ...(branches.includes(store.id) ? {} : { branch_ids: [...branches, store.id] }) } }).catch(() => {});
-  // إشعار برقمه: التحديث الصامت كان الجوال يطلع فيه آخر رسالة ("بالعافية") بدل رقمه، فرجعنا نرسل "رقمك ..."
+  // رقمه الجديد في البطاقة بصمت (الإشعار الوحيد "طلبك جاهز"، شوف wallet.updatePagerPass)
   later(wallet.updatePagerPass(pc.wallet_serial, wallet.pagerStep({ store, number: t.number, step: t.status, lang: t.lang || pc.lang }))
     .then(async r => {
       await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_error: `link ${r}` } });
@@ -176,8 +176,6 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
         const home = await loyaltyHome(store.id);
         const card = (await rest(`loyalty_cards?token=eq.${q(b.lt)}&client_id=eq.${home}&select=id,wallet_serial`).catch(() => []))[0];
         if (card) await rest(`pager_tickets?token=eq.${q(res.token)}&client_id=eq.${store.id}`, { method: 'PATCH', body: { loyalty_card_id: card.id } }).catch(() => {});
-        // إشعار برقمه على بطاقة الولاء: يأكد له إن النداء بيوصله، ونعرف منه لو البطاقة انحذفت من محفظته
-        if (card && card.wallet_serial && (await loyaltyOf(store.id)).enabled) later(walletNotice(home, card.id, `رقمك ${res.number} في ${store.name}. يوصلك إشعار هنا لما يجي دورك`));
       }
       // عنده بطاقة نداء من زيارة سابقة: نربطها بالرقم الجديد وتتحدث برقمه
       // card_ok: false = البطاقة المحفوظة في جواله ما عادت شغالة، والصفحة تعرض عليه يضيف وحدة جديدة
