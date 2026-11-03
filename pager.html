@@ -775,7 +775,7 @@
       else show('w-loyalty', `<span class="pw-pass" aria-hidden="true"><i class="ph-bold ph-seal-check"></i></span><span class="min-w-0 flex-1"><span class="pw-title block">أضف بطاقة الولاء للمحفظة</span><span class="pw-sub block">بطاقتك مربوطة برقمك، وبعد ما تضيفها يوصلك منها إشعار ${T.ringWhen}. أختامك محفوظة فيها.</span></span><i class="ph-bold ph-caret-left text-lg shrink-0"></i>`, 'pw-link', `${DM.storePage('loyalty', slug)}`);
       show('r-loyalty', l.stamped ? '<i class="ph-bold ph-seal-check"></i> انضاف لك ختم في بطاقة الولاء' : '', 'text-white bg-white/10 border border-white/25', `${DM.storePage('loyalty', slug)}`);
     } else {
-      const html = `<i class="ph-bold ph-wallet"></i> سجّل في بطاقة الولاء وأضفها للمحفظة: يوصلك إشعار ${T.ringWhen}، وتاخذ ختم`;
+      const html = `<i class="ph-bold ph-wallet"></i> سجّل في بطاقة الولاء وأضفها للمحفظة: تجمع أختام من طلبك الجاي، ويوصلك إشعار ${T.ringWhen}`;
       show('w-loyalty', '');
       show('r-loyalty', html, 'text-white bg-white/10 border border-white/25', join);
     }
