@@ -207,7 +207,8 @@ async function endPagerPass(serial, ticketId, ctx) {
 // (لو المحتوى ما تغيّر الخدمة ما ترسل لأحد، فـ devices=0 وقتها ما تعني شي)
 const passRemoved = (err) => {
   const last = String(err || '').split('|').pop();
-  return /devices=0\b/.test(last) && !/unchanged=true\b/.test(last);
+  // أو البطاقة نفسها انلغت عند شركة المحفظة (404): لازم يضيفها من جديد
+  return (/devices=0\b/.test(last) && !/unchanged=true\b/.test(last)) || /\b404\b/.test(last);
 };
 
 module.exports = { passRemoved, configured, createPass, updatePass, revokePass, buildCtx, cardUrl, createPagerPass, updatePagerPass, endPagerPass, pagerStep };

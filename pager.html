@@ -958,6 +958,7 @@
       const r = await DM.post('/api/pager?action=take', { slug, lt: lt || undefined, pc: pagerCard() || undefined, invoice: stepInv || undefined, car: stepCar || undefined });
       stepInv = ''; stepAt = ''; stepCar = null; carSkipped = false; try { sessionStorage.removeItem(JUST_KEY); } catch {}
       saveToken(r.token); setStore(r.store); dismissed = false;
+      if (r.card_ok === false) forgetPagerCard();   // بطاقته القديمة انلغت: نعرض عليه يضيف وحدة جديدة
       if (perm) await perm;
       await subscribePush();
       await poll();
@@ -1077,6 +1078,14 @@
     document.cookie = `${PC_NAME()}=${t}; max-age=31536000; path=/; secure; samesite=lax${SHARED}`;
     try { localStorage.setItem(PC_NAME(), t); } catch {}
   }
+  // البطاقة المحفوظة ما عادت شغالة: ننساها من الجوال (كل devmenu.digital)
+  function forgetPagerCard() {
+    if (!brand) return;
+    document.cookie = `${PC_NAME()}=; max-age=0; path=/; secure; samesite=lax${SHARED}`;
+    document.cookie = `${PC_NAME()}=; max-age=0; path=/`;
+    try { localStorage.removeItem(PC_NAME()); localStorage.removeItem(`dm_pcard_${slug}`); } catch {}
+    hadCard = false;
+  }
   async function addPagerPass() {
     const btn = $('pw-btn'); btn.disabled = true;
     const label = btn.querySelector('span').textContent;
@@ -1180,7 +1189,9 @@
     try { const info = await DM.get(`/api/pager?action=info&slug=${encodeURIComponent(slug)}`); setStore(info.store); pushKey = info.push_key || ''; brand = Number(info.brand) || 0; fullNow = info.full === true; cardOffer = info.card === true; carOffer = info.car === true; }
     catch (e) { return unavailable('البيجر غير متاح حالياً', 'اسأل الموظف.'); }
     // بطاقة النداء محفوظة في هالجوال (ولو من قبل تحديث الفروع): نجدد حفظها لكل devmenu.digital عشان كل فرع يعرفها
-    { const pc = pagerCard(); if (pc) savePagerCard(pc); hadCard = !!pc; }
+    { const pc = pagerCard(); if (pc) savePagerCard(pc); hadCard = !!pc;
+      // بطاقته المحفوظة انلغت؟ ننساها عشان تطلع له خطوة "أضف بطاقة النداء"
+      if (pc && cardOffer) { try { const c = await DM.get(`/api/pager?action=card&slug=${encodeURIComponent(slug)}&pc=${encodeURIComponent(pc)}`); if (c.ok === false) forgetPagerCard(); } catch {} } }
     if ('serviceWorker' in navigator && pushKey) navigator.serviceWorker.register('/sw.js').catch(() => {});
     if (loadToken()) { await poll(); return offerPerm(); }   // رجع للصفحة: الصوت يحتاج ضغطة منه من جديد
     if (fullNow) return unavailable('البيجر متوقف مؤقتاً', 'تفضّل عند الكاشير وبيبلغك أول ما يجهز طلبك.');

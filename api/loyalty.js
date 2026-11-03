@@ -429,9 +429,10 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (action === 'wallet' && req.method === 'POST') {
       const ctx = await loadStore(b.slug);
       const card = await cardByToken(ctx, b.t);
-      if (card.wallet_url) return { url: card.wallet_url };
+      // البطاقة القديمة لو انلغت عند شركة المحفظة (404) نسوي وحدة جديدة
+      if (card.wallet_url && !/\b404\b/.test(String(card.wallet_error || ''))) return { url: card.wallet_url };
       const pass = await wallet.createPass(await walletCtx(ctx, card));
-      await rest(`loyalty_cards?id=eq.${card.id}`, { method: 'PATCH', body: { wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl } });
+      await rest(`loyalty_cards?id=eq.${card.id}`, { method: 'PATCH', body: { wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, wallet_error: null } });
       return { url: pass.shareUrl };
     }
   } catch (e) {

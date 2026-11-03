@@ -36,7 +36,8 @@ async function brandOf(store) {
 // بطاقة النداء (المحل اللي ما عنده ولاء): نربطها بالرقم ونحدّثها برقمه واسم الفرع. يرجّع البطاقة أو null
 async function linkPagerCard(store, ticketToken, cardToken) {
   const pc = (await rest(`pager_cards?token=eq.${q(cardToken)}&client_id=eq.${await brandOf(store)}&select=id,wallet_serial,wallet_url,lang,branch_ids`).catch(() => []))[0];
-  if (!pc || !pc.wallet_serial || (await loyaltyOf(store.id)).enabled) return null;
+  if (!pc || !pc.wallet_serial || !pc.wallet_url) return null;   // ما عادت شغالة (انلغت أو انحذفت)
+  if ((await loyaltyOf(store.id)).enabled) return undefined;      // محل الولاء: النداء من بطاقة الولاء
   const t = (await rest(`pager_tickets?token=eq.${q(ticketToken)}&client_id=eq.${store.id}`, { method: 'PATCH', prefer: 'return=representation', body: { wallet_serial: pc.wallet_serial, wallet_url: pc.wallet_url } }))[0];
   if (!t) return null;
   // الفرع ينضاف لفروع البطاقة (عشان رسائل زبائن الفرع توصله)
@@ -44,7 +45,11 @@ async function linkPagerCard(store, ticketToken, cardToken) {
   await rest(`pager_cards?id=eq.${pc.id}`, { method: 'PATCH', body: { last_used_at: new Date().toISOString(), ...(branches.includes(store.id) ? {} : { branch_ids: [...branches, store.id] }) } }).catch(() => {});
   // إشعار برقمه: التحديث الصامت كان الجوال يطلع فيه آخر رسالة ("بالعافية") بدل رقمه، فرجعنا نرسل "رقمك ..."
   later(wallet.updatePagerPass(pc.wallet_serial, wallet.pagerStep({ store, number: t.number, step: t.status, lang: t.lang || pc.lang }))
-    .then(r => rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_error: `link ${r}` } })));
+    .then(async r => {
+      await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_error: `link ${r}` } });
+      // البطاقة انلغت عند شركة المحفظة: نفكها عن الزبون عشان يقدر يضيف وحدة جديدة
+      if (/^404\b/.test(r)) await rest(`pager_cards?id=eq.${pc.id}`, { method: 'PATCH', body: { wallet_serial: null, wallet_url: null } });
+    }));
   return pc;
 }
 
@@ -145,6 +150,15 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     return { store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, push_key: pushPublicKey(), brand: await brandOf(store), card, car, ...(full ? { full: true } : {}) };
   }
 
+  // بطاقة النداء المحفوظة في جواله: شغالة؟ (لو انلغت أو انحذفت، الصفحة تعرض عليه يضيف وحدة جديدة)
+  if (action === 'card' && req.method === 'GET') {
+    const store = await loadStore(req.query.slug);
+    const pc = String(req.query.pc || '');
+    if (!TOKEN_RE.test(pc)) return { ok: false };
+    const row = (await rest(`pager_cards?token=eq.${q(pc)}&client_id=eq.${await brandOf(store)}&select=wallet_url`).catch(() => null));
+    return { ok: row === null ? true : !!(row[0] && row[0].wallet_url) };   // خطأ في القراءة: نفترض إنها شغالة
+  }
+
   if (action === 'take' && req.method === 'POST') {
     const store = await loadStore(b.slug);
     // المجانية: 200 رقم بالشهر. الزبون ما يشوف إن فيه حد، بس يطلب من الموظف
@@ -166,9 +180,10 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
         if (card && card.wallet_serial && (await loyaltyOf(store.id)).enabled) later(walletNotice(home, card.id, `رقمك ${res.number} في ${store.name}. يوصلك إشعار هنا لما يجي دورك`));
       }
       // عنده بطاقة نداء من زيارة سابقة: نربطها بالرقم الجديد وتتحدث برقمه
-      if (TOKEN_RE.test(String(b.pc || ''))) await linkPagerCard(store, res.token, b.pc).catch(e => console.error('PAGER_CARD', e.message));
+      // card_ok: false = البطاقة المحفوظة في جواله ما عادت شغالة، والصفحة تعرض عليه يضيف وحدة جديدة
+      const linked = TOKEN_RE.test(String(b.pc || '')) ? await linkPagerCard(store, res.token, b.pc).catch(e => { console.error('PAGER_CARD', e.message); return null; }) : undefined;
       await poke(topic('pager', store.id));
-      return { token: res.token, number: res.number, store: { name: store.name, logo_url: store.logo_url, accent_color: store.accent_color || null } };
+      return { token: res.token, number: res.number, ...(linked === null ? { card_ok: false } : {}), store: { name: store.name, logo_url: store.logo_url, accent_color: store.accent_color || null } };
     } catch (e) {
       if (String(e.dbMessage || e.message).includes('PAGER_FULL')) throw new ApiError(409, 'وصلنا الحد اليومي للأرقام', 'FULL');
       throw e;
