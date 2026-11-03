@@ -139,13 +139,15 @@ async function pagerBody({ store, number, step, status, notice, url, lang }) {
     sharingProhibited: true,
     notification: String(notice || ' ').slice(0, 250)
   };
-  const strip = await pagerStrip(color, step);
+  // تجربة مؤقتة على staging: بدون صورة الخطوات وبدون الموقع (نشوف هل هم اللي يمنعون التحديث يوصل للجوال)
+  const TEST_PLAIN = process.env.VERCEL_ENV === 'preview';
+  const strip = TEST_PLAIN ? null : await pagerStrip(color, step);
   if (strip) body.stripURL = strip;
   if (store.logo_url && /^https:\/\//.test(store.logo_url)) { body.logoURL = store.logo_url; body.iconURL = store.logo_url; }
   // موقع المحل: البطاقة تطلع على شاشة القفل لما يقرب منه، بنص صاحب المحل أو النص الافتراضي
   const lat = Number(x.loyalty_lat), lng = Number(x.loyalty_lng);
   const near = String(x.pager_near_text || '').trim() || L(`أنت قريب من ${store.name || 'المحل'}، تفضّل 👋`);
-  if (x.loyalty_lat != null && Number.isFinite(lat) && Number.isFinite(lng)) body.locations = [{ latitude: lat, longitude: lng, relevantText: near.slice(0, 80) }];
+  if (!TEST_PLAIN && x.loyalty_lat != null && Number.isFinite(lat) && Number.isFinite(lng)) body.locations = [{ latitude: lat, longitude: lng, relevantText: near.slice(0, 80) }];
   return body;
 }
 async function createPagerPass(ctx) {
