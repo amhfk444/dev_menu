@@ -62,6 +62,18 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     return { on: ((await rest('app_settings?key=eq.pager_card_off&select=value').catch(() => []))[0] || {}).value === 'on' };
   }
 
+  // اتصال تجريبي بصوت "هالة" (قبل ربط الاتصال بالبيجر)
+  if (action === 'voice-test' && req.method === 'POST') {
+    const voice = require('./_lib/voice');
+    const b = readBody(req);
+    if (!voice.configured()) throw new ApiError(503, 'حط بيانات Twilio في Vercel أول (TWILIO_ACCOUNT_SID و TWILIO_AUTH_TOKEN و TWILIO_FROM)', 'VOICE_OFF');
+    if (!voice.saPhone(b.phone)) throw new ApiError(400, 'اكتب جوال سعودي مثل 05xxxxxxxx');
+    const store = String(b.store || 'المحل').slice(0, 40);
+    const r = await voice.sayCall(b.phone, `هلا، طلبك رقم ${Number(b.number) || 12} جاهز في ${store}، تفضّل استلمه.`);
+    if (!r.ok) throw new ApiError(502, `ما تم الاتصال: ${r.error}`, 'VOICE_FAILED');
+    return { ok: true, sid: r.sid };
+  }
+
   if (action === 'list' && req.method === 'GET') {
     return { clients: await rest('clients?select=*&order=id.desc') };
   }

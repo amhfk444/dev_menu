@@ -186,6 +186,18 @@
       </div>
       <button type="button" id="cm-btn" onclick="toggleCardMaintenance()" class="px-4 py-2.5 rounded-xl text-xs font-bold border"></button>
     </section>
+    <!-- اتصال تجريبي: نسمع صوت "طلبك جاهز" قبل ربطه بالبيجر -->
+    <section class="card p-5 flex flex-wrap items-center justify-between gap-3">
+      <div class="min-w-0">
+        <p class="text-sm font-black"><i class="ph-bold ph-phone-call text-emerald-700"></i> اتصال تجريبي «طلبك جاهز»</p>
+        <p class="text-[12px] text-ink/65 leading-relaxed">يتصل على الرقم بصوت «هالة» الخليجي من Twilio. الحساب التجريبي يتصل بس على الأرقام المؤكدة فيه.</p>
+      </div>
+      <form class="flex flex-wrap gap-2" onsubmit="event.preventDefault(); voiceTest()">
+        <input id="vt-phone" type="tel" inputmode="tel" dir="ltr" placeholder="05xxxxxxxx" class="px-3 py-2.5 rounded-xl text-sm border border-ink/20 w-36">
+        <input id="vt-store" type="text" placeholder="اسم المحل" value="تيست" class="px-3 py-2.5 rounded-xl text-sm border border-ink/20 w-32">
+        <button id="vt-btn" class="px-4 py-2.5 rounded-xl text-xs font-bold bg-emerald-700 text-white"><i class="ph-bold ph-phone-outgoing"></i> اتصل</button>
+      </form>
+    </section>
     <section id="kpis" class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3"></section>
 
     <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -463,6 +475,12 @@
     catch (e) { showToast(e.message || 'ما انحفظ', true); }
   }
   loadCardMaintenance();
+  async function voiceTest() {
+    const b = document.getElementById('vt-btn'); b.disabled = true;
+    try { await DM.post(A('voice-test'), { phone: document.getElementById('vt-phone').value, store: document.getElementById('vt-store').value, number: 12 }, true); showToast('جاري الاتصال، انتبه لجوالك'); }
+    catch (e) { showToast(e.message || 'ما تم الاتصال', true); }
+    b.disabled = false;
+  }
   async function setSupport(id, status, reply) {
     try { await DM.post(A('support-update'), { id, status, ...(reply !== undefined ? { reply } : {}) }, true); await loadSupport(); }
     catch (e) { showToast(e.message || 'ما انحفظ التعديل. تأكد من الإنترنت وحاول مرة ثانية', true); }
