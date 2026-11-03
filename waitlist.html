@@ -151,7 +151,7 @@
   let token = params.get('t') || (() => { try { return localStorage.getItem(tokenKey) || ''; } catch { return ''; } })();
   let settings = null, partySize = 2, pollTimer = null, lastStatus = null;
   document.getElementById('f-phone-cc').innerHTML = DM.countryOptions();
-  DM.fillMe(document.getElementById('f-name'), document.getElementById('f-phone'), document.getElementById('f-phone-cc'));
+  if (DM.fillMe) DM.fillMe(document.getElementById('f-name'), document.getElementById('f-phone'), document.getElementById('f-phone-cc'));
   document.getElementById('f-phone-cc').addEventListener('change', (e) => { document.getElementById('f-phone').placeholder = e.target.value === '966' ? '05xxxxxxxx' : 'رقم الجوال'; });
 
   const views = ['loading', 'unavailable', 'form', 'closed', 'status'];
@@ -250,7 +250,7 @@
     try {
       data.lt = (await DM.loyaltyToken(slug)) || undefined;   // بطاقة الولاء (ولو انسجّلت من فرع ثاني)
       const res = await DM.post('/api/waitlist?action=join', data);
-      DM.rememberMe({ name: data.name, phone: data.phone });
+      if (DM.rememberMe) DM.rememberMe({ name: data.name, phone: data.phone });
       saveToken(res.token);
       history.replaceState(null, '', `${DM.storePage('waitlist', slug)}${DM.hostSlug() ? '?' : '&'}t=${encodeURIComponent(res.token)}`);
       await loadStatus(true);
