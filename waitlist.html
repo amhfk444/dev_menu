@@ -38,7 +38,7 @@
   <!-- المتجر -->
   <header class="text-center space-y-2 pt-2">
     <div class="w-20 h-20 mx-auto rounded-3xl bg-cream border border-brand/15 overflow-hidden flex items-center justify-center shadow-md">
-      <img id="store-logo" src="images/logo.jpeg?v=2" alt="" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='images/logo.jpeg?v=2'">
+      <img id="store-logo" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='images/logo.jpeg?v=2'">
     </div>
     <h1 id="store-name" class="text-xl font-black">...</h1>
     <p class="text-xs font-bold text-ink/55"><i class="ph-bold ph-hourglass-medium"></i> قائمة الانتظار</p>
@@ -168,7 +168,7 @@
     if (store.business_type) { WT = DMSectors.terms(store); document.querySelectorAll('.t-when').forEach(el => { el.textContent = WT.wlWhen; }); }
     document.getElementById('store-name').textContent = store.name || '';
     document.title = `قائمة الانتظار | ${store.name || 'DEV MENU'}`;
-    if (store.logo_url) document.getElementById('store-logo').src = store.logo_url;
+    document.getElementById('store-logo').src = store.logo_url || 'images/logo.jpeg?v=2';
   }
 
   // ─── النموذج ───

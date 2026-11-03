@@ -212,8 +212,45 @@ const faqKey = (t) => String(t).toLowerCase().replace(/[ً-ْـ]/g, '').replace(
 const menuFingerprint = (d) => crypto.createHash('sha1').update(JSON.stringify(['tone2', d.products, d.categories, d.store.opening_hours, d.store.location_url, d.store.currency, d.store.show_calories])).digest('hex').slice(0, 16);
 const versionOf = (data) => crypto.createHash('sha1').update(JSON.stringify(data)).digest('hex').slice(0, 16);
 
+// معاينة الرابط في واتساب وتويتر وتيليجرام: اسم المحل وشعاره بدل DEV MENU (middleware.js يحوّل لها البوتات بس)
+const SHARE_PAGES = {
+  menu: ['menu', (n) => `المنيو الرقمي لـ ${n}`],
+  links: ['links', (n) => `روابط ${n}`],
+  waitlist: ['waitlist', (n) => `سجّل في قائمة الانتظار عند ${n}`],
+  pager: ['pager', (n) => `خذ رقمك من البيجر عند ${n}`],
+  loyalty: ['loyalty', (n) => `بطاقة الولاء من ${n}`]
+};
+const escAttr = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 module.exports = handler(['GET', 'POST'], async (req, res) => {
   const action = req.query.action;
+
+  if (action === 'share' && req.method === 'GET') {
+    const [page, desc] = SHARE_PAGES[req.query.page] || SHARE_PAGES.menu;
+    const { store } = await findPublicStore(req.query.slug, 'name,client_slug,logo_url,promo_message').catch(() => ({ store: null }));
+    const url = store ? require('./_lib/core').storeLink(store.client_slug, page) : require('./_lib/core').SITE;
+    const name = store ? store.name : 'DEV MENU';
+    const image = store && /^https:\/\//.test(store.logo_url || '') ? store.logo_url : `${require('./_lib/core').SITE}/images/icon-512.png`;
+    const text = (store && String(store.promo_message || '').trim()) || desc(name);
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.status(200).send(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<title>${escAttr(name)}</title>
+<meta name="description" content="${escAttr(text)}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="${escAttr(name)}">
+<meta property="og:title" content="${escAttr(name)}">
+<meta property="og:description" content="${escAttr(text)}">
+<meta property="og:image" content="${escAttr(image)}">
+<meta property="og:url" content="${escAttr(url)}">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="${escAttr(name)}">
+<meta name="twitter:image" content="${escAttr(image)}">
+<link rel="icon" href="${escAttr(image)}">
+<meta http-equiv="refresh" content="0;url=${escAttr(url)}">
+</head><body><a href="${escAttr(url)}">${escAttr(name)}</a></body></html>`);
+    return;
+  }
 
   // ─── مساعد المنيو: الزبون يسأل عن الأطباق ───
   if (action === 'menu-chat' && req.method === 'POST') {

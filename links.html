@@ -71,7 +71,7 @@
   <div id="page" class="hidden space-y-6">
     <header id="links-header" class="relative text-center space-y-3">
       <div class="relative z-[1] w-28 h-28 mx-auto p-1.5 rounded-full logo-ring overflow-hidden shadow-2xl">
-        <img id="logo" src="images/logo.jpeg?v=2" alt="" class="w-full h-full object-cover rounded-full" onerror="this.onerror=null;this.src='images/logo.jpeg?v=2'">
+        <img id="logo" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="" class="w-full h-full object-cover rounded-full" onerror="this.onerror=null;this.src='images/logo.jpeg?v=2'">
       </div>
       <div>
         <h1 id="name" class="text-2xl font-black"></h1>
@@ -138,7 +138,7 @@
     document.getElementById('name').textContent = p.name || '';
     document.getElementById('type').textContent = TYPE_LABELS[p.business_type] || '';
     const logo = safeUrl(p.logo_url);
-    if (logo) document.getElementById('logo').src = logo;
+    document.getElementById('logo').src = logo || 'images/logo.jpeg?v=2';
     // خلفية الصفحة الخاصة (فيديو أو صورة)، ولو ما فيه تاخذ خلفية المنيو
     const own = p.links_bg_video_url || p.links_bg_image_url;
     const video = safeUrl(own ? p.links_bg_video_url : p.bg_video_url), bg = safeUrl(own ? p.links_bg_image_url : p.bg_image_url);

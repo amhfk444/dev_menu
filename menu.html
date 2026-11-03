@@ -7,7 +7,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="/images/icon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
 <meta name="theme-color" content="#0b0b0b">
-<title>المنيو الرقمي | Dev Menu</title>
+<title>المنيو الرقمي</title>
 
 <!-- Tailwind CSS & FontAwesome -->
 <script src="https://cdn.tailwindcss.com"></script>
@@ -231,12 +231,12 @@
     <div class="relative z-[1] w-32 h-32 mx-auto">
       <div class="absolute inset-0 bg-white/10 rounded-full blur-xl"></div>
       <div class="relative w-full h-full p-2 rounded-full bg-black/90 border-2 border-white/40 shadow-2xl flex items-center justify-center overflow-hidden">
-        <img id="project-logo" src="images/logo.jpeg?v=2" class="w-full h-full object-cover rounded-full" onerror="this.src='https://via.placeholder.com/150/000000/ffffff?text=LOGO'">
+        <img id="project-logo" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="" class="w-full h-full object-cover rounded-full" onerror="this.onerror=null;this.src='images/logo.jpeg?v=2'">
       </div>
     </div>
     <div class="space-y-1">
-      <h1 id="project-title" class="text-2xl font-black text-white tracking-widest uppercase">Dev Menu</h1>
-      <p id="project-type" class="text-xs text-gray-300 font-semibold tracking-wider">RESTAURANT &amp; CAFE</p>
+      <h1 id="project-title" class="text-2xl font-black text-white tracking-widest uppercase min-h-[2rem]"></h1>
+      <p id="project-type" class="text-xs text-gray-300 font-semibold tracking-wider min-h-[1rem]"></p>
     </div>
     <div id="occasion-greeting" class="hidden relative z-[1]"></div>
     <div id="info-bar" class="hidden flex-wrap justify-center gap-2 pt-1"></div>
@@ -431,6 +431,13 @@
   }
   const urlParams = new URLSearchParams(window.location.search);
   const clientSlug = (urlParams.get('client') || DM.hostSlug()).trim().toLowerCase();
+  // شعار المحل واسمه من آخر زيارة: يطلعون على طول بدل شعار DEV MENU لين يوصل المنيو
+  const BRAND_KEY = `dm_brand_${clientSlug}`;
+  try {
+    const b = JSON.parse(localStorage.getItem(BRAND_KEY) || 'null');
+    if (b && b.name) { document.getElementById('project-title').textContent = b.name; document.title = `${b.name} | المنيو الرقمي`; }
+    if (b && /^https:\/\//.test(b.logo || '')) document.getElementById('project-logo').src = b.logo;
+  } catch {}
   // مصدر الزيارة: رمز QR المطبوع أو رابط مشارك. نشيل src من الرابط حتى لا تُحسب المشاركات كمسح QR
   const visitSource = urlParams.get('src') === 'qr' ? 'qr' : 'link';
   if (urlParams.has('src')) {
@@ -898,7 +905,8 @@
     const logo = safeUrl(p.logo_url);
     const logoEl = document.getElementById('project-logo');
     if (logo) { if (logoEl.getAttribute('src') !== logo) logoEl.src = logo; }
-    else if (!first) logoEl.src = 'images/logo.jpeg?v=2';
+    else logoEl.src = 'images/logo.jpeg?v=2';
+    try { localStorage.setItem(BRAND_KEY, JSON.stringify({ name: p.name || '', logo: logo || '' })); } catch {}
 
     const promo = (p.promo_message || '').trim();
     document.getElementById('promo-text').textContent = tr(promo);
