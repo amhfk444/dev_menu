@@ -232,8 +232,8 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (!src || !src.startsWith(`${SUPABASE_URL}/storage/`)) throw new ApiError(404, 'لا يوجد شعار', 'NO_LOGO');
     const r = await fetch(src, { signal: AbortSignal.timeout(8000) });
     if (!r.ok) throw new ApiError(404, 'لا يوجد شعار', 'NO_LOGO');
-    const png = await require('sharp')(Buffer.from(await r.arrayBuffer())).resize(600, 600, { fit: 'contain', background: '#ffffff' }).flatten({ background: '#ffffff' }).png().toBuffer();
-    res.setHeader('Content-Type', 'image/png');
+    const png = await require('sharp')(Buffer.from(await r.arrayBuffer())).resize(512, 512, { fit: 'contain', background: '#ffffff' }).flatten({ background: '#ffffff' }).jpeg({ quality: 85 }).toBuffer();
+    res.setHeader('Content-Type', 'image/jpeg');
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.status(200).send(png);
     return;
@@ -244,7 +244,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const { store } = await findPublicStore(req.query.slug, 'name,client_slug,logo_url,promo_message').catch(() => ({ store: null }));
     const url = store ? require('./_lib/core').storeLink(store.client_slug, page) : require('./_lib/core').SITE;
     const name = store ? store.name : 'DEV MENU';
-    // الشعار محفوظ webp، وواتساب ما يعرضه دايم: نعطيه نسخة PNG من share-img
+    // الشعار محفوظ webp، وواتساب ما يعرضه دايم: نعطيه نسخة JPEG خفيفة (أقل من 300KB) من share-img
     const image = store && /^https:\/\//.test(store.logo_url || '') ? `${require('./_lib/core').SITE}/api/public?action=share-img&slug=${encodeURIComponent(store.client_slug)}` : `${require('./_lib/core').SITE}/images/icon-512.png`;
     const text = (store && String(store.promo_message || '').trim()) || desc(name);
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
