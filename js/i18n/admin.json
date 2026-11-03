@@ -1586,5 +1586,20 @@
   "رابطين": "2 links",
   "{n} روابط": "{n} links",
   "ما فيه": "None",
-  "(اختياري للزبون، يوصله عليه التنبيه)": "(optional for customers, alerts go there)"
+  "(اختياري للزبون، يوصله عليه التنبيه)": "(optional for customers, alerts go there)",
+  "شوف كيف يطلع للضيف": "See it as a guest",
+  "اللي يعبّيه الضيف": "What guests fill in",
+  "يطلع للضيف في: نموذج التسجيل. كل ما قلّت الخانات، سجّل أسرع.": "Guests see: the sign-up form. Fewer fields, faster sign-up.",
+  "كم دقيقة تاخذ كل مجموعة تقريباً؟": "About how many minutes per group?",
+  "كم دقيقة تنتظر الضيف يحضر لما يجي دوره؟": "How long do you wait for a guest when it's their turn?",
+  "أكبر مجموعة تستقبلها": "Largest group you take",
+  "الضيف ما يقدر يختار عدد أشخاص أكثر من كذا.": "Guests can't pick more people than this.",
+  "رسالة للضيوف": "Message to guests",
+  "يطلع للضيف في: أعلى صفحة التسجيل.": "Guests see: the top of the sign-up page.",
+  "عشان الزبون ما ياخذ أكثر من ختم في نفس الزيارة.": "So a customer can't get more than one stamp per visit.",
+  "رسالة الترحيب": "Welcome message",
+  "يطلع للزبون في: إشعار على بطاقته في المحفظة، أول ما يسجل.": "Customers see: a notification on their wallet card right after joining.",
+  "رسالة تسليم المكافأة": "Reward message",
+  "يطلع للزبون في: إشعار على بطاقته في المحفظة، لما الموظف يصرف له المكافأة.": "Customers see: a notification on their wallet card when staff give the reward.",
+  "يطلع للزبون في بطاقته:": "Customers see on their card:"
 }

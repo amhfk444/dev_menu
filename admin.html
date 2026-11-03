@@ -950,9 +950,13 @@
 
             <!-- الإعدادات -->
             <div class="pro-card p-5 space-y-4">
-              <h3 class="text-xs font-black flex items-center gap-2"><i class="ph-bold ph-sliders-horizontal text-ink"></i> إعدادات قائمة الانتظار</h3>
+              <div class="flex items-center justify-between gap-2">
+                <h3 class="text-xs font-black flex items-center gap-2"><i class="ph-bold ph-sliders-horizontal text-ink"></i> إعدادات قائمة الانتظار</h3>
+                <a id="wl-preview" target="_blank" rel="noopener" class="text-[11px] font-bold text-ink underline"><i class="ph-bold ph-arrow-square-out"></i> شوف كيف يطلع للضيف</a>
+              </div>
               <div>
-                <p class="text-[11px] font-bold text-ink mb-2">البيانات المطلوبة من الضيف</p>
+                <p class="text-[11px] font-bold text-ink">اللي يعبّيه الضيف</p>
+                <p class="text-[11px] text-ink mt-1 leading-relaxed mb-2">يطلع للضيف في: نموذج التسجيل. كل ما قلّت الخانات، سجّل أسرع.</p>
                 <div class="rounded-xl border border-brand/15 overflow-hidden">
                   <div class="grid grid-cols-[1fr_auto_auto] gap-x-4 px-3 py-2 bg-brand/5 text-[11px] font-bold text-ink">
                     <span>الحقل</span><span>يظهر</span><span>إلزامي</span>
@@ -960,24 +964,27 @@
                   <div id="wl-fields" class="divide-y divide-brand/10"></div>
                 </div>
               </div>
-              <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-3">
                 <div>
-                  <label class="text-[11px] font-bold text-ink block mb-1">دقائق لكل مجموعة</label>
+                  <label for="wl-minutes" class="text-[11px] font-bold text-ink block mb-1">كم دقيقة تاخذ كل مجموعة تقريباً؟</label>
                   <input id="wl-minutes" type="number" min="1" max="120" class="input-pro text-xs" dir="ltr">
+                  <p id="wl-say-eta" class="text-[11px] text-ink mt-1 leading-relaxed"></p>
                 </div>
                 <div>
-                  <label class="text-[11px] font-bold text-ink block mb-1">مهلة الحضور (دقيقة)</label>
+                  <label for="wl-hold" class="text-[11px] font-bold text-ink block mb-1">كم دقيقة تنتظر الضيف يحضر لما يجي دوره؟</label>
                   <input id="wl-hold" type="number" min="2" max="60" class="input-pro text-xs" dir="ltr">
+                  <p id="wl-say-hold" class="text-[11px] text-ink mt-1 leading-relaxed"></p>
                 </div>
-                <div class="col-span-2">
-                  <label class="text-[11px] font-bold text-ink block mb-1">أقصى عدد أشخاص للمجموعة</label>
+                <div>
+                  <label for="wl-max-party" class="text-[11px] font-bold text-ink block mb-1">أكبر مجموعة تستقبلها</label>
                   <input id="wl-max-party" type="number" min="1" max="100" class="input-pro text-xs" dir="ltr">
+                  <p class="text-[11px] text-ink mt-1 leading-relaxed">الضيف ما يقدر يختار عدد أشخاص أكثر من كذا.</p>
                 </div>
-              </div>
-              <p class="text-[11px] text-ink leading-relaxed -mt-1">الوقت التقريبي للضيف = ترتيبه × دقائق كل مجموعة. ومهلة الحضور تظهر له في بريد "جاء دورك".</p>
-              <div>
-                <label class="text-[11px] font-bold text-ink block mb-1">رسالة للضيوف (اختياري)</label>
-                <input id="wl-message" type="text" maxlength="200" placeholder="مثال: الانتظار التقريبي 15 دقيقة" class="input-pro text-xs">
+                <div>
+                  <label for="wl-message" class="text-[11px] font-bold text-ink block mb-1">رسالة للضيوف <span class="font-normal">(اختياري)</span></label>
+                  <input id="wl-message" type="text" maxlength="200" placeholder="مثال: الانتظار التقريبي 15 دقيقة" class="input-pro text-xs">
+                  <p class="text-[11px] text-ink mt-1 leading-relaxed">يطلع للضيف في: أعلى صفحة التسجيل.</p>
+                </div>
               </div>
               <button onclick="saveWaitlistSettings()" class="w-full bg-brand hover:bg-brand-dark text-cream font-bold py-2.5 rounded-xl text-xs transition">حفظ الإعدادات</button>
             </div>
@@ -1074,10 +1081,11 @@
                   <input id="ly-reward" class="input-pro" maxlength="60" placeholder="مثلاً: مشروب مجاني"></label>
                 <label class="block"><span class="text-xs font-semibold text-ink block mb-1.5">المكافأة بالإنجليزي <span class="font-normal text-ink">(اختياري)</span></span>
                   <input id="ly-reward-en" class="input-pro" maxlength="60" dir="ltr" placeholder="Free drink"></label>
+                <p id="ly-basics-say" class="sm:col-span-2 text-[12px] text-ink bg-brand/5 border border-brand/15 rounded-xl px-3 py-2 leading-relaxed"></p>
                 <label class="block"><span class="text-xs font-semibold text-ink block mb-1.5">ختم وحد كل</span>
                   <select id="ly-cooldown" class="input-pro">
                     <option value="1">ساعة</option><option value="2">ساعتين</option><option value="3">3 ساعات</option><option value="4">4 ساعات</option><option value="6">6 ساعات</option><option value="12">12 ساعة</option><option value="24">يوم كامل</option>
-                  </select></label>
+                  </select><span class="block text-[11px] text-ink mt-1 leading-relaxed">عشان الزبون ما ياخذ أكثر من ختم في نفس الزيارة.</span></label>
                 <label class="hidden"><span class="text-xs font-semibold text-ink block mb-1.5">المسافة المسموحة لاستخدام المكافأة</span>
                   <select id="ly-radius" class="input-pro">
                     <option value="25">25 متر</option><option value="50">50 متر</option><option value="100">100 متر (مول أو مبنى كبير)</option><option value="200">200 متر</option>
@@ -1098,7 +1106,8 @@
               </div>
               <div class="space-y-2 pt-3">
                 <h4 class="text-xs font-bold text-ink border-b border-ink/10 pb-1.5">رسائل للزبون</h4>
-                <p class="text-xs font-semibold text-ink">رسالة الترحيب (توصل للزبون أول ما يسجل)</p>
+                <p class="text-xs font-semibold text-ink">رسالة الترحيب</p>
+                <p class="text-[11px] text-ink mt-1 leading-relaxed -mt-1">يطلع للزبون في: إشعار على بطاقته في المحفظة، أول ما يسجل.</p>
                 <div class="grid sm:grid-cols-3 gap-2" id="ly-welcome-modes">
                   <label class="cursor-pointer"><input type="radio" name="ly-welcome" value="ai" class="peer sr-only"><span class="block rounded-xl border border-brand/20 p-3 text-[13px] peer-checked:border-brand peer-checked:bg-brand/5"><b class="block"><i class="ph-bold ph-sparkle"></i> المساعد يكتبها</b><span class="text-[11px] text-ink">كل زبون تجيه رسالة مختلفة باسمه</span></span></label>
                   <label class="cursor-pointer"><input type="radio" name="ly-welcome" value="custom" class="peer sr-only"><span class="block rounded-xl border border-brand/20 p-3 text-[13px] peer-checked:border-brand peer-checked:bg-brand/5"><b class="block"><i class="ph-bold ph-pen-nib"></i> أكتبها بنفسي</b><span class="text-[11px] text-ink">نفس الرسالة للكل</span></span></label>
@@ -1107,7 +1116,8 @@
                 <textarea id="ly-welcome-text" rows="2" maxlength="200" class="input-pro hidden" placeholder="مثلاً: حيّاك الله في بيتك الثاني، هذا أول ختم لك"></textarea>
               </div>
               <div class="space-y-2 pt-1">
-                <p class="text-xs font-semibold text-ink">رسالة تسليم المكافأة (توصل على بطاقة الزبون لما الموظف يصرفها)</p>
+                <p class="text-xs font-semibold text-ink">رسالة تسليم المكافأة</p>
+                <p class="text-[11px] text-ink mt-1 leading-relaxed -mt-1">يطلع للزبون في: إشعار على بطاقته في المحفظة، لما الموظف يصرف له المكافأة.</p>
                 <div class="grid sm:grid-cols-3 gap-2">
                   <label class="cursor-pointer"><input type="radio" name="ly-redeem" value="ai" class="peer sr-only"><span class="block rounded-xl border border-brand/20 p-3 text-[13px] peer-checked:border-brand peer-checked:bg-brand/5"><b class="block"><i class="ph-bold ph-sparkle"></i> المساعد يكتبها</b><span class="text-[11px] text-ink">تهنئة مختلفة لكل زبون باسمه</span></span></label>
                   <label class="cursor-pointer"><input type="radio" name="ly-redeem" value="custom" class="peer sr-only"><span class="block rounded-xl border border-brand/20 p-3 text-[13px] peer-checked:border-brand peer-checked:bg-brand/5"><b class="block"><i class="ph-bold ph-pen-nib"></i> أكتبها بنفسي</b><span class="text-[11px] text-ink">نفس الرسالة للكل</span></span></label>
@@ -4014,6 +4024,8 @@
     document.getElementById('wl-hold').value = s.hold_minutes;
     document.getElementById('wl-max-party').value = s.max_party;
     document.getElementById('wl-message').value = s.message || '';
+    document.getElementById('wl-preview').href = wlUrl();
+    sayWaitlist();
   }
   document.getElementById('wl-fields').addEventListener('change', (e) => {
     const cb = e.target.closest('[data-wlf]'); if (!cb || cb.dataset.kind !== 'on') return;
@@ -4021,6 +4033,20 @@
     req.disabled = !cb.checked; if (!cb.checked) req.checked = false;
   });
 
+  // مثال حي لصاحب المحل: كيف يقرا الزبون عدد الأختام والمكافأة
+  function sayLoyaltyBasics() {
+    const n = +document.getElementById('ly-needed').value || 0, r = document.getElementById('ly-reward').value.trim();
+    document.getElementById('ly-basics-say').innerHTML = `<b>يطلع للزبون في بطاقته:</b> «بعد ${n} أختام تاخذ ${r ? esc(r) : '...'}»`;
+  }
+  document.getElementById('ly-needed').addEventListener('change', sayLoyaltyBasics);
+  document.getElementById('ly-reward').addEventListener('input', sayLoyaltyBasics);
+  // مثال حي لوقت الانتظار
+  function sayWaitlist() {
+    const m = +document.getElementById('wl-minutes').value || 0, h = +document.getElementById('wl-hold').value || 0;
+    document.getElementById('wl-say-eta').innerHTML = `مثال: لو قدّام الضيف 3 مجموعات، يطلع له <b>~${m * 3} دقيقة</b>.`;
+    document.getElementById('wl-say-hold').innerHTML = `لما يجي دوره يطلع له: <b>«عندك ${h} دقايق تحضر»</b>، وبعدها تقدر تعطي دوره للي بعده.`;
+  }
+  ['wl-minutes', 'wl-hold'].forEach(id => document.getElementById(id).addEventListener('input', sayWaitlist));
   async function saveWaitlistSettings() {
     const fields = {};
     Object.keys(WL_FIELDS).forEach(k => {
@@ -5257,6 +5283,7 @@
     document.getElementById('ly-reward').value = st.reward;
     document.getElementById('ly-reward-en').value = st.reward_en || '';
     document.getElementById('ly-cooldown').value = String(st.cooldown_hours);
+    sayLoyaltyBasics();
     document.getElementById('ly-radius').value = String(st.radius_m);
     document.getElementById('ly-pager-stamp').checked = st.pager_stamp !== false;
     const wm = (st.welcome && st.welcome.mode) || 'ai';
