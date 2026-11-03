@@ -871,6 +871,7 @@
   }
   // رابط المحفظة مباشرة: آيفون يفتح نافذة "إضافة" على طول، وأندرويد يفتح قوقل والت، بدون صفحة وسيطة
   function walletHref(url) {
+    return url;   // مثل أمس: صفحة شركة المحفظة (فيها زر آبل وقوقل)
     const m = String(url).match(/^https:\/\/pass\.walletwallet\.dev\/p\/([0-9a-f-]{36})$/i);
     if (!m) return url;
     const ua = navigator.userAgent;
@@ -1186,7 +1187,7 @@
     if (!slug) return unavailable('الرابط غير صحيح', 'امسح رمز QR من عند الموظف.');
     // نتأكد إن المتجر موجود، ونجيب مفتاح الإشعارات
     let fullNow = false;
-    try { const info = await DM.get(`/api/pager?action=info&slug=${encodeURIComponent(slug)}`); setStore(info.store); pushKey = info.push_key || ''; brand = Number(info.brand) || 0; fullNow = info.full === true; cardOffer = info.card === true; carOffer = info.car === true; }
+    try { const info = await DM.get(`/api/pager?action=info&slug=${encodeURIComponent(slug)}`); setStore(info.store); pushKey = info.push_key || ''; brand = Number(info.brand) || 0; fullNow = info.full === true; cardOffer = false /* بطاقة النداء تنضاف بعد أخذ الرقم مثل أمس */; carOffer = info.car === true; }
     catch (e) { return unavailable('البيجر غير متاح حالياً', 'اسأل الموظف.'); }
     // بطاقة النداء محفوظة في هالجوال (ولو من قبل تحديث الفروع): نجدد حفظها لكل devmenu.digital عشان كل فرع يعرفها
     { const pc = pagerCard(); if (pc) savePagerCard(pc); hadCard = !!pc;
