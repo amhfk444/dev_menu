@@ -42,8 +42,8 @@ async function linkPagerCard(store, ticketToken, cardToken) {
   // الفرع ينضاف لفروع البطاقة (عشان رسائل زبائن الفرع توصله)
   const branches = (pc.branch_ids || []).map(Number);
   await rest(`pager_cards?id=eq.${pc.id}`, { method: 'PATCH', body: { last_used_at: new Date().toISOString(), ...(branches.includes(store.id) ? {} : { branch_ids: [...branches, store.id] }) } }).catch(() => {});
-  // تحديث صامت: الرقم يطلع في البطاقة بدون إشعار، والإشعار يجيه لما يجهز طلبه
-  later(wallet.updatePagerPass(pc.wallet_serial, { ...wallet.pagerStep({ store, number: t.number, step: t.status, lang: t.lang || pc.lang }), silent: t.status === 'waiting' })
+  // إشعار برقمه: التحديث الصامت كان الجوال يطلع فيه آخر رسالة ("بالعافية") بدل رقمه، فرجعنا نرسل "رقمك ..."
+  later(wallet.updatePagerPass(pc.wallet_serial, wallet.pagerStep({ store, number: t.number, step: t.status, lang: t.lang || pc.lang }))
     .then(r => rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_error: `link ${r}` } })));
   return pc;
 }
