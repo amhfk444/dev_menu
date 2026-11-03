@@ -1772,6 +1772,19 @@ async function main(req) {
     return { product: created, copied_to: copied };
   }
 
+  // صورة الطبق بس (أداة القص): نفس الصورة في الطبق المربوط بالفروع الثانية
+  if (action === 'product-image') {
+    const id = int(b.id);
+    if (!b.image_url || !ownsMediaUrl(b.image_url, sid)) throw new ApiError(400, 'الصورة غير تابعة لمتجرك');
+    const rows = await rest(`products?id=eq.${id}&client_id=eq.${sid}`, { method: 'PATCH', body: { image_url: b.image_url }, prefer: 'return=representation' });
+    if (!rows.length) throw new ApiError(404, 'الطبق غير موجود');
+    if (rows[0].link_id) {
+      const others = (await familyOf(store)).map(f => f.id).filter(x => x !== sid);
+      if (others.length) await rest(`products?link_id=eq.${q(rows[0].link_id)}&client_id=in.(${others.join(',')})`, { method: 'PATCH', body: { image_url: b.image_url } });
+    }
+    return { product: rows[0] };
+  }
+
   if (action === 'product-toggle') {
     const id = int(b.id);
     if (!['is_available', 'is_bestseller', 'is_hidden'].includes(b.field)) throw new ApiError(400, 'حقل غير صحيح');

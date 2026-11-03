@@ -274,6 +274,26 @@
 
 <!-- رسائل التنبيه Toast -->
 <!-- نافذة تأكيد الحذف -->
+<!-- قص صورة الطبق بنسبة 4:3: الإطار ثابت، والصورة تتحرك وتتكبر تحته -->
+<div id="crop-modal" class="fixed inset-0 z-[70] bg-ink/60 backdrop-blur-sm items-center justify-center p-4 hidden">
+  <div role="dialog" aria-modal="true" aria-labelledby="crop-title" class="pro-card max-w-md w-full p-5 space-y-4">
+    <div>
+      <h3 id="crop-title" class="text-[16px] font-bold text-ink">قصّ صورة الطبق</h3>
+      <p class="text-[12px] text-ink mt-0.5">اسحب الصورة لاختيار الجزء الظاهر، واستخدم الشريط للتكبير.</p>
+    </div>
+    <div id="crop-stage" class="relative w-full rounded-2xl overflow-hidden touch-none select-none cursor-grab" style="aspect-ratio: 4 / 3; background: #111" dir="ltr">
+      <img id="crop-img" alt="" draggable="false" style="position:absolute;left:0;top:0;max-width:none;max-height:none;transform-origin:0 0">
+    </div>
+    <label class="flex items-center gap-3 text-ink"><i class="ph-bold ph-magnifying-glass-minus"></i>
+      <input id="crop-zoom" type="range" min="1" max="3" step="0.01" value="1" class="flex-1" aria-label="التكبير">
+      <i class="ph-bold ph-magnifying-glass-plus"></i></label>
+    <div class="flex gap-2">
+      <button type="button" id="crop-save" class="flex-1 bg-brand text-cream hover:bg-brand-dark py-2.5 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5"><i class="ph-bold ph-check"></i> اعتماد القص</button>
+      <button type="button" id="crop-cancel" class="bg-brand/10 hover:bg-brand/15 text-ink font-bold px-4 py-2.5 rounded-xl text-xs transition border border-brand/25">إلغاء</button>
+    </div>
+  </div>
+</div>
+
 <div id="delete-modal" class="fixed inset-0 z-[60] bg-ink/40 backdrop-blur-sm items-center justify-center p-4 hidden">
   <div role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" class="pro-card max-w-md w-full p-6 space-y-4 text-center">
     <div class="w-12 h-12 rounded-full bg-red-500/10 text-red-600 border border-red-500/20 flex items-center justify-center mx-auto text-xl">
@@ -719,6 +739,17 @@
           <button type="button" onclick="document.getElementById('mp-file').click()" class="bg-brand text-cream hover:bg-brand-dark px-3.5 py-2.5 rounded-xl text-xs font-bold transition"><i class="ph-bold ph-camera"></i> المنيو من صورة</button>
           <input type="file" id="mp-file" accept="image/*" multiple class="hidden" onchange="readMenuPhoto(this)">
           <button type="button" onclick="downloadProductTemplate()" class="text-[11px] font-bold text-ink hover:text-ink underline underline-offset-4">نموذج الملف</button>
+        </div>
+        <!-- أطباق صورها مو 4:3 (تظهر بحواف في المنيو): قصّها من هنا بدون ما يرفع صورة جديدة -->
+        <div id="crop-needed" class="pro-card px-4 sm:px-5 py-4 mb-3 hidden">
+          <div class="flex items-start gap-3">
+            <span class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 grid place-items-center text-lg shrink-0"><i class="ph-bold ph-crop"></i></span>
+            <div class="min-w-0 flex-1">
+              <h3 class="text-[14px] font-bold text-ink" id="crop-needed-title"></h3>
+              <p class="text-[12px] text-ink mt-0.5">تظهر هذه الصور في المنيو بحواف لأن مقاسها غير مناسب. يمكنك قصّها بنسبة 4:3 دون رفع صورة جديدة.</p>
+            </div>
+          </div>
+          <div id="crop-needed-list" class="mt-3 grid gap-2"></div>
         </div>
         <div class="pro-card px-4 sm:px-5 pt-4 pb-2">
           <div class="flex items-baseline justify-between gap-3">
@@ -3103,11 +3134,115 @@
       if (r >= 1.2 && r <= 1.5) return;
       const shape = r < 0.9 ? 'رأسية' : r < 1.2 ? 'شبه مربعة' : 'عريضة جداً';
       const dims = (w, h) => `<bdi dir="ltr">${Number(w)}×${Number(h)}</bdi>`;
-      warn.innerHTML = `الصورة المختارة ${shape} (${dims(img.naturalWidth, img.naturalHeight)})، وستظهر في المنيو بحواف ${r > 1.5 ? 'في الأعلى والأسفل' : 'على الجانبين'}. لظهورها كاملة، يُرجى استخدام صورة أفقية أو قصّها بنسبة 4:3 (مثل ${dims(1200, 900)}).`;
+      warn.innerHTML = `الصورة المختارة ${shape} (${dims(img.naturalWidth, img.naturalHeight)})، وستظهر في المنيو بحواف ${r > 1.5 ? 'في الأعلى والأسفل' : 'على الجانبين'}. لظهورها كاملة، يُرجى استخدام صورة أفقية أو قصّها بنسبة 4:3 (مثل ${dims(1200, 900)}).
+        <button type="button" id="img-crop-btn" class="mt-2 inline-flex items-center gap-1.5 bg-white border border-amber-300 text-amber-900 rounded-lg px-3 py-1.5 text-[12px] font-bold"><i class="ph-bold ph-crop"></i> قصّ الصورة 4:3</button>`;
       warn.classList.remove('hidden');
+      document.getElementById('img-crop-btn').onclick = () => openCropper(url, (blob) => {
+        const name = f.name.replace(/\.[^.]+$/, '') + '-4x3.jpg';
+        const dt = new DataTransfer(); dt.items.add(new File([blob], name, { type: 'image/jpeg' }));
+        input.files = dt.files;
+        previewDishImage(input);
+      });
     };
     img.src = url;
   }
+  // ─── قص صورة الطبق 4:3 ───
+  // الإطار ثابت (نفس شكل صورة الطبق في المنيو)، والصورة تتحرك تحته وتتكبر. أقل تكبير يغطي الإطار كامل
+  const crop = { img: null, base: 1, zoom: 1, x: 0, y: 0, done: null };
+  function cropLayout() {
+    const st = document.getElementById('crop-stage'), W = st.clientWidth, H = st.clientHeight, im = crop.img;
+    const sc = crop.base * crop.zoom, w = im.naturalWidth * sc, h = im.naturalHeight * sc;
+    crop.x = Math.min(0, Math.max(W - w, crop.x)); crop.y = Math.min(0, Math.max(H - h, crop.y));
+    im.style.transform = `translate(${crop.x}px, ${crop.y}px) scale(${sc})`;
+  }
+  function openCropper(src, done) {
+    const im = document.getElementById('crop-img'), modal = document.getElementById('crop-modal');
+    crop.done = done; crop.zoom = 1; document.getElementById('crop-zoom').value = 1;
+    modal.classList.replace('hidden', 'flex');
+    im.crossOrigin = /^blob:|^data:/.test(src) ? null : 'anonymous';
+    im.onload = () => {
+      const st = document.getElementById('crop-stage'), W = st.clientWidth, H = st.clientHeight;
+      im.style.width = `${im.naturalWidth}px`; im.style.height = `${im.naturalHeight}px`;
+      crop.img = im; crop.base = Math.max(W / im.naturalWidth, H / im.naturalHeight);
+      crop.x = (W - im.naturalWidth * crop.base) / 2; crop.y = (H - im.naturalHeight * crop.base) / 2;
+      cropLayout();
+    };
+    im.onerror = () => { closeCropper(); showToast('تعذر فتح الصورة، ارفعها من جديد', true); };
+    // نسخة جديدة بإذن CORS (النسخة المحفوظة في المتصفح بدون إذن تمنع حفظ القص)
+    im.src = im.crossOrigin ? `${src}${src.includes('?') ? '&' : '?'}crop=1` : src;
+  }
+  function closeCropper() { document.getElementById('crop-modal').classList.replace('flex', 'hidden'); crop.done = null; }
+  (() => {
+    const st = document.getElementById('crop-stage');
+    let drag = null;
+    st.addEventListener('pointerdown', (e) => { if (!crop.img) return; drag = { x: e.clientX - crop.x, y: e.clientY - crop.y }; st.setPointerCapture(e.pointerId); st.style.cursor = 'grabbing'; });
+    st.addEventListener('pointermove', (e) => { if (!drag) return; crop.x = e.clientX - drag.x; crop.y = e.clientY - drag.y; cropLayout(); });
+    const end = () => { drag = null; st.style.cursor = ''; };
+    st.addEventListener('pointerup', end); st.addEventListener('pointercancel', end);
+    // التكبير من نص الإطار
+    const zoomTo = (z) => {
+      const W = st.clientWidth, H = st.clientHeight, old = crop.base * crop.zoom;
+      crop.zoom = Math.min(3, Math.max(1, z));
+      const sc = crop.base * crop.zoom;
+      crop.x = W / 2 - (W / 2 - crop.x) * sc / old; crop.y = H / 2 - (H / 2 - crop.y) * sc / old;
+      document.getElementById('crop-zoom').value = crop.zoom; cropLayout();
+    };
+    document.getElementById('crop-zoom').addEventListener('input', (e) => crop.img && zoomTo(Number(e.target.value)));
+    st.addEventListener('wheel', (e) => { if (!crop.img) return; e.preventDefault(); zoomTo(crop.zoom * (e.deltaY < 0 ? 1.08 : 1 / 1.08)); }, { passive: false });
+    document.getElementById('crop-cancel').onclick = closeCropper;
+    document.getElementById('crop-save').onclick = () => {
+      const im = crop.img, sc = crop.base * crop.zoom;
+      const W = st.clientWidth, H = st.clientHeight;
+      const sx = -crop.x / sc, sy = -crop.y / sc, sw = W / sc, sh = H / sc;
+      const out = document.createElement('canvas'); out.width = Math.min(1200, Math.round(sw)); out.height = Math.round(out.width * 3 / 4);
+      out.getContext('2d').drawImage(im, sx, sy, sw, sh, 0, 0, out.width, out.height);
+      const fn = crop.done;
+      closeCropper();
+      try {
+        out.toBlob((blob) => { if (blob && fn) fn(blob); else showToast('تعذر قص الصورة', true); }, 'image/jpeg', 0.88);
+      } catch { showToast('تعذر قص هذه الصورة، ارفعها من جديد وقصّها', true); }
+    };
+  })();
+
+  // أطباق صورها مو 4:3: نقيس الصور مرة وحدة لكل رابط، ونعرضها فوق قائمة الأطباق مع زر القص
+  const photoRatio = new Map();
+  function checkPhotoRatios() {
+    const box = document.getElementById('crop-needed');
+    if (!box) return;
+    const withImg = loadedProducts.filter(p => p.image_url);
+    const pending = withImg.filter(p => !photoRatio.has(p.image_url));
+    pending.forEach(p => {
+      photoRatio.set(p.image_url, null);
+      const im = new Image();
+      im.onload = () => { photoRatio.set(p.image_url, im.naturalWidth / im.naturalHeight); checkPhotoRatios(); };
+      im.src = p.image_url;
+    });
+    const bad = withImg.filter(p => { const r = photoRatio.get(p.image_url); return r && (r < 1.2 || r > 1.5); });
+    box.classList.toggle('hidden', !bad.length);
+    if (!bad.length) return;
+    document.getElementById('crop-needed-title').textContent = bad.length === 1 ? 'طبق واحد صورته تحتاج قص' : `${bad.length} أطباق صورها تحتاج قص`;
+    document.getElementById('crop-needed-list').innerHTML = bad.slice(0, 30).map(p => `
+      <div class="flex items-center gap-3 bg-brand/5 border border-brand/15 rounded-xl px-3 py-2">
+        <img src="${esc(safeUrl(p.image_url))}" alt="" class="w-11 h-11 rounded-lg object-cover shrink-0">
+        <p class="min-w-0 flex-1 text-[13px] font-bold text-ink truncate">${esc(p.name)}</p>
+        <button type="button" data-crop="${Number(p.id)}" class="text-xs bg-brand text-cream font-bold px-3.5 py-2 rounded-xl transition hover:bg-brand-dark flex items-center gap-1.5"><i class="ph-bold ph-crop"></i> قصّ</button>
+      </div>`).join('');
+  }
+  document.getElementById('crop-needed-list').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-crop]'); if (!b) return;
+    const p = loadedProducts.find(x => x.id === Number(b.dataset.crop)); if (!p) return;
+    openCropper(p.image_url, async (blob) => {
+      showToast('جاري حفظ الصورة...');
+      const url = await uploadFile(new File([blob], 'dish-4x3.jpg', { type: 'image/jpeg' }), 'prod', 1200);
+      if (!url) return showToast(`فشل رفع الصورة: ${lastUploadError}`, true);
+      try { await api('product-image', { id: p.id, image_url: url }); }
+      catch { return showToast('تعذر حفظ الصورة', true); }
+      photoRatio.set(url, 4 / 3);
+      showToast('تم قص الصورة، وتظهر الآن كاملة في المنيو');
+      refreshAll();
+    });
+  });
+
   async function compressImage(file, maxDim = 1600, quality = 0.82) {
     if (!/^image\/(jpeg|png|webp|heic|heif)$/i.test(file.type)) return file;
     try {
@@ -6519,6 +6654,7 @@
   }
 
   function filterProducts() {
+    checkPhotoRatios();
     const search = document.getElementById('search-input').value.trim().toLowerCase();
     const category = document.getElementById('filter-category').value;
     const catName = loadedCategories.find(c => c.key === category)?.name;
