@@ -49,7 +49,9 @@ function passBody({ store, settings, card, url, restoreUrl, lat, lng, notice, st
     ...(card.client_id ? { barcodeValue: require('./loyalty-stamp').memberQr(card), barcodeFormat: 'QR', barcodeAltText: L(`رقم العضوية #${card.member_no || ''}`) } : {}),
     sharingProhibited: true,
     // رسالة المحل: لما تتغير تطلع إشعار على الجوال (لازم تكون موجودة من أول مرة، عشان كذا مسافة لو ما فيه رسالة)
-    notification: String(notice || ' ').slice(0, 250)
+    // رسالة فاضية تمسح خانة الإشعار من البطاقة، والتحديث اللي يرجّعها ما يطلع إشعار (فتضيع أول رسالة بعدها).
+    // فبدون رسالة ما نرسل الخانة أصلاً، والبطاقة تحتفظ برسالتها الحالية
+    ...(String(notice || '').trim() ? { notification: String(notice).slice(0, 250) } : {})
   };
   if (full) {
     // لون المحل بدل اللون الجاهز (ما نرسل الاثنين، عشان الجاهز ما يغطي عليه)
@@ -67,6 +69,7 @@ function passBody({ store, settings, card, url, restoreUrl, lat, lng, notice, st
 // بطاقة جديدة. لو الباقة المجانية رفضت المزايا المدفوعة نعيد بدونها
 async function createPass(ctx) {
   if (!configured()) throw new ApiError(503, 'إضافة البطاقة للمحفظة مو متاحة حالياً', 'WALLET_OFF');
+  if (!String(ctx.notice || '').trim()) ctx = { ...ctx, notice: firstNotice(ctx.store, ctx.card && ctx.card.lang) };
   ctx = { ...ctx, strip: await stampStrip(ctx.settings, ctx.card) };
   try { return await call('POST', '', passBody(ctx, true)); }
   catch (e) {
@@ -137,7 +140,7 @@ async function pagerBody({ store, number, step, status, notice, url, lang }) {
       ...(review ? [{ label: L('قيّمنا في قوقل'), value: review }] : [])
     ],
     sharingProhibited: true,
-    notification: String(notice || ' ').slice(0, 250)
+    ...(String(notice || '').trim() ? { notification: String(notice).slice(0, 250) } : {})   // بدون رسالة: البطاقة تحتفظ برسالتها (شوف passBody)
   };
   const strip = await pagerStrip(color, step);
   if (strip) body.stripURL = strip;
@@ -148,8 +151,11 @@ async function pagerBody({ store, number, step, status, notice, url, lang }) {
   if (x.loyalty_lat != null && Number.isFinite(lat) && Number.isFinite(lng)) body.locations = [{ latitude: lat, longitude: lng, relevantText: near.slice(0, 80) }];
   return body;
 }
+// البطاقة لازم تنولد وفيها خانة الإشعار، وإلا أول رسالة توصلها ما تطلع إشعار
+const firstNotice = (store, lang) => tr(lang, `أهلاً بك في ${store.name || 'المحل'}`);
 async function createPagerPass(ctx) {
   if (!configured()) throw new ApiError(503, 'المحفظة مو متاحة حالياً', 'WALLET_OFF');
+  if (!String(ctx.notice || '').trim()) ctx = { ...ctx, notice: firstNotice(ctx.store, ctx.lang) };
   try { return await call('POST', '', await pagerBody(ctx)); }
   catch (e) {
     // الباقة المجانية ترفض الصور واللون: بطاقة بسيطة بدلها
@@ -178,12 +184,9 @@ async function updatePagerPass(serial, ctx) {
   const { rest, q } = require('./core');
   try {
     const body = await pagerBody(ctx);
-    if (ctx.silent) {
-      const prev = (await rest(`pager_cards?wallet_serial=eq.${q(serial)}&select=last_notice`).catch(() => []))[0];
-      if (prev && prev.last_notice != null) body.notification = prev.last_notice;   // بطاقة قديمة ما نعرف نصها: تحديث عادي
-    }
+    if (ctx.silent) delete body.notification;   // بدون الخانة: الرسالة الحالية تبقى، فما يطلع إشعار
     const r = await call('PUT', `/${encodeURIComponent(serial)}`, body);
-    if (!ctx.silent) await rest(`pager_cards?wallet_serial=eq.${q(serial)}`, { method: 'PATCH', body: { last_notice: body.notification } }).catch(() => {});
+    if (body.notification) await rest(`pager_cards?wallet_serial=eq.${q(serial)}`, { method: 'PATCH', body: { last_notice: body.notification } }).catch(() => {});
     return `ok devices=${r.notifiedDevices ?? '?'}`;
   } catch (e) { return `${e.status || ''} ${e.message || ''}`.trim().slice(0, 200); }
 }
@@ -197,7 +200,7 @@ async function endPagerPass(serial, ticketId, ctx) {
   const at = t && (await rest(`clients?id=eq.${t.client_id}&select=id,name,client_slug,logo_url,accent_color,business_type`).catch(() => []))[0];
   if (!at) return updatePagerPass(serial, ctx);
   const step = pagerStep({ store: at, number: t.number, step: t.status === 'ready' ? 'ready' : 'waiting', lang: t.lang || ctx.lang });
-  return `back ${await updatePagerPass(serial, { ...step, notice: ' ' })}`;
+  return `back ${await updatePagerPass(serial, { ...step, silent: true })}`;
 }
 
 // الزبون حذف البطاقة من محفظته: آخر تحديث تغيّر محتواه وما وصل لأي جهاز

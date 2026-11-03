@@ -233,9 +233,10 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       const lang = reqLang(req) === 'en' ? 'en' : null;
       const pc = TOKEN_RE.test(String(b.pc || '')) ? (await rest(`pager_cards?token=eq.${q(b.pc)}&client_id=eq.${await brandOf(store)}&select=wallet_url`).catch(() => []))[0] : null;
       if (pc && pc.wallet_url) return { url: pc.wallet_url, card: b.pc };
-      const pass = await wallet.createPagerPass({ ...wallet.pagerStep({ store, step: 'idle', lang }), status: 'خذ رقمك من البيجر', notice: ' ' });
+      const notice = 'خذ رقمك من البيجر، ويوصلك هنا إشعار لما يجهز طلبك';
+      const pass = await wallet.createPagerPass({ ...wallet.pagerStep({ store, step: 'idle', lang }), status: 'خذ رقمك من البيجر', notice });
       const card = crypto.randomBytes(18).toString('base64url');
-      await rest('pager_cards', { method: 'POST', body: { client_id: await brandOf(store), token: card, wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, lang, branch_ids: [store.id], last_notice: ' ' } });
+      await rest('pager_cards', { method: 'POST', body: { client_id: await brandOf(store), token: card, wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, lang, branch_ids: [store.id], last_notice: notice } });
       return { url: pass.shareUrl, card };
     }
     if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
