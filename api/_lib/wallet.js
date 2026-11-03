@@ -10,20 +10,9 @@ const { stampStrip } = require('./strip');
 
 const BASE = 'https://api.walletwallet.dev/api/passes';
 const KEY = process.env.WALLET_API_KEY || '';
-// بطاقات الآيفون من سيرفرنا لو شهادة آبل موجودة (applepass.js)، والأندرويد يكمل على WalletWallet (Google Wallet)
-const apple = require('./applepass');
-const configured = () => !!KEY || apple.configured();
-const appleDevice = (req) => /iPhone|iPad|iPod|Macintosh/.test(String((req && req.headers && req.headers['user-agent']) || ''));
+const configured = () => !!KEY;
 
-// نفس ردود WalletWallet من الطريقين: بطاقة جديدة للآيفون (ctx.apple) أو بطاقة تبدأ بـ dm- تروح لسيرفرنا
-async function call(method, path, body, toApple = false) {
-  const serial = decodeURIComponent(path.slice(1));
-  if (method === 'POST' && toApple && apple.configured()) return apple.create(body);
-  if (apple.ours(serial)) {
-    if (!apple.configured()) { const e = new Error('apple wallet off'); e.status = 503; throw e; }
-    return method === 'DELETE' ? apple.revoke(serial) : apple.update(serial, body);
-  }
-  if (!KEY) { const e = new Error('wallet off'); e.status = 503; throw e; }
+async function call(method, path, body) {
   const r = await fetch(BASE + path, {
     method, signal: AbortSignal.timeout(15000),
     headers: { Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' },
@@ -82,10 +71,10 @@ async function createPass(ctx) {
   if (!configured()) throw new ApiError(503, 'إضافة البطاقة للمحفظة مو متاحة حالياً', 'WALLET_OFF');
   if (!String(ctx.notice || '').trim()) ctx = { ...ctx, notice: firstNotice(ctx.store, ctx.card && ctx.card.lang) };
   ctx = { ...ctx, strip: await stampStrip(ctx.settings, ctx.card) };
-  try { return await call('POST', '', passBody(ctx, true), ctx.apple); }
+  try { return await call('POST', '', passBody(ctx, true)); }
   catch (e) {
     if (e.status >= 400 && e.status < 500 && e.status !== 401 && e.status !== 429) {
-      try { return await call('POST', '', passBody(ctx, false), ctx.apple); } catch (e2) { e = e2; }
+      try { return await call('POST', '', passBody(ctx, false)); } catch (e2) { e = e2; }
     }
     if (e.status === 429) throw new ApiError(503, 'المحفظة مشغولة الحين، جرّب بعد شوي', 'WALLET_LIMIT');
     throw new ApiError(502, 'تعذر تجهيز البطاقة للمحفظة، جرّب بعد شوي', 'WALLET_FAILED');
@@ -177,12 +166,12 @@ async function createPagerPass(ctx) {
   if (!configured()) throw new ApiError(503, 'المحفظة مو متاحة حالياً', 'WALLET_OFF');
   if (await cardMaintenance()) throw new ApiError(503, 'بطاقة النداء تحت الصيانة حالياً، والتنبيه يوصلك من هالصفحة', 'CARD_OFF');
   if (!String(ctx.notice || '').trim()) ctx = { ...ctx, notice: firstNotice(ctx.store, ctx.lang) };
-  try { return await call('POST', '', await pagerBody(ctx), ctx.apple); }
+  try { return await call('POST', '', await pagerBody(ctx)); }
   catch (e) {
     // الباقة المجانية ترفض الصور واللون: بطاقة بسيطة بدلها
     if (e.status >= 400 && e.status < 500 && e.status !== 401 && e.status !== 429) {
       const b = await pagerBody(ctx); ['logoURL', 'iconURL', 'stripURL', 'color'].forEach(k => delete b[k]); b.colorPreset = 'dark';
-      try { return await call('POST', '', b, ctx.apple); } catch {}
+      try { return await call('POST', '', b); } catch {}
     }
     throw new ApiError(502, 'تعذر تجهيز رقمك للمحفظة، جرّب بعد شوي', 'WALLET_FAILED');
   }
@@ -235,4 +224,4 @@ const passRemoved = (err) => {
   return (/devices=0\b/.test(last) && !/unchanged=true\b/.test(last)) || /\b404\b/.test(last);
 };
 
-module.exports = { appleDevice, cardMaintenance, passRemoved, configured, createPass, updatePass, revokePass, buildCtx, cardUrl, createPagerPass, updatePagerPass, endPagerPass, pagerStep };
+module.exports = { cardMaintenance, passRemoved, configured, createPass, updatePass, revokePass, buildCtx, cardUrl, createPagerPass, updatePagerPass, endPagerPass, pagerStep };
