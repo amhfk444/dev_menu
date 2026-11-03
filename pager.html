@@ -133,6 +133,11 @@
   .stp .field:focus { background: #fff !important; border-color: #15271b !important; }
   .stp .field::placeholder { color: rgba(21,39,27,.3); }
   #s-inv-in.stp-in { text-align: center; font-size: 34px !important; font-weight: 900 !important; letter-spacing: .12em; padding: 16px !important; border-radius: 18px !important; }
+  /* خطوات فيها كتابة (الفاتورة والسيارة): المحتوى فوق وأصغر شوي، عشان الكيبورد لما يطلع ما يغطي الخانة وزر "التالي" والشاشة ما تتحرك */
+  .stp.top { justify-content: flex-start; padding-top: 22px; }
+  .stp.top .stp-ic { width: 52px; height: 52px; font-size: 26px; border-radius: 16px; margin-bottom: 10px; }
+  .stp.top .stp-h { font-size: 24px; }
+  .stp.top .stp-sub { font-size: 15px; margin-bottom: 14px; }
   .stp-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 12px; }
   .stp-dots span { width: 8px; height: 8px; border-radius: 99px; background: rgba(255,255,255,.3); transition: width .25s; }
   .stp-dots span.done { background: rgba(255,255,255,.75); }
@@ -204,7 +209,7 @@
         <button type="button" id="s-card-skip" class="stp-skip">تخطي</button>
       </div>
     </div>
-    <div id="s-inv" class="stp">
+    <div id="s-inv" class="stp top">
       <div class="stp-ic"><i class="ph-bold ph-receipt"></i></div>
       <h3 class="stp-h">رقم الفاتورة</h3>
       <form id="s-inv-form" class="stp-b" novalidate>
@@ -215,7 +220,7 @@
         <button type="button" id="s-inv-skip" class="stp-skip">ما عندي فاتورة</button>
       </form>
     </div>
-    <div id="s-car" class="stp">
+    <div id="s-car" class="stp top">
       <div class="stp-ic"><i class="ph-bold ph-car"></i></div>
       <h3 class="stp-h">وش سيارتك؟</h3>
       <form id="s-car-form" class="stp-b" novalidate>
@@ -934,6 +939,8 @@
     stepInv = v; invSkipped = false; $('s-inv-in').blur(); goStep('');
   };
   $('s-inv-skip').onclick = () => { stepInv = ''; invSkipped = true; $('s-inv-err').classList.add('hidden'); $('s-inv-in').blur(); goStep(''); };
+  // الآيفون يحرّك الصفحة لما يطلع الكيبورد ويخليها متحركة بعد ما ينزل: نرجعها مكانها
+  ['s-inv-in', 's-car-model', 's-car-plate'].forEach(id => $(id).addEventListener('blur', () => setTimeout(() => { if (!document.activeElement || !/INPUT/.test(document.activeElement.tagName)) window.scrollTo(0, 0); }, 60)));
   // رجع من صفحة المحفظة: نحدّث الخطوات
   window.addEventListener('pageshow', () => { if (!$('v-start').classList.contains('hidden')) renderSteps(); });
 
