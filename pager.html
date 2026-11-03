@@ -27,6 +27,9 @@
   .btn-ghost { background: #fff; color: var(--brand); border: 1.5px solid rgba(35,61,44,.2); }
   .num { font-size: 120px; line-height: 1; font-weight: 900; letter-spacing: -2px; color: var(--brand); }
   .pulse-dot { width: 10px; height: 10px; border-radius: 50%; background: #10b981; box-shadow: 0 0 0 0 rgba(16,185,129,.6); animation: pd 1.8s infinite; }
+  .snd-off { display: flex; align-items: center; gap: .75rem; width: 100%; padding: .85rem 1rem; border-radius: 1rem; font-weight: 900; font-size: 15px; color: #1d1606; background: #f3d77a; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+  .snd-off.hidden { display: none; }
+  .keep-open { display: flex; align-items: center; justify-content: center; gap: .5rem; font-size: 13px; font-weight: 800; line-height: 1.6; padding: .7rem .9rem; border-radius: 1rem; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); }
   @keyframes pd { 70% { box-shadow: 0 0 0 12px rgba(16,185,129,0); } 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); } }
   body.ringing { animation: flash 0.9s infinite; }
   @keyframes flash { 0%, 100% { background: #233d2c; } 50% { background: #c9a227; } }
@@ -261,6 +264,8 @@
         <button type="button" id="w-invoice" class="hidden text-[12.5px] font-black bg-white/15 rounded-lg py-1 px-3">🧾 <span dir="ltr"></span> <i class="ph-bold ph-pencil-simple text-xs opacity-70"></i></button>
       </div>
     </div>
+    <!-- الصوت طافي (ما اشتغل أو وقّفه تطبيق ثاني): ضغطة وحدة ترجّعه -->
+    <button type="button" id="snd-off" class="snd-off hidden"><i class="ph-bold ph-speaker-slash text-xl shrink-0"></i><span class="min-w-0 flex-1 text-right"><b class="block">جوالك ما راح يرن</b><span class="block text-[12.5px] opacity-80">اضغط هنا عشان يشتغل صوت التنبيه</span></span></button>
     <!-- بطاقة المحفظة: أهم شي بعد الرقم، تطلع فوق دايم لين يضيفها (النداء يوصله منها حتى لو قفل الصفحة) -->
     <div id="pw-box" class="pw hidden">
       <div class="pw-head">
@@ -279,7 +284,7 @@
       <li><i class="ph-bold ph-bell"></i>جاهز</li>
     </ul>
     <p id="w-tell" class="note"></p>
-    <p class="note !text-[12.5px] !opacity-65"><span id="t-waiting"></span></p>
+    <p class="keep-open"><i class="ph-bold ph-device-mobile-speaker text-lg shrink-0"></i><span id="t-waiting"></span></p>
     <!-- تسجيل في الولاء من نفس الصفحة -->
     <section id="v-join" class="card p-5 space-y-3.5 hidden">
       <div class="flex items-start gap-3">
@@ -343,11 +348,11 @@
 
 
     <details class="tips">
-      <summary><i class="ph-bold ph-info"></i> نصائح عشان يوصلك التنبيه</summary>
+      <summary><i class="ph-bold ph-info"></i> عشان يرن جوالك أكيد</summary>
       <ul>
-        <li><i class="ph-bold ph-device-mobile"></i> تقدر تطلع من الصفحة وتقفل الجوال، بس لا تسكّر المتصفح</li>
-        <li><i class="ph-bold ph-speaker-high"></i> ارفع صوت الوسائط</li>
-        <li><i class="ph-bold ph-music-notes"></i> لا تشغّل مقطع أو موسيقى ثانية وانت تنتظر</li>
+        <li><i class="ph-bold ph-device-mobile"></i> تقدر تقفل شاشة جوالك، بس لا تقفل هالصفحة ولا المتصفح</li>
+        <li><i class="ph-bold ph-speaker-high"></i> ارفع صوت جوالك</li>
+        <li><i class="ph-bold ph-music-notes"></i> لا تشغّل فيديو أو أغاني وانت تنتظر</li>
       </ul>
       <button id="test-btn" class="text-xs font-black underline opacity-70 mt-2">جرّب صوت التنبيه</button>
     </details>
@@ -545,11 +550,46 @@
   const WANT_KEY = `${KEY}_keep`;
   const wantKeeper = () => { try { return localStorage.getItem(WANT_KEY) === '1'; } catch { return false; } };
   if ('mediaSession' in navigator) ['pause', 'stop'].forEach(a => { try { navigator.mediaSession.setActionHandler(a, () => { if (keeperMode) keeper.play().catch(() => {}); }); } catch {} });
+  // صورة مشغّل الصوت في شاشة القفل: رقم الزبون هو البطل (يتقرا حتى بالحجم الصغير)، وتحته مراحل الطلب الثلاث وحالته
+  function numberArt(num, ready) {
+    try {
+      const S = 512, c = document.createElement('canvas'); c.width = c.height = S;
+      const g = c.getContext('2d'), F = "'IBM Plex Sans Arabic', sans-serif";
+      const brand = getComputedStyle(document.documentElement).getPropertyValue('--brand').trim() || '#233d2c';
+      const accent = ready ? '#8be3b0' : '#f1d27a';
+      // الخلفية: لون المحل (أو أخضر لما يجهز) مع إضاءة ناعمة من فوق
+      g.fillStyle = ready ? '#14593a' : brand; g.fillRect(0, 0, S, S);
+      const lt = g.createRadialGradient(S * 0.3, -40, 20, S * 0.3, -40, S * 1.1);
+      lt.addColorStop(0, 'rgba(255,255,255,.16)'); lt.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = lt; g.fillRect(0, 0, S, S);
+      const dk = g.createLinearGradient(0, S * 0.45, 0, S);
+      dk.addColorStop(0, 'rgba(0,0,0,0)'); dk.addColorStop(1, 'rgba(0,0,0,.32)');
+      g.fillStyle = dk; g.fillRect(0, 0, S, S);
+      g.textAlign = 'center'; g.textBaseline = 'alphabetic'; g.direction = 'rtl';
+      g.fillStyle = 'rgba(255,255,255,.62)'; g.font = `600 30px ${F}`;
+      g.fillText('رقم طلبك', S / 2, 92);
+      const n = String(num || '');
+      g.fillStyle = '#fff'; g.font = `700 ${n.length > 3 ? 150 : n.length > 2 ? 190 : 230}px ${F}`;
+      g.fillText(n, S / 2, 318);
+      // المراحل: استلمنا، قيد التحضير، جاهز
+      const W = 112, gap = 12, y = 378, x0 = (S - (W * 3 + gap * 2)) / 2;
+      for (let i = 0; i < 3; i++) {
+        const on = ready || i < 2, x = x0 + (2 - i) * (W + gap);
+        g.fillStyle = on ? accent : 'rgba(255,255,255,.2)';
+        g.beginPath(); g.roundRect ? g.roundRect(x, y, W, 10, 5) : g.rect(x, y, W, 10); g.fill();
+      }
+      g.fillStyle = accent; g.font = `700 40px ${F}`;
+      g.fillText(ready ? T.ready.replace('!', '') : T.waiting.replace('…', ''), S / 2, 456);
+      return c.toDataURL('image/png');
+    } catch { return ''; }
+  }
   // نفس النص: ما نعيد كتابته (كل تحديث للحالة كان يعيد رسم مشغّل الصوت في شاشة القفل فيرمش)
-  function setMedia(title) {
+  function setMedia(title, ready = false) {
     if (!('mediaSession' in navigator) || title === setMedia.last) return;
     setMedia.last = title;
-    try { navigator.mediaSession.metadata = title ? new MediaMetadata({ title, artist: storeInfo.name || 'البيجر الرقمي', album: 'DEV MENU', artwork: storeInfo.logo_url ? [{ src: storeInfo.logo_url, sizes: '512x512' }] : [] }) : null; } catch {}
+    const art = title && curNumber ? numberArt(curNumber, ready) : '';
+    const artwork = art ? [{ src: art, sizes: '512x512', type: 'image/png' }] : storeInfo.logo_url ? [{ src: storeInfo.logo_url, sizes: '512x512' }] : [];
+    try { navigator.mediaSession.metadata = title ? new MediaMetadata({ title, artist: storeInfo.name || 'البيجر الرقمي', album: 'DEV MENU', artwork }) : null; } catch {}
   }
   // لازم تنادى من ضغطة العميل نفسها
   function startKeeper() {
@@ -565,7 +605,7 @@
     ringUrl = ringUrl || wavUrl(RING_SEC, ringWave);
     keeperMode = 'ring'; keeper.src = ringUrl;
     keeper.play().catch(() => {});
-    setMedia(`🔔 ${T.ready} رقم ${curNumber}`);
+    setMedia(`🔔 ${T.ready} رقم ${curNumber}`, true);
     return true;
   }
   function stopKeeper() {
@@ -628,9 +668,10 @@
     $('push-on').classList.add('hidden');
     $('keep-on').classList.add('hidden');
     $('push-btn').classList.toggle('hidden', on || denied || !supported);
-    $('keep-btn').classList.toggle('hidden', kept);
+    $('keep-btn').classList.add('hidden');
+    $('snd-off').classList.toggle('hidden', kept && (!on || audioReady()));
     $('push-denied').classList.toggle('hidden', !denied);
-    $('unlock-btn').classList.toggle('hidden', !on || audioReady());
+    $('unlock-btn').classList.add('hidden');
   }
 
   // مصطلحات حسب مجال المنشأة (مطعم: "طلبك جاهز"، عيادة: "جاء دورك"، مغسلة: "سيارتك جاهزة")
@@ -638,7 +679,7 @@
   function applyTerms() {
     $('t-start').textContent = `بنرن جوالك ${T.ringWhen}، حتى لو كان على الصامت.`;
     $('w-tell').textContent = T.tell;
-    $('t-waiting').textContent = `${T.waiting} بنرن جوالك ${T.ringWhen}`;
+    $('t-waiting').textContent = `لا تقفل هالصفحة. تقدر تقفل شاشة جوالك، وبيرن ${T.ringWhen}`;
     $('mm-title').textContent = T.game;
     $('t-ready').textContent = T.ready;
     $('d-wait').textContent = /دور/.test(T.ringWhen) ? 'بالانتظار' : 'قيد التحضير';
@@ -1109,6 +1150,7 @@
 
   $('unlock-btn').onclick = unlockAudio;
   $('keep-btn').onclick = () => { unlockAudio(); startKeeper(); };
+  $('snd-off').onclick = () => { unlockAudio(); startKeeper(); ringOnce(); renderPush(); };
   $('push-btn').onclick = askPush;
   $('test-btn').onclick = () => { unlockAudio(); ringOnce(); };
   // "استلمت طلبي": التقييم (النجوم وقوقل ماب) يطلع على طول، لأن الزبون يقفل الصفحة بعد ما يستلم.
