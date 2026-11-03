@@ -145,7 +145,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=300');   // بيانات المحل العامة: تتخزن 30 ثانية في CDN
     const full = store.free && (await monthTickets(store.id, PLANS.FREE.pager)) >= PLANS.FREE.pager;   // البيجر المجاني خلّص عدده
     // بطاقة النداء تنعرض قبل أخذ الرقم (المحل اللي ما عنده ولاء)
-    const card = wallet.configured() && !store.free && !(await loyaltyOf(store.id)).enabled;
+    const card = wallet.configured() && !store.free && !(await wallet.cardMaintenance()) && !(await loyaltyOf(store.id)).enabled;
     const car = (await rest(`clients?id=eq.${store.id}&select=pager_car`).catch(() => []))[0]?.pager_car === true;   // خطوة السيارة قبل الرقم
     return { store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, push_key: pushPublicKey(), brand: await brandOf(store), card, car, ...(full ? { full: true } : {}) };
   }
@@ -208,7 +208,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const card_gone = !!t.wallet_url && wallet.passRemoved(t.wallet_error);
     // تسليم الطلب للسيارة: صاحب المحل مشغّله، فنسأل الزبون عن سيارته
     const car_ask = t.status === 'waiting' && ((await rest(`clients?id=eq.${store.id}&select=pager_car`).catch(() => []))[0] || {}).pager_car === true;
-    return { demo: DEMO.has(store.client_slug), wallet: wallet.configured() && !store.free, in_wallet: !!t.wallet_url && !card_gone, card_gone, car_ask, car: t.car || null, review_url: review, social, store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
+    return { demo: DEMO.has(store.client_slug), wallet: wallet.configured() && !store.free && !(await wallet.cardMaintenance()), in_wallet: !!t.wallet_url && !card_gone, card_gone, car_ask, car: t.car || null, review_url: review, social, store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
       loyalty: { ...(await loyaltyOf(store.id)), linked: !!t.loyalty_card_id, stamped: !!t.loyalty_stamped,
         ...(await linkedCard(store.id, t.loyalty_card_id)) } };
   }

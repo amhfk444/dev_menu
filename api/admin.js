@@ -52,6 +52,16 @@ module.exports = handler(['GET', 'POST'], async (req) => {
 
   if (action === 'check') return { ok: true, email: user.email };
 
+  // صيانة بطاقة النداء: تختفي من البيجر عند كل المحلات وتوقف تحديثاتها، والبيجر نفسه يشتغل عادي
+  if (action === 'card-maintenance') {
+    if (req.method === 'POST') {
+      const on = readBody(req).on === true;
+      await rest('app_settings', { method: 'POST', prefer: 'resolution=merge-duplicates', body: { key: 'pager_card_off', value: on ? 'on' : 'off' } });
+      return { on };
+    }
+    return { on: ((await rest('app_settings?key=eq.pager_card_off&select=value').catch(() => []))[0] || {}).value === 'on' };
+  }
+
   if (action === 'list' && req.method === 'GET') {
     return { clients: await rest('clients?select=*&order=id.desc') };
   }

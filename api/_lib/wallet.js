@@ -153,8 +153,17 @@ async function pagerBody({ store, number, step, status, notice, url, lang }) {
 }
 // البطاقة لازم تنولد وفيها خانة الإشعار، وإلا أول رسالة توصلها ما تطلع إشعار
 const firstNotice = (store, lang) => tr(lang, `أهلاً بك في ${store.name || 'المحل'}`);
+// صيانة بطاقة النداء (زر في لوحة المدير): ما ننشئ ولا نحدّث بطاقات نداء، والبيجر يشتغل بدونها (يرن من الصفحة)
+let maint = { at: 0, on: false };
+async function cardMaintenance() {
+  if (Date.now() - maint.at < 20e3) return maint.on;
+  const v = ((await require('./core').rest('app_settings?key=eq.pager_card_off&select=value').catch(() => []))[0] || {}).value;
+  maint = { at: Date.now(), on: v === 'on' };
+  return maint.on;
+}
 async function createPagerPass(ctx) {
   if (!configured()) throw new ApiError(503, 'المحفظة مو متاحة حالياً', 'WALLET_OFF');
+  if (await cardMaintenance()) throw new ApiError(503, 'بطاقة النداء تحت الصيانة حالياً، والتنبيه يوصلك من هالصفحة', 'CARD_OFF');
   if (!String(ctx.notice || '').trim()) ctx = { ...ctx, notice: firstNotice(ctx.store, ctx.lang) };
   try { return await call('POST', '', await pagerBody(ctx)); }
   catch (e) {
@@ -181,6 +190,7 @@ function pagerStep({ store, number, step, lang }) {
 // ونحفظ آخر نص على البطاقة عشان نعرفه في التحديث الصامت الجاي
 async function updatePagerPass(serial, ctx) {
   if (!configured() || !serial) return 'off';
+  if (await cardMaintenance()) return 'off maintenance';
   const { rest, q } = require('./core');
   try {
     const body = await pagerBody(ctx);
@@ -213,4 +223,4 @@ const passRemoved = (err) => {
   return (/devices=0\b/.test(last) && !/unchanged=true\b/.test(last)) || /\b404\b/.test(last);
 };
 
-module.exports = { passRemoved, configured, createPass, updatePass, revokePass, buildCtx, cardUrl, createPagerPass, updatePagerPass, endPagerPass, pagerStep };
+module.exports = { cardMaintenance, passRemoved, configured, createPass, updatePass, revokePass, buildCtx, cardUrl, createPagerPass, updatePagerPass, endPagerPass, pagerStep };

@@ -178,6 +178,14 @@
   <main class="max-w-[1500px] mx-auto px-3 md:px-8 py-6 space-y-6">
     <!-- ═══ الأرقام والدخل ═══ -->
     <div data-satab="overview" class="space-y-6">
+    <!-- صيانة بطاقة النداء -->
+    <section class="card p-5 flex flex-wrap items-center justify-between gap-3">
+      <div class="min-w-0">
+        <p class="text-sm font-black"><i class="ph-bold ph-wallet text-amber-600"></i> صيانة بطاقة النداء</p>
+        <p class="text-[12px] text-ink/65 leading-relaxed">لما تشغّلها: خيار "أضف بطاقة النداء" يختفي من البيجر عند كل المحلات، وتوقف تحديثات البطاقات ورسائلها. البيجر نفسه يشتغل عادي ويرن من الصفحة.</p>
+      </div>
+      <button type="button" id="cm-btn" onclick="toggleCardMaintenance()" class="px-4 py-2.5 rounded-xl text-xs font-bold border"></button>
+    </section>
     <section id="kpis" class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3"></section>
 
     <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -440,6 +448,21 @@
   }
   document.querySelectorAll('[data-satab-btn]').forEach(b => b.addEventListener('click', () => { saAuto = false; showTab(b.dataset.satabBtn); window.scrollTo({ top: 0 }); }));
   showTab(location.hash ? location.hash.slice(1) : 'stores');
+  // ─── صيانة بطاقة النداء ───
+  let cardOff = false;
+  function paintCardMaintenance() {
+    const b = document.getElementById('cm-btn');
+    b.className = `px-4 py-2.5 rounded-xl text-xs font-bold border ${cardOff ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-ink border-ink/20'}`;
+    b.innerHTML = cardOff ? '<i class="ph-bold ph-wrench"></i> الصيانة شغّالة، اضغط لإيقافها' : '<i class="ph-bold ph-wrench"></i> شغّل الصيانة';
+  }
+  async function loadCardMaintenance() { try { cardOff = (await DM.get(A('card-maintenance'), true)).on === true; } catch {} paintCardMaintenance(); }
+  async function toggleCardMaintenance() {
+    const next = !cardOff;
+    if (next && !confirm('تشغّل صيانة بطاقة النداء؟ تختفي من البيجر عند كل المحلات لين توقفها.')) return;
+    try { cardOff = (await DM.post(A('card-maintenance'), { on: next }, true)).on === true; paintCardMaintenance(); showToast(cardOff ? 'بطاقة النداء تحت الصيانة' : 'رجعت بطاقة النداء'); }
+    catch (e) { showToast(e.message || 'ما انحفظ', true); }
+  }
+  loadCardMaintenance();
   async function setSupport(id, status, reply) {
     try { await DM.post(A('support-update'), { id, status, ...(reply !== undefined ? { reply } : {}) }, true); await loadSupport(); }
     catch (e) { showToast(e.message || 'ما انحفظ التعديل. تأكد من الإنترنت وحاول مرة ثانية', true); }
