@@ -1187,10 +1187,13 @@ async function main(req) {
     else if (status === 'waiting') { patch.ready_at = null; patch.closed_at = null; }
     else patch.closed_at = now;
     if (status === 'done' || status === 'cancelled') patch.push_sub = null;
+    // استلم: إشعار "بالعافية" من المتصفح قبل ما نشيل اشتراكه (في الأندرويد ما يوصل من بطاقة قوقل، إشعاراتها محدودة)
+    const doneSub = status === 'done' ? ((await rest(`pager_tickets?id=eq.${id}&client_id=eq.${sid}&status=neq.done&select=push_sub,lang`).catch(() => []))[0] || null) : null;
     const rows = await rest(`pager_tickets?id=eq.${id}&client_id=eq.${sid}`, { method: 'PATCH', body: patch, prefer: 'return=representation' });
     if (!rows.length) throw new ApiError(404, 'الرقم غير موجود');
     const t = rows[0];
     if (status === 'ready' && !t.push_sub) console.log('PAGER_READY_NO_SUB', sid, t.id);
+    if (doneSub && doneSub.push_sub) later(sendPush(doneSub.push_sub, { title: tr(doneSub.lang, 'بالعافية! نتشرف بزيارتك'), body: store.name, url: storeLink(store.client_slug, 'pager'), tag: `pager-${t.id}-done` }).catch(() => {}));
     // بطاقة النداء وبطاقة الولاء يتحدثون بالخلفية: الكاشير ياخذ الرد على طول، والإشعار يوصل خلال ثواني
     // تحديث البطاقة يبدأ قبل رنّة المتصفح (WalletWallet ياخذ ثواني، فما ينتظر الرنّة)
     // رقمه مضاف للمحفظة: تحديث يطلع إشعار من النظام (حتى لو يشوف فيديو)

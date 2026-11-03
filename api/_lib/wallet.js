@@ -195,7 +195,10 @@ async function updatePagerPass(serial, ctx) {
   const { rest, q } = require('./core');
   try {
     const body = await pagerBody(ctx);
-    if (ctx.silent) delete body.notification;   // بدون الخانة: الرسالة الحالية تبقى، فما يطلع إشعار
+    // Google Wallet: 3 إشعارات بس لكل بطاقة كل 24 ساعة، فنخليها لـ "جاهز" (أهم رسالة) والباقي يتحدث بصمت.
+    // "جاري التجهيز" و"بالعافية" توصل الأندرويد من إشعارات المتصفح (بدون حد)
+    const google = ctx.step !== 'ready' && ((await rest(`pager_cards?wallet_serial=eq.${q(serial)}&select=platform`).catch(() => []))[0] || {}).platform === 'google';
+    if (ctx.silent || google) delete body.notification;   // بدون الخانة: الرسالة الحالية تبقى، فما يطلع إشعار
     const r = await call('PUT', `/${encodeURIComponent(serial)}`, body);
     if (body.notification) await rest(`pager_cards?wallet_serial=eq.${q(serial)}`, { method: 'PATCH', body: { last_notice: body.notification } }).catch(() => {});
     // الرد كامل (بدون القيم الطويلة): يكشف لو الخدمة ما غيّرت شي (unchanged) أو فيه وضع تجربة أو أي حقل ثاني

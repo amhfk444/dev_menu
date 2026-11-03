@@ -11,7 +11,10 @@
 // =====================================================================
 const crypto = require('crypto');
 const PLANS = require('./_lib/plans');
-const { reqLang, handler, rest, rpc, q, ApiError, readBody, findPublicStore, storeHasFeature, loyaltyHome, later, googleReviewLink } = require('./_lib/core');
+const { reqLang, handler, rest, rpc, q, ApiError, readBody, findPublicStore, storeHasFeature, loyaltyHome, later, googleReviewLink, storeLink } = require('./_lib/core');
+const { tr } = require('./_lib/i18n');
+// نوع المحفظة من جوال الزبون وقت إضافة بطاقة النداء: الأندرويد = Google Wallet (إشعاراتها محدودة، شوف wallet.updatePagerPass)
+const walletPlatform = (req) => /Android/i.test(String(req.headers['user-agent'] || '')) ? 'google' : 'apple';
 const { pushPublicKey, cleanSubscription, sendPush } = require('./_lib/push');
 const { topic, poke } = require('./_lib/live');
 const { normalizeLoyalty } = require('./_lib/loyalty');
@@ -219,10 +222,17 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
     const sub = cleanSubscription(b.sub);
     if (!sub) throw new ApiError(400, 'اشتراك الإشعارات غير صالح');
+    const hadSub = !!((await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&select=push_sub`).catch(() => []))[0] || {}).push_sub;
     const rows = await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=in.(waiting,ready)`,
       { method: 'PATCH', body: { push_sub: sub }, prefer: 'return=representation' });
     if (!rows.length) throw new ApiError(404, 'الرقم غير موجود أو انتهى', 'NOT_FOUND');
     console.log('PAGER_SUBSCRIBED', store.id, new URL(sub.endpoint).host);
+    // أول إشعار: رقمه وإنه قيد التجهيز (في الأندرويد يوصل من هنا بدل بطاقة قوقل، عشان إشعاراتها محدودة)
+    const t0 = rows[0];
+    if (t0.status === 'waiting' && !hadSub) {
+      const T = require('./_lib/sectors').terms(store);
+      later(sendPush(sub, { title: tr(t0.lang, `رقمك ${t0.number}: ${T.waiting.replace('…', '')}`), body: tr(t0.lang, `بنرسل لك إشعار ${T.ringWhen}`), url: storeLink(store.client_slug, 'pager'), tag: `pager-${t0.id}-0` }).catch(() => {}));
+    }
     await poke(topic('pager', store.id));
     return { ok: true };
   }
@@ -251,7 +261,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       const notice = 'خذ رقمك من البيجر، ويوصلك هنا إشعار لما يجهز طلبك';
       const pass = await wallet.createPagerPass({ ...wallet.pagerStep({ store, step: 'idle', lang }), status: 'خذ رقمك من البيجر', notice });
       const card = crypto.randomBytes(18).toString('base64url');
-      await rest('pager_cards', { method: 'POST', body: { client_id: await brandOf(store), token: card, wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, lang, branch_ids: [store.id], last_notice: notice } });
+      await rest('pager_cards', { method: 'POST', body: { client_id: await brandOf(store), token: card, wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, platform: walletPlatform(req), lang, branch_ids: [store.id], last_notice: notice } });
       return { url: pass.shareUrl, card };
     }
     if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
@@ -267,7 +277,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const step = wallet.pagerStep({ store, number: t.number, step: t.status, lang: t.lang });
     const pass = await wallet.createPagerPass(step);
     const card = crypto.randomBytes(18).toString('base64url');
-    await rest('pager_cards', { method: 'POST', body: { client_id: await brandOf(store), token: card, wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, lang: t.lang || null, branch_ids: [store.id], last_notice: step.notice } });
+    await rest('pager_cards', { method: 'POST', body: { client_id: await brandOf(store), token: card, wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, platform: walletPlatform(req), lang: t.lang || null, branch_ids: [store.id], last_notice: step.notice } });
     await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, ...(DEMO.has(store.client_slug) ? { created_at: new Date().toISOString() } : {}) } });
     return { url: pass.shareUrl, card };
   }
