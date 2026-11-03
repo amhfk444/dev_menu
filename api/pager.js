@@ -249,7 +249,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       const pc = TOKEN_RE.test(String(b.pc || '')) ? (await rest(`pager_cards?token=eq.${q(b.pc)}&client_id=eq.${await brandOf(store)}&select=wallet_url`).catch(() => []))[0] : null;
       if (pc && pc.wallet_url) return { url: pc.wallet_url, card: b.pc };
       const notice = 'خذ رقمك من البيجر، ويوصلك هنا إشعار لما يجهز طلبك';
-      const pass = await wallet.createPagerPass({ ...wallet.pagerStep({ store, step: 'idle', lang }), status: 'خذ رقمك من البيجر', notice });
+      const pass = await wallet.createPagerPass({ ...wallet.pagerStep({ store, step: 'idle', lang }), status: 'خذ رقمك من البيجر', notice, apple: wallet.appleDevice(req) });
       const card = crypto.randomBytes(18).toString('base64url');
       await rest('pager_cards', { method: 'POST', body: { client_id: await brandOf(store), token: card, wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, lang, branch_ids: [store.id], last_notice: notice } });
       return { url: pass.shareUrl, card };
@@ -265,7 +265,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (pc) return { url: pc.wallet_url, card: b.pc };
     if (t.wallet_url) return { url: t.wallet_url };
     const step = wallet.pagerStep({ store, number: t.number, step: t.status, lang: t.lang });
-    const pass = await wallet.createPagerPass(step);
+    const pass = await wallet.createPagerPass({ ...step, apple: wallet.appleDevice(req) });
     const card = crypto.randomBytes(18).toString('base64url');
     await rest('pager_cards', { method: 'POST', body: { client_id: await brandOf(store), token: card, wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, lang: t.lang || null, branch_ids: [store.id], last_notice: step.notice } });
     await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, ...(DEMO.has(store.client_slug) ? { created_at: new Date().toISOString() } : {}) } });

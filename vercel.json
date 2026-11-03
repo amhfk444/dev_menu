@@ -73,5 +73,11 @@
     "api/owner.js": {
       "maxDuration": 60
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/api/passkit/v1/:path*",
+      "destination": "/api/passkit?p=v1/:path*"
+    }
+  ]
 }
