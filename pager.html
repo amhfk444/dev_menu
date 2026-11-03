@@ -545,8 +545,10 @@
   const WANT_KEY = `${KEY}_keep`;
   const wantKeeper = () => { try { return localStorage.getItem(WANT_KEY) === '1'; } catch { return false; } };
   if ('mediaSession' in navigator) ['pause', 'stop'].forEach(a => { try { navigator.mediaSession.setActionHandler(a, () => { if (keeperMode) keeper.play().catch(() => {}); }); } catch {} });
+  // نفس النص: ما نعيد كتابته (كل تحديث للحالة كان يعيد رسم مشغّل الصوت في شاشة القفل فيرمش)
   function setMedia(title) {
-    if (!('mediaSession' in navigator)) return;
+    if (!('mediaSession' in navigator) || title === setMedia.last) return;
+    setMedia.last = title;
     try { navigator.mediaSession.metadata = title ? new MediaMetadata({ title, artist: storeInfo.name || 'البيجر الرقمي', album: 'DEV MENU', artwork: storeInfo.logo_url ? [{ src: storeInfo.logo_url, sizes: '512x512' }] : [] }) : null; } catch {}
   }
   // لازم تنادى من ضغطة العميل نفسها
