@@ -88,7 +88,8 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       if (String(e.dbMessage || e.message).includes('WAITLIST_FULL')) throw new ApiError(409, 'قائمة الانتظار ممتلئة حالياً', 'FULL');
       throw e;
     }
-    if (res.duplicate) return { token: res.token, ticket: res.ticket, duplicate: true };
+    // الجوال مسجل من قبل: ما نعطي رابط دوره لأي أحد يكتب نفس الرقم (كان يقدر يشوف اسمه ويلغي دوره)
+    if (res.duplicate) throw new ApiError(409, `هذا الجوال مسجل في القائمة برقم ${res.ticket}. افتح الرابط اللي وصلك أو كلّم الموظف`, 'DUPLICATE');
     if (reqLang(req) === 'en') await rest(`waitlist_entries?token=eq.${q(res.token)}`, { method: 'PATCH', body: { lang: 'en' } }).catch(() => {});
     await linkLoyalty(store.id, res.token, b.lt, val.phone).catch(e => console.error('WL_LOYALTY', e.message));
     await poke(topic('wl', store.id));

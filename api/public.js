@@ -244,7 +244,8 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const device = crypto.createHash('sha256').update(`${ip}|${req.headers['user-agent'] || ''}`).digest('hex').slice(0, 32);
     let took = 'ok';
     try { took = await rpc('server_chat_take', { p_client: store.id, p_device: device, p_limit: data.feats.chat_limit, p_day: PLANS.CHAT.day }); }
-    catch (e) { console.warn('chat quota', e.message); }
+    // ما قدرنا نعرف الرصيد: نوقف بدل ما نفتح المساعد بلا حد (كل سؤال عليه تكلفة)
+    catch (e) { console.warn('chat quota', e.message); took = 'day'; }
     // خلص رصيد المحل أو وصل الجوال حده: ما نقول للزبون إن فيه حد، نوجّهه للموظف بلطف
     if (took === 'month' || took === 'day') return { reply: AR(faqQ || list[list.length - 1].content) ? 'سؤالك حلو 😊 الموظف يقدر يفيدك فيه أكثر، اسأله وبيخدمك.' : "Great question 😊 our staff can help you with that, just ask them." };
     const cur = CURRENCIES[store.currency] || CURRENCIES.SAR;
