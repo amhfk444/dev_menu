@@ -139,9 +139,7 @@ async function pagerBody({ store, number, step, status, notice, url, lang }) {
     sharingProhibited: true,
     notification: String(notice || ' ').slice(0, 250)
   };
-  // تجربة مؤقتة على staging: صورة الخطوات ثابتة (ما تتغير بين الخطوات) — نشوف هل تغيّر الصورة يمنع التحديث يوصل
-  const TEST_PLAIN = process.env.VERCEL_ENV === 'preview';
-  const strip = await pagerStrip(color, TEST_PLAIN ? 'waiting' : step);
+  const strip = await pagerStrip(color, step);
   if (strip) body.stripURL = strip;
   if (store.logo_url && /^https:\/\//.test(store.logo_url)) { body.logoURL = store.logo_url; body.iconURL = store.logo_url; }
   // موقع المحل: البطاقة تطلع على شاشة القفل لما يقرب منه، بنص صاحب المحل أو النص الافتراضي
