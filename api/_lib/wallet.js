@@ -26,16 +26,6 @@ async function call(method, path, body) {
   return d;
 }
 
-// شركة المحفظة تنبّه الجوال أحياناً قبل ما تحفظ النسخة الجديدة، فيجيب الجوال النسخة القديمة ويتأخر خطوة
-// (يطلع له إشعار الخطوة اللي قبل). فبعد كل تحديث تغيّر، نرسل تنبيه ثاني بعد ثواني: نفس المحتوى
-// مع وقت التحديث في ظهر البطاقة (عشان يحسبه تغيير)، فيرجع الجوال يجيب النسخة الصحيحة ويطلع إشعارها
-const NUDGE_MS = 4000;
-function nudgeLater(serial, body, r) {
-  if (!r || r.unchanged === true || !(r.notifiedDevices > 0)) return;
-  const stamped = { ...body, backFields: [...(body.backFields || []), { label: 'آخر تحديث', value: new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Riyadh' }) }] };
-  require('./core').later(new Promise(res => setTimeout(res, NUDGE_MS)).then(() => call('PUT', `/${encodeURIComponent(serial)}`, stamped)));
-}
-
 // محتوى البطاقة. full = مزايا الباقة المدفوعة (الشعار، الموقع على شاشة القفل)
 function passBody({ store, settings, card, url, restoreUrl, lat, lng, notice, strip, nearText }, full = true) {
   const n = settings.needed, s = Math.min(card.stamps, n);
@@ -99,7 +89,6 @@ async function updatePass(serial, ctx) {
   try {
     const lb = passBody(ctx, true);
     const r = await call('PUT', `/${encodeURIComponent(serial)}`, lb);
-    nudgeLater(serial, lb, r);
     // نسجل رد الخدمة: كم جهاز وصله التحديث، وهل المحتوى تغيّر
     return `ok devices=${r.notifiedDevices ?? '?'} unchanged=${r.unchanged ?? '?'} strip=${ctx.strip ? Math.round(ctx.strip.length / 1024) + 'KB' : 'none ' + (stampStrip.lastError || '')} at=${new Date().toISOString().slice(0, 19)}`;
   }
@@ -208,7 +197,6 @@ async function updatePagerPass(serial, ctx) {
     const body = await pagerBody(ctx);
     if (ctx.silent) delete body.notification;   // بدون الخانة: الرسالة الحالية تبقى، فما يطلع إشعار
     const r = await call('PUT', `/${encodeURIComponent(serial)}`, body);
-    nudgeLater(serial, body, r);
     if (body.notification) await rest(`pager_cards?wallet_serial=eq.${q(serial)}`, { method: 'PATCH', body: { last_notice: body.notification } }).catch(() => {});
     // الرد كامل (بدون القيم الطويلة): يكشف لو الخدمة ما غيّرت شي (unchanged) أو فيه وضع تجربة أو أي حقل ثاني
     const extra = Object.entries(r || {}).filter(([k]) => !['notifiedDevices', 'serialNumber', 'lastUpdated'].includes(k)).map(([k, v]) => `${k}=${typeof v === 'object' ? JSON.stringify(v).slice(0, 60) : String(v).slice(0, 40)}`).join(' ');
