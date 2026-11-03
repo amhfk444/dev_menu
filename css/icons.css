@@ -1,6 +1,6 @@
 /* DEV MENU — أيقونات (Phosphor, MIT). مولّد بـ tools/icons.js، لا تعدّله يدوياً */
-@font-face { font-family: "Phosphor-Bold"; src: url("/fonts/Phosphor-Bold.woff2?v=6b137af3") format("woff2"); font-display: block; }
-@font-face { font-family: "Phosphor-Fill"; src: url("/fonts/Phosphor-Fill.woff2?v=7555ccfc") format("woff2"); font-display: block; }
+@font-face { font-family: "Phosphor-Bold"; src: url("/fonts/Phosphor-Bold.woff2?v=c0aa3461") format("woff2"); font-display: block; }
+@font-face { font-family: "Phosphor-Fill"; src: url("/fonts/Phosphor-Fill.woff2?v=bea71ac9") format("woff2"); font-display: block; }
 .ph-bold { font-family: "Phosphor-Bold" !important; font-style: normal; font-weight: normal; font-variant: normal; text-transform: none; line-height: 1; display: inline-block; vertical-align: -.125em; speak: never; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 .ph-bold.ph-star, .ph-bold.ph-star-half, .ph-bold.ph-circle { font-family: "Phosphor-Fill" !important; }
 .ph-address-book:before { content: "\e6f8"; }
@@ -77,6 +77,7 @@
 .ph-flask:before { content: "\e79e"; }
 .ph-floppy-disk:before { content: "\e248"; }
 .ph-fork-knife:before { content: "\e262"; }
+.ph-frame-corners:before { content: "\e626"; }
 .ph-gauge:before { content: "\e628"; }
 .ph-gift:before { content: "\e276"; }
 .ph-git-branch:before { content: "\e278"; }
@@ -168,6 +169,7 @@
 .ph-warning:before { content: "\e4e0"; }
 .ph-warning-circle:before { content: "\e4e2"; }
 .ph-whatsapp-logo:before { content: "\e5d0"; }
+.ph-wrench:before { content: "\e5d4"; }
 .ph-x:before { content: "\e4f6"; }
 .ph-x-circle:before { content: "\e4f8"; }
 .ph-spin { animation: ph-spin 1s linear infinite; }
