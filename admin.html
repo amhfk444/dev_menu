@@ -4613,18 +4613,20 @@
     showToast('انرسلت، وبتوصل لزبائنك خلال ثواني');
     try {
       const r = await api('pager-message', { body, ...(to ? { branch_id: to } : {}) });
-      let p = r.progress || { done: true }, sent = p.sent || 0, gone = p.gone || 0;
-      const total = p.total;
-      while (!p.done) {
-        row.lastElementChild.innerHTML = `<i class="ph-bold ph-spinner-gap ph-spin"></i> وصلت لـ ${sent}${total ? ` من ${total}` : ''}…`;
-        p = (await api('pager-message-push', { message_id: r.message.id, after: p.lastId })).progress;
-        sent += p.sent; gone += p.gone || 0;
-      }
-      row.lastElementChild.className = 'text-[11px] text-ink mt-0.5';
       const label = branches.length > 1 ? ` · ${to ? `زبائن ${toName}` : 'كل الفروع'}` : '';
-      row.lastElementChild.textContent = sent ? `الحين${label} · وصلت لـ ${sent} جوال` : `الحين${label} · ما وصلت لأحد`;
-      if (!sent) showToast(gone ? `ما وصلت: الزبائن اللي عندهم البطاقة (${gone}) حذفوها من محفظتهم` : total ? 'ما قدرنا نوصلها الحين، جرّب بعد شوي' : 'انرسلت، بس ما فيه أحد حافظ البطاقة للحين', !!(gone || total));
-      else if (gone) showToast(`وصلت لـ ${sent} جوال، و${gone} حذفوا البطاقة من محفظتهم`);
+      const line = row.lastElementChild;
+      if (!r.queued) { line.className = 'text-[11px] text-ink mt-0.5'; line.textContent = `الحين${label} · ما فيه أحد حافظ البطاقة للحين`; return; }
+      // الطابور يرسلها بالخلفية: نتابع كم وصلت لين تخلص (أو 3 دقايق، وبعدها تكمل بدون ما ننتظر)
+      let st = { sent: 0, gone: 0, pending: r.queued, waiting_limit: 0 };
+      for (let i = 0; i < 45 && st.pending; i++) {
+        line.innerHTML = `<i class="ph-bold ph-spinner-gap ph-spin"></i> وصلت لـ ${st.sent} من ${r.queued}…`;
+        await new Promise(res => setTimeout(res, 4000));
+        try { st = (await api('pager-message-status', { message_id: r.message.id })).status; } catch {}
+        if (st.pending && st.pending === st.waiting_limit) break;   // الباقي ينتظر حد قوقل اليومي
+      }
+      line.className = 'text-[11px] text-ink mt-0.5';
+      line.textContent = `الحين${label} · وصلت لـ ${st.sent} جوال${st.pending ? `، و${st.pending} بتوصلهم ${st.waiting_limit === st.pending ? 'بكرة (حد قوقل اليومي)' : 'خلال دقايق'}` : ''}`;
+      if (st.gone) showToast(`وصلت لـ ${st.sent} جوال، و${st.gone} حذفوا البطاقة من محفظتهم`);
     } catch (e) {
       row.remove(); input.value = body; document.getElementById('nt-count').textContent = `${body.length}/150`; ntPreview();
       showToast(e.message || 'ما انرسلت. تأكد من الإنترنت وحاول مرة ثانية', true);

@@ -18,7 +18,7 @@ function winbackSettings(w) {
   return { enabled: w.enabled === true, days: WINBACK_DAYS.includes(days) ? days : 14, text: String(w.text || '').trim().slice(0, 150) };
 }
 
-// يرسل لزبائن محل رئيسي واحد. يرجّع كم وصلت
+// يجهّز "وحشتنا" لزبائن محل رئيسي واحد في الطابور. يرجّع كم بطاقة
 async function runWinback(store) {
   const w = winbackSettings(store.pager_winback);
   if (!w.enabled || w.text.length < 2 || !wallet.configured()) return { skipped: 'off' };
@@ -29,16 +29,13 @@ async function runWinback(store) {
   if (!due.length) return { sent: 0 };
   // عنده رقم شغّال اليوم (رجع بنفسه): ما نرسل له
   const live = new Set((await rest(`pager_tickets?wallet_serial=in.(${due.map(c => q(c.wallet_serial)).join(',')})&status=in.(waiting,ready)&created_at=gte.${q(riyadhDayStart())}&select=wallet_serial`).catch(() => [])).map(t => t.wallet_serial));
-  let sent = 0, gone = 0;
-  await Promise.all(due.filter(c => !live.has(c.wallet_serial)).map(async (c) => {
-    const r = await wallet.updatePagerPass(c.wallet_serial, { ...wallet.pagerStep({ store, step: 'idle', lang: c.lang }), notice: w.text });
-    if (!r.startsWith('ok')) return console.error('PAGER_WINBACK', store.id, c.id, r);
-    await rest(`pager_cards?id=eq.${c.id}`, { method: 'PATCH', body: { winback_at: new Date().toISOString() } }).catch(() => {});
-    wallet.reached(r, c.platform) ? sent++ : gone++;
-  }));
-  const last = { at: new Date().toISOString(), sent };
+  // للطابور (api/notify-cron يرسلها ويحترم حد قوقل)، ونعلّم البطاقة إنها أخذت "وحشتنا" لهالغيبة
+  const go = due.filter(c => !live.has(c.wallet_serial));
+  const queued = await require('./notify-queue').enqueueWinback(store.id, go, w.text);
+  if (go.length) await rest(`pager_cards?id=in.(${go.map(c => c.id).join(',')})`, { method: 'PATCH', body: { winback_at: new Date().toISOString() } }).catch(() => {});
+  const last = { at: new Date().toISOString(), sent: queued };
   await rest(`clients?id=eq.${store.id}`, { method: 'PATCH', body: { pager_winback: { ...(store.pager_winback || {}), last } } }).catch(() => {});
-  return { sent, gone };
+  return { queued };
 }
 
 module.exports = { winbackSettings, runWinback, WINBACK_DAYS };

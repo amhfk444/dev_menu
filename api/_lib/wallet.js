@@ -197,7 +197,8 @@ async function updatePagerPass(serial, ctx) {
     const body = await pagerBody(ctx);
     // إشعار واحد بس لكل طلب: "طلبك جاهز". أخذ الرقم والاستلام يحدّثون البطاقة (الرقم والحالة) بصمت.
     // (Google Wallet تسمح بـ 3 إشعارات للبطاقة باليوم، والآيفون يوقف التحديث لو جاه كثير)
-    if (ctx.silent || ctx.step !== 'ready') delete body.notification;   // بدون الخانة: الرسالة الحالية تبقى، فما يطلع إشعار
+    // force: رسالة المحل و"وحشتنا" (من الطابور) لازم يطلع لها إشعار
+    if (ctx.silent || (ctx.step !== 'ready' && !ctx.force)) delete body.notification;   // بدون الخانة: الرسالة الحالية تبقى، فما يطلع إشعار
     const r = await call('PUT', `/${encodeURIComponent(serial)}`, body);
     if (body.notification) await rest(`pager_cards?wallet_serial=eq.${q(serial)}`, { method: 'PATCH', body: { last_notice: body.notification } }).catch(() => {});
     // الرد كامل (بدون القيم الطويلة): يكشف لو الخدمة ما غيّرت شي (unchanged) أو فيه وضع تجربة أو أي حقل ثاني

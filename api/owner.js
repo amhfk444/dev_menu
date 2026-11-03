@@ -17,6 +17,7 @@ const { normalizeLoyalty, validPoint } = require('./_lib/loyalty');
 const PLANS = require('./_lib/plans');
 const { tr } = require('./_lib/i18n');
 const wallet = require('./_lib/wallet');
+const queue = require('./_lib/notify-queue');
 const { pushWalletCards, pushWalletBatch, runAssistant, pagerReadyNotice, walletNotice } = require('./_lib/loyalty-assistant');
 const { loyaltyMessages, loyaltyNearLines } = require('./_lib/ai');
 const { stampPagerTicket, purchaseStamp, tagBranch, newStampCode, parseMemberQr, cooldownLeft, leftText } = require('./_lib/loyalty-stamp');
@@ -280,37 +281,6 @@ async function refreshWalletCards(store) {
 // رسائل لزبائنك بدون حد: صاحب المحل يقرر. بس دقيقتين بين كل رسالة والثانية (عشان ضغطة مكررة ما ترسلها مرتين)
 const PAGER_MSG_GAP = 2 * 60e3;
 const { winbackSettings } = require('./_lib/winback');
-// يرسل دفعة (40 بطاقة) ويرجع وين وقف، ولوحة التحكم تكمّل الباقي
-// branchId: زبائن فرع واحد بس (اللي أخذوا منه رقم)، وبدونه كل الفروع
-async function pushPagerMessage(homeId, body, afterId, limit = 40, branchId = null) {
-  const base = `pager_cards?client_id=eq.${homeId}&wallet_serial=not.is.null${branchId ? `&branch_ids=cs.{${Number(branchId)}}` : ''}`;
-  const [store, cards, all] = await Promise.all([
-    rest(`clients?id=eq.${homeId}&select=id,name,client_slug,logo_url,accent_color,business_type`).then(r => r[0]),
-    rest(`${base}&id=gt.${Number(afterId) || 0}&select=id,wallet_serial,lang,platform&order=id.asc&limit=${limit}`),
-    afterId ? Promise.resolve(null) : rest(`${base}&select=id`).catch(() => [])
-  ]);
-  if (!store || !wallet.configured() || !cards.length) return { sent: 0, gone: 0, lastId: afterId, done: true, total: all ? all.length : 0 };
-  // الزبون اللي عنده رقم شغّال اليوم: توصله الرسالة وبطاقته تبقى على رقمه وحالته (ما ننزله لـ "بالعافية")
-  // ولو رقمه في محل ثاني، البطاقة تبقى باسم ذاك المحل ورقمه، والرسالة تطلع باسم هالمحل
-  const serials = cards.map(c => q(c.wallet_serial)).join(',');
-  const live = new Map((await rest(`pager_tickets?wallet_serial=in.(${serials})&status=in.(waiting,ready)&created_at=gte.${q(riyadhDayStart())}&select=wallet_serial,number,status,client_id&order=id.asc`).catch(() => [])).map(t => [t.wallet_serial, t]));
-  const otherIds = [...new Set([...live.values()].map(t => t.client_id).filter(id => id !== store.id))];
-  const others = new Map(otherIds.length ? (await rest(`clients?id=in.(${otherIds.join(',')})&select=id,name,client_slug,logo_url,accent_color,business_type`).catch(() => [])).map(s => [s.id, s]) : []);
-  let sent = 0, gone = 0;
-  // كل الدفعة مع بعض (40 بالكثير) عشان ما ينتظر صاحب المحل
-  await Promise.all(cards.map(async (c) => {
-    const t = live.get(c.wallet_serial);
-    const at = t && others.get(t.client_id);   // رقمه الشغّال في محل ثاني (أو فرع)
-    const step = t ? wallet.pagerStep({ store: at || store, number: t.number, step: t.status === 'ready' ? 'ready' : 'waiting', lang: c.lang }) : wallet.pagerStep({ store, step: 'idle', lang: c.lang });
-    const r = await wallet.updatePagerPass(c.wallet_serial, { ...step, notice: at ? `${store.name}: ${body}` : body });
-    // devices=0: البطاقة انحذفت من محفظة الزبون، فما يوصله إشعار
-    if (wallet.reached(r, c.platform)) sent++;
-    else if (r.startsWith('ok')) gone++;   // آيفون ما وصله التحديث: حذف البطاقة
-    else console.error('PAGER_MSG', c.id, r);
-  }));
-  return { sent, gone, lastId: cards.length ? cards[cards.length - 1].id : afterId, done: cards.length < limit, total: all ? all.length : null };
-}
-
 // المكافآت الجاهزة لعضو: مكافأة الأختام + هدايا الأصدقاء المستلمة
 // رسالة تسليم المكافأة: نص صاحب المحل، أو يكتبها المساعد لهالعميل، أو بدون
 async function redeemMessage(store, settings, card, reward) {
@@ -918,9 +888,10 @@ async function main(req) {
     const recent = await rest(`pager_messages?client_id=eq.${home}&created_at=gte.${q(new Date(Date.now() - PAGER_MSG_GAP).toISOString())}&select=id&limit=1`).catch(() => []);
     if (recent.length) throw new ApiError(429, 'أرسلت رسالة قبل شوي، انتظر دقيقتين وأرسل الثانية', 'MSG_LIMIT');
     const msg = (await rest('pager_messages', { method: 'POST', prefer: 'return=representation', body: { client_id: home, body, branch_id: branch } }))[0];
-    const p = await pushPagerMessage(home, body, 0, 40, branch);
-    await rest(`pager_messages?id=eq.${msg.id}`, { method: 'PATCH', body: { sent: p.sent } }).catch(() => {});
-    return { message: { ...msg, sent: p.sent }, progress: p };
+    // الطابور يرسلها بالخلفية (api/notify-cron كل دقيقة)، ونبدأ أول دفعة الحين عشان توصل خلال ثواني
+    const queued = await queue.enqueuePagerMessage(home, msg.id, body, branch);
+    later(queue.processQueue(20e3));
+    return { message: { ...msg, queued, sent: 0 }, queued };
   }
   // "وحشتنا" التلقائية: تنحفظ على المحل الرئيسي، ويرسلها loyalty-cron كل يوم
   if (action === 'pager-winback') {
@@ -931,13 +902,12 @@ async function main(req) {
     await rest(`clients?id=eq.${home}`, { method: 'PATCH', body: { pager_winback: { ...(old.pager_winback || {}), ...w } } });
     return { winback: w };
   }
-  if (action === 'pager-message-push') {
+  // وين وصلت رسالة المحل (لوحة التحكم تسأل كل كم ثانية لين تخلص)
+  if (action === 'pager-message-status') {
     const home = await loyaltyHome(sid);
-    const msg = (await rest(`pager_messages?id=eq.${int(b.message_id)}&client_id=eq.${home}&select=id,body,sent,branch_id`))[0];
+    const msg = (await rest(`pager_messages?id=eq.${int(b.message_id)}&client_id=eq.${home}&select=id`))[0];
     if (!msg) throw new ApiError(404, 'الرسالة غير موجودة');
-    const p = await pushPagerMessage(home, msg.body, int(b.after) || 0, 40, msg.branch_id);
-    await rest(`pager_messages?id=eq.${msg.id}`, { method: 'PATCH', body: { sent: (msg.sent || 0) + p.sent } }).catch(() => {});
-    return { progress: p };
+    return { status: await queue.messageStatus(msg.id) };
   }
 
   // ─── كود ختم جديد من شاشة الكاشير (بعد الدفع) ───
