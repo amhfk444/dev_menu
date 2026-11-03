@@ -583,7 +583,7 @@
               <span class="ph" id="img-drop-ph"><i class="ph-bold ph-camera"></i></span>
               <span class="min-w-0"><b class="block text-[13px] text-ink" id="img-drop-name">اختر صورة الطبق</b>
                 <span class="block text-[11.5px] text-ink">صورة واضحة للطبق تزيد الطلب عليه <span id="image-hint" class="text-ink"></span></span>
-                <span class="block text-[11.5px] text-ink mt-0.5"><i class="ph-bold ph-frame-corners"></i> المقاس الأفضل: صورة بالعرض 4:3، مثل <bdi dir="ltr">1200×900</bdi>، عشان تطلع كاملة بدون حواف</span></span>
+                <span class="block text-[11.5px] text-ink mt-0.5"><i class="ph-bold ph-frame-corners"></i> المقاس الموصى به: صورة أفقية بنسبة 4:3 (مثل <bdi dir="ltr">1200×900</bdi>) لتظهر كاملة دون حواف</span></span>
             </label>
             <p id="img-ratio-warn" class="hidden mt-2 text-[12px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2"></p>
             <input type="file" id="prod-image-file" accept="image/*" class="sr-only" onchange="previewDishImage(this)">
@@ -3101,9 +3101,9 @@
     img.onload = () => {
       const r = img.naturalWidth / img.naturalHeight;
       if (r >= 1.2 && r <= 1.5) return;
-      const shape = r < 0.9 ? 'طولية' : r < 1.2 ? 'شبه مربعة' : 'عريضة جداً';
+      const shape = r < 0.9 ? 'رأسية' : r < 1.2 ? 'شبه مربعة' : 'عريضة جداً';
       const dims = (w, h) => `<bdi dir="ltr">${Number(w)}×${Number(h)}</bdi>`;
-      warn.innerHTML = `صورتك ${shape} (${dims(img.naturalWidth, img.naturalHeight)})، وبتطلع في المنيو بحواف ${r > 1.5 ? 'فوق وتحت' : 'على الجنبين'}. لو تبيها كاملة صوّرها بالعرض أو قصّها 4:3 (مثل ${dims(1200, 900)}).`;
+      warn.innerHTML = `الصورة المختارة ${shape} (${dims(img.naturalWidth, img.naturalHeight)})، وستظهر في المنيو بحواف ${r > 1.5 ? 'في الأعلى والأسفل' : 'على الجانبين'}. لظهورها كاملة، يُرجى استخدام صورة أفقية أو قصّها بنسبة 4:3 (مثل ${dims(1200, 900)}).`;
       warn.classList.remove('hidden');
     };
     img.src = url;
