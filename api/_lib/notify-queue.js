@@ -73,6 +73,7 @@ async function sendLoyalty(row, store) {
   const { normalizeLoyalty } = require('./loyalty'), { ctxFor } = require('./loyalty-assistant');
   const r = await wallet.updatePass(row.serial, ctxFor(store, normalizeLoyalty(store.loyalty_settings), card, row.body));
   await rest(`loyalty_cards?id=eq.${card.id}`, { method: 'PATCH', body: { wallet_error: r } }).catch(() => {});
+  if (/^404\b/.test(r)) return { status: 'gone', result: r };
   if (!String(r).startsWith('ok')) return { status: 'failed', result: r };
   return { status: wallet.reached(r, row.platform) ? 'sent' : 'gone', result: r };
 }
@@ -93,6 +94,7 @@ async function sendOne(row, stores) {
     : wallet.pagerStep({ store, step: 'idle', lang: row.lang });
   // force: رسالة المحل لازم يطلع لها إشعار (updatePagerPass يسكّت كل شي غير "جاهز")
   const r = await wallet.updatePagerPass(row.serial, { ...step, notice: at ? `${store.name}: ${row.body}` : row.body, force: true });
+  if (/^404\b/.test(r)) return { status: 'gone', result: r };   // البطاقة انلغت: ما نعيد المحاولة
   if (!r.startsWith('ok')) return { status: 'failed', result: r };
   return { status: wallet.reached(r, row.platform) ? 'sent' : 'gone', result: r };
 }
