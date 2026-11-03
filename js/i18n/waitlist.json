@@ -56,5 +56,8 @@
   "نعم، ألغِ التسجيل": "Yes, cancel",
   "لا، أبقى": "No, keep it",
   "الرابط غير مكتمل": "Incomplete link",
-  "اطلب رابط قائمة الانتظار من المحل.": "Ask the store for the waitlist link."
+  "اطلب رابط قائمة الانتظار من المحل.": "Ask the store for the waitlist link.",
+  "(اختياري)": "(optional)",
+  "اكتبه لو تبي يوصلك تنبيه على إيميلك": "Add it if you want an alert by email",
+  "وبدونه خلّ هالصفحة مفتوحة.": "Without it, keep this page open."
 }

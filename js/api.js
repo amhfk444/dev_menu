@@ -280,6 +280,22 @@
     signedIn: () => !!loadSession(),
     // بطاقة الولاء وحدة للمحل بكل فروعه، وكل فرع له رابط مختلف: نحفظ بطاقات الجوال على devmenu.digital كله،
     // ولما يفتح من فرع ما فيه بطاقته محفوظة، نسأل الخادم أي وحدة منها تخص هالمحل
+    // اسم الزبون وجواله: يتعبّى لحاله في المرة الجاية (البيجر، الولاء، قائمة الانتظار، وكل فروع المحل)
+    me() {
+      const m = document.cookie.match(/(?:^|; )dm_me=([^;]+)/);
+      try { const v = JSON.parse(decodeURIComponent(m ? m[1] : '') || 'null'); return v && typeof v === 'object' ? v : {}; } catch { return {}; }
+    },
+    rememberMe({ name, phone }) {
+      const v = { ...window.DM.me(), ...(name ? { name: String(name).slice(0, 40) } : {}), ...(phone ? { phone: String(phone).replace(/\D/g, '').slice(0, 15) } : {}) };
+      const shared = /(^|\.)devmenu\.digital$/.test(location.hostname) ? '; domain=.devmenu.digital' : '';
+      document.cookie = `dm_me=${encodeURIComponent(JSON.stringify(v))}; max-age=31536000; path=/; secure; samesite=lax${shared}`;
+    },
+    // يعبّي خانات الاسم والجوال (لو فاضية) من آخر مرة
+    fillMe(nameEl, phoneEl, ccEl) {
+      const me = window.DM.me();
+      if (nameEl && !nameEl.value && me.name) nameEl.value = me.name;
+      if (phoneEl && !phoneEl.value && me.phone) { const p = splitPhone(me.phone); phoneEl.value = p.local; if (ccEl) ccEl.value = p.code; }
+    },
     rememberLoyalty(slug, t) {
       try { t ? localStorage.setItem(`dm_loyalty_${slug}`, t) : localStorage.removeItem(`dm_loyalty_${slug}`); } catch {}
       if (!t) return;

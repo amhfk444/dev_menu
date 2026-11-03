@@ -81,9 +81,9 @@
         <div class="flex gap-2" dir="ltr"><select id="f-phone-cc" aria-label="رمز الدولة" class="field !w-auto shrink-0 !px-2.5"></select><input id="f-phone" type="tel" inputmode="tel" maxlength="18" autocomplete="tel-national" placeholder="05xxxxxxxx" class="field flex-1 min-w-0"></div>
       </div>
       <div data-field="email">
-        <label class="lbl" for="f-email">البريد الإلكتروني <span class="req hidden">*</span></label>
+        <label class="lbl" for="f-email">البريد الإلكتروني <span class="text-ink/50 font-normal">(اختياري)</span> <span class="req hidden">*</span></label>
         <input id="f-email" type="email" inputmode="email" maxlength="120" autocomplete="email" placeholder="name@example.com" class="field" dir="ltr">
-        <p class="text-[10px] text-ink/50 mt-1">يوصلك عليه تأكيد التسجيل، وتنبيه <span class="t-when">أول ما يجي دورك</span>.</p>
+        <p class="text-[10px] text-ink/50 mt-1">اكتبه لو تبي يوصلك تنبيه على إيميلك <span class="t-when">أول ما يجي دورك</span>. وبدونه خلّ هالصفحة مفتوحة.</p>
       </div>
       <div data-field="party_size">
         <span class="lbl">عدد الأشخاص <span class="req hidden">*</span></span>
@@ -151,6 +151,7 @@
   let token = params.get('t') || (() => { try { return localStorage.getItem(tokenKey) || ''; } catch { return ''; } })();
   let settings = null, partySize = 2, pollTimer = null, lastStatus = null;
   document.getElementById('f-phone-cc').innerHTML = DM.countryOptions();
+  DM.fillMe(document.getElementById('f-name'), document.getElementById('f-phone'), document.getElementById('f-phone-cc'));
   document.getElementById('f-phone-cc').addEventListener('change', (e) => { document.getElementById('f-phone').placeholder = e.target.value === '966' ? '05xxxxxxxx' : 'رقم الجوال'; });
 
   const views = ['loading', 'unavailable', 'form', 'closed', 'status'];
@@ -203,6 +204,22 @@
     el.textContent = msg; el.classList.toggle('hidden', !msg);
   }
 
+  // صوت التنبيه لما يجي دوره (الصفحة مفتوحة): المتصفح يسمح بالصوت بعد أول ضغطة من الزبون
+  let actx = null;
+  function unlockSound() { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state !== 'running') actx.resume(); } catch {} }
+  document.addEventListener('pointerdown', unlockSound, { passive: true });
+  function chime() {
+    if (!actx) return;
+    try {
+      const t0 = actx.currentTime;
+      [0, .35, .7].forEach((d, i) => {
+        const o = actx.createOscillator(), g = actx.createGain();
+        o.type = 'sine'; o.frequency.value = i === 2 ? 1175 : 880;
+        g.gain.setValueAtTime(.0001, t0 + d); g.gain.exponentialRampToValueAtTime(.5, t0 + d + .02); g.gain.exponentialRampToValueAtTime(.0001, t0 + d + .3);
+        o.connect(g).connect(actx.destination); o.start(t0 + d); o.stop(t0 + d + .32);
+      });
+    } catch {}
+  }
   document.getElementById('join-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     formError('');
@@ -219,7 +236,7 @@
     };
     const labels = { name: 'الاسم', phone: 'رقم الجوال', email: 'البريد الإلكتروني', seating: 'تفضيل الجلسة', notes: 'الملاحظات' };
     for (const k of Object.keys(labels)) if (F[k].on && F[k].req && !data[k]) return formError(`${labels[k]} مطلوب`);
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return formError('البريد الإلكتروني غير صحيح');
+    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return formError('البريد الإلكتروني غير صحيح');
     // الجوال بالصيغة الدولية مع + عشان زر الاتصال يشتغل من أي دولة
     if (data.phone) {
       const intl = DM.intlPhone(data.phone, data.phoneCode);
@@ -233,6 +250,7 @@
     try {
       data.lt = (await DM.loyaltyToken(slug)) || undefined;   // بطاقة الولاء (ولو انسجّلت من فرع ثاني)
       const res = await DM.post('/api/waitlist?action=join', data);
+      DM.rememberMe({ name: data.name, phone: data.phone });
       saveToken(res.token);
       history.replaceState(null, '', `${DM.storePage('waitlist', slug)}${DM.hostSlug() ? '?' : '&'}t=${encodeURIComponent(res.token)}`);
       await loadStatus(true);
@@ -290,7 +308,7 @@
       : `<button onclick="newEntry()" class="w-full bg-brand text-cream font-black text-sm py-3.5 rounded-2xl"><i class="ph-bold ph-user-plus"></i> تسجيل جديد</button>`;
 
     // تنبيه لحظة جهوز الطاولة
-    if (st === 'notified' && lastStatus && lastStatus !== 'notified' && navigator.vibrate) navigator.vibrate([300, 150, 300]);
+    if (st === 'notified' && lastStatus && lastStatus !== 'notified') { if (navigator.vibrate) navigator.vibrate([300, 150, 300]); chime(); }
     lastStatus = st;
     show('status');
 

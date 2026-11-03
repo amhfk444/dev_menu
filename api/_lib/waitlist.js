@@ -15,7 +15,7 @@ const DEFAULTS = {
   fields: {
     name:       { on: true,  req: true },
     phone:      { on: true,  req: true },
-    email:      { on: true,  req: true },
+    email:      { on: true,  req: false },
     party_size: { on: true,  req: true },
     seating:    { on: false, req: false },
     notes:      { on: true,  req: false }
@@ -39,7 +39,7 @@ function normalizeSettings(raw) {
     const on = src.on === true, req = on && src.req === true;
     out.fields[f] = { on, req };
   }
-  out.fields.email = { on: true, req: true };
+  out.fields.email = { on: true, req: false };   // اختياري: اللي يكتبه يوصله التنبيه على إيميله
   return out;
 }
 

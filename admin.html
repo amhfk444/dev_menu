@@ -4005,7 +4005,7 @@
       const f = s.fields[k], locked = k === 'email';
       return `
         <div class="grid grid-cols-[1fr_auto_auto] items-center gap-x-4 px-3 py-2.5 text-xs">
-          <span class="font-bold">${label}${locked ? ' <span class="text-[10px] text-ink font-normal">(للإشعارات)</span>' : ''}</span>
+          <span class="font-bold">${label}${locked ? ' <span class="text-[10px] text-ink font-normal">(اختياري للزبون، يوصله عليه التنبيه)</span>' : ''}</span>
           <input type="checkbox" data-wlf="${k}" data-kind="on" ${f.on ? 'checked' : ''} ${locked ? 'disabled' : ''} class="w-5 h-5 accent-[#384f3d]">
           <input type="checkbox" data-wlf="${k}" data-kind="req" ${f.req ? 'checked' : ''} ${locked || !f.on ? 'disabled' : ''} class="w-5 h-5 accent-[#b45309]">
         </div>`;

@@ -777,6 +777,7 @@
   // ─── التسجيل في الولاء من صفحة البيجر ───
   let joined = false, jnGender = '', lyToken = '';
   $('jn-cc').innerHTML = DM.countryOptions();
+  DM.fillMe($('jn-name'), $('jn-phone'), $('jn-cc'));
   document.querySelectorAll('.jn-g').forEach(b => b.onclick = () => { jnGender = b.dataset.g; document.querySelectorAll('.jn-g').forEach(x => x.setAttribute('aria-checked', String(x === b))); });
   $('jn-form').onsubmit = async (e) => {
     e.preventDefault();
@@ -787,6 +788,7 @@
     const btn = $('jn-btn'); btn.disabled = true; btn.innerHTML = '<i class="ph-bold ph-spinner-gap ph-spin"></i>';
     try {
       const r = await DM.post('/api/loyalty?action=join', { slug, name, phone, gender: jnGender, pt: loadToken() });
+      DM.rememberMe({ name, phone });
       lyToken = r.token; joined = true;
       DM.rememberLoyalty(slug, r.token);
       $('jn-form').classList.add('hidden'); $('jn-done').classList.remove('hidden');

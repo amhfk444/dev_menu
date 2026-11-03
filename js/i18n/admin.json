@@ -1585,5 +1585,6 @@
   "رابط واحد": "1 link",
   "رابطين": "2 links",
   "{n} روابط": "{n} links",
-  "ما فيه": "None"
+  "ما فيه": "None",
+  "(اختياري للزبون، يوصله عليه التنبيه)": "(optional for customers, alerts go there)"
 }

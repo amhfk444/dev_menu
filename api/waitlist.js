@@ -71,7 +71,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     for (const f of Object.keys(missing)) {
       if (F[f].req && (val[f] === '' || val[f] === null)) throw new ApiError(400, `${missing[f]} مطلوب`);
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.email)) throw new ApiError(400, 'البريد الإلكتروني غير صحيح');
+    if (val.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.email)) throw new ApiError(400, 'البريد الإلكتروني غير صحيح');
     if (val.phone && !/^\+?\d{9,15}$/.test(val.phone)) throw new ApiError(400, 'رقم الجوال غير صحيح');
     if (val.party_size !== null && (!Number.isInteger(val.party_size) || val.party_size < 1 || val.party_size > settings.max_party)) {
       throw new ApiError(400, `عدد الأشخاص من 1 إلى ${settings.max_party}`);

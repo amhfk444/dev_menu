@@ -259,6 +259,7 @@
 
   $('f-cc').innerHTML = DM.countryOptions();
   $('p-cc').innerHTML = DM.countryOptions();
+  DM.fillMe($('f-name'), $('f-phone'), $('f-cc')); DM.fillMe($('p-name'), $('p-phone'), $('p-cc'));
 
   function setStore(s) {
     $('store-name').textContent = s.name || '';
@@ -413,6 +414,7 @@
     try {
       const proof = stampCodeParam ? { code: stampCodeParam } : ptParam ? { pt: ptParam } : {};
       const r = await DM.post('/api/loyalty?action=join', { slug, ...profile, ...proof, gift: giftCode || undefined });
+      DM.rememberMe(profile);
       if (stampCodeParam || ptParam) dropParams('c', 'pt');
       saveToken(r.token);
       if (params.get('s')) { params.delete('s'); history.replaceState(null, '', location.pathname + (params.toString() ? `?${params}` : '')); }
@@ -445,7 +447,7 @@
         const loc = await getLocation().catch(x => { throw { message: locationError(x) }; });
         r = await DM.post('/api/loyalty?action=phone', { slug, t: loadToken(), ...profile, ...loc });
       }
-      saveToken(r.token); card = r.card; renderCard();
+      saveToken(r.token); card = r.card; renderCard(); DM.rememberMe(profile);
       msg('ok', 'ph-check-circle', r.merged ? 'رجعت لبطاقتك القديمة وانضافت لها أختامك' : 'تم حفظ بياناتك');
     } catch (e) {
       msg('err', 'ph-warning-circle', e.message || 'تعذر الحفظ، حاول مرة ثانية');
