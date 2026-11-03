@@ -174,4 +174,19 @@ async function drawPagerStrip(color, step) {
   } catch (e) { console.error('PAGER_STRIP', e.message); return null; }
 }
 
-module.exports = { stampStrip, pagerStrip, brandColor };
+// شعار المحل مصغّر للمحفظة: الشعار الأصلي ممكن يكون نص ميقا ويتكرر 4 مرات في البطاقة، فتثقل وتتأخر.
+// 180 بكسل يكفي للشعار والأيقونة. يرجّع data URI، أو الرابط الأصلي لو صار خطأ
+const logos = new Map();
+async function smallLogo(url) {
+  const hit = logos.get(url);
+  if (hit && hit.at > Date.now() - 600e3) return hit.src;
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+    const buf = await sharp(Buffer.from(await res.arrayBuffer())).resize(180, 180, { fit: 'inside', withoutEnlargement: true }).png({ compressionLevel: 9 }).toBuffer();
+    const src = `data:image/png;base64,${buf.toString('base64')}`;
+    logos.set(url, { src, at: Date.now() });
+    return src;
+  } catch { return url; }
+}
+
+module.exports = { stampStrip, pagerStrip, brandColor, smallLogo };
