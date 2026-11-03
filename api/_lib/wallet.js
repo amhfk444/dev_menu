@@ -187,7 +187,9 @@ async function updatePagerPass(serial, ctx) {
     if (ctx.silent) delete body.notification;   // بدون الخانة: الرسالة الحالية تبقى، فما يطلع إشعار
     const r = await call('PUT', `/${encodeURIComponent(serial)}`, body);
     if (body.notification) await rest(`pager_cards?wallet_serial=eq.${q(serial)}`, { method: 'PATCH', body: { last_notice: body.notification } }).catch(() => {});
-    return `ok devices=${r.notifiedDevices ?? '?'}`;
+    // الرد كامل (بدون القيم الطويلة): يكشف لو الخدمة ما غيّرت شي (unchanged) أو فيه وضع تجربة أو أي حقل ثاني
+    const extra = Object.entries(r || {}).filter(([k]) => !['notifiedDevices', 'serialNumber', 'lastUpdated'].includes(k)).map(([k, v]) => `${k}=${typeof v === 'object' ? JSON.stringify(v).slice(0, 60) : String(v).slice(0, 40)}`).join(' ');
+    return `ok devices=${r.notifiedDevices ?? '?'}${extra ? ' ' + extra : ''} at=${new Date().toISOString().slice(11, 19)}`;
   } catch (e) { return `${e.status || ''} ${e.message || ''}`.trim().slice(0, 200); }
 }
 
