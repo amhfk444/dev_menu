@@ -161,7 +161,7 @@ async function runAssistant(storeId, { maxGuests = 80 } = {}) {
     }
   }
 
-  const cards = await rest(`loyalty_cards?client_id=eq.${storeId}&select=id,name,gender,lang,stamps,visits,rewards,last_stamp_at,created_at,ai_last_at,wallet_serial&limit=2000`);
+  const cards = await rest(`loyalty_cards?client_id=eq.${storeId}&select=id,name,gender,lang,stamps,visits,rewards,last_stamp_at,created_at,ai_last_at,wallet_serial,wallet_platform&limit=2000`);
   const picked = pickGuests(cards, settings).slice(0, maxGuests);
   if (picked.length) {
     const prev = await rest(`loyalty_messages?client_id=eq.${storeId}&source=eq.ai&card_id=in.(${picked.map(p => p.card.id).join(',')})&select=card_id,body&order=id.desc&limit=200`).catch(() => []);
@@ -179,7 +179,8 @@ async function runAssistant(storeId, { maxGuests = 80 } = {}) {
       result.messages = rows.length;
     }
     const inWallet = rows.filter(r => picked.find(p => p.card.id === r.card_id).card.wallet_serial);
-    if (inWallet.length) result.wallet = await pushWalletCards(storeId, { cardIds: inWallet.map(r => r.card_id), notices: Object.fromEntries(inWallet.map(r => [r.card_id, r.body])) });
+    // للطابور (يحترم حد قوقل ويعيد اللي فشل)
+    if (inWallet.length) result.wallet = await require('./notify-queue').enqueueLoyalty(storeId, 'loyalty_ai', inWallet.map(r => picked.find(p => p.card.id === r.card_id).card), { bodies: Object.fromEntries(inWallet.map(r => [r.card_id, r.body])) });
   }
   // جمل القرب الجديدة توصل لبطاقات المحفظة الباقية
   if (result.near) await pushWalletCards(storeId);
@@ -206,4 +207,4 @@ async function walletNotice(storeId, cardId, body, kind = 'pager') {
   } catch (e) { console.error('PAGER_WALLET', e.message); return 'error'; }
 }
 
-module.exports = { pushWalletBatch, pushWalletCards, runAssistant, nearLineFor, STORE_FIELDS, pickGuests, pagerReadyNotice, walletNotice };
+module.exports = { ctxFor, pushWalletBatch, pushWalletCards, runAssistant, nearLineFor, STORE_FIELDS, pickGuests, pagerReadyNotice, walletNotice };

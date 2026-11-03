@@ -18,7 +18,7 @@ const PLANS = require('./_lib/plans');
 const { tr } = require('./_lib/i18n');
 const wallet = require('./_lib/wallet');
 const queue = require('./_lib/notify-queue');
-const { pushWalletCards, pushWalletBatch, runAssistant, pagerReadyNotice, walletNotice } = require('./_lib/loyalty-assistant');
+const { pushWalletCards, runAssistant, pagerReadyNotice, walletNotice } = require('./_lib/loyalty-assistant');
 const { loyaltyMessages, loyaltyNearLines } = require('./_lib/ai');
 const { stampPagerTicket, purchaseStamp, tagBranch, newStampCode, parseMemberQr, cooldownLeft, leftText } = require('./_lib/loyalty-stamp');
 
@@ -834,8 +834,10 @@ async function main(req) {
       for (let i = 0; i < away.length; i += 500) {
         await rest('loyalty_messages', { method: 'POST', body: away.slice(i, i + 500).map(c => ({ client_id: sid, card_id: c.id, body, source: 'owner', kind: 'away' })) });
       }
-      const sent = await pushWalletCards(sid, { cardIds: away.map(c => c.id), notice: body });
-      return { message: { id: 0, body, card_id: null, audience: 'away', wallet_sent: sent, created_at: new Date().toISOString() }, progress: { done: true, sent, total: away.length } };
+      const cards = await rest(`loyalty_cards?id=in.(${away.map(c => c.id).join(',')})&wallet_serial=not.is.null&select=id,wallet_serial,wallet_platform,lang`).catch(() => []);
+      const queued = await queue.enqueueLoyalty(sid, 'loyalty_msg', cards, { body });
+      later(queue.processQueue(20e3));
+      return { message: { id: 0, body, card_id: null, audience: 'away', wallet_sent: 0, created_at: new Date().toISOString() }, queued };
     }
     // زبائن فرع واحد (من فروع المحل بس)
     const branch = b.branch_id ? Number(b.branch_id) : null;
@@ -853,16 +855,16 @@ async function main(req) {
       await rest(`loyalty_messages?id=eq.${msg.id}`, { method: 'PATCH', body: { wallet_sent: sent } }).catch(() => {});
       return { message: { ...msg, wallet_sent: sent }, progress: { done: true, sent, total: 1 } };
     }
-    const p = await pushWalletBatch(sid, { notice: body, branchId: branch });
-    await rest(`loyalty_messages?id=eq.${msg.id}`, { method: 'PATCH', body: { wallet_sent: p.sent } }).catch(() => {});
-    return { message: { ...msg, wallet_sent: p.sent }, progress: p };
+    // للكل أو لفرع: الطابور يرسلها بالخلفية ويحترم حد قوقل (لوحة التحكم تتابع بـ loyalty-message-status)
+    const cards = await rest(`loyalty_cards?client_id=eq.${sid}&wallet_serial=not.is.null${branch ? `&branch_ids=cs.{${branch}}` : ''}&select=id,wallet_serial,wallet_platform,lang&limit=20000`).catch(() => []);
+    const queued = await queue.enqueueLoyalty(sid, 'loyalty_msg', cards, { body, refId: msg.id });
+    later(queue.processQueue(20e3));
+    return { message: { ...msg, wallet_sent: 0 }, queued };
   }
-  if (action === 'loyalty-message-push') {
-    const msg = (await rest(`loyalty_messages?id=eq.${int(b.message_id)}&client_id=eq.${sid}&card_id=is.null&select=id,body,wallet_sent,branch_id`))[0];
+  if (action === 'loyalty-message-status') {
+    const msg = (await rest(`loyalty_messages?id=eq.${int(b.message_id)}&client_id=eq.${sid}&select=id`))[0];
     if (!msg) throw new ApiError(404, 'الرسالة غير موجودة');
-    const p = await pushWalletBatch(sid, { notice: msg.body, afterId: int(b.after) || 0, branchId: msg.branch_id });
-    await rest(`loyalty_messages?id=eq.${msg.id}`, { method: 'PATCH', body: { wallet_sent: (msg.wallet_sent || 0) + p.sent } }).catch(() => {});
-    return { progress: p };
+    return { status: await queue.messageStatus(msg.id, 'loyalty_msg') };
   }
 
   // ─── رسائل لزبائنك: إشعار على بطاقة النداء لكل زبون حافظها (إضافة على البيجر) ───
@@ -907,7 +909,7 @@ async function main(req) {
     const home = await loyaltyHome(sid);
     const msg = (await rest(`pager_messages?id=eq.${int(b.message_id)}&client_id=eq.${home}&select=id`))[0];
     if (!msg) throw new ApiError(404, 'الرسالة غير موجودة');
-    return { status: await queue.messageStatus(msg.id) };
+    return { status: await queue.messageStatus(msg.id, 'pager_msg') };
   }
 
   // ─── كود ختم جديد من شاشة الكاشير (بعد الدفع) ───

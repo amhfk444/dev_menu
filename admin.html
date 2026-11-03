@@ -5676,16 +5676,23 @@
     try {
       const r = await api('loyalty-message', br ? { body, branch_id: br.id } : to === 'away' ? { body, audience: 'away' } : { body, card_id: to || null });
       document.getElementById('ly-msg-body').value = ''; document.getElementById('ly-msg-count').textContent = '0/200';
-      // للكل: نكمّل الإرسال على دفعات لين توصل لكل جوال
-      let p = r.progress || { done: true }, sent = p.sent || 0;
-      const total = p.total;
-      while (!p.done) {
-        btn.innerHTML = `<i class="ph-bold ph-spinner-gap ph-spin"></i> وصلت لـ ${sent}${total ? ` من ${total}` : ''}`;
-        p = (await api('loyalty-message-push', { message_id: r.message.id, after: p.lastId })).progress;
-        sent += p.sent;
+      // للكل أو لفرع: الطابور يرسلها بالخلفية، ونتابع كم وصلت (3 دقايق بالكثير، وبعدها تكمل بدون ما ننتظر)
+      if (r.queued != null) {
+        let st = { sent: 0, pending: r.queued, waiting_limit: 0, gone: 0 };
+        for (let i = 0; i < 45 && st.pending && r.message && r.message.id; i++) {
+          btn.innerHTML = `<i class="ph-bold ph-spinner-gap ph-spin"></i> وصلت لـ ${st.sent} من ${r.queued}`;
+          await new Promise(res => setTimeout(res, 4000));
+          try { st = (await api('loyalty-message-status', { message_id: r.message.id })).status; } catch {}
+          if (st.pending && st.pending === st.waiting_limit) break;
+        }
+        btn.innerHTML = '<i class="ph-bold ph-paper-plane-tilt"></i> أرسل';
+        showToast(!r.queued ? 'انرسلت، وتطلع لهم في صفحة البطاقة'
+          : !r.message.id ? `انرسلت، وبتوصل إشعار لـ ${r.queued} جوال خلال دقايق`
+          : `وصلت إشعار لـ ${st.sent} جوال${st.pending ? `، و${st.pending} بتوصلهم ${st.waiting_limit === st.pending ? 'بكرة (حد قوقل اليومي)' : 'خلال دقايق'}` : ''}`);
+      } else {
+        const sent = (r.progress && r.progress.sent) || 0;
+        showToast(sent ? 'انرسلت، ووصلت إشعار لجواله' : 'انرسلت، وتطلع له في صفحة البطاقة');
       }
-      btn.innerHTML = '<i class="ph-bold ph-paper-plane-tilt"></i> أرسل';
-      showToast(sent ? `انرسلت، ووصلت إشعار لـ ${sent} جوال` : 'انرسلت، وتطلع لهم في صفحة البطاقة');
       await onLoyaltyPage();
     } catch (e) { showToast(e.message || 'ما انرسل. تأكد من الإنترنت وحاول مرة ثانية', true); }
     btn.disabled = false;
