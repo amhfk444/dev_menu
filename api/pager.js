@@ -22,7 +22,7 @@ const wallet = require('./_lib/wallet');
 // تحديث رقم المحفظة لما يجي دوره (يطلع إشعار من النظام)
 async function walletReady(store, t) {
   if (!t.wallet_serial) return;
-  const r = await wallet.updatePagerPass(t.wallet_serial, wallet.pagerStep({ store, number: t.number, step: 'ready', lang: t.lang }));
+  const r = await wallet.updatePagerPass(t.wallet_serial, wallet.pagerStep({ store, number: t.number, step: 'ready', lang: t.lang, invoice: t.invoice_no }));
   console.log('PAGER_PASS', store.id, t.id, r);
 }
 
@@ -44,7 +44,7 @@ async function linkPagerCard(store, ticketToken, cardToken) {
   const branches = (pc.branch_ids || []).map(Number);
   await rest(`pager_cards?id=eq.${pc.id}`, { method: 'PATCH', body: { last_used_at: new Date().toISOString(), ...(branches.includes(store.id) ? {} : { branch_ids: [...branches, store.id] }) } }).catch(() => {});
   // رقمه الجديد في البطاقة بصمت (الإشعار الوحيد "طلبك جاهز"، شوف wallet.updatePagerPass)
-  later(wallet.updatePagerPass(pc.wallet_serial, wallet.pagerStep({ store, number: t.number, step: t.status, lang: t.lang || pc.lang }))
+  later(wallet.updatePagerPass(pc.wallet_serial, wallet.pagerStep({ store, number: t.number, step: t.status, lang: t.lang || pc.lang, invoice: t.invoice_no }))
     .then(async r => {
       await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_error: `link ${r}` } });
       // البطاقة انلغت عند شركة المحفظة: نفكها عن الزبون عشان يقدر يضيف وحدة جديدة
@@ -254,7 +254,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       return { url: pass.shareUrl, card };
     }
     if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
-    const t = (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=in.(waiting,ready)&select=id,number,status,wallet_url,lang`))[0];
+    const t = (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=in.(waiting,ready)&select=id,number,status,wallet_url,lang,invoice_no`))[0];
     if (!t) throw new ApiError(404, 'الرقم غير موجود أو انتهى', 'NOT_FOUND');
     // المحل المشترك في الولاء: النداء يوصل من بطاقة الولاء، فما فيه بطاقة نداء
     if ((await loyaltyOf(store.id)).enabled) throw new ApiError(409, 'سجّل في بطاقة الولاء ويوصلك النداء منها', 'USE_LOYALTY');
@@ -263,7 +263,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (pc && DEMO.has(store.client_slug)) await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { created_at: new Date().toISOString() } }).catch(() => {});
     if (pc) return { url: pc.wallet_url, card: b.pc };
     if (t.wallet_url) return { url: t.wallet_url };
-    const step = wallet.pagerStep({ store, number: t.number, step: t.status, lang: t.lang });
+    const step = wallet.pagerStep({ store, number: t.number, step: t.status, lang: t.lang, invoice: t.invoice_no });
     const pass = await wallet.createPagerPass(step);
     const card = crypto.randomBytes(18).toString('base64url');
     await rest('pager_cards', { method: 'POST', body: { client_id: await brandOf(store), token: card, wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, platform: wallet.walletPlatform(req), lang: t.lang || null, branch_ids: [store.id], last_notice: step.notice } });
@@ -291,13 +291,15 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const token = String(b.t || '');
     if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
     const invoice = cleanInvoice(b.invoice);
-    const t = (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=in.(waiting,ready)&select=id,number`))[0];
+    const t = (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=in.(waiting,ready)&select=id,number,status,lang,wallet_serial`))[0];
     if (!t) throw new ApiError(404, 'الرقم غير موجود أو انتهى', 'NOT_FOUND');
     if (invoice) {
       const dup = await rest(`pager_tickets?client_id=eq.${store.id}&invoice_no=eq.${q(invoice)}&id=neq.${t.id}&created_at=gte.${q(riyadhDayStart())}&status=in.(waiting,ready)&select=number&limit=1`);
       if (dup.length) throw new ApiError(409, 'هذي الفاتورة مسجلة على رقم ثاني، تأكد من الرقم', 'DUPLICATE');
     }
     await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { invoice_no: invoice || null } });
+    // رقم الفاتورة في بطاقة النداء (بصمت)
+    if (t.wallet_serial) later(wallet.updatePagerPass(t.wallet_serial, { ...wallet.pagerStep({ store, number: t.number, step: t.status, lang: t.lang, invoice }), silent: true }));
     await poke([topic('pager', store.id), topic('ticket', token)]);
     return { invoice_no: invoice || null };
   }

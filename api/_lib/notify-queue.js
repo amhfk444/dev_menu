@@ -87,10 +87,10 @@ async function sendOne(row, stores) {
   }
   if (isLoyalty(row.kind)) return sendLoyalty(row, store);
   // عنده رقم شغّال اليوم: الرسالة توصله والبطاقة تبقى على رقمه (ولو في محل ثاني، باسم ذاك المحل والرسالة باسم هالمحل)
-  const t = (await rest(`pager_tickets?wallet_serial=eq.${q(row.serial)}&status=in.(waiting,ready)&created_at=gte.${q(riyadhDayStart())}&select=number,status,client_id&order=id.desc&limit=1`).catch(() => []))[0];
+  const t = (await rest(`pager_tickets?wallet_serial=eq.${q(row.serial)}&status=in.(waiting,ready)&created_at=gte.${q(riyadhDayStart())}&select=number,status,client_id,invoice_no&order=id.desc&limit=1`).catch(() => []))[0];
   if (t && t.client_id !== store.id && !stores.has(t.client_id)) stores.set(t.client_id, (await rest(`clients?id=eq.${t.client_id}&select=${STORE_FIELDS}`).catch(() => []))[0] || null);
   const at = t && t.client_id !== store.id ? stores.get(t.client_id) : null;
-  const step = t ? wallet.pagerStep({ store: at || store, number: t.number, step: t.status === 'ready' ? 'ready' : 'waiting', lang: row.lang })
+  const step = t ? wallet.pagerStep({ store: at || store, number: t.number, step: t.status === 'ready' ? 'ready' : 'waiting', lang: row.lang, invoice: t.invoice_no })
     : wallet.pagerStep({ store, step: 'idle', lang: row.lang });
   // force: رسالة المحل لازم يطلع لها إشعار (updatePagerPass يسكّت كل شي غير "جاهز")
   const r = await wallet.updatePagerPass(row.serial, { ...step, notice: at ? `${store.name}: ${row.body}` : row.body, force: true });

@@ -1167,7 +1167,7 @@ async function main(req) {
     // تحديث البطاقة يبدأ قبل رنّة المتصفح (WalletWallet ياخذ ثواني، فما ينتظر الرنّة)
     // رقمه مضاف للمحفظة: تحديث يطلع إشعار من النظام (حتى لو يشوف فيديو)
     if (status === 'ready' && t.wallet_serial) {
-      later(wallet.updatePagerPass(t.wallet_serial, wallet.pagerStep({ store, number: t.number, step: 'ready', lang: t.lang })).then(wr => {
+      later(wallet.updatePagerPass(t.wallet_serial, wallet.pagerStep({ store, number: t.number, step: 'ready', lang: t.lang, invoice: t.invoice_no })).then(wr => {
         console.log('PAGER_PASS', sid, t.id, wr);
         return rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_error: `ready ${wr} at=${new Date().toISOString().slice(11, 19)}` } });
       }));
@@ -1208,8 +1208,11 @@ async function main(req) {
     }
     const rows = await rest(`pager_tickets?id=eq.${id}&client_id=eq.${sid}`, { method: 'PATCH', body: { invoice_no: invoice || null }, prefer: 'return=representation' });
     if (!rows.length) throw new ApiError(404, 'الرقم غير موجود');
-    await poke([topic('pager', sid), topic('ticket', rows[0].token)]);
-    return { ticket: { id: rows[0].id, number: rows[0].number, invoice_no: rows[0].invoice_no } };
+    const t = rows[0];
+    // رقم الفاتورة في بطاقة النداء (بصمت)
+    if (t.wallet_serial && ['waiting', 'ready'].includes(t.status)) later(wallet.updatePagerPass(t.wallet_serial, { ...wallet.pagerStep({ store, number: t.number, step: t.status, lang: t.lang, invoice: t.invoice_no }), silent: true }));
+    await poke([topic('pager', sid), topic('ticket', t.token)]);
+    return { ticket: { id: t.id, number: t.number, invoice_no: t.invoice_no } };
   }
 
   // ─── البيجر: إعادة الرنين — شاشة الكاشير تطلبه كل 30 ثانية ───

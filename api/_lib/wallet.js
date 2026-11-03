@@ -119,7 +119,7 @@ async function revokePass(serial) {
 // ─── بطاقة النداء: بطاقة وحدة للزبون في المحل (اللي ما عنده ولاء)، بهوية المحل (لونه وشعاره) وبدون أختام ───
 // كل رقم جديد يحدّثها: الرقم فوق، والحالة تحت الصورة. لما تتغير الحالة آبل تطلعها إشعار على شاشة القفل بشعار المحل.
 // بعد الاستلام ترجع "بالعافية" (step = idle) وتنتظر الزيارة الجاية
-async function pagerBody({ store, number, step, status, notice, url, lang }) {
+async function pagerBody({ store, number, step, status, notice, url, lang, invoice }) {
   const L = (t) => tr(lang, t);
   const { pagerStrip, brandColor } = require('./strip');
   const { rest, googleReviewLink } = require('./core');
@@ -134,7 +134,7 @@ async function pagerBody({ store, number, step, status, notice, url, lang }) {
     description: L(`بطاقة النداء: ${store.name || ''}`).slice(0, 120),
     color,
     headerFields: [{ label: L('رقمك'), value: number ? String(number) : '—' }],
-    secondaryFields: [{ label: L('الحالة'), value: L(String(status)).slice(0, 40) }],   // الإشعار من حقل notification (فيه الوقت، فيطلع كل مرة)
+    secondaryFields: [{ label: L('الحالة'), value: L(String(status)).slice(0, 40) }, ...(invoice ? [{ label: L('رقم الفاتورة'), value: String(invoice).slice(0, 20) }] : [])],   // الإشعار من حقل notification (فيه الوقت، فيطلع كل مرة)
     backFields: [
       { label: L('بطاقة النداء'), value: L('كل ما تاخذ رقم من البيجر تتحدث هالبطاقة برقمك، ويوصلك منها إشعار لما يجهز طلبك.') },
       { label: L('صفحة رقمك'), value: url },
@@ -178,14 +178,15 @@ async function createPagerPass(ctx) {
 }
 // محتوى بطاقة النداء لكل خطوة: waiting (رقم جديد)، ready (جاهز)، idle (استلم)
 // الإشعار فيه الوقت عشان يطلع حتى لو تكرر نفس الرقم في يوم ثاني
-function pagerStep({ store, number, step, lang }) {
+function pagerStep({ store, number, step, lang, invoice }) {
   const T = require('./sectors').terms(store), L = (t) => tr(lang, t);
   const at = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Riyadh' });
   const url = require('./core').storeLink(store.client_slug, 'pager');
-  if (step === 'ready') return { store, number, step, lang, url, status: T.ready, notice: `${L(`🔔 ${T.ready} رقم ${number}. ${T.readyBody}`)} (${at})` };
+  invoice = step === 'idle' ? null : String(invoice || '').trim() || null;   // رقم الفاتورة يطلع في البطاقة مع رقمه
+  if (step === 'ready') return { store, number, step, lang, url, invoice, status: T.ready, notice: `${L(`🔔 ${T.ready} رقم ${number}. ${T.readyBody}`)} (${at})` };
   if (step === 'idle') return { store, number: null, step, lang, url, status: 'بالعافية! نتشرف بزيارتك', notice: L('بالعافية! نتشرف بزيارتك') };
   const waiting = T.waiting.replace('…', '');
-  return { store, number, step: 'waiting', lang, url, status: waiting, notice: `${L(`رقمك ${number}: ${waiting}`)} (${at})` };
+  return { store, number, step: 'waiting', lang, url, invoice, status: waiting, notice: `${L(`رقمك ${number}: ${waiting}`)} (${at})` };
 }
 // silent: نحدّث البطاقة (الرقم والحالة) بدون إشعار: نخلي نص الإشعار مثل ما هو (الآيفون يطلع إشعار بس لما يتغير)
 // ونحفظ آخر نص على البطاقة عشان نعرفه في التحديث الصامت الجاي
@@ -212,10 +213,10 @@ async function updatePagerPass(serial, ctx) {
 async function endPagerPass(serial, ticketId, ctx) {
   if (!configured() || !serial) return 'off';
   const { rest, q } = require('./core'), { riyadhDayStart } = require('./waitlist');
-  const t = (await rest(`pager_tickets?wallet_serial=eq.${q(serial)}&id=neq.${Number(ticketId) || 0}&status=in.(waiting,ready)&created_at=gte.${q(riyadhDayStart())}&select=client_id,number,status,lang&order=id.desc&limit=1`).catch(() => []))[0];
+  const t = (await rest(`pager_tickets?wallet_serial=eq.${q(serial)}&id=neq.${Number(ticketId) || 0}&status=in.(waiting,ready)&created_at=gte.${q(riyadhDayStart())}&select=client_id,number,status,lang,invoice_no&order=id.desc&limit=1`).catch(() => []))[0];
   const at = t && (await rest(`clients?id=eq.${t.client_id}&select=id,name,client_slug,logo_url,accent_color,business_type`).catch(() => []))[0];
   if (!at) return updatePagerPass(serial, ctx);
-  const step = pagerStep({ store: at, number: t.number, step: t.status === 'ready' ? 'ready' : 'waiting', lang: t.lang || ctx.lang });
+  const step = pagerStep({ store: at, number: t.number, step: t.status === 'ready' ? 'ready' : 'waiting', lang: t.lang || ctx.lang, invoice: t.invoice_no });
   return `back ${await updatePagerPass(serial, { ...step, silent: true })}`;
 }
 
