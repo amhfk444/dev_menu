@@ -517,8 +517,8 @@
   // ─── إبقاء الصفحة حيّة بالخلفية بدون تثبيت (للآيفون: Safari ما يسمح بالإشعارات إلا من الشاشة الرئيسية) ───
   // مقطع صوت شبه صامت يشتغل بتكرار ← Safari يعامل الصفحة كمشغّل صوت ويخليها تشتغل والجوال مقفول،
   // فيكمل الاستعلام عن الحالة. لما يجهز الطلب نبدّل المقطع لصوت الرنين على نفس العنصر.
-  function wavUrl(sec, fn) {
-    const rate = 22050, n = Math.floor(rate * sec), v = new DataView(new ArrayBuffer(44 + n * 2));
+  function wavUrl(sec, fn, rate = 22050) {
+    const n = Math.floor(rate * sec), v = new DataView(new ArrayBuffer(44 + n * 2));
     const w = (o, str) => [...str].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
     w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true);
     v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true);
@@ -534,6 +534,7 @@
   let resumeTimer = null, interrupted = false;
   keeper.addEventListener('playing', () => {
     clearInterval(resumeTimer); resumeTimer = null;
+    if (setMedia.last) setMedia(setMedia.last, setMedia.ready, true);
     if (interrupted) { interrupted = false; if (loadToken()) poll(); }
     renderPush();
   });
@@ -580,22 +581,27 @@
       }
       g.fillStyle = accent; g.font = `700 40px ${F}`;
       g.fillText(ready ? T.ready.replace('!', '') : T.waiting.replace('…', ''), S / 2, 456);
-      return c.toDataURL('image/png');
+      // سفاري ما يعرض صورة data: في شاشة القفل، فنحولها لرابط blob
+      const bin = atob(c.toDataURL('image/png').split(',')[1]), u8 = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      if (numberArt.url) URL.revokeObjectURL(numberArt.url);
+      return (numberArt.url = URL.createObjectURL(new Blob([u8], { type: 'image/png' })));
     } catch { return ''; }
   }
   // نفس النص: ما نعيد كتابته (كل تحديث للحالة كان يعيد رسم مشغّل الصوت في شاشة القفل فيرمش)
-  function setMedia(title, ready = false) {
-    if (!('mediaSession' in navigator) || title === setMedia.last) return;
-    setMedia.last = title;
-    const art = title && curNumber ? numberArt(curNumber, ready) : '';
-    const artwork = art ? [{ src: art, sizes: '512x512', type: 'image/png' }] : storeInfo.logo_url ? [{ src: storeInfo.logo_url, sizes: '512x512' }] : [];
+  function setMedia(title, ready = false, force = false) {
+    if (!('mediaSession' in navigator) || (title === setMedia.last && !force)) return;
+    if (title !== setMedia.last || !setMedia.art) setMedia.art = title && curNumber ? numberArt(curNumber, ready) : '';
+    setMedia.last = title; setMedia.ready = ready;
+    const art = setMedia.art;
+    const artwork = art ? [96, 256, 512].map(n => ({ src: art, sizes: `${n}x${n}`, type: 'image/png' })) : storeInfo.logo_url ? [{ src: storeInfo.logo_url, sizes: '512x512' }] : [];
     try { navigator.mediaSession.metadata = title ? new MediaMetadata({ title, artist: storeInfo.name || 'البيجر الرقمي', album: 'DEV MENU', artwork }) : null; } catch {}
   }
   // لازم تنادى من ضغطة العميل نفسها
   function startKeeper() {
     try { localStorage.setItem(WANT_KEY, '1'); } catch {}
     if (keeperOn()) return;
-    silentUrl = silentUrl || wavUrl(3, () => (Math.random() - 0.5) * 0.0002);
+    silentUrl = silentUrl || wavUrl(60, () => (Math.random() - 0.5) * 0.0002, 8000);   // دقيقة كاملة: المقطع القصير كان يرجع لأوله كل 3 ثواني فيرمش المشغّل في شاشة القفل
     if (keeperMode !== 'ring') { keeper.src = silentUrl; keeperMode = 'silent'; }
     keeper.play().catch(() => { if (!interrupted) { keeperMode = ''; renderPush(); } });
     setMedia(curNumber ? `رقمك ${curNumber}: ${T.waiting}` : `البيجر: ${T.waiting}`);
