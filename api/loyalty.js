@@ -250,8 +250,10 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
         // نربط البطاقة برقم البيجر: ينختم لما يستلم طلبه (أو الحين لو استلم)
         await rest(`pager_tickets?id=eq.${ticket.id}`, { method: 'PATCH', body: { loyalty_card_id: card.id } });
         let r = { stamped: false, count: 0, reason: 'PAGER_PENDING' };
-        // سجّل بعد ما استلم طلبه: البطاقة تبدأ بدون ختم (ما ياخذ ختم على مجرد التسجيل)، وأول ختم من طلبه الجاي
-        if (ticket.status === 'done') r = { stamped: false, count: 0, reason: 'REGISTERED' };
+        if (pagerStampDue(ticket)) {
+          r = await purchaseStamp(ctx.store.id, card.id, ctx.settings, ctx.branch.id);
+          await rest(`pager_tickets?id=eq.${ticket.id}`, { method: 'PATCH', body: { loyalty_stamped: true } });
+        }
         out = { ...r, card: cardView((await rest(`loyalty_cards?id=eq.${card.id}&select=*`))[0]) };
       } else {
         // تسجيل من كرت QR الثابت: بطاقة بدون ختم، والختم من الكاشير بعد الشراء
