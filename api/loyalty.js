@@ -56,7 +56,7 @@ function checkPresence(ctx, b) {
   return d;
 }
 
-const cardView = (c) => ({ no: c.member_no, qr: c.client_id ? memberQr(c) : null, name: c.name || null, gender: c.gender || null, stamps: c.stamps, visits: c.visits, rewards: c.rewards, last_stamp_at: c.last_stamp_at, in_wallet: !!c.wallet_url && !wallet.passRemoved(c.wallet_error), has_phone: !!c.phone, has_profile: !!(c.name && c.phone && c.gender) });
+const cardView = (c) => ({ no: c.member_no, qr: c.client_id ? memberQr(c) : null, name: c.name || null, gender: c.gender || null, stamps: c.stamps, visits: c.visits, rewards: c.rewards, last_stamp_at: c.last_stamp_at, in_wallet: !!c.wallet_url && !wallet.passRemoved(c.wallet_error, c.wallet_platform), has_phone: !!c.phone, has_profile: !!(c.name && c.phone && c.gender) });
 
 // بيانات التسجيل: الاسم والجوال والنوع (كلها إجبارية)
 function readProfile(b) {
@@ -432,7 +432,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       // البطاقة القديمة لو انلغت عند شركة المحفظة (404) نسوي وحدة جديدة
       if (card.wallet_url && !/\b404\b/.test(String(card.wallet_error || ''))) return { url: card.wallet_url };
       const pass = await wallet.createPass(await walletCtx(ctx, card));
-      await rest(`loyalty_cards?id=eq.${card.id}`, { method: 'PATCH', body: { wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, wallet_error: null } });
+      await rest(`loyalty_cards?id=eq.${card.id}`, { method: 'PATCH', body: { wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, wallet_error: null, wallet_platform: wallet.walletPlatform(req) } });
       return { url: pass.shareUrl };
     }
   } catch (e) {

@@ -286,7 +286,7 @@ async function pushPagerMessage(homeId, body, afterId, limit = 40, branchId = nu
   const base = `pager_cards?client_id=eq.${homeId}&wallet_serial=not.is.null${branchId ? `&branch_ids=cs.{${Number(branchId)}}` : ''}`;
   const [store, cards, all] = await Promise.all([
     rest(`clients?id=eq.${homeId}&select=id,name,client_slug,logo_url,accent_color,business_type`).then(r => r[0]),
-    rest(`${base}&id=gt.${Number(afterId) || 0}&select=id,wallet_serial,lang&order=id.asc&limit=${limit}`),
+    rest(`${base}&id=gt.${Number(afterId) || 0}&select=id,wallet_serial,lang,platform&order=id.asc&limit=${limit}`),
     afterId ? Promise.resolve(null) : rest(`${base}&select=id`).catch(() => [])
   ]);
   if (!store || !wallet.configured() || !cards.length) return { sent: 0, gone: 0, lastId: afterId, done: true, total: all ? all.length : 0 };
@@ -304,8 +304,8 @@ async function pushPagerMessage(homeId, body, afterId, limit = 40, branchId = nu
     const step = t ? wallet.pagerStep({ store: at || store, number: t.number, step: t.status === 'ready' ? 'ready' : 'waiting', lang: c.lang }) : wallet.pagerStep({ store, step: 'idle', lang: c.lang });
     const r = await wallet.updatePagerPass(c.wallet_serial, { ...step, notice: at ? `${store.name}: ${body}` : body });
     // devices=0: البطاقة انحذفت من محفظة الزبون، فما يوصله إشعار
-    if (r.startsWith('ok') && !/devices=0\b/.test(r)) sent++;
-    else if (r.startsWith('ok')) gone++;
+    if (wallet.reached(r, c.platform)) sent++;
+    else if (r.startsWith('ok')) gone++;   // آيفون ما وصله التحديث: حذف البطاقة
     else console.error('PAGER_MSG', c.id, r);
   }));
   return { sent, gone, lastId: cards.length ? cards[cards.length - 1].id : afterId, done: cards.length < limit, total: all ? all.length : null };
@@ -777,33 +777,33 @@ async function main(req) {
   }
 
   // البطاقة في المحفظة: لو آخر تحديث لها ما وصل لأي جهاز، الزبون حذفها (ما نعرف إلا بعد أول تحديث: ختم أو رسالة)
-  const walletState = (serial, err) => {
-    const removed = !!serial && wallet.passRemoved(err);
+  const walletState = (serial, err, platform) => {
+    const removed = !!serial && wallet.passRemoved(err, platform);
     return { in_wallet: !!serial && !removed, wallet_removed: removed };
   };
   // ─── بطاقة الولاء: كل الأعضاء (للقائمة والداشبورد وملف CSV) ───
   if (action === 'loyalty-members' && req.method === 'GET') {
     const { store } = await context(req);
-    const cards = await rest(`loyalty_cards?client_id=eq.${store.id}&select=id,member_no,name,phone,gender,stamps,visits,rewards,last_stamp_at,created_at,wallet_serial,wallet_error,ai_last_at,branch_ids&order=last_stamp_at.desc.nullslast&limit=5000`);
-    return { members: cards.map(({ wallet_serial, wallet_error, ...c }) => ({ ...c, ...walletState(wallet_serial, wallet_error) })) };
+    const cards = await rest(`loyalty_cards?client_id=eq.${store.id}&select=id,member_no,name,phone,gender,stamps,visits,rewards,last_stamp_at,created_at,wallet_serial,wallet_error,wallet_platform,ai_last_at,branch_ids&order=last_stamp_at.desc.nullslast&limit=5000`);
+    return { members: cards.map(({ wallet_serial, wallet_error, wallet_platform, ...c }) => ({ ...c, ...walletState(wallet_serial, wallet_error, wallet_platform) })) };
   }
 
   // ─── بطاقة الولاء: تفاصيل عضو (زياراته ورسائله) ───
   if (action === 'loyalty-member' && req.method === 'GET') {
     const { store } = await context(req);
     const id = int(req.query.id);
-    const card = (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${store.id}&select=id,member_no,name,phone,gender,stamps,visits,rewards,last_stamp_at,created_at,wallet_serial,wallet_error,ai_last_at,transferred,transferred_at,token`))[0];
+    const card = (await rest(`loyalty_cards?id=eq.${id}&client_id=eq.${store.id}&select=id,member_no,name,phone,gender,stamps,visits,rewards,last_stamp_at,created_at,wallet_serial,wallet_error,wallet_platform,ai_last_at,transferred,transferred_at,token`))[0];
     if (!card) throw new ApiError(404, 'العضو غير موجود');
     const [events, messages, feedback] = await Promise.all([
       rest(`loyalty_events?card_id=eq.${id}&select=kind,created_at,distance_m&order=id.desc&limit=200`),
       rest(`loyalty_messages?client_id=eq.${store.id}&card_id=eq.${id}&or=${q('(kind.is.null,kind.neq.pager)')}&select=id,body,source,kind,created_at&order=id.desc&limit=30`).catch(() => []),
       rest(`loyalty_feedback?client_id=eq.${store.id}&card_id=eq.${id}&select=reason,note,created_at&order=id.desc&limit=10`).catch(() => [])
     ]);
-    const { wallet_serial, wallet_error, token, ...rest_ } = card;
+    const { wallet_serial, wallet_error, wallet_platform, token, ...rest_ } = card;
     // رابط استرجاع البطاقة: صاحب المحل يرسله للعضو بعد ما يتأكد إنه هو (لو غيّر جواله)
     const base = wallet.cardUrl(store.client_slug);
     const restore_url = `${base}${base.includes('?') ? '&' : '?'}t=${encodeURIComponent(token)}`;
-    return { member: { ...rest_, ...walletState(wallet_serial, wallet_error), restore_url }, events, messages, feedback };
+    return { member: { ...rest_, ...walletState(wallet_serial, wallet_error, wallet_platform), restore_url }, events, messages, feedback };
   }
 
   if (req.method !== 'POST') throw new ApiError(404, 'هذا الطلب غير معروف، حدّث الصفحة وحاول مرة ثانية', 'UNKNOWN');

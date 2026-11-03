@@ -24,7 +24,7 @@ async function runWinback(store) {
   if (!w.enabled || w.text.length < 2 || !wallet.configured()) return { skipped: 'off' };
   if (!PLANS.has(store, 'notify') || !PLANS.has(store, 'pager') || PLANS.has(store, 'loyalty')) return { skipped: 'plan' };
   const day = 864e5, now = Date.now();
-  const rows = await rest(`pager_cards?client_id=eq.${store.id}&wallet_serial=not.is.null&last_used_at=lt.${q(new Date(now - w.days * day).toISOString())}&last_used_at=gt.${q(new Date(now - WINBACK_MAX_AGE * day).toISOString())}&select=id,wallet_serial,lang,last_used_at,winback_at&order=last_used_at.desc&limit=500`);
+  const rows = await rest(`pager_cards?client_id=eq.${store.id}&wallet_serial=not.is.null&last_used_at=lt.${q(new Date(now - w.days * day).toISOString())}&last_used_at=gt.${q(new Date(now - WINBACK_MAX_AGE * day).toISOString())}&select=id,wallet_serial,lang,platform,last_used_at,winback_at&order=last_used_at.desc&limit=500`);
   const due = rows.filter(c => !c.winback_at || Date.parse(c.winback_at) < Date.parse(c.last_used_at)).slice(0, WINBACK_BATCH);
   if (!due.length) return { sent: 0 };
   // عنده رقم شغّال اليوم (رجع بنفسه): ما نرسل له
@@ -34,7 +34,7 @@ async function runWinback(store) {
     const r = await wallet.updatePagerPass(c.wallet_serial, { ...wallet.pagerStep({ store, step: 'idle', lang: c.lang }), notice: w.text });
     if (!r.startsWith('ok')) return console.error('PAGER_WINBACK', store.id, c.id, r);
     await rest(`pager_cards?id=eq.${c.id}`, { method: 'PATCH', body: { winback_at: new Date().toISOString() } }).catch(() => {});
-    /devices=0\b/.test(r) ? gone++ : sent++;
+    wallet.reached(r, c.platform) ? sent++ : gone++;
   }));
   const last = { at: new Date().toISOString(), sent };
   await rest(`clients?id=eq.${store.id}`, { method: 'PATCH', body: { pager_winback: { ...(store.pager_winback || {}), last } } }).catch(() => {});

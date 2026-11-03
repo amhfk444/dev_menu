@@ -73,10 +73,10 @@ function cleanInvoice(v) {
 async function linkedCard(branchId, cardId) {
   if (!cardId) return { wallet: false, reward_ready: false };
   const storeId = await loyaltyHome(branchId);
-  const c = (await rest(`loyalty_cards?id=eq.${cardId}&select=stamps,wallet_serial,wallet_error`).catch(() => []))[0] || {};
+  const c = (await rest(`loyalty_cards?id=eq.${cardId}&select=stamps,wallet_serial,wallet_error,wallet_platform`).catch(() => []))[0] || {};
   const x = (await rest(`clients?id=eq.${storeId}&select=loyalty_settings`).catch(() => []))[0] || {};
   const gifts = await rest(`loyalty_gifts?to_card=eq.${cardId}&status=eq.claimed&expires_at=gt.${q(new Date().toISOString())}&select=code&limit=1`).catch(() => []);
-  return { wallet: !!c.wallet_serial && !wallet.passRemoved(c.wallet_error), wallet_removed: !!c.wallet_serial && wallet.passRemoved(c.wallet_error), reward_ready: (c.stamps || 0) >= normalizeLoyalty(x.loyalty_settings).needed || gifts.length > 0 };
+  return { wallet: !!c.wallet_serial && !wallet.passRemoved(c.wallet_error, c.wallet_platform), wallet_removed: !!c.wallet_serial && wallet.passRemoved(c.wallet_error, c.wallet_platform), reward_ready: (c.stamps || 0) >= normalizeLoyalty(x.loyalty_settings).needed || gifts.length > 0 };
 }
 // رابط تقييم المحل في قوقل ماب، وحساباته في التواصل (تطلع للزبون بعد ما يستلم)
 async function afterPickup(store) {
@@ -193,7 +193,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const token = String(req.query.t || '');
     if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
     const sel = `pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&select=number,status,created_at,ready_at`;
-    const t = (await rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url,wallet_error,car`).catch(() => rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url,wallet_error`)).catch(() => rest(`${sel},invoice_no`)).catch(() => rest(sel)))[0];
+    const t = (await rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url,wallet_serial,wallet_error,car`).catch(() => rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url,wallet_serial,wallet_error`)).catch(() => rest(`${sel},invoice_no`)).catch(() => rest(sel)))[0];
     if (!t) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
     if (DEMO.has(store.client_slug) && t.status === 'waiting' && Date.now() - Date.parse(t.created_at) > (t.wallet_url ? DEMO_AFTER_CARD : DEMO_AFTER)) {
       await demoRing(store, token);
@@ -203,7 +203,8 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const stale = t.status === 'waiting' && Date.now() - Date.parse(t.created_at) > 18 * 3600e3;
     const { review = null, social = {} } = ['ready', 'done'].includes(t.status) ? await afterPickup(store) : {};
     // البطاقة المربوطة انحذفت من محفظته (آخر تحديث وصل لـ 0 جوال): نعرض عليه يضيفها من جديد
-    const card_gone = !!t.wallet_url && wallet.passRemoved(t.wallet_error);
+    const card_gone = !!t.wallet_url && wallet.passRemoved(t.wallet_error)
+      && ((await rest(`pager_cards?wallet_serial=eq.${q(t.wallet_serial || '')}&select=platform`).catch(() => []))[0] || {}).platform !== 'google';
     // تسليم الطلب للسيارة: صاحب المحل مشغّله، فنسأل الزبون عن سيارته
     const car_ask = t.status === 'waiting' && ((await rest(`clients?id=eq.${store.id}&select=pager_car`).catch(() => []))[0] || {}).pager_car === true;
     return { demo: DEMO.has(store.client_slug), wallet: wallet.configured() && !store.free && !(await wallet.cardMaintenance()), in_wallet: !!t.wallet_url && !card_gone, card_gone, car_ask, car: t.car || null, review_url: review, social, store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
@@ -249,7 +250,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       const notice = 'خذ رقمك من البيجر، ويوصلك هنا إشعار لما يجهز طلبك';
       const pass = await wallet.createPagerPass({ ...wallet.pagerStep({ store, step: 'idle', lang }), status: 'خذ رقمك من البيجر', notice });
       const card = crypto.randomBytes(18).toString('base64url');
-      await rest('pager_cards', { method: 'POST', body: { client_id: await brandOf(store), token: card, wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, lang, branch_ids: [store.id], last_notice: notice } });
+      await rest('pager_cards', { method: 'POST', body: { client_id: await brandOf(store), token: card, wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, platform: wallet.walletPlatform(req), lang, branch_ids: [store.id], last_notice: notice } });
       return { url: pass.shareUrl, card };
     }
     if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
@@ -265,7 +266,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const step = wallet.pagerStep({ store, number: t.number, step: t.status, lang: t.lang });
     const pass = await wallet.createPagerPass(step);
     const card = crypto.randomBytes(18).toString('base64url');
-    await rest('pager_cards', { method: 'POST', body: { client_id: await brandOf(store), token: card, wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, lang: t.lang || null, branch_ids: [store.id], last_notice: step.notice } });
+    await rest('pager_cards', { method: 'POST', body: { client_id: await brandOf(store), token: card, wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, platform: wallet.walletPlatform(req), lang: t.lang || null, branch_ids: [store.id], last_notice: step.notice } });
     await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { wallet_serial: pass.serialNumber, wallet_url: pass.shareUrl, ...(DEMO.has(store.client_slug) ? { created_at: new Date().toISOString() } : {}) } });
     return { url: pass.shareUrl, card };
   }

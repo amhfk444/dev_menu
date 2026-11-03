@@ -220,10 +220,16 @@ async function endPagerPass(serial, ticketId, ctx) {
 
 // الزبون حذف البطاقة من محفظته: آخر تحديث تغيّر محتواه وما وصل لأي جهاز
 // (لو المحتوى ما تغيّر الخدمة ما ترسل لأحد، فـ devices=0 وقتها ما تعني شي)
-const passRemoved = (err) => {
+// platform: google = Google Wallet (رد الخدمة ما يحسب أجهزته، فما نعرف إنها انحذفت إلا لو انلغت 404)
+const passRemoved = (err, platform) => {
   const last = String(err || '').split('|').pop();
+  if (platform === 'google') return /\b404\b/.test(last);
   // أو البطاقة نفسها انلغت عند شركة المحفظة (404): لازم يضيفها من جديد
   return (/devices=0\b/.test(last) && !/unchanged=true\b/.test(last)) || /\b404\b/.test(last);
 };
 
-module.exports = { cardMaintenance, passRemoved, configured, createPass, updatePass, revokePass, buildCtx, cardUrl, createPagerPass, updatePagerPass, endPagerPass, pagerStep };
+// نوع المحفظة من جوال الزبون وقت الإضافة: الأندرويد = Google Wallet
+const walletPlatform = (req) => /Android/i.test(String((req && req.headers && req.headers['user-agent']) || '')) ? 'google' : 'apple';
+// التحديث وصل للزبون؟ (devices يحسب أجهزة الآيفون بس، فبطاقة قوقل نعتبرها وصلت لو التحديث نجح)
+const reached = (r, platform) => String(r).startsWith('ok') && (platform === 'google' || !/devices=0\b/.test(r));
+module.exports = { walletPlatform, reached, cardMaintenance, passRemoved, configured, createPass, updatePass, revokePass, buildCtx, cardUrl, createPagerPass, updatePagerPass, endPagerPass, pagerStep };
