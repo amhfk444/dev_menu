@@ -1601,5 +1601,12 @@
   "يطلع للزبون في: إشعار على بطاقته في المحفظة، أول ما يسجل.": "Customers see: a notification on their wallet card right after joining.",
   "رسالة تسليم المكافأة": "Reward message",
   "يطلع للزبون في: إشعار على بطاقته في المحفظة، لما الموظف يصرف له المكافأة.": "Customers see: a notification on their wallet card when staff give the reward.",
-  "يطلع للزبون في بطاقته:": "Customers see on their card:"
+  "يطلع للزبون في بطاقته:": "Customers see on their card:",
+  "يطلع للزبون في: أعلى كل صفحاتك (المنيو، الروابط، البيجر، الولاء)، وفي بطاقات المحفظة.": "Customers see: the top of all your pages (menu, links, pager, loyalty) and on wallet cards.",
+  "يطلع للزبون في: كل صفحاتك، وبطاقات المحفظة، وظهر بطاقات لعبة البيجر.": "Customers see: all your pages, wallet cards, and the back of the pager game cards.",
+  "يطلع للزبون في: خلف أعلى المنيو، وفي صفحة الروابط لو ما حطيت لها خلفية خاصة.": "Customers see: behind the top of your menu, and on your links page if it has no background of its own.",
+  "يطلع للزبون في: مكان صورة الخلفية، يتحرك. لو رفعته يطلع بدل الصورة.": "Customers see: a moving background instead of the image.",
+  "يطلع للزبون في: المنيو وصفحة الروابط، والمساعد الذكي يجاوب منها لو سألوه متى تفتحون.": "Customers see: your menu and links page; the assistant uses it when asked about opening hours.",
+  "يطلع للزبون في: زر \"موقعنا\" في المنيو، و\"زورونا\" في صفحة الروابط. ولو ما حطيت رابط تقييم، زر التقييم في البيجر يفتحه.": "Customers see: the \"Location\" button in your menu and \"Visit us\" on your links page. Without a review link, the pager review button opens it.",
+  "مثال:": "Example:"
 }

@@ -1427,6 +1427,7 @@
                     <span class="text-ink">من آخر رقم أخذه</span>
                   </div>
                   <textarea id="nt-wb-text" rows="2" maxlength="150" placeholder="مثلاً: وحشتنا! قهوتك اليوم بنص السعر، وريها للكاشير" class="input-pro text-sm resize-none"></textarea>
+                  <p id="nt-wb-say" class="text-[12px] text-ink bg-brand/5 border border-brand/15 rounded-xl px-3 py-2 leading-relaxed"></p>
                   <div class="flex flex-wrap items-center justify-between gap-2">
                     <p id="nt-wb-last" class="text-[11px] text-ink"></p>
                     <button type="button" id="nt-wb-save" onclick="saveWinback()" class="bg-brand hover:bg-brand-dark text-cream px-4 py-2 rounded-xl text-xs font-bold transition"><i class="ph-bold ph-floppy-disk"></i> احفظ</button>
@@ -1631,12 +1632,14 @@
       <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
         <label class="text-[11px] font-bold text-ink">اسم المنشأة</label>
         <input type="text" id="setting-name" placeholder="اسم المنشأة" class="input-pro text-xs">
+        <p class="text-[11px] text-ink leading-relaxed">يطلع للزبون في: أعلى كل صفحاتك (المنيو، الروابط، البيجر، الولاء)، وفي بطاقات المحفظة.</p>
         <button onclick="updateRestaurantName()" class="w-full bg-brand text-cream hover:bg-brand-dark text-xs font-bold py-2 rounded-xl transition">حفظ الاسم</button>
       </div>
 
       <div class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
         <div class="flex items-center justify-between">
           <label class="text-[11px] font-bold text-ink">شعار المنشأة (Logo)</label>
+          <p class="text-[11px] text-ink leading-relaxed">يطلع للزبون في: كل صفحاتك، وبطاقات المحفظة، وظهر بطاقات لعبة البيجر.</p>
           <img id="logo-preview" src="images/logo.jpeg?v=2" class="w-7 h-7 object-cover rounded-full border border-brand/30" onerror="this.onerror=null;this.src='images/logo.jpeg?v=2'">
         </div>
         <input type="file" id="logo-file" accept="image/*" class="input-pro text-[11px]">
@@ -1645,6 +1648,7 @@
 
       <div data-free-hide class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
         <label class="text-[11px] font-bold text-ink">صورة خلفية المنيو</label>
+        <p class="text-[11px] text-ink leading-relaxed">يطلع للزبون في: خلف أعلى المنيو، وفي صفحة الروابط لو ما حطيت لها خلفية خاصة.</p>
         <input type="file" id="bg-img-file" accept="image/*" class="input-pro text-[11px]">
         <button id="upl-bg_image" onclick="uploadMedia('bg_image')" class="w-full bg-brand text-cream hover:bg-brand-dark text-xs font-bold py-2 rounded-xl transition">تحديث الخلفية</button>
         <div id="bg-img-prev" class="hidden"></div>
@@ -1652,6 +1656,7 @@
 
       <div data-free-hide class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
         <label class="text-[11px] font-bold text-ink">فيديو خلفية المنيو (MP4)</label>
+        <p class="text-[11px] text-ink leading-relaxed">يطلع للزبون في: مكان صورة الخلفية، يتحرك. لو رفعته يطلع بدل الصورة.</p>
         <input type="file" id="bg-video-file" accept="video/*" class="input-pro text-[11px]">
         <button id="upl-bg_video" onclick="uploadMedia('bg_video')" class="w-full bg-brand text-cream hover:bg-brand-dark text-xs font-bold py-2 rounded-xl transition">تحديث الفيديو</button>
         <div id="bg-video-prev" class="hidden"></div>
@@ -1813,10 +1818,12 @@
           <div data-free-hide>
             <label for="info-hours" class="text-xs font-semibold text-ink block mb-1">ساعات العمل</label>
             <input type="text" id="info-hours" maxlength="80" placeholder="مثال: يومياً من 1 ظهراً حتى 1 فجراً" class="input-pro text-xs">
+            <p class="text-[11px] text-ink leading-relaxed mt-1">يطلع للزبون في: المنيو وصفحة الروابط، والمساعد الذكي يجاوب منها لو سألوه متى تفتحون.</p>
           </div>
           <div>
             <label for="info-location" class="text-xs font-semibold text-ink block mb-1">رابط الموقع على خرائط Google</label>
             <input type="url" id="info-location" placeholder="https://maps.app.goo.gl/..." class="input-pro text-xs" dir="ltr">
+            <p class="text-[11px] text-ink leading-relaxed mt-1">يطلع للزبون في: زر "موقعنا" في المنيو، و"زورونا" في صفحة الروابط. ولو ما حطيت رابط تقييم، زر التقييم في البيجر يفتحه.</p>
           </div>
         </div>
         <div data-needs="menu" id="wa-orders-box" class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2.5">
@@ -1985,7 +1992,7 @@
         <div data-needs="menu" class="pro-card p-5 space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-moped text-amber-600"></i> تطبيقات التوصيل</h3>
-            <span class="text-[11px] text-ink">اختر التطبيقات اللي منشأتك موجودة فيها، وتظهر للزبائن في المنيو</span>
+            <span class="text-[11px] text-ink">اختر التطبيقات اللي منشأتك موجودة فيها. يطلع للزبون في: أعلى المنيو "اطلب توصيل عبر"، وفي صفحة الروابط.</span>
           </div>
           <div id="delivery-picker" class="grid grid-cols-3 sm:grid-cols-5 gap-2"></div>
           <div id="delivery-list" class="space-y-2"></div>
@@ -1998,7 +2005,7 @@
               <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-phone text-emerald-600"></i> أرقام الطلبات</h3>
               <span id="order-numbers-count" class="text-[11px] text-ink"></span>
             </div>
-            <p class="text-[11px] text-ink -mt-2">تظهر كأزرار اتصال أعلى المنيو وفي صفحة الروابط. مثال: "الطلبات الخارجية".</p>
+            <p class="text-[11px] text-ink -mt-2">يطلع للزبون في: أزرار اتصال أعلى المنيو وفي صفحة الروابط. مثال: "الطلبات الخارجية".</p>
             <div id="order-numbers-list" class="space-y-2"></div>
             <button type="button" id="order-numbers-add" onclick="addOrderNumber()" class="w-full bg-brand/5 hover:bg-brand/10 text-ink border border-dashed border-brand/30 font-bold py-2 rounded-xl text-xs transition disabled:opacity-40 disabled:cursor-not-allowed"><i class="ph-bold ph-plus text-[11px]"></i> إضافة رقم</button>
             <button onclick="saveOrderNumbers()" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition">حفظ أرقام الطلبات</button>
@@ -4047,6 +4054,13 @@
     document.getElementById('wl-say-hold').innerHTML = `لما يجي دوره يطلع له: <b>«عندك ${h} دقايق تحضر»</b>، وبعدها تقدر تعطي دوره للي بعده.`;
   }
   ['wl-minutes', 'wl-hold'].forEach(id => document.getElementById(id).addEventListener('input', sayWaitlist));
+  // مثال حي لرسالة "وحشتنا"
+  function sayWinback() {
+    const el = document.getElementById('nt-wb-say'); if (!el) return;
+    const d = document.getElementById('nt-wb-days').value, t = document.getElementById('nt-wb-text').value.trim();
+    el.innerHTML = `<b>مثال:</b> زبون آخر رقم أخذه قبل ${d} يوم، يوصله على شاشة القفل من بطاقة النداء: «${t ? esc(t) : '...'}». ومرة وحدة بس لين يرجع.`;
+  }
+  ['nt-wb-days', 'nt-wb-text'].forEach(id => { const el = document.getElementById(id); if (el) el.addEventListener(id === 'nt-wb-days' ? 'change' : 'input', sayWinback); });
   async function saveWaitlistSettings() {
     const fields = {};
     Object.keys(WL_FIELDS).forEach(k => {
@@ -4392,7 +4406,7 @@
     w = w || {};
     document.getElementById('nt-wb-on').checked = w.enabled === true;
     document.getElementById('nt-wb-days').value = String(w.days || 14);
-    document.getElementById('nt-wb-text').value = w.text || '';
+    document.getElementById('nt-wb-text').value = w.text || ''; sayWinback();
     const when = (iso) => new Date(iso).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short' });
     document.getElementById('nt-wb-last').textContent = w.last && w.last.sent ? `آخر مرة: ${when(w.last.at)} · وصلت لـ ${w.last.sent} زبون` : w.enabled ? 'تنرسل كل يوم العصر للي غابوا' : '';
   }
