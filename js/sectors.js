@@ -19,13 +19,13 @@
   // ─── المصطلحات والرسائل حسب المجال (البيجر وقائمة الانتظار والإشعارات) ───
   const ORDER_T = {   // استلام طلب: مطاعم، مقاهي، مخابز، صيدليات، متاجر، مغسلة ملابس
     ready: 'طلبك جاهز!', readyBody: 'تفضّل استلمه', waiting: 'جاري تجهيز طلبك…', ringWhen: 'لما يجهز طلبك',
-    tell: 'لما تستلم طلبك، ورّ الموظف هذا الرقم', got: 'استلمت طلبي', game: 'العب لين يجهز طلبك',
+    tell: 'ورّ هذا الرقم للموظف مع طلبك', got: 'استلمت طلبي', game: 'العب لين يجهز طلبك',
     deskWait: 'قيد التجهيز', deskReady: 'جاهز، بانتظار الاستلام', deskCall: 'جاهز', deskDone: 'استلم',
     wlReady: 'طاولتك جاهزة!', wlReadyLine: 'طاولتك جاهزة الآن', wlWhen: 'أول ما تجهز طاولتك'
   };
   const TURN_T = {    // دور: عيادات، صالونات، مراكز خدمة
     ready: 'جاء دورك!', readyBody: 'تفضّل للموظف', waiting: 'انتظر دورك…', ringWhen: 'لما يجي دورك',
-    tell: 'لما يجي دورك، ورّ الموظف هذا الرقم', got: 'تمام، وصلت', game: 'العب لين يجي دورك',
+    tell: 'ورّ هذا الرقم للموظف', got: 'تمام، وصلت', game: 'العب لين يجي دورك',
     deskWait: 'بالانتظار', deskReady: 'تم النداء، بانتظار الحضور', deskCall: 'نادِ', deskDone: 'حضر',
     wlReady: 'جاء دورك!', wlReadyLine: 'جاء دورك الآن', wlWhen: 'أول ما يجي دورك'
   };
@@ -33,7 +33,7 @@
     restaurant: ORDER_T, cafe: ORDER_T, mixed: ORDER_T, bakery: ORDER_T, pharmacy: ORDER_T, retail: ORDER_T,
     laundry: { ...ORDER_T, ready: 'غسيلك جاهز!', wlReady: 'جاء دورك!', wlReadyLine: 'جاء دورك الآن', wlWhen: 'أول ما يجي دورك' },
     carwash: { ...ORDER_T, ready: 'سيارتك جاهزة!', readyBody: 'تفضّل استلمها', waiting: 'جاري العمل على سيارتك…', ringWhen: 'لما تجهز سيارتك',
-      tell: 'لما تستلم سيارتك، ورّ الموظف هذا الرقم', got: 'استلمت سيارتي', game: 'العب لين تجهز سيارتك', wlReady: 'جاء دورك!', wlReadyLine: 'جاء دورك الآن', wlWhen: 'أول ما يجي دورك' },
+      tell: 'ورّ هذا الرقم للموظف', got: 'استلمت سيارتي', game: 'العب لين تجهز سيارتك', wlReady: 'جاء دورك!', wlReadyLine: 'جاء دورك الآن', wlWhen: 'أول ما يجي دورك' },
     clinic: { ...TURN_T, readyBody: 'تفضّل للدخول' },
     salon: TURN_T, services: TURN_T, other: TURN_T
   };

@@ -1,6 +1,6 @@
 /* DEV MENU — أيقونات (Phosphor, MIT). مولّد بـ tools/icons.js، لا تعدّله يدوياً */
-@font-face { font-family: "Phosphor-Bold"; src: url("/fonts/Phosphor-Bold.woff2?v=2e210372") format("woff2"); font-display: block; }
-@font-face { font-family: "Phosphor-Fill"; src: url("/fonts/Phosphor-Fill.woff2?v=237611c9") format("woff2"); font-display: block; }
+@font-face { font-family: "Phosphor-Bold"; src: url("/fonts/Phosphor-Bold.woff2?v=6b137af3") format("woff2"); font-display: block; }
+@font-face { font-family: "Phosphor-Fill"; src: url("/fonts/Phosphor-Fill.woff2?v=7555ccfc") format("woff2"); font-display: block; }
 .ph-bold { font-family: "Phosphor-Bold" !important; font-style: normal; font-weight: normal; font-variant: normal; text-transform: none; line-height: 1; display: inline-block; vertical-align: -.125em; speak: never; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 .ph-bold.ph-star, .ph-bold.ph-star-half, .ph-bold.ph-circle { font-family: "Phosphor-Fill" !important; }
 .ph-address-book:before { content: "\e6f8"; }
@@ -55,7 +55,6 @@
 .ph-crosshair:before { content: "\e1d6"; }
 .ph-crown:before { content: "\e614"; }
 .ph-device-mobile:before { content: "\e1e0"; }
-.ph-device-mobile-speaker:before { content: "\e1e4"; }
 .ph-device-tablet:before { content: "\e1e6"; }
 .ph-door:before { content: "\e61c"; }
 .ph-dots-six-vertical:before { content: "\eae2"; }
@@ -145,7 +144,6 @@
 .ph-snapchat-logo:before { content: "\e668"; }
 .ph-sparkle:before { content: "\e6a2"; }
 .ph-speaker-high:before { content: "\e44a"; }
-.ph-speaker-slash:before { content: "\e45a"; }
 .ph-spinner-gap:before { content: "\e66c"; }
 .ph-squares-four:before { content: "\e464"; }
 .ph-stack:before { content: "\e466"; }
@@ -170,7 +168,6 @@
 .ph-warning:before { content: "\e4e0"; }
 .ph-warning-circle:before { content: "\e4e2"; }
 .ph-whatsapp-logo:before { content: "\e5d0"; }
-.ph-wrench:before { content: "\e5d4"; }
 .ph-x:before { content: "\e4f6"; }
 .ph-x-circle:before { content: "\e4f8"; }
 .ph-spin { animation: ph-spin 1s linear infinite; }
