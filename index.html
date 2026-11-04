@@ -977,7 +977,8 @@
       dlg.close();
       const t = document.querySelector(`.tabs [data-tab="${tab}"]`); if (t) t.click();
       $('try').classList.add('in');   // نلغي حركة الظهور قبل النزول، عشان ما يتغطى أعلى البطاقة
-      $('try').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+      // بعد ما تقفل النافذة (إغلاقها يرجّع التركيز للشعار فوق ويوقف النزول)
+      setTimeout(() => $('try').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }), 60);
     };
     if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
   }
