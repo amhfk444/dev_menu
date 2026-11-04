@@ -120,8 +120,7 @@ async function priceCart(store, coupon, rawItems) {
   const [products, categories, promos] = await Promise.all([
     rest(`products?client_id=eq.${store.id}&id=in.(${ids.join(',')})&is_hidden=is.false&select=id,price,category,sizes,is_available`),
     rest(`categories?client_id=eq.${store.id}&select=key,name`),
-    menuPromos(store.id),
-    brandName(store.id, store.name)
+    menuPromos(store.id)
   ]);
   const byId = new Map(products.map(p => [p.id, p]));
   const nameToKey = new Map(categories.map(c => [c.name, c.key]));
@@ -184,7 +183,8 @@ async function menuPayload(slug) {
     waitlistOpen(store.id),
     hasCoupons(store.id),
     activeOccasion(store.id),
-    menuPromos(store.id)
+    menuPromos(store.id),
+    brandName(store.id, store.name)
   ]);
   // زر المساعد: مشغّل من صاحب المحل + ضمن باقته + باقي له رصيد هالشهر
   // الزر يبقى ظاهر حتى لو خلص الرصيد: المساعد يرد رد لطيف بدل ما يختفي أو يذكر حدود
