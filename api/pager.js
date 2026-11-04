@@ -229,8 +229,11 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const store = await loadStore(req.query.slug);
     res.setHeader('Cache-Control', 'no-store');
     const fake = { status: 'waiting', game_won: false, created_at: new Date().toISOString() };
-    const [extras, typical] = await Promise.all([waitExtras(store.id, fake), require('./_lib/pager-wait').typicalWait(store.id)]);
-    return { ...extras, queue: { ahead: 2, eta: typical || 6 }, staff_eta: null, addons: [], game_won: false, demo: false, wallet: false, in_wallet: true, card_gone: false, car_ask: false, car: null, review_url: null, social: {},
+    const PW = require('./_lib/pager-wait');
+    const [extras, stats] = await Promise.all([waitExtras(store.id, fake), PW.waitStats(store.id)]);
+    const sample = { ...fake, created_at: new Date(Date.now() - 3 * 60000).toISOString() };   // كأنه انتظر 3 دقايق
+    const est = PW.estimate(sample, 2, stats.typical || stats.gap ? stats : { typical: 10, gap: 3 });
+    return { ...extras, queue: { ahead: 2, ...est }, staff_eta: null, addons: [], game_won: false, demo: false, wallet: false, in_wallet: true, card_gone: false, car_ask: false, car: null, review_url: null, social: {},
       store: { name: store.display_name || store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null },
       ticket: { number: 23, status: 'waiting', ready_at: null, invoice_no: null }, live: '', loyalty: { enabled: false } };
   }
@@ -261,11 +264,11 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     let queue;
     if (req.query.q === '1' && t.status === 'waiting' && !stale) {
       const PW = require('./_lib/pager-wait');
-      const [ahead, typical] = await Promise.all([PW.aheadOf(store.id, t), PW.typicalWait(store.id)]);
-      queue = { ahead, eta: PW.etaOf(t, typical) };
+      const [ahead, stats] = await Promise.all([PW.aheadOf(store.id, t), PW.waitStats(store.id)]);
+      queue = { ahead, ...PW.estimate(t, ahead, stats) };
     }
     // وقت الكاشير يوصل مع كل تحديث (يتغير فوراً عند الزبون)، والتقدير من الطابور كل 15 ثانية
-    const staffEta = t.status === 'waiting' && t.eta_at ? require('./_lib/pager-wait').etaOf(t, null) : null;
+    const staffEta = t.status === 'waiting' && t.eta_at ? require('./_lib/pager-wait').estimate(t, 0, null) : null;
     return { ...extras, ...(queue ? { queue } : {}), staff_eta: staffEta, addons: publicAddons(t.addons), game_won: t.game_won === true, demo: DEMO.has(store.client_slug), wallet: wallet.configured() && !store.free && !(await wallet.cardMaintenance()), in_wallet: !!t.wallet_url && !card_gone, card_gone, car_ask, car: t.car || null, review_url: review, social, store: { name: store.display_name || store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
       loyalty: { ...(await loyaltyOf(store.id)), linked: !!t.loyalty_card_id, stamped: !!t.loyalty_stamped,
         ...(await linkedCard(store.id, t.loyalty_card_id)) } };

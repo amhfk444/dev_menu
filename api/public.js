@@ -171,14 +171,16 @@ async function brandName(storeId, name) {
 async function pagerOrder(storeId, token) {
   const t = (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${storeId}&select=number,status,created_at,ready_at,addons,eta_at`).catch(() => rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${storeId}&select=number,status,created_at,ready_at,addons`)).catch(() => []))[0];
   if (!t) return null;
-  const { mins, aheadOf, typicalWait, etaOf, addonLine } = require('./_lib/pager-wait');
-  const [ahead, typical] = await Promise.all([aheadOf(storeId, t), typicalWait(storeId)]);
+  const { mins, aheadOf, waitStats, estimate, etaOf, addonLine } = require('./_lib/pager-wait');
+  const [ahead, stats] = await Promise.all([aheadOf(storeId, t), waitStats(storeId)]);
+  const typical = stats.typical, est = estimate(t, ahead, stats);
   const STATUS = { waiting: 'being prepared (waiting)', ready: 'READY now, guest should pick it up from the counter', done: 'already picked up', cancelled: 'cancelled by the store' };
   const added = Array.isArray(t.addons) && t.addons.length ? `items the guest added from this page (sent to the cashier, paid at pickup): ${t.addons.map(addonLine).join(', ')}` : '';
   const staff = t.status === 'waiting' && t.eta_at ? `EXPECTED READY IN (set by the cashier just now, authoritative): about ${etaOf(t, null)} minutes from now` : '';
   return [`pager number: ${t.number}`, `status: ${STATUS[t.status] || t.status}`, staff, `waiting since: ${mins(Date.now() - Date.parse(t.created_at))} minutes`,
     t.status === 'waiting' ? `orders ahead still being prepared: ${ahead}` : '',
-    typical ? `typical wait at this place (median, last 7 days): ${typical} minutes` : 'typical wait: not enough data', added].filter(Boolean).join('\n');
+    est && !t.eta_at ? (est.overdue ? 'estimate: already past the usual time, it should be ready any moment' : est.low ? `estimated time left (counts the orders ahead): ${est.low} to ${est.high} minutes` : 'estimate: not enough data, do not give minutes') : '',
+    typical ? `typical wait at this place (median, last 7 days): ${typical} minutes` : '', added].filter(Boolean).join('\n');
 }
 
 async function menuPayload(slug) {
