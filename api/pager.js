@@ -128,6 +128,12 @@ async function loadStore(slug) {
   // الباقة المجانية: البيجر الأساسي بس (بدون بطاقة النداء)
   const plan = (await rest(`clients?id=eq.${store.id}&select=subscription_status,plan_features,parent_id,is_active,trial_ends_at,subscription_end_date`))[0];
   store.free = PLANS.pagerLite(plan);   // الباقة المجانية، أو البيجر المجاني المضاف لمشترك
+  // الاسم اللي يشوفه الزبون في صفحة البيجر: الفرع ياخذ اسم المحل الرئيسي (ماندولين، مو "ماندولين فرع بيش")
+  store.display_name = store.name;
+  if (plan && plan.parent_id) {
+    const root = (await rest(`clients?id=eq.${Number(plan.parent_id)}&select=name`).catch(() => []))[0];
+    if (root && root.name) store.display_name = root.name;
+  }
   return store;
 }
 // أرقام المحل هالشهر (بتوقيت الرياض)
@@ -147,7 +153,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     // بطاقة النداء تنعرض قبل أخذ الرقم (المحل اللي ما عنده ولاء)
     const card = wallet.configured() && !store.free && !(await wallet.cardMaintenance()) && !(await loyaltyOf(store.id)).enabled;
     const car = (await rest(`clients?id=eq.${store.id}&select=pager_car`).catch(() => []))[0]?.pager_car === true;   // خطوة السيارة قبل الرقم
-    return { store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, push_key: pushPublicKey(), brand: await brandOf(store), card, car, ...(full ? { full: true } : {}) };
+    return { store: { name: store.display_name || store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, push_key: pushPublicKey(), brand: await brandOf(store), card, car, ...(full ? { full: true } : {}) };
   }
 
   // بطاقة النداء المحفوظة في جواله: شغالة؟ (لو انلغت أو انحذفت، الصفحة تعرض عليه يضيف وحدة جديدة)
@@ -181,7 +187,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       // card_ok: false = البطاقة المحفوظة في جواله ما عادت شغالة، والصفحة تعرض عليه يضيف وحدة جديدة
       const linked = TOKEN_RE.test(String(b.pc || '')) ? await linkPagerCard(store, res.token, b.pc).catch(e => { console.error('PAGER_CARD', e.message); return null; }) : undefined;
       await poke(topic('pager', store.id));
-      return { token: res.token, number: res.number, ...(linked === null ? { card_ok: false } : {}), store: { name: store.name, logo_url: store.logo_url, accent_color: store.accent_color || null } };
+      return { token: res.token, number: res.number, ...(linked === null ? { card_ok: false } : {}), store: { name: store.display_name || store.name, logo_url: store.logo_url, accent_color: store.accent_color || null } };
     } catch (e) {
       if (String(e.dbMessage || e.message).includes('PAGER_FULL')) throw new ApiError(409, 'وصلنا الحد اليومي للأرقام', 'FULL');
       throw e;
@@ -207,7 +213,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       && ((await rest(`pager_cards?wallet_serial=eq.${q(t.wallet_serial || '')}&select=platform`).catch(() => []))[0] || {}).platform !== 'google';
     // تسليم الطلب للسيارة: صاحب المحل مشغّله، فنسأل الزبون عن سيارته
     const car_ask = t.status === 'waiting' && ((await rest(`clients?id=eq.${store.id}&select=pager_car`).catch(() => []))[0] || {}).pager_car === true;
-    return { demo: DEMO.has(store.client_slug), wallet: wallet.configured() && !store.free && !(await wallet.cardMaintenance()), in_wallet: !!t.wallet_url && !card_gone, card_gone, car_ask, car: t.car || null, review_url: review, social, store: { name: store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
+    return { demo: DEMO.has(store.client_slug), wallet: wallet.configured() && !store.free && !(await wallet.cardMaintenance()), in_wallet: !!t.wallet_url && !card_gone, card_gone, car_ask, car: t.car || null, review_url: review, social, store: { name: store.display_name || store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
       loyalty: { ...(await loyaltyOf(store.id)), linked: !!t.loyalty_card_id, stamped: !!t.loyalty_stamped,
         ...(await linkedCard(store.id, t.loyalty_card_id)) } };
   }
