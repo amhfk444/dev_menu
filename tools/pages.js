@@ -5,6 +5,7 @@ module.exports = {
     colors: { brand: { DEFAULT: '#384f3d', dark: '#2a3e2f' }, ink: '#303030', sand: '#f1f1f1', gold: { DEFAULT: '#c9a227', deep: '#8a6d0f' } },
     fontFamily: { sans: ['SaudiRiyal', '"IBM Plex Sans Arabic"', 'system-ui', 'sans-serif'] }
   },
+  menu: {},   // المنيو كان يحمّل Tailwind من cdn.tailwindcss.com ويبني الـ CSS في جوال الزبون
   login: {},
   links: {},
   pager: {},

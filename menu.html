@@ -9,24 +9,24 @@
 <meta name="theme-color" content="#0b0b0b">
 <title>المنيو الرقمي</title>
 
-<!-- Tailwind CSS & FontAwesome -->
-<script src="https://cdn.tailwindcss.com"></script>
+<!-- FontAwesome (و Tailwind مبني مسبقاً آخر الـ head، نفس ترتيب Tailwind CDN اللي كان ينضاف بعد الأنماط) -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="js/api.js"></script>
 <script src="js/theme.js"></script>
 <script src="js/occasions.js"></script>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
 <style>
   /* رمز الريال السعودي الجديد ⃁ (U+20C1): خط مخصص يُستخدم لهذا الرمز فقط */
   @font-face {
     font-family: 'SaudiRiyal';
-    src: url('https://cdn.jsdelivr.net/npm/@emran-alhaddad/saudi-riyal-font@1.1.0/fonts/regular/saudi_riyal.woff2') format('woff2');
+    src: url('/fonts/saudi-riyal-regular.woff2') format('woff2');
     font-weight: 100 600; font-display: swap; unicode-range: U+20C1;
   }
   @font-face {
     font-family: 'SaudiRiyal';
-    src: url('https://cdn.jsdelivr.net/npm/@emran-alhaddad/saudi-riyal-font@1.1.0/fonts/bold/saudi_riyal.woff2') format('woff2');
+    src: url('/fonts/saudi-riyal-bold.woff2') format('woff2');
     font-weight: 700 900; font-display: swap; unicode-range: U+20C1;
   }
   /* ─── مساعد المنيو الذكي ─── */
@@ -191,6 +191,7 @@
   body.tone-light .text-green-300 { color: #15803d; }
   body.tone-light #promo-banner, body.tone-light #waitlist-btn { box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.25); border: 1px solid var(--line); }
 </style>
+<link rel="stylesheet" href="/css/tw/menu.css">
 </head>
 
 <body class="font-sans antialiased pb-16">
