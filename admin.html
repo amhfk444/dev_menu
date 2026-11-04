@@ -1679,7 +1679,7 @@
         <button id="upl-logo" onclick="uploadMedia('logo')" class="w-full bg-brand text-cream hover:bg-brand-dark text-xs font-bold py-2 rounded-xl transition">تحديث الشعار</button>
       </div>
 
-      <div data-free-hide class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
+      <div data-free-hide data-needs="menu" class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
         <label class="text-[11px] font-bold text-ink">صورة خلفية المنيو</label>
         <p class="text-[11px] text-ink leading-relaxed">يطلع للزبون في: خلف أعلى المنيو، وفي صفحة الروابط لو ما حطيت لها خلفية خاصة.</p>
         <input type="file" id="bg-img-file" accept="image/*" class="input-pro text-[11px]">
@@ -1687,7 +1687,7 @@
         <div id="bg-img-prev" class="hidden"></div>
       </div>
 
-      <div data-free-hide class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
+      <div data-free-hide data-needs="menu" class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-2">
         <label class="text-[11px] font-bold text-ink">فيديو خلفية المنيو (MP4)</label>
         <p class="text-[11px] text-ink leading-relaxed">يطلع للزبون في: مكان صورة الخلفية، يتحرك. لو رفعته يطلع بدل الصورة.</p>
         <input type="file" id="bg-video-file" accept="video/*" class="input-pro text-[11px]">
@@ -1698,7 +1698,7 @@
     <!-- خلفية صفحة الروابط السريعة: خاصة فيها، ولو ما فيه تاخذ خلفية المنيو -->
     <div id="links-bg-card" class="scroll-mt-24 bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-3">
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <label class="text-[11px] font-bold text-ink"><i class="ph-bold ph-link-simple"></i> خلفية صفحة الروابط السريعة <span class="text-ink font-semibold">(صورة أو فيديو مختلف عن خلفية المنيو)</span></label>
+        <label class="text-[11px] font-bold text-ink"><i class="ph-bold ph-link-simple"></i> خلفية صفحة الروابط السريعة <span data-needs="menu" class="text-ink font-semibold">(صورة أو فيديو مختلف عن خلفية المنيو)</span></label>
         <div id="links-bg-status" class="flex items-center gap-2 text-[11px] font-bold text-ink"></div>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
