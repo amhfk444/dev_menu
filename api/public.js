@@ -155,7 +155,7 @@ async function priceCart(store, coupon, rawItems) {
 async function waitlistOpen(storeId) {
   const wl = (await rest(`clients?id=eq.${storeId}&select=waitlist_enabled,waitlist_settings`))[0] || {};
   const ws = wl.waitlist_settings || {};
-  return wl.waitlist_enabled === true && ws.open !== false && ws.show_in_menu !== false;
+  return wl.waitlist_enabled === true && ws.open === true && ws.show_in_menu !== false;
 }
 
 // كل بيانات المنيو العام لمتجر
