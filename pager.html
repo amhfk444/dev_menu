@@ -94,6 +94,15 @@
   .mg.open .mg-toggle .mg-title::after { transform: rotate(135deg) translateY(-1px); }
   .mg:not(.open) .mm-grid, .mg:not(.open) .mg-ft, .mg:not(.open) .mg-stat, .mg:not(.open) .mg-win, .mg:not(.open) .mg-prize { display: none !important; }
   .mg:not(.open) .mg-hd { border-bottom: 0; padding-bottom: 0; }
+  .gm-inv { margin-top: 14px; background: #f4efe4; color: #23302a; border-radius: 18px; padding: 16px; display: grid; gap: 8px; text-align: center; }
+  .gm-inv b { font-size: 18px; font-weight: 800; } .gm-inv p { font-size: 14px; font-weight: 500; line-height: 1.6; opacity: .8; }
+  .gm-inv input { width: 100%; padding: 12px; border-radius: 12px; border: 1.5px solid rgba(35,48,42,.25); background: #fff; font-size: 22px; font-weight: 800; text-align: center; letter-spacing: 2px; outline: none; }
+  .gm-inv input:focus { border-color: #23302a; }
+  .gm-inv .qz-main { background: #23302a; color: #f4efe4; }
+  .gm-inv-err { color: #a1121f; font-weight: 700 !important; opacity: 1 !important; }
+  .gm-msg { margin-top: 12px; text-align: center; font-size: 14px; font-weight: 600; line-height: 1.6; color: rgba(244,239,228,.85); }
+  #mm-won-inv { margin-top: 4px; }
+  #mm-won-inv:empty { display: none; }
   /* ─── خمّن الطبق ─── */
   .mg.quiz .mm-grid, .mg.quiz .mg-ft, .mg.quiz .mg-stat, .mg.quiz .mg-win { display: none !important; }
   .mg:not(.open) .qz { display: none !important; }
@@ -593,12 +602,22 @@
       <button id="mm-restart" type="button">من جديد</button>
     </div>
     <p id="mm-win" class="mg-win hidden"></p>
+    <!-- الجائزة تحتاج رقم الفاتورة -->
+    <form id="gm-inv" class="gm-inv hidden" novalidate>
+      <b>فزت! باقي خطوة</b>
+      <p>اكتب رقم فاتورتك عشان تثبت جائزتك. تلقاه في فاتورة طلبك.</p>
+      <input id="gm-inv-in" inputmode="numeric" autocomplete="off" maxlength="20" dir="ltr" placeholder="1045" aria-label="رقم الفاتورة">
+      <p id="gm-inv-err" class="gm-inv-err hidden"></p>
+      <button id="gm-inv-btn" class="qz-main">ثبّت جائزتي</button>
+    </form>
+    <p id="gm-msg" class="gm-msg hidden"></p>
     <div id="mm-won" class="mg-won hidden" role="status">
       <small>الجائزة</small>
       <p id="mm-won-text"></p>
       <span class="mg-won-rule"></span>
       <small>ورّ هالشاشة للكاشير مع رقم طلبك</small>
       <b id="mm-won-num"></b>
+      <small id="mm-won-inv"></small>
     </div>
   </section>
 
@@ -824,7 +843,7 @@
     return URL.createObjectURL(new Blob([v.buffer], { type: 'audio/wav' }));
   }
   const keeper = new Audio(); keeper.loop = true; keeper.setAttribute('playsinline', '');
-  let keeperMode = '', silentUrl = '', ringUrl = '', storeInfo = {}, curNumber = '';
+  let keeperMode = '', silentUrl = '', ringUrl = '', storeInfo = {}, curNumber = '', curInvoice = '';
   const keeperOn = () => !!keeperMode && !keeper.paused;
   // فيديو في تطبيق ثاني (تيك توك/انستقرام) ياخذ الصوت ويوقف مقطعنا. نحاول نرجّعه كل ثانيتين:
   // أول ما يوقف الفيديو ويرجّع iOS الصوت لـ Safari ← يشتغل المقطع، نسأل عن الحالة فوراً، ويرن لو الطلب جاهز
@@ -1285,22 +1304,39 @@
     if (on) $('mm-prize').innerHTML = quizOn ? `جاوب ${game.need} من 5 صح، وجائزتك: <b>${esc(game.reward)}</b>` : `خلّصها بـ ${game.moves} حركة أو أقل، وجائزتك: <b>${esc(game.reward)}</b>`;
     $('mm-won').classList.toggle('hidden', !(on && gameWon)); $('mm-grid').classList.toggle('hidden', on && gameWon);
     if (quizOn && on && gameWon) { $('qz-start').classList.add('hidden'); }
-    if (on && gameWon) { $('mm-won-text').textContent = gameReward || game.reward; $('mm-won-num').textContent = curNumber; }
+    if (on && gameWon) { $('mm-won-text').textContent = gameReward || game.reward; $('mm-won-num').textContent = curNumber; $('mm-won-inv').textContent = (gameInvoice || curInvoice) ? `فاتورة ${gameInvoice || curInvoice}` : ''; }
   }
-  async function claimGame(moves, mode) {
+  // جوال الزبون (جائزة وحدة باليوم لكل جوال)
+  const devId = (() => { try { let d = localStorage.getItem('dm_dev'); if (!d) { d = Array.from(crypto.getRandomValues(new Uint8Array(18)), b => 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'[b & 63]).join(''); localStorage.setItem('dm_dev', d); } return d; } catch { return ''; } })();
+  let pendingClaim = null;
+  const gameMsg = (m) => { $('gm-msg').textContent = m || ''; $('gm-msg').classList.toggle('hidden', !m); };
+  async function claimGame(moves, mode, invoice) {
     if (!game || gameWon) return;
-    if (mode === 'quiz') {
-      if (PREVIEW) { gameWon = true; return renderGame(); }
-      try { const r = await DM.post('/api/pager?action=game', { slug, t: loadToken(), mode: 'quiz', score: moves }); if (r.won) { gameWon = true; gameReward = r.reward; renderGame(); if (navigator.vibrate) navigator.vibrate([40, 60, 40]); } } catch {}
-      return;
+    if (mode !== 'quiz' && moves > game.moves) { $('mm-win').textContent += ` (الجايزة تحتاج ${game.moves} حركة أو أقل، جرّب مرة ثانية)`; return; }
+    if (PREVIEW) { gameWon = true; $('mm-win').classList.add('hidden'); return renderGame(); }
+    pendingClaim = { moves, mode };
+    let r;
+    try { r = await DM.post('/api/pager?action=game', { slug, t: loadToken(), dev: devId, ...(mode === 'quiz' ? { mode: 'quiz', score: moves } : { moves }), ...(invoice ? { invoice } : {}) }); }
+    catch (e) { if (invoice) { $('gm-inv-err').textContent = e.message || 'تأكد من رقم الفاتورة'; $('gm-inv-err').classList.remove('hidden'); } return; }
+    if (r.won) {
+      pendingClaim = null; gameWon = true; gameReward = r.reward; gameInvoice = r.invoice || '';
+      $('gm-inv').classList.add('hidden'); gameMsg(''); $('mm-win').classList.add('hidden'); renderGame();
+      if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+    } else if (r.need_invoice) {
+      $('gm-inv').classList.remove('hidden'); $('gm-inv-err').classList.add('hidden');
+      setTimeout(() => $('gm-inv').scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+    } else if (r.message) {
+      if (invoice) { $('gm-inv-err').textContent = r.message; $('gm-inv-err').classList.remove('hidden'); }
+      else { gameMsg(r.message); if (mode === 'quiz') $('qz-final-sub').textContent = ''; }
     }
-    if (PREVIEW && moves <= game.moves) { gameWon = true; $('mm-win').classList.add('hidden'); return renderGame(); }
-    if (moves > game.moves) { $('mm-win').textContent += ` (الجايزة تحتاج ${game.moves} حركة أو أقل، جرّب مرة ثانية)`; return; }
-    try {
-      const r = await DM.post('/api/pager?action=game', { slug, t: loadToken(), moves });
-      if (r.won) { gameWon = true; gameReward = r.reward; $('mm-win').classList.add('hidden'); renderGame(); if (navigator.vibrate) navigator.vibrate([40, 60, 40]); }
-    } catch {}
   }
+  let gameInvoice = '';
+  $('gm-inv').onsubmit = (e) => {
+    e.preventDefault();
+    const v = $('gm-inv-in').value.trim().replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15));
+    if (!v) { $('gm-inv-err').textContent = 'اكتب رقم الفاتورة'; return $('gm-inv-err').classList.remove('hidden'); }
+    if (pendingClaim) claimGame(pendingClaim.moves, pendingClaim.mode, v);
+  };
 
   // ─── خمّن الطبق: 5 صور مقرّبة من أطباق المحل، 3 خيارات لكل وحدة ───
   var quizOn = false;   // var: applyTerms يقراها قبل هالسطر
@@ -1357,7 +1393,7 @@
     const n = qzRound.length;
     $('qz-final').textContent = `جاوبت ${qzScore} من ${n}`;
     const need = game && game.need ? game.need : null;
-    if (game && !gameWon && need && qzScore >= need) { $('qz-final-sub').textContent = 'مبروك، فزت بالجائزة'; claimGame(qzScore, 'quiz'); }
+    if (game && !gameWon && need && qzScore >= need) { $('qz-final-sub').textContent = 'مبروك، وصلت للجائزة'; claimGame(qzScore, 'quiz'); }
     else if (game && !gameWon && need) $('qz-final-sub').textContent = `قربت! تحتاج ${need} من ${n} عشان الجائزة. تقدر تعيدها بأطباق ثانية.`;
     else $('qz-final-sub').textContent = qzScore === n ? 'كلها صح، تعرف المنيو زين' : 'تقدر تعيدها بأطباق ثانية';
   }
@@ -1438,7 +1474,7 @@
     renderLoyalty(r.loyalty, st, token);
     curNumber = r.ticket.number;
     $('w-number').textContent = r.ticket.number; $('r-number').textContent = r.ticket.number;
-    const inv = r.ticket.invoice_no || '';
+    const inv = r.ticket.invoice_no || ''; curInvoice = inv;
     ['w-invoice', 'r-invoice'].forEach(id => { $(id).classList.toggle('hidden', !inv); $(id).querySelector('span').textContent = inv; });
     $('w-tell').classList.toggle('hidden', !!inv);
     if (!invEditing) $('inv-form').classList.add('hidden');   // الفاتورة تنكتب قبل أخذ الرقم، وهنا تعديل بس

@@ -461,10 +461,28 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     }
     // المطابقة: 8 أزواج = أقل شي 8 حركات
     else if (!Number.isInteger(moves) || moves < 8 || moves > limit) return { won: false, moves: limit };
-    const rows = await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=in.(waiting,ready)`, { method: 'PATCH', body: { game_won: true }, prefer: 'return=representation' });
-    if (!rows.length) throw new ApiError(409, 'الرقم انتهى', 'NOT_WAITING');
+    const t = (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=in.(waiting,ready)&select=id,invoice_no,game_won`))[0];
+    if (!t) throw new ApiError(409, 'الرقم انتهى', 'NOT_WAITING');
+    if (t.game_won) return { won: true, reward, invoice: t.invoice_no };
+    // الجائزة مع طلب مدفوع: رقم الفاتورة إجباري (يكتبه الزبون لو ما كتبه وقت أخذ الرقم)
+    let invoice = t.invoice_no || cleanInvoice(b.invoice);
+    if (!invoice) return { won: false, need_invoice: true };
+    // الفاتورة ما تاخذ جائزتين، ولا تنربط برقمين
+    const since = new Date(Date.now() - 60 * 864e5).toISOString();
+    const used = await rest(`pager_tickets?client_id=eq.${store.id}&invoice_no=eq.${q(invoice)}&id=neq.${t.id}&created_at=gte.${q(since)}&select=game_won,status&limit=5`).catch(() => []);
+    if (used.some(u => u.game_won)) return { won: false, reason: 'invoice_used', message: 'هذي الفاتورة أخذت جائزتها قبل' };
+    if (!t.invoice_no && used.some(u => ['waiting', 'ready'].includes(u.status))) return { won: false, reason: 'invoice_taken', message: 'هذي الفاتورة مسجلة على رقم ثاني، تأكد من الرقم' };
+    // جائزة وحدة لكل جوال في اليوم (اليوم يبدأ مع أرقام البيجر، الساعة 12 بالليل)
+    const dev = /^[A-Za-z0-9_-]{16,64}$/.test(String(b.dev || '')) ? String(b.dev) : null;
+    if (dev) {
+      const today = await rest(`pager_tickets?client_id=eq.${store.id}&game_won=is.true&game_device=eq.${q(dev)}&created_at=gte.${q(riyadhDayStart())}&select=id&limit=1`).catch(() => []);
+      if (today.length) return { won: false, reason: 'device_today', message: 'فزت بجائزة اليوم من هالجوال، تقدر تلعب للمتعة وتفوز بكرة' };
+    }
+    const rows = await rest(`pager_tickets?id=eq.${t.id}&status=in.(waiting,ready)&game_won=is.false`, { method: 'PATCH', body: { game_won: true, invoice_no: invoice, ...(dev ? { game_device: dev } : {}) }, prefer: 'return=representation' });
+    if (!rows.length) return { won: false };
+    console.log('PAGER_GAME_WON', store.id, t.id);
     await poke(topic('pager', store.id));
-    return { won: true, reward };
+    return { won: true, reward, invoice };
   }
 
   if (action === 'rate' && req.method === 'POST') {

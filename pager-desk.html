@@ -445,7 +445,7 @@
       const c = [];
       if (t.invoice_no && ready) c.push(`<span class="tk-tag"><i class="ph-bold ph-receipt"></i> ${esc(t.invoice_no)}</span>`);
       const car = t.car; if (car && (car.color || car.model)) c.push(`<span class="tk-tag"><i class="ph-bold ph-car"></i> ${esc([car.model, car.color].filter(Boolean).join(' '))}${car.plate ? ` <b dir="ltr">${esc(car.plate)}</b>` : ''}</span>`);
-      if (t.game_won) c.push('<span class="tk-tag gold"><i class="ph-bold ph-trophy"></i> فاز باللعبة</span>');
+      if (t.game_won) c.push(`<span class="tk-tag gold"><i class="ph-bold ph-trophy"></i> فاز باللعبة${t.invoice_no ? ` · فاتورة <b dir="ltr">${esc(t.invoice_no)}</b>` : ''}</span>`);
       const a = Array.isArray(t.addons) ? t.addons : [];
       const total = a.reduce((k, x) => k + (Number(x.price) || 0) * (x.qty || 1), 0), unseen = a.some(x => !x.seen);
       const head = `<div class="tk-order-hd"><small>أضافه الزبون${total ? ` · ${fmtMoney(total)}` : ''}</small>${unseen ? `<button class="tk-seen" data-seen="${t.id}"><i class="ph-bold ph-check"></i> شفتها</button>` : '<span class="tk-seen-ok"><i class="ph-bold ph-check-circle"></i> تم</span>'}</div>`;

@@ -25,3 +25,8 @@ notify pgrst, 'reload schema';
 -- لعبة «خمّن الطبق»: كم جواب صح من 5 عشان يفوز بالجائزة
 alter table public.clients add column if not exists pager_quiz_need integer not null default 4;
 notify pgrst, 'reload schema';
+
+-- الجائزة: جوال الفائز (جائزة وحدة لكل جوال باليوم)، ورقم الفاتورة إجباري (ما يتكرر)
+alter table public.pager_tickets add column if not exists game_device text;
+create index if not exists pager_tickets_game_won_idx on public.pager_tickets (client_id, created_at) where game_won;
+notify pgrst, 'reload schema';
