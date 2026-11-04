@@ -1713,6 +1713,7 @@
       </div>
       <div id="links-bg-prev" class="hidden"></div>
     </div>
+    <p id="links-branch-note" class="hidden bg-brand/5 p-3.5 rounded-2xl border border-brand/15 text-[12px] text-ink leading-relaxed"><i class="ph-bold ph-link-simple"></i> صفحة الروابط السريعة واحدة لجميع فروعك، وتُعدَّل خلفيتها وترتيبها من الفرع الرئيسي. ويظهر هذا الفرع فيها ضمن قسم «فروعنا».</p>
     <!-- ترتيب أقسام صفحة الروابط السريعة: سحب أو أسهم، إخفاء، وتعديل. ينحفظ تلقائياً -->
     <div id="links-order-card" class="bg-brand/5 p-3.5 rounded-2xl border border-brand/15 space-y-3 scroll-mt-24">
       <div class="flex flex-wrap items-start justify-between gap-2">
@@ -2247,6 +2248,11 @@
     // الباقة المجانية (البيجر بعد التجربة) ما فيها صفحة الروابط السريعة
     const free = DMPlans.isFree(client);
     ['links-bg-card', 'links-order-card', 'appearance-card'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = free ? 'none' : ''; });
+    // الفرع: صفحة الروابط وحدة للمحل كله، خلفيتها وترتيبها من الفرع الرئيسي
+    const isBranch = !!client.parent_id;
+    ['links-bg-card', 'links-order-card'].forEach(id => { const el = document.getElementById(id); if (el && isBranch) el.style.display = 'none'; });
+    const bNote = document.getElementById('links-branch-note');
+    if (bNote) bNote.classList.toggle('hidden', !isBranch || free);
     const slugHint = document.getElementById('slug-hint');
     if (slugHint) slugHint.textContent = free ? 'اسم رابط البيجر حقك، ويطلع في رمز QR. الروابط القديمة تبقى شغالة لو غيّرته' : 'شاركه في البايو والرسائل، ويفتح المنيو مباشرة';
     // هوية المنشأة في المجاني: الاسم والشعار ورابط قوقل ماب بس
@@ -3335,6 +3341,7 @@
   // ─── ترتيب أقسام صفحة الروابط: سحب أو أسهم، إخفاء، تعديل، وحفظ تلقائي ───
   const LINKS_SECTIONS = {
     services: ['خدماتك', 'المنيو، البيجر، بطاقة الولاء، قائمة الانتظار', 'ph-squares-four'],
+    branches: ['فروعنا', 'كل فروعك: المنيو والموقع لكل فرع', 'ph-storefront'],
     contact:  ['الطلبات والتواصل', 'أرقام الطلبات وواتساب', 'ph-phone'],
     delivery: ['تطبيقات التوصيل', 'روابط تطبيقات التوصيل', 'ph-moped'],
     social:   ['تابعنا', 'انستجرام، تيك توك، سناب شات، الموقع', 'ph-instagram-logo'],
@@ -3344,6 +3351,7 @@
   // هل القسم فيه روابط تظهر في الصفحة؟
   const LINKS_FILLED = {
     services: () => true,
+    branches: () => branches.length > 1,
     contact:  () => (client.order_numbers || []).some(n => n && String(n.phone || '').replace(/\D/g, '').length >= 9) || !!String(client.whatsapp_number || '').replace(/\D/g, ''),
     delivery: () => (client.delivery_apps || []).some(d => d && d.url),
     social:   () => ['instagram_url', 'tiktok_url', 'snapchat_url', 'website_url'].some(k => client[k]),

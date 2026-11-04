@@ -354,13 +354,31 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
 
   // صفحة الروابط السريعة: نفس بيانات المتجر بدون الأقسام والأطباق
   if (action === 'links' && req.method === 'GET') {
-    const store = await findStore(req.query.slug);
+    let store = await findStore(req.query.slug);
+    // المحل اللي عنده فروع: صفحة روابط وحدة للمحل كله بإعدادات الرئيسي (رابط الفرع يفتحها بعد)، وفيها "فروعنا"
+    const self = (await rest(`clients?id=eq.${store.id}&select=parent_id`).catch(() => []))[0];
+    const rootId = (self && self.parent_id) || store.id;
+    if (rootId !== store.id) {
+      const root = (await rest(`public_clients?id=eq.${rootId}&select=client_slug`).catch(() => []))[0];
+      if (root) store = await findStore(root.client_slug);
+    }
+    let branches = [];
+    const kids = await rest(`clients?parent_id=eq.${rootId}&select=id`).catch(() => []);
+    if (kids.length) {
+      // الفروع السارية بس (public_clients)، الرئيسي أول
+      const ids = [rootId, ...kids.map(k => k.id)];
+      const live = await rest(`public_clients?id=in.(${ids.join(',')})&select=id,name,client_slug,location_url`).catch(() => []);
+      branches = await Promise.all(live.sort((x, y) => ids.indexOf(x.id) - ids.indexOf(y.id)).map(async (x) => ({
+        name: x.name, slug: x.client_slug, location_url: x.location_url || null, menu: !!(await storeFeatures(x.id).catch(() => ({}))).menu
+      })));
+      if (branches.length < 2) branches = [];
+    }
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=300');   // بيانات عامة: تتخزن 30 ثانية في CDN
     // صفحة الروابط لكل المشتركين (مو بس المنيو)، وتعرف وش الخدمات اللي عنده
     const services = {};
     Object.assign(services, await storeFeatures(store.id));
     const [waitlist_open, occasion] = await Promise.all([waitlistOpen(store.id), activeOccasion(store.id)]);
-    return { store: { ...store, waitlist_open, occasion, services } };
+    return { store: { ...store, waitlist_open, occasion, services, branches } };
   }
 
   if (action === 'featured' && req.method === 'GET') {

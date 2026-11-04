@@ -55,6 +55,11 @@
   .lnk .sub { display: block; font-size: 11px; font-weight: 500; color: var(--fg3); margin-top: 2px; }
   .lnk.primary .sub { color: inherit; opacity: .75; }
   .group-title { font-size: 11px; font-weight: 800; color: var(--fg3); padding: 8px 4px 0; }
+  .branch { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; width: 100%; min-height: 56px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--surface-line); border-radius: 18px; backdrop-filter: blur(12px); color: var(--fg); }
+  .branch-name { flex: 1; min-width: 0; font-weight: 800; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  .branch-btns { display: flex; gap: 6px; }
+  .br-btn { display: inline-flex; align-items: center; gap: 5px; padding: 8px 12px; border-radius: 12px; background: var(--chip); color: var(--fg); font-size: 12.5px; font-weight: 800; touch-action: manipulation; }
+  .br-btn:active { transform: scale(.97); }
 </style>
 <link rel="stylesheet" href="/css/tw/links.css">
 </head>
@@ -130,7 +135,7 @@
       </div>`;
   }
 
-  const LINKS_ORDER = ['services', 'contact', 'delivery', 'social', 'custom', 'location'];
+  const LINKS_ORDER = ['services', 'branches', 'contact', 'delivery', 'social', 'custom', 'location'];
 
   function render(p) {
     if (window.DMTheme) DMTheme.apply(p);
@@ -197,6 +202,17 @@
     // شعار الموقع نفسه (لو ما له شعار يطلع أول حرف)
     if (site) { let host = ''; try { host = new URL(site).hostname; } catch {} social.push(linkBtn({ href: site, label: 'موقعنا الإلكتروني', ...(host ? { img: appLogo(host) } : { icon: 'ph-bold ph-globe' }) })); }
     sec.social = group('تابعنا', social);
+
+    // فروعنا: المحل اللي عنده أكثر من فرع، لكل فرع المنيو والموقع
+    const branches = (Array.isArray(p.branches) ? p.branches : []).map(br => {
+      const loc = safeUrl(br.location_url);
+      const btns = [
+        br.menu ? `<a href="${esc(DM.storePage('menu', br.slug))}" class="br-btn"><i class="ph-bold ph-fork-knife"></i> المنيو</a>` : '',
+        loc ? `<a href="${esc(loc)}" target="_blank" rel="noopener" class="br-btn"><i class="ph-bold ph-map-pin"></i> الموقع</a>` : ''
+      ].join('');
+      return `<div class="branch"><span class="branch-name"><i class="ph-bold ph-storefront"></i> ${esc(br.name)}</span>${btns ? `<span class="branch-btns">${btns}</span>` : ''}</div>`;
+    });
+    sec.branches = group('فروعنا', branches);
 
     // 7) الروابط المخصصة
     const custom = (Array.isArray(p.custom_links) ? p.custom_links : [])
