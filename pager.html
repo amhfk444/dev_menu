@@ -98,6 +98,22 @@
   .ups-go { opacity: .45; }
   .ups .ups-added { margin: 2px 6px 6px; }
   .ups .ups-added { color: #6b5000; background: #fff6dc; }
+  .ups-show { width: 100%; margin-top: 10px; min-height: 48px; border-radius: 12px; background: var(--brand); color: #fff; font-size: 15.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .cv { position: fixed; inset: 0; z-index: 2147483000; background: #fff; color: #111; overflow-y: auto; }
+  .cv[hidden] { display: none; }
+  .cv-box { max-width: 480px; margin: 0 auto; padding: calc(28px + env(safe-area-inset-top)) 22px calc(24px + env(safe-area-inset-bottom)); min-height: 100%; display: flex; flex-direction: column; }
+  .cv-store { font-size: 15px; font-weight: 600; color: #666; text-align: center; }
+  .cv-lbl { margin-top: 18px; font-size: 16px; font-weight: 600; color: #444; text-align: center; }
+  .cv-num { font-size: 92px; line-height: 1; font-weight: 800; text-align: center; letter-spacing: -2px; font-variant-numeric: tabular-nums; }
+  .cv-list { list-style: none; margin: 26px 0 0; padding: 0; border-top: 2px solid #111; }
+  .cv-list li { display: flex; align-items: flex-start; gap: 12px; padding: 14px 0; border-bottom: 1px solid #ddd; }
+  .cv-list .q { min-width: 40px; height: 40px; border-radius: 10px; background: #111; color: #fff; font-size: 20px; font-weight: 800; display: grid; place-items: center; flex-shrink: 0; }
+  .cv-list .nm { flex: 1; font-size: 22px; font-weight: 800; line-height: 1.35; } .cv-list .nm span { font-weight: 600; color: #444; }
+  .cv-list .nm em { display: block; font-style: normal; font-size: 18px; font-weight: 700; color: #b3121f; }
+  .cv-list .pr { font-size: 17px; font-weight: 700; color: #444; padding-top: 6px; white-space: nowrap; }
+  .cv-total { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; font-size: 20px; font-weight: 700; } .cv-total b { font-size: 26px; font-weight: 800; }
+  .cv-hint { margin-top: auto; padding-top: 18px; text-align: center; font-size: 15px; font-weight: 600; color: #555; }
+  .cv-close { margin-top: 12px; min-height: 54px; border-radius: 14px; background: #111; color: #fff; font-size: 18px; font-weight: 800; }
   .ups .ups-added.seen { color: #0a6b45; background: #e7f4ec; }
   .ua-hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; } .ua-hd span { display: inline-flex; align-items: center; gap: 5px; } .ua-hd b { color: #15271b; font-weight: 800; }
   .ups-added li small { font-size: 13px; font-weight: 600; color: #15271b; opacity: .75; flex-shrink: 0; }
@@ -415,7 +431,7 @@
     <section id="w-upsell" class="ups hidden" aria-label="أضف لطلبك">
       <button type="button" id="ups-open" class="ups-bar">
         <span id="ups-thumbs" class="ups-thumbs" aria-hidden="true"></span>
-        <span class="ups-tx"><b id="ups-title">تبي تزيد على طلبك؟</b><small>يوصل للكاشير مع رقمك، وتدفع عند الاستلام</small></span>
+        <span class="ups-tx"><b id="ups-title">تبي تزيد على طلبك؟</b><small>اختر من المنيو، وورّ الكاشير جوالك</small></span>
         <i class="ph-bold ph-caret-left ups-go"></i>
       </button>
       <div id="ups-added" class="ups-added hidden"></div>
@@ -568,7 +584,7 @@
   <div class="ask-back" data-mn-close></div>
   <div class="ask-panel">
     <div class="ask-hd">
-      <div class="ask-hd-tx"><b id="mn-title">أضف لطلبك</b><small>يوصل للكاشير مع رقمك، وتدفع عند الاستلام</small></div>
+      <div class="ask-hd-tx"><b id="mn-title">أضف لطلبك</b><small>اختر اللي تبيه، وبعدها ورّ الكاشير جوالك</small></div>
       <button type="button" class="ask-x" data-mn-close aria-label="إغلاق"><i class="ph-bold ph-x"></i></button>
     </div>
     <label class="mn-search"><i class="ph-bold ph-magnifying-glass"></i><input id="mn-q" type="search" autocomplete="off" placeholder="ابحث في المنيو" aria-label="ابحث في المنيو"></label>
@@ -598,6 +614,19 @@
       <p id="it-err" class="it-err hidden"></p>
     </div>
   </form>
+</div>
+
+<!-- ورّ الكاشير: الإضافة بخط كبير وواضح عشان يدخلها في نظام المبيعات -->
+<div id="cv-sheet" class="cv" role="dialog" aria-modal="true" aria-labelledby="cv-num" hidden>
+  <div class="cv-box">
+    <p class="cv-store" id="cv-store"></p>
+    <p class="cv-lbl">إضافة على طلب رقم</p>
+    <p class="cv-num" id="cv-num"></p>
+    <ul id="cv-list" class="cv-list"></ul>
+    <div class="cv-total"><span>المجموع</span><b id="cv-total"></b></div>
+    <p class="cv-hint">ورّ هالشاشة للكاشير عشان يضيفها لفاتورتك</p>
+    <button type="button" id="cv-close" class="cv-close">تم</button>
+  </div>
 </div>
 
 <!-- محادثة المساعد -->
@@ -1052,8 +1081,19 @@
     $('ups-added').classList.toggle('hidden', !addedNow.length);
     const total = addedNow.reduce((k, a) => k + (Number(a.price) || 0) * (a.qty || 1), 0), allSeen = addedNow.length && addedNow.every(a => a.seen);
     $('ups-added').classList.toggle('seen', !!allSeen);
-    $('ups-added').innerHTML = addedNow.length ? `<div class="ua-hd"><span>${allSeen ? '<i class="ph-bold ph-check-circle"></i> الكاشير استلم إضافتك' : 'وصل للكاشير، ينتظر يشوفها'}</span>${total ? `<b>${fmtPrice(total)}</b>` : ''}</div><ul>${addedNow.map((a, k) => `<li><span>${(a.qty || 1) > 1 ? `${a.qty}× ` : ''}${esc(a.name)}${a.size ? ` (${esc(a.size)})` : ''}${a.note ? `<em>${esc(a.note)}</em>` : ''}</span>${a.price ? `<small>${fmtPrice(a.price * (a.qty || 1))}</small>` : ''}${a.seen ? '<i class="ph-bold ph-check ua-ok" aria-label="استلمها الكاشير"></i>' : `<button type="button" data-rm="${k}" aria-label="شيلها"><i class="ph-bold ph-x"></i></button>`}</li>`).join('')}</ul>` : '';
+    $('ups-added').innerHTML = addedNow.length ? `<div class="ua-hd"><span>${allSeen ? '<i class="ph-bold ph-check-circle"></i> الكاشير استلم إضافتك' : 'ورّ الكاشير جوالك عشان يضيفها لفاتورتك'}</span>${total ? `<b>${fmtPrice(total)}</b>` : ''}</div><ul>${addedNow.map((a, k) => `<li><span>${(a.qty || 1) > 1 ? `${a.qty}× ` : ''}${esc(a.name)}${a.size ? ` (${esc(a.size)})` : ''}${a.note ? `<em>${esc(a.note)}</em>` : ''}</span>${a.price ? `<small>${fmtPrice(a.price * (a.qty || 1))}</small>` : ''}${a.seen ? '<i class="ph-bold ph-check ua-ok" aria-label="استلمها الكاشير"></i>' : `<button type="button" data-rm="${k}" aria-label="شيلها"><i class="ph-bold ph-x"></i></button>`}</li>`).join('')}</ul>${allSeen ? '' : '<button type="button" id="ups-show" class="ups-show"><i class="ph-bold ph-device-mobile"></i> اعرضها للكاشير</button>'}` : '';
   }
+  // شاشة الكاشير على جوال الزبون: خط كبير، رقم الطلب، الأصناف والمجموع
+  function showCashier() {
+    $('cv-store').textContent = (storeInfo && storeInfo.name) || '';
+    $('cv-num').textContent = curNumber;
+    $('cv-list').innerHTML = addedNow.map(a => `<li><span class="q">${a.qty || 1}</span><span class="nm">${esc(a.name)}${a.size ? ` <span>(${esc(a.size)})</span>` : ''}${a.note ? `<em>${esc(a.note)}</em>` : ''}</span>${a.price ? `<span class="pr">${fmtPrice(a.price * (a.qty || 1))}</span>` : ''}</li>`).join('');
+    const total = addedNow.reduce((k, a) => k + (Number(a.price) || 0) * (a.qty || 1), 0);
+    $('cv-total').textContent = total ? fmtPrice(total) : '';
+    $('cv-total').parentElement.classList.toggle('hidden', !total);
+    $('cv-sheet').hidden = false; document.documentElement.classList.add('ask-lock');
+  }
+  $('cv-close').onclick = () => { $('cv-sheet').hidden = true; if (['ask-sheet', 'mn-sheet', 'it-sheet'].every(x => $(x).hidden)) document.documentElement.classList.remove('ask-lock'); };
   const sheetOpen = (id) => { $(id).hidden = false; document.documentElement.classList.add('ask-lock'); };
   const sheetClose = (id) => { $(id).hidden = true; $(id).classList.remove('kb'); $(id).style.cssText = ''; const pn = $(id).querySelector('.ask-panel'); if (pn) { pn.style.height = ''; pn.style.maxHeight = ''; } if (['ask-sheet', 'mn-sheet', 'it-sheet'].every(x => $(x).hidden)) document.documentElement.classList.remove('ask-lock'); };
   // الكيبورد في الجوال: النافذة تاخذ الجزء الظاهر من الشاشة وتبقى فوق الكيبورد، ومحتواها يتمرر بدل ما ينضغط
@@ -1111,10 +1151,12 @@
       const r = await DM.post('/api/pager?action=addon', { slug, t: loadToken(), id: it.id, qty: itQty, size: itSize || undefined, note: $('it-note').value.trim() });
       addedNow = r.addons || addedNow; if (navigator.vibrate) navigator.vibrate(25);
       sheetClose('it-sheet'); sheetClose('mn-sheet'); renderUpsell(true);
+      setTimeout(() => $('ups-added').scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
     } catch (err) { $('it-err').textContent = err.message || 'ما قدرنا نضيفها، اطلبها من الكاشير'; $('it-err').classList.remove('hidden'); }
     upsBusy = false; $('it-add').disabled = false;
   };
   $('ups-added').addEventListener('click', async (e) => {
+    if (e.target.closest('#ups-show')) return showCashier();
     const b = e.target.closest('[data-rm]'); if (!b || upsBusy) return;
     if (PREVIEW) { addedNow = addedNow.filter((_, k) => k !== Number(b.dataset.rm)); return renderUpsell(true); }
     upsBusy = true; b.disabled = true;
@@ -1285,6 +1327,7 @@
     else if (st === 'ready') {
       if (!$('ask-sheet').hidden) closeAsk();   // جهز طلبه: نسكّر المحادثة والمنيو عشان يشوف النداء
       ['mn-sheet', 'it-sheet'].forEach(id => { if (!$(id).hidden) sheetClose(id); });
+      if (!$('cv-sheet').hidden) $('cv-close').click();
       show('ready'); if (!dismissed) startRinging(); if (!document.hidden) ack();
     }
     else {
