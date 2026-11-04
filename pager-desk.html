@@ -33,7 +33,6 @@
   .tile-ready { background: #fff7dc; color: #8a6d0f; border: 2px solid rgba(201,162,39,.5); }
   .tile .n { font-size: 46px; line-height: 1; }
   /* الشاشة ضيقة (ثلث شاشة الآيباد جنب نظام الكاشير): رقمين بالسطر بدل ثلاثة عشان الأزرار ما تنقص */
-  @media (max-width: 379px) { #wait-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @keyframes rwp { 50% { box-shadow: 0 0 0 6px rgba(201,162,39,.25); } }
   .rw-pulse { animation: rwp 1.6s infinite; }
   /* داخل لوحة التحكم (embed): نافذة الأداة بس، بدون الشاشة نفسها */
@@ -85,46 +84,56 @@
 <link rel="stylesheet" href="/css/tw/pager-desk.css">
 <style>body.desk .owner-only { display: none !important; }
   /* ─── بطاقات الأرقام: الرقم كبير، والزر الرئيسي كبير تحت (نفس المكان في كل بطاقة)، والأزرار الثانية 48px ─── */
-  .dk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 640px), 1fr)); gap: 10px; }
-  /* بطاقة عريضة وقصيرة: الرقم يمين، المعلومات بالوسط، والأزرار يسار */
-  .dk { display: flex; align-items: stretch; gap: 14px; padding: 12px 14px; border-radius: 16px; background: #fff; box-shadow: var(--shadow-card); }
-  .dk-wait { border-right: 6px solid var(--brand); }
-  .dk-ready { background: #fffbea; border-right: 6px solid #c9a227; }
-  .dk-num { width: 92px; flex-shrink: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 4px; }
-  .dk-n { font-size: 50px; line-height: .95; font-weight: 800; color: #1a1a1a; font-variant-numeric: tabular-nums; letter-spacing: -1px; }
-  .dk-meta { font-size: 13px; font-weight: 600; color: #555; line-height: 1.4; }
-  .dk-mid { flex: 1; min-width: 0; min-height: 1px; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
-  .dk-act { width: 300px; flex-shrink: 0; margin-inline-start: auto; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-  .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 14px; font-weight: 700; padding: 5px 9px; border-radius: 9px; background: #f1f1f1; color: #1a1a1a; }
-  .chip b { font-weight: 800; }
-  .chip-gold { background: #fbefc4; color: #5c4600; }
-  .adds { background: #fff6e0; border: 1px solid #f0dca0; border-radius: 12px; padding: 7px 10px; }
-  .adds small { display: block; font-size: 12px; font-weight: 700; color: #7a5a00; }
-  .adds ul { list-style: none; margin: 2px 0 0; padding: 0; } .adds li { font-size: 15px; line-height: 1.45; } .adds li + li { margin-top: 3px; }
-  .adds li b { font-weight: 800; } .adds li span { font-weight: 600; } .adds li em { font-style: normal; font-size: 13px; font-weight: 600; color: #8a5a00; margin-inline-start: 6px; }
-  .dk-main { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 54px; border-radius: 12px; background: var(--brand); color: #fff; font-size: 19px; font-weight: 800; box-shadow: var(--shadow-primary); }
-  .dk-main:active { transform: scale(.98); }
-  .dk-main:disabled { opacity: .6; }
-  .dk-main i { font-size: 22px; }
-  .dk-main-done { background: #1f6b45; box-shadow: inset 0 -1px 0 1px rgba(0,0,0,.45); }
-  .dk-row { display: grid; grid-template-columns: 1fr 1fr 44px; gap: 6px; }
-  .dk-row-2 { grid-template-columns: 1fr 44px; }
-  .dk-btn { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 44px; padding: 0 6px; border-radius: 10px; background: #fff; color: #303030; font-size: 14px; font-weight: 700; box-shadow: var(--shadow-button); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .dk-btn.on { background: #eef4ef; color: var(--brand); box-shadow: inset 0 0 0 1.5px rgba(56,79,61,.45); }
-  .dk-btn:active { background: #f1f1f1; }
-  .dk-del { color: #a1121f; padding: 0; } .dk-del i { font-size: 18px; }
-  .dk-gold { background: #c9a227; color: #1a1a1a; box-shadow: none; align-self: flex-start; padding: 0 12px; }
-  /* الجوال وثلث الآيباد: الرقم والمعلومات فوق، والأزرار بعرض البطاقة تحتها */
-  @media (max-width: 559px) {
-    .dk { flex-wrap: wrap; gap: 10px; padding: 11px; }
-    .dk-num { width: auto; flex-direction: row; align-items: baseline; gap: 10px; }
-    .dk-n { font-size: 42px; }
-    .dk-mid { flex-basis: 100%; order: 2; }
-    .dk-act { width: 100%; order: 3; margin: 0; }
-    .dk-mid:empty { display: none; }
+  /* ─── لوحة الأرقام: عمودين، وكل رقم بطاقة فيها الطلب واضح والأزرار في مكانها الثابت ─── */
+  .board { display: grid; gap: 16px; align-items: start; }
+  @media (min-width: 900px) { .board { grid-template-columns: 3fr 2fr; } }
+  .col { background: #e9e9e7; border-radius: 16px; padding: 12px; min-height: 160px; }
+  .col-hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 4px 12px; }
+  .col-hd h2 { font-size: 18px; font-weight: 800; color: #1a1a1a; display: flex; align-items: center; gap: 8px; }
+  .col-count { min-width: 28px; height: 28px; padding: 0 8px; border-radius: 999px; background: #1a1a1a; color: #fff; font-size: 14px; display: inline-grid; place-items: center; }
+  .col-count:empty { display: none; }
+  .col-ready .col-count { background: #a07c10; }
+  .col-note { font-size: 12px; font-weight: 600; color: #666; }
+  .col-empty { text-align: center; font-size: 14px; font-weight: 600; color: #666; padding: 28px 8px; }
+  .tk-list { display: grid; gap: 10px; }
+  .tk-in { display: flex; gap: 14px; }
+  .tk { container-type: inline-size; background: #fff; border-radius: 14px; padding: 14px; box-shadow: 0 1px 0 rgba(0,0,0,.06), 0 0 0 1px rgba(0,0,0,.05); }
+  .tk-ready { box-shadow: inset 4px 0 0 #c9a227, 0 1px 0 rgba(0,0,0,.06), 0 0 0 1px rgba(0,0,0,.05); }
+  .tk-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+  .tk-hd { display: flex; align-items: center; gap: 10px; }
+  .tk-n { font-size: 44px; line-height: 1; font-weight: 800; color: #1a1a1a; font-variant-numeric: tabular-nums; letter-spacing: -1px; min-width: 64px; }
+  .tk-time { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 700; padding: 4px 9px; border-radius: 999px; background: #f1f1f1; color: #444; font-variant-numeric: tabular-nums; }
+  .tk-time.warn { background: #fff1c2; color: #6b5000; }
+  .tk-time.late { background: #fde3e1; color: #a1121f; }
+  .tk-push { color: #888; font-size: 16px; }
+  .tk-ring { font-size: 13.5px; font-weight: 600; color: #555; }
+  .tk-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tk-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 14px; font-weight: 700; padding: 5px 9px; border-radius: 8px; background: #f1f1f1; color: #1a1a1a; }
+  .tk-tag b { font-weight: 800; } .tk-tag.gold { background: #fbefc4; color: #5c4600; }
+  .tk-order { border-top: 1px dashed #d6d6d6; padding-top: 8px; }
+  .tk-order small { display: block; font-size: 12px; font-weight: 700; color: #777; margin-bottom: 4px; }
+  .tk-order ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .tk-order li { display: flex; align-items: flex-start; gap: 8px; }
+  .tk-order .q { min-width: 28px; height: 28px; border-radius: 8px; background: #1a1a1a; color: #fff; font-size: 15px; font-weight: 800; display: grid; place-items: center; flex-shrink: 0; }
+  .tk-order .nm { font-size: 16px; line-height: 1.4; padding-top: 2px; } .tk-order .nm b { font-weight: 800; } .tk-order .nm span { font-weight: 600; color: #555; }
+  .tk-order .nm em { display: block; font-style: normal; font-size: 14px; font-weight: 700; color: #a1121f; }
+  .tk-reward { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px; border-radius: 10px; background: #c9a227; color: #1a1a1a; font-size: 14px; font-weight: 800; }
+  .tk-act { width: 210px; flex-shrink: 0; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; }
+  .tk-main { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 62px; border-radius: 12px; background: var(--brand); color: #fff; font-size: 20px; font-weight: 800; box-shadow: var(--shadow-primary); }
+  .tk-main i { font-size: 23px; } .tk-main:active { transform: scale(.98); } .tk-main:disabled { opacity: .6; }
+  .tk-main.done { background: #1a1a1a; box-shadow: inset 0 -1px 0 1px rgba(0,0,0,.5); }
+  .tk-sub { display: grid; grid-template-columns: 1fr 1fr 46px; gap: 6px; } .tk-sub.two { grid-template-columns: 1fr 46px; }
+  .tk-btn { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 46px; padding: 0 6px; border-radius: 10px; background: #fff; color: #303030; font-size: 14px; font-weight: 700; box-shadow: var(--shadow-button); min-width: 0; }
+  .tk-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tk-btn.on { background: #eef4ef; color: var(--brand); box-shadow: inset 0 0 0 1.5px rgba(56,79,61,.45); }
+  .tk-btn:active { background: #f1f1f1; } .tk-btn.del { color: #a1121f; padding: 0; } .tk-btn.del i { font-size: 18px; }
+  /* البطاقة ضيقة (جوال أو عمود ضيق): الأزرار بعرضها تحت */
+  @container (max-width: 470px) {
+    .tk-in { flex-direction: column; }
+    .tk-act { width: 100%; }
   }
-  .dk.tile-new { animation: tileNew 1s ease-in-out 4; }
+  @supports not (container-type: inline-size) { @media (max-width: 599px) { .tk-in { flex-direction: column; } .tk-act { width: 100%; } } }
+  .tk.tile-new { animation: tileNew 1s ease-in-out 4; }
   @media (prefers-reduced-motion: reduce) { .tile-new { animation: none; outline: 4px solid #c9a227; } }
 </style>
 </head>
@@ -169,24 +178,23 @@
     </div>
   </section>
 
-  <section class="panel p-5" data-pager>
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-black"><span id="t-dwait">بالانتظار</span> <span id="wait-count" class="text-sm opacity-85"></span></h2>
-      <span class="text-[11px] font-bold opacity-85"><i class="ph-bold ph-arrows-clockwise"></i> يتحدث تلقائياً</span>
-    </div>
-    <div class="relative mb-4">
-      <i class="ph-bold ph-magnifying-glass absolute start-4 top-1/2 -translate-y-1/2 opacity-40"></i>
+  <!-- لوحة الأرقام: «قيد التجهيز» يمين و«جاهز» يسار (الآيباد بالعرض)، وفوقها البحث -->
+  <div class="relative" data-pager>
+    <i class="ph-bold ph-magnifying-glass absolute start-4 top-1/2 -translate-y-1/2 opacity-40"></i>
       <input id="search" type="text" inputmode="numeric" autocomplete="off" placeholder="ابحث برقم الفاتورة أو رقم البيجر…" class="w-full bg-[#fdfdfd] border border-[#8a8a8a] hover:border-[#616161] rounded-lg py-3 ps-11 pe-4 text-base font-semibold focus:outline focus:outline-2 focus:outline-[#005bd3] focus:outline-offset-1">
-    </div>
-    <div id="wait-grid" class="dk-grid"></div>
-    <p id="wait-empty" class="text-center text-sm font-bold opacity-85 py-8 hidden">ما فيه أرقام تنتظر. أول ما يمسح العميل الـ QR يطلع رقمه هنا.</p>
-  </section>
-
-  <section class="panel p-5" data-pager>
-    <h2 class="text-lg font-black mb-4"><span id="t-dready">تم النداء، بانتظار الحضور</span> <span id="ready-count" class="text-sm opacity-85"></span></h2>
-    <div id="ready-grid" class="dk-grid"></div>
-    <p id="ready-empty" class="text-center text-sm font-bold opacity-85 py-6 hidden">ما فيه أحد تم نداؤه.</p>
-  </section>
+  </div>
+  <div class="board" data-pager>
+    <section class="col col-wait">
+      <div class="col-hd"><h2><span id="t-dwait">بالانتظار</span> <span id="wait-count" class="col-count"></span></h2><span class="col-note"><i class="ph-bold ph-arrows-clockwise"></i> يتحدث تلقائياً</span></div>
+      <div id="wait-grid" class="tk-list"></div>
+      <p id="wait-empty" class="col-empty hidden">ما فيه أرقام تنتظر. أول ما يمسح الزبون الـ QR يطلع رقمه هنا.</p>
+    </section>
+    <section class="col col-ready">
+      <div class="col-hd"><h2><span id="t-dready">تم النداء، بانتظار الحضور</span> <span id="ready-count" class="col-count"></span></h2></div>
+      <div id="ready-grid" class="tk-list"></div>
+      <p id="ready-empty" class="col-empty hidden">ما فيه أحد تم نداؤه.</p>
+    </section>
+  </div>
 </main>
 
 <!-- رقم الفاتورة -->
@@ -415,57 +423,52 @@
     const match = (t) => !term || String(t.number) === term || String(t.invoice_no || '').includes(term);
     const waiting = tickets.filter(t => t.status === 'waiting' && match(t));
     const ready = tickets.filter(t => t.status === 'ready' && match(t));
-    $('wait-count').textContent = waiting.length ? `(${waiting.length})` : '';
-    $('ready-count').textContent = ready.length ? `(${ready.length})` : '';
+    $('wait-count').textContent = waiting.length || '';
+    $('ready-count').textContent = ready.length || '';
     $('wait-empty').classList.toggle('hidden', waiting.length > 0);
     $('ready-empty').classList.toggle('hidden', ready.length > 0);
-    const chips = (t, ready) => {
+    const mins = (iso) => Math.max(0, Math.floor((Date.now() - Date.parse(iso)) / 60000));
+    const timer = (iso, warn, late) => { const m = mins(iso); return `<span class="tk-time${m >= late ? ' late' : m >= warn ? ' warn' : ''}"><i class="ph-bold ph-timer"></i> ${m < 1 ? 'الآن' : `${m} د`}</span>`; };
+    const details = (t, ready) => {
       const c = [];
-      if (t.invoice_no && ready) c.push(`<span class="chip"><i class="ph-bold ph-receipt"></i> ${esc(t.invoice_no)}</span>`);
-      const car = t.car; if (car && (car.color || car.model)) c.push(`<span class="chip"><i class="ph-bold ph-car"></i> ${esc([car.model, car.color].filter(Boolean).join(' '))}${car.plate ? ` <b dir="ltr">${esc(car.plate)}</b>` : ''}</span>`);
-      if (t.game_won) c.push('<span class="chip chip-gold"><i class="ph-bold ph-trophy"></i> فاز باللعبة</span>');
-      return c.length ? `<div class="chips">${c.join('')}</div>` : '';
-    };
-    const addonsBox = (t) => {
+      if (t.invoice_no && ready) c.push(`<span class="tk-tag"><i class="ph-bold ph-receipt"></i> ${esc(t.invoice_no)}</span>`);
+      const car = t.car; if (car && (car.color || car.model)) c.push(`<span class="tk-tag"><i class="ph-bold ph-car"></i> ${esc([car.model, car.color].filter(Boolean).join(' '))}${car.plate ? ` <b dir="ltr">${esc(car.plate)}</b>` : ''}</span>`);
+      if (t.game_won) c.push('<span class="tk-tag gold"><i class="ph-bold ph-trophy"></i> فاز باللعبة</span>');
       const a = Array.isArray(t.addons) ? t.addons : [];
-      if (!a.length) return '';
-      return `<div class="adds"><small>أضافه الزبون</small><ul>${a.map(x => `<li><b>${(x.qty || 1) > 1 ? `${x.qty}× ` : ''}${esc(x.name)}</b>${x.size ? ` <span>(${esc(x.size)})</span>` : ''}${x.note ? `<em>${esc(x.note)}</em>` : ''}</li>`).join('')}</ul></div>`;
+      const items = a.length ? `<div class="tk-order"><small>أضافه الزبون</small><ul>${a.map(x => `<li><span class="q">${x.qty || 1}</span><span class="nm"><b>${esc(x.name)}</b>${x.size ? ` <span>${esc(x.size)}</span>` : ''}${x.note ? `<em>${esc(x.note)}</em>` : ''}</span></li>`).join('')}</ul></div>` : '';
+      const rw = t.reward ? `<button class="tk-reward rw-pulse" data-reward="${t.id}"><i class="ph-bold ph-gift"></i> عنده مكافأة</button>` : '';
+      return (c.length ? `<div class="tk-tags">${c.join('')}</div>` : '') + items + rw;
     };
     $('wait-grid').innerHTML = waiting.map(t => `
-      <div class="dk dk-wait${freshIds.has(t.id) ? ' tile-new' : ''}">
-        <div class="dk-num"><div class="dk-n">${t.number}</div><div class="dk-meta">${ago(t.created_at)}${t.has_push ? ' <i class="ph-bold ph-device-mobile" title="الإشعارات مفعّلة"></i>' : ''}</div></div>
-        <div class="dk-mid">
-          ${chips(t, false)}
-          ${addonsBox(t)}
-          ${t.reward ? `<button class="dk-btn dk-gold rw-pulse" data-reward="${t.id}"><i class="ph-bold ph-gift"></i> عنده مكافأة</button>` : ''}
+      <article class="tk${freshIds.has(t.id) ? ' tile-new' : ''}"><div class="tk-in">
+        <div class="tk-info">
+          <div class="tk-hd"><span class="tk-n">${t.number}</span>${timer(t.created_at, 10, 15)}${t.has_push ? '<i class="ph-bold ph-device-mobile tk-push" title="الإشعارات مفعّلة"></i>' : ''}</div>
+          ${details(t, false)}
         </div>
-        <div class="dk-act">
-          <button class="dk-main" data-ready="${t.id}" ${busy.has(t.id) ? 'disabled' : ''}>
-            ${busy.has(t.id) ? '<i class="ph-bold ph-spinner-gap ph-spin"></i>' : `<i class="ph-bold ph-bell-ringing"></i> ${T.deskCall}`}
-          </button>
-          <div class="dk-row">
-            <button class="dk-btn${t.invoice_no ? ' on' : ''}" data-invoice="${t.id}"><i class="ph-bold ph-receipt"></i> ${t.invoice_no ? esc(t.invoice_no) : 'الفاتورة'}</button>
-            <button class="dk-btn${t.eta_at ? ' on' : ''}" data-eta="${t.id}"><i class="ph-bold ph-timer"></i> ${t.eta_at ? etaLeft(t.eta_at).replace('يجهز بعد ', '') : 'الوقت'}</button>
-            <button class="dk-btn dk-del" data-del="${t.id}" title="حذف الرقم" aria-label="حذف الرقم"><i class="ph-bold ph-trash"></i></button>
+        <div class="tk-act">
+          <button class="tk-main" data-ready="${t.id}" ${busy.has(t.id) ? 'disabled' : ''}>${busy.has(t.id) ? '<i class="ph-bold ph-spinner-gap ph-spin"></i>' : `<i class="ph-bold ph-bell-ringing"></i> ${T.deskCall}`}</button>
+          <div class="tk-sub">
+            <button class="tk-btn${t.invoice_no ? ' on' : ''}" data-invoice="${t.id}"><i class="ph-bold ph-receipt"></i><span>${t.invoice_no ? esc(t.invoice_no) : 'الفاتورة'}</span></button>
+            <button class="tk-btn${t.eta_at ? ' on' : ''}" data-eta="${t.id}"><i class="ph-bold ph-timer"></i><span>${t.eta_at ? etaLeft(t.eta_at).replace('يجهز بعد ', '') : 'الوقت'}</span></button>
+            <button class="tk-btn del" data-del="${t.id}" title="حذف الرقم" aria-label="حذف الرقم"><i class="ph-bold ph-trash"></i></button>
           </div>
         </div>
-      </div>`).join('');
+      </div></article>`).join('');
     $('ready-grid').innerHTML = ready.map(t => `
-      <div class="dk dk-ready">
-        <div class="dk-num"><div class="dk-n">${t.number}</div><div class="dk-meta">${ringLabel(t)}</div></div>
-        <div class="dk-mid">
-          ${chips(t, true)}
-          ${addonsBox(t)}
-          ${t.reward ? `<button class="dk-btn dk-gold rw-pulse" data-reward="${t.id}"><i class="ph-bold ph-gift"></i> عنده مكافأة</button>` : ''}
+      <article class="tk tk-ready"><div class="tk-in">
+        <div class="tk-info">
+          <div class="tk-hd"><span class="tk-n">${t.number}</span>${timer(t.ready_at || t.created_at, 4, 8)}</div>
+          <div class="tk-ring">${ringLabel(t)}</div>
+          ${details(t, true)}
         </div>
-        <div class="dk-act">
-          <button class="dk-main dk-main-done" data-done="${t.id}"><i class="ph-bold ph-check-circle"></i> ${T.deskDone}</button>
-          <div class="dk-row dk-row-2">
-            <button class="dk-btn" data-undo="${t.id}"><i class="ph-bold ph-arrow-counter-clockwise"></i> رجّعه للتجهيز</button>
-            <button class="dk-btn dk-del" data-del="${t.id}" title="حذف الرقم" aria-label="حذف الرقم"><i class="ph-bold ph-trash"></i></button>
+        <div class="tk-act">
+          <button class="tk-main done" data-done="${t.id}"><i class="ph-bold ph-check-circle"></i> ${T.deskDone}</button>
+          <div class="tk-sub two">
+            <button class="tk-btn" data-undo="${t.id}"><i class="ph-bold ph-arrow-counter-clockwise"></i><span>رجّعه</span></button>
+            <button class="tk-btn del" data-del="${t.id}" title="حذف الرقم" aria-label="حذف الرقم"><i class="ph-bold ph-trash"></i></button>
           </div>
         </div>
-      </div>`).join('');
+      </div></article>`).join('');
   }
 
   async function setStatus(id, status, msg) {
