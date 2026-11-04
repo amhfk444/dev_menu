@@ -117,7 +117,7 @@ function cleanCar(b) {
 
 // إضافات صفحة الانتظار (تنحسب مرة وحدة لكل رقم): المساعد، «أضف لطلبك»، وجايزة اللعبة
 async function waitSettings(storeId) {
-  return (await rest(`clients?id=eq.${storeId}&select=menu_chat,pager_chat,pager_game,pager_upsell,pager_game_reward,pager_game_moves,currency`)
+  return (await rest(`clients?id=eq.${storeId}&select=menu_chat,pager_chat,pager_game,pager_upsell,pager_game_reward,pager_game_moves,pager_quiz_need,currency`)
     .catch(() => rest(`clients?id=eq.${storeId}&select=menu_chat`)).catch(() => []))[0] || {};
 }
 async function waitExtras(storeId, t) {
@@ -128,7 +128,15 @@ async function waitExtras(storeId, t) {
   let upsell = [];
   if (x.pager_upsell === true && menu && t.status === 'waiting') upsell = await upsellItems(storeId);
   const reward = String(x.pager_game_reward || '').trim();
-  return { chat, upsell, game_on: gameOn, currency: CURRENCIES[x.currency] || CURRENCIES.SAR, game: gameOn && reward ? { reward, moves: Math.min(40, Math.max(10, Number(x.pager_game_moves) || 20)), won: t.game_won === true } : null };
+  // «خمّن الطبق» لو المحل عنده المنيو و6 أطباق بصور على الأقل، وإلا لعبة المطابقة
+  const quiz = gameOn && menu ? (await quizItems(storeId, 6)).length >= 6 : false;
+  return { chat, upsell, game_on: gameOn, quiz, currency: CURRENCIES[x.currency] || CURRENCIES.SAR, game: gameOn && reward ? { reward, moves: Math.min(40, Math.max(10, Number(x.pager_game_moves) || 20)), need: quizNeed(x), won: t.game_won === true } : null };
+}
+const quizNeed = (x) => Math.min(5, Math.max(3, Number(x.pager_quiz_need) || 4));
+// أطباق «خمّن الطبق»: المتوفرة اللي لها صورة
+async function quizItems(storeId, limit = 60) {
+  const rows = await rest(`products?client_id=eq.${storeId}&is_hidden=is.false&is_available=is.true&image_url=not.is.null&select=id,name,name_en,price,image_url,sizes,description&limit=${limit}`).catch(() => []);
+  return rows.filter(p => /^https:\/\//.test(p.image_url || '') && String(p.name || '').trim());
 }
 const publicAddons = (list) => (Array.isArray(list) ? list : []).map(a => ({ id: a.id, name: a.name, qty: a.qty || 1, size: a.size || null, note: a.note || null, price: Number(a.price) || 0, seen: a.seen === true }));
 const sizeName = (z) => String((z && (z.name || z.label)) || '').trim();
@@ -374,6 +382,15 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
   }
 
   // ─── تقييم الزبون بعد الاستلام: الراضي (4-5) نعطيه رابط تقييم المحل في قوقل ───
+  // ─── أطباق «خمّن الطبق» (الصفحة تختار منها 5 أسئلة) ───
+  if (action === 'quiz' && req.method === 'GET') {
+    const store = await loadStore(req.query.slug);
+    const x = await waitSettings(store.id);
+    if (x.pager_game === false || !(await storeHasFeature(store.id, 'menu'))) throw new ApiError(403, 'اللعبة غير متاحة', 'GAME_OFF');
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=60, stale-while-revalidate=300');
+    return { items: (await quizItems(store.id)).map(menuItem) };
+  }
+
   // ─── المنيو كامل لـ «أضف لطلبك» (يتحمل لما يفتحه الزبون) ───
   if (action === 'menu' && req.method === 'GET') {
     const store = await loadStore(req.query.slug);
@@ -438,8 +455,12 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const limit = Math.min(40, Math.max(10, Number(x.pager_game_moves) || 20));
     const moves = Number(b.moves);
     if (!reward || x.pager_game === false) return { won: false };
-    // 8 أزواج = أقل شي 8 حركات
-    if (!Number.isInteger(moves) || moves < 8 || moves > limit) return { won: false, moves: limit };
+    if (b.mode === 'quiz') {   // خمّن الطبق: عدد الإجابات الصح من 5
+      const score = Number(b.score), need = quizNeed(x);
+      if (!Number.isInteger(score) || score < need || score > 5) return { won: false, need };
+    }
+    // المطابقة: 8 أزواج = أقل شي 8 حركات
+    else if (!Number.isInteger(moves) || moves < 8 || moves > limit) return { won: false, moves: limit };
     const rows = await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=in.(waiting,ready)`, { method: 'PATCH', body: { game_won: true }, prefer: 'return=representation' });
     if (!rows.length) throw new ApiError(409, 'الرقم انتهى', 'NOT_WAITING');
     await poke(topic('pager', store.id));

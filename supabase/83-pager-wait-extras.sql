@@ -21,3 +21,7 @@ notify pgrst, 'reload schema';
 alter table public.clients add column if not exists pager_chat boolean not null default false;
 alter table public.clients add column if not exists pager_game boolean not null default true;
 notify pgrst, 'reload schema';
+
+-- لعبة «خمّن الطبق»: كم جواب صح من 5 عشان يفوز بالجائزة
+alter table public.clients add column if not exists pager_quiz_need integer not null default 4;
+notify pgrst, 'reload schema';

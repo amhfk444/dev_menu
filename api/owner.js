@@ -1332,6 +1332,7 @@ async function main(req) {
     }
     if (has('pager_game')) p.pager_game = b.pager_game !== false;
     if (has('pager_game_reward')) p.pager_game_reward = String(b.pager_game_reward || '').replace(/\s+/g, ' ').trim().slice(0, 80) || null;
+    if (has('pager_quiz_need')) p.pager_quiz_need = Math.min(5, Math.max(3, int(b.pager_quiz_need) || 4));
     if (has('pager_game_moves')) p.pager_game_moves = Math.min(40, Math.max(10, int(b.pager_game_moves) || 20));
     if (has('pager_near_text')) p.pager_near_text = String(b.pager_near_text || '').replace(/\s+/g, ' ').trim().slice(0, 80) || null;
     if (has('menu_layout')) p.menu_layout = b.menu_layout === 'photos' ? 'photos' : 'list';

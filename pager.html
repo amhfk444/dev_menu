@@ -94,6 +94,30 @@
   .mg.open .mg-toggle .mg-title::after { transform: rotate(135deg) translateY(-1px); }
   .mg:not(.open) .mm-grid, .mg:not(.open) .mg-ft, .mg:not(.open) .mg-stat, .mg:not(.open) .mg-win, .mg:not(.open) .mg-prize { display: none !important; }
   .mg:not(.open) .mg-hd { border-bottom: 0; padding-bottom: 0; }
+  /* ─── خمّن الطبق ─── */
+  .mg.quiz .mm-grid, .mg.quiz .mg-ft, .mg.quiz .mg-stat, .mg.quiz .mg-win { display: none !important; }
+  .mg:not(.open) .qz { display: none !important; }
+  .qz { margin-top: 14px; }
+  .qz-start p { font-size: 14.5px; font-weight: 500; line-height: 1.7; color: rgba(244,239,228,.8); margin-bottom: 12px; }
+  .qz-main { width: 100%; min-height: 52px; border-radius: 14px; background: #f4efe4; color: #23302a; font-size: 16.5px; font-weight: 800; }
+  .qz-main:active { transform: scale(.98); }
+  .qz-top { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: rgba(244,239,228,.65); margin-bottom: 10px; }
+  .qz-pic { position: relative; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; background: rgba(255,255,255,.06); }
+  .qz-img { position: absolute; inset: 0; background-size: cover; background-repeat: no-repeat; transform: scale(2.8); filter: blur(5px) saturate(1.1); transition: transform .7s cubic-bezier(.2,.7,.2,1), filter .6s; }
+  .qz-img.open { transform: scale(1); filter: none; }
+  .qz-opts { display: grid; gap: 8px; margin-top: 12px; }
+  .qz-opts button { min-height: 52px; padding: 8px 14px; border-radius: 14px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.18); color: #f4efe4; font-size: 16px; font-weight: 700; text-align: center; transition: background .2s, border-color .2s, color .2s; }
+  .qz-opts button:disabled { cursor: default; }
+  .qz-opts button.ok { background: #f4efe4; color: #23302a; border-color: #f4efe4; }
+  .qz-opts button.no { background: transparent; border-color: rgba(229,140,130,.7); color: rgba(244,239,228,.7); text-decoration: line-through; }
+  .qz-opts button.dim { opacity: .45; }
+  .qz-res { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; padding: 10px 12px; border-radius: 14px; background: rgba(255,255,255,.06); }
+  .qz-res-tx b { display: block; font-size: 15.5px; font-weight: 800; } .qz-res-tx span { font-size: 13.5px; opacity: .7; }
+  .qz-add { flex-shrink: 0; min-height: 42px; padding: 0 14px; border-radius: 12px; border: 1px solid rgba(244,239,228,.5); color: #f4efe4; font-size: 14px; font-weight: 800; }
+  #qz-next { margin-top: 12px; }
+  .qz-end { text-align: center; }
+  #qz-final { font-size: 22px; font-weight: 800; } #qz-final-sub { font-size: 14px; font-weight: 500; opacity: .75; margin: 6px 0 14px; line-height: 1.6; }
+  @media (prefers-reduced-motion: reduce) { .qz-img { transition: none; } }
   /* ─── الطابور الحي ─── */
   .queue { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); border-radius: 22px; padding: 14px 16px; text-align: center; color: #fff; }
   .q-dots { display: flex; justify-content: center; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
@@ -541,6 +565,28 @@
       <div class="mg-stat"><span>الحركات</span><b id="mm-moves">0</b></div>
     </div>
     <p id="mm-prize" class="mg-prize hidden"></p>
+    <!-- خمّن الطبق: صور من منيو المحل -->
+    <div id="qz" class="qz hidden" aria-live="polite">
+      <div id="qz-start" class="qz-start">
+        <p>5 صور مقرّبة من أطباق المحل. خمّن وش هي.</p>
+        <button type="button" id="qz-go" class="qz-main">ابدأ</button>
+      </div>
+      <div id="qz-q" class="hidden">
+        <div class="qz-top"><span id="qz-step"></span><span id="qz-score"></span></div>
+        <div class="qz-pic"><div id="qz-img" class="qz-img"></div></div>
+        <div id="qz-opts" class="qz-opts"></div>
+        <div id="qz-res" class="qz-res hidden">
+          <div class="qz-res-tx"><b id="qz-name"></b><span id="qz-price"></span></div>
+          <button type="button" id="qz-add" class="qz-add hidden">أضفه لطلبي</button>
+        </div>
+        <button type="button" id="qz-next" class="qz-main hidden">التالي</button>
+      </div>
+      <div id="qz-end" class="qz-end hidden">
+        <p id="qz-final"></p>
+        <p id="qz-final-sub"></p>
+        <button type="button" id="qz-again" class="qz-main">العب مرة ثانية</button>
+      </div>
+    </div>
     <div id="mm-grid" class="mm-grid" role="grid" aria-label="بطاقات اللعبة"></div>
     <div class="mg-ft">
       <span id="mm-best"></span>
@@ -893,7 +939,7 @@
     $('t-start').textContent = `بنرن جوالك ${T.ringWhen}، حتى لو كان على الصامت.`;
     $('w-tell').textContent = T.tell;
     $('t-waiting').textContent = `${T.waiting} بنرن جوالك ${T.ringWhen}`;
-    $('mm-title').textContent = T.game;
+    $('mm-title').textContent = quizOn ? 'خمّن الطبق' : T.game;
     $('t-ready').textContent = T.ready;
     $('d-wait').textContent = /دور/.test(T.ringWhen) ? 'بالانتظار' : 'قيد التحضير';
     $('d-ready').textContent = 'قيد التحضير';
@@ -1232,15 +1278,22 @@
   $('mg-toggle').onclick = () => { const open = $('v-game').classList.toggle('open'); $('mg-toggle').setAttribute('aria-expanded', open); };
   function renderGame() {
     const on = !!game;
-    $('mg-sub').textContent = on && !gameWon ? `عليها جائزة: ${game.reward}` : 'طابق كل بطاقتين متشابهتين';
+    const base = quizOn ? '5 صور من منيو المحل، خمّن وش هي' : 'طابق كل بطاقتين متشابهتين';
+    $('mg-sub').textContent = on && !gameWon ? `${quizOn ? '5 أسئلة من المنيو · ' : ''}عليها جائزة: ${game.reward}` : base;
     if (on && gameWon) $('v-game').classList.add('open');
     $('mm-prize').classList.toggle('hidden', !on || gameWon);
-    if (on) $('mm-prize').innerHTML = `خلّصها بـ ${game.moves} حركة أو أقل، وجائزتك: <b>${esc(game.reward)}</b>`;
+    if (on) $('mm-prize').innerHTML = quizOn ? `جاوب ${game.need} من 5 صح، وجائزتك: <b>${esc(game.reward)}</b>` : `خلّصها بـ ${game.moves} حركة أو أقل، وجائزتك: <b>${esc(game.reward)}</b>`;
     $('mm-won').classList.toggle('hidden', !(on && gameWon)); $('mm-grid').classList.toggle('hidden', on && gameWon);
+    if (quizOn && on && gameWon) { $('qz-start').classList.add('hidden'); }
     if (on && gameWon) { $('mm-won-text').textContent = gameReward || game.reward; $('mm-won-num').textContent = curNumber; }
   }
-  async function claimGame(moves) {
+  async function claimGame(moves, mode) {
     if (!game || gameWon) return;
+    if (mode === 'quiz') {
+      if (PREVIEW) { gameWon = true; return renderGame(); }
+      try { const r = await DM.post('/api/pager?action=game', { slug, t: loadToken(), mode: 'quiz', score: moves }); if (r.won) { gameWon = true; gameReward = r.reward; renderGame(); if (navigator.vibrate) navigator.vibrate([40, 60, 40]); } } catch {}
+      return;
+    }
     if (PREVIEW && moves <= game.moves) { gameWon = true; $('mm-win').classList.add('hidden'); return renderGame(); }
     if (moves > game.moves) { $('mm-win').textContent += ` (الجايزة تحتاج ${game.moves} حركة أو أقل، جرّب مرة ثانية)`; return; }
     try {
@@ -1248,6 +1301,68 @@
       if (r.won) { gameWon = true; gameReward = r.reward; $('mm-win').classList.add('hidden'); renderGame(); if (navigator.vibrate) navigator.vibrate([40, 60, 40]); }
     } catch {}
   }
+
+  // ─── خمّن الطبق: 5 صور مقرّبة من أطباق المحل، 3 خيارات لكل وحدة ───
+  var quizOn = false;   // var: applyTerms يقراها قبل هالسطر
+  let qzItems = null, qzRound = [], qzAt = 0, qzScore = 0;
+  const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  function quizMode() {
+    $('v-game').classList.toggle('quiz', quizOn);
+    $('qz').classList.toggle('hidden', !quizOn);
+    if (quizOn) { $('mm-title').textContent = 'خمّن الطبق'; }
+  }
+  async function quizStart() {
+    if (!qzItems) {
+      try { qzItems = (await DM.get(`/api/pager?action=quiz&slug=${encodeURIComponent(slug)}`)).items || []; }
+      catch { qzItems = []; }
+      if (qzItems.length < 6) { quizOn = false; quizMode(); return; }   // صور قليلة: نرجع للمطابقة
+    }
+    // 5 أطباق بأسماء مختلفة
+    const seen = new Set(); qzRound = shuffle(qzItems).filter(p => !seen.has(p.name) && seen.add(p.name)).slice(0, 5);
+    qzAt = 0; qzScore = 0;
+    $('qz-start').classList.add('hidden'); $('qz-end').classList.add('hidden'); $('qz-q').classList.remove('hidden');
+    quizShow();
+  }
+  function quizShow() {
+    const p = qzRound[qzAt];
+    $('qz-step').textContent = `سؤال ${qzAt + 1} من ${qzRound.length}`;
+    $('qz-score').textContent = qzScore ? `صح: ${qzScore}` : '';
+    const img = $('qz-img'); img.classList.remove('open');
+    img.style.backgroundImage = `url('${encodeURI(p.image_url).replace(/'/g, '%27')}')`;
+    img.style.backgroundPosition = `${20 + Math.round(Math.random() * 60)}% ${20 + Math.round(Math.random() * 60)}%`;
+    img.style.transformOrigin = img.style.backgroundPosition;
+    const others = shuffle(qzItems.filter(x => x.name !== p.name)).filter((x, i, a) => a.findIndex(y => y.name === x.name) === i).slice(0, 2);
+    $('qz-opts').innerHTML = shuffle([p, ...others]).map(x => `<button type="button" data-qz="${x.id}">${esc(x.name)}</button>`).join('');
+    $('qz-res').classList.add('hidden'); $('qz-next').classList.add('hidden');
+  }
+  $('qz-opts').onclick = (e) => {
+    const b = e.target.closest('[data-qz]'); if (!b || b.disabled) return;
+    const p = qzRound[qzAt], right = Number(b.dataset.qz) === p.id;
+    if (right) qzScore++;
+    [...$('qz-opts').children].forEach(x => { x.disabled = true; const ok = Number(x.dataset.qz) === p.id; x.classList.add(ok ? 'ok' : x === b ? 'no' : 'dim'); });
+    $('qz-img').classList.add('open');
+    if (navigator.vibrate) navigator.vibrate(right ? 30 : [20, 40, 20]);
+    $('qz-name').textContent = p.name;
+    $('qz-price').textContent = `${p.sizes && p.sizes.length ? 'من ' : ''}${fmtPrice(fromPrice(p))}`;
+    $('qz-add').classList.toggle('hidden', !upsell.length);   // «أضف لطلبك» مشغّل عند المحل
+    $('qz-res').classList.remove('hidden');
+    $('qz-next').textContent = qzAt + 1 < qzRound.length ? 'التالي' : 'النتيجة';
+    $('qz-next').classList.remove('hidden');
+    $('qz-score').textContent = qzScore ? `صح: ${qzScore}` : '';
+  };
+  $('qz-add').onclick = () => { const p = qzRound[qzAt]; if (p) openItem(p); };
+  $('qz-next').onclick = () => { if (++qzAt < qzRound.length) return quizShow(); quizEnd(); };
+  function quizEnd() {
+    $('qz-q').classList.add('hidden'); $('qz-end').classList.remove('hidden');
+    const n = qzRound.length;
+    $('qz-final').textContent = `جاوبت ${qzScore} من ${n}`;
+    const need = game && game.need ? game.need : null;
+    if (game && !gameWon && need && qzScore >= need) { $('qz-final-sub').textContent = 'مبروك، فزت بالجائزة'; claimGame(qzScore, 'quiz'); }
+    else if (game && !gameWon && need) $('qz-final-sub').textContent = `قربت! تحتاج ${need} من ${n} عشان الجائزة. تقدر تعيدها بأطباق ثانية.`;
+    else $('qz-final-sub').textContent = qzScore === n ? 'كلها صح، تعرف المنيو زين' : 'تقدر تعيدها بأطباق ثانية';
+  }
+  $('qz-go').onclick = quizStart;
+  $('qz-again').onclick = quizStart;
 
   // ─── المساعد الذكي: يسأل عن طلبه (متى يجهز، كم قدامه) وعن المنيو ───
   let chatOn = false, chatFor = '', askMsgs = [], askBusy = false, askToken = '';
@@ -1312,7 +1427,7 @@
       pollTimer = setTimeout(poll, 5000); return;   // انقطاع مؤقت: نعيد المحاولة
     }
     if (!PREVIEW && loadToken() !== token) return;   // تغيّر الرقم وهو ينتظر الرد (ضغط "استلمت" أو أخذ رقم جديد): الرد قديم
-    if (askChat && typeof r.chat === 'boolean') { chatFor = token; chatOn = r.chat; upsell = r.upsell || []; curLabel = r.currency || 'ر.س'; game = r.game || null; gameOn = r.game_on !== false; }
+    if (askChat && typeof r.chat === 'boolean') { chatFor = token; chatOn = r.chat; upsell = r.upsell || []; curLabel = r.currency || 'ر.س'; game = r.game || null; gameOn = r.game_on !== false; quizOn = r.quiz === true; quizMode(); }
     if (askQ) lastQ = Date.now();
     staffEta = r.staff_eta && typeof r.staff_eta === 'object' ? r.staff_eta : null;
     if (r.queue) renderQueue(r.queue, r.ticket.number); else if (lastQueue) renderQueue(lastQueue, r.ticket.number);
