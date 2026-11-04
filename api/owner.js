@@ -434,6 +434,8 @@ async function main(req) {
     let meta = null;
     if (kind === 'branch') {
       if (store.parent_id) throw new ApiError(400, 'اطلب الفرع من حساب المحل الرئيسي');
+      // البيجر المجاني لفرع واحد: الفرع الإضافي يحتاج اشتراك في ميزة وحدة على الأقل
+      if (PLANS.isFree(store)) throw new ApiError(403, 'البيجر المجاني لفرع واحد. عشان تضيف فرع، اشترك في ميزة وحدة على الأقل من "اشتراكك"', 'FREE_PLAN');
       const name = str(b.meta && b.meta.name, 80, 'اسم الفرع');
       if (!name || name.length < 2) throw new ApiError(400, 'اكتب اسم الفرع');
       const open = await rest(`support_requests?client_id=eq.${mainId}&kind=eq.branch&status=eq.open&select=id`).catch(() => []);

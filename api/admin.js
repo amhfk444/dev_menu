@@ -297,9 +297,11 @@ module.exports = handler(['GET', 'POST'], async (req) => {
 
   // ─── إضافة فرع: نسخة من المنيو يديرها صاحب المتجر الرئيسي من لوحته ───
   if (action === 'branch-create') {
-    const parent = (await rest(`clients?id=eq.${id}&select=id,client_slug,parent_id`))[0];
+    const parent = (await rest(`clients?id=eq.${id}&select=id,client_slug,parent_id,subscription_status,plan_features,is_active,trial_ends_at`))[0];
     if (!parent) throw new ApiError(404, 'المتجر غير موجود');
     if (parent.parent_id) throw new ApiError(400, 'هذا فرع، أضف الفرع للمتجر الرئيسي');
+    // البيجر المجاني لفرع واحد: لازم يشترك في ميزة قبل ما ينضاف له فرع
+    if (PLANS.isFree(parent)) throw new ApiError(400, 'هذا المحل على البيجر المجاني (فرع واحد). فعّل له اشتراك قبل إضافة فرع');
     const name = str(b.name, 80, 'اسم الفرع');
     if (!name) throw new ApiError(400, 'اكتب اسم الفرع');
     let slug = String(b.slug || '').trim().toLowerCase();

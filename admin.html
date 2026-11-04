@@ -4661,6 +4661,7 @@
   }
   const pendingBranch = () => supportRows.find(x => x.kind === 'branch' && x.status === 'open');
   async function requestBranch() {
+    if (DMPlans.isFree(client)) return showToast('البيجر المجاني لفرع واحد. عشان تضيف فرع، اشترك في ميزة وحدة على الأقل من "اشتراكك"', true);
     if (pendingBranch()) return showToast('عندك طلب فرع قيد الإضافة، بنضيفه لك قريب', true);
     const p = accountPeriod(), fee = DMPlans.BRANCH[p];
     const wide = accountFeatures().filter(k => DMPlans.ACCOUNT_WIDE.includes(k)), wideNames = wide.map(k => DMPlans.FEATURES[k].name).join(' و');
