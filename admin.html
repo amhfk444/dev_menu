@@ -6799,13 +6799,17 @@
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && dishMenuFor !== null) closeDishMenu(); });
   window.addEventListener('scroll', () => { if (dishMenuFor !== null) closeDishMenu(); }, { passive: true });
 
+  // المفتاح يتغير على طول (بدون انتظار الخادم)، ولو فشل الحفظ يرجع لحالته
   async function toggleField(id, field, current) {
+    const p = loadedProducts.find(x => x.id === id);
+    const apply = (v) => { if (p) p[field] = v; filterProducts(); renderDashboardSummary(); };
+    apply(!current);
     try { await api('product-toggle', { id, field, value: !current }); }
-    catch { return showToast('ما قدرنا نحدّث البيانات. تأكد من الإنترنت', true); }
+    catch { apply(current); return showToast('ما قدرنا نحدّث البيانات. تأكد من الإنترنت', true); }
     if (field === 'is_available') showToast(current ? 'صار الطبق: نفدت الكمية' : 'صار الطبق: متوفر');
     else if (field === 'is_hidden') showToast(current ? 'الطبق ظاهر في المنيو' : 'تم إخفاء الطبق من المنيو');
     else showToast(current ? 'تمت إزالة التمييز' : 'تم تمييز الطبق');
-    refreshAll();
+    if (!p) refreshAll();
   }
 
   async function deleteProduct(id) {

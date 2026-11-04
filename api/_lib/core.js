@@ -149,6 +149,14 @@ async function storeFeatures(storeId) {
   return out;
 }
 
+// خدمات أكثر من محل باستعلام واحد (بدل استعلام لكل محل): { id: { menu, pager, ... } }
+async function storesFeatures(ids) {
+  const PLANS = require('./plans');
+  if (!ids.length) return {};
+  const rows = await rest(`clients?id=in.(${ids.map(Number).join(',')})&select=id,subscription_status,plan_features,parent_id,is_active,trial_ends_at,subscription_end_date`);
+  return Object.fromEntries(rows.map(s => [s.id, Object.fromEntries(['menu', 'chat', 'pager', 'waitlist', 'loyalty'].map(k => [k, PLANS.has(s, k)]))]));
+}
+
 // عنوان الموقع: الإنتاج www.devmenu.digital، ونسخة التجربة تحط SITE_URL حقها (روابط الإيميلات والمحفظة والإشعارات)
 const SITE = (process.env.SITE_URL || 'https://www.devmenu.digital').replace(/\/+$/, '');
 const SUBDOMAINS = !process.env.SITE_URL;   // روابط المتاجر المختصرة (duja.devmenu.digital) للإنتاج بس
@@ -231,5 +239,5 @@ const googleReviewLink = (x) => [x && x.google_review_url, x && x.location_url].
 module.exports = {
   googleReviewLink, reqLang, SUPABASE_URL, BUCKET, ApiError, rest, rpc, q, storage, publicUrl, ownsMediaUrl, storagePathFromUrl,
   getUser, isSuperAdmin, str, httpUrl, waNumber, int, readBody, handler,
-  SLUG_RE, RESERVED_SLUGS, findPublicStore, CURRENCIES, storeHasFeature, storeFeatures, SITE, storeLink, loyaltyHome, later
+  SLUG_RE, RESERVED_SLUGS, findPublicStore, CURRENCIES, storeHasFeature, storeFeatures, storesFeatures, SITE, storeLink, loyaltyHome, later
 };

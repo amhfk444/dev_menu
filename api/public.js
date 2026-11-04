@@ -10,7 +10,7 @@
 // =====================================================================
 const crypto = require('crypto');
 const PLANS = require('./_lib/plans');
-const { handler, rest, rpc, q, ApiError, readBody, int, findPublicStore, CURRENCIES, storeHasFeature, storeFeatures } = require('./_lib/core');
+const { handler, rest, rpc, q, ApiError, readBody, int, findPublicStore, CURRENCIES, storeHasFeature, storeFeatures, storesFeatures } = require('./_lib/core');
 const { topic } = require('./_lib/live');
 
 const STORE_FIELDS = 'id,name,client_slug,logo_url,bg_image_url,bg_video_url,promo_message,website_url,tiktok_url,instagram_url,whatsapp_number,snapchat_url,opening_hours,location_url,whatsapp_orders,business_type,show_calories,menu_layout,delivery_apps,theme,accent_color,order_numbers,custom_links';
@@ -368,13 +368,14 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       // الفروع السارية بس (public_clients)، الرئيسي أول
       const ids = [rootId, ...kids.map(k => k.id)];
       const live = await rest(`public_clients?id=in.(${ids.join(',')})&select=id,name,client_slug,location_url,order_numbers,whatsapp_number,delivery_apps`).catch(() => []);
-      branches = await Promise.all(live.sort((x, y) => ids.indexOf(x.id) - ids.indexOf(y.id)).map(async (x) => ({
-        name: x.name, slug: x.client_slug, location_url: x.location_url || null, menu: !!(await storeFeatures(x.id).catch(() => ({}))).menu,
+      const feats = await storesFeatures(live.map(x => x.id)).catch(() => ({}));
+      branches = live.sort((x, y) => ids.indexOf(x.id) - ids.indexOf(y.id)).map((x) => ({
+        name: x.name, slug: x.client_slug, location_url: x.location_url || null, menu: !!(feats[x.id] || {}).menu,
         // رقم الطلب للفرع: أول رقم طلبات صحيح، وإلا واتساب الفرع
         phone: ((Array.isArray(x.order_numbers) ? x.order_numbers : []).map(n => String((n && n.phone) || '').replace(/[^\d+]/g, '')).find(n => /^\+?\d{9,15}$/.test(n))) || null,
         whatsapp: String(x.whatsapp_number || '').replace(/\D/g, '') || null,
         delivery: (Array.isArray(x.delivery_apps) ? x.delivery_apps : []).filter(d => d && d.url).map(d => ({ app: d.app || null, name: d.name || null, url: d.url }))
-      })));
+      }));
       if (branches.length < 2) branches = [];
     }
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=300');   // بيانات عامة: تتخزن 30 ثانية في CDN
