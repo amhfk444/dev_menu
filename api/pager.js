@@ -98,7 +98,7 @@ async function demoRing(store, token) {
   const t = rows[0];
   if (!t) return;
   const T = SECTORS.terms(store);
-  if (t.loyalty_card_id) await pagerReadyNotice(await loyaltyHome(store.id), t.loyalty_card_id, t.number, store.name, T);
+  if (t.loyalty_card_id) await pagerReadyNotice(await loyaltyHome(store.id), t.loyalty_card_id, t.number, store.display_name || store.name, T);
   await walletReady(store, t).catch(() => {});
   if (t.push_sub) await sendPush(t.push_sub, { title: `🔔 ${T.ready} رقم ${t.number}`, body: `هذي تجربة من DEV MENU، كذا يوصل التنبيه لزبونك`, url: `https://${store.client_slug}.devmenu.digital/pager`, tag: `pager-${t.id}-1` }).catch(() => {});
   await poke([topic('pager', store.id), topic('ticket', token)]);

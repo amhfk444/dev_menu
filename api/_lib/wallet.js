@@ -124,14 +124,17 @@ async function pagerBody({ store, number, step, status, notice, url, lang, invoi
   const { pagerStrip, brandColor } = require('./strip');
   const { rest, googleReviewLink } = require('./core');
   const [color, x] = await Promise.all([brandColor(store),
-    store.id ? rest(`clients?id=eq.${Number(store.id)}&select=google_review_url,location_url,loyalty_lat,loyalty_lng,pager_near_text`).then(r => r[0] || {}).catch(() => ({})) : {}]);
+    store.id ? rest(`clients?id=eq.${Number(store.id)}&select=google_review_url,location_url,loyalty_lat,loyalty_lng,pager_near_text,parent_id`).then(r => r[0] || {}).catch(() => ({})) : {}]);
   const review = googleReviewLink(x);
+  // اسم البطاقة: الفرع ياخذ اسم المحل الرئيسي (ماندولين، مو "ماندولين فرع بيش")، من أي مكان تتحدث منه
+  let name = store.name;
+  if (x.parent_id) { const root = (await rest(`clients?id=eq.${Number(x.parent_id)}&select=name`).catch(() => []))[0]; if (root && root.name) name = root.name; }
   // بعد الاستلام: "بالعافية" ومعها طلب التقييم لو المحل حط رابطه
   if (step === 'idle' && review && notice === L('بالعافية! نتشرف بزيارتك')) notice = L('بالعافية! عجبك طلبك؟ قيّمنا في قوقل ⭐');
   const body = {
-    logoText: String(store.name || 'DEV MENU').slice(0, 40),
-    organizationName: String(store.name || 'DEV MENU').slice(0, 64),
-    description: L(`بطاقة النداء: ${store.name || ''}`).slice(0, 120),
+    logoText: String(name || 'DEV MENU').slice(0, 40),
+    organizationName: String(name || 'DEV MENU').slice(0, 64),
+    description: L(`بطاقة النداء: ${name || ''}`).slice(0, 120),
     color,
     headerFields: [{ label: L('رقمك'), value: number ? String(number) : '—' }],
     secondaryFields: [{ label: L('الحالة'), value: L(String(status)).slice(0, 40) }, ...(invoice ? [{ label: L('رقم الفاتورة'), value: String(invoice).slice(0, 20) }] : [])],   // الإشعار من حقل notification (فيه الوقت، فيطلع كل مرة)
@@ -148,12 +151,12 @@ async function pagerBody({ store, number, step, status, notice, url, lang, invoi
   if (store.logo_url && /^https:\/\//.test(store.logo_url)) body.logoURL = body.iconURL = await require('./strip').smallLogo(store.logo_url);
   // موقع المحل: البطاقة تطلع على شاشة القفل لما يقرب منه، بنص صاحب المحل أو النص الافتراضي
   const lat = Number(x.loyalty_lat), lng = Number(x.loyalty_lng);
-  const near = String(x.pager_near_text || '').trim() || L(`أنت قريب من ${store.name || 'المحل'}، تفضّل 👋`);
+  const near = String(x.pager_near_text || '').trim() || L(`أنت قريب من ${name || 'المحل'}، تفضّل 👋`);
   if (x.loyalty_lat != null && Number.isFinite(lat) && Number.isFinite(lng)) body.locations = [{ latitude: lat, longitude: lng, relevantText: near.slice(0, 80) }];
   return body;
 }
 // البطاقة لازم تنولد وفيها خانة الإشعار، وإلا أول رسالة توصلها ما تطلع إشعار
-const firstNotice = (store, lang) => tr(lang, `أهلاً بك في ${store.name || 'المحل'}`);
+const firstNotice = (store, lang) => tr(lang, `أهلاً بك في ${store.display_name || store.name || 'المحل'}`);
 // صيانة بطاقة النداء (زر في لوحة المدير): ما ننشئ ولا نحدّث بطاقات نداء، والبيجر يشتغل بدونها (يرن من الصفحة)
 let maint = { at: 0, on: false };
 async function cardMaintenance() {

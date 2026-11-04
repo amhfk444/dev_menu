@@ -1190,7 +1190,7 @@ async function main(req) {
     // بطاقة ولاء مربوطة بالرقم: "جاهز" = إشعار من بطاقة المحفظة، و"استلم" = الختم (مرة وحدة)
     // الختم مع الاستلام مو الجاهز: اللي أخذ رقم من بعيد وما طلب ما يجي يستلم، فما ينختم له لو انضغط "جاهز" بالغلط
     if (status === 'ready' && t.loyalty_card_id && PLANS.has(store, 'loyalty')) {
-      later((async () => console.log('PAGER_WALLET', sid, t.id, await pagerReadyNotice(await loyaltyHome(sid), t.loyalty_card_id, t.number, store.name, SECTORS.terms(store))))());
+      later((async () => console.log('PAGER_WALLET', sid, t.id, await (async () => { const home = await loyaltyHome(sid); const brand = home === sid ? store.name : ((await rest(`clients?id=eq.${home}&select=name`).catch(() => []))[0] || store).name; return pagerReadyNotice(home, t.loyalty_card_id, t.number, brand, SECTORS.terms(store)); })()))());
     }
     if (status === 'done' && t.loyalty_card_id && !t.loyalty_stamped) {
       later((async () => {
@@ -1271,7 +1271,9 @@ async function main(req) {
     // مربوط ببطاقة ولاء في المحفظة: إشعار "جاء دورك/طاولتك جاهزة" من البطاقة
     if (status === 'notified' && updated.loyalty_card_id && PLANS.has(store, 'loyalty')) {
       const T = SECTORS.terms(store);
-      await walletNotice(await loyaltyHome(sid), updated.loyalty_card_id, `🔔 ${T.wlReady} دور #${updated.ticket}. تفضّل للاستقبال في ${store.name}`).catch(() => {});
+      const home = await loyaltyHome(sid);
+      const brand = home === sid ? store.name : ((await rest(`clients?id=eq.${home}&select=name`).catch(() => []))[0] || store).name;
+      await walletNotice(home, updated.loyalty_card_id, `🔔 ${T.wlReady} دور #${updated.ticket}. تفضّل للاستقبال في ${brand}`).catch(() => {});
     }
     await poke(topic('wl', sid));
     return { entry: updated, email_sent };
