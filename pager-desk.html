@@ -84,9 +84,41 @@
 </style>
 <link rel="stylesheet" href="/css/tw/pager-desk.css">
 <style>body.desk .owner-only { display: none !important; }
+  /* ─── بطاقات الأرقام: الرقم كبير، والزر الرئيسي كبير تحت (نفس المكان في كل بطاقة)، والأزرار الثانية 48px ─── */
+  .dk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  @media (max-width: 459px) { .dk-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
+  .dk { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 16px; background: #fff; box-shadow: var(--shadow-card); min-height: 230px; }
+  .dk-wait { border-top: 5px solid var(--brand); }
+  .dk-ready { background: #fffbea; border-top: 5px solid #c9a227; }
+  .dk-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .dk-n { font-size: 52px; line-height: .95; font-weight: 800; color: #1a1a1a; font-variant-numeric: tabular-nums; letter-spacing: -1px; }
+  .dk-meta { font-size: 13px; font-weight: 600; color: #555; text-align: left; padding-top: 4px; line-height: 1.5; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 13.5px; font-weight: 700; padding: 5px 9px; border-radius: 9px; background: #f1f1f1; color: #1a1a1a; }
+  .chip b { font-weight: 800; }
+  .chip-gold { background: #fbefc4; color: #5c4600; }
+  .adds { background: #fff6e0; border: 1px solid #f0dca0; border-radius: 12px; padding: 8px 10px; }
+  .adds small { display: block; font-size: 12px; font-weight: 700; color: #7a5a00; }
+  .adds ul { list-style: none; margin: 4px 0 0; padding: 0; } .adds li { font-size: 15px; line-height: 1.45; } .adds li + li { margin-top: 4px; }
+  .adds li b { font-weight: 800; } .adds li span { font-weight: 600; } .adds li em { display: block; font-style: normal; font-size: 13px; font-weight: 600; color: #8a5a00; }
+  .dk-grow { flex: 1; }
+  .dk-main { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 58px; border-radius: 12px; background: var(--brand); color: #fff; font-size: 19px; font-weight: 800; box-shadow: var(--shadow-primary); }
+  .dk-main:active { transform: scale(.98); }
+  .dk-main:disabled { opacity: .6; }
+  .dk-main i { font-size: 22px; }
+  .dk-main-done { background: #1f6b45; box-shadow: inset 0 -1px 0 1px rgba(0,0,0,.45); }
+  .dk-row { display: grid; grid-template-columns: 1fr 1fr 48px; gap: 6px; }
+  .dk-row-2 { grid-template-columns: 1fr 48px; }
+  .dk-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 48px; padding: 0 8px; border-radius: 10px; background: #fff; color: #303030; font-size: 14px; font-weight: 700; box-shadow: var(--shadow-button); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dk-btn.on { background: #eef4ef; color: var(--brand); box-shadow: inset 0 0 0 1.5px rgba(56,79,61,.45); }
+  .dk-btn:active { background: #f1f1f1; }
+  .dk-del { color: #a1121f; padding: 0; } .dk-del i { font-size: 18px; }
+  .dk-gold { background: #c9a227; color: #1a1a1a; box-shadow: none; width: 100%; }
+  @media (max-width: 459px) { .dk { padding: 11px; min-height: 0; } .dk-n { font-size: 42px; } .dk-main { min-height: 54px; font-size: 17px; } .dk-btn { font-size: 13px; } .dk-row { grid-template-columns: 1fr 1fr; } .dk-row .dk-del { grid-column: span 2; min-height: 40px; } .dk-row-2 { grid-template-columns: 1fr; } .dk-row-2 .dk-del { grid-column: auto; } }
   /* رقم جديد: وميض ذهبي لين يلاحظه الكاشير */
   @keyframes tileNew { 0%, 100% { box-shadow: 0 0 0 0 rgba(201,162,39,0); } 50% { box-shadow: 0 0 0 8px rgba(201,162,39,.85); } }
   .tile-new { animation: tileNew 1s ease-in-out 4; }
+  .dk.tile-new { animation: tileNew 1s ease-in-out 4; }
   @media (prefers-reduced-motion: reduce) { .tile-new { animation: none; outline: 4px solid #c9a227; } }
 </style>
 </head>
@@ -100,7 +132,7 @@
       <a href="admin.html" class="owner-only w-10 h-10 rounded-xl bg-white border border-[#233d2c]/15 grid place-items-center text-[#233d2c]" title="لوحة التحكم"><i class="ph-bold ph-arrow-right"></i></a>
       <div class="min-w-0">
         <h1 class="text-base font-black truncate"><i class="ph-bold ph-bell text-[#c9a227]"></i> <span id="desk-title">شاشة البيجر</span> — <span id="store-name">…</span></h1>
-        <p id="desk-sub" class="hidden md:block text-[11px] font-bold opacity-85">اضغط على الرقم لما يجي دوره، ويرن جوال العميل</p>
+        <p id="desk-sub" class="hidden md:block text-[11px] font-bold opacity-85">اضغط «جاهز» تحت الرقم لما يجهز الطلب، ويرن جوال الزبون</p>
       </div>
     </div>
     <div class="flex gap-2 overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0 pb-0.5 [&>*]:shrink-0 [&>*]:whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -140,13 +172,13 @@
       <i class="ph-bold ph-magnifying-glass absolute start-4 top-1/2 -translate-y-1/2 opacity-40"></i>
       <input id="search" type="text" inputmode="numeric" autocomplete="off" placeholder="ابحث برقم الفاتورة أو رقم البيجر…" class="w-full bg-[#fdfdfd] border border-[#8a8a8a] hover:border-[#616161] rounded-lg py-3 ps-11 pe-4 text-base font-semibold focus:outline focus:outline-2 focus:outline-[#005bd3] focus:outline-offset-1">
     </div>
-    <div id="wait-grid" class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-7 gap-3"></div>
+    <div id="wait-grid" class="dk-grid"></div>
     <p id="wait-empty" class="text-center text-sm font-bold opacity-85 py-8 hidden">ما فيه أرقام تنتظر. أول ما يمسح العميل الـ QR يطلع رقمه هنا.</p>
   </section>
 
   <section class="panel p-5" data-pager>
     <h2 class="text-lg font-black mb-4"><span id="t-dready">تم النداء، بانتظار الحضور</span> <span id="ready-count" class="text-sm opacity-85"></span></h2>
-    <div id="ready-grid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3"></div>
+    <div id="ready-grid" class="dk-grid"></div>
     <p id="ready-empty" class="text-center text-sm font-bold opacity-85 py-6 hidden">ما فيه أحد تم نداؤه.</p>
   </section>
 </main>
@@ -381,37 +413,51 @@
     $('ready-count').textContent = ready.length ? `(${ready.length})` : '';
     $('wait-empty').classList.toggle('hidden', waiting.length > 0);
     $('ready-empty').classList.toggle('hidden', ready.length > 0);
+    const chips = (t, ready) => {
+      const c = [];
+      if (t.invoice_no && ready) c.push(`<span class="chip"><i class="ph-bold ph-receipt"></i> ${esc(t.invoice_no)}</span>`);
+      const car = t.car; if (car && (car.color || car.model)) c.push(`<span class="chip"><i class="ph-bold ph-car"></i> ${esc([car.model, car.color].filter(Boolean).join(' '))}${car.plate ? ` <b dir="ltr">${esc(car.plate)}</b>` : ''}</span>`);
+      if (t.game_won) c.push('<span class="chip chip-gold"><i class="ph-bold ph-trophy"></i> فاز باللعبة</span>');
+      return c.length ? `<div class="chips">${c.join('')}</div>` : '';
+    };
+    const addonsBox = (t) => {
+      const a = Array.isArray(t.addons) ? t.addons : [];
+      if (!a.length) return '';
+      return `<div class="adds"><small>أضافه الزبون</small><ul>${a.map(x => `<li><b>${(x.qty || 1) > 1 ? `${x.qty}× ` : ''}${esc(x.name)}</b>${x.size ? ` <span>(${esc(x.size)})</span>` : ''}${x.note ? `<em>${esc(x.note)}</em>` : ''}</li>`).join('')}</ul></div>`;
+    };
     $('wait-grid').innerHTML = waiting.map(t => `
-      <div class="tile tile-wait${freshIds.has(t.id) ? ' tile-new' : ''}">
-        <div class="text-[11px] opacity-85">بيجر</div>
-        <div class="n">${t.number}</div>
-        ${carLine(t)}
-        ${extraLines(t)}
-        <button class="mini w-full mt-2 ${t.invoice_no ? 'bg-white/15 text-white' : 'bg-[#c9a227] text-[#15271b]'}" data-invoice="${t.id}">
-          ${t.invoice_no ? `🧾 ${esc(t.invoice_no)}` : '🧾 أضف الفاتورة'}
-        </button>
-        <button class="mini w-full mt-1.5 ${t.eta_at ? 'bg-white text-[#233d2c]' : 'bg-white/15 text-white'}" data-eta="${t.id}">⏱ ${t.eta_at ? etaLeft(t.eta_at) : 'حدد وقت الانتظار'}</button>
-        <div class="flex gap-1.5 mt-1.5">
-          <button class="mini flex-1 bg-white text-[#233d2c]" data-ready="${t.id}" ${busy.has(t.id) ? 'disabled' : ''}>
-            ${busy.has(t.id) ? '<i class="ph-bold ph-spinner-gap ph-spin"></i>' : `<i class="ph-bold ph-bell"></i> ${T.deskCall}`}
-          </button>
-          <button class="mini bg-white/15 text-white" data-del="${t.id}" title="حذف الرقم" aria-label="حذف الرقم"><i class="ph-bold ph-trash"></i></button>
+      <div class="dk dk-wait${freshIds.has(t.id) ? ' tile-new' : ''}">
+        <div class="dk-top">
+          <div class="dk-n">${t.number}</div>
+          <div class="dk-meta">${ago(t.created_at)}${t.has_push ? ' <i class="ph-bold ph-device-mobile" title="الإشعارات مفعّلة"></i>' : ''}</div>
         </div>
-        ${t.reward ? `<button class="mini w-full mt-1.5 bg-[#c9a227] text-[#15271b] rw-pulse" data-reward="${t.id}"><i class="ph-bold ph-gift"></i> عنده مكافأة</button>` : ''}
-        <div class="text-[11px] mt-1.5 opacity-85">${ago(t.created_at)}${t.has_push ? ' · <i class="ph-bold ph-device-mobile" title="الإشعارات مفعّلة"></i>' : ''}</div>
+        ${chips(t, false)}
+        ${addonsBox(t)}
+        ${t.reward ? `<button class="dk-btn dk-gold rw-pulse" data-reward="${t.id}"><i class="ph-bold ph-gift"></i> عنده مكافأة</button>` : ''}
+        <div class="dk-grow"></div>
+        <button class="dk-main" data-ready="${t.id}" ${busy.has(t.id) ? 'disabled' : ''}>
+          ${busy.has(t.id) ? '<i class="ph-bold ph-spinner-gap ph-spin"></i>' : `<i class="ph-bold ph-bell-ringing"></i> ${T.deskCall}`}
+        </button>
+        <div class="dk-row">
+          <button class="dk-btn${t.invoice_no ? ' on' : ''}" data-invoice="${t.id}"><i class="ph-bold ph-receipt"></i> ${t.invoice_no ? esc(t.invoice_no) : 'الفاتورة'}</button>
+          <button class="dk-btn${t.eta_at ? ' on' : ''}" data-eta="${t.id}"><i class="ph-bold ph-timer"></i> ${t.eta_at ? etaLeft(t.eta_at).replace('يجهز بعد ', '') : 'الوقت'}</button>
+          <button class="dk-btn dk-del" data-del="${t.id}" title="حذف الرقم" aria-label="حذف الرقم"><i class="ph-bold ph-trash"></i></button>
+        </div>
       </div>`).join('');
     $('ready-grid').innerHTML = ready.map(t => `
-      <div class="tile tile-ready">
-        <div class="n">${t.number}</div>
-        ${carLine(t)}
-        ${extraLines(t)}
-        ${t.invoice_no ? `<div class="text-[12px] font-black mt-1">🧾 ${esc(t.invoice_no)}</div>` : ''}
-        <div class="text-[11px] mt-1 opacity-85">${ringLabel(t)}</div>
-        ${t.reward ? `<button class="mini w-full mt-1.5 bg-[#c9a227] text-[#15271b] rw-pulse" data-reward="${t.id}"><i class="ph-bold ph-gift"></i> عنده مكافأة</button>` : ''}
-        <div class="flex gap-1.5 mt-3">
-          <button class="mini flex-1 bg-[#384f3d] text-white" data-done="${t.id}"><i class="ph-bold ph-check"></i> ${T.deskDone}</button>
-          <button class="mini bg-white border border-[#c9a227]/40" data-undo="${t.id}" title="إرجاع للتجهيز"><i class="ph-bold ph-arrow-counter-clockwise"></i></button>
-          <button class="mini bg-white border border-[#c9a227]/40" data-del="${t.id}" title="حذف الرقم" aria-label="حذف الرقم"><i class="ph-bold ph-trash"></i></button>
+      <div class="dk dk-ready">
+        <div class="dk-top">
+          <div class="dk-n">${t.number}</div>
+          <div class="dk-meta">${ringLabel(t)}</div>
+        </div>
+        ${chips(t, true)}
+        ${addonsBox(t)}
+        ${t.reward ? `<button class="dk-btn dk-gold rw-pulse" data-reward="${t.id}"><i class="ph-bold ph-gift"></i> عنده مكافأة</button>` : ''}
+        <div class="dk-grow"></div>
+        <button class="dk-main dk-main-done" data-done="${t.id}"><i class="ph-bold ph-check-circle"></i> ${T.deskDone}</button>
+        <div class="dk-row dk-row-2">
+          <button class="dk-btn" data-undo="${t.id}"><i class="ph-bold ph-arrow-counter-clockwise"></i> رجّعه للتجهيز</button>
+          <button class="dk-btn dk-del" data-del="${t.id}" title="حذف الرقم" aria-label="حذف الرقم"><i class="ph-bold ph-trash"></i></button>
         </div>
       </div>`).join('');
   }
