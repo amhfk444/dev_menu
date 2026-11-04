@@ -34,9 +34,16 @@ async function parse(r) {
 async function rest(path, { method = 'GET', body, prefer } = {}) {
   const headers = keyHeaders(SERVICE_KEY, { 'Content-Type': 'application/json' });
   if (prefer) headers.Prefer = prefer;
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    method, headers, body: body === undefined ? undefined : JSON.stringify(body)
-  });
+  // مهلة 25 ثانية: لو قاعدة البيانات علّقت ما تبقى الدالة معلقة لين حدها (ويرجع للمستخدم رسالة واضحة)
+  let r;
+  try {
+    r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      method, headers, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(25000)
+    });
+  } catch (e) {
+    if (e && (e.name === 'TimeoutError' || e.name === 'AbortError')) throw new ApiError(504, 'الخادم تأخر في الرد، حاول مرة ثانية', 'DB_TIMEOUT');
+    throw e;
+  }
   const data = await parse(r);
   if (!r.ok) {
     const msg = (data && (data.message || data.error)) || `DB error ${r.status}`;
