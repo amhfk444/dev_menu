@@ -2091,7 +2091,7 @@
     <div id="mp-wait" class="py-10 text-center space-y-3">
       <i class="ph-bold ph-spinner-gap ph-spin text-3xl text-brand"></i>
       <p class="text-sm font-bold">جاري قراءة المنيو…</p>
-      <p class="text-[12px] text-ink">ياخذ عادة 20 إلى 40 ثانية. لا تقفل الصفحة.</p>
+      <p class="text-[12px] text-ink">المنيو الطويل ياخذ دقيقة أو دقيقتين. لا تقفل الصفحة.</p>
     </div>
     <div id="mp-body" class="hidden space-y-3">
       <p class="text-[12px] text-ink leading-relaxed">راجع الأطباق قبل الإضافة: عدّل أي خانة، واحذف اللي انقرأ غلط. الأقسام اللي مو موجودة تنضاف لحالها.</p>
@@ -5979,8 +5979,22 @@
 
   // ─── المنيو من صورة ───
   let mpItems = [], mpBusy = false;
+  // الصورة للقراءة بس (ما تنحفظ): أي صورة يقدر الجوال يفتحها (HEIC وPNG الكبيرة وغيرها) تتحول JPEG بالمقاس المطلوب
+  async function menuReadImage(file, maxDim, quality) {
+    let bmp;
+    try { bmp = await createImageBitmap(file); }
+    catch {
+      // بعض المتصفحات ما تفتح الصورة بـ createImageBitmap: نجرب عنصر صورة عادي
+      bmp = await new Promise((ok, no) => { const u = URL.createObjectURL(file), im = new Image(); im.onload = () => { ok(im); setTimeout(() => URL.revokeObjectURL(u), 0); }; im.onerror = () => { URL.revokeObjectURL(u); no(new Error('ما قدرنا نفتح الصورة على هذا الجهاز، صوّر المنيو بكاميرا الجوال وارفعها')); }; im.src = u; });
+    }
+    const w0 = bmp.width || bmp.naturalWidth, h0 = bmp.height || bmp.naturalHeight, k = Math.min(1, maxDim / Math.max(w0, h0));
+    const c = document.createElement('canvas'); c.width = Math.round(w0 * k); c.height = Math.round(h0 * k);
+    const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(bmp, 0, 0, c.width, c.height);
+    if (bmp.close) bmp.close();
+    return { type: 'image/jpeg', data: c.toDataURL('image/jpeg', quality).split(',')[1] };
+  }
   async function readMenuPhoto(input) {
-    const files = [...(input.files || [])].slice(0, 4); input.value = '';
+    const files = [...(input.files || [])].slice(0, 8); input.value = '';
     if (!files.length) return;
     const box = document.getElementById('mp');
     box.classList.remove('hidden'); box.classList.add('flex');
@@ -5988,17 +6002,23 @@
     document.getElementById('mp-sub').textContent = files.length === 1 ? 'صورة وحدة' : `${files.length} صور`;
     mpBusy = true;
     try {
-      const images = [];
-      for (const f of files) {
-        const small = await compressImage(f, 1600, .82);
-        if (!/^image\/(jpeg|png|webp)$/.test(small.type)) throw new Error('صيغة الصورة غير مدعومة، صوّرها JPG أو PNG');
-        const data = await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1]); r.onerror = no; r.readAsDataURL(small); });
-        images.push({ type: small.type, data });
+      // كل طلب للخادم حده 4.5 ميجا و4 صور: نصغّر الصور لين تدخل، ونقسمها دفعات لو كثيرة
+      const LIMIT = 3.9e6, batches = [];
+      for (let i = 0; i < files.length; i += 4) batches.push(files.slice(i, i + 4));
+      const items = [];
+      for (const batch of batches) {
+        let images = [];
+        for (const [dim, qual] of [[1800, .85], [1500, .8], [1200, .75], [1000, .7]]) {
+          images = [];
+          for (const f of batch) images.push(await menuReadImage(f, dim, qual));
+          if (images.reduce((n, im) => n + im.data.length, 0) <= LIMIT) break;
+        }
+        // دفعة ما فيها أطباق (صورة غلاف مثلاً) ما توقف الباقي
+        try { items.push(...(await api('menu-from-photo', { images })).items); }
+        catch (e) { if (e.code !== 'NO_ITEMS' || batches.length === 1) throw e; }
       }
-      // حد الطلب في الخادم 4.5 ميجا: الصور الكبيرة ترجع رسالة واضحة بدل خطأ غامض
-      if (images.reduce((n, im) => n + im.data.length, 0) > 4.2e6) throw new Error('الصور كبيرة مع بعض، ارفعها صورتين صورتين');
-      const r = await api('menu-from-photo', { images });
-      mpItems = r.items.map(it => ({ ...it }));
+      if (!items.length) throw new Error('ما لقينا أطباق في الصور، جرّب صورة أوضح للمنيو');
+      mpItems = items.map(it => ({ ...it }));
       renderMenuPhoto();
       document.getElementById('mp-wait').classList.add('hidden'); document.getElementById('mp-body').classList.remove('hidden');
     } catch (e) {
