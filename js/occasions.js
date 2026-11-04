@@ -145,6 +145,51 @@
     custom:         { bg: 'var(--accent,#384f3d)', fg: 'var(--accent-fg,#fff)', icon: 'spark' }
   };
 
+  // ─── الأسلوب العصري: إضاءة ناعمة خلف الشعار، حلقة متوهجة حوله، وذرات ضوء تطفو ───
+  // aura: ألوان الإضاءة، ring: ألوان الحلقة، dust: لون الذرات، line: رسم خطي رفيع حول الحلقة
+  const LOOK = {
+    ramadan:        { aura: ['#3b2a7a', '#c9a227', '#1d2a6d'], ring: ['#f6d77a', '#8e6bd6', '#f6d77a'], dust: '#ffe39a', line: 'crescent' },
+    eid_fitr:       { aura: ['#f2b84b', '#e07a8f', '#f7e3a1'], ring: ['#ffd36b', '#ff9aa8', '#fff1c2'], dust: '#ffd36b', line: 'sparkles' },
+    eid_adha:       { aura: ['#e9b44c', '#2a9d8f', '#f7e3a1'], ring: ['#ffd36b', '#5fd3c2', '#fff1c2'], dust: '#ffe39a', line: 'sparkles' },
+    national_day:   { aura: ['#14864f', '#7be0a8', '#0f5c35'], ring: ['#2fdc8a', '#ffffff', '#1b7f4b'], dust: '#b9f5d2', line: 'sparkles' },
+    founding_day:   { aura: ['#a4532c', '#c9a227', '#5a2e16'], ring: ['#e3b05c', '#a4532c', '#f3d9a4'], dust: '#f3d9a4', line: 'sadu' },
+    hijri_new_year: { aura: ['#1f3a6b', '#9fb8e6', '#0f1e3d'], ring: ['#dfe9ff', '#7f9fd8', '#dfe9ff'], dust: '#eef3ff', line: 'crescent' },
+    winter:         { aura: ['#8fc3f0', '#ffffff', '#5d8fc4'], ring: ['#ffffff', '#9ccdf5', '#ffffff'], dust: '#ffffff', line: 'none' },
+    custom:         { aura: ['var(--accent,#c9a227)', '#f2b84b', 'var(--accent,#c9a227)'], ring: ['#ffd36b', '#ffffff', '#ffd36b'], dust: '#ffe39a', line: 'sparkles' }
+  };
+  const LOGO = 128, RING = 156;   // حجم الشعار في المنيو، وحجم الحلقة حوله
+  function modernDecor(top, preset, contained) {
+    const L = LOOK[preset] || LOOK.custom, cy = 4 + LOGO / 2;
+    // الإضاءة: ثلاث بقع ضبابية خلف الشعار تتحرك ببطء
+    L.aura.forEach((c, i) => el(top, '', `left:calc(50% + ${[-70, 60, -10][i]}px);top:${[-10, 10, 40][i]}px;width:${[190, 170, 210][i]}px;height:${[150, 140, 120][i]}px;margin-left:-${[95, 85, 105][i]}px;border-radius:50%;background:${c};opacity:.42;filter:blur(38px);animation-delay:-${i * 2}s`, 'dmo-aura'));
+    // الحلقة: خط متدرج يدور حول الشعار
+    el(top, `<svg viewBox="0 0 100 100"><defs><linearGradient id="dmr-${preset}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${L.ring[0]}"/><stop offset=".5" stop-color="${L.ring[1]}" stop-opacity=".25"/><stop offset="1" stop-color="${L.ring[2]}"/></linearGradient></defs>
+      <circle cx="50" cy="50" r="48" fill="none" stroke="url(#dmr-${preset})" stroke-width="1.6" stroke-dasharray="70 12 4 12" stroke-linecap="round"/></svg>`,
+      `left:50%;top:${cy - RING / 2}px;width:${RING}px;margin-left:-${RING / 2}px;filter:drop-shadow(0 0 6px ${L.ring[0]})`, 'dmo-spin');
+    // رسم خطي رفيع على الحلقة
+    if (L.line === 'crescent') {
+      el(top, `<svg viewBox="0 0 100 100"><path d="M70 8 A44 44 0 1 0 94 60 A36 36 0 1 1 70 8 Z" fill="none" stroke="${L.ring[0]}" stroke-width="1.4"/></svg>`,
+        `left:50%;top:${cy - 104}px;width:64px;margin-left:44px;filter:drop-shadow(0 0 5px ${L.ring[0]})`, 'dmo-float');
+    }
+    if (L.line === 'sparkles' || L.line === 'crescent') {
+      [[-86, -40, 13], [80, 34, 10], [-70, 52, 8], [92, -46, 7]].forEach(([dx, dy, w], i) =>
+        el(top, `<svg viewBox="0 0 20 20"><path d="M10 0 C10.6 7 13 9.4 20 10 C13 10.6 10.6 13 10 20 C9.4 13 7 10.6 0 10 C7 9.4 9.4 7 10 0Z" fill="${L.ring[0]}"/></svg>`,
+          `left:calc(50% + ${dx}px);top:${cy + dy}px;width:${w}px;margin-left:-${w / 2}px;animation-delay:-${i * .6}s;filter:drop-shadow(0 0 4px ${L.ring[0]})`, 'dmo-twinkle'));
+    }
+    if (L.line === 'sadu') {
+      // نقشة سدو مبسطة بخط رفيع: معينات صغيرة على يمين ويسار الشعار
+      const row = (n) => Array.from({ length: n }, (_, i) => `<path d="M${6 + i * 14} 2 L${12 + i * 14} 8 L${6 + i * 14} 14 L${i * 14} 8 Z" fill="none" stroke="${L.ring[0]}" stroke-width="1.3"/>`).join('');
+      ['right', 'left'].forEach(side => el(top, `<svg viewBox="0 0 70 16">${row(5)}</svg>`, `${side}:6%;top:${cy - 8}px;width:70px;opacity:.9;filter:drop-shadow(0 0 4px ${L.ring[0]})`, 'dmo-float'));
+    }
+  }
+  // ذرات ضوء تطلع بهدوء من تحت لفوق في خلفية الصفحة
+  function dust(back, color, n = 16) {
+    for (let i = 0; i < n; i++) {
+      const w = rnd(3, 7);
+      el(back, '', `left:${rnd(2, 98)}%;width:${w}px;height:${w}px;border-radius:50%;background:${color};box-shadow:0 0 ${w * 2}px ${color};opacity:${rnd(.35, .8)};animation-duration:${rnd(12, 22)}s;animation-delay:-${rnd(0, 22)}s;--dx:${rnd(-24, 24)}px`, 'dmo-dust');
+    }
+  }
+
   // ─── CSS (يُحقن مرة وحدة) ───
   const CSS = `
     .dmo-top{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:visible}
@@ -161,6 +206,12 @@
     .dmo-twinkle{animation:dmo-twinkle 2.4s ease-in-out infinite}
     .dmo-rise{animation:dmo-rise 4s ease-in-out infinite alternate}
     .dmo-bulb{animation:dmo-bulb 1.5s ease-in-out infinite alternate}
+    .dmo-aura{animation:dmo-aura 9s ease-in-out infinite alternate}
+    .dmo-spin{animation:dmo-spin 18s linear infinite}
+    .dmo-dust{top:104%;animation:dmo-dust linear infinite}
+    @keyframes dmo-aura{from{transform:translate(-12px,0) scale(1)}to{transform:translate(12px,8px) scale(1.12)}}
+    @keyframes dmo-spin{to{transform:rotate(360deg)}}
+    @keyframes dmo-dust{to{top:-6%;transform:translateX(var(--dx,0))}}
     .dmo-fall{top:-8%;animation:dmo-fall linear forwards}
     .dmo-snow{top:-6%;animation:dmo-fall linear infinite}
     @keyframes dmo-swing{from{transform:rotate(-6deg)}to{transform:rotate(6deg)}}
@@ -178,7 +229,7 @@
     .dmo-card::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.45) 50%,transparent 65%);transform:translateX(-120%);animation:dmo-shine 3.6s ease-in-out 1s infinite}
     @keyframes dmo-in{from{opacity:0;transform:translateY(8px) scale(.92)}to{opacity:1;transform:none}}
     @keyframes dmo-shine{0%{transform:translateX(-120%)}35%,100%{transform:translateX(120%)}}
-    @media (prefers-reduced-motion:reduce){.dmo-swing,.dmo-float,.dmo-bounce,.dmo-pulse,.dmo-twinkle,.dmo-rise,.dmo-snow,.dmo-bulb,.dmo-card,.dmo-card::after{animation:none}}`;
+    @media (prefers-reduced-motion:reduce){.dmo-swing,.dmo-float,.dmo-bounce,.dmo-pulse,.dmo-twinkle,.dmo-rise,.dmo-snow,.dmo-bulb,.dmo-card,.dmo-card::after,.dmo-aura,.dmo-spin,.dmo-dust{animation:none}}`;
   function injectCss() {
     const old = document.getElementById('dmo-css'); if (old) old.remove();
     const st = document.createElement('style'); st.id = 'dmo-css'; st.textContent = CSS; document.head.appendChild(st);
@@ -274,12 +325,12 @@
     };
     const back = layer('back'), front = layer('front');
 
-    if (p.decor === 'bunting') el(top, lights(PALETTES.lights), 'left:-2%;right:-2%;top:-4px;height:50px', 'dmo-glow');
-    if (p.decor === 'green') el(top, bunting(PALETTES.green), 'left:-2%;right:-2%;top:-4px;height:44px', 'dmo-shadow');
-    if (p.decor === 'sadu') el(top, sadu(), 'left:0;right:0;top:-8px;height:22px;border-radius:4px;overflow:hidden', 'dmo-shadow');
-    const taken = new Set((occ.stickers || []).map(s => s.position));
-    sideDecor(top, p.decor, taken);
-    effects(back, front, p.fx);
+    modernDecor(top, occ.preset, contained);
+    if (!reduced()) {
+      if (p.fx === 'snow') effects(back, front, 'snow');
+      else dust(back, (LOOK[occ.preset] || LOOK.custom).dust);
+      if (p.fx.startsWith('confetti')) effects(back, front, p.fx);   // قصاصات العيد والمناسبات: مرة وحدة عند الفتح
+    }
     stickers(top, front, occ.stickers);
 
     setGreeting(occ, greet, lang);
