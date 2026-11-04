@@ -5990,11 +5990,13 @@
     try {
       const images = [];
       for (const f of files) {
-        const small = await compressImage(f, 1800, .85);
+        const small = await compressImage(f, 1600, .82);
         if (!/^image\/(jpeg|png|webp)$/.test(small.type)) throw new Error('صيغة الصورة غير مدعومة، صوّرها JPG أو PNG');
         const data = await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1]); r.onerror = no; r.readAsDataURL(small); });
         images.push({ type: small.type, data });
       }
+      // حد الطلب في الخادم 4.5 ميجا: الصور الكبيرة ترجع رسالة واضحة بدل خطأ غامض
+      if (images.reduce((n, im) => n + im.data.length, 0) > 4.2e6) throw new Error('الصور كبيرة مع بعض، ارفعها صورتين صورتين');
       const r = await api('menu-from-photo', { images });
       mpItems = r.items.map(it => ({ ...it }));
       renderMenuPhoto();

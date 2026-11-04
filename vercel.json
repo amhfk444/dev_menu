@@ -71,7 +71,7 @@
   ],
   "functions": {
     "api/owner.js": {
-      "maxDuration": 60
+      "maxDuration": 300
     }
   }
 }

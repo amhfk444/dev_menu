@@ -115,6 +115,9 @@ const DESK_ACTIONS = ['pager', 'pager-update', 'pager-invoice', 'pager-ring', 'l
 const DESK_KEY_RE = /^[A-Za-z0-9_-]{24,64}$/;
 // الولاء وحدة للمحل بكل فروعه: أي طلب ولاء من فرع يشتغل على بيانات المحل الرئيسي وإعداداته
 // (ما عدا موقع الختم: لكل فرع موقعه). here = الفرع اللي جاي منه الطلب
+// عمليات المنيو (الأطباق والأقسام والكوبونات والمناسبات): لمشتركي المنيو بس
+const MENU_ONLY = ['category-add', 'category-group', 'category-rename', 'category-delete', 'reorder', 'menu-from-photo', 'products-import',
+  'product-save', 'product-image', 'product-toggle', 'product-delete', 'coupon-save', 'coupon-toggle', 'coupon-delete', 'occasions-save'];
 async function context(req, opts) {
   const ctx = await storeContext(req, opts);
   const action = String(req.query.action || '');
@@ -789,7 +792,12 @@ async function main(req) {
   // المميزات حسب باقة المحل
   if (['pager-update', 'pager-invoice', 'pager-ring'].includes(action) && !PLANS.has(store, 'pager')) throw new ApiError(403, 'البيجر مو ضمن باقتك', 'ADDON_OFF');
   if (['pager-message', 'pager-message-push', 'pager-winback'].includes(action) && !PLANS.has(store, 'notify')) throw new ApiError(403, '"رسائل لزبائنك" مو ضمن باقتك. أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
-  if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-member-delete', 'loyalty-import', 'loyalty-redeem', 'loyalty-message', 'loyalty-message-push', 'loyalty-ai-run'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء متوقفة: مو ضمن باقتك أو انتهى اشتراكك. جدّد من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
+  if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-member-delete', 'loyalty-import', 'loyalty-redeem', 'loyalty-message', 'loyalty-message-push', 'loyalty-ai', 'loyalty-ai-run', 'loyalty-ai-preview'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء متوقفة: مو ضمن باقتك أو انتهى اشتراكك. جدّد من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
+  // خدمة مو ضمن باقة المشترك (في التجربة أو الاشتراك): نفس قفل اللوحة (featureLocked في admin.html)،
+  // عشان محل البيجر بس ما يعدّل المنيو أو إعدادات الولاء من خارج اللوحة
+  const notInPlan = (key) => ['active', 'trial'].includes(store.subscription_status) && !PLANS.has(store, key);
+  if (MENU_ONLY.includes(action) && notInPlan('menu')) throw new ApiError(403, 'المنيو مو ضمن باقتك. أضفه من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
+  if (action === 'loyalty-settings' && notInPlan('loyalty')) throw new ApiError(403, 'بطاقة الولاء مو ضمن باقتك. أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
 
 
   // ─── بطاقة الولاء: تشغيل وإعدادات ───
@@ -1597,6 +1605,7 @@ async function main(req) {
   // ─── المنيو من صورة: يقرأ صور المنيو الورقي ويرجّع الأطباق للمراجعة (ما يضيف شي لحاله) ───
   if (action === 'menu-from-photo' && req.method === 'POST') {
     const imgs = (Array.isArray(b.images) ? b.images : []).slice(0, 4).filter(im => im && /^image\/(jpeg|png|webp)$/.test(im.type) && typeof im.data === 'string' && im.data.length < 3_000_000);
+    if (Array.isArray(b.images) && b.images.length && !imgs.length) throw new ApiError(400, 'صيغة الصورة أو حجمها غير مناسب، صوّر المنيو JPG أو PNG');
     if (PLANS.isFree(store)) throw new ApiError(403, 'المنيو من صورة متاح مع اشتراك المنيو', 'FREE_PLAN');
     if (!imgs.length) throw new ApiError(400, 'ارفع صورة المنيو');
     // 10 قراءات باليوم لكل محل
@@ -1791,4 +1800,5 @@ module.exports = handler(['GET', 'POST'], async (req) => {
   return out;
 });
 
-module.exports.config = { maxDuration: 60 };
+// 300: قراءة المنيو من صورة بالذكاء الاصطناعي تاخذ أكثر من دقيقة للمنيو الطويل
+module.exports.config = { maxDuration: 300 };
