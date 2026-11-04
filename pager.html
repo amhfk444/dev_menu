@@ -83,6 +83,41 @@
   .ups-it button.ok { background: #e7f4ec; color: #0a6b45; }
   .ups-it button:disabled { opacity: .6; }
   .ups-added { margin-top: 10px; font-size: 13px; font-weight: 700; color: #0a6b45; background: #e7f4ec; border-radius: 12px; padding: 8px 10px; }
+  .ups-added ul { list-style: none; margin: 4px 0 0; padding: 0; } .ups-added li { display: flex; align-items: center; gap: 8px; padding: 3px 0; color: #15271b; }
+  .ups-added li span { flex: 1; min-width: 0; } .ups-added li em { display: block; font-style: normal; font-weight: 500; font-size: 12px; opacity: .7; }
+  .ups-added li button { width: 28px; height: 28px; border-radius: 50%; background: rgba(0,0,0,.06); display: grid; place-items: center; flex-shrink: 0; }
+  .ups-all { width: 100%; margin-top: 10px; padding: 11px; border-radius: 14px; border: 1.5px solid rgba(35,61,44,.18); font-size: 14.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .mn-cats { display: flex; gap: 6px; overflow-x: auto; padding: 10px 14px; scrollbar-width: none; border-bottom: 1px solid rgba(35,61,44,.08); }
+  .mn-cats:empty { display: none; }
+  .mn-cats button { flex-shrink: 0; padding: 7px 13px; border-radius: 999px; border: 1px solid rgba(35,61,44,.18); font-size: 13.5px; font-weight: 700; }
+  .mn-cats button.on { background: var(--brand); color: #fff; border-color: var(--brand); }
+  .mn-list { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 6px 14px 14px; }
+  .mn-list h4 { font-size: 14px; font-weight: 800; margin: 14px 0 6px; }
+  .mn-it { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 0; border-bottom: 1px solid rgba(35,61,44,.08); text-align: right; }
+  .mn-it .th { width: 56px; height: 56px; border-radius: 12px; background: #f1efe9 center / cover no-repeat; flex-shrink: 0; display: grid; place-items: center; color: rgba(35,61,44,.35); }
+  .mn-it .tx { flex: 1; min-width: 0; } .mn-it .tx b { display: block; font-size: 14.5px; font-weight: 700; } .mn-it .tx small { font-size: 13px; opacity: .65; }
+  .mn-it .pl { width: 34px; height: 34px; border-radius: 50%; background: var(--brand); color: #fff; display: grid; place-items: center; flex-shrink: 0; }
+  .mn-empty { text-align: center; padding: 30px 0; opacity: .6; }
+  .it-panel { height: auto !important; max-height: 88dvh; overflow-y: auto; }
+  .it-img { height: 180px; background: #f1efe9 center / cover no-repeat; border-radius: 24px 24px 0 0; flex-shrink: 0; }
+  .it-img:empty:not([style]) { display: none; }
+  .it-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .it-top { display: flex; align-items: flex-start; gap: 10px; } .it-top b { flex: 1; font-size: 18px; font-weight: 800; line-height: 1.4; }
+  .it-desc { font-size: 13.5px; opacity: .7; line-height: 1.6; } .it-desc:empty { display: none; }
+  .it-sizes { display: flex; flex-wrap: wrap; gap: 8px; } .it-sizes:empty { display: none; }
+  .it-sizes button { padding: 9px 14px; border-radius: 14px; border: 1.5px solid rgba(35,61,44,.18); font-size: 14px; font-weight: 700; }
+  .it-sizes button small { display: block; font-size: 12px; font-weight: 600; opacity: .7; }
+  .it-sizes button.on { border-color: var(--brand); background: rgba(35,61,44,.07); }
+  .it-lbl { font-size: 13px; font-weight: 700; margin-top: 2px; }
+  .it-note { width: 100%; padding: 11px 13px; border-radius: 14px; border: 1px solid rgba(35,61,44,.2); font-size: 16px; background: #fff; outline: none; }
+  .it-note:focus { border-color: var(--brand); }
+  .it-row { display: flex; gap: 10px; align-items: center; margin-top: 4px; }
+  .it-qty { display: flex; align-items: center; gap: 4px; border: 1px solid rgba(35,61,44,.2); border-radius: 999px; padding: 4px; }
+  .it-qty button { width: 38px; height: 38px; border-radius: 50%; background: rgba(35,61,44,.07); display: grid; place-items: center; }
+  .it-qty b { min-width: 26px; text-align: center; font-size: 17px; font-weight: 800; }
+  .it-add { flex: 1; padding: 14px; border-radius: 16px; background: var(--brand); color: #fff; font-size: 15.5px; font-weight: 800; }
+  .it-add:disabled { opacity: .6; }
+  .it-err { font-size: 13.5px; font-weight: 700; color: #b3121f; }
   /* ─── جايزة اللعبة ─── */
   .mm-prize { font-size: 13.5px; font-weight: 700; background: #c9a227; color: #15271b; border-radius: 14px; padding: 9px 12px; text-align: center; line-height: 1.5; }
   .mm-won { text-align: center; background: linear-gradient(160deg, #e2bd3f, #c9a227); color: #15271b; border-radius: 20px; padding: 16px; }
@@ -358,7 +393,8 @@
     <section id="w-upsell" class="ups hidden" aria-labelledby="ups-title">
       <div class="ups-hd"><b id="ups-title">أضف لطلبك وأنت تنتظر</b><small>يوصل للكاشير مع رقمك، وتدفع عند الاستلام</small></div>
       <div id="ups-list" class="ups-list"></div>
-      <p id="ups-added" class="ups-added hidden"></p>
+      <button type="button" id="ups-all" class="ups-all"><i class="ph-bold ph-fork-knife"></i> شوف المنيو كامل</button>
+      <div id="ups-added" class="ups-added hidden"></div>
     </section>
     <p id="w-tell" class="note"></p>
     <p class="note !text-[12.5px] !opacity-65"><span id="t-waiting"></span></p>
@@ -502,6 +538,42 @@
     <button id="new-btn" class="btn btn-ghost"><i class="ph-bold ph-ticket"></i> خذ رقم جديد</button>
   </section>
 </main>
+
+<!-- المنيو كامل (أضف لطلبك) -->
+<div id="mn-sheet" class="ask-sheet" role="dialog" aria-modal="true" aria-labelledby="mn-title" hidden>
+  <div class="ask-back" data-mn-close></div>
+  <div class="ask-panel">
+    <div class="ask-hd">
+      <div class="ask-hd-tx"><b id="mn-title">أضف لطلبك</b><small>يوصل للكاشير مع رقمك، وتدفع عند الاستلام</small></div>
+      <button type="button" class="ask-x" data-mn-close aria-label="إغلاق"><i class="ph-bold ph-x"></i></button>
+    </div>
+    <div id="mn-cats" class="mn-cats"></div>
+    <div id="mn-list" class="mn-list"><p class="mn-empty"><i class="ph-bold ph-spinner-gap ph-spin"></i></p></div>
+  </div>
+</div>
+<!-- الصنف: الحجم، العدد، الملاحظة -->
+<div id="it-sheet" class="ask-sheet" role="dialog" aria-modal="true" aria-labelledby="it-name" hidden>
+  <div class="ask-back" data-it-close></div>
+  <form id="it-form" class="ask-panel it-panel">
+    <div id="it-img" class="it-img"></div>
+    <div class="it-body">
+      <div class="it-top"><b id="it-name"></b><button type="button" class="ask-x" data-it-close aria-label="إغلاق"><i class="ph-bold ph-x"></i></button></div>
+      <p id="it-desc" class="it-desc"></p>
+      <div id="it-sizes" class="it-sizes" role="radiogroup" aria-label="الحجم"></div>
+      <label class="it-lbl" for="it-note">ملاحظة للكاشير (اختياري)</label>
+      <input id="it-note" maxlength="100" autocomplete="off" placeholder="مثل: بدون سكر، حار" class="it-note">
+      <div class="it-row">
+        <div class="it-qty" aria-label="العدد">
+          <button type="button" id="it-plus" aria-label="زيادة"><i class="ph-bold ph-plus"></i></button>
+          <b id="it-q">1</b>
+          <button type="button" id="it-minus" aria-label="نقص"><i class="ph-bold ph-minus"></i></button>
+        </div>
+        <button id="it-add" class="it-add">أضف للطلب <span id="it-total"></span></button>
+      </div>
+      <p id="it-err" class="it-err hidden"></p>
+    </div>
+  </form>
+</div>
 
 <!-- محادثة المساعد -->
 <div id="ask-sheet" class="ask-sheet" role="dialog" aria-modal="true" aria-labelledby="ask-title" hidden>
@@ -915,46 +987,107 @@
 
 
   // ─── الطابور الحي: نقاط للطلبات اللي قدامه، ورقمه في الآخر ───
-  let lastQ = 0, queueShown = false;
+  let lastQ = 0, queueShown = false, lastQueue = null, staffEta = null;
   const arCount = (n, one, two, many) => n === 1 ? one : n === 2 ? two : n <= 10 ? `${n} ${many}` : `${n} ${one}`;
   function renderQueue(q, num) {
-    queueShown = true;
+    queueShown = true; lastQueue = q;
     const a = Math.max(0, Number(q.ahead) || 0), shown = Math.min(a, 6);
     $('q-dots').innerHTML = Array.from({ length: shown }, (_, i) => `<i class="${i === 0 ? 'cook' : ''}"></i>`).join('')
       + (a > shown ? `<span class="more">+${a - shown}</span>` : '') + `<span class="me">${num}</span>`;
     $('q-ahead').textContent = a === 0 ? 'طلبك هو اللي يتجهز الحين' : `قدامك ${arCount(a, 'طلب واحد', 'طلبين', 'طلبات')}`;
-    const e = q.eta == null ? null : Number(q.eta);
-    $('q-eta').textContent = e == null ? '' : e <= 1 ? 'يجهز خلال دقيقة تقريباً' : `يجهز تقريباً بعد ${arCount(e, 'دقيقة', 'دقيقتين', 'دقايق')}`;
+    // الكاشير حدد الوقت: هو المعتمد
+    const e = staffEta != null ? staffEta : q.eta == null ? null : Number(q.eta);
+    $('q-eta').textContent = e == null ? '' : `${staffEta != null ? 'حسب الكاشير: ' : ''}${e <= 1 ? 'يجهز خلال دقيقة تقريباً' : `يجهز تقريباً بعد ${arCount(e, 'دقيقة', 'دقيقتين', 'دقايق')}`}`;
   }
 
-  // ─── أضف لطلبك ───
-  let upsell = [], curLabel = 'ر.س', addedNow = [], upsBusy = false;
-  const fmtPrice = (n) => `${Number.isInteger(n) ? n : n.toFixed(2)} ${curLabel}`;
+  // ─── أضف لطلبك: اقتراحات + المنيو كامل، وكل صنف بحجم وعدد وملاحظة ───
+  let upsell = [], curLabel = 'ر.س', addedNow = [], upsBusy = false, fullMenu = null;
+  const fmtPrice = (n) => `${Number.isInteger(n) ? n : Number(n).toFixed(2)} ${curLabel}`;
+  const bgImg = (u) => u && /^https:\/\//.test(u) ? ` style="background-image:url('${encodeURI(u).replace(/'/g, '%27')}')"` : '';
+  const fromPrice = (p) => p.sizes && p.sizes.length ? Math.min(...p.sizes.map(z => z.price)) : p.price;
   function renderUpsell(on) {
     const box = $('w-upsell');
     box.classList.toggle('hidden', !(on && upsell.length));
     if (box.classList.contains('hidden')) return;
-    const count = (id) => addedNow.filter(a => a.id === id).length;
+    const count = (id) => addedNow.filter(a => a.id === id).reduce((n, a) => n + (a.qty || 1), 0);
     $('ups-list').innerHTML = upsell.map(p => {
-      const n = count(p.id), img = p.image_url && /^https:\/\//.test(p.image_url) ? ` style="background-image:url('${encodeURI(p.image_url).replace(/'/g, '%27')}')"` : '';
+      const n = count(p.id), img = bgImg(p.image_url);
       return `<div class="ups-it"><div class="im"${img}>${img ? '' : '<i class="ph-bold ph-fork-knife"></i>'}</div><div class="bd">
-        <span class="nm">${esc(p.name)}</span><span class="pr">${fmtPrice(p.price)}</span>
-        <button type="button" data-add="${p.id}" class="${n ? 'ok' : ''}" ${upsBusy ? 'disabled' : ''}>${n ? `✓ أضفته${n > 1 ? ` ×${n}` : ''}` : 'أضف'}</button></div></div>`;
+        <span class="nm">${esc(p.name)}</span><span class="pr">${p.sizes && p.sizes.length ? 'من ' : ''}${fmtPrice(fromPrice(p))}</span>
+        <button type="button" data-add="${p.id}" class="${n ? 'ok' : ''}">${n ? `✓ أضفته${n > 1 ? ` ×${n}` : ''}` : 'أضف'}</button></div></div>`;
     }).join('');
-    const names = addedNow.map(a => a.name);
-    $('ups-added').classList.toggle('hidden', !names.length);
-    $('ups-added').textContent = names.length ? `وصل للكاشير: ${names.join('، ')}` : '';
+    $('ups-added').classList.toggle('hidden', !addedNow.length);
+    $('ups-added').innerHTML = addedNow.length ? `وصل للكاشير:<ul>${addedNow.map((a, k) => `<li><span>${(a.qty || 1) > 1 ? `${a.qty}× ` : ''}${esc(a.name)}${a.size ? ` (${esc(a.size)})` : ''}${a.note ? `<em>${esc(a.note)}</em>` : ''}</span><button type="button" data-rm="${k}" aria-label="شيلها"><i class="ph-bold ph-x"></i></button></li>`).join('')}</ul>` : '';
   }
-  $('ups-list').addEventListener('click', async (e) => {
-    const b = e.target.closest('[data-add]'); if (!b || upsBusy) return;
-    upsBusy = true; b.disabled = true; b.textContent = '…';
+  const sheetOpen = (id) => { $(id).hidden = false; document.documentElement.classList.add('ask-lock'); };
+  const sheetClose = (id) => { $(id).hidden = true; if (['ask-sheet', 'mn-sheet', 'it-sheet'].every(x => $(x).hidden)) document.documentElement.classList.remove('ask-lock'); };
+  // الصنف: حجم + عدد + ملاحظة
+  let it = null, itQty = 1, itSize = '';
+  function openItem(p) {
+    it = p; itQty = 1; itSize = p.sizes && p.sizes.length ? p.sizes[0].name : '';
+    $('it-img').setAttribute('style', p.image_url && /^https:\/\//.test(p.image_url) ? `background-image:url('${encodeURI(p.image_url).replace(/'/g, '%27')}')` : '');
+    if (!p.image_url) $('it-img').removeAttribute('style');
+    $('it-name').textContent = p.name; $('it-desc').textContent = p.description || '';
+    $('it-note').value = ''; $('it-err').classList.add('hidden');
+    $('it-sizes').innerHTML = (p.sizes || []).map(z => `<button type="button" role="radio" data-sz="${esc(z.name)}">${esc(z.name)}<small>${fmtPrice(z.price)}</small></button>`).join('');
+    renderItem(); sheetOpen('it-sheet');
+  }
+  function renderItem() {
+    const unit = it.sizes && it.sizes.length ? (it.sizes.find(z => z.name === itSize) || it.sizes[0]).price : it.price;
+    $('it-q').textContent = itQty; $('it-total').textContent = `(${fmtPrice(unit * itQty)})`;
+    [...$('it-sizes').children].forEach(b => { const on = b.dataset.sz === itSize; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });
+    $('it-minus').disabled = itQty <= 1; $('it-plus').disabled = itQty >= 10;
+  }
+  $('it-sizes').onclick = (e) => { const b = e.target.closest('[data-sz]'); if (b) { itSize = b.dataset.sz; renderItem(); } };
+  $('it-plus').onclick = () => { itQty = Math.min(10, itQty + 1); renderItem(); };
+  $('it-minus').onclick = () => { itQty = Math.max(1, itQty - 1); renderItem(); };
+  $('it-sheet').addEventListener('click', (e) => { if (e.target.closest('[data-it-close]')) sheetClose('it-sheet'); });
+  $('it-form').onsubmit = async (e) => {
+    e.preventDefault(); if (upsBusy || !it) return;
+    upsBusy = true; $('it-add').disabled = true;
     try {
-      const r = await DM.post('/api/pager?action=addon', { slug, t: loadToken(), id: Number(b.dataset.add) });
-      addedNow = r.addons || addedNow;
-      if (navigator.vibrate) navigator.vibrate(25);
-    } catch (err) { alert(err.message || 'ما قدرنا نضيفها، اطلبها من الكاشير'); }
+      const r = await DM.post('/api/pager?action=addon', { slug, t: loadToken(), id: it.id, qty: itQty, size: itSize || undefined, note: $('it-note').value.trim() });
+      addedNow = r.addons || addedNow; if (navigator.vibrate) navigator.vibrate(25);
+      sheetClose('it-sheet'); sheetClose('mn-sheet'); renderUpsell(true);
+    } catch (err) { $('it-err').textContent = err.message || 'ما قدرنا نضيفها، اطلبها من الكاشير'; $('it-err').classList.remove('hidden'); }
+    upsBusy = false; $('it-add').disabled = false;
+  };
+  $('ups-list').addEventListener('click', (e) => { const b = e.target.closest('[data-add]'); if (b) { const p = upsell.find(x => x.id === Number(b.dataset.add)); if (p) openItem(p); } });
+  $('ups-added').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-rm]'); if (!b || upsBusy) return;
+    upsBusy = true; b.disabled = true;
+    try { const r = await DM.post('/api/pager?action=addon', { slug, t: loadToken(), remove: Number(b.dataset.rm) }); addedNow = r.addons || []; }
+    catch (err) { alert(err.message || 'ما قدرنا نشيلها، كلم الكاشير'); }
     upsBusy = false; renderUpsell(true);
   });
+  // المنيو كامل
+  async function openMenu() {
+    sheetOpen('mn-sheet');
+    if (!fullMenu) {
+      try { fullMenu = await DM.get(`/api/pager?action=menu&slug=${encodeURIComponent(slug)}`); }
+      catch (err) { $('mn-list').innerHTML = `<p class="mn-empty">${esc(err.message || 'ما قدرنا نفتح المنيو')}</p>`; return; }
+      renderMenuList();
+    }
+  }
+  function renderMenuList() {
+    const cats = fullMenu.categories.length ? fullMenu.categories : [{ key: undefined, name: '' }];
+    const groups = cats.map(c => ({ c, items: fullMenu.products.filter(p => !fullMenu.categories.length || p.category === c.key) })).filter(g => g.items.length);
+    const known = new Set(fullMenu.categories.map(c => c.key)), rest = fullMenu.products.filter(p => fullMenu.categories.length && !known.has(p.category));
+    if (rest.length) groups.push({ c: { key: '_', name: 'أخرى' }, items: rest });
+    $('mn-cats').innerHTML = groups.length > 1 ? groups.map((g, k) => `<button type="button" data-cat="${k}">${esc(g.c.name)}</button>`).join('') : '';
+    $('mn-list').innerHTML = groups.length ? groups.map((g, k) => `${g.c.name ? `<h4 id="mn-g${k}">${esc(g.c.name)}</h4>` : ''}${g.items.map(p => {
+      const img = bgImg(p.image_url);
+      return `<button type="button" class="mn-it" data-p="${p.id}"><span class="th"${img}>${img ? '' : '<i class="ph-bold ph-fork-knife"></i>'}</span><span class="tx"><b>${esc(p.name)}</b><small>${p.sizes && p.sizes.length ? 'من ' : ''}${fmtPrice(fromPrice(p))}</small></span><span class="pl"><i class="ph-bold ph-plus"></i></span></button>`;
+    }).join('')}`).join('') : '<p class="mn-empty">ما فيه أصناف متاحة الحين</p>';
+  }
+  $('mn-cats').onclick = (e) => {
+    const b = e.target.closest('[data-cat]'); if (!b) return;
+    [...$('mn-cats').children].forEach(x => x.classList.toggle('on', x === b));
+    const h = $(`mn-g${b.dataset.cat}`); if (h) $('mn-list').scrollTo({ top: h.offsetTop - $('mn-list').offsetTop - 4, behavior: 'smooth' });
+  };
+  $('mn-list').onclick = (e) => { const b = e.target.closest('[data-p]'); if (b) { const p = fullMenu.products.find(x => x.id === Number(b.dataset.p)); if (p) openItem(p); } };
+  $('mn-sheet').addEventListener('click', (e) => { if (e.target.closest('[data-mn-close]')) sheetClose('mn-sheet'); });
+  $('ups-all').onclick = openMenu;
 
   // ─── جايزة اللعبة ───
   let game = null, gameWon = false, gameReward = '';
@@ -1034,7 +1167,8 @@
     if (loadToken() !== token) return;   // تغيّر الرقم وهو ينتظر الرد (ضغط "استلمت" أو أخذ رقم جديد): الرد قديم
     if (askChat && typeof r.chat === 'boolean') { chatFor = token; chatOn = r.chat; upsell = r.upsell || []; curLabel = r.currency || 'ر.س'; game = r.game || null; }
     if (askQ) lastQ = Date.now();
-    if (r.queue) renderQueue(r.queue, r.ticket.number);
+    staffEta = r.staff_eta == null ? null : Number(r.staff_eta);
+    if (r.queue) renderQueue(r.queue, r.ticket.number); else if (lastQueue) renderQueue(lastQueue, r.ticket.number);
     addedNow = r.addons || []; gameWon = r.game_won === true;
     setStore(r.store);
     watchTicket(r.live);
@@ -1068,7 +1202,8 @@
     renderGame();
     if (st === 'waiting') { show('waiting'); keepAwake(); renderPush(); if (keeperMode === 'silent') setMedia(`رقمك ${curNumber}: ${T.waiting}`); }
     else if (st === 'ready') {
-      if (!$('ask-sheet').hidden) closeAsk();   // جهز طلبه: نسكّر المحادثة عشان يشوف النداء
+      if (!$('ask-sheet').hidden) closeAsk();   // جهز طلبه: نسكّر المحادثة والمنيو عشان يشوف النداء
+      ['mn-sheet', 'it-sheet'].forEach(id => { if (!$(id).hidden) sheetClose(id); });
       show('ready'); if (!dismissed) startRinging(); if (!document.hidden) ack();
     }
     else {

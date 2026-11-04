@@ -12,3 +12,7 @@ alter table public.clients add column if not exists pager_game_moves integer not
 alter table public.pager_tickets add column if not exists addons jsonb;
 alter table public.pager_tickets add column if not exists game_won boolean not null default false;
 notify pgrst, 'reload schema';
+
+-- الكاشير يحدد وقت الانتظار لرقم معيّن (بعض الأصناف تتأخر): يطلع للزبون بدل التقدير
+alter table public.pager_tickets add column if not exists eta_at timestamptz;
+notify pgrst, 'reload schema';

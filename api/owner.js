@@ -114,7 +114,7 @@ function phoneNumber(v) {
 }
 
 // رابط الكاشير: مفتاح الفرع يفتح شاشة البيجر وشاشة الختم بس (بدون حساب المالك)
-const DESK_ACTIONS = ['pager', 'pager-update', 'pager-invoice', 'pager-ring', 'loyalty-stamp-code', 'loyalty-scan', 'loyalty-redeem', 'loyalty-transfer', 'kiosk'];
+const DESK_ACTIONS = ['pager', 'pager-update', 'pager-invoice', 'pager-ring', 'pager-eta', 'loyalty-stamp-code', 'loyalty-scan', 'loyalty-redeem', 'loyalty-transfer', 'kiosk'];
 const DESK_KEY_RE = /^[A-Za-z0-9_-]{24,64}$/;
 // الولاء وحدة للمحل بكل فروعه: أي طلب ولاء من فرع يشتغل على بيانات المحل الرئيسي وإعداداته
 // (ما عدا موقع الختم: لكل فرع موقعه). here = الفرع اللي جاي منه الطلب
@@ -637,7 +637,7 @@ async function main(req) {
     if (!hasPager && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'البيجر مو ضمن باقتك، أضفه من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
     const base = `pager_tickets?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&order=number.asc&select=id,number,status,created_at,ready_at,closed_at,push_sub`;
     // أعمدة التكرار من 21-pager-repeat.sql — لو ما انضافت نكمل بدونها
-    const tickets = !hasPager ? [] : await rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id,car,addons,game_won`).catch(() => rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id,car`)).catch(() => rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id`)).catch(() => rest(`${base},ring_count,acked_at,invoice_no`)).catch(() => rest(`${base},ring_count,acked_at`)).catch(() => rest(base));
+    const tickets = !hasPager ? [] : await rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id,car,addons,game_won,eta_at`).catch(() => rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id,car,addons,game_won`)).catch(() => rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id,car`)).catch(() => rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id`)).catch(() => rest(`${base},ring_count,acked_at,invoice_no`)).catch(() => rest(`${base},ring_count,acked_at`)).catch(() => rest(base));
     const lhome = await loyaltyHome(store.id);   // الولاء على المحل الرئيسي
     const lx = (await rest(`clients?id=eq.${lhome}&select=loyalty_enabled`).catch(() => []))[0] || {};
     lx.loyalty_enabled = lx.loyalty_enabled && PLANS.has(store, 'loyalty');
@@ -795,7 +795,7 @@ async function main(req) {
     return (await familyIds(store)).includes(want) ? want : here.id;
   };
   // المميزات حسب باقة المحل
-  if (['pager-update', 'pager-invoice', 'pager-ring'].includes(action) && !PLANS.has(store, 'pager')) throw new ApiError(403, 'البيجر مو ضمن باقتك', 'ADDON_OFF');
+  if (['pager-update', 'pager-invoice', 'pager-ring', 'pager-eta'].includes(action) && !PLANS.has(store, 'pager')) throw new ApiError(403, 'البيجر مو ضمن باقتك', 'ADDON_OFF');
   if (['pager-message', 'pager-message-push', 'pager-winback'].includes(action) && !PLANS.has(store, 'notify')) throw new ApiError(403, '"رسائل لزبائنك" مو ضمن باقتك. أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
   if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-member-delete', 'loyalty-import', 'loyalty-redeem', 'loyalty-message', 'loyalty-message-push', 'loyalty-ai', 'loyalty-ai-run', 'loyalty-ai-preview'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء متوقفة: مو ضمن باقتك أو انتهى اشتراكك. جدّد من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
   // خدمة مو ضمن باقة المشترك (في التجربة أو الاشتراك): نفس قفل اللوحة (featureLocked في admin.html)،
@@ -1209,6 +1209,17 @@ async function main(req) {
   }
 
   // ─── البيجر: الكاشير يربط رقم البيجر برقم الفاتورة ───
+  // ─── البيجر: الكاشير يحدد وقت الانتظار لرقم (بعض الأصناف تتأخر). 0 = يرجع للتقدير التلقائي ───
+  if (action === 'pager-eta') {
+    const id = int(b.id), m = int(b.minutes);
+    if (!(m >= 0 && m <= 120)) throw new ApiError(400, 'الوقت من 1 إلى 120 دقيقة');
+    const eta_at = m ? new Date(Date.now() + m * 60000).toISOString() : null;
+    const rows = await rest(`pager_tickets?id=eq.${id}&client_id=eq.${sid}&status=eq.waiting`, { method: 'PATCH', body: { eta_at }, prefer: 'return=representation' });
+    if (!rows.length) throw new ApiError(404, 'الرقم غير موجود أو جهز');
+    await poke([topic('pager', sid), topic('ticket', rows[0].token)]);
+    return { ticket: { id: rows[0].id, eta_at } };
+  }
+
   if (action === 'pager-invoice') {
     const id = int(b.id);
     // الأرقام العربية (١٢٣) والفارسية تتحول لأرقام عادية

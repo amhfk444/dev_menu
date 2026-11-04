@@ -76,7 +76,10 @@
   header .mini.bg-white:hover, header button[data-lang-toggle]:hover { background: rgba(56,79,61,.12); color: var(--brand); }
   header .mini.bg-\[\#233d2c\] { background: var(--brand); box-shadow: var(--shadow-primary); }
   #search { border-radius: 8px; }
-  .addon-line { margin-top: 6px; padding: 5px 8px; border-radius: 10px; background: #fff; color: #15271b; font-size: 13px; font-weight: 800; line-height: 1.45; }
+  .addon-line { margin-top: 6px; padding: 6px 8px; border-radius: 10px; background: #fff; color: #15271b; font-size: 13px; font-weight: 800; line-height: 1.45; text-align: right; }
+  .addon-line small { display: block; font-size: 11px; font-weight: 700; opacity: .6; }
+  .addon-line ul { margin: 2px 0 0; padding: 0; list-style: none; } .addon-line li + li { margin-top: 3px; }
+  .addon-line li span { font-weight: 600; } .addon-line li em { display: block; font-style: normal; font-weight: 600; font-size: 12px; color: #8a5a00; }
   .addon-line.game { background: #c9a227; }
 </style>
 <link rel="stylesheet" href="/css/tw/pager-desk.css">
@@ -159,6 +162,19 @@
       <button type="button" id="inv-cancel" class="flex-1 bg-white border border-[#233d2c]/20 font-black rounded-2xl py-3">إلغاء</button>
     </div>
   </form>
+</div>
+
+<!-- وقت الانتظار لرقم (بعض الأصناف تتأخر) -->
+<div id="eta-modal" class="fixed inset-0 z-50 bg-black/50 hidden items-center justify-center p-5">
+  <div class="bg-white rounded-[28px] p-7 w-full max-w-sm space-y-4">
+    <h3 class="text-lg font-black">⏱ متى يجهز طلب رقم <span id="eta-num" class="text-[#c9a227]"></span>؟</h3>
+    <p class="text-sm font-semibold opacity-70">يظهر للزبون في صفحة رقمه بدل التقدير التلقائي.</p>
+    <div id="eta-opts" class="grid grid-cols-3 gap-2"></div>
+    <div class="flex gap-2">
+      <button type="button" id="eta-clear" class="flex-1 bg-white border border-[#233d2c]/20 font-black rounded-2xl py-3">تقدير تلقائي</button>
+      <button type="button" id="eta-cancel" class="flex-1 bg-white border border-[#233d2c]/20 font-black rounded-2xl py-3">إلغاء</button>
+    </div>
+  </div>
 </div>
 
 <!-- QR -->
@@ -290,10 +306,31 @@
   // اللي أضافه الزبون من صفحة الانتظار، وفوزه باللعبة: تحت رقمه عشان الموظف يجهزها ويحاسبه عليها
   const extraLines = (t) => {
     const a = Array.isArray(t.addons) ? t.addons : [];
-    const names = Object.entries(a.reduce((m, x) => (m[x.name] = (m[x.name] || 0) + 1, m), {})).map(([n, k]) => k > 1 ? `${n} ×${k}` : n);
-    return (names.length ? `<div class="addon-line">➕ ${esc(names.join('، '))}</div>` : '') + (t.game_won ? '<div class="addon-line game">🏆 فاز باللعبة</div>' : '');
+    const line = (x) => `<li><b>${(x.qty || 1) > 1 ? `${x.qty}× ` : ''}${esc(x.name)}</b>${x.size ? ` <span>(${esc(x.size)})</span>` : ''}${x.note ? `<em>${esc(x.note)}</em>` : ''}</li>`;
+    return (a.length ? `<div class="addon-line"><small>➕ أضافه الزبون</small><ul>${a.map(line).join('')}</ul></div>` : '') + (t.game_won ? '<div class="addon-line game">🏆 فاز باللعبة</div>' : '');
   };
   const normDigits = (v) => String(v).replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15));
+
+  // ─── وقت الانتظار لرقم ───
+  const etaLeft = (at) => { const m = Math.max(0, Math.ceil((Date.parse(at) - Date.now()) / 60000)); return m ? `يجهز بعد ${m} د` : 'انتهى الوقت المحدد'; };
+  let etaId = null;
+  function openEta(id) {
+    const t = tickets.find(x => x.id === id); if (!t) return;
+    etaId = id; $('eta-num').textContent = t.number;
+    $('eta-opts').innerHTML = [5, 10, 15, 20, 30, 45].map(m => `<button type="button" data-m="${m}" class="bg-[#f5f2eb] border border-[#233d2c]/15 font-black rounded-2xl py-3 text-lg">${m} د</button>`).join('');
+    $('eta-modal').classList.replace('hidden', 'flex');
+  }
+  const closeEta = () => { etaId = null; $('eta-modal').classList.replace('flex', 'hidden'); };
+  async function saveEta(minutes) {
+    const id = etaId; if (!id) return; closeEta();
+    try {
+      const r = await api('pager-eta', { id, minutes });
+      tickets = tickets.map(t => t.id === id ? { ...t, eta_at: r.ticket.eta_at } : t); render();
+    } catch (e) { alert(e.message || 'ما انحفظ الوقت'); }
+  }
+  $('eta-opts').onclick = (e) => { const b = e.target.closest('[data-m]'); if (b) saveEta(+b.dataset.m); };
+  $('eta-clear').onclick = () => saveEta(0);
+  $('eta-cancel').onclick = closeEta;
 
   // ─── رقم الفاتورة ───
   let invId = null;
@@ -353,6 +390,7 @@
         <button class="mini w-full mt-2 ${t.invoice_no ? 'bg-white/15 text-white' : 'bg-[#c9a227] text-[#15271b]'}" data-invoice="${t.id}">
           ${t.invoice_no ? `🧾 ${esc(t.invoice_no)}` : '🧾 أضف الفاتورة'}
         </button>
+        <button class="mini w-full mt-1.5 ${t.eta_at ? 'bg-white text-[#233d2c]' : 'bg-white/15 text-white'}" data-eta="${t.id}">⏱ ${t.eta_at ? etaLeft(t.eta_at) : 'حدد وقت الانتظار'}</button>
         <div class="flex gap-1.5 mt-1.5">
           <button class="mini flex-1 bg-white text-[#233d2c]" data-ready="${t.id}" ${busy.has(t.id) ? 'disabled' : ''}>
             ${busy.has(t.id) ? '<i class="ph-bold ph-spinner-gap ph-spin"></i>' : `<i class="ph-bold ph-bell"></i> ${T.deskCall}`}
@@ -393,6 +431,7 @@
     if (rw) { const t = tickets.find(x => x.id === +rw.dataset.reward); if (t && t.reward) openReward({ id: t.reward.card_id, name: t.reward.name }, t.reward.rewards); return; }
     const r = e.target.closest('[data-ready]'), d = e.target.closest('[data-done]'), u = e.target.closest('[data-undo]'), inv = e.target.closest('[data-invoice]');
     if (inv) return openInvoice(+inv.dataset.invoice);
+    const et = e.target.closest('[data-eta]'); if (et) return openEta(+et.dataset.eta);
     if (r) setStatus(+r.dataset.ready, 'ready', '🔔 جوال رقم # يرن الحين');
     if (d) setStatus(+d.dataset.done, 'done', `✓ رقم # ${T.deskDone}`);
     if (u) setStatus(+u.dataset.undo, 'waiting', 'رقم # رجع للانتظار');

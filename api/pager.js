@@ -128,14 +128,20 @@ async function waitExtras(storeId, t) {
   const reward = String(x.pager_game_reward || '').trim();
   return { chat, upsell, currency: CURRENCIES[x.currency] || CURRENCIES.SAR, game: reward ? { reward, moves: Math.min(40, Math.max(10, Number(x.pager_game_moves) || 20)), won: t.game_won === true } : null };
 }
+const publicAddons = (list) => (Array.isArray(list) ? list : []).map(a => ({ id: a.id, name: a.name, qty: a.qty || 1, size: a.size || null, note: a.note || null }));
+const sizeName = (z) => String((z && (z.name || z.label)) || '').trim();
+
 // اقتراحات «أضف لطلبك»: الأكثر طلباً بصورة أول، وبعدها الأرخص بصورة (بدون الأصناف اللي لها أحجام: تحتاج اختيار)
 async function upsellItems(storeId) {
   const rows = await rest(`products?client_id=eq.${storeId}&is_hidden=is.false&is_available=is.true&select=id,name,name_en,price,image_url,is_bestseller,sizes&limit=400`).catch(() => []);
-  const ok = rows.filter(p => Number(p.price) > 0 && !(Array.isArray(p.sizes) && p.sizes.length));
+  const ok = rows.filter(p => Number(p.price) > 0);
   const score = (p) => (p.image_url ? 0 : 2) + (p.is_bestseller ? 0 : 1);
   return ok.sort((a, b) => score(a) - score(b) || Number(a.price) - Number(b.price)).slice(0, 4)
-    .map(p => ({ id: p.id, name: p.name, name_en: p.name_en || null, price: Number(p.price), image_url: p.image_url || null }));
+    .map(menuItem);
 }
+const menuItem = (p) => ({ id: p.id, name: p.name, name_en: p.name_en || null, price: Number(p.price) || 0, image_url: p.image_url || null,
+  ...(p.category !== undefined ? { category: p.category } : {}), ...(p.description ? { description: String(p.description).slice(0, 140) } : {}),
+  sizes: (Array.isArray(p.sizes) ? p.sizes : []).map(z => ({ name: sizeName(z), price: Number(z.price) || 0 })).filter(z => z.name) });
 
 async function loadStore(slug) {
   let { store, bad } = await findPublicStore(slug, 'id,name,client_slug,logo_url,business_type,accent_color');
@@ -221,7 +227,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const token = String(req.query.t || '');
     if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
     const sel = `pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&select=number,status,created_at,ready_at`;
-    const t = (await rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url,wallet_serial,wallet_error,car,addons,game_won`).catch(() => rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url,wallet_serial,wallet_error,car`)).catch(() => rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url,wallet_serial,wallet_error`)).catch(() => rest(`${sel},invoice_no`)).catch(() => rest(sel)))[0];
+    const t = (await rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url,wallet_serial,wallet_error,car,addons,game_won,eta_at`).catch(() => rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url,wallet_serial,wallet_error,car,addons,game_won`)).catch(() => rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url,wallet_serial,wallet_error,car`)).catch(() => rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url,wallet_serial,wallet_error`)).catch(() => rest(`${sel},invoice_no`)).catch(() => rest(sel)))[0];
     if (!t) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
     if (DEMO.has(store.client_slug) && t.status === 'waiting' && Date.now() - Date.parse(t.created_at) > (t.wallet_url ? DEMO_AFTER_CARD : DEMO_AFTER)) {
       await demoRing(store, token);
@@ -245,7 +251,9 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       const [ahead, typical] = await Promise.all([PW.aheadOf(store.id, t), PW.typicalWait(store.id)]);
       queue = { ahead, eta: PW.etaOf(t, typical) };
     }
-    return { ...extras, ...(queue ? { queue } : {}), addons: Array.isArray(t.addons) ? t.addons.map(a => ({ id: a.id, name: a.name })) : [], game_won: t.game_won === true, demo: DEMO.has(store.client_slug), wallet: wallet.configured() && !store.free && !(await wallet.cardMaintenance()), in_wallet: !!t.wallet_url && !card_gone, card_gone, car_ask, car: t.car || null, review_url: review, social, store: { name: store.display_name || store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
+    // وقت الكاشير يوصل مع كل تحديث (يتغير فوراً عند الزبون)، والتقدير من الطابور كل 15 ثانية
+    const staffEta = t.status === 'waiting' && t.eta_at ? require('./_lib/pager-wait').etaOf(t, null) : null;
+    return { ...extras, ...(queue ? { queue } : {}), staff_eta: staffEta, addons: publicAddons(t.addons), game_won: t.game_won === true, demo: DEMO.has(store.client_slug), wallet: wallet.configured() && !store.free && !(await wallet.cardMaintenance()), in_wallet: !!t.wallet_url && !card_gone, card_gone, car_ask, car: t.car || null, review_url: review, social, store: { name: store.display_name || store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
       loyalty: { ...(await loyaltyOf(store.id)), linked: !!t.loyalty_card_id, stamped: !!t.loyalty_stamped,
         ...(await linkedCard(store.id, t.loyalty_card_id)) } };
   }
@@ -343,7 +351,22 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
   }
 
   // ─── تقييم الزبون بعد الاستلام: الراضي (4-5) نعطيه رابط تقييم المحل في قوقل ───
-  // ─── «أضف لطلبك»: الزبون يضيف صنف وهو ينتظر، ويوصل للكاشير تحت رقمه (الدفع عند الاستلام) ───
+  // ─── المنيو كامل لـ «أضف لطلبك» (يتحمل لما يفتحه الزبون) ───
+  if (action === 'menu' && req.method === 'GET') {
+    const store = await loadStore(req.query.slug);
+    const x = await waitSettings(store.id);
+    if (x.pager_upsell !== true || !(await storeHasFeature(store.id, 'menu'))) throw new ApiError(403, 'الإضافة غير متاحة الحين', 'UPSELL_OFF');
+    const [cats, prods] = await Promise.all([
+      rest(`categories?client_id=eq.${store.id}&select=key,name,sort_order&order=sort_order.asc`).catch(() => []),
+      rest(`products?client_id=eq.${store.id}&is_hidden=is.false&is_available=is.true&select=id,name,name_en,price,image_url,category,description,sizes,sort_order&order=sort_order.asc&limit=600`).catch(() => [])
+    ]);
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=120');
+    const items = prods.filter(p => Number(p.price) > 0 || (Array.isArray(p.sizes) && p.sizes.length)).map(menuItem);
+    const used = new Set(items.map(p => p.category));
+    return { categories: cats.filter(c => used.has(c.key)).map(c => ({ key: c.key, name: c.name })), products: items };
+  }
+
+  // ─── «أضف لطلبك»: الزبون يضيف صنف (بعدد وحجم وملاحظة) وهو ينتظر، ويوصل للكاشير تحت رقمه (الدفع عند الاستلام) ───
   if (action === 'addon' && req.method === 'POST') {
     const store = await loadStore(b.slug);
     const token = String(b.t || '');
@@ -353,14 +376,32 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const t = (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&select=id,status,addons`))[0];
     if (!t || t.status !== 'waiting') throw new ApiError(409, 'طلبك جهز، أضفها من الكاشير', 'NOT_WAITING');
     const list = Array.isArray(t.addons) ? t.addons : [];
-    if (list.length >= 5) throw new ApiError(409, 'وصلت حد الإضافات من هنا، كمّل من الكاشير', 'ADDON_MAX');
-    const p = (await rest(`products?id=eq.${Number(b.id) || 0}&client_id=eq.${store.id}&is_hidden=is.false&is_available=is.true&select=id,name,price`))[0];
+    // حذف سطر أضافه (غيّر رأيه قبل ما يجهز)
+    if (b.remove !== undefined) {
+      const k = Number(b.remove);
+      if (!Number.isInteger(k) || k < 0 || k >= list.length) throw new ApiError(404, 'الإضافة غير موجودة');
+      const addons = list.filter((_, i) => i !== k);
+      await rest(`pager_tickets?id=eq.${t.id}&status=eq.waiting`, { method: 'PATCH', body: { addons: addons.length ? addons : null } });
+      await poke(topic('pager', store.id));
+      return { ok: true, addons: publicAddons(addons) };
+    }
+    const qty = Math.min(10, Math.max(1, Math.round(Number(b.qty) || 1)));
+    if (list.length >= 10 || list.reduce((n, a) => n + (a.qty || 1), 0) + qty > 20) throw new ApiError(409, 'وصلت حد الإضافات من هنا، كمّل من الكاشير', 'ADDON_MAX');
+    const p = (await rest(`products?id=eq.${Number(b.id) || 0}&client_id=eq.${store.id}&is_hidden=is.false&is_available=is.true&select=id,name,price,sizes`))[0];
     if (!p) throw new ApiError(404, 'الصنف غير متوفر الحين', 'NO_ITEM');
-    const addons = [...list, { id: p.id, name: p.name, price: Number(p.price) || 0, at: new Date().toISOString() }];
+    const sizes = (Array.isArray(p.sizes) ? p.sizes : []).filter(z => sizeName(z));
+    let size = null, price = Number(p.price) || 0;
+    if (sizes.length) {
+      const z = sizes.find(z => sizeName(z) === String(b.size || '').trim());
+      if (!z) throw new ApiError(400, 'اختر الحجم', 'SIZE');
+      size = sizeName(z); price = Number(z.price) || price;
+    }
+    const note = String(b.note || '').replace(/\s+/g, ' ').trim().slice(0, 100) || null;
+    const addons = [...list, { id: p.id, name: p.name, price, qty, ...(size ? { size } : {}), ...(note ? { note } : {}), at: new Date().toISOString() }];
     await rest(`pager_tickets?id=eq.${t.id}&status=eq.waiting`, { method: 'PATCH', body: { addons } });
-    console.log('PAGER_ADDON', store.id, p.id);
+    console.log('PAGER_ADDON', store.id, p.id, qty);
     await poke(topic('pager', store.id));
-    return { ok: true, addons: addons.map(a => ({ id: a.id, name: a.name })) };
+    return { ok: true, addons: publicAddons(addons) };
   }
 
   // ─── جايزة اللعبة: خلّصها بحركات أقل من حد صاحب المحل، وتطلع للموظف جنب رقمه ───

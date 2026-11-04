@@ -20,8 +20,14 @@ async function typicalWait(storeId) {
 
 // الوقت الباقي تقريباً: الوسيط ناقص اللي انتظره (أقل شي دقيقة). null = ما نعرف
 function etaOf(t, typical) {
-  if (t.status !== 'waiting' || !typical) return null;
+  if (t.status !== 'waiting') return null;
+  // الكاشير حدد الوقت بنفسه (أصناف تتأخر): هو المعتمد
+  if (t.eta_at) return Math.max(1, Math.ceil((Date.parse(t.eta_at) - Date.now()) / 60000));
+  if (!typical) return null;
   return Math.max(1, typical - mins(Date.now() - Date.parse(t.created_at)));
 }
 
-module.exports = { mins, aheadOf, typicalWait, etaOf };
+// سطر الإضافة كما يطلع للكاشير والمساعد: «2× كوكيز (كبير) — بدون سكر»
+const addonLine = (a) => `${(a.qty || 1) > 1 ? `${a.qty}× ` : ''}${a.name}${a.size ? ` (${a.size})` : ''}${a.note ? ` — ${a.note}` : ''}`;
+
+module.exports = { mins, aheadOf, typicalWait, etaOf, addonLine };
