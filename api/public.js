@@ -366,12 +366,9 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
   if (action === 'featured' && req.method === 'GET') {
     // أمثلة الصفحة الرئيسية: شعار واسم ورابط كل منشأة مختارة (والسارية فقط)
     const rows = await rest('public_clients?is_featured=eq.true&logo_url=not.is.null&select=id,name,client_slug,logo_url&order=id.desc&limit=12');
-    // services: خدمات كل منشأة. اللي ما عندها منيو (بيجر بس مثلاً) يفتح لها نافذة تعريف في الرئيسية
-    // بدل صفحاتها، عشان الزائر ما ياخذ رقم حقيقي في محل حقيقي
-    const stores = await Promise.all(rows.map(async ({ id, ...c }) => {
-      const f = await storeFeatures(id).catch(() => ({}));
-      return { ...c, services: ['menu', 'pager', 'loyalty', 'waitlist'].filter(k => f[k]) };
-    }));
+    // menu: الشعار يفتح المنيو. اللي ما عندها منيو تفتح لها نافذة تعريف في الرئيسية بدل صفحاتها
+    // (عشان الزائر ما ياخذ رقم حقيقي في محل حقيقي). وما نكشف باقي خدمات المنشأة
+    const stores = await Promise.all(rows.map(async ({ id, ...c }) => ({ ...c, menu: !!(await storeFeatures(id).catch(() => ({}))).menu })));
     return { stores };
   }
 
