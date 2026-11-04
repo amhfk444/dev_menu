@@ -36,10 +36,12 @@ const DELIVERY = ['hungerstation', 'jahez', 'keeta', 'toyou', 'mrsool', 'thechef
 const THEMES = ['dark', 'light', 'sand', 'forest'];
 const MAX_SIZES = 6, MAX_COUPONS = 100;
 const OCCASION_PRESETS = ['ramadan', 'eid_fitr', 'eid_adha', 'national_day', 'founding_day', 'hijri_new_year', 'winter', 'custom'];
-const STICKER_POSITIONS = ['logo-right', 'logo-left', 'float'];
+const STICKER_POSITIONS = ['logo-right', 'logo-left', 'under-right', 'under-left', 'float'];
+// ملصقات المكتبة الجاهزة (js/occasions.js LIBRARY)
+const STICKER_LIB = ['lantern', 'crescent', 'dates', 'samosa', 'drum', 'snowman', 'cocoa', 'cookie', 'gift', 'scarf'];
 const STICKER_SIZES = ['s', 'm', 'l'];
 const STICKER_ANIMS = ['float', 'swing', 'bounce', 'pulse', 'none'];
-const MAX_OCCASIONS = 20, MAX_STICKERS = 3;
+const MAX_OCCASIONS = 20, MAX_STICKERS = 6;
 const isDay = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(Date.parse(v));
 
 // مناسبات المتجر: [{id, preset, title, greeting, starts_on, ends_on, enabled, stickers}]
@@ -59,9 +61,10 @@ function cleanOccasions(list, sid, ownerIds = [sid], max = MAX_OCCASIONS) {
     if ((Date.parse(o.ends_on) - Date.parse(o.starts_on)) / 86400000 > 180) throw new ApiError(400, `مدة "${title}" أطول من 180 يوم`);
     if (o.stickers !== undefined && (!Array.isArray(o.stickers) || o.stickers.length > MAX_STICKERS)) throw new ApiError(400, `الملصقات حدها ${MAX_STICKERS} لكل مناسبة`);
     const stickers = (o.stickers || []).map((k) => {
-      if (!k || !ownerIds.some(id => ownsMediaUrl(k.url, id))) throw new ApiError(400, 'ملصق غير تابع لمتجرك');
+      const lib = k && STICKER_LIB.includes(k.lib) ? k.lib : null;
+      if (!k || (!lib && !ownerIds.some(id => ownsMediaUrl(k.url, id)))) throw new ApiError(400, 'ملصق غير تابع لمتجرك');
       return {
-        url: k.url,
+        ...(lib ? { lib } : { url: k.url }),
         position: STICKER_POSITIONS.includes(k.position) ? k.position : 'logo-right',
         size: STICKER_SIZES.includes(k.size) ? k.size : 'm',
         animation: STICKER_ANIMS.includes(k.animation) ? k.animation : 'float'

@@ -17,7 +17,7 @@
     winter:         { name: 'الشتاء',              icon: '❄️', greet: ['أجواء الشتاء', 'Winter vibes'],                decor: 'none',     fx: 'snow' },
     custom:         { name: 'مناسبة خاصة',         icon: '✨', greet: ['', ''],                                         decor: 'balloons', fx: 'confetti' }
   };
-  const POSITIONS = { 'logo-right': 'يمين الشعار', 'logo-left': 'يسار الشعار', float: 'عائم في زاوية الشاشة' };
+  const POSITIONS = { 'logo-right': 'يمين الشعار', 'logo-left': 'يسار الشعار', 'under-right': 'تحت الشعار يمين', 'under-left': 'تحت الشعار يسار', float: 'عائم في زاوية الشاشة' };
   const SIZES = { s: 'صغير', m: 'وسط', l: 'كبير' };
   const ANIMS = { float: 'طفو', swing: 'تمايل', bounce: 'قفز', pulse: 'نبض', none: 'ثابت' };
 
@@ -157,11 +157,18 @@
     winter:         { aura: ['#8fc3f0', '#ffffff', '#5d8fc4'], ring: ['#ffffff', '#9ccdf5', '#ffffff'], dust: '#ffffff', line: 'none' },
     custom:         { aura: ['var(--accent,#c9a227)', '#f2b84b', 'var(--accent,#c9a227)'], ring: ['#ffd36b', '#ffffff', '#ffd36b'], dust: '#ffe39a', line: 'sparkles' }
   };
-  const LOGO = 128, RING = 156;   // حجم الشعار في المنيو، وحجم الحلقة حوله
+  // مكان الشعار وحجمه داخل الترويسة (المنيو 128، معاينة اللوحة أصغر): يتقاس وقت العرض
+  let LOGO = 128, CY = 68;
+  function measureLogo(header) {
+    const img = header.querySelector('#project-logo, #occ-preview-logo, #logo, img');
+    const box = img && (img.closest('.rounded-full:not(img)') || img);
+    const r = box && box.getBoundingClientRect(), h = header.getBoundingClientRect();
+    if (r && r.width > 20) { LOGO = r.width; CY = r.top - h.top + r.height / 2; } else { LOGO = 128; CY = 68; }
+  }
   function modernDecor(top, preset, contained) {
-    const L = LOOK[preset] || LOOK.custom, cy = 4 + LOGO / 2;
+    const L = LOOK[preset] || LOOK.custom, cy = CY, RING = Math.round(LOGO * 1.22), k = LOGO / 128;
     // الإضاءة: ثلاث بقع ضبابية خلف الشعار تتحرك ببطء
-    L.aura.forEach((c, i) => el(top, '', `left:calc(50% + ${[-70, 60, -10][i]}px);top:${[-10, 10, 40][i]}px;width:${[190, 170, 210][i]}px;height:${[150, 140, 120][i]}px;margin-left:-${[95, 85, 105][i]}px;border-radius:50%;background:${c};opacity:.42;filter:blur(38px);animation-delay:-${i * 2}s`, 'dmo-aura'));
+    L.aura.forEach((c, i) => { const w = [190, 170, 210][i] * k, h = [150, 140, 120][i] * k; el(top, '', `left:calc(50% + ${[-70, 60, -10][i] * k}px);top:${cy + [-78, -58, -28][i] * k}px;width:${w}px;height:${h}px;margin-left:-${w / 2}px;border-radius:50%;background:${c};opacity:.42;filter:blur(${38 * k}px);animation-delay:-${i * 2}s`, 'dmo-aura'); });
     // الحلقة: خط متدرج يدور حول الشعار
     el(top, `<svg viewBox="0 0 100 100"><defs><linearGradient id="dmr-${preset}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${L.ring[0]}"/><stop offset=".5" stop-color="${L.ring[1]}" stop-opacity=".25"/><stop offset="1" stop-color="${L.ring[2]}"/></linearGradient></defs>
       <circle cx="50" cy="50" r="48" fill="none" stroke="url(#dmr-${preset})" stroke-width="1.6" stroke-dasharray="70 12 4 12" stroke-linecap="round"/></svg>`,
@@ -169,12 +176,12 @@
     // رسم خطي رفيع على الحلقة
     if (L.line === 'crescent') {
       el(top, `<svg viewBox="0 0 100 100"><path d="M70 8 A44 44 0 1 0 94 60 A36 36 0 1 1 70 8 Z" fill="none" stroke="${L.ring[0]}" stroke-width="1.4"/></svg>`,
-        `left:50%;top:${cy - 104}px;width:64px;margin-left:44px;filter:drop-shadow(0 0 5px ${L.ring[0]})`, 'dmo-float');
+        `left:50%;top:${cy - 104 * k}px;width:${64 * k}px;margin-left:${44 * k}px;filter:drop-shadow(0 0 5px ${L.ring[0]})`, 'dmo-float');
     }
     if (L.line === 'sparkles' || L.line === 'crescent') {
       [[-86, -40, 13], [80, 34, 10], [-70, 52, 8], [92, -46, 7]].forEach(([dx, dy, w], i) =>
         el(top, `<svg viewBox="0 0 20 20"><path d="M10 0 C10.6 7 13 9.4 20 10 C13 10.6 10.6 13 10 20 C9.4 13 7 10.6 0 10 C7 9.4 9.4 7 10 0Z" fill="${L.ring[0]}"/></svg>`,
-          `left:calc(50% + ${dx}px);top:${cy + dy}px;width:${w}px;margin-left:-${w / 2}px;animation-delay:-${i * .6}s;filter:drop-shadow(0 0 4px ${L.ring[0]})`, 'dmo-twinkle'));
+          `left:calc(50% + ${dx * k}px);top:${cy + dy * k}px;width:${w}px;margin-left:-${w / 2}px;animation-delay:-${i * .6}s;filter:drop-shadow(0 0 4px ${L.ring[0]})`, 'dmo-twinkle'));
     }
     if (L.line === 'sadu') {
       // نقشة سدو مبسطة بخط رفيع: معينات صغيرة على يمين ويسار الشعار
@@ -232,8 +239,21 @@
       <rect x="18" y="22" width="54" height="34" rx="6" fill="#2f8f9d"/><ellipse cx="18" cy="39" rx="9" ry="17" fill="#f3e2c8"/>
       <path d="M4 20 L22 34" stroke="#6b4a36" stroke-width="3.4"/><circle cx="4" cy="20" r="4" fill="#e07a8f"/></g></svg>`
   };
+  // مكتبة الملصقات الجاهزة: صاحب المحل يختار منها (group = المناسبة اللي تناسبها أكثر)
+  const LIBRARY = {
+    lantern:  { name: 'فانوس', group: 'ramadan', svg: RAMADAN.lantern, anim: 'swing' },
+    crescent: { name: 'هلال', group: 'ramadan', svg: RAMADAN.crescent },
+    dates:    { name: 'صحن تمر', group: 'ramadan', svg: RAMADAN.dates },
+    samosa:   { name: 'سمبوسة', group: 'ramadan', svg: RAMADAN.samosa },
+    drum:     { name: 'طبل المسحراتي', group: 'ramadan', svg: RAMADAN.drum },
+    snowman:  { name: 'رجل ثلج', group: 'winter', svg: WINTER.snowman },
+    cocoa:    { name: 'كوب كاكاو', group: 'winter', svg: WINTER.cocoa },
+    cookie:   { name: 'كوكيز', group: 'winter', svg: WINTER.cookie },
+    gift:     { name: 'هدية', group: 'winter', svg: WINTER.gift },
+    scarf:    { name: 'شال', group: 'winter', svg: WINTER.scarf }
+  };
   function ramadanStickers(top, front, taken) {
-    const cy = 4 + LOGO / 2;
+    const cy = CY;
     if (!taken.has('logo-left')) {
       el(top, RAMADAN.lantern, `left:4%;top:-4px;width:36px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.22))`, 'dmo-swing');
       el(top, RAMADAN.lantern, `left:15%;top:22px;width:28px;animation-delay:-1.4s;filter:drop-shadow(0 6px 10px rgba(0,0,0,.22))`, 'dmo-swing');
@@ -243,7 +263,7 @@
     el(top, RAMADAN.samosa, `right:16%;top:${cy + 34}px;width:48px;animation-delay:-1.6s;filter:drop-shadow(0 4px 6px rgba(0,0,0,.2))`, 'dmo-rise');
   }
   function winterStickers(top, front, taken) {
-    const cy = 4 + LOGO / 2;
+    const cy = CY;
     if (!taken.has('logo-left')) el(top, WINTER.snowman, `left:5%;top:${cy - 40}px;width:66px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.22))`, 'dmo-float');
     if (!taken.has('logo-right')) el(top, WINTER.cocoa, `right:6%;top:${cy - 30}px;width:56px;animation-delay:-1.2s;filter:drop-shadow(0 6px 10px rgba(0,0,0,.22))`, 'dmo-float');
     el(top, WINTER.cookie, `right:21%;top:${cy + 30}px;width:30px;animation-delay:-.6s;filter:drop-shadow(0 4px 6px rgba(0,0,0,.2))`, 'dmo-rise');
@@ -362,17 +382,27 @@
   }
 
   const STICKER_PX = { s: 56, m: 80, l: 110 };
+  const LIB_PX = { s: 38, m: 54, l: 72 };   // ملصقات المكتبة رسم خفيف، أصغر من صور المحل
   function stickers(top, front, list) {
+    const cy = CY, used = {};
     (list || []).forEach((s, i) => {
-      const url = safeUrl(s.url); if (!url) return;
-      const px = STICKER_PX[s.size] || STICKER_PX.m;
+      const lib = s.lib && LIBRARY[s.lib];
+      const url = lib ? '' : safeUrl(s.url); if (!lib && !url) return;
+      const px = Math.round(((lib ? LIB_PX : STICKER_PX)[s.size] || (lib ? LIB_PX : STICKER_PX).m) * (lib ? Math.min(1, LOGO / 128) : 1));   // في معاينة اللوحة الشعار أصغر
       const anim = ANIMS[s.animation] && s.animation !== 'none' ? `dmo-${s.animation}` : '';
-      const img = `<img src="${esc(url)}" alt="" loading="lazy" decoding="async">`;
-      if (s.position === 'float') {
-        el(front, img, `left:12px;bottom:${96 + i * 8}px;width:${px}px;z-index:1;filter:drop-shadow(0 6px 12px rgba(0,0,0,.25))`, anim);
+      const art = lib ? lib.svg : `<img src="${esc(url)}" alt="" loading="lazy" decoding="async">`;
+      const shadow = 'filter:drop-shadow(0 6px 12px rgba(0,0,0,.25))';
+      const pos = POSITIONS[s.position] ? s.position : 'logo-right';
+      const k = used[pos] = (used[pos] || 0) + 1;   // أكثر من ملصق بنفس المكان: الثاني يجي جنب الأول
+      if (pos === 'float') {
+        el(front, art, `left:12px;bottom:${96 + (k - 1) * (px + 8)}px;width:${px}px;z-index:1;${shadow}`, anim);
+      } else if (pos.startsWith('under')) {
+        const side = pos === 'under-left' ? 'left' : 'right';
+        el(top, art, `${side}:${16 + (k - 1) * 14}%;top:${cy + LOGO * .32}px;width:${px}px;animation-delay:-${i * .7}s;${shadow}`, anim);
       } else {
-        const side = s.position === 'logo-left' ? 'left' : 'right';
-        el(top, img, `${side}:3%;top:${px > 90 ? 6 : 22}px;width:${px}px;animation-delay:-${i * .7}s;filter:drop-shadow(0 6px 12px rgba(0,0,0,.25))`, anim);
+        const side = pos === 'logo-left' ? 'left' : 'right';
+        const hang = lib && s.lib === 'lantern';   // الفانوس يتعلّق من فوق
+        el(top, art, `${side}:${3 + (k - 1) * 15}%;top:${hang ? -4 + (k - 1) * 22 : (lib ? cy - px / 2 - 6 : (px > 90 ? 6 : 22))}px;width:${px}px;animation-delay:-${i * .7}s;${shadow}`, anim);
       }
     });
   }
@@ -386,6 +416,7 @@
     const p = PRESETS[occ.preset];
     const top = document.createElement('div'); top.className = 'dmo-top'; top.dataset.dmo = '1';
     header.prepend(top);
+    measureLogo(header);
     const layer = (cls) => {
       const d = document.createElement('div'); d.className = `dmo-fx ${cls}`; d.dataset.dmo = '1';
       d.style.position = contained ? 'absolute' : 'fixed';
@@ -394,8 +425,6 @@
     const back = layer('back'), front = layer('front');
 
     modernDecor(top, occ.preset, contained);
-    if (occ.preset === 'winter') winterStickers(top, front, new Set((occ.stickers || []).map(x => x.position)));
-    if (occ.preset === 'ramadan') ramadanStickers(top, front, new Set((occ.stickers || []).map(x => x.position)));
     if (!reduced()) {
       if (p.fx === 'snow') effects(back, front, 'snow');
       else dust(back, (LOOK[occ.preset] || LOOK.custom).dust);
@@ -420,5 +449,5 @@
     if (greet) { greet.innerHTML = ''; greet.classList.add('hidden'); }
   }
 
-  window.DMOccasions = { PRESETS, POSITIONS, SIZES, ANIMS, suggestDates, render, clear, setGreeting };
+  window.DMOccasions = { PRESETS, POSITIONS, SIZES, ANIMS, LIBRARY, suggestDates, render, clear, setGreeting };
 })();
