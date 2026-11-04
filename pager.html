@@ -87,23 +87,20 @@
   .q-text span:empty { display: none; }
   @media (prefers-reduced-motion: reduce) { .q-dots i.cook { animation: none; } }
   /* ─── أضف لطلبك ─── */
-  .ups { background: #fff; color: #15271b; border-radius: 22px; padding: 14px; box-shadow: 0 24px 48px -30px rgba(0,0,0,.7); }
-  .ups-hd b { display: block; font-size: 15.5px; font-weight: 800; } .ups-hd small { display: block; font-size: 12.5px; opacity: .65; margin-top: 2px; }
-  .ups-list { display: flex; gap: 10px; overflow-x: auto; margin: 12px -14px 0; padding: 0 14px 4px; scrollbar-width: none; scroll-snap-type: x mandatory; }
-  .ups-list::-webkit-scrollbar { display: none; }
-  .ups-it { flex: 0 0 132px; scroll-snap-align: start; border: 1px solid rgba(35,61,44,.12); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; }
-  .ups-it .im { height: 88px; background: #f1efe9 center / cover no-repeat; display: grid; place-items: center; font-size: 26px; color: rgba(35,61,44,.35); }
-  .ups-it .bd { padding: 8px 9px 9px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
-  .ups-it .nm { font-size: 13.5px; font-weight: 700; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .ups-it .pr { font-size: 13px; font-weight: 600; opacity: .7; }
-  .ups-it button { margin-top: auto; padding: 7px 0; border-radius: 11px; background: var(--brand); color: #fff; font-size: 13.5px; font-weight: 800; }
-  .ups-it button.ok { background: #e7f4ec; color: #0a6b45; }
-  .ups-it button:disabled { opacity: .6; }
+  .ups { background: #fff; color: #15271b; border-radius: 20px; padding: 6px; box-shadow: 0 24px 48px -30px rgba(0,0,0,.7); }
+  .ups-bar { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 10px; border-radius: 15px; text-align: right; }
+  .ups-bar:active { background: #f6f4ef; }
+  .ups-thumbs { display: flex; flex-shrink: 0; }
+  .ups-thumbs span { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #fff; background: #f1efe9 center / cover no-repeat; display: grid; place-items: center; color: rgba(35,61,44,.4); font-size: 16px; box-shadow: 0 2px 6px -2px rgba(0,0,0,.25); }
+  .ups-thumbs span + span { margin-right: -14px; }
+  .ups-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .ups-tx b { font-size: 15.5px; font-weight: 800; } .ups-tx small { font-size: 12.5px; font-weight: 500; opacity: .65; }
+  .ups-go { opacity: .45; }
+  .ups .ups-added { margin: 2px 6px 6px; }
   .ups-added { margin-top: 10px; font-size: 13px; font-weight: 700; color: #0a6b45; background: #e7f4ec; border-radius: 12px; padding: 8px 10px; }
   .ups-added ul { list-style: none; margin: 4px 0 0; padding: 0; } .ups-added li { display: flex; align-items: center; gap: 8px; padding: 3px 0; color: #15271b; }
   .ups-added li span { flex: 1; min-width: 0; } .ups-added li em { display: block; font-style: normal; font-weight: 500; font-size: 12px; opacity: .7; }
   .ups-added li button { width: 28px; height: 28px; border-radius: 50%; background: rgba(0,0,0,.06); display: grid; place-items: center; flex-shrink: 0; }
-  .ups-all { width: 100%; margin-top: 10px; padding: 11px; border-radius: 14px; border: 1.5px solid rgba(35,61,44,.18); font-size: 14.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; }
   .mn-cats { display: flex; gap: 6px; overflow-x: auto; padding: 10px 14px; scrollbar-width: none; border-bottom: 1px solid rgba(35,61,44,.08); }
   .mn-cats:empty { display: none; }
   .mn-cats button { flex-shrink: 0; padding: 7px 13px; border-radius: 999px; border: 1px solid rgba(35,61,44,.18); font-size: 13.5px; font-weight: 700; }
@@ -407,10 +404,12 @@
       <i class="ph-bold ph-caret-left ask-go"></i>
     </button>
     <!-- أضف لطلبك: يوصل للكاشير تحت رقمه، والدفع عند الاستلام -->
-    <section id="w-upsell" class="ups hidden" aria-labelledby="ups-title">
-      <div class="ups-hd"><b id="ups-title">أضف لطلبك وأنت تنتظر</b><small>يوصل للكاشير مع رقمك، وتدفع عند الاستلام</small></div>
-      <div id="ups-list" class="ups-list"></div>
-      <button type="button" id="ups-all" class="ups-all"><i class="ph-bold ph-fork-knife"></i> شوف المنيو كامل</button>
+    <section id="w-upsell" class="ups hidden" aria-label="أضف لطلبك">
+      <button type="button" id="ups-open" class="ups-bar">
+        <span id="ups-thumbs" class="ups-thumbs" aria-hidden="true"></span>
+        <span class="ups-tx"><b id="ups-title">تبي تزيد على طلبك؟</b><small>يوصل للكاشير مع رقمك، وتدفع عند الاستلام</small></span>
+        <i class="ph-bold ph-caret-left ups-go"></i>
+      </button>
       <div id="ups-added" class="ups-added hidden"></div>
     </section>
     <p id="w-tell" class="note"></p>
@@ -1037,13 +1036,10 @@
     const box = $('w-upsell');
     box.classList.toggle('hidden', !(on && upsell.length));
     if (box.classList.contains('hidden')) return;
-    const count = (id) => addedNow.filter(a => a.id === id).reduce((n, a) => n + (a.qty || 1), 0);
-    $('ups-list').innerHTML = upsell.map(p => {
-      const n = count(p.id), img = bgImg(p.image_url);
-      return `<div class="ups-it"><div class="im"${img}>${img ? '' : '<i class="ph-bold ph-fork-knife"></i>'}</div><div class="bd">
-        <span class="nm">${esc(p.name)}</span><span class="pr">${p.sizes && p.sizes.length ? 'من ' : ''}${fmtPrice(fromPrice(p))}</span>
-        <button type="button" data-add="${p.id}" class="${n ? 'ok' : ''}">${n ? `✓ أضفته${n > 1 ? ` ×${n}` : ''}` : 'أضف'}</button></div></div>`;
-    }).join('');
+    // صور صغيرة من الاقتراحات (تشد العين بدون ما تاخذ مساحة)
+    $('ups-thumbs').innerHTML = upsell.slice(0, 3).map(p => { const img = bgImg(p.image_url); return `<span${img}>${img ? '' : '<i class="ph-bold ph-fork-knife"></i>'}</span>`; }).join('');
+    const n = addedNow.reduce((k, a) => k + (a.qty || 1), 0);
+    $('ups-title').textContent = n ? `✓ أضفت ${n === 1 ? 'صنف واحد' : n === 2 ? 'صنفين' : `${n} أصناف`}، تبي تزيد؟` : 'تبي تزيد على طلبك؟';
     $('ups-added').classList.toggle('hidden', !addedNow.length);
     $('ups-added').innerHTML = addedNow.length ? `وصل للكاشير:<ul>${addedNow.map((a, k) => `<li><span>${(a.qty || 1) > 1 ? `${a.qty}× ` : ''}${esc(a.name)}${a.size ? ` (${esc(a.size)})` : ''}${a.note ? `<em>${esc(a.note)}</em>` : ''}</span><button type="button" data-rm="${k}" aria-label="شيلها"><i class="ph-bold ph-x"></i></button></li>`).join('')}</ul>` : '';
   }
@@ -1107,7 +1103,6 @@
     } catch (err) { $('it-err').textContent = err.message || 'ما قدرنا نضيفها، اطلبها من الكاشير'; $('it-err').classList.remove('hidden'); }
     upsBusy = false; $('it-add').disabled = false;
   };
-  $('ups-list').addEventListener('click', (e) => { const b = e.target.closest('[data-add]'); if (b) { const p = upsell.find(x => x.id === Number(b.dataset.add)); if (p) openItem(p); } });
   $('ups-added').addEventListener('click', async (e) => {
     const b = e.target.closest('[data-rm]'); if (!b || upsBusy) return;
     if (PREVIEW) { addedNow = addedNow.filter((_, k) => k !== Number(b.dataset.rm)); return renderUpsell(true); }
@@ -1121,7 +1116,7 @@
     sheetOpen('mn-sheet');
     if (!fullMenu) {
       try { fullMenu = await DM.get(`/api/pager?action=menu&slug=${encodeURIComponent(slug)}`); }
-      catch (err) { $('mn-list').innerHTML = `<p class="mn-empty">${esc(err.message || 'ما قدرنا نفتح المنيو')}</p>`; return; }
+      catch (err) { if (!upsell.length) { $('mn-list').innerHTML = `<p class="mn-empty">${esc(err.message || 'ما قدرنا نفتح المنيو')}</p>`; return; } fullMenu = { categories: [], products: [], failed: true }; }
       renderMenuList();
     }
   }
@@ -1130,6 +1125,9 @@
     const groups = cats.map(c => ({ c, items: fullMenu.products.filter(p => !fullMenu.categories.length || p.category === c.key) })).filter(g => g.items.length);
     const known = new Set(fullMenu.categories.map(c => c.key)), rest = fullMenu.products.filter(p => fullMenu.categories.length && !known.has(p.category));
     if (rest.length) groups.push({ c: { key: '_', name: 'أخرى' }, items: rest });
+    // المقترحة أول
+    if (upsell.length) groups.unshift({ c: { key: '_s', name: 'مقترحة لك' }, items: upsell });
+    if (fullMenu.failed) groups.splice(1);
     $('mn-cats').innerHTML = groups.length > 1 ? groups.map((g, k) => `<button type="button" data-cat="${k}">${esc(g.c.name)}</button>`).join('') : '';
     $('mn-list').innerHTML = groups.length ? groups.map((g, k) => `${g.c.name ? `<h4 id="mn-g${k}">${esc(g.c.name)}</h4>` : ''}${g.items.map(p => {
       const img = bgImg(p.image_url);
@@ -1141,9 +1139,9 @@
     [...$('mn-cats').children].forEach(x => x.classList.toggle('on', x === b));
     const h = $(`mn-g${b.dataset.cat}`); if (h) $('mn-list').scrollTo({ top: h.offsetTop - $('mn-list').offsetTop - 4, behavior: 'smooth' });
   };
-  $('mn-list').onclick = (e) => { const b = e.target.closest('[data-p]'); if (b) { const p = fullMenu.products.find(x => x.id === Number(b.dataset.p)); if (p) openItem(p); } };
+  $('mn-list').onclick = (e) => { const b = e.target.closest('[data-p]'); if (b) { const id = Number(b.dataset.p), p = fullMenu.products.find(x => x.id === id) || upsell.find(x => x.id === id); if (p) openItem(p); } };
   $('mn-sheet').addEventListener('click', (e) => { if (e.target.closest('[data-mn-close]')) sheetClose('mn-sheet'); });
-  $('ups-all').onclick = openMenu;
+  $('ups-open').onclick = openMenu;
 
   // ─── جايزة اللعبة ───
   let game = null, gameWon = false, gameReward = '', gameOn = true;   // صاحب المحل يقدر يوقف اللعبة
