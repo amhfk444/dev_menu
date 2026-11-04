@@ -268,6 +268,44 @@
   nav.fixed.bottom-0 { background: #fff !important; border-top: 1px solid var(--line) !important; }
 </style>
 <link rel="stylesheet" href="/css/tw/admin.css">
+<style>
+  /* ─── وضوح اللوحة (بعد Tailwind عشان يغلبه) ───
+     النص: 3 درجات (عنوان أسود، وصف رمادي متوسط، تلميح رمادي فاتح)
+     الأحجام: أصغر نص 12.5، والعادي 13 إلى 14، وعناوين البطاقات 15
+     العريض للعناوين والأزرار، والوصف بوزن عادي
+     الحالات: أخضر واحد للشغال، وأصفر واحد للتنبيه، وأحمر واحد للخطأ */
+  :root { --ink: #1a1a1a; --ink-2: #4a4a4a; --ink-3: #6b6b6b; --ok: #0a7a52; --warn: #8a5a00; --bad: #b3121f; }
+  .text-ink { color: var(--ink); }
+
+  .text-\[10px\], .text-\[10\.5px\] { font-size: 11.5px; }
+  .text-\[11px\], .text-\[11\.5px\] { font-size: 12.5px; }
+  .text-xs, .text-\[12px\] { font-size: 13px; }
+  .text-\[13px\] { font-size: 13.5px; }
+  .text-xs:not([class*="leading-"]), .text-\[11px\]:not([class*="leading-"]), .text-\[12px\]:not([class*="leading-"]) { line-height: 1.55; }
+
+  /* الوصف والشرح الصغير: رمادي متوسط بوزن عادي */
+  main p:is(.text-\[11px\], .text-\[11\.5px\], .text-xs, .text-\[12px\], .text-\[10px\]):not(.font-bold, .font-black, .font-semibold):is(.text-ink, :not([class*="text-"][class*="-6"], [class*="text-"][class*="-7"], [class*="text-"][class*="-8"], [class*="text-"][class*="-9"])) { color: var(--ink-2); }
+  main p.leading-relaxed:is(.text-\[11px\], .text-xs, .text-\[12px\]).font-bold.text-ink { font-weight: 500; color: var(--ink-2); }
+  /* أسماء الحقول: واضحة ونصف عريضة */
+  main label:is(.text-\[11px\], .text-xs, .text-\[12px\]):is(.font-bold, .font-black) { font-weight: 600; color: var(--ink); }
+  main label.block { margin-bottom: 6px; }
+  .input-pro::placeholder { color: #8f8f8f; }
+
+  /* العناوين */
+  #page-title { font-size: 22px; color: var(--ink); }
+  .pro-card h3 { font-size: 15px !important; font-weight: 700; color: var(--ink); }
+  main h2 { color: var(--ink); }
+
+  /* ألوان الحالات موحّدة */
+  .text-emerald-600, .text-emerald-700, .text-emerald-800, .text-green-600, .text-green-700 { color: var(--ok); }
+  .text-amber-600, .text-amber-700, .text-amber-800, .text-amber-900 { color: var(--warn); }
+  .text-red-600, .text-red-700 { color: var(--bad); }
+
+  /* شريط الجوال السفلي والقائمة الجانبية */
+  .bnav { font-size: 11px; color: #555; }
+  .nav-item { font-size: .875rem; color: var(--ink); }
+  .kpi small { font-size: 13px; color: var(--ink-2); }
+</style>
 </head>
 
 <body>
