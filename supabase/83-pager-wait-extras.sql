@@ -16,3 +16,8 @@ notify pgrst, 'reload schema';
 -- الكاشير يحدد وقت الانتظار لرقم معيّن (بعض الأصناف تتأخر): يطلع للزبون بدل التقدير
 alter table public.pager_tickets add column if not exists eta_at timestamptz;
 notify pgrst, 'reload schema';
+
+-- صاحب المحل يختار: المساعد الذكي في صفحة الانتظار (مطفي افتراضياً)، واللعبة (شغالة افتراضياً مثل قبل)
+alter table public.clients add column if not exists pager_chat boolean not null default false;
+alter table public.clients add column if not exists pager_game boolean not null default true;
+notify pgrst, 'reload schema';

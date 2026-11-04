@@ -117,16 +117,18 @@ function cleanCar(b) {
 
 // إضافات صفحة الانتظار (تنحسب مرة وحدة لكل رقم): المساعد، «أضف لطلبك»، وجايزة اللعبة
 async function waitSettings(storeId) {
-  return (await rest(`clients?id=eq.${storeId}&select=menu_chat,pager_upsell,pager_game_reward,pager_game_moves,currency`)
+  return (await rest(`clients?id=eq.${storeId}&select=menu_chat,pager_chat,pager_game,pager_upsell,pager_game_reward,pager_game_moves,currency`)
     .catch(() => rest(`clients?id=eq.${storeId}&select=menu_chat`)).catch(() => []))[0] || {};
 }
 async function waitExtras(storeId, t) {
   const [x, menu, chatOk] = await Promise.all([waitSettings(storeId), storeHasFeature(storeId, 'menu'), storeHasFeature(storeId, 'chat')]);
-  const chat = x.menu_chat === true && menu && chatOk;
+  // المساعد في صفحة الانتظار: صاحب المحل يشغّله بنفسه (منفصل عن مساعد المنيو)، ويحتاج المنيو والمساعد في باقته
+  const chat = x.pager_chat === true && menu && chatOk;
+  const gameOn = x.pager_game !== false;
   let upsell = [];
   if (x.pager_upsell === true && menu && t.status === 'waiting') upsell = await upsellItems(storeId);
   const reward = String(x.pager_game_reward || '').trim();
-  return { chat, upsell, currency: CURRENCIES[x.currency] || CURRENCIES.SAR, game: reward ? { reward, moves: Math.min(40, Math.max(10, Number(x.pager_game_moves) || 20)), won: t.game_won === true } : null };
+  return { chat, upsell, game_on: gameOn, currency: CURRENCIES[x.currency] || CURRENCIES.SAR, game: gameOn && reward ? { reward, moves: Math.min(40, Math.max(10, Number(x.pager_game_moves) || 20)), won: t.game_won === true } : null };
 }
 const publicAddons = (list) => (Array.isArray(list) ? list : []).map(a => ({ id: a.id, name: a.name, qty: a.qty || 1, size: a.size || null, note: a.note || null }));
 const sizeName = (z) => String((z && (z.name || z.label)) || '').trim();
@@ -243,7 +245,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const car_ask = t.status === 'waiting' && ((await rest(`clients?id=eq.${store.id}&select=pager_car`).catch(() => []))[0] || {}).pager_car === true;
     // إضافات صفحة الانتظار: الصفحة تسأل عنها مرة وحدة لكل رقم (c=1)، مو مع كل تحديث كل 3 ثواني
     const live = ['waiting', 'ready'].includes(t.status) && !stale;
-    const extras = req.query.c === '1' ? (live ? await waitExtras(store.id, t) : { chat: false, upsell: [], game: null }) : {};
+    const extras = req.query.c === '1' ? (live ? await waitExtras(store.id, t) : { chat: false, upsell: [], game: null, game_on: true }) : {};
     // الطابور الحي: كم طلب قدامه، والوقت الباقي تقريباً (الصفحة تسأل كل 15 ثانية تقريباً بـ q=1)
     let queue;
     if (req.query.q === '1' && t.status === 'waiting' && !stale) {
@@ -413,7 +415,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const reward = String(x.pager_game_reward || '').trim();
     const limit = Math.min(40, Math.max(10, Number(x.pager_game_moves) || 20));
     const moves = Number(b.moves);
-    if (!reward) return { won: false };
+    if (!reward || x.pager_game === false) return { won: false };
     // 8 أزواج = أقل شي 8 حركات
     if (!Number.isInteger(moves) || moves < 8 || moves > limit) return { won: false, moves: limit };
     const rows = await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=in.(waiting,ready)`, { method: 'PATCH', body: { game_won: true }, prefer: 'return=representation' });

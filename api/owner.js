@@ -1314,6 +1314,12 @@ async function main(req) {
       if (b.pager_upsell === true && (!PLANS.has(store, 'menu') || !PLANS.has(store, 'pager'))) throw new ApiError(403, '«أضف لطلبك» تحتاج المنيو والبيجر في باقتك', 'ADDON_OFF');
       p.pager_upsell = b.pager_upsell === true;
     }
+    if (has('pager_chat')) {
+      // المساعد يرد من المنيو ويُحسب من رصيد المساعد الذكي
+      if (b.pager_chat === true && (!PLANS.has(store, 'menu') || !PLANS.has(store, 'chat'))) throw new ApiError(403, 'المساعد في صفحة الانتظار يحتاج المنيو والمساعد الذكي في باقتك', 'ADDON_OFF');
+      p.pager_chat = b.pager_chat === true;
+    }
+    if (has('pager_game')) p.pager_game = b.pager_game !== false;
     if (has('pager_game_reward')) p.pager_game_reward = String(b.pager_game_reward || '').replace(/\s+/g, ' ').trim().slice(0, 80) || null;
     if (has('pager_game_moves')) p.pager_game_moves = Math.min(40, Math.max(10, int(b.pager_game_moves) || 20));
     if (has('pager_near_text')) p.pager_near_text = String(b.pager_near_text || '').replace(/\s+/g, ' ').trim().slice(0, 80) || null;

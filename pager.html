@@ -653,7 +653,7 @@
   const KEY = `dm_pager_${slug}`;
   const VIEWS = ['loading', 'unavailable', 'start', 'waiting', 'ready', 'done'];
   const $ = (id) => document.getElementById(id);
-  const show = (v) => { VIEWS.forEach(x => $(`v-${x}`).classList.toggle('hidden', x !== v)); $('v-game').classList.toggle('hidden', v !== 'waiting'); if (v === 'start') renderSteps(); };
+  const show = (v) => { VIEWS.forEach(x => $(`v-${x}`).classList.toggle('hidden', x !== v)); $('v-game').classList.toggle('hidden', v !== 'waiting' || !gameOn); if (v === 'start') renderSteps(); };
   const saveToken = (t) => { try { t ? localStorage.setItem(KEY, t) : localStorage.removeItem(KEY); } catch {} };
   const loadToken = () => { try { return localStorage.getItem(KEY) || ''; } catch { return ''; } };
 
@@ -1102,7 +1102,7 @@
   $('ups-all').onclick = openMenu;
 
   // ─── جايزة اللعبة ───
-  let game = null, gameWon = false, gameReward = '';
+  let game = null, gameWon = false, gameReward = '', gameOn = true;   // صاحب المحل يقدر يوقف اللعبة
   function renderGame() {
     const on = !!game;
     $('mm-prize').classList.toggle('hidden', !on || gameWon);
@@ -1177,7 +1177,7 @@
       pollTimer = setTimeout(poll, 5000); return;   // انقطاع مؤقت: نعيد المحاولة
     }
     if (loadToken() !== token) return;   // تغيّر الرقم وهو ينتظر الرد (ضغط "استلمت" أو أخذ رقم جديد): الرد قديم
-    if (askChat && typeof r.chat === 'boolean') { chatFor = token; chatOn = r.chat; upsell = r.upsell || []; curLabel = r.currency || 'ر.س'; game = r.game || null; }
+    if (askChat && typeof r.chat === 'boolean') { chatFor = token; chatOn = r.chat; upsell = r.upsell || []; curLabel = r.currency || 'ر.س'; game = r.game || null; gameOn = r.game_on !== false; }
     if (askQ) lastQ = Date.now();
     staffEta = r.staff_eta == null ? null : Number(r.staff_eta);
     if (r.queue) renderQueue(r.queue, r.ticket.number); else if (lastQueue) renderQueue(lastQueue, r.ticket.number);

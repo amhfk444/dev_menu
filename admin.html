@@ -1966,7 +1966,23 @@
           </span>
           <span id="pg-st-upsell"></span>
         </label>
-        <div class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2.5">
+        <label data-needs="chat" class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
+          <input type="checkbox" id="info-pager-chat" onchange="togglePagerFlag('pager_chat', this)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
+          <span class="text-xs flex-1">
+            <b class="text-ink"><i class="ph-bold ph-chat-circle-dots text-amber-600"></i> المساعد الذكي في صفحة الانتظار</b>
+            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يظهر للزبون في صفحة رقمه زر «اسأل عن طلبك»: يجيبه عن موعد جاهزية طلبه وعدد الطلبات قبله وعن أصناف المنيو، ويعتمد الوقت الذي يحدده الكاشير. يُحتسب من رصيد المساعد الذكي.</span>
+          </span>
+          <span id="pg-st-chat"></span>
+        </label>
+        <label class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
+          <input type="checkbox" id="info-pager-game" onchange="togglePagerFlag('pager_game', this)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
+          <span class="text-xs flex-1">
+            <b class="text-ink"><i class="ph-bold ph-squares-four text-amber-600"></i> لعبة الانتظار</b>
+            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يظهر للزبون في صفحة رقمه: لعبة مطابقة البطاقات يتسلى بها حتى يجهز طلبه.</span>
+          </span>
+          <span id="pg-st-gameon"></span>
+        </label>
+        <div id="info-game-box" class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2.5">
           <div class="flex flex-wrap items-start justify-between gap-2">
             <span class="text-xs">
               <b class="text-ink"><i class="ph-bold ph-trophy text-amber-600"></i> جائزة لعبة الانتظار</b>
@@ -5411,6 +5427,8 @@
     document.getElementById('info-kiosk-call').checked = !!client && client.kiosk_call === true;
     document.getElementById('info-pager-car').checked = !!client && client.pager_car === true;
     document.getElementById('info-pager-upsell').checked = !!client && client.pager_upsell === true;
+    document.getElementById('info-pager-chat').checked = !!client && client.pager_chat === true;
+    document.getElementById('info-pager-game').checked = !client || client.pager_game !== false;
     if (client) {
       document.getElementById('info-game-reward').value = client.pager_game_reward || '';
       const mv = String(client.pager_game_moves || 20), sel = document.getElementById('info-game-moves');
@@ -5438,6 +5456,9 @@
     pgChip('pg-st-kiosk', client.kiosk_call ? 'ok' : 'off', client.kiosk_call ? 'مفعّل' : 'مو مفعّل');
     pgChip('pg-st-upsell', client.pager_upsell ? 'ok' : 'off', client.pager_upsell ? 'مفعّل' : 'مو مفعّل');
     pgChip('pg-st-game', client.pager_game_reward ? 'ok' : 'off', client.pager_game_reward ? 'مفعّلة' : 'بدون جائزة');
+    pgChip('pg-st-chat', client.pager_chat ? 'ok' : 'off', client.pager_chat ? 'مفعّل' : 'مو مفعّل');
+    pgChip('pg-st-gameon', client.pager_game !== false ? 'ok' : 'off', client.pager_game !== false ? 'مفعّلة' : 'موقفة');
+    const gb = document.getElementById('info-game-box'); if (gb) gb.classList.toggle('hidden', client.pager_game === false);
     if (client.google_review_url) pgChip('pg-st-review', 'ok', 'جاهز');
     else if (client.location_url) pgChip('pg-st-review', 'ok', 'يفتح موقعك في الخريطة');
     else pgChip('pg-st-review', 'warn', 'ناقص: زبائنك ما يقدرون يقيّمونك');
@@ -5459,6 +5480,11 @@
   async function togglePagerUpsell(on) {
     if (await updateClient({ pager_upsell: on })) { renderPagerStatus(); showToast(on ? 'الزبون يقدر يضيف لطلبه وهو ينتظر' : 'تم إيقاف «أضف لطلبك»'); }
     else { document.getElementById('info-pager-upsell').checked = !on; showToast('تعذر حفظ الإعداد', true); }
+  }
+  async function togglePagerFlag(key, box) {
+    const on = box.checked, msgs = { pager_chat: ['المساعد صار يظهر في صفحة الانتظار', 'تم إيقاف المساعد في صفحة الانتظار'], pager_game: ['اللعبة تظهر للزبون وهو ينتظر', 'تم إيقاف اللعبة'] };
+    if (await updateClient({ [key]: on })) { renderPagerStatus(); showToast(msgs[key][on ? 0 : 1]); }
+    else { box.checked = !on; showToast('تعذر حفظ الإعداد', true); }
   }
   async function saveGameReward() {
     const reward = document.getElementById('info-game-reward').value.trim(), moves = Number(document.getElementById('info-game-moves').value);

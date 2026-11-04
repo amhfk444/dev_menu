@@ -175,10 +175,10 @@ async function pagerOrder(storeId, token) {
   const [ahead, typical] = await Promise.all([aheadOf(storeId, t), typicalWait(storeId)]);
   const STATUS = { waiting: 'being prepared (waiting)', ready: 'READY now, guest should pick it up from the counter', done: 'already picked up', cancelled: 'cancelled by the store' };
   const added = Array.isArray(t.addons) && t.addons.length ? `items the guest added from this page (sent to the cashier, paid at pickup): ${t.addons.map(addonLine).join(', ')}` : '';
-  const staff = t.status === 'waiting' && t.eta_at ? `the cashier set the expected ready time: about ${etaOf(t, null)} minutes from now (use this instead of the typical wait)` : '';
-  return [`pager number: ${t.number}`, `status: ${STATUS[t.status] || t.status}`, `waiting since: ${mins(Date.now() - Date.parse(t.created_at))} minutes`,
+  const staff = t.status === 'waiting' && t.eta_at ? `EXPECTED READY IN (set by the cashier just now, authoritative): about ${etaOf(t, null)} minutes from now` : '';
+  return [`pager number: ${t.number}`, `status: ${STATUS[t.status] || t.status}`, staff, `waiting since: ${mins(Date.now() - Date.parse(t.created_at))} minutes`,
     t.status === 'waiting' ? `orders ahead still being prepared: ${ahead}` : '',
-    typical ? `typical wait at this place (median, last 7 days): ${typical} minutes` : 'typical wait: not enough data', staff, added].filter(Boolean).join('\n');
+    typical ? `typical wait at this place (median, last 7 days): ${typical} minutes` : 'typical wait: not enough data', added].filter(Boolean).join('\n');
 }
 
 async function menuPayload(slug) {
@@ -296,7 +296,10 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const b = await readBody(req);
     const data = await menuPayload(b.slug);
     const store = data.store;
-    if (store.menu_chat !== true) throw new ApiError(403, 'المساعد غير متاح الحين، اسأل الموظف 😊', 'CHAT_OFF');
+    // من صفحة انتظار البيجر: يتبع إعداد «المساعد في صفحة الانتظار». ومن المنيو: إعداد مساعد المنيو
+    const fromPager = /^[A-Za-z0-9_-]{10,64}$/.test(String(b.t || ''));
+    const on = fromPager ? ((await rest(`clients?id=eq.${store.id}&select=pager_chat`).catch(() => []))[0] || {}).pager_chat === true && data.feats.chat : store.menu_chat === true;
+    if (!on) throw new ApiError(403, 'المساعد غير متاح الحين، اسأل الموظف 😊', 'CHAT_OFF');
     // المحادثة قصيرة: آخر 6 رسائل، وكل رسالة 300 حرف (الحد الفعلي: أسئلة الجوال باليوم)
     const list = (Array.isArray(b.messages) ? b.messages : []).slice(-6)
       .map(m => ({ role: m && m.role === 'assistant' ? 'assistant' : 'user', content: String((m && m.content) || '').trim().slice(0, 300) }))
@@ -304,7 +307,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (!list.length || list[list.length - 1].role !== 'user') throw new ApiError(400, 'اكتب سؤالك');
     while (list.length && list[0].role !== 'user') list.shift();
     // من صفحة انتظار البيجر: المساعد يعرف رقم الزبون وحالته وكم طلب قدامه
-    const order = /^[A-Za-z0-9_-]{10,64}$/.test(String(b.t || '')) ? await pagerOrder(store.id, b.t) : null;
+    const order = fromPager ? await pagerOrder(store.id, b.t) : null;
     // الأسئلة البسيطة (سلام، شكر، الأوقات، الموقع) نرد عليها من بيانات المحل بدون ذكاء اصطناعي: ببلاش وفوري
     const quick = quickChat(list[list.length - 1].content, store, list.length === 1);
     if (quick) return { reply: quick };
