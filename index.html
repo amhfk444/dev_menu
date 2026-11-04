@@ -84,6 +84,14 @@
   .logos a { width: 58px; height: 58px; border-radius: 18px; overflow: hidden; background: #fff; border: 1px solid var(--line); display: block; transition: transform .2s; }
   .logos a:hover { transform: translateY(-3px); }
   .logos img { width: 100%; height: 100%; object-fit: cover; }
+  .logos button { width: 58px; height: 58px; border-radius: 18px; overflow: hidden; background: #fff; border: 1px solid var(--line); display: block; padding: 0; cursor: pointer; transition: transform .2s; }
+  .logos button:hover { transform: translateY(-3px); }
+  .logos button:focus-visible, .logos a:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+  /* نافذة تعريف المنشأة (للمنشآت اللي ما عندها منيو) */
+  #store-dlg { border: 0; padding: 0; border-radius: 24px; width: min(360px, calc(100vw - 32px)); background: #fff; color: inherit; box-shadow: 0 40px 80px -30px rgba(21,39,27,.55); }
+  #store-dlg::backdrop { background: rgba(21,39,27,.45); }
+  #store-dlg .sd-logo { width: 76px; height: 76px; border-radius: 22px; object-fit: cover; border: 1px solid var(--line); background: #fff; }
+  #store-dlg .sd-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: #eaf3ec; color: #233d2c; font-size: 13px; font-weight: 700; }
 
   .h2 { font-size: clamp(30px, 4.4vw, 50px); line-height: 1.2; font-weight: 700; letter-spacing: -.3px; }
   .h2 em { font-style: normal; color: var(--gold-deep); }
@@ -261,6 +269,18 @@
         <p class="text-[13px] font-semibold text-[color:var(--muted)] mb-3">منشآت تستخدم DEV MENU</p>
         <div id="trust-logos" class="logos flex flex-wrap gap-3"></div>
       </div>
+      <dialog id="store-dlg" aria-labelledby="sd-name">
+        <div class="p-6 text-center">
+          <img id="sd-logo" class="sd-logo mx-auto" alt="">
+          <h3 id="sd-name" class="font-bold text-[18px] mt-3"></h3>
+          <p class="text-[13.5px] text-[color:var(--muted)] mt-1">تستخدم DEV MENU في:</p>
+          <div id="sd-services" class="flex flex-wrap justify-center gap-2 mt-3"></div>
+          <div class="flex flex-col gap-2 mt-6">
+            <button type="button" id="sd-try" class="btn btn-main px-5 py-3 text-[14px] justify-center"></button>
+            <button type="button" id="sd-close" class="btn btn-soft px-5 py-3 text-[14px] justify-center">إغلاق</button>
+          </div>
+        </div>
+      </dialog>
     </div>
 
     <!-- بطاقة تجربة تفاعلية -->
@@ -941,6 +961,29 @@
   }
   finishGoogleSignup();
 
+  // ─── نافذة تعريف المنشأة: خدماتها، وزر يجرّب الخدمة في بطاقة التجربة ───
+  const SERVICE_INFO = { pager: ['ph-bell', 'البيجر', 'جرّب البيجر بنفسك'], loyalty: ['ph-seal-check', 'بطاقة الولاء', 'شاهد بطاقة الولاء'], waitlist: ['ph-users-three', 'قائمة الانتظار', ''], menu: ['ph-fork-knife', 'المنيو الرقمي', 'شاهد المنيو'] };
+  const dlg = $('store-dlg');
+  function openStore(c) {
+    if (!c || !dlg) return;
+    const sv = (c.services || []).filter(k => SERVICE_INFO[k]);
+    $('sd-logo').src = safeUrl(c.logo_url); $('sd-logo').alt = c.name;
+    $('sd-name').textContent = c.name;
+    $('sd-services').innerHTML = sv.map(k => `<span class="sd-chip"><i class="ph-bold ${SERVICE_INFO[k][0]}"></i> ${SERVICE_INFO[k][1]}</span>`).join('');
+    const tab = sv.find(k => k === 'pager') || sv.find(k => k === 'loyalty') || 'pager';
+    $('sd-try').innerHTML = `<i class="ph-bold ph-bell-ringing"></i> ${SERVICE_INFO[tab][2]}`;
+    $('sd-try').onclick = () => {
+      dlg.close();
+      const t = document.querySelector(`.tabs [data-tab="${tab}"]`); if (t) t.click();
+      $('try').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    };
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+  }
+  if (dlg) {
+    $('sd-close').onclick = () => dlg.close();
+    dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+  }
+
   // ─── شعارات المحلات (يختارها المدير العام) ───
   const safeUrl = (u) => { try { const x = new URL(u); return /^https?:$/.test(x.protocol) ? x.href : ''; } catch { return ''; } };
   (async () => {
@@ -948,7 +991,15 @@
       const { stores } = await DM.get('/api/public?action=featured');
       const list = (stores || []).filter(s => safeUrl(s.logo_url));
       if (!list.length) return;
-      $('trust-logos').innerHTML = list.slice(0, 8).map(c => `<a href="${c.page === 'links' ? 'links' : 'menu'}.html?client=${encodeURIComponent(c.client_slug)}" target="_blank" rel="noopener" title="${esc(c.name)}" aria-label="${c.page === 'links' ? '' : 'منيو '}${esc(c.name)}"><img src="${esc(safeUrl(c.logo_url))}" alt="${esc(c.name)}" loading="lazy"></a>`).join('');
+      const shown = list.slice(0, 8);
+      // عنده منيو: الشعار يفتح المنيو. ما عنده منيو: نافذة تعريف بالمنشأة وخدماتها (ما نفتح صفحة البيجر حقتها)
+      $('trust-logos').innerHTML = shown.map((c, i) => {
+        const img = `<img src="${esc(safeUrl(c.logo_url))}" alt="${esc(c.name)}" loading="lazy">`;
+        return (c.services || []).includes('menu')
+          ? `<a href="menu.html?client=${encodeURIComponent(c.client_slug)}" target="_blank" rel="noopener" title="${esc(c.name)}" aria-label="منيو ${esc(c.name)}">${img}</a>`
+          : `<button type="button" data-store="${i}" title="${esc(c.name)}" aria-label="${esc(c.name)}" aria-haspopup="dialog">${img}</button>`;
+      }).join('');
+      $('trust-logos').addEventListener('click', (e) => { const b = e.target.closest('[data-store]'); if (b) openStore(shown[+b.dataset.store]); });
       $('trust').classList.remove('hidden');
     } catch {}
   })();
