@@ -224,6 +224,17 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     }
   }
 
+  // ─── معاينة لوحة التحكم: صفحة الانتظار برقم تجريبي (ما ينحفظ شي) بإعدادات المحل الحالية ───
+  if (action === 'preview' && req.method === 'GET') {
+    const store = await loadStore(req.query.slug);
+    res.setHeader('Cache-Control', 'no-store');
+    const fake = { status: 'waiting', game_won: false, created_at: new Date().toISOString() };
+    const [extras, typical] = await Promise.all([waitExtras(store.id, fake), require('./_lib/pager-wait').typicalWait(store.id)]);
+    return { ...extras, queue: { ahead: 2, eta: typical || 6 }, staff_eta: null, addons: [], game_won: false, demo: false, wallet: false, in_wallet: true, card_gone: false, car_ask: false, car: null, review_url: null, social: {},
+      store: { name: store.display_name || store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null },
+      ticket: { number: 23, status: 'waiting', ready_at: null, invoice_no: null }, live: '', loyalty: { enabled: false } };
+  }
+
   if (action === 'status' && req.method === 'GET') {
     const store = await loadStore(req.query.slug);
     const token = String(req.query.t || '');

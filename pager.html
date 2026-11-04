@@ -170,6 +170,7 @@
   .ask-form button { width: 42px; height: 42px; border-radius: 50%; background: var(--brand); color: #fff; display: grid; place-items: center; flex-shrink: 0; }
   .ask-form button:disabled { opacity: .45; }
   html.ask-lock, html.ask-lock body { overflow: hidden; }
+  html.is-preview #lang-btn, html.is-preview .lang-switch { display: none !important; }
   .ticket.ready::before, .ticket.ready::after, .ticket.plain::before, .ticket.plain::after { display: none; }
   .ticket::before, .ticket::after { top: auto; bottom: 52px; }
   .ring-ic { width: 64px; height: 64px; border-radius: 22px; background: rgba(255,255,255,.12); color: #e9c95a; display: grid; place-items: center; font-size: 30px; }
@@ -651,6 +652,8 @@
   const params = new URLSearchParams(location.search);
   const slug = (params.get('client') || DM.hostSlug()).trim().toLowerCase();
   const KEY = `dm_pager_${slug}`;
+  // معاينة لوحة التحكم: رقم تجريبي بدون ما ناخذ رقم حقيقي، والأزرار ما ترسل شي
+  const PREVIEW = params.get('preview') === '1';
   const VIEWS = ['loading', 'unavailable', 'start', 'waiting', 'ready', 'done'];
   const $ = (id) => document.getElementById(id);
   const show = (v) => { VIEWS.forEach(x => $(`v-${x}`).classList.toggle('hidden', x !== v)); $('v-game').classList.toggle('hidden', v !== 'waiting' || !gameOn); if (v === 'start') renderSteps(); };
@@ -1056,6 +1059,7 @@
   $('it-sheet').addEventListener('click', (e) => { if (e.target.closest('[data-it-close]')) sheetClose('it-sheet'); });
   $('it-form').onsubmit = async (e) => {
     e.preventDefault(); if (upsBusy || !it) return;
+    if (PREVIEW) { addedNow = [...addedNow, { id: it.id, name: it.name, qty: itQty, size: itSize || null, note: $('it-note').value.trim() || null }]; sheetClose('it-sheet'); sheetClose('mn-sheet'); return renderUpsell(true); }
     upsBusy = true; $('it-add').disabled = true;
     try {
       const r = await DM.post('/api/pager?action=addon', { slug, t: loadToken(), id: it.id, qty: itQty, size: itSize || undefined, note: $('it-note').value.trim() });
@@ -1067,6 +1071,7 @@
   $('ups-list').addEventListener('click', (e) => { const b = e.target.closest('[data-add]'); if (b) { const p = upsell.find(x => x.id === Number(b.dataset.add)); if (p) openItem(p); } });
   $('ups-added').addEventListener('click', async (e) => {
     const b = e.target.closest('[data-rm]'); if (!b || upsBusy) return;
+    if (PREVIEW) { addedNow = addedNow.filter((_, k) => k !== Number(b.dataset.rm)); return renderUpsell(true); }
     upsBusy = true; b.disabled = true;
     try { const r = await DM.post('/api/pager?action=addon', { slug, t: loadToken(), remove: Number(b.dataset.rm) }); addedNow = r.addons || []; }
     catch (err) { alert(err.message || 'ما قدرنا نشيلها، كلم الكاشير'); }
@@ -1112,6 +1117,7 @@
   }
   async function claimGame(moves) {
     if (!game || gameWon) return;
+    if (PREVIEW && moves <= game.moves) { gameWon = true; $('mm-win').classList.add('hidden'); return renderGame(); }
     if (moves > game.moves) { $('mm-win').textContent += ` (الجايزة تحتاج ${game.moves} حركة أو أقل، جرّب مرة ثانية)`; return; }
     try {
       const r = await DM.post('/api/pager?action=game', { slug, t: loadToken(), moves });
@@ -1149,6 +1155,7 @@
     if (!text || askBusy) return;
     $('ask-in').value = ''; askBusy = true; $('ask-send').disabled = true; $('ask-chips').innerHTML = '';
     askBubble('me', text); askMsgs.push({ role: 'user', content: text });
+    if (PREVIEW) { askBubble('bot', 'هذي معاينة: هنا يرد المساعد على زبونك عن وقت طلبه وعن المنيو.'); askMsgs.pop(); askBusy = false; $('ask-send').disabled = false; return askChips(); }
     const wait = askBubble('bot wait', ''); wait.innerHTML = '<i></i><i></i><i></i>'; wait.setAttribute('aria-label', 'يكتب…');
     try {
       const r = await DM.post('/api/public?action=menu-chat', { slug, t: loadToken(), messages: askMsgs.slice(-6) });
@@ -1165,18 +1172,22 @@
   let lastPoll = 0;
   async function poll() {
     clearTimeout(pollTimer); lastPoll = Date.now();
-    const token = loadToken();
+    const token = PREVIEW ? 'preview' : loadToken();
     if (!token) return $('v-done').classList.contains('hidden') ? show('start') : undefined;   // شاشة "بالعافية" والتقييم تبقى
     let r;
     const askChat = chatFor !== token;   // إضافات الصفحة (المساعد، أضف لطلبك، جايزة اللعبة): نسأل مرة وحدة لكل رقم
     const askQ = askChat || Date.now() - lastQ > 15000;   // الطابور: كل 15 ثانية تقريباً
-    try { r = await DM.get(`/api/pager?action=status&slug=${encodeURIComponent(slug)}&t=${encodeURIComponent(token)}${askChat ? '&c=1' : ''}${askQ ? '&q=1' : ''}`); }
+    if (PREVIEW) {
+      try { r = await DM.get(`/api/pager?action=preview&slug=${encodeURIComponent(slug)}`); }
+      catch (e) { return unavailable('المعاينة غير متاحة', e.message || ''); }
+    }
+    else try { r = await DM.get(`/api/pager?action=status&slug=${encodeURIComponent(slug)}&t=${encodeURIComponent(token)}${askChat ? '&c=1' : ''}${askQ ? '&q=1' : ''}`); }
     catch (e) {
       if (e.status === 404 && e.code === 'NOT_FOUND') { saveToken(''); return show('start'); }
       if (e.status === 404 || e.status === 400) return unavailable('البيجر غير متاح حالياً', 'اسأل الموظف.');
       pollTimer = setTimeout(poll, 5000); return;   // انقطاع مؤقت: نعيد المحاولة
     }
-    if (loadToken() !== token) return;   // تغيّر الرقم وهو ينتظر الرد (ضغط "استلمت" أو أخذ رقم جديد): الرد قديم
+    if (!PREVIEW && loadToken() !== token) return;   // تغيّر الرقم وهو ينتظر الرد (ضغط "استلمت" أو أخذ رقم جديد): الرد قديم
     if (askChat && typeof r.chat === 'boolean') { chatFor = token; chatOn = r.chat; upsell = r.upsell || []; curLabel = r.currency || 'ر.س'; game = r.game || null; gameOn = r.game_on !== false; }
     if (askQ) lastQ = Date.now();
     staffEta = r.staff_eta == null ? null : Number(r.staff_eta);
@@ -1226,6 +1237,7 @@
       watchTicket(''); show('done'); lastStatus = st; return;
     }
     lastStatus = st;
+    if (PREVIEW) return;
     pollTimer = setTimeout(poll, document.hidden ? 5000 : 3000);
   }
 
@@ -1553,6 +1565,7 @@
 
   (async function init() {
     if (!slug) return unavailable('الرابط غير صحيح', 'امسح رمز QR من عند الموظف.');
+    if (PREVIEW) { document.documentElement.classList.add('is-preview'); return poll(); }
     // نتأكد إن المتجر موجود، ونجيب مفتاح الإشعارات
     let fullNow = false;
     try { const info = await DM.get(`/api/pager?action=info&slug=${encodeURIComponent(slug)}`); setStore(info.store); pushKey = info.push_key || ''; brand = Number(info.brand) || 0; fullNow = info.full === true; cardOffer = info.card === true; carOffer = info.car === true; }

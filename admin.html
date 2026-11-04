@@ -142,6 +142,9 @@
   .pv-n-icon { display: grid; place-items: center; background: #000; color: #fff; font-size: 15px; }
   .ly-chip { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: rgba(201,162,39,.16); color: #6b520a; }
   @media (min-width: 1024px) { .ly-phone-screen { height: 600px; } }
+  .pg-phone { max-width: 330px; }
+  .pg-phone-screen { height: 640px !important; overflow: hidden; background: #1b2a20; }
+  .pg-phone-screen iframe { position: absolute; top: 0; right: 0; width: 390px; height: 822px; border: 0; transform: scale(.7795); transform-origin: top right; }
   @media (max-width: 1023px) { .ly-phone { max-width: 290px; } }
   @media (prefers-reduced-motion: reduce) { .ly-phone { transition: none; } }
   .ly-kpi { background: #fff; border: 1px solid rgba(56,79,61,.12); border-radius: 18px; padding: 16px; }
@@ -2050,6 +2053,7 @@
       </section>
     </div>
     <!-- العروض والرسائل الترويجية -->
+  <div class="space-y-6 self-stretch">
     <div data-needs="menu" class="pro-card p-5 space-y-3">
       <h4 class="text-xs font-bold text-ink flex items-center gap-1.5">
         <i class="ph-bold ph-megaphone text-amber-700"></i> الرسائل الترويجية والعروض (تظهر أعلى المنيو للعملاء)
@@ -2070,6 +2074,16 @@
         </div>
       </div>
     </div>
+    <!-- معاينة صفحة الانتظار: جوال ثابت يشوف فيه صاحب المحل اللي يطلع للزبون، ويتحدث مع كل إعداد -->
+    <div id="pg-phone-wrap" data-needs="pager" data-free-hide class="hidden xl:block xl:sticky xl:top-24 space-y-2">
+      <div class="flex items-center justify-between gap-2 px-1">
+        <p class="text-xs font-bold text-ink"><i class="ph-bold ph-device-mobile"></i> كما يراها الزبون وهو ينتظر</p>
+        <button type="button" onclick="reloadPagerPhone()" class="text-[11px] font-bold text-ink underline"><i class="ph-bold ph-arrow-clockwise"></i> تحديث</button>
+      </div>
+      <div class="ly-phone pg-phone"><div class="ly-phone-screen pg-phone-screen"><span class="ly-island"></span><iframe id="pg-phone" title="معاينة صفحة الانتظار" loading="lazy"></iframe></div></div>
+      <p class="text-[11px] text-ink text-center leading-relaxed">رقم تجريبي للمعاينة فقط، ولا يُسجَّل عندك.</p>
+    </div>
+  </div>
         </div>
     <!-- روابط التواصل الاجتماعي (مو في البيجر المجاني) -->
     <div id="social-card" data-free-hide class="pro-card p-5 space-y-3">
@@ -2487,6 +2501,7 @@
     if (page === 'pager' && !locked) page = 'dashboard';
     if (locked) showLocked(key);
     document.querySelectorAll('[data-page]').forEach(sec => sec.classList.toggle('hidden', locked ? sec.dataset.page !== 'locked' : sec.dataset.page !== page));
+    if (page === 'settings' && !locked) { const f = document.getElementById('pg-phone'); if (f && !f.getAttribute('src')) setTimeout(reloadPagerPhone, 200); }
     if (locked) {
       document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('nav-active', b.dataset.nav === page));
       document.getElementById('page-title').textContent = DMPlans.FEATURES[key].name;
@@ -3069,6 +3084,7 @@
     try {
       const res = await api('update-store', payload);
       Object.assign(client, res.store || payload);
+      if (Object.keys(payload).some(k => /^(pager_|kiosk_call|name|logo_url|accent_color|theme|google_review_url|instagram_url|tiktok_url|snapchat_url|website_url)/.test(k))) setTimeout(reloadPagerPhone, 300);
       renderDashboardSummary();
       renderPagerStatus();
       if (linksOrder.length) renderLinksOrder(false);
@@ -5476,6 +5492,11 @@
   async function togglePagerCar(on) {
     if (await updateClient({ pager_car: on })) showToast(on ? 'الزبون يقدر يحدد سيارته بعد ما ياخذ رقم' : 'تم إيقاف تسليم الطلب للسيارة');
     else { document.getElementById('info-pager-car').checked = !on; showToast('تعذر حفظ الإعداد', true); }
+  }
+  // معاينة صفحة الانتظار في الجوال (شاشة كبيرة بس)
+  function reloadPagerPhone() {
+    const f = document.getElementById('pg-phone'); if (!f || !client || !window.matchMedia('(min-width: 1280px)').matches) return;
+    f.src = `pager.html?client=${encodeURIComponent(client.client_slug)}&preview=1&v=${Date.now()}`;
   }
   async function togglePagerUpsell(on) {
     if (await updateClient({ pager_upsell: on })) { renderPagerStatus(); showToast(on ? 'الزبون يقدر يضيف لطلبه وهو ينتظر' : 'تم إيقاف «أضف لطلبك»'); }
