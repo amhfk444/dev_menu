@@ -976,6 +976,7 @@
     $('sd-try').onclick = () => {
       dlg.close();
       const t = document.querySelector(`.tabs [data-tab="${tab}"]`); if (t) t.click();
+      $('try').classList.add('in');   // نلغي حركة الظهور قبل النزول، عشان ما يتغطى أعلى البطاقة
       $('try').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
     };
     if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
