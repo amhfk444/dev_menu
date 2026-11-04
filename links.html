@@ -60,6 +60,11 @@
   .branch-btns { display: flex; flex: 1 1 100%; gap: 6px; }
   .br-btn { flex: 1; justify-content: center; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; padding: 8px 12px; border-radius: 12px; background: var(--chip); color: var(--fg); font-size: 12.5px; font-weight: 800; touch-action: manipulation; }
   .br-btn:active { transform: scale(.97); }
+  .dgroup summary { list-style: none; cursor: pointer; }
+  .dgroup summary::-webkit-details-marker { display: none; }
+  .dgroup[open] summary .arrow { transform: rotate(180deg); }
+  .dlist { display: grid; gap: 6px; padding: 8px 4px 2px; }
+  .dlist .br-btn { justify-content: flex-start; padding: 12px 14px; }
 </style>
 <link rel="stylesheet" href="/css/tw/links.css">
 </head>
@@ -183,16 +188,25 @@
     sec.contact = multi ? '' : group('الطلبات والتواصل', contact);
 
     // 5) تطبيقات التوصيل بشعاراتها
-    const delivery = (Array.isArray(p.delivery_apps) ? p.delivery_apps : []).map(d => {
+    // المحل اللي عنده فروع: روابط كل الفروع، والتطبيق اللي له أكثر من رابط يفتح قائمة الفروع
+    const appInfo = (d) => {
       const url = safeUrl(d && d.url);
-      if (!url) return '';
+      if (!url) return null;
       const meta = DELIVERY_APPS[d.app];
       const name = meta ? meta[0] : String(d.name || '').trim();
-      if (!name) return '';
+      if (!name) return null;
       let domain = meta ? meta[1] : '';
       if (!domain) { try { domain = new URL(url).hostname; } catch {} }
-      return linkBtn({ href: url, label: `اطلب عبر ${name}`, sub: 'يصلك طلبك إلى باب منزلك', img: appLogo(domain) });
-    }).filter(Boolean);
+      return { key: d.app && meta ? d.app : name, name, url, domain };
+    };
+    const groups = new Map();
+    const add = (d, branch) => { const a = appInfo(d); if (!a) return; if (!groups.has(a.key)) groups.set(a.key, { ...a, links: [] }); const g = groups.get(a.key); if (!g.links.some(l => l.url === a.url)) g.links.push({ url: a.url, branch }); };
+    if (multi) p.branches.forEach(br => (br.delivery || []).forEach(d => add(d, br.name)));
+    else (Array.isArray(p.delivery_apps) ? p.delivery_apps : []).forEach(d => add(d, ''));
+    const delivery = [...groups.values()].map(g => g.links.length === 1
+      ? linkBtn({ href: g.links[0].url, label: `اطلب عبر ${g.name}`, sub: g.links[0].branch ? `فرع ${g.links[0].branch}` : 'يصلك طلبك إلى باب منزلك', img: appLogo(g.domain) })
+      : `<details class="dgroup"><summary class="lnk"><span class="ico" style="background:#fff"><img src="${esc(appLogo(g.domain))}" alt="" class="w-6 h-6 object-contain"></span><span class="txt"><span class="block truncate">اطلب عبر ${esc(g.name)}</span><span class="sub truncate">اختر الفرع</span></span><i class="ph-bold ph-caret-down arrow"></i></summary>
+          <div class="dlist">${g.links.map(l => `<a href="${esc(l.url)}" target="_blank" rel="noopener" class="br-btn"><i class="ph-bold ph-storefront"></i> ${esc(l.branch)}</a>`).join('')}</div></details>`);
     sec.delivery = group('تطبيقات التوصيل', delivery);
 
     // 6) روابط التواصل

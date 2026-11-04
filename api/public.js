@@ -367,12 +367,13 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (kids.length) {
       // الفروع السارية بس (public_clients)، الرئيسي أول
       const ids = [rootId, ...kids.map(k => k.id)];
-      const live = await rest(`public_clients?id=in.(${ids.join(',')})&select=id,name,client_slug,location_url,order_numbers,whatsapp_number`).catch(() => []);
+      const live = await rest(`public_clients?id=in.(${ids.join(',')})&select=id,name,client_slug,location_url,order_numbers,whatsapp_number,delivery_apps`).catch(() => []);
       branches = await Promise.all(live.sort((x, y) => ids.indexOf(x.id) - ids.indexOf(y.id)).map(async (x) => ({
         name: x.name, slug: x.client_slug, location_url: x.location_url || null, menu: !!(await storeFeatures(x.id).catch(() => ({}))).menu,
         // رقم الطلب للفرع: أول رقم طلبات صحيح، وإلا واتساب الفرع
         phone: ((Array.isArray(x.order_numbers) ? x.order_numbers : []).map(n => String((n && n.phone) || '').replace(/[^\d+]/g, '')).find(n => /^\+?\d{9,15}$/.test(n))) || null,
-        whatsapp: String(x.whatsapp_number || '').replace(/\D/g, '') || null
+        whatsapp: String(x.whatsapp_number || '').replace(/\D/g, '') || null,
+        delivery: (Array.isArray(x.delivery_apps) ? x.delivery_apps : []).filter(d => d && d.url).map(d => ({ app: d.app || null, name: d.name || null, url: d.url }))
       })));
       if (branches.length < 2) branches = [];
     }
