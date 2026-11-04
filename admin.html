@@ -349,7 +349,7 @@
       <button data-nav="waitlist" class="nav-item"><i class="ph-bold ph-hourglass-medium"></i> قائمة الانتظار <span id="nav-waitlist" class="mr-auto hidden text-[11px] bg-amber-400 text-black px-2 py-0.5 rounded-full font-black">0</span></button>
       <button data-nav="loyalty" class="nav-item"><i class="ph-bold ph-seal-check"></i> بطاقة الولاء</button>
       <p class="px-3 pt-4 pb-1 text-[11px] text-ink font-semibold">منشأتك</p>
-      <button data-nav="branches" data-free-hide class="nav-item"><i class="ph-bold ph-git-branch"></i> الفروع</button>
+      <button data-nav="branches" class="nav-item"><i class="ph-bold ph-git-branch"></i> الفروع</button>
       <button data-nav="settings" class="nav-item"><i class="ph-bold ph-palette"></i> هوية المنشأة</button>
       <button data-nav="account" class="nav-item"><i class="ph-bold ph-identification-card"></i> الاشتراك</button>
       <p class="px-3 pt-5 pb-1 text-[11px] text-ink font-semibold">اختصارات</p>
@@ -1527,7 +1527,7 @@
               </div>
             </div>
     <!-- رابط الكاشير: يفتح شاشة البيجر وشاشة الختم لهالفرع بدون حساب المالك -->
-            <div id="desk-card" class="hidden pro-card p-5 space-y-3">
+            <div data-free-hide id="desk-card" class="hidden pro-card p-5 space-y-3">
               <div class="space-y-1">
                 <h3 class="text-xs font-bold text-ink"><i class="ph-bold ph-cash-register text-emerald-600"></i> رابط الكاشير<span id="desk-branch" class="text-ink"></span></h3>
                 <p class="text-[11px] text-ink leading-relaxed">افتحه على جهاز الكاشير مرة وحدة. يفتح شاشة البيجر وشاشة الختم بس، بدون إيميلك وكلمة المرور، وما يقدر الموظف يدخل لوحة التحكم ولا يشوف الأسعار وجوالات الزبائن.</p>
@@ -1543,7 +1543,7 @@
               <button id="desk-show" type="button" onclick="showDeskLink()" class="text-[11px] font-bold px-3 py-2 rounded-lg bg-brand/10 border border-brand/45 text-ink"><i class="ph-bold ph-link-simple"></i> اطلع رابط الكاشير</button>
             </div>
     <!-- رابط شاشة الزبون: يفتحها على شاشة خارجية أو تابلت قدّام العميل بدون حساب المالك -->
-            <div id="kiosk-card" class="hidden pro-card p-5 space-y-3">
+            <div data-free-hide id="kiosk-card" class="hidden pro-card p-5 space-y-3">
               <div class="space-y-1">
                 <h3 class="text-xs font-bold text-ink"><i class="ph-bold ph-device-tablet text-emerald-600"></i> رابط شاشة الزبون<span id="kiosk-branch" class="text-ink"></span></h3>
                 <p class="text-[11px] text-ink leading-relaxed">انسخ الرابط وافتحه على شاشة أو جهاز لوحي قدّام العميل، فتعرض رموز QR لخدماتك وكود الختم. يعمل دون الحاجة إلى إيميلك وكلمة المرور.</p>
@@ -2074,7 +2074,7 @@
     <div class="w-full bg-cream rounded-t-3xl p-4 pb-8 grid grid-cols-3 gap-2" style="padding-bottom: calc(2rem + env(safe-area-inset-bottom))" onclick="if (event.target.closest('[data-nav]')) toggleMore(false)">
       <button data-nav="customers" data-needs="loyalty" class="more-item"><i class="ph-bold ph-users-three"></i><span>العملاء</span></button>
       <button data-nav="waitlist" class="more-item"><i class="ph-bold ph-hourglass-medium"></i><span>قائمة الانتظار</span></button>
-      <button data-nav="branches" data-free-hide class="more-item"><i class="ph-bold ph-git-branch"></i><span>الفروع</span></button>
+      <button data-nav="branches" class="more-item"><i class="ph-bold ph-git-branch"></i><span>الفروع</span></button>
       <button data-nav="settings" class="more-item"><i class="ph-bold ph-palette"></i><span>هوية المنشأة</span></button>
       <button data-nav="account" class="more-item"><i class="ph-bold ph-identification-card"></i><span>الاشتراك</span></button>
     </div>
@@ -4661,7 +4661,12 @@
   }
   const pendingBranch = () => supportRows.find(x => x.kind === 'branch' && x.status === 'open');
   async function requestBranch() {
-    if (DMPlans.isFree(client)) return showToast('البيجر المجاني لفرع واحد. عشان تضيف فرع، اشترك في ميزة وحدة على الأقل من "اشتراكك"', true);
+    if (DMPlans.isFree(client)) {
+      const ok = await DMDialog.confirm({ title: 'إضافة فرع', icon: 'ph-git-branch', tone: 'success', confirmText: 'اشترك الحين', cancelText: 'لاحقاً',
+        message: `البيجر المجاني لفرع واحد. لإضافة فرع اشترك في البيجر، يبدأ من ${DMPlans.FEATURES.pager.month} ر.س بالشهر، وبعدها تضيف فروعك من هنا.` });
+      if (ok) { location.hash = 'account'; setTimeout(openPlan, 150); }
+      return;
+    }
     if (pendingBranch()) return showToast('عندك طلب فرع قيد الإضافة، بنضيفه لك قريب', true);
     const p = accountPeriod(), fee = DMPlans.BRANCH[p];
     const wide = accountFeatures().filter(k => DMPlans.ACCOUNT_WIDE.includes(k)), wideNames = wide.map(k => DMPlans.FEATURES[k].name).join(' و');
@@ -4734,7 +4739,10 @@
     const main = !client.parent_id;
     document.getElementById('branches-card').classList.toggle('hidden', !main && branches.length < 2);
     document.getElementById('branch-ask').classList.toggle('hidden', !main);
-    if (main) { const q = branchQuote(); document.getElementById('branch-ask-price').textContent = `كل فرع: ربط ${q.fee} ر.س ${q.per} + سعر مميزاته`; }
+    // البيجر المجاني لفرع واحد: نوضح له السعر، والزر يوديه للاشتراك
+    const free = DMPlans.isFree(client);
+    if (main) { const q = branchQuote(); document.getElementById('branch-ask-price').textContent = free ? `البيجر المجاني لفرع واحد. لإضافة فرع اشترك في البيجر (يبدأ من ${DMPlans.FEATURES.pager.month} ر.س بالشهر)` : `كل فرع: ربط ${q.fee} ر.س ${q.per} + سعر مميزاته`; }
+    document.getElementById('branch-ask-btn').innerHTML = free ? '<i class="ph-bold ph-crown"></i> اشترك وأضف فرع' : '<i class="ph-bold ph-plus"></i> اطلب فرع جديد';
     // الطلب المفتوح يطلع كسطر في القائمة لين ينضاف الفرع
     const wait = main && pendingBranch();
     document.getElementById('branch-ask-btn').classList.toggle('hidden', !!wait);
