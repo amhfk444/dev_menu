@@ -153,7 +153,8 @@
       v.play().catch(() => {});
       document.getElementById('bg').classList.remove('hidden');
     } else if (bg) { document.getElementById('bg-img').src = bg; document.getElementById('bg').classList.remove('hidden'); }
-    if (p.opening_hours) {
+    const multi = Array.isArray(p.branches) && p.branches.length > 1;
+    if (p.opening_hours && !multi) {
       const h = document.getElementById('hours');
       h.querySelector('span').textContent = p.opening_hours;
       h.classList.remove('hidden');
@@ -163,12 +164,14 @@
     const sec = {};
     const out = [];
 
+    // المحل اللي عنده فروع: الصفحة للمحل كله، فاللي يخص فرع واحد (المنيو، البيجر، الانتظار، الأرقام، الموقع)
+    // ينعرض لكل فرع في "فروعنا"، ويبقى هنا اللي يشمل الكل (بطاقة الولاء، الحسابات، التوصيل، الروابط)
     // 1) المنيو و 2) قائمة الانتظار
-    const sv = p.services || { menu: true };
+    const sv = multi ? { loyalty: (p.services || {}).loyalty } : (p.services || { menu: true });
     if (sv.menu) out.push(linkBtn({ href: DM.storePage('menu', p.client_slug), label: 'عرض المنيو', sub: 'تصفّح الأصناف والأسعار', icon: 'ph-bold ph-fork-knife', primary: true, external: false }));
     if (sv.pager) out.push(linkBtn({ href: DM.storePage('pager', p.client_slug), label: 'البيجر', sub: 'احصل على رقم انتظار وننبهك عند جاهزية طلبك', icon: 'ph-bold ph-bell', primary: true, external: false }));
     if (sv.loyalty) out.push(linkBtn({ href: DM.storePage('loyalty', p.client_slug), label: 'بطاقة الولاء', sub: 'اجمع الأختام واحصل على مكافأتك', icon: 'ph-bold ph-seal-check', external: false }));
-    if (p.waitlist_open === true) out.push(linkBtn({ href: DM.storePage('waitlist', p.client_slug), label: 'انضم لقائمة الانتظار', sub: 'سجّل اسمك وننبهك عند حلول دورك', icon: 'ph-bold ph-hourglass-medium', external: false }));
+    if (!multi && p.waitlist_open === true) out.push(linkBtn({ href: DM.storePage('waitlist', p.client_slug), label: 'انضم لقائمة الانتظار', sub: 'سجّل اسمك وننبهك عند حلول دورك', icon: 'ph-bold ph-hourglass-medium', external: false }));
 
     // 3) أرقام الطلبات و 4) واتساب
     const contact = (Array.isArray(p.order_numbers) ? p.order_numbers : [])
@@ -177,7 +180,7 @@
       .map(n => linkBtn({ href: `tel:${n.phone}`, label: n.label || `اتصل بنا ${n.phone}`, sub: 'اتصل واطلب مباشرة', icon: 'ph-bold ph-phone', tile: '#34c759', external: false }));
     const wa = String(p.whatsapp_number || '').replace(/\D/g, '');
     if (wa) contact.push(linkBtn({ href: `https://wa.me/${wa}`, label: 'تواصل عبر واتساب', sub: 'راسلنا للطلب أو الاستفسار', img: appLogo('whatsapp.com') }));
-    sec.contact = group('الطلبات والتواصل', contact);
+    sec.contact = multi ? '' : group('الطلبات والتواصل', contact);
 
     // 5) تطبيقات التوصيل بشعاراتها
     const delivery = (Array.isArray(p.delivery_apps) ? p.delivery_apps : []).map(d => {
@@ -225,7 +228,7 @@
 
     // 8) الموقع على الخريطة
     const loc = safeUrl(p.location_url);
-    if (loc) sec.location = group('زورونا', [linkBtn({ href: loc, label: 'موقعنا على الخريطة', sub: 'الاتجاهات إلى المحل', ...(/google\.|goo\.gl/i.test(loc) ? { img: appLogo('maps.google.com') } : /apple\.com/i.test(loc) ? { img: appLogo('maps.apple.com') } : { icon: 'ph-bold ph-map-pin' }) })]);
+    if (loc && !multi) sec.location = group('زورونا', [linkBtn({ href: loc, label: 'موقعنا على الخريطة', sub: 'الاتجاهات إلى المحل', ...(/google\.|goo\.gl/i.test(loc) ? { img: appLogo('maps.google.com') } : /apple\.com/i.test(loc) ? { img: appLogo('maps.apple.com') } : { icon: 'ph-bold ph-map-pin' }) })]);
 
     sec.services = out.join('');
     const order = [...(Array.isArray(p.links_order) ? p.links_order : []), ...LINKS_ORDER];
