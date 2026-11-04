@@ -167,6 +167,25 @@ async function brandName(storeId, name) {
   return (root && root.name) || name;
 }
 
+// طلب الزبون من البيجر (للمساعد): رقمه، حالته، كم طلب قبله، ومتوسط الانتظار في المحل آخر 7 أيام
+async function pagerOrder(storeId, token) {
+  const t = (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${storeId}&select=number,status,created_at,ready_at`).catch(() => []))[0];
+  if (!t) return null;
+  const now = Date.now(), mins = (ms) => Math.max(0, Math.round(ms / 60000));
+  const week = new Date(now - 7 * 864e5).toISOString();
+  const [ahead, past] = await Promise.all([
+    t.status === 'waiting' ? rest(`pager_tickets?client_id=eq.${storeId}&status=eq.waiting&created_at=lt.${q(t.created_at)}&created_at=gte.${q(new Date(Date.parse(t.created_at) - 18 * 3600e3).toISOString())}&select=id&limit=50`).catch(() => []) : [],
+    rest(`pager_tickets?client_id=eq.${storeId}&ready_at=not.is.null&created_at=gte.${q(week)}&select=created_at,ready_at&order=created_at.desc&limit=60`).catch(() => [])
+  ]);
+  // نشيل الأرقام الشاذة (نسوا يضغطون جاهز) عشان المتوسط ما يكبر بالغلط
+  const waits = past.map(r => mins(Date.parse(r.ready_at) - Date.parse(r.created_at))).filter(m => m > 0 && m <= 60).sort((a, b) => a - b);
+  const typical = waits.length >= 5 ? waits[Math.floor(waits.length / 2)] : null;
+  const STATUS = { waiting: 'being prepared (waiting)', ready: 'READY now, guest should pick it up from the counter', done: 'already picked up', cancelled: 'cancelled by the store' };
+  return [`pager number: ${t.number}`, `status: ${STATUS[t.status] || t.status}`, `waiting since: ${mins(now - Date.parse(t.created_at))} minutes`,
+    t.status === 'waiting' ? `orders ahead still being prepared: ${ahead.length}` : '',
+    typical ? `typical wait at this place (median, last 7 days): ${typical} minutes` : 'typical wait: not enough data'].filter(Boolean).join('\n');
+}
+
 async function menuPayload(slug) {
   const store = await findStore(slug);
   // المنيو ضمن باقة المحل؟ (اللي مشترك في الولاء بس، ما يطلع له منيو)
@@ -289,11 +308,13 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       .filter(m => m.content);
     if (!list.length || list[list.length - 1].role !== 'user') throw new ApiError(400, 'اكتب سؤالك');
     while (list.length && list[0].role !== 'user') list.shift();
+    // من صفحة انتظار البيجر: المساعد يعرف رقم الزبون وحالته وكم طلب قدامه
+    const order = /^[A-Za-z0-9_-]{10,64}$/.test(String(b.t || '')) ? await pagerOrder(store.id, b.t) : null;
     // الأسئلة البسيطة (سلام، شكر، الأوقات، الموقع) نرد عليها من بيانات المحل بدون ذكاء اصطناعي: ببلاش وفوري
     const quick = quickChat(list[list.length - 1].content, store, list.length === 1);
     if (quick) return { reply: quick };
     // السؤال الأول في المحادثة (ما يعتمد على كلام قبله): لو انسأل قبل وجوابه محفوظ والمنيو ما تغيّر، يرجع ببلاش
-    const faqQ = list.length === 1 ? list[0].content : null, qkey = faqQ ? faqKey(faqQ) : null;
+    const faqQ = list.length === 1 && !order ? list[0].content : null, qkey = faqQ ? faqKey(faqQ) : null;
     const ver = menuFingerprint(data);
     if (qkey) {
       try {
@@ -325,7 +346,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const info = [`name: ${store.name}`, store.opening_hours ? `hours: ${store.opening_hours}` : 'hours: not given', store.location_url ? `location: ${store.location_url}` : '',
       `currency: ${cur}`, `today (Riyadh): ${new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 16).replace('T', ' ')}`].filter(Boolean).join('\n');
     const { menuChat } = require('./_lib/ai');
-    const reply = await menuChat({ storeName: store.name, storeInfo: info, menu, messages: list });
+    const reply = await menuChat({ storeName: store.name, storeInfo: info, menu, messages: list, order });
     // نحفظ الجواب للمرة الجاية. الأسئلة البرّانية أو الطويلة ما تطلع كأزرار للزبائن
     if (qkey) {
       const ok = faqQ.length <= 80 && !/المساعد الذكي ل|only the smart assistant|smart assistant for/i.test(reply);

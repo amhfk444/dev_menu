@@ -115,6 +115,13 @@ function cleanCar(b) {
   return color || model ? { color, model, plate } : null;
 }
 
+async function pagerChat(storeId) {
+  const row = (await rest(`clients?id=eq.${storeId}&select=menu_chat`).catch(() => []))[0];
+  if (!row || row.menu_chat !== true) return false;
+  const [menu, chat] = await Promise.all([storeHasFeature(storeId, 'menu'), storeHasFeature(storeId, 'chat')]);
+  return menu && chat;
+}
+
 async function loadStore(slug) {
   let { store, bad } = await findPublicStore(slug, 'id,name,client_slug,logo_url,business_type,accent_color');
   if (bad) throw new ApiError(400, 'الرابط غير صحيح');
@@ -213,7 +220,10 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       && ((await rest(`pager_cards?wallet_serial=eq.${q(t.wallet_serial || '')}&select=platform`).catch(() => []))[0] || {}).platform !== 'google';
     // تسليم الطلب للسيارة: صاحب المحل مشغّله، فنسأل الزبون عن سيارته
     const car_ask = t.status === 'waiting' && ((await rest(`clients?id=eq.${store.id}&select=pager_car`).catch(() => []))[0] || {}).pager_car === true;
-    return { demo: DEMO.has(store.client_slug), wallet: wallet.configured() && !store.free && !(await wallet.cardMaintenance()), in_wallet: !!t.wallet_url && !card_gone, card_gone, car_ask, car: t.car || null, review_url: review, social, store: { name: store.display_name || store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
+    // المساعد الذكي في صفحة الانتظار: للمحل اللي عنده المنيو والمساعد ومشغّله، والطلب ما زال ينتظر أو جاهز
+    // (الصفحة تسأل عنه مرة وحدة بـ c=1، مو مع كل تحديث كل 3 ثواني)
+    const chat = req.query.c === '1' ? ['waiting', 'ready'].includes(t.status) && !stale && await pagerChat(store.id) : undefined;
+    return { chat, demo: DEMO.has(store.client_slug), wallet: wallet.configured() && !store.free && !(await wallet.cardMaintenance()), in_wallet: !!t.wallet_url && !card_gone, card_gone, car_ask, car: t.car || null, review_url: review, social, store: { name: store.display_name || store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
       loyalty: { ...(await loyaltyOf(store.id)), linked: !!t.loyalty_card_id, stamped: !!t.loyalty_stamped,
         ...(await linkedCard(store.id, t.loyalty_card_id)) } };
   }
