@@ -948,7 +948,7 @@
       const { stores } = await DM.get('/api/public?action=featured');
       const list = (stores || []).filter(s => safeUrl(s.logo_url));
       if (!list.length) return;
-      $('trust-logos').innerHTML = list.slice(0, 8).map(c => `<a href="menu.html?client=${encodeURIComponent(c.client_slug)}" target="_blank" rel="noopener" title="${esc(c.name)}" aria-label="منيو ${esc(c.name)}"><img src="${esc(safeUrl(c.logo_url))}" alt="${esc(c.name)}" loading="lazy"></a>`).join('');
+      $('trust-logos').innerHTML = list.slice(0, 8).map(c => `<a href="${c.page === 'links' ? 'links' : 'menu'}.html?client=${encodeURIComponent(c.client_slug)}" target="_blank" rel="noopener" title="${esc(c.name)}" aria-label="${c.page === 'links' ? '' : 'منيو '}${esc(c.name)}"><img src="${esc(safeUrl(c.logo_url))}" alt="${esc(c.name)}" loading="lazy"></a>`).join('');
       $('trust').classList.remove('hidden');
     } catch {}
   })();
