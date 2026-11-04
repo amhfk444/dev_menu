@@ -148,7 +148,7 @@
   // ─── الأسلوب العصري: إضاءة ناعمة خلف الشعار، حلقة متوهجة حوله، وذرات ضوء تطفو ───
   // aura: ألوان الإضاءة، ring: ألوان الحلقة، dust: لون الذرات، line: رسم خطي رفيع حول الحلقة
   const LOOK = {
-    ramadan:        { aura: ['#3b2a7a', '#c9a227', '#1d2a6d'], ring: ['#f6d77a', '#8e6bd6', '#f6d77a'], dust: '#ffe39a', line: 'crescent' },
+    ramadan:        { aura: ['#3b2a7a', '#c9a227', '#1d2a6d'], ring: ['#f6d77a', '#8e6bd6', '#f6d77a'], dust: '#ffe39a', line: 'sparkles' },   // الهلال من ملصقات رمضان
     eid_fitr:       { aura: ['#f2b84b', '#e07a8f', '#f7e3a1'], ring: ['#ffd36b', '#ff9aa8', '#fff1c2'], dust: '#ffd36b', line: 'sparkles' },
     eid_adha:       { aura: ['#e9b44c', '#2a9d8f', '#f7e3a1'], ring: ['#ffd36b', '#5fd3c2', '#fff1c2'], dust: '#ffe39a', line: 'sparkles' },
     national_day:   { aura: ['#14864f', '#7be0a8', '#0f5c35'], ring: ['#2fdc8a', '#ffffff', '#1b7f4b'], dust: '#b9f5d2', line: 'sparkles' },
@@ -212,6 +212,36 @@
       <g stroke="#7d1820" stroke-width="1.6" opacity=".6"><path d="M28 30 L30 40 M40 26 L41 42 M60 26 L59 42 M72 30 L70 40 M51 52 L60 51 M53 64 L62 63 M55 76 L64 75"/></g>
       <g stroke="#b7262f" stroke-width="2.4" stroke-linecap="round"><path d="M52 90 L51 97 M56 90 L56 97 M60 89 L61 96 M64 88 L66 95"/></g></svg>`
   };
+  // ─── ملصقات رمضان (رسم أصلي بنفس الأسلوب) ───
+  const RAMADAN = {
+    lantern: `<svg viewBox="0 0 50 96"><g ${O}>
+      <path d="M25 2 V14" fill="none" stroke="#3a3a3a" stroke-width="2" stroke-dasharray="3 2"/>
+      <path d="M13 26 Q25 8 37 26 Z" fill="#2f8f9d"/><rect x="21" y="12" width="8" height="5" rx="2" fill="#e0805a"/>
+      <rect x="9" y="26" width="32" height="6" rx="2" fill="#e0805a"/>
+      <path d="M11 32 H39 L37 74 H13 Z" fill="#e8c9a6"/>
+      <path d="M16 70 V44 Q18 37 20.5 44 V70 Z M22.5 70 V42 Q25 34 27.5 42 V70 Z M29.5 70 V44 Q32 37 34 44 V70 Z" fill="#ffd45a"/>
+      <rect x="9" y="74" width="32" height="7" rx="2" fill="#2f8f9d"/><path d="M15 81 H35 L30 90 H20 Z" fill="#2f8f9d"/></g></svg>`,
+    crescent: `<svg viewBox="0 0 80 80"><g ${O}><path d="M50 6 A34 34 0 1 0 74 60 A27 27 0 1 1 50 6 Z" fill="#f2c14e"/></g>
+      <path d="M44 16 A24 24 0 0 0 30 56" stroke="#c99a2e" stroke-width="2" stroke-dasharray="4 4" fill="none"/></svg>`,
+    dates: `<svg viewBox="0 0 100 70"><g ${O}><ellipse cx="50" cy="48" rx="44" ry="16" fill="#8a5a34"/><ellipse cx="50" cy="44" rx="40" ry="12" fill="#a8714a"/></g>
+      <g ${O} fill="#6b2f1a">${[[30, 36], [44, 32], [58, 34], [70, 38], [38, 42], [52, 41], [64, 44], [26, 44]].map(([x, y], i) => `<ellipse cx="${x}" cy="${y}" rx="8" ry="5.2" transform="rotate(${i % 2 ? 25 : -20} ${x} ${y})"/>`).join('')}</g>
+      <g fill="#fff" opacity=".35">${[[28, 35], [42, 31], [56, 33], [68, 37]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="2.4" ry="1.2"/>`).join('')}</g></svg>`,
+    samosa: `<svg viewBox="0 0 100 70"><g ${O}><path d="M8 64 L32 18 L54 64 Z" fill="#f0a93a"/><path d="M40 64 L66 14 L92 64 Z" fill="#f4b84f"/><path d="M28 66 L50 30 L72 66 Z" fill="#e89a2c"/></g>
+      <g stroke="#c27a1e" stroke-width="1.6" fill="none" opacity=".7"><path d="M32 24 L28 60 M66 20 L62 60 M50 36 L48 64"/></g></svg>`,
+    drum: `<svg viewBox="0 0 90 80"><g ${O}><path d="M20 70 L34 50 M70 70 L56 50" fill="none" stroke="#c9a46a" stroke-width="5"/>
+      <rect x="18" y="22" width="54" height="34" rx="6" fill="#2f8f9d"/><ellipse cx="18" cy="39" rx="9" ry="17" fill="#f3e2c8"/>
+      <path d="M4 20 L22 34" stroke="#6b4a36" stroke-width="3.4"/><circle cx="4" cy="20" r="4" fill="#e07a8f"/></g></svg>`
+  };
+  function ramadanStickers(top, front, taken) {
+    const cy = 4 + LOGO / 2;
+    if (!taken.has('logo-left')) {
+      el(top, RAMADAN.lantern, `left:4%;top:-4px;width:36px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.22))`, 'dmo-swing');
+      el(top, RAMADAN.lantern, `left:15%;top:22px;width:28px;animation-delay:-1.4s;filter:drop-shadow(0 6px 10px rgba(0,0,0,.22))`, 'dmo-swing');
+    }
+    if (!taken.has('logo-right')) el(top, RAMADAN.crescent, `right:6%;top:${cy - 52}px;width:58px;filter:drop-shadow(0 0 10px rgba(242,193,78,.55))`, 'dmo-float');
+    el(top, RAMADAN.dates, `left:16%;top:${cy + 36}px;width:52px;animation-delay:-.8s;filter:drop-shadow(0 4px 6px rgba(0,0,0,.2))`, 'dmo-rise');
+    el(top, RAMADAN.samosa, `right:16%;top:${cy + 34}px;width:48px;animation-delay:-1.6s;filter:drop-shadow(0 4px 6px rgba(0,0,0,.2))`, 'dmo-rise');
+  }
   function winterStickers(top, front, taken) {
     const cy = 4 + LOGO / 2;
     if (!taken.has('logo-left')) el(top, WINTER.snowman, `left:5%;top:${cy - 40}px;width:66px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.22))`, 'dmo-float');
@@ -365,6 +395,7 @@
 
     modernDecor(top, occ.preset, contained);
     if (occ.preset === 'winter') winterStickers(top, front, new Set((occ.stickers || []).map(x => x.position)));
+    if (occ.preset === 'ramadan') ramadanStickers(top, front, new Set((occ.stickers || []).map(x => x.position)));
     if (!reduced()) {
       if (p.fx === 'snow') effects(back, front, 'snow');
       else dust(back, (LOOK[occ.preset] || LOOK.custom).dust);
