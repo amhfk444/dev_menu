@@ -50,6 +50,14 @@
   #chatFab.mini .lbl { max-width: 0; opacity: 0; }
   #chatFab::before { content: ''; position: absolute; inset: -6px; }
   @keyframes sayIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+  /* هيكل التحميل: بلون نص الثيم بشفافية، فيطلع مناسب للثيم الفاتح والداكن */
+  .sk { display: block; border-radius: 10px; background: currentColor; opacity: .09; animation: skPulse 1.4s ease-in-out infinite; }
+  .sk-line { height: 12px; }
+  .sk-pill { flex-shrink: 0; width: 76px; height: 34px; border-radius: 12px; }
+  .sk-img { width: 88px; height: 88px; border-radius: 14px; flex-shrink: 0; }
+  .sk-card { display: flex; gap: 14px; align-items: center; padding: 14px; border-radius: 22px; border: 1px solid; border-color: color-mix(in srgb, currentColor 12%, transparent); }
+  @keyframes skPulse { 50% { opacity: .17; } }
+  @media (prefers-reduced-motion: reduce) { .sk { animation: none; } }
   @media (prefers-reduced-motion: reduce) { #chatFab, #chatFab .lbl { transition: none; } #chatFab .lbl small span { animation: none; } }
   #cartBar:not(.hidden) ~ #chatFab { bottom: calc(84px + env(safe-area-inset-bottom)); }
   /* النافذة: تاخذ ارتفاع الشاشة الظاهر (visualViewport) عشان الكيبورد ما يغطي خانة الكتابة */
@@ -278,11 +286,12 @@
   <!-- شريط الأقسام السريع -->
   <div class="sticky top-2 z-40">
     <div id="group-bar" class="hidden gap-2 mb-2 overflow-x-auto no-scrollbar"></div>
-    <div id="fast-filter-bar" class="glass-header rounded-2xl p-1.5 flex gap-2 overflow-x-auto no-scrollbar text-xs border border-white/20 shadow-xl"></div>
+    <div id="fast-filter-bar" class="glass-header rounded-2xl p-1.5 flex gap-2 overflow-x-auto no-scrollbar text-xs border border-white/20 shadow-xl"><span class="sk sk-pill"></span><span class="sk sk-pill"></span><span class="sk sk-pill"></span></div>
   </div>
 
   <!-- الأقسام والمنتجات -->
-  <main id="dynamic-menu-sections" class="space-y-8 min-h-[300px]"></main>
+  <!-- هيكل التحميل: يطلع لين توصل بيانات المنيو، وبعدها ينكتب مكانه -->
+  <main id="dynamic-menu-sections" class="space-y-8 min-h-[300px]" aria-busy="true"><div class="space-y-3"><span class="sk sk-line w-24 h-5"></span><div class="sk-card"><span class="sk sk-img"></span><div class="flex-1 space-y-2.5"><span class="sk sk-line w-1/2"></span><span class="sk sk-line w-5/6"></span><span class="sk sk-line w-1/3"></span></div></div><div class="sk-card"><span class="sk sk-img"></span><div class="flex-1 space-y-2.5"><span class="sk sk-line w-1/2"></span><span class="sk sk-line w-5/6"></span><span class="sk sk-line w-1/3"></span></div></div><div class="sk-card"><span class="sk sk-img"></span><div class="flex-1 space-y-2.5"><span class="sk sk-line w-1/2"></span><span class="sk sk-line w-5/6"></span><span class="sk sk-line w-1/3"></span></div></div></div></main>
 
   <!-- ملاحظة السعرات (هيئة الغذاء والدواء) -->
   <p id="calorie-note" class="hidden text-center text-[10px] text-gray-400 leading-relaxed px-4"></p>
@@ -1162,6 +1171,7 @@
 
   function renderMenu(products, isSearch) {
     const container = document.getElementById('dynamic-menu-sections');
+    container.removeAttribute('aria-busy');
     // البحث يشمل كل الأقسام، والتصفح يعرض أقسام الفئة المختارة فقط
     const groups = (isSearch ? allCategories : visibleCats()).map(c => [c, productsIn(c, products)]).filter(([, ps]) => ps.length > 0);
 
