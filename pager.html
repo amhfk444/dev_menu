@@ -38,19 +38,36 @@
   .star { font-size: 40px; color: #d8d2c4; transition: transform .12s, color .12s; line-height: 1; }
   .star.on { color: var(--gold); }
   .star:active { transform: scale(.88); }
-  .mm-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; perspective: 800px; }
-  .mm-card { position: relative; aspect-ratio: 1; border-radius: 14px; transform-style: preserve-3d; transition: transform .35s ease; cursor: pointer; }
+  /* اللعبة: هادية وأنيقة، ورق عاجي وحبر، بدون ألوان صارخة */
+  .mg { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.12); border-radius: 26px; padding: 20px 18px 18px; color: #f4efe4; }
+  .mg-hd { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,.1); }
+  .mg-title { font-size: 17px; font-weight: 700; } .mg-sub { font-size: 13px; font-weight: 500; opacity: .6; margin-top: 2px; }
+  .mg-stat { text-align: left; } .mg-stat span { display: block; font-size: 11.5px; font-weight: 500; opacity: .55; }
+  .mg-stat b { display: block; font-size: 26px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .mg-prize { margin-top: 12px; font-size: 13.5px; font-weight: 500; line-height: 1.6; color: rgba(244,239,228,.85); }
+  .mg-prize b { font-weight: 700; color: #f4efe4; }
+  .mm-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; perspective: 900px; margin-top: 16px; }
+  .mm-card { position: relative; aspect-ratio: 3 / 4; border-radius: 12px; transform-style: preserve-3d; transition: transform .45s cubic-bezier(.2,.7,.2,1); cursor: pointer; }
   .mm-card.up, .mm-card.done { transform: rotateY(180deg); }
-  .mm-face { position: absolute; inset: 0; border-radius: 14px; display: grid; place-items: center; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-  .mm-back { background: linear-gradient(145deg, color-mix(in srgb, var(--brand) 82%, #fff), var(--brand)); border: 1px solid rgba(255,255,255,.18); box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 6px 14px -8px rgba(0,0,0,.6); }
-  .mm-back::after { content: ''; width: 34%; aspect-ratio: 1; border-radius: 10px; border: 2px solid rgba(255,255,255,.35); }
-  .has-logo .mm-back { background: #fff var(--mm-logo) center / cover no-repeat; border: 1px solid rgba(255,255,255,.25); }
-  .has-logo .mm-back::after { display: none; }
-  .mm-front { background: #fff; border: 1.5px solid rgba(35,61,44,.15); transform: rotateY(180deg); color: #233d2c; font-size: 24px; }
-  .mm-card.done .mm-front { background: #ecfdf5; border-color: #10b981; color: #047857; }
-  .mm-card:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
-  @keyframes mmPop { 50% { transform: rotateY(180deg) scale(1.08); } }
-  .mm-card.pop { animation: mmPop .35s ease; }
+  .mm-face { position: absolute; inset: 0; border-radius: 12px; display: grid; place-items: center; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+  .mm-back { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.16); }
+  .mm-back::before { content: ''; position: absolute; inset: 5px; border-radius: 8px; border: 1px solid rgba(255,255,255,.08); }
+  .mm-back::after { content: ''; width: 9px; height: 9px; transform: rotate(45deg); border: 1px solid rgba(255,255,255,.4); }
+  .has-logo .mm-back::after { width: 34%; height: auto; aspect-ratio: 1; transform: none; border: 0; border-radius: 50%; background: var(--mm-logo) center / cover no-repeat; opacity: .85; }
+  .mm-front { background: #f4efe4; border: 1px solid #e4dccb; transform: rotateY(180deg); color: #23302a; font-size: 24px; }
+  .mm-card.done .mm-front { background: transparent; border-color: rgba(244,239,228,.35); color: rgba(244,239,228,.55); transition: background .4s .3s, color .4s .3s, border-color .4s .3s; }
+  .mm-card:focus-visible { outline: 2px solid #f4efe4; outline-offset: 2px; }
+  @keyframes mmPop { 50% { transform: rotateY(180deg) scale(1.05); } }
+  .mm-card.pop { animation: mmPop .4s ease; }
+  .mg-ft { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; font-size: 13px; font-weight: 500; color: rgba(244,239,228,.6); }
+  .mg-ft button { font-weight: 600; color: #f4efe4; padding: 6px 12px; border: 1px solid rgba(255,255,255,.2); border-radius: 999px; }
+  .mg-win { margin-top: 12px; text-align: center; font-size: 14px; font-weight: 600; line-height: 1.6; color: #f4efe4; padding: 12px; border-top: 1px solid rgba(255,255,255,.1); }
+  .mg-won { margin-top: 14px; text-align: center; background: #f4efe4; color: #23302a; border-radius: 18px; padding: 20px 16px 18px; }
+  .mg-won small { display: block; font-size: 12px; font-weight: 600; opacity: .55; }
+  .mg-won p { font-size: 19px; font-weight: 700; line-height: 1.5; margin-top: 4px; }
+  .mg-won-rule { display: block; width: 40px; height: 1px; background: #23302a; opacity: .25; margin: 14px auto 12px; }
+  .mg-won b { display: block; font-size: 40px; font-weight: 600; line-height: 1.1; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  @media (prefers-reduced-motion: reduce) { .mm-card { transition: none; } .mm-card.pop { animation: none; } }
   .ticket { position: relative; background: linear-gradient(160deg, #2c4a36 0%, #233d2c 45%, #15271b 100%); color: #fff; border-radius: 30px; padding: 28px 22px; box-shadow: 0 30px 60px -30px rgba(21,39,27,.75); overflow: hidden; }
   .ticket::before, .ticket::after { content: ''; position: absolute; width: 26px; height: 26px; border-radius: 50%; background: var(--sand); top: 62%; }
   .ticket::before { left: -13px; } .ticket::after { right: -13px; }
@@ -118,11 +135,6 @@
   .it-add { flex: 1; padding: 14px; border-radius: 16px; background: var(--brand); color: #fff; font-size: 15.5px; font-weight: 800; }
   .it-add:disabled { opacity: .6; }
   .it-err { font-size: 13.5px; font-weight: 700; color: #b3121f; }
-  /* ─── جايزة اللعبة ─── */
-  .mm-prize { font-size: 13.5px; font-weight: 700; background: #c9a227; color: #15271b; border-radius: 14px; padding: 9px 12px; text-align: center; line-height: 1.5; }
-  .mm-won { text-align: center; background: linear-gradient(160deg, #e2bd3f, #c9a227); color: #15271b; border-radius: 20px; padding: 16px; }
-  .mm-won-ic { font-size: 34px; display: block; } .mm-won b { display: block; font-size: 20px; font-weight: 900; margin-top: 4px; }
-  .mm-won p { font-size: 16px; font-weight: 800; margin-top: 4px; } .mm-won small { display: block; font-size: 13px; font-weight: 600; margin-top: 6px; opacity: .85; }
   /* ─── المساعد في صفحة الانتظار ─── */
   .ask { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; border-radius: 20px; background: #fff; border: 1.5px solid rgba(35,61,44,.14); text-align: right; color: #15271b; box-shadow: 0 14px 30px -24px rgba(35,61,44,.5); }
   .ask:active { transform: scale(.985); }
@@ -472,27 +484,27 @@
   </section>
 
   <!-- يتسلّى وهو ينتظر -->
-  <section id="v-game" class="card p-5 space-y-4 hidden" aria-labelledby="mm-title">
-    <div class="flex items-center justify-between gap-3">
+  <section id="v-game" class="mg hidden" aria-labelledby="mm-title">
+    <div class="mg-hd">
       <div>
-        <h2 id="mm-title" class="text-base font-black"></h2>
-        <p class="text-xs font-bold opacity-60">طابق كل بطاقتين متشابهتين</p>
+        <h2 id="mm-title" class="mg-title"></h2>
+        <p class="mg-sub">طابق كل بطاقتين متشابهتين</p>
       </div>
-      <span class="shrink-0 text-xs font-black bg-[#f5f2eb] rounded-full px-3 py-1.5">رقمك <span id="mm-num">—</span></span>
+      <div class="mg-stat"><span>الحركات</span><b id="mm-moves">0</b></div>
     </div>
-    <p id="mm-prize" class="mm-prize hidden"></p>
+    <p id="mm-prize" class="mg-prize hidden"></p>
     <div id="mm-grid" class="mm-grid" role="grid" aria-label="بطاقات اللعبة"></div>
-    <div class="flex items-center justify-between text-xs font-bold">
-      <span class="opacity-70">الحركات: <b id="mm-moves" class="tnum">0</b></span>
-      <span id="mm-best" class="opacity-70"></span>
-      <button id="mm-restart" class="font-black underline opacity-70">من جديد</button>
+    <div class="mg-ft">
+      <span id="mm-best"></span>
+      <button id="mm-restart" type="button">من جديد</button>
     </div>
-    <p id="mm-win" class="hidden text-center text-sm font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl py-3"></p>
-    <div id="mm-won" class="mm-won hidden" role="status">
-      <span class="mm-won-ic">🏆</span>
-      <b>فزت!</b>
+    <p id="mm-win" class="mg-win hidden"></p>
+    <div id="mm-won" class="mg-won hidden" role="status">
+      <small>الجائزة</small>
       <p id="mm-won-text"></p>
-      <small>ورّ هالشاشة للكاشير مع رقم طلبك <span id="mm-won-num"></span></small>
+      <span class="mg-won-rule"></span>
+      <small>ورّ هالشاشة للكاشير مع رقم طلبك</small>
+      <b id="mm-won-num"></b>
     </div>
   </section>
 
@@ -1094,8 +1106,8 @@
   function renderGame() {
     const on = !!game;
     $('mm-prize').classList.toggle('hidden', !on || gameWon);
-    if (on) $('mm-prize').textContent = `🎁 خلّصها بـ ${game.moves} حركة أو أقل: ${game.reward}`;
-    $('mm-won').classList.toggle('hidden', !(on && gameWon));
+    if (on) $('mm-prize').innerHTML = `خلّصها بـ ${game.moves} حركة أو أقل، وجائزتك: <b>${esc(game.reward)}</b>`;
+    $('mm-won').classList.toggle('hidden', !(on && gameWon)); $('mm-grid').classList.toggle('hidden', on && gameWon);
     if (on && gameWon) { $('mm-won-text').textContent = gameReward || game.reward; $('mm-won-num').textContent = curNumber; }
   }
   async function claimGame(moves) {
@@ -1175,7 +1187,6 @@
     const st = r.ticket.status;
     renderLoyalty(r.loyalty, st, token);
     curNumber = r.ticket.number;
-    $('mm-num').textContent = r.ticket.number;
     $('w-number').textContent = r.ticket.number; $('r-number').textContent = r.ticket.number;
     const inv = r.ticket.invoice_no || '';
     ['w-invoice', 'r-invoice'].forEach(id => { $(id).classList.toggle('hidden', !inv); $(id).querySelector('span').textContent = inv; });

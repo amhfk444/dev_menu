@@ -324,7 +324,7 @@
   async function saveEta(minutes) {
     const id = etaId; if (!id) return; closeEta();
     try {
-      const r = await api('pager-eta', { id, minutes });
+      const r = await call('pager-eta', { id, minutes });
       tickets = tickets.map(t => t.id === id ? { ...t, eta_at: r.ticket.eta_at } : t); render();
     } catch (e) { alert(e.message || 'ما انحفظ الوقت'); }
   }
