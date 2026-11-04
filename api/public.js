@@ -120,7 +120,8 @@ async function priceCart(store, coupon, rawItems) {
   const [products, categories, promos] = await Promise.all([
     rest(`products?client_id=eq.${store.id}&id=in.(${ids.join(',')})&is_hidden=is.false&select=id,price,category,sizes,is_available`),
     rest(`categories?client_id=eq.${store.id}&select=key,name`),
-    menuPromos(store.id)
+    menuPromos(store.id),
+    brandName(store.id, store.name)
   ]);
   const byId = new Map(products.map(p => [p.id, p]));
   const nameToKey = new Map(categories.map(c => [c.name, c.key]));
@@ -159,6 +160,14 @@ async function waitlistOpen(storeId) {
 }
 
 // كل بيانات المنيو العام لمتجر
+// اسم المحل للزبون: الفرع ياخذ اسم المحل الرئيسي (ماندولين، مو "ماندولين فرع بيش")
+async function brandName(storeId, name) {
+  const self = (await rest(`clients?id=eq.${Number(storeId)}&select=parent_id`).catch(() => []))[0];
+  if (!self || !self.parent_id) return name;
+  const root = (await rest(`clients?id=eq.${self.parent_id}&select=name`).catch(() => []))[0];
+  return (root && root.name) || name;
+}
+
 async function menuPayload(slug) {
   const store = await findStore(slug);
   // المنيو ضمن باقة المحل؟ (اللي مشترك في الولاء بس، ما يطلع له منيو)
@@ -168,7 +177,7 @@ async function menuPayload(slug) {
     for (const k of ['pager', 'waitlist', 'loyalty']) if (feats[k]) throw new ApiError(404, 'المنيو غير متاح', `GO:${k}`);
     throw new ApiError(404, 'المنيو غير متاح حالياً', 'NOT_AVAILABLE');
   }
-  const [categories, products, waitlist_open, has_coupons, occasion, promos] = await Promise.all([
+  const [categories, products, waitlist_open, has_coupons, occasion, promos, name] = await Promise.all([
     rest(`categories?client_id=eq.${store.id}&select=id,key,name,name_en,sort_order,group_name`),
     // المنتجات المخفية ما توصل للزبون أصلاً
     rest(`products?client_id=eq.${store.id}&is_hidden=is.false&select=${PRODUCT_FIELDS}`),
@@ -180,7 +189,7 @@ async function menuPayload(slug) {
   // زر المساعد: مشغّل من صاحب المحل + ضمن باقته + باقي له رصيد هالشهر
   // الزر يبقى ظاهر حتى لو خلص الرصيد: المساعد يرد رد لطيف بدل ما يختفي أو يذكر حدود
   const menu_chat = store.menu_chat === true && feats.chat;
-  return { store: { ...store, menu_chat, waitlist_open, has_coupons, occasion, promos }, categories: categories.sort(bySort), products: products.sort(bySort), feats };
+  return { store: { ...store, name, menu_chat, waitlist_open, has_coupons, occasion, promos }, categories: categories.sort(bySort), products: products.sort(bySort), feats };
 }
 // ردود جاهزة للأسئلة البسيطة. أي شي غيرها يروح للمساعد
 const AR = (t) => /[؀-ۿ]/.test(t);
@@ -241,7 +250,8 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
 
   if (action === 'share' && req.method === 'GET') {
     const [page, desc] = SHARE_PAGES[req.query.page] || SHARE_PAGES.menu;
-    const { store } = await findPublicStore(req.query.slug, 'name,client_slug,logo_url,promo_message').catch(() => ({ store: null }));
+    const { store } = await findPublicStore(req.query.slug, 'id,name,client_slug,logo_url,promo_message').catch(() => ({ store: null }));
+    if (store) store.name = await brandName(store.id, store.name);
     const url = store ? require('./_lib/core').storeLink(store.client_slug, page) : require('./_lib/core').SITE;
     const name = store ? store.name : 'DEV MENU';
     // الشعار محفوظ webp، وواتساب ما يعرضه دايم: نعطيه نسخة JPEG خفيفة (أقل من 300KB) من share-img
