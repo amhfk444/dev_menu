@@ -136,7 +136,7 @@ const MENU_CHAT_MODEL = 'claude-haiku-5-5';
 // من صفحة انتظار البيجر: نضيف حالة طلب الزبون بعد الجزء المخزّن (تتغير كل دقيقة)
 const ORDER_RULES = `The guest is now waiting for their order with a pager number, and opened you from the pager waiting page. <order> has their live order status.
 - If they ask about their order (how long, when, is it ready, where is it): answer from <order>: their number, the status, how many orders are ahead, and a rough estimate from the typical wait minus the minutes already waited (say تقريباً; if it is past the typical wait, say it should be ready any moment). If there is no typical wait data, don't give a number.
-- You cannot see what they ordered and you cannot change, add to or cancel an order. For changes (e.g. no sugar, extra item, cancel), tell them to tell the cashier with their pager number.
+- You cannot see what they ordered and you cannot change, add to or cancel an order. For changes (e.g. no sugar, extra item, cancel), tell them to tell the cashier their order number. In Arabic always call it "رقم طلبك" (never رقم الجهاز or البيجر).
 - When the status is READY, tell them to pick it up from the counter.
 - While they wait you may suggest one fitting item from the menu if they ask what to add.`;
 async function menuChat({ storeName, storeInfo, menu, messages, order }, retry = true) {
