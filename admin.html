@@ -1958,6 +1958,32 @@
           <span id="pg-st-kiosk"></span>
         </label>
 
+        <label data-needs="menu" class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
+          <input type="checkbox" id="info-pager-upsell" onchange="togglePagerUpsell(this.checked)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
+          <span class="text-xs flex-1">
+            <b class="text-ink"><i class="ph-bold ph-plus-circle text-amber-600"></i> أضف لطلبك</b>
+            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يظهر للزبون في صفحة رقمه أثناء الانتظار: أربعة أصناف من المنيو (الأكثر طلباً ذات الصور أولاً) يضيفها بضغطة. وتظهر للموظف تحت الرقم في شاشة الكاشير مع تنبيه صوتي، ويدفعها الزبون عند الاستلام.</span>
+          </span>
+          <span id="pg-st-upsell"></span>
+        </label>
+        <div class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2.5">
+          <div class="flex flex-wrap items-start justify-between gap-2">
+            <span class="text-xs">
+              <b class="text-ink"><i class="ph-bold ph-trophy text-amber-600"></i> جائزة لعبة الانتظار</b>
+              <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يظهر للزبون في صفحة رقمه: من ينهي اللعبة بعدد الحركات المحدد أو أقل يحصل على الجائزة، ويظهر بجانب رقمه في شاشة الكاشير «فاز باللعبة». اترك الخانة فارغة لإيقاف الجائزة.</span>
+            </span>
+            <span id="pg-st-game"></span>
+          </div>
+          <input type="text" id="info-game-reward" maxlength="80" placeholder="مثال: كوكيز مجانية مع طلبك" class="input-pro text-xs">
+          <div class="flex flex-wrap items-center gap-2">
+            <label for="info-game-moves" class="text-xs font-semibold text-ink">أقصى عدد حركات</label>
+            <select id="info-game-moves" class="input-pro text-xs !w-auto">
+              <option value="14">14 (صعبة)</option><option value="16">16</option><option value="18">18</option><option value="20">20 (متوسطة)</option><option value="24">24</option><option value="28">28 (سهلة)</option>
+            </select>
+            <button type="button" onclick="saveGameReward()" class="bg-brand text-cream hover:bg-brand-dark px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-sm"><i class="ph-bold ph-floppy-disk"></i> احفظ</button>
+          </div>
+        </div>
+
         <p class="text-[11px] font-black text-ink/70 pt-1">بعد ما يستلم طلبه</p>
         <div class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2.5">
           <div class="flex flex-wrap items-start justify-between gap-2">
@@ -5384,6 +5410,13 @@
     document.getElementById('info-show-calories').checked = showCalories();
     document.getElementById('info-kiosk-call').checked = !!client && client.kiosk_call === true;
     document.getElementById('info-pager-car').checked = !!client && client.pager_car === true;
+    document.getElementById('info-pager-upsell').checked = !!client && client.pager_upsell === true;
+    if (client) {
+      document.getElementById('info-game-reward').value = client.pager_game_reward || '';
+      const mv = String(client.pager_game_moves || 20), sel = document.getElementById('info-game-moves');
+      if (![...sel.options].some(o => o.value === mv)) sel.add(new Option(mv, mv));
+      sel.value = mv;
+    }
     renderPagerStatus();
     document.getElementById('calories-field').classList.toggle('hidden', !showCalories());
   }
@@ -5403,6 +5436,8 @@
     pgChip('pg-st-pin', pin ? 'ok' : 'off', pin ? 'محدد' : 'اختياري');
     pgChip('pg-st-car', client.pager_car ? 'ok' : 'off', client.pager_car ? 'مفعّل' : 'مو مفعّل');
     pgChip('pg-st-kiosk', client.kiosk_call ? 'ok' : 'off', client.kiosk_call ? 'مفعّل' : 'مو مفعّل');
+    pgChip('pg-st-upsell', client.pager_upsell ? 'ok' : 'off', client.pager_upsell ? 'مفعّل' : 'مو مفعّل');
+    pgChip('pg-st-game', client.pager_game_reward ? 'ok' : 'off', client.pager_game_reward ? 'مفعّلة' : 'بدون جائزة');
     if (client.google_review_url) pgChip('pg-st-review', 'ok', 'جاهز');
     else if (client.location_url) pgChip('pg-st-review', 'ok', 'يفتح موقعك في الخريطة');
     else pgChip('pg-st-review', 'warn', 'ناقص: زبائنك ما يقدرون يقيّمونك');
@@ -5420,6 +5455,15 @@
   async function togglePagerCar(on) {
     if (await updateClient({ pager_car: on })) showToast(on ? 'الزبون يقدر يحدد سيارته بعد ما ياخذ رقم' : 'تم إيقاف تسليم الطلب للسيارة');
     else { document.getElementById('info-pager-car').checked = !on; showToast('تعذر حفظ الإعداد', true); }
+  }
+  async function togglePagerUpsell(on) {
+    if (await updateClient({ pager_upsell: on })) { renderPagerStatus(); showToast(on ? 'الزبون يقدر يضيف لطلبه وهو ينتظر' : 'تم إيقاف «أضف لطلبك»'); }
+    else { document.getElementById('info-pager-upsell').checked = !on; showToast('تعذر حفظ الإعداد', true); }
+  }
+  async function saveGameReward() {
+    const reward = document.getElementById('info-game-reward').value.trim(), moves = Number(document.getElementById('info-game-moves').value);
+    if (await updateClient({ pager_game_reward: reward, pager_game_moves: moves })) { renderPagerStatus(); showToast(reward ? 'تم حفظ جائزة اللعبة' : 'تم إيقاف جائزة اللعبة'); }
+    else showToast('تعذر حفظ الجائزة', true);
   }
   async function toggleKioskCall(on) {
     if (await updateClient({ kiosk_call: on })) showToast(on ? 'الأرقام الجاهزة تظهر على شاشة الزبون' : 'شاشة الزبون تعرض الأكواد بس');

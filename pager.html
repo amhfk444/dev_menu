@@ -58,6 +58,36 @@
   .ticket .tear { border-top: 2px dashed rgba(255,255,255,.25); margin: 18px 6px 14px; }
   .ticket.ready { background: linear-gradient(160deg, #e2bd3f 0%, #c9a227 55%, #a8851a 100%); color: #15271b; }
   .ticket.ready .num { color: #15271b; }
+  /* ─── الطابور الحي ─── */
+  .queue { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); border-radius: 22px; padding: 14px 16px; text-align: center; color: #fff; }
+  .q-dots { display: flex; justify-content: center; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .q-dots i { width: 14px; height: 14px; border-radius: 50%; background: rgba(255,255,255,.28); }
+  .q-dots i.cook { background: rgba(255,255,255,.6); animation: qPulse 1.6s infinite; }
+  .q-dots .me { min-width: 34px; height: 34px; padding: 0 8px; border-radius: 999px; background: #fff; color: #15271b; display: grid; place-items: center; font-weight: 900; font-size: 15px; }
+  .q-dots .more { font-size: 12px; font-weight: 800; opacity: .7; }
+  @keyframes qPulse { 50% { transform: scale(1.25); } }
+  .q-text { font-size: 15px; line-height: 1.6; } .q-text b { font-weight: 800; } .q-text span { display: block; font-size: 13.5px; opacity: .8; }
+  .q-text span:empty { display: none; }
+  @media (prefers-reduced-motion: reduce) { .q-dots i.cook { animation: none; } }
+  /* ─── أضف لطلبك ─── */
+  .ups { background: #fff; color: #15271b; border-radius: 22px; padding: 14px; box-shadow: 0 24px 48px -30px rgba(0,0,0,.7); }
+  .ups-hd b { display: block; font-size: 15.5px; font-weight: 800; } .ups-hd small { display: block; font-size: 12.5px; opacity: .65; margin-top: 2px; }
+  .ups-list { display: flex; gap: 10px; overflow-x: auto; margin: 12px -14px 0; padding: 0 14px 4px; scrollbar-width: none; scroll-snap-type: x mandatory; }
+  .ups-list::-webkit-scrollbar { display: none; }
+  .ups-it { flex: 0 0 132px; scroll-snap-align: start; border: 1px solid rgba(35,61,44,.12); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; }
+  .ups-it .im { height: 88px; background: #f1efe9 center / cover no-repeat; display: grid; place-items: center; font-size: 26px; color: rgba(35,61,44,.35); }
+  .ups-it .bd { padding: 8px 9px 9px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .ups-it .nm { font-size: 13.5px; font-weight: 700; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .ups-it .pr { font-size: 13px; font-weight: 600; opacity: .7; }
+  .ups-it button { margin-top: auto; padding: 7px 0; border-radius: 11px; background: var(--brand); color: #fff; font-size: 13.5px; font-weight: 800; }
+  .ups-it button.ok { background: #e7f4ec; color: #0a6b45; }
+  .ups-it button:disabled { opacity: .6; }
+  .ups-added { margin-top: 10px; font-size: 13px; font-weight: 700; color: #0a6b45; background: #e7f4ec; border-radius: 12px; padding: 8px 10px; }
+  /* ─── جايزة اللعبة ─── */
+  .mm-prize { font-size: 13.5px; font-weight: 700; background: #c9a227; color: #15271b; border-radius: 14px; padding: 9px 12px; text-align: center; line-height: 1.5; }
+  .mm-won { text-align: center; background: linear-gradient(160deg, #e2bd3f, #c9a227); color: #15271b; border-radius: 20px; padding: 16px; }
+  .mm-won-ic { font-size: 34px; display: block; } .mm-won b { display: block; font-size: 20px; font-weight: 900; margin-top: 4px; }
+  .mm-won p { font-size: 16px; font-weight: 800; margin-top: 4px; } .mm-won small { display: block; font-size: 13px; font-weight: 600; margin-top: 6px; opacity: .85; }
   /* ─── المساعد في صفحة الانتظار ─── */
   .ask { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; border-radius: 20px; background: #fff; border: 1.5px solid rgba(35,61,44,.14); text-align: right; color: #15271b; box-shadow: 0 14px 30px -24px rgba(35,61,44,.5); }
   .ask:active { transform: scale(.985); }
@@ -308,6 +338,11 @@
       <button id="pw-btn" class="btn btn-wallet !py-3.5 !text-base"><i class="ph-bold ph-wallet"></i> <span>أضف بطاقة النداء</span></button>
     </div>
     <a id="w-loyalty" class="hidden block text-[13px] font-black rounded-2xl py-3 px-3"></a>
+    <!-- الطابور الحي: كم طلب قدامه والوقت الباقي تقريباً -->
+    <div id="w-queue" class="queue hidden" aria-live="polite">
+      <div id="q-dots" class="q-dots" aria-hidden="true"></div>
+      <p class="q-text"><b id="q-ahead"></b><span id="q-eta"></span></p>
+    </div>
     <ul class="track">
       <li class="done"><i class="ph-bold ph-check"></i>استلمنا طلبك</li>
       <li class="now"><i class="ph-bold ph-cooking-pot"></i><span id="d-wait"></span></li>
@@ -319,6 +354,12 @@
       <span class="ask-tx"><b>اسأل عن طلبك</b><small>متى يجهز؟ وش أضيف وأنا أنتظر؟</small></span>
       <i class="ph-bold ph-caret-left ask-go"></i>
     </button>
+    <!-- أضف لطلبك: يوصل للكاشير تحت رقمه، والدفع عند الاستلام -->
+    <section id="w-upsell" class="ups hidden" aria-labelledby="ups-title">
+      <div class="ups-hd"><b id="ups-title">أضف لطلبك وأنت تنتظر</b><small>يوصل للكاشير مع رقمك، وتدفع عند الاستلام</small></div>
+      <div id="ups-list" class="ups-list"></div>
+      <p id="ups-added" class="ups-added hidden"></p>
+    </section>
     <p id="w-tell" class="note"></p>
     <p class="note !text-[12.5px] !opacity-65"><span id="t-waiting"></span></p>
     <!-- تسجيل في الولاء من نفس الصفحة -->
@@ -403,6 +444,7 @@
       </div>
       <span class="shrink-0 text-xs font-black bg-[#f5f2eb] rounded-full px-3 py-1.5">رقمك <span id="mm-num">—</span></span>
     </div>
+    <p id="mm-prize" class="mm-prize hidden"></p>
     <div id="mm-grid" class="mm-grid" role="grid" aria-label="بطاقات اللعبة"></div>
     <div class="flex items-center justify-between text-xs font-bold">
       <span class="opacity-70">الحركات: <b id="mm-moves" class="tnum">0</b></span>
@@ -410,6 +452,12 @@
       <button id="mm-restart" class="font-black underline opacity-70">من جديد</button>
     </div>
     <p id="mm-win" class="hidden text-center text-sm font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl py-3"></p>
+    <div id="mm-won" class="mm-won hidden" role="status">
+      <span class="mm-won-ic">🏆</span>
+      <b>فزت!</b>
+      <p id="mm-won-text"></p>
+      <small>ورّ هالشاشة للكاشير مع رقم طلبك <span id="mm-won-num"></span></small>
+    </div>
   </section>
 
   <!-- جاهز -->
@@ -866,6 +914,66 @@
   };
 
 
+  // ─── الطابور الحي: نقاط للطلبات اللي قدامه، ورقمه في الآخر ───
+  let lastQ = 0, queueShown = false;
+  const arCount = (n, one, two, many) => n === 1 ? one : n === 2 ? two : n <= 10 ? `${n} ${many}` : `${n} ${one}`;
+  function renderQueue(q, num) {
+    queueShown = true;
+    const a = Math.max(0, Number(q.ahead) || 0), shown = Math.min(a, 6);
+    $('q-dots').innerHTML = Array.from({ length: shown }, (_, i) => `<i class="${i === 0 ? 'cook' : ''}"></i>`).join('')
+      + (a > shown ? `<span class="more">+${a - shown}</span>` : '') + `<span class="me">${num}</span>`;
+    $('q-ahead').textContent = a === 0 ? 'طلبك هو اللي يتجهز الحين' : `قدامك ${arCount(a, 'طلب واحد', 'طلبين', 'طلبات')}`;
+    const e = q.eta == null ? null : Number(q.eta);
+    $('q-eta').textContent = e == null ? '' : e <= 1 ? 'يجهز خلال دقيقة تقريباً' : `يجهز تقريباً بعد ${arCount(e, 'دقيقة', 'دقيقتين', 'دقايق')}`;
+  }
+
+  // ─── أضف لطلبك ───
+  let upsell = [], curLabel = 'ر.س', addedNow = [], upsBusy = false;
+  const fmtPrice = (n) => `${Number.isInteger(n) ? n : n.toFixed(2)} ${curLabel}`;
+  function renderUpsell(on) {
+    const box = $('w-upsell');
+    box.classList.toggle('hidden', !(on && upsell.length));
+    if (box.classList.contains('hidden')) return;
+    const count = (id) => addedNow.filter(a => a.id === id).length;
+    $('ups-list').innerHTML = upsell.map(p => {
+      const n = count(p.id), img = p.image_url && /^https:\/\//.test(p.image_url) ? ` style="background-image:url('${encodeURI(p.image_url).replace(/'/g, '%27')}')"` : '';
+      return `<div class="ups-it"><div class="im"${img}>${img ? '' : '<i class="ph-bold ph-fork-knife"></i>'}</div><div class="bd">
+        <span class="nm">${esc(p.name)}</span><span class="pr">${fmtPrice(p.price)}</span>
+        <button type="button" data-add="${p.id}" class="${n ? 'ok' : ''}" ${upsBusy ? 'disabled' : ''}>${n ? `✓ أضفته${n > 1 ? ` ×${n}` : ''}` : 'أضف'}</button></div></div>`;
+    }).join('');
+    const names = addedNow.map(a => a.name);
+    $('ups-added').classList.toggle('hidden', !names.length);
+    $('ups-added').textContent = names.length ? `وصل للكاشير: ${names.join('، ')}` : '';
+  }
+  $('ups-list').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-add]'); if (!b || upsBusy) return;
+    upsBusy = true; b.disabled = true; b.textContent = '…';
+    try {
+      const r = await DM.post('/api/pager?action=addon', { slug, t: loadToken(), id: Number(b.dataset.add) });
+      addedNow = r.addons || addedNow;
+      if (navigator.vibrate) navigator.vibrate(25);
+    } catch (err) { alert(err.message || 'ما قدرنا نضيفها، اطلبها من الكاشير'); }
+    upsBusy = false; renderUpsell(true);
+  });
+
+  // ─── جايزة اللعبة ───
+  let game = null, gameWon = false, gameReward = '';
+  function renderGame() {
+    const on = !!game;
+    $('mm-prize').classList.toggle('hidden', !on || gameWon);
+    if (on) $('mm-prize').textContent = `🎁 خلّصها بـ ${game.moves} حركة أو أقل: ${game.reward}`;
+    $('mm-won').classList.toggle('hidden', !(on && gameWon));
+    if (on && gameWon) { $('mm-won-text').textContent = gameReward || game.reward; $('mm-won-num').textContent = curNumber; }
+  }
+  async function claimGame(moves) {
+    if (!game || gameWon) return;
+    if (moves > game.moves) { $('mm-win').textContent += ` (الجايزة تحتاج ${game.moves} حركة أو أقل، جرّب مرة ثانية)`; return; }
+    try {
+      const r = await DM.post('/api/pager?action=game', { slug, t: loadToken(), moves });
+      if (r.won) { gameWon = true; gameReward = r.reward; $('mm-win').classList.add('hidden'); renderGame(); if (navigator.vibrate) navigator.vibrate([40, 60, 40]); }
+    } catch {}
+  }
+
   // ─── المساعد الذكي: يسأل عن طلبه (متى يجهز، كم قدامه) وعن المنيو ───
   let chatOn = false, chatFor = '', askMsgs = [], askBusy = false, askToken = '';
   function askBubble(cls, text) {
@@ -915,15 +1023,19 @@
     const token = loadToken();
     if (!token) return $('v-done').classList.contains('hidden') ? show('start') : undefined;   // شاشة "بالعافية" والتقييم تبقى
     let r;
-    const askChat = chatFor !== token;   // المساعد متاح؟ نسأل مرة وحدة لكل رقم
-    try { r = await DM.get(`/api/pager?action=status&slug=${encodeURIComponent(slug)}&t=${encodeURIComponent(token)}${askChat ? '&c=1' : ''}`); }
+    const askChat = chatFor !== token;   // إضافات الصفحة (المساعد، أضف لطلبك، جايزة اللعبة): نسأل مرة وحدة لكل رقم
+    const askQ = askChat || Date.now() - lastQ > 15000;   // الطابور: كل 15 ثانية تقريباً
+    try { r = await DM.get(`/api/pager?action=status&slug=${encodeURIComponent(slug)}&t=${encodeURIComponent(token)}${askChat ? '&c=1' : ''}${askQ ? '&q=1' : ''}`); }
     catch (e) {
       if (e.status === 404 && e.code === 'NOT_FOUND') { saveToken(''); return show('start'); }
       if (e.status === 404 || e.status === 400) return unavailable('البيجر غير متاح حالياً', 'اسأل الموظف.');
       pollTimer = setTimeout(poll, 5000); return;   // انقطاع مؤقت: نعيد المحاولة
     }
     if (loadToken() !== token) return;   // تغيّر الرقم وهو ينتظر الرد (ضغط "استلمت" أو أخذ رقم جديد): الرد قديم
-    if (askChat && typeof r.chat === 'boolean') { chatFor = token; chatOn = r.chat; }
+    if (askChat && typeof r.chat === 'boolean') { chatFor = token; chatOn = r.chat; upsell = r.upsell || []; curLabel = r.currency || 'ر.س'; game = r.game || null; }
+    if (askQ) lastQ = Date.now();
+    if (r.queue) renderQueue(r.queue, r.ticket.number);
+    addedNow = r.addons || []; gameWon = r.game_won === true;
     setStore(r.store);
     watchTicket(r.live);
     const st = r.ticket.status;
@@ -951,6 +1063,9 @@
     if (r.social) renderSocial(r.social);
     if (reviewLink) $('rate-google').href = reviewLink;
     $('w-ask').classList.toggle('hidden', !(chatOn && chatFor === token && st === 'waiting'));
+    $('w-queue').classList.toggle('hidden', !(st === 'waiting' && queueShown));
+    renderUpsell(st === 'waiting' && chatFor === token);
+    renderGame();
     if (st === 'waiting') { show('waiting'); keepAwake(); renderPush(); if (keeperMode === 'silent') setMedia(`رقمك ${curNumber}: ${T.waiting}`); }
     else if (st === 'ready') {
       if (!$('ask-sheet').hidden) closeAsk();   // جهز طلبه: نسكّر المحادثة عشان يشوف النداء
@@ -1113,6 +1228,7 @@
         if (record) try { localStorage.setItem(mmBestKey, String(mm.moves)); } catch {}
         $('mm-win').textContent = record ? `ممتاز! خلصتها في ${mm.moves} حركة، وهذي أفضل نتيجة لك` : `خلصتها في ${mm.moves} حركة. تقدر تكسر رقمك ${best}؟`;
         $('mm-win').classList.remove('hidden'); mmShowBest();
+        claimGame(mm.moves);
       }
     } else {
       mm.lock = true;

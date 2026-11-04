@@ -169,21 +169,15 @@ async function brandName(storeId, name) {
 
 // طلب الزبون من البيجر (للمساعد): رقمه، حالته، كم طلب قبله، ومتوسط الانتظار في المحل آخر 7 أيام
 async function pagerOrder(storeId, token) {
-  const t = (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${storeId}&select=number,status,created_at,ready_at`).catch(() => []))[0];
+  const t = (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${storeId}&select=number,status,created_at,ready_at,addons`).catch(() => []))[0];
   if (!t) return null;
-  const now = Date.now(), mins = (ms) => Math.max(0, Math.round(ms / 60000));
-  const week = new Date(now - 7 * 864e5).toISOString();
-  const [ahead, past] = await Promise.all([
-    t.status === 'waiting' ? rest(`pager_tickets?client_id=eq.${storeId}&status=eq.waiting&created_at=lt.${q(t.created_at)}&created_at=gte.${q(new Date(Date.parse(t.created_at) - 18 * 3600e3).toISOString())}&select=id&limit=50`).catch(() => []) : [],
-    rest(`pager_tickets?client_id=eq.${storeId}&ready_at=not.is.null&created_at=gte.${q(week)}&select=created_at,ready_at&order=created_at.desc&limit=60`).catch(() => [])
-  ]);
-  // نشيل الأرقام الشاذة (نسوا يضغطون جاهز) عشان المتوسط ما يكبر بالغلط
-  const waits = past.map(r => mins(Date.parse(r.ready_at) - Date.parse(r.created_at))).filter(m => m > 0 && m <= 60).sort((a, b) => a - b);
-  const typical = waits.length >= 5 ? waits[Math.floor(waits.length / 2)] : null;
+  const { mins, aheadOf, typicalWait } = require('./_lib/pager-wait');
+  const [ahead, typical] = await Promise.all([aheadOf(storeId, t), typicalWait(storeId)]);
   const STATUS = { waiting: 'being prepared (waiting)', ready: 'READY now, guest should pick it up from the counter', done: 'already picked up', cancelled: 'cancelled by the store' };
-  return [`pager number: ${t.number}`, `status: ${STATUS[t.status] || t.status}`, `waiting since: ${mins(now - Date.parse(t.created_at))} minutes`,
-    t.status === 'waiting' ? `orders ahead still being prepared: ${ahead.length}` : '',
-    typical ? `typical wait at this place (median, last 7 days): ${typical} minutes` : 'typical wait: not enough data'].filter(Boolean).join('\n');
+  const added = Array.isArray(t.addons) && t.addons.length ? `items the guest added from this page (sent to the cashier, paid at pickup): ${t.addons.map(a => a.name).join(', ')}` : '';
+  return [`pager number: ${t.number}`, `status: ${STATUS[t.status] || t.status}`, `waiting since: ${mins(Date.now() - Date.parse(t.created_at))} minutes`,
+    t.status === 'waiting' ? `orders ahead still being prepared: ${ahead}` : '',
+    typical ? `typical wait at this place (median, last 7 days): ${typical} minutes` : 'typical wait: not enough data', added].filter(Boolean).join('\n');
 }
 
 async function menuPayload(slug) {

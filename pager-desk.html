@@ -76,6 +76,8 @@
   header .mini.bg-white:hover, header button[data-lang-toggle]:hover { background: rgba(56,79,61,.12); color: var(--brand); }
   header .mini.bg-\[\#233d2c\] { background: var(--brand); box-shadow: var(--shadow-primary); }
   #search { border-radius: 8px; }
+  .addon-line { margin-top: 6px; padding: 5px 8px; border-radius: 10px; background: #fff; color: #15271b; font-size: 13px; font-weight: 800; line-height: 1.45; }
+  .addon-line.game { background: #c9a227; }
 </style>
 <link rel="stylesheet" href="/css/tw/pager-desk.css">
 <style>body.desk .owner-only { display: none !important; }
@@ -285,6 +287,12 @@
     const c = t.car; if (!c || !(c.color || c.model)) return '';
     return `<div class="text-[12.5px] font-black mt-1 leading-snug">🚗 ${esc([c.model, c.color].filter(Boolean).join(' · '))}${c.plate ? ` · <span dir="ltr">${esc(c.plate)}</span>` : ''}</div>`;
   };
+  // اللي أضافه الزبون من صفحة الانتظار، وفوزه باللعبة: تحت رقمه عشان الموظف يجهزها ويحاسبه عليها
+  const extraLines = (t) => {
+    const a = Array.isArray(t.addons) ? t.addons : [];
+    const names = Object.entries(a.reduce((m, x) => (m[x.name] = (m[x.name] || 0) + 1, m), {})).map(([n, k]) => k > 1 ? `${n} ×${k}` : n);
+    return (names.length ? `<div class="addon-line">➕ ${esc(names.join('، '))}</div>` : '') + (t.game_won ? '<div class="addon-line game">🏆 فاز باللعبة</div>' : '');
+  };
   const normDigits = (v) => String(v).replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15));
 
   // ─── رقم الفاتورة ───
@@ -341,6 +349,7 @@
         <div class="text-[11px] opacity-85">بيجر</div>
         <div class="n">${t.number}</div>
         ${carLine(t)}
+        ${extraLines(t)}
         <button class="mini w-full mt-2 ${t.invoice_no ? 'bg-white/15 text-white' : 'bg-[#c9a227] text-[#15271b]'}" data-invoice="${t.id}">
           ${t.invoice_no ? `🧾 ${esc(t.invoice_no)}` : '🧾 أضف الفاتورة'}
         </button>
@@ -357,6 +366,7 @@
       <div class="tile tile-ready">
         <div class="n">${t.number}</div>
         ${carLine(t)}
+        ${extraLines(t)}
         ${t.invoice_no ? `<div class="text-[12px] font-black mt-1">🧾 ${esc(t.invoice_no)}</div>` : ''}
         <div class="text-[11px] mt-1 opacity-85">${ringLabel(t)}</div>
         ${t.reward ? `<button class="mini w-full mt-1.5 bg-[#c9a227] text-[#15271b] rw-pulse" data-reward="${t.id}"><i class="ph-bold ph-gift"></i> عنده مكافأة</button>` : ''}
@@ -410,7 +420,7 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { keepAwake(); load(); } });
 
   // 2) رقم جديد: صوت قصير ووميض على البطاقة (المتصفح يسمح بالصوت بعد أول لمسة على الشاشة)
-  let seenIds = null, freshIds = new Set(), audio = null;
+  let seenIds = null, seenAdds = null, freshIds = new Set(), audio = null;
   let soundOn = (() => { try { return localStorage.getItem('dm_desk_sound') !== 'off'; } catch { return true; } })();
   const unlockAudio = () => { try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); } catch {} };
   document.addEventListener('pointerdown', unlockAudio, { passive: true });
@@ -426,8 +436,12 @@
   }
   function noticeNew() {
     const waiting = tickets.filter(t => t.status === 'waiting').map(t => t.id);
+    // زبون أضاف صنف من صفحة الانتظار: نفس التنبيه على بطاقته
+    const addCount = (t) => Array.isArray(t.addons) ? t.addons.length : 0;
+    const grew = seenAdds ? tickets.filter(t => t.status === 'waiting' && addCount(t) > (seenAdds.get(t.id) || 0)).map(t => t.id) : [];
+    seenAdds = new Map(tickets.map(t => [t.id, addCount(t)]));
     if (seenIds) {
-      const fresh = waiting.filter(id => !seenIds.has(id));
+      const fresh = [...new Set([...waiting.filter(id => !seenIds.has(id)), ...grew])];
       if (fresh.length) { fresh.forEach(id => freshIds.add(id)); chime(); setTimeout(() => { fresh.forEach(id => freshIds.delete(id)); }, 4500); }
     }
     seenIds = new Set(tickets.map(t => t.id));

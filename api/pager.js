@@ -11,7 +11,7 @@
 // =====================================================================
 const crypto = require('crypto');
 const PLANS = require('./_lib/plans');
-const { reqLang, handler, rest, rpc, q, ApiError, readBody, findPublicStore, storeHasFeature, loyaltyHome, later, googleReviewLink } = require('./_lib/core');
+const { reqLang, handler, rest, rpc, q, ApiError, readBody, findPublicStore, storeHasFeature, loyaltyHome, later, googleReviewLink, CURRENCIES } = require('./_lib/core');
 const { pushPublicKey, cleanSubscription, sendPush } = require('./_lib/push');
 const { topic, poke } = require('./_lib/live');
 const { normalizeLoyalty } = require('./_lib/loyalty');
@@ -115,11 +115,26 @@ function cleanCar(b) {
   return color || model ? { color, model, plate } : null;
 }
 
-async function pagerChat(storeId) {
-  const row = (await rest(`clients?id=eq.${storeId}&select=menu_chat`).catch(() => []))[0];
-  if (!row || row.menu_chat !== true) return false;
-  const [menu, chat] = await Promise.all([storeHasFeature(storeId, 'menu'), storeHasFeature(storeId, 'chat')]);
-  return menu && chat;
+// إضافات صفحة الانتظار (تنحسب مرة وحدة لكل رقم): المساعد، «أضف لطلبك»، وجايزة اللعبة
+async function waitSettings(storeId) {
+  return (await rest(`clients?id=eq.${storeId}&select=menu_chat,pager_upsell,pager_game_reward,pager_game_moves,currency`)
+    .catch(() => rest(`clients?id=eq.${storeId}&select=menu_chat`)).catch(() => []))[0] || {};
+}
+async function waitExtras(storeId, t) {
+  const [x, menu, chatOk] = await Promise.all([waitSettings(storeId), storeHasFeature(storeId, 'menu'), storeHasFeature(storeId, 'chat')]);
+  const chat = x.menu_chat === true && menu && chatOk;
+  let upsell = [];
+  if (x.pager_upsell === true && menu && t.status === 'waiting') upsell = await upsellItems(storeId);
+  const reward = String(x.pager_game_reward || '').trim();
+  return { chat, upsell, currency: CURRENCIES[x.currency] || CURRENCIES.SAR, game: reward ? { reward, moves: Math.min(40, Math.max(10, Number(x.pager_game_moves) || 20)), won: t.game_won === true } : null };
+}
+// اقتراحات «أضف لطلبك»: الأكثر طلباً بصورة أول، وبعدها الأرخص بصورة (بدون الأصناف اللي لها أحجام: تحتاج اختيار)
+async function upsellItems(storeId) {
+  const rows = await rest(`products?client_id=eq.${storeId}&is_hidden=is.false&is_available=is.true&select=id,name,name_en,price,image_url,is_bestseller,sizes&limit=400`).catch(() => []);
+  const ok = rows.filter(p => Number(p.price) > 0 && !(Array.isArray(p.sizes) && p.sizes.length));
+  const score = (p) => (p.image_url ? 0 : 2) + (p.is_bestseller ? 0 : 1);
+  return ok.sort((a, b) => score(a) - score(b) || Number(a.price) - Number(b.price)).slice(0, 4)
+    .map(p => ({ id: p.id, name: p.name, name_en: p.name_en || null, price: Number(p.price), image_url: p.image_url || null }));
 }
 
 async function loadStore(slug) {
@@ -206,7 +221,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const token = String(req.query.t || '');
     if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
     const sel = `pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&select=number,status,created_at,ready_at`;
-    const t = (await rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url,wallet_serial,wallet_error,car`).catch(() => rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url,wallet_serial,wallet_error`)).catch(() => rest(`${sel},invoice_no`)).catch(() => rest(sel)))[0];
+    const t = (await rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url,wallet_serial,wallet_error,car,addons,game_won`).catch(() => rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url,wallet_serial,wallet_error,car`)).catch(() => rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url,wallet_serial,wallet_error`)).catch(() => rest(`${sel},invoice_no`)).catch(() => rest(sel)))[0];
     if (!t) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
     if (DEMO.has(store.client_slug) && t.status === 'waiting' && Date.now() - Date.parse(t.created_at) > (t.wallet_url ? DEMO_AFTER_CARD : DEMO_AFTER)) {
       await demoRing(store, token);
@@ -220,10 +235,17 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       && ((await rest(`pager_cards?wallet_serial=eq.${q(t.wallet_serial || '')}&select=platform`).catch(() => []))[0] || {}).platform !== 'google';
     // تسليم الطلب للسيارة: صاحب المحل مشغّله، فنسأل الزبون عن سيارته
     const car_ask = t.status === 'waiting' && ((await rest(`clients?id=eq.${store.id}&select=pager_car`).catch(() => []))[0] || {}).pager_car === true;
-    // المساعد الذكي في صفحة الانتظار: للمحل اللي عنده المنيو والمساعد ومشغّله، والطلب ما زال ينتظر أو جاهز
-    // (الصفحة تسأل عنه مرة وحدة بـ c=1، مو مع كل تحديث كل 3 ثواني)
-    const chat = req.query.c === '1' ? ['waiting', 'ready'].includes(t.status) && !stale && await pagerChat(store.id) : undefined;
-    return { chat, demo: DEMO.has(store.client_slug), wallet: wallet.configured() && !store.free && !(await wallet.cardMaintenance()), in_wallet: !!t.wallet_url && !card_gone, card_gone, car_ask, car: t.car || null, review_url: review, social, store: { name: store.display_name || store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
+    // إضافات صفحة الانتظار: الصفحة تسأل عنها مرة وحدة لكل رقم (c=1)، مو مع كل تحديث كل 3 ثواني
+    const live = ['waiting', 'ready'].includes(t.status) && !stale;
+    const extras = req.query.c === '1' ? (live ? await waitExtras(store.id, t) : { chat: false, upsell: [], game: null }) : {};
+    // الطابور الحي: كم طلب قدامه، والوقت الباقي تقريباً (الصفحة تسأل كل 15 ثانية تقريباً بـ q=1)
+    let queue;
+    if (req.query.q === '1' && t.status === 'waiting' && !stale) {
+      const PW = require('./_lib/pager-wait');
+      const [ahead, typical] = await Promise.all([PW.aheadOf(store.id, t), PW.typicalWait(store.id)]);
+      queue = { ahead, eta: PW.etaOf(t, typical) };
+    }
+    return { ...extras, ...(queue ? { queue } : {}), addons: Array.isArray(t.addons) ? t.addons.map(a => ({ id: a.id, name: a.name })) : [], game_won: t.game_won === true, demo: DEMO.has(store.client_slug), wallet: wallet.configured() && !store.free && !(await wallet.cardMaintenance()), in_wallet: !!t.wallet_url && !card_gone, card_gone, car_ask, car: t.car || null, review_url: review, social, store: { name: store.display_name || store.name, logo_url: store.logo_url, business_type: store.business_type, accent_color: store.accent_color || null }, ticket: { number: t.number, status: stale ? 'expired' : t.status, ready_at: t.ready_at, invoice_no: t.invoice_no || null }, live: topic('ticket', token),
       loyalty: { ...(await loyaltyOf(store.id)), linked: !!t.loyalty_card_id, stamped: !!t.loyalty_stamped,
         ...(await linkedCard(store.id, t.loyalty_card_id)) } };
   }
@@ -321,6 +343,44 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
   }
 
   // ─── تقييم الزبون بعد الاستلام: الراضي (4-5) نعطيه رابط تقييم المحل في قوقل ───
+  // ─── «أضف لطلبك»: الزبون يضيف صنف وهو ينتظر، ويوصل للكاشير تحت رقمه (الدفع عند الاستلام) ───
+  if (action === 'addon' && req.method === 'POST') {
+    const store = await loadStore(b.slug);
+    const token = String(b.t || '');
+    if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
+    const x = await waitSettings(store.id);
+    if (x.pager_upsell !== true || !(await storeHasFeature(store.id, 'menu'))) throw new ApiError(403, 'الإضافة غير متاحة الحين، اطلبها من الكاشير', 'UPSELL_OFF');
+    const t = (await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&select=id,status,addons`))[0];
+    if (!t || t.status !== 'waiting') throw new ApiError(409, 'طلبك جهز، أضفها من الكاشير', 'NOT_WAITING');
+    const list = Array.isArray(t.addons) ? t.addons : [];
+    if (list.length >= 5) throw new ApiError(409, 'وصلت حد الإضافات من هنا، كمّل من الكاشير', 'ADDON_MAX');
+    const p = (await rest(`products?id=eq.${Number(b.id) || 0}&client_id=eq.${store.id}&is_hidden=is.false&is_available=is.true&select=id,name,price`))[0];
+    if (!p) throw new ApiError(404, 'الصنف غير متوفر الحين', 'NO_ITEM');
+    const addons = [...list, { id: p.id, name: p.name, price: Number(p.price) || 0, at: new Date().toISOString() }];
+    await rest(`pager_tickets?id=eq.${t.id}&status=eq.waiting`, { method: 'PATCH', body: { addons } });
+    console.log('PAGER_ADDON', store.id, p.id);
+    await poke(topic('pager', store.id));
+    return { ok: true, addons: addons.map(a => ({ id: a.id, name: a.name })) };
+  }
+
+  // ─── جايزة اللعبة: خلّصها بحركات أقل من حد صاحب المحل، وتطلع للموظف جنب رقمه ───
+  if (action === 'game' && req.method === 'POST') {
+    const store = await loadStore(b.slug);
+    const token = String(b.t || '');
+    if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
+    const x = await waitSettings(store.id);
+    const reward = String(x.pager_game_reward || '').trim();
+    const limit = Math.min(40, Math.max(10, Number(x.pager_game_moves) || 20));
+    const moves = Number(b.moves);
+    if (!reward) return { won: false };
+    // 8 أزواج = أقل شي 8 حركات
+    if (!Number.isInteger(moves) || moves < 8 || moves > limit) return { won: false, moves: limit };
+    const rows = await rest(`pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&status=in.(waiting,ready)`, { method: 'PATCH', body: { game_won: true }, prefer: 'return=representation' });
+    if (!rows.length) throw new ApiError(409, 'الرقم انتهى', 'NOT_WAITING');
+    await poke(topic('pager', store.id));
+    return { won: true, reward };
+  }
+
   if (action === 'rate' && req.method === 'POST') {
     const store = await loadStore(b.slug);
     const token = String(b.t || '');
