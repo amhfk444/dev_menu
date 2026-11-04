@@ -111,7 +111,13 @@
   .tk-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 14px; font-weight: 700; padding: 5px 9px; border-radius: 8px; background: #f1f1f1; color: #1a1a1a; }
   .tk-tag b { font-weight: 800; } .tk-tag.gold { background: #fbefc4; color: #5c4600; }
   .tk-order { border-top: 1px dashed #d6d6d6; padding-top: 8px; }
-  .tk-order small { display: block; font-size: 12px; font-weight: 700; color: #777; margin-bottom: 4px; }
+  .tk-order-hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+  .tk-order small { font-size: 12.5px; font-weight: 700; color: #666; }
+  .tk-order.new { background: #fff6dc; border: 1.5px solid #e9c85a; border-radius: 12px; padding: 8px 10px; animation: seenPulse 1.4s ease-in-out infinite; }
+  @keyframes seenPulse { 50% { box-shadow: 0 0 0 4px rgba(233,200,90,.35); } }
+  @media (prefers-reduced-motion: reduce) { .tk-order.new { animation: none; } }
+  .tk-seen { display: inline-flex; align-items: center; gap: 5px; min-height: 40px; padding: 0 14px; border-radius: 10px; background: #1a1a1a; color: #fff; font-size: 14px; font-weight: 800; }
+  .tk-seen-ok { font-size: 13px; font-weight: 700; color: #1f6b45; display: inline-flex; align-items: center; gap: 4px; }
   .tk-order ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
   .tk-order li { display: flex; align-items: flex-start; gap: 8px; }
   .tk-order .q { min-width: 28px; height: 28px; border-radius: 8px; background: #1a1a1a; color: #fff; font-size: 15px; font-weight: 800; display: grid; place-items: center; flex-shrink: 0; }
@@ -359,7 +365,7 @@
 
   // ─── وقت الانتظار لرقم ───
   const etaLeft = (at) => { const m = Math.max(0, Math.ceil((Date.parse(at) - Date.now()) / 60000)); return m ? `يجهز بعد ${m} د` : 'انتهى الوقت المحدد'; };
-  let etaId = null;
+  let etaId = null, deskCur = 'ر.س';
   function openEta(id) {
     const t = tickets.find(x => x.id === id); if (!t) return;
     etaId = id; $('eta-num').textContent = t.number;
@@ -367,6 +373,11 @@
     $('eta-modal').classList.replace('hidden', 'flex');
   }
   const closeEta = () => { etaId = null; $('eta-modal').classList.replace('flex', 'hidden'); };
+  async function markSeen(id, btn) {
+    btn.disabled = true;
+    try { const r = await call('pager-addons-seen', { id }); tickets = tickets.map(t => t.id === id ? { ...t, addons: r.ticket.addons } : t); render(); }
+    catch (e) { btn.disabled = false; alert(e.message || 'ما انحفظ'); }
+  }
   async function saveEta(minutes) {
     const id = etaId; if (!id) return; closeEta();
     try {
@@ -427,6 +438,7 @@
     $('ready-count').textContent = ready.length || '';
     $('wait-empty').classList.toggle('hidden', waiting.length > 0);
     $('ready-empty').classList.toggle('hidden', ready.length > 0);
+    const fmtMoney = (n) => `${Number.isInteger(n) ? n : n.toFixed(2)} ${deskCur}`;
     const mins = (iso) => Math.max(0, Math.floor((Date.now() - Date.parse(iso)) / 60000));
     const timer = (iso, warn, late) => { const m = mins(iso); return `<span class="tk-time${m >= late ? ' late' : m >= warn ? ' warn' : ''}"><i class="ph-bold ph-timer"></i> ${m < 1 ? 'الآن' : `${m} د`}</span>`; };
     const details = (t, ready) => {
@@ -435,7 +447,9 @@
       const car = t.car; if (car && (car.color || car.model)) c.push(`<span class="tk-tag"><i class="ph-bold ph-car"></i> ${esc([car.model, car.color].filter(Boolean).join(' '))}${car.plate ? ` <b dir="ltr">${esc(car.plate)}</b>` : ''}</span>`);
       if (t.game_won) c.push('<span class="tk-tag gold"><i class="ph-bold ph-trophy"></i> فاز باللعبة</span>');
       const a = Array.isArray(t.addons) ? t.addons : [];
-      const items = a.length ? `<div class="tk-order"><small>أضافه الزبون</small><ul>${a.map(x => `<li><span class="q">${x.qty || 1}</span><span class="nm"><b>${esc(x.name)}</b>${x.size ? ` <span>${esc(x.size)}</span>` : ''}${x.note ? `<em>${esc(x.note)}</em>` : ''}</span></li>`).join('')}</ul></div>` : '';
+      const total = a.reduce((k, x) => k + (Number(x.price) || 0) * (x.qty || 1), 0), unseen = a.some(x => !x.seen);
+      const head = `<div class="tk-order-hd"><small>أضافه الزبون${total ? ` · ${fmtMoney(total)}` : ''}</small>${unseen ? `<button class="tk-seen" data-seen="${t.id}"><i class="ph-bold ph-check"></i> شفتها</button>` : '<span class="tk-seen-ok"><i class="ph-bold ph-check-circle"></i> تم</span>'}</div>`;
+      const items = a.length ? `<div class="tk-order${unseen ? ' new' : ''}">${head}<ul>${a.map(x => `<li><span class="q">${x.qty || 1}</span><span class="nm"><b>${esc(x.name)}</b>${x.size ? ` <span>${esc(x.size)}</span>` : ''}${x.note ? `<em>${esc(x.note)}</em>` : ''}</span></li>`).join('')}</ul></div>` : '';
       const rw = t.reward ? `<button class="tk-reward rw-pulse" data-reward="${t.id}"><i class="ph-bold ph-gift"></i> عنده مكافأة</button>` : '';
       return (c.length ? `<div class="tk-tags">${c.join('')}</div>` : '') + items + rw;
     };
@@ -487,6 +501,7 @@
     const r = e.target.closest('[data-ready]'), d = e.target.closest('[data-done]'), u = e.target.closest('[data-undo]'), inv = e.target.closest('[data-invoice]');
     if (inv) return openInvoice(+inv.dataset.invoice);
     const et = e.target.closest('[data-eta]'); if (et) return openEta(+et.dataset.eta);
+    const sn = e.target.closest('[data-seen]'); if (sn) return markSeen(+sn.dataset.seen, sn);
     if (r) setStatus(+r.dataset.ready, 'ready', '🔔 جوال رقم # يرن الحين');
     if (d) setStatus(+d.dataset.done, 'done', `✓ رقم # ${T.deskDone}`);
     if (u) setStatus(+u.dataset.undo, 'waiting', 'رقم # رجع للانتظار');
@@ -584,6 +599,7 @@
       // تحديث لحظي: رقم جديد أو عميل شاف التنبيه يظهر هنا على طول
       if (r.live && !liveOn && !EMBED) { liveOn = true; DM.live(r.live, () => load()); }
       // ما نلمس الأرقام اللي جاري تحديثها
+      deskCur = r.currency || deskCur;
       tickets = r.tickets.map(t => busy.has(t.id) ? (tickets.find(x => x.id === t.id) || t) : t);
       netOk(); if (!EMBED) noticeNew();
       if (invId) return void (timer = setTimeout(load, 4000));   // النافذة مفتوحة: لا نعيد الرسم

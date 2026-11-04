@@ -130,14 +130,21 @@ async function waitExtras(storeId, t) {
   const reward = String(x.pager_game_reward || '').trim();
   return { chat, upsell, game_on: gameOn, currency: CURRENCIES[x.currency] || CURRENCIES.SAR, game: gameOn && reward ? { reward, moves: Math.min(40, Math.max(10, Number(x.pager_game_moves) || 20)), won: t.game_won === true } : null };
 }
-const publicAddons = (list) => (Array.isArray(list) ? list : []).map(a => ({ id: a.id, name: a.name, qty: a.qty || 1, size: a.size || null, note: a.note || null }));
+const publicAddons = (list) => (Array.isArray(list) ? list : []).map(a => ({ id: a.id, name: a.name, qty: a.qty || 1, size: a.size || null, note: a.note || null, price: Number(a.price) || 0, seen: a.seen === true }));
 const sizeName = (z) => String((z && (z.name || z.label)) || '').trim();
 
 // اقتراحات «أضف لطلبك»: الأكثر طلباً بصورة أول، وبعدها الأرخص بصورة (بدون الأصناف اللي لها أحجام: تحتاج اختيار)
 async function upsellItems(storeId) {
-  const rows = await rest(`products?client_id=eq.${storeId}&is_hidden=is.false&is_available=is.true&select=id,name,name_en,price,image_url,is_bestseller,sizes&limit=400`).catch(() => []);
-  const ok = rows.filter(p => Number(p.price) > 0);
-  const score = (p) => (p.image_url ? 0 : 2) + (p.is_bestseller ? 0 : 1);
+  const since = new Date(Date.now() - 30 * 864e5).toISOString();
+  const [rows, past] = await Promise.all([
+    rest(`products?client_id=eq.${storeId}&is_hidden=is.false&is_available=is.true&select=id,name,name_en,price,image_url,is_bestseller,sizes&limit=400`).catch(() => []),
+    // اللي يضيفونه الزبائن أكثر وهم ينتظرون (آخر 30 يوم) يطلع أول
+    rest(`pager_tickets?client_id=eq.${storeId}&addons=not.is.null&created_at=gte.${q(since)}&select=addons&order=id.desc&limit=400`).catch(() => [])
+  ]);
+  const added = {};
+  for (const t of past) for (const a of (Array.isArray(t.addons) ? t.addons : [])) added[a.id] = (added[a.id] || 0) + (a.qty || 1);
+  const ok = rows.filter(p => Number(p.price) > 0 || (Array.isArray(p.sizes) && p.sizes.length));
+  const score = (p) => -(added[p.id] || 0) * 10 + (p.image_url ? 0 : 2) + (p.is_bestseller ? 0 : 1);
   return ok.sort((a, b) => score(a) - score(b) || Number(a.price) - Number(b.price)).slice(0, 4)
     .map(menuItem);
 }
@@ -396,6 +403,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (b.remove !== undefined) {
       const k = Number(b.remove);
       if (!Number.isInteger(k) || k < 0 || k >= list.length) throw new ApiError(404, 'الإضافة غير موجودة');
+      if (list[k].seen === true) throw new ApiError(409, 'الكاشير استلم الإضافة، كلمه لو تبي تغيّرها', 'ADDON_SEEN');
       const addons = list.filter((_, i) => i !== k);
       await rest(`pager_tickets?id=eq.${t.id}&status=eq.waiting`, { method: 'PATCH', body: { addons: addons.length ? addons : null } });
       await poke(topic('pager', store.id));

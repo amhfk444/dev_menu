@@ -114,7 +114,7 @@ function phoneNumber(v) {
 }
 
 // رابط الكاشير: مفتاح الفرع يفتح شاشة البيجر وشاشة الختم بس (بدون حساب المالك)
-const DESK_ACTIONS = ['pager', 'pager-update', 'pager-invoice', 'pager-ring', 'pager-eta', 'loyalty-stamp-code', 'loyalty-scan', 'loyalty-redeem', 'loyalty-transfer', 'kiosk'];
+const DESK_ACTIONS = ['pager', 'pager-update', 'pager-invoice', 'pager-ring', 'pager-eta', 'pager-addons-seen', 'loyalty-stamp-code', 'loyalty-scan', 'loyalty-redeem', 'loyalty-transfer', 'kiosk'];
 const DESK_KEY_RE = /^[A-Za-z0-9_-]{24,64}$/;
 // الولاء وحدة للمحل بكل فروعه: أي طلب ولاء من فرع يشتغل على بيانات المحل الرئيسي وإعداداته
 // (ما عدا موقع الختم: لكل فرع موقعه). here = الفرع اللي جاي منه الطلب
@@ -649,7 +649,7 @@ async function main(req) {
       const cards = await rest(`loyalty_cards?id=in.(${linked.join(',')})&select=id,member_no,name,stamps`).catch(() => []);
       for (const c of cards) { const r = await readyRewards(lhome, c, st); if (r.length) rewardsBy[c.id] = { card_id: c.id, name: c.name || `عضو #${c.member_no}`, rewards: r }; }
     }
-    return { tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub, reward: t.loyalty_card_id ? rewardsBy[t.loyalty_card_id] || null : null })), slug: store.client_slug, name: store.name, business_type: store.business_type, max_rings: PAGER_MAX_RINGS, live: topic('pager', store.id), loyalty: lx.loyalty_enabled === true, pager: hasPager, loyalty_entitled: PLANS.has(store, 'loyalty') };
+    return { currency: CURRENCIES[store.currency] || CURRENCIES.SAR, tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub, reward: t.loyalty_card_id ? rewardsBy[t.loyalty_card_id] || null : null })), slug: store.client_slug, name: store.name, business_type: store.business_type, max_rings: PAGER_MAX_RINGS, live: topic('pager', store.id), loyalty: lx.loyalty_enabled === true, pager: hasPager, loyalty_entitled: PLANS.has(store, 'loyalty') };
   }
 
   // ─── إحصائيات البيجر: وقت الانتظار، الإنجاز، أوقات الذروة، والتقييم (آخر 30 يوم) ───
@@ -795,7 +795,7 @@ async function main(req) {
     return (await familyIds(store)).includes(want) ? want : here.id;
   };
   // المميزات حسب باقة المحل
-  if (['pager-update', 'pager-invoice', 'pager-ring', 'pager-eta'].includes(action) && !PLANS.has(store, 'pager')) throw new ApiError(403, 'البيجر مو ضمن باقتك', 'ADDON_OFF');
+  if (['pager-update', 'pager-invoice', 'pager-ring', 'pager-eta', 'pager-addons-seen'].includes(action) && !PLANS.has(store, 'pager')) throw new ApiError(403, 'البيجر مو ضمن باقتك', 'ADDON_OFF');
   if (['pager-message', 'pager-message-push', 'pager-winback'].includes(action) && !PLANS.has(store, 'notify')) throw new ApiError(403, '"رسائل لزبائنك" مو ضمن باقتك. أضفها من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
   if (['loyalty-stamp-code', 'loyalty-scan', 'loyalty-transfer', 'loyalty-give-stamp', 'loyalty-member-delete', 'loyalty-import', 'loyalty-redeem', 'loyalty-message', 'loyalty-message-push', 'loyalty-ai', 'loyalty-ai-run', 'loyalty-ai-preview'].includes(action) && !PLANS.has(store, 'loyalty')) throw new ApiError(403, 'بطاقة الولاء متوقفة: مو ضمن باقتك أو انتهى اشتراكك. جدّد من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
   // خدمة مو ضمن باقة المشترك (في التجربة أو الاشتراك): نفس قفل اللوحة (featureLocked في admin.html)،
@@ -1209,6 +1209,17 @@ async function main(req) {
   }
 
   // ─── البيجر: الكاشير يربط رقم البيجر برقم الفاتورة ───
+  // ─── البيجر: الكاشير شاف اللي أضافه الزبون (يطلع للزبون «الكاشير استلم إضافتك»، وما يقدر يحذفها بعدها) ───
+  if (action === 'pager-addons-seen') {
+    const id = int(b.id);
+    const t = (await rest(`pager_tickets?id=eq.${id}&client_id=eq.${sid}&select=id,token,addons`))[0];
+    if (!t) throw new ApiError(404, 'الرقم غير موجود');
+    const addons = (Array.isArray(t.addons) ? t.addons : []).map(a => ({ ...a, seen: true }));
+    await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { addons } });
+    await poke([topic('pager', sid), topic('ticket', t.token)]);
+    return { ticket: { id: t.id, addons } };
+  }
+
   // ─── البيجر: الكاشير يحدد وقت الانتظار لرقم (بعض الأصناف تتأخر). 0 = يرجع للتقدير التلقائي ───
   if (action === 'pager-eta') {
     const id = int(b.id), m = int(b.minutes);

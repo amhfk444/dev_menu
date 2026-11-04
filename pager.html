@@ -97,6 +97,14 @@
   .ups-tx b { font-size: 15.5px; font-weight: 800; } .ups-tx small { font-size: 12.5px; font-weight: 500; opacity: .65; }
   .ups-go { opacity: .45; }
   .ups .ups-added { margin: 2px 6px 6px; }
+  .ups .ups-added { color: #6b5000; background: #fff6dc; }
+  .ups .ups-added.seen { color: #0a6b45; background: #e7f4ec; }
+  .ua-hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; } .ua-hd span { display: inline-flex; align-items: center; gap: 5px; } .ua-hd b { color: #15271b; font-weight: 800; }
+  .ups-added li small { font-size: 13px; font-weight: 600; color: #15271b; opacity: .75; flex-shrink: 0; }
+  .ua-ok { color: #0a6b45; font-size: 17px; width: 28px; text-align: center; flex-shrink: 0; }
+  .mn-search { margin: 10px 14px 0; position: relative; } .mn-search i { position: absolute; right: 13px; top: 50%; transform: translateY(-50%); opacity: .45; }
+  .mn-search input { width: 100%; padding: 11px 38px 11px 12px; border-radius: 14px; border: 1px solid rgba(35,61,44,.18); background: #f6f5f1; font-size: 16px; outline: none; }
+  .mn-search input:focus { border-color: var(--brand); background: #fff; }
   .ups-added { margin-top: 10px; font-size: 13px; font-weight: 700; color: #0a6b45; background: #e7f4ec; border-radius: 12px; padding: 8px 10px; }
   .ups-added ul { list-style: none; margin: 4px 0 0; padding: 0; } .ups-added li { display: flex; align-items: center; gap: 8px; padding: 3px 0; color: #15271b; }
   .ups-added li span { flex: 1; min-width: 0; } .ups-added li em { display: block; font-style: normal; font-weight: 500; font-size: 12px; opacity: .7; }
@@ -563,6 +571,7 @@
       <div class="ask-hd-tx"><b id="mn-title">أضف لطلبك</b><small>يوصل للكاشير مع رقمك، وتدفع عند الاستلام</small></div>
       <button type="button" class="ask-x" data-mn-close aria-label="إغلاق"><i class="ph-bold ph-x"></i></button>
     </div>
+    <label class="mn-search"><i class="ph-bold ph-magnifying-glass"></i><input id="mn-q" type="search" autocomplete="off" placeholder="ابحث في المنيو" aria-label="ابحث في المنيو"></label>
     <div id="mn-cats" class="mn-cats"></div>
     <div id="mn-list" class="mn-list"><p class="mn-empty"><i class="ph-bold ph-spinner-gap ph-spin"></i></p></div>
   </div>
@@ -1041,7 +1050,9 @@
     const n = addedNow.reduce((k, a) => k + (a.qty || 1), 0);
     $('ups-title').textContent = n ? `✓ أضفت ${n === 1 ? 'صنف واحد' : n === 2 ? 'صنفين' : `${n} أصناف`}، تبي تزيد؟` : 'تبي تزيد على طلبك؟';
     $('ups-added').classList.toggle('hidden', !addedNow.length);
-    $('ups-added').innerHTML = addedNow.length ? `وصل للكاشير:<ul>${addedNow.map((a, k) => `<li><span>${(a.qty || 1) > 1 ? `${a.qty}× ` : ''}${esc(a.name)}${a.size ? ` (${esc(a.size)})` : ''}${a.note ? `<em>${esc(a.note)}</em>` : ''}</span><button type="button" data-rm="${k}" aria-label="شيلها"><i class="ph-bold ph-x"></i></button></li>`).join('')}</ul>` : '';
+    const total = addedNow.reduce((k, a) => k + (Number(a.price) || 0) * (a.qty || 1), 0), allSeen = addedNow.length && addedNow.every(a => a.seen);
+    $('ups-added').classList.toggle('seen', !!allSeen);
+    $('ups-added').innerHTML = addedNow.length ? `<div class="ua-hd"><span>${allSeen ? '<i class="ph-bold ph-check-circle"></i> الكاشير استلم إضافتك' : 'وصل للكاشير، ينتظر يشوفها'}</span>${total ? `<b>${fmtPrice(total)}</b>` : ''}</div><ul>${addedNow.map((a, k) => `<li><span>${(a.qty || 1) > 1 ? `${a.qty}× ` : ''}${esc(a.name)}${a.size ? ` (${esc(a.size)})` : ''}${a.note ? `<em>${esc(a.note)}</em>` : ''}</span>${a.price ? `<small>${fmtPrice(a.price * (a.qty || 1))}</small>` : ''}${a.seen ? '<i class="ph-bold ph-check ua-ok" aria-label="استلمها الكاشير"></i>' : `<button type="button" data-rm="${k}" aria-label="شيلها"><i class="ph-bold ph-x"></i></button>`}</li>`).join('')}</ul>` : '';
   }
   const sheetOpen = (id) => { $(id).hidden = false; document.documentElement.classList.add('ask-lock'); };
   const sheetClose = (id) => { $(id).hidden = true; $(id).classList.remove('kb'); $(id).style.cssText = ''; const pn = $(id).querySelector('.ask-panel'); if (pn) { pn.style.height = ''; pn.style.maxHeight = ''; } if (['ask-sheet', 'mn-sheet', 'it-sheet'].every(x => $(x).hidden)) document.documentElement.classList.remove('ask-lock'); };
@@ -1069,7 +1080,7 @@
     });
   }
   if (window.visualViewport) { visualViewport.addEventListener('resize', fitSheets); visualViewport.addEventListener('scroll', fitSheets); }
-  ['it-note', 'ask-in'].forEach(id => { $(id).addEventListener('focus', () => [60, 250, 500].forEach(t => setTimeout(fitSheets, t))); $(id).addEventListener('blur', () => setTimeout(fitSheets, 150)); });
+  ['it-note', 'ask-in', 'mn-q'].forEach(id => { $(id).addEventListener('focus', () => [60, 250, 500].forEach(t => setTimeout(fitSheets, t))); $(id).addEventListener('blur', () => setTimeout(fitSheets, 150)); });
 
   // الصنف: حجم + عدد + ملاحظة
   let it = null, itQty = 1, itSize = '';
@@ -1094,7 +1105,7 @@
   $('it-sheet').addEventListener('click', (e) => { if (e.target.closest('[data-it-close]')) sheetClose('it-sheet'); });
   $('it-form').onsubmit = async (e) => {
     e.preventDefault(); if (upsBusy || !it) return;
-    if (PREVIEW) { addedNow = [...addedNow, { id: it.id, name: it.name, qty: itQty, size: itSize || null, note: $('it-note').value.trim() || null }]; sheetClose('it-sheet'); sheetClose('mn-sheet'); return renderUpsell(true); }
+    if (PREVIEW) { addedNow = [...addedNow, { id: it.id, name: it.name, qty: itQty, size: itSize || null, note: $('it-note').value.trim() || null, price: it.sizes && it.sizes.length ? (it.sizes.find(z => z.name === itSize) || it.sizes[0]).price : it.price }]; sheetClose('it-sheet'); sheetClose('mn-sheet'); return renderUpsell(true); }
     upsBusy = true; $('it-add').disabled = true;
     try {
       const r = await DM.post('/api/pager?action=addon', { slug, t: loadToken(), id: it.id, qty: itQty, size: itSize || undefined, note: $('it-note').value.trim() });
@@ -1114,13 +1125,22 @@
   // المنيو كامل
   async function openMenu() {
     sheetOpen('mn-sheet');
+    if ($('mn-q').value) { $('mn-q').value = ''; if (fullMenu) renderMenuList(); }
     if (!fullMenu) {
       try { fullMenu = await DM.get(`/api/pager?action=menu&slug=${encodeURIComponent(slug)}`); }
       catch (err) { if (!upsell.length) { $('mn-list').innerHTML = `<p class="mn-empty">${esc(err.message || 'ما قدرنا نفتح المنيو')}</p>`; return; } fullMenu = { categories: [], products: [], failed: true }; }
       renderMenuList();
     }
   }
+  const normAr = (v) => String(v || '').toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[ً-ْ]/g, '');
   function renderMenuList() {
+    const q = normAr($('mn-q').value.trim());
+    if (q) {
+      const seen = new Set(), hits = [...upsell, ...fullMenu.products].filter(p => !seen.has(p.id) && seen.add(p.id) && normAr(`${p.name} ${p.name_en || ''}`).includes(q));
+      $('mn-cats').innerHTML = '';
+      $('mn-list').innerHTML = hits.length ? hits.map(menuRow).join('') : '<p class="mn-empty">ما لقينا صنف بهالاسم</p>';
+      return;
+    }
     const cats = fullMenu.categories.length ? fullMenu.categories : [{ key: undefined, name: '' }];
     const groups = cats.map(c => ({ c, items: fullMenu.products.filter(p => !fullMenu.categories.length || p.category === c.key) })).filter(g => g.items.length);
     const known = new Set(fullMenu.categories.map(c => c.key)), rest = fullMenu.products.filter(p => fullMenu.categories.length && !known.has(p.category));
@@ -1129,11 +1149,13 @@
     if (upsell.length) groups.unshift({ c: { key: '_s', name: 'مقترحة لك' }, items: upsell });
     if (fullMenu.failed) groups.splice(1);
     $('mn-cats').innerHTML = groups.length > 1 ? groups.map((g, k) => `<button type="button" data-cat="${k}">${esc(g.c.name)}</button>`).join('') : '';
-    $('mn-list').innerHTML = groups.length ? groups.map((g, k) => `${g.c.name ? `<h4 id="mn-g${k}">${esc(g.c.name)}</h4>` : ''}${g.items.map(p => {
-      const img = bgImg(p.image_url);
-      return `<button type="button" class="mn-it" data-p="${p.id}"><span class="th"${img}>${img ? '' : '<i class="ph-bold ph-fork-knife"></i>'}</span><span class="tx"><b>${esc(p.name)}</b><small>${p.sizes && p.sizes.length ? 'من ' : ''}${fmtPrice(fromPrice(p))}</small></span><span class="pl"><i class="ph-bold ph-plus"></i></span></button>`;
-    }).join('')}`).join('') : '<p class="mn-empty">ما فيه أصناف متاحة الحين</p>';
+    $('mn-list').innerHTML = groups.length ? groups.map((g, k) => `${g.c.name ? `<h4 id="mn-g${k}">${esc(g.c.name)}</h4>` : ''}${g.items.map(menuRow).join('')}`).join('') : '<p class="mn-empty">ما فيه أصناف متاحة الحين</p>';
   }
+  function menuRow(p) {
+    const img = bgImg(p.image_url);
+    return `<button type="button" class="mn-it" data-p="${p.id}"><span class="th"${img}>${img ? '' : '<i class="ph-bold ph-fork-knife"></i>'}</span><span class="tx"><b>${esc(p.name)}</b><small>${p.sizes && p.sizes.length ? 'من ' : ''}${fmtPrice(fromPrice(p))}</small></span><span class="pl"><i class="ph-bold ph-plus"></i></span></button>`;
+  }
+  $('mn-q').addEventListener('input', () => { if (fullMenu) renderMenuList(); });
   $('mn-cats').onclick = (e) => {
     const b = e.target.closest('[data-cat]'); if (!b) return;
     [...$('mn-cats').children].forEach(x => x.classList.toggle('on', x === b));
