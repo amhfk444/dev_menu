@@ -701,7 +701,7 @@
       <a href="${esc(a.url)}" target="_blank" rel="noopener"
          class="shrink-0 flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-white text-xs font-bold pl-3.5 pr-1.5 py-1.5 rounded-full transition">
         <span class="w-7 h-7 rounded-full bg-white flex items-center justify-center overflow-hidden text-black text-[11px] font-black">
-          <img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(a.domain)}&sz=64" alt="" data-l="${esc(a.name.charAt(0))}" class="w-5 h-5 object-contain" onerror="this.parentNode.textContent=this.dataset.l">
+          <img src="${({ 'jahez.net': '/images/delivery/jahez.png', 'keeta.com': '/images/delivery/keeta.png' })[a.domain] || `https://www.google.com/s2/favicons?domain=${encodeURIComponent(a.domain)}&sz=64`}" alt="" data-l="${esc(a.name.charAt(0))}" class="w-5 h-5 object-contain" onerror="this.parentNode.textContent=this.dataset.l">
         </span>
         ${esc(a.name)}
       </a>`).join('');

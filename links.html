@@ -127,7 +127,9 @@
       ${ico}<span class="txt"><span class="block truncate">${esc(label)}</span>${sub ? `<span class="sub truncate">${esc(sub)}</span>` : ''}</span><i class="ph-bold ph-caret-left arrow"></i></a>`;
   }
   // شعار التطبيق نفسه (مثل تطبيقات التوصيل)
-  const appLogo = (domain) => `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
+  // جاهز وكيتا شعارهم من Google ما يطلع: شعار التطبيق محفوظ عندنا
+  const LOCAL_LOGOS = { 'jahez.net': '/images/delivery/jahez.png', 'keeta.com': '/images/delivery/keeta.png' };
+  const appLogo = (domain) => LOCAL_LOGOS[domain] || `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
   const group = (title, items) => items.length ? `<p class="group-title">${esc(title)}</p>${items.join('')}` : '';
 
   function showUnavailable(title, sub) {

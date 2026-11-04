@@ -4405,7 +4405,8 @@
     shgardi:       { name: 'شقردي',      domain: 'shgardi.app' },
     other:         { name: 'تطبيق آخر',  domain: '' }
   };
-  const favicon = (domain) => domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : '';
+  const LOCAL_LOGOS = { 'jahez.net': '/images/delivery/jahez.png', 'keeta.com': '/images/delivery/keeta.png' };   // شعار جاهز وكيتا من Google ما يطلع
+  const favicon = (domain) => domain ? LOCAL_LOGOS[domain] || `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : '';
   const hostOf = (u) => { try { return new URL(u).hostname; } catch { return ''; } };
   let deliveryApps = [];
 
