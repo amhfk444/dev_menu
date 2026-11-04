@@ -182,6 +182,44 @@
       ['right', 'left'].forEach(side => el(top, `<svg viewBox="0 0 70 16">${row(5)}</svg>`, `${side}:6%;top:${cy - 8}px;width:70px;opacity:.9;filter:drop-shadow(0 0 4px ${L.ring[0]})`, 'dmo-float'));
     }
   }
+  // ─── ملصقات الشتاء (رسم أصلي بخط داكن وألوان دافية، شبه الملصقات) ───
+  const O = 'stroke="#2b2320" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"';
+  const WINTER = {
+    snowman: `<svg viewBox="0 0 100 120"><g ${O}>
+      <path d="M22 62 L6 50 M10 54 L5 46 M78 62 L94 50 M90 54 L95 46" fill="none" stroke="#5a3a28" stroke-width="3"/>
+      <ellipse cx="50" cy="90" rx="30" ry="26" fill="#f7fbff"/><circle cx="50" cy="50" r="24" fill="#f7fbff"/>
+      <path d="M25 34 Q50 4 75 34 Z" fill="#b9a08a"/><rect x="23" y="31" width="54" height="11" rx="5" fill="#a88d74"/><circle cx="50" cy="9" r="7" fill="#a88d74"/>
+      <path d="M28 66 Q50 76 72 66 L72 74 Q50 84 28 74 Z" fill="#c8323a"/><path d="M60 72 L66 100 L56 100 L52 76 Z" fill="#c8323a"/>
+      <circle cx="41" cy="48" r="2.4" fill="#2b2320"/><circle cx="59" cy="48" r="2.4" fill="#2b2320"/><path d="M50 53 L66 57 L50 59 Z" fill="#f08a2c"/>
+      <circle cx="50" cy="88" r="3" fill="#6b4a36"/><circle cx="50" cy="100" r="3" fill="#6b4a36"/></g>
+      <ellipse cx="35" cy="54" rx="5" ry="3" fill="#f6a3a0" opacity=".8"/><ellipse cx="65" cy="54" rx="5" ry="3" fill="#f6a3a0" opacity=".8"/></svg>`,
+    cocoa: `<svg viewBox="0 0 100 100"><g ${O}>
+      <path d="M72 46 Q92 46 90 62 Q88 76 70 74" fill="none" stroke="#c8323a" stroke-width="7"/><path d="M72 46 Q92 46 90 62 Q88 76 70 74" fill="none"/>
+      <path d="M16 38 H76 L71 86 Q70 94 62 94 H30 Q22 94 21 86 Z" fill="#c8323a"/><ellipse cx="46" cy="38" rx="30" ry="8" fill="#5b3420"/>
+      <rect x="28" y="28" width="12" height="11" rx="3" fill="#fffaf2"/><rect x="42" y="25" width="12" height="11" rx="3" fill="#fffaf2"/><rect x="55" y="29" width="11" height="10" rx="3" fill="#fffaf2"/></g>
+      <g fill="#fff" opacity=".9"><circle cx="30" cy="56" r="3"/><circle cx="46" cy="66" r="3"/><circle cx="60" cy="54" r="3"/><circle cx="36" cy="80" r="3"/><circle cx="56" cy="80" r="3"/></g>
+      <path d="M34 20 Q30 12 36 6 M50 18 Q46 10 52 4" stroke="#c9c2bb" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>`,
+    cookie: `<svg viewBox="0 0 100 100"><g ${O}><path d="M50 8 Q78 8 88 30 Q96 52 84 72 Q70 94 46 92 Q20 90 10 66 Q2 44 16 24 Q28 8 50 8 Z" fill="#d79a52"/></g>
+      <g fill="#4a2a18"><path d="M34 30 l7 -2 l2 7 l-7 2z"/><path d="M60 26 l7 1 l-1 7 l-7 -1z"/><path d="M28 56 l6 -3 l3 6 l-6 3z"/><path d="M52 50 l7 0 l0 7 l-7 0z"/><path d="M70 60 l6 2 l-2 6 l-6 -2z"/><path d="M44 74 l6 -2 l2 6 l-6 2z"/></g>
+      <path d="M22 36 Q30 30 36 40" stroke="#f0c48a" stroke-width="3" fill="none" stroke-linecap="round" opacity=".7"/></svg>`,
+    gift: `<svg viewBox="0 0 100 100"><g ${O}>
+      <rect x="14" y="40" width="72" height="52" rx="4" fill="#c8323a"/><rect x="10" y="30" width="80" height="14" rx="3" fill="#b0262e"/>
+      <rect x="44" y="30" width="12" height="62" fill="#e7c06a"/>
+      <path d="M50 30 Q30 8 22 20 Q16 30 50 30 Z" fill="#e7c06a"/><path d="M50 30 Q70 8 78 20 Q84 30 50 30 Z" fill="#e7c06a"/></g></svg>`,
+    scarf: `<svg viewBox="0 0 100 100"><g ${O}>
+      <path d="M18 30 Q50 14 82 30 Q80 44 50 46 Q22 44 18 30 Z" fill="#b7262f"/>
+      <path d="M56 40 L66 88 L50 90 L44 44 Z" fill="#c8323a"/></g>
+      <g stroke="#7d1820" stroke-width="1.6" opacity=".6"><path d="M28 30 L30 40 M40 26 L41 42 M60 26 L59 42 M72 30 L70 40 M51 52 L60 51 M53 64 L62 63 M55 76 L64 75"/></g>
+      <g stroke="#b7262f" stroke-width="2.4" stroke-linecap="round"><path d="M52 90 L51 97 M56 90 L56 97 M60 89 L61 96 M64 88 L66 95"/></g></svg>`
+  };
+  function winterStickers(top, front, taken) {
+    const cy = 4 + LOGO / 2;
+    if (!taken.has('logo-left')) el(top, WINTER.snowman, `left:5%;top:${cy - 40}px;width:66px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.22))`, 'dmo-float');
+    if (!taken.has('logo-right')) el(top, WINTER.cocoa, `right:6%;top:${cy - 30}px;width:56px;animation-delay:-1.2s;filter:drop-shadow(0 6px 10px rgba(0,0,0,.22))`, 'dmo-float');
+    el(top, WINTER.cookie, `right:21%;top:${cy + 30}px;width:30px;animation-delay:-.6s;filter:drop-shadow(0 4px 6px rgba(0,0,0,.2))`, 'dmo-rise');
+    el(top, WINTER.gift, `left:20%;top:${cy + 34}px;width:30px;animation-delay:-1.8s;filter:drop-shadow(0 4px 6px rgba(0,0,0,.2))`, 'dmo-rise');
+  }
+
   // ذرات ضوء تطلع بهدوء من تحت لفوق في خلفية الصفحة
   function dust(back, color, n = 16) {
     for (let i = 0; i < n; i++) {
@@ -326,6 +364,7 @@
     const back = layer('back'), front = layer('front');
 
     modernDecor(top, occ.preset, contained);
+    if (occ.preset === 'winter') winterStickers(top, front, new Set((occ.stickers || []).map(x => x.position)));
     if (!reduced()) {
       if (p.fx === 'snow') effects(back, front, 'snow');
       else dust(back, (LOOK[occ.preset] || LOOK.custom).dust);
