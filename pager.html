@@ -115,7 +115,9 @@
   .mn-it .tx { flex: 1; min-width: 0; } .mn-it .tx b { display: block; font-size: 14.5px; font-weight: 700; } .mn-it .tx small { font-size: 13px; opacity: .65; }
   .mn-it .pl { width: 34px; height: 34px; border-radius: 50%; background: var(--brand); color: #fff; display: grid; place-items: center; flex-shrink: 0; }
   .mn-empty { text-align: center; padding: 30px 0; opacity: .6; }
-  .it-panel { height: auto !important; max-height: 88dvh; overflow-y: auto; }
+  .it-panel { height: auto !important; max-height: 88vh; overflow-y: auto; overscroll-behavior: contain; display: block !important; }
+  .it-panel > * { flex-shrink: 0; }
+  .ask-sheet.kb .ask-panel { border-radius: 18px 18px 0 0; }
   .it-img { height: 180px; background: #f1efe9 center / cover no-repeat; border-radius: 24px 24px 0 0; flex-shrink: 0; }
   .it-img:empty:not([style]) { display: none; }
   .it-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
@@ -1046,7 +1048,33 @@
     $('ups-added').innerHTML = addedNow.length ? `وصل للكاشير:<ul>${addedNow.map((a, k) => `<li><span>${(a.qty || 1) > 1 ? `${a.qty}× ` : ''}${esc(a.name)}${a.size ? ` (${esc(a.size)})` : ''}${a.note ? `<em>${esc(a.note)}</em>` : ''}</span><button type="button" data-rm="${k}" aria-label="شيلها"><i class="ph-bold ph-x"></i></button></li>`).join('')}</ul>` : '';
   }
   const sheetOpen = (id) => { $(id).hidden = false; document.documentElement.classList.add('ask-lock'); };
-  const sheetClose = (id) => { $(id).hidden = true; if (['ask-sheet', 'mn-sheet', 'it-sheet'].every(x => $(x).hidden)) document.documentElement.classList.remove('ask-lock'); };
+  const sheetClose = (id) => { $(id).hidden = true; $(id).classList.remove('kb'); $(id).style.cssText = ''; const pn = $(id).querySelector('.ask-panel'); if (pn) { pn.style.height = ''; pn.style.maxHeight = ''; } if (['ask-sheet', 'mn-sheet', 'it-sheet'].every(x => $(x).hidden)) document.documentElement.classList.remove('ask-lock'); };
+  // الكيبورد في الجوال: النافذة تاخذ الجزء الظاهر من الشاشة وتبقى فوق الكيبورد، ومحتواها يتمرر بدل ما ينضغط
+  let fitRaf = 0;
+  function fitSheets() {
+    if (fitRaf) return;
+    fitRaf = requestAnimationFrame(() => {
+      fitRaf = 0;
+      const vv = window.visualViewport; if (!vv) return;
+      const kb = window.innerHeight - vv.height > 120;
+      ['ask-sheet', 'mn-sheet', 'it-sheet'].forEach(id => {
+        const sh = $(id); if (sh.hidden) return;
+        sh.style.height = `${Math.round(vv.height)}px`; sh.style.bottom = 'auto';
+        sh.style.transform = `translateY(${Math.round(vv.offsetTop)}px)`;
+        sh.classList.toggle('kb', kb);
+        const panel = sh.querySelector('.ask-panel');
+        if (id === 'it-sheet') panel.style.maxHeight = `${Math.round(vv.height * (kb ? 1 : .88))}px`;
+        else panel.style.height = kb ? `${Math.round(vv.height) - 6}px` : '';
+      });
+      // الخانة اللي يكتب فيها تبقى ظاهرة
+      const a = document.activeElement;
+      if (kb && a && (a.id === 'it-note')) a.scrollIntoView({ block: 'nearest' });
+      if (kb && a && a.id === 'ask-in') { const log = $('ask-log'); log.scrollTop = log.scrollHeight; }
+    });
+  }
+  if (window.visualViewport) { visualViewport.addEventListener('resize', fitSheets); visualViewport.addEventListener('scroll', fitSheets); }
+  ['it-note', 'ask-in'].forEach(id => { $(id).addEventListener('focus', () => [60, 250, 500].forEach(t => setTimeout(fitSheets, t))); $(id).addEventListener('blur', () => setTimeout(fitSheets, 150)); });
+
   // الصنف: حجم + عدد + ملاحظة
   let it = null, itQty = 1, itSize = '';
   function openItem(p) {
@@ -1159,7 +1187,7 @@
     $('ask-sheet').hidden = false; document.documentElement.classList.add('ask-lock');
     if (window.matchMedia('(pointer: fine)').matches) setTimeout(() => $('ask-in').focus(), 50);
   }
-  function closeAsk() { $('ask-in').blur(); $('ask-sheet').hidden = true; document.documentElement.classList.remove('ask-lock'); }
+  function closeAsk() { $('ask-in').blur(); $('ask-sheet').hidden = true; $('ask-sheet').classList.remove('kb'); $('ask-sheet').style.cssText = ''; $('ask-sheet').querySelector('.ask-panel').style.height = ''; document.documentElement.classList.remove('ask-lock'); }
   async function sendAsk(e) {
     if (e) e.preventDefault();
     const text = $('ask-in').value.trim();
