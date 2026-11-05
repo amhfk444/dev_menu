@@ -734,7 +734,9 @@ async function main(req) {
     // الطلب من المنيو: طلبات الطاولات (المنيو بس) أو مع رقم البيجر (الخدمة الذاتية)، كلها في نفس الشاشة
     const orderMode = await require('./_lib/order').orderMode(store.id);
     if (!hasPager && !PLANS.has(store, 'loyalty') && !orderMode) throw new ApiError(403, 'البيجر مو ضمن باقتك، أضفه من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
-    const base = `pager_tickets?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&order=number.asc&select=id,number,status,created_at,ready_at,closed_at,push_sub`;
+    // أرقام اليوم، والأرقام اللي للحين مفتوحة من أمس (بعد منتصف الليل ما تختفي قبل لا يستلمها العميل)
+    const day0 = riyadhDayStart(), open0 = new Date(Date.now() - 36 * 3600e3).toISOString();
+    const base = `pager_tickets?client_id=eq.${store.id}&or=${encodeURIComponent(`(created_at.gte."${day0}",and(status.in.(waiting,ready),created_at.gte."${open0}"))`)}&order=created_at.asc,number.asc&select=id,number,status,created_at,ready_at,closed_at,push_sub`;
     // أعمدة التكرار من 21-pager-repeat.sql — لو ما انضافت نكمل بدونها
     const tickets = !hasPager ? [] : await rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id,car,addons,game_won,eta_at`).catch(() => rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id,car,addons,game_won`)).catch(() => rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id,car`)).catch(() => rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id`)).catch(() => rest(`${base},ring_count,acked_at,invoice_no`)).catch(() => rest(`${base},ring_count,acked_at`)).catch(() => rest(base));
     const lhome = await loyaltyHome(store.id);   // الولاء على المحل الرئيسي
@@ -750,7 +752,8 @@ async function main(req) {
     }
     // طلبات المنيو المفتوحة اليوم (وصلت / استلمها الكاشير)
     const { publicOrder } = require('./_lib/order');
-    const mos = await rest(`menu_orders?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&select=*&order=id.asc&limit=300`).catch(() => []);
+    // طلبات اليوم + أي طلب للحين مفتوح من قبل (ما استلمه العميل، أو طلب بموعد لبكرة) ما يختفي بعد منتصف الليل
+    const mos = await rest(`menu_orders?client_id=eq.${store.id}&or=${encodeURIComponent(`(created_at.gte."${day0}",status.in.(new,accepted))`)}&select=*&order=id.asc&limit=300`).catch(() => []);
     // السفري اللي صار له رقم بيجر: يطلع تحت رقمه في أعمدة البيجر، والباقي في «طلبات المنيو»
     const byTicket = new Map(mos.filter(o => o.pager_ticket_id).map(o => [o.pager_ticket_id, publicOrder(o)]));
     const orders = mos.filter(o => !o.pager_ticket_id && ['new', 'accepted'].includes(o.status)).map(publicOrder);
