@@ -203,6 +203,7 @@
   .mo-steps { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
   .mo-steps span { font-size:11px; font-weight:800; text-align:center; padding:6px 4px; border-radius:10px; background:rgba(255,255,255,.06); color:rgba(255,255,255,.55); }
   .mo-steps span.on { background:#fff; color:#111; }
+  #moBar.st-grace { background:#fff; } #moBar.st-pay { background:#fff1c2; }
 </style>
 <link rel="stylesheet" href="/css/tw/menu.css">
 </head>
@@ -1002,7 +1003,7 @@
     if (first) renderMenu(allProducts, false); else handleSearch();
     renderCartBar();
     renderCalorieNote();
-    if (first && directMode() === 'table') refreshOrders();   // طلباته السابقة على الطاولة وحالتها
+    if (first && directMode()) refreshOrders();   // طلباته السابقة على الطاولة وحالتها
     if (!first && coupon && cart.length) applyCoupon(true);
     // نفس اللغة اللي اختارها الزائر في باقي صفحات DEV MENU
     let saved = ''; try { saved = localStorage.getItem('dm_lang'); } catch {}
@@ -1675,29 +1676,20 @@
     const dm = directMode();
     // معاينة لوحة التحكم: نوري صاحب المحل الخطوات بدون ما يوصل طلب للكاشير
     if (urlParams.get('preview') === '1') return directErr(T('هذي معاينة: الطلب ما ينرسل للكاشير', 'Preview only: the order is not sent'));
-    const table = document.getElementById('tableInput').value.trim().replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15));
+    const table = document.getElementById('tableInput').value.trim().replace(/[٠-٩۰-۹]/g, d => String(d.charCodeAt(0) & 15));
     if (dm === 'table' && !table) { directErr(T('اكتب رقم طاولتك عشان يوصلك الطلب', 'Enter your table number')); return document.getElementById('tableInput').focus(); }
     const out = dm === 'self' && dine === 'out';
-    const phone = document.getElementById('phoneInput').value.trim().replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15)).replace(/\D/g, '');
+    const phone = document.getElementById('phoneInput').value.trim().replace(/[٠-٩۰-۹]/g, d => String(d.charCodeAt(0) & 15)).replace(/\D/g, '');
     if (out && !/^(05\d{8}|5\d{8}|9665\d{8})$/.test(phone)) { directErr(T('اكتب رقم جوالك عشان يوصلك طلبك السفري، مثل 0512345678', 'Enter your mobile number, e.g. 0512345678')); return document.getElementById('phoneInput').focus(); }
     if (out) try { localStorage.setItem('dm_phone', phone); } catch {}
     const btn = document.getElementById('cartSend'); btn.disabled = true;
-    const body = { items: cart.map(c => ({ id: c.id, qty: c.qty, size: c.size, note: c.note })), note: '', table: dm === 'self' && dine === 'out' ? '' : table, coupon: coupon ? coupon.coupon.code : undefined };
+    const body = { mode: dm, items: cart.map(c => ({ id: c.id, qty: c.qty, size: c.size, note: c.note })), note: '', table: out ? '' : table, dine: dm === 'self' ? dine : undefined, phone: out ? phone : undefined, coupon: coupon ? coupon.coupon.code : undefined };
     try {
       try { if (table) sessionStorage.setItem(tableKey(), table); } catch {}
-      if (dm === 'self') {
-        const lt = await DM.loyaltyToken(project.client_slug).catch(() => '');
-        const r = await DM.post('/api/pager?action=take', { slug: project.client_slug, dev: devId(), lt: lt || undefined, order: { ...body, dine, phone: out ? phone : undefined } });
-        cart.forEach(c => DM.post('/api/public?action=track', { client_id: project.id, kind: 'order', product_id: c.id }).catch(() => {}));
-        try { localStorage.setItem(`dm_pager_${String(project.client_slug).toLowerCase()}`, r.token); } catch {}
-        cart = []; resetCoupon(); saveCart();
-        location.href = DM.storePage('pager', project.client_slug);
-        return;
-      }
       const r = await DM.post('/api/public?action=order', { slug: project.client_slug, dev: devId(), lang: currentLang, ...body });
       cart.forEach(c => DM.post('/api/public?action=track', { client_id: project.id, kind: 'order', product_id: c.id }).catch(() => {}));
       myOrders = [{ token: r.token, ...r.order }, ...myOrders.filter(o => o.token !== r.token)].slice(0, 5);
-      saveOrders(); watchOrder(r.live); clearTimeout(refreshOrders.t); refreshOrders.t = setTimeout(refreshOrders, 8000);
+      saveOrders(); watchOrder(r.live); clearTimeout(refreshOrders.t); refreshOrders.t = setTimeout(refreshOrders, 4000);
       cart = []; resetCoupon(); document.getElementById('cartNote').value = ''; saveCart(); closeCart();
       renderOrders(); openOrders();
     } catch (e) {
@@ -1710,65 +1702,130 @@
     } finally { btn.disabled = false; }
   }
 
-  // ─── طلباتي (الطاولات): تتحفظ في الجوال، والحالة تتحدث لحظياً ───
+  // ─── طلباتي: تتحفظ في الجوال، والحالة تتحدث لحظياً ───
+  // الطاولة: وصل ← استلمه الكاشير ← انقدّم
+  // الخدمة الذاتية: دقيقتين يعدّل أو يلغي ← يروح للكاشير ويدفع برمز الطلب ← الكاشير يكتب الفاتورة ← صفحة الانتظار (يرن لما يجهز)
   let myOrders = [];
   const ordersKey = () => `dm_mo_${project.id}`;
   function saveOrders() { try { localStorage.setItem(ordersKey(), JSON.stringify(myOrders.map(o => ({ token: o.token, at: o.created_at })))); } catch {} }
   function watchOrder(topic) { if (topic && !watchOrder.on.has(topic)) { watchOrder.on.add(topic); DM.live(topic, () => refreshOrders()); } }
   watchOrder.on = new Set();
   // رجع للمنيو من تطبيق ثاني: نحدّث حالة طلباته على طول
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && project && directMode() === 'table') refreshOrders(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && project && directMode()) refreshOrders(); });
+  const isUnpaid = (o) => o.mode === 'self' && o.status === 'new' && !o.paid;
+  const inGrace = (o) => isUnpaid(o) && o.grace_until && Date.now() < Date.parse(o.grace_until);
+  const waitingPay = (o) => isUnpaid(o) && !inGrace(o);
+  // انفدع: يروح لصفحة الانتظار (هناك يرن جواله لما يجهز)
+  function goWaiting(o) {
+    try { localStorage.setItem(`dm_pager_${String(project.client_slug).toLowerCase()}`, o.pager_token); } catch {}
+    location.href = DM.storePage('pager', project.client_slug);
+  }
   async function refreshOrders() {
     let saved = []; try { saved = JSON.parse(localStorage.getItem(ordersKey()) || '[]'); } catch {}
     saved = saved.filter(o => o && o.token && Date.now() - Date.parse(o.at || 0) < 12 * 3600e3);
     if (!saved.length) { myOrders = []; return renderOrders(); }
     try {
       const r = await DM.get(`/api/public?action=order-status&slug=${encodeURIComponent(project.client_slug)}&t=${saved.map(o => o.token).join(',')}`);
-      const before = new Map(myOrders.map(o => [o.token, o.status]));
+      const before = new Map(myOrders.map(o => [o.token, o]));
       myOrders = r.orders.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
       // اللي خلص من أكثر من دقيقة ما نحتاج نسأل عنه مرة ثانية
       myOrders = myOrders.filter(o => ['new', 'accepted'].includes(o.status) || Date.now() - Date.parse(o.closed_at || o.created_at) < 60000);
       saveOrders();
-      // التحديث اللحظي لكل طلب مفتوح (حتى بعد ما يحدّث الصفحة)
       myOrders.forEach(o => watchOrder(o.live));
+      // دفع الحين (كان ينتظر الدفع وهو فاتح المنيو): على طول لصفحة الانتظار
+      const paidNow = myOrders.find(o => o.paid && o.pager_token && before.has(o.token) && !before.get(o.token).paid);
+      if (paidNow) return goWaiting(paidNow);
       // تغيّرت الحالة: تنبيه صغير + اهتزاز
-      const changed = myOrders.find(o => before.has(o.token) && before.get(o.token) !== o.status);
-      if (changed) { menuToast(ST[changed.status][currentLang === 'ar' ? 0 : 1]); try { navigator.vibrate && navigator.vibrate(200); } catch {} }
+      const changed = myOrders.find(o => before.has(o.token) && before.get(o.token).status !== o.status);
+      if (changed) { menuToast(statusText(changed)); try { navigator.vibrate && navigator.vibrate(200); } catch {} }
     } catch {}
     renderOrders();
     clearTimeout(refreshOrders.t);
-    // احتياطي لو التحديث اللحظي انقطع: كل 8 ثواني طول ما فيه طلب مفتوح
-    if (myOrders.some(o => ['new', 'accepted'].includes(o.status))) refreshOrders.t = setTimeout(refreshOrders, 8000);
+    // احتياطي لو التحديث اللحظي انقطع: ينتظر الدفع كل 4 ثواني، والباقي كل 8
+    if (myOrders.some(o => ['new', 'accepted'].includes(o.status))) refreshOrders.t = setTimeout(refreshOrders, myOrders.some(isUnpaid) ? 4000 : 8000);
   }
-  const ST = { new: ['وصل طلبك للكاشير', 'Sent to the cashier'], accepted: ['الكاشير استلم طلبك، وجاري تحضيره', 'The cashier has it, being prepared'], served: ['تم تقديم طلبك، بالعافية', 'Served, enjoy'], cancelled: ['انلغى الطلب، كلّم الكاشير', 'Cancelled, ask the cashier'] };
+  const ST = { new: ['وصل طلبك للكاشير', 'Sent to the cashier'], accepted: ['الكاشير استلم طلبك، وجاري تحضيره', 'The cashier has it, being prepared'], served: ['تم تقديم طلبك، بالعافية', 'Served, enjoy'], cancelled: ['انلغى الطلب', 'Order cancelled'] };
+  function statusText(o) {
+    if (inGrace(o)) return T('يوصل للكاشير بعد شوي، تقدر تعدّله الحين', 'Reaches the cashier shortly, you can still edit it');
+    if (waitingPay(o)) return T(`تفضّل للكاشير وادفع، رمز طلبك ${o.code}`, `Pay at the counter, your order code is ${o.code}`);
+    if (o.mode === 'self' && o.status === 'accepted') return T('تم الدفع، وطلبك يتجهز', 'Paid, your order is being prepared');
+    return ST[o.status][currentLang === 'ar' ? 0 : 1];
+  }
+  const mmss = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+  // تعديل الطلب (خلال الدقيقتين): نلغيه ونرجع أصنافه للسلة
+  async function editOrder(token, edit) {
+    const o = myOrders.find(x => x.token === token); if (!o) return;
+    if (!edit && !confirm(T('تلغي طلبك؟', 'Cancel your order?'))) return;
+    try {
+      const r = await DM.post('/api/public?action=order-cancel', { slug: project.client_slug, t: token });
+      myOrders = myOrders.filter(x => x.token !== token); saveOrders();
+      if (edit) {
+        (r.items || o.items || []).forEach(i => { if (productById(i.id)) cart.push({ id: i.id, size: i.size || null, qty: i.qty, note: i.note || null }); });
+        saveCart(); closeOrders(); renderOrders(); openCart();
+      } else { closeOrders(); renderOrders(); menuToast(T('انلغى طلبك', 'Order cancelled')); }
+    } catch (e) { menuToast(currentLang === 'ar' ? (e.message || 'ما قدرنا نلغيه') : 'Too late to change it'); refreshOrders(); }
+  }
   function renderOrders() {
     const bar = document.getElementById('moBar');
     // الطلب اللي انقدّم أو انلغى: يطلع دقيقة بس عشان يشوفه، وبعدها يختفي من المنيو
     const live = myOrders.filter(o => ['new', 'accepted'].includes(o.status) || Date.now() - Date.parse(o.closed_at || o.created_at) < 60000);
     clearTimeout(renderOrders.t);
-    if (live.some(o => !['new', 'accepted'].includes(o.status))) renderOrders.t = setTimeout(renderOrders, 61000);
+    // عدّاد وقت التعديل يتحدث كل ثانية، والمنتهي يختفي بعد دقيقة
+    if (live.some(inGrace)) renderOrders.t = setTimeout(() => { if (live.some(o => inGrace(o) && Date.now() >= Date.parse(o.grace_until) - 1000)) refreshOrders(); else renderOrders(); }, 1000);
+    else if (live.some(o => !['new', 'accepted'].includes(o.status))) renderOrders.t = setTimeout(renderOrders, 61000);
     const top = live[0];
     bar.classList.toggle('hidden', !top); bar.classList.toggle('flex', !!top);
+    const L = currentLang === 'ar' ? 0 : 1;
     if (top) {
-      const L = currentLang === 'ar' ? 0 : 1;
-      bar.className = `${bar.className.replace(/\bst-\w+/g, '').trim()} st-${top.status}`;
-      bar.innerHTML = `<i class="fa-solid ${top.status === 'served' ? 'fa-utensils text-green-700' : top.status === 'accepted' ? 'fa-fire text-amber-700' : 'fa-clock'} text-xl"></i>
-        <span class="flex-1 min-w-0"><b class="block text-sm font-black">${ST[top.status][L]}</b><small class="block text-[11px] font-bold opacity-70">${top.table_no ? `${T('طاولة', 'Table')} <span dir="ltr">${esc(top.table_no)}</span> · ` : ''}${esc(money(top.total))}${live.length > 1 ? ` · ${T(`${live.length} طلبات`, `${live.length} orders`)}` : ''}</small></span>
-        <span class="text-[11px] font-black underline">${T('التفاصيل', 'Details')}</span>`;
+      const st = inGrace(top) ? 'grace' : waitingPay(top) ? 'pay' : top.status;
+      bar.className = `${bar.className.replace(/\bst-\w+/g, '').trim()} st-${st}`;
+      const icon = st === 'served' ? 'fa-utensils text-green-700' : st === 'accepted' ? 'fa-fire text-amber-700' : st === 'pay' ? 'fa-ticket' : 'fa-clock';
+      const sub = inGrace(top) ? `${T('تقدر تعدّله خلال', 'Edit within')} <b dir="ltr">${mmss(Date.parse(top.grace_until) - Date.now())}</b>`
+        : waitingPay(top) ? `${T('رمز طلبك', 'Order code')} <b dir="ltr" class="text-base">${esc(top.code || '')}</b> · ${esc(money(top.total))}`
+        : `${top.table_no ? `${T('طاولة', 'Table')} <span dir="ltr">${esc(top.table_no)}</span> · ` : ''}${esc(money(top.total))}`;
+      bar.innerHTML = `<i class="fa-solid ${icon} text-xl"></i>
+        <span class="flex-1 min-w-0"><b class="block text-sm font-black">${esc(waitingPay(top) ? T('تفضّل للكاشير وادفع', 'Pay at the counter') : statusText(top))}</b><small class="block text-[11px] font-bold opacity-70">${sub}${live.length > 1 ? ` · ${T(`${live.length} طلبات`, `${live.length} orders`)}` : ''}</small></span>
+        <span class="text-[11px] font-black underline">${top.paid && top.pager_token && top.status === 'accepted' ? T('صفحة الانتظار', 'Track') : T('التفاصيل', 'Details')}</span>`;
     }
     document.getElementById('moTitle').textContent = T('طلباتك', 'Your orders');
-    const step = (o) => { const i = { new: 0, accepted: 1, served: 2 }[o.status] ?? -1; return `<div class="mo-steps">${[['وصل', 'Sent'], ['يتحضّر', 'Preparing'], ['انقدّم', 'Served']].map((x, k) => `<span class="${k <= i ? 'on' : ''}">${x[currentLang === 'ar' ? 0 : 1]}</span>`).join('')}</div>`; };
+    const step = (o) => {
+      const self = o.mode === 'self';
+      const names = self ? [['أرسلته', 'Sent'], ['ادفع', 'Pay'], ['يتجهز', 'Preparing']] : [['وصل', 'Sent'], ['يتحضّر', 'Preparing'], ['انقدّم', 'Served']];
+      const i = self ? (inGrace(o) ? 0 : waitingPay(o) ? 1 : o.status === 'cancelled' ? -1 : 2) : ({ new: 0, accepted: 1, served: 2 }[o.status] ?? -1);
+      return `<div class="mo-steps">${names.map((x, k) => `<span class="${k <= i ? 'on' : ''}">${x[L]}</span>`).join('')}</div>`;
+    };
+    const selfBox = (o) => {
+      if (inGrace(o)) {
+        const left = Date.parse(o.grace_until) - Date.now(), pct = Math.max(0, Math.min(100, left / 1200));
+        return `<div class="space-y-2"><p class="text-[12px] font-bold text-gray-300">${T('يوصل طلبك للكاشير بعد ما يخلص الوقت. تبي تغيّر شي؟', 'Your order reaches the cashier when the time runs out. Want to change anything?')}</p>
+          <div class="h-2 rounded-full bg-white/10 overflow-hidden"><div class="h-full bg-white rounded-full" style="width:${pct}%"></div></div>
+          <div class="grid grid-cols-2 gap-2"><button type="button" onclick="editOrder('${o.token}', true)" class="rounded-xl bg-white text-black font-black text-sm py-2.5">${T('عدّل الطلب', 'Edit')} <span dir="ltr">${mmss(left)}</span></button>
+          <button type="button" onclick="editOrder('${o.token}', false)" class="rounded-xl bg-white/10 border border-white/15 text-red-200 font-black text-sm py-2.5">${T('ألغِ الطلب', 'Cancel')}</button></div></div>`;
+      }
+      if (waitingPay(o)) return `<div class="text-center bg-white rounded-2xl p-4 text-black space-y-1">
+          <p class="text-[12px] font-black opacity-70">${T('ورّ الكاشير هذا الرمز وادفع', 'Show this code at the counter and pay')}</p>
+          <p class="text-5xl font-black" dir="ltr">${esc(o.code || '')}</p>
+          <p class="text-[11px] font-bold opacity-70">${T('بعد الدفع يوصلك إشعار لما يجهز طلبك، وتستلمه برقم الفاتورة', "After paying you'll be notified when it's ready, and pick it up with your invoice number")}</p>
+          ${o.pay_until ? `<p class="text-[11px] font-bold text-red-700">${T(`ينلغى لو ما انفدع خلال ${mmss(Date.parse(o.pay_until) - Date.now()).split(':')[0]} دقيقة`, `Cancelled if not paid within ${mmss(Date.parse(o.pay_until) - Date.now()).split(':')[0]} min`)}</p>` : ''}
+        </div>`;
+      if (o.paid && o.pager_token && o.status === 'accepted') return `<button type="button" onclick="goWaiting(myOrders.find(x => x.token === '${o.token}'))" class="w-full rounded-xl bg-white text-black font-black text-sm py-3">${T('افتح صفحة الانتظار', 'Open the waiting page')}</button>`;
+      return '';
+    };
     if (!live.length) closeOrders();
     document.getElementById('moList').innerHTML = live.length ? live.map(o => `
       <div class="bg-white/5 border border-white/10 rounded-2xl p-3.5 space-y-2.5">
-        <div class="flex items-center justify-between gap-2"><b class="text-white text-sm font-black">${o.table_no ? `${T('طاولة', 'Table')} <span dir="ltr">${esc(o.table_no)}</span>` : T('طلبك', 'Your order')}</b><span class="text-[11px] font-bold text-gray-400">${new Date(o.created_at).toLocaleTimeString(currentLang === 'ar' ? 'ar-SA-u-nu-latn' : 'en-GB', { hour: '2-digit', minute: '2-digit' })}</span></div>
-        ${o.status === 'cancelled' ? `<p class="text-[12px] font-black text-red-300">${ST.cancelled[currentLang === 'ar' ? 0 : 1]}</p>` : step(o)}
+        <div class="flex items-center justify-between gap-2"><b class="text-white text-sm font-black">${o.table_no && o.mode === 'table' ? `${T('طاولة', 'Table')} <span dir="ltr">${esc(o.table_no)}</span>` : o.dine === 'out' ? T('طلبك (سفري)', 'Your order (takeaway)') : T('طلبك', 'Your order')}</b><span class="text-[11px] font-bold text-gray-400">${new Date(o.created_at).toLocaleTimeString(currentLang === 'ar' ? 'ar-SA-u-nu-latn' : 'en-GB', { hour: '2-digit', minute: '2-digit' })}</span></div>
+        ${o.status === 'cancelled' ? `<p class="text-[12px] font-black text-red-300">${o.mode === 'self' && !o.paid ? T('انلغى الطلب لأنه ما انفدع في وقته. تقدر تطلب من جديد', "Cancelled because it wasn't paid in time. You can order again") : T('انلغى الطلب، كلّم الكاشير', 'Cancelled, ask the cashier')}</p>` : step(o)}
+        ${o.status === 'cancelled' ? '' : o.mode === 'self' ? selfBox(o) : ''}
         <ul class="space-y-1">${(o.items || []).map(i => `<li class="text-[13px] text-white"><b>${i.qty}×</b> ${esc(i.name)}${i.size ? ` <span class="text-gray-400">(${esc(i.size)})</span>` : ''}${i.note ? `<span class="block text-[11px] text-amber-200 font-bold">${esc(i.note)}</span>` : ''}</li>`).join('')}</ul>
-        ${o.note ? `<p class="text-[11px] text-gray-300">${T('ملاحظات', 'Notes')}: ${esc(o.note)}</p>` : ''}
-        <div class="flex items-center justify-between border-t border-white/10 pt-2"><span class="text-[12px] text-gray-300 font-bold">${T('المجموع (تدفعه عند الكاشير)', 'Total (pay at the counter)')}</span><b class="text-white">${esc(money(o.total))}</b></div>
+        <div class="flex items-center justify-between border-t border-white/10 pt-2"><span class="text-[12px] text-gray-300 font-bold">${o.paid ? T('المجموع (مدفوع)', 'Total (paid)') : T('المجموع (تدفعه عند الكاشير)', 'Total (pay at the counter)')}</span><b class="text-white">${esc(money(o.total))}</b></div>
       </div>`).join('') : `<p class="text-sm text-gray-400 text-center">${T('ما عندك طلبات', 'No orders yet')}</p>`;
   }
-  function openOrders() { renderOrders(); document.getElementById('moModal').classList.remove('opacity-0', 'pointer-events-none'); }
+  function openOrders() {
+    const top = myOrders.find(o => ['new', 'accepted'].includes(o.status));
+    if (top && top.paid && top.pager_token && top.status === 'accepted') return goWaiting(top);
+    renderOrders(); document.getElementById('moModal').classList.remove('opacity-0', 'pointer-events-none');
+  }
   function closeOrders() { document.getElementById('moModal').classList.add('opacity-0', 'pointer-events-none'); }
   document.getElementById('moModal').addEventListener('click', (e) => { if (e.target.id === 'moModal') closeOrders(); });
 

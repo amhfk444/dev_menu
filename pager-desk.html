@@ -153,6 +153,7 @@
   .tk-phone { background: #fff; color: #1a1a1a; box-shadow: inset 0 0 0 1.5px #1a1a1a; text-decoration: none; }
   .tk-onote { margin-top: 6px; font-size: 14px; font-weight: 700; color: #a1121f; }
   .tk-sub.one { grid-template-columns: 1fr; }
+  .tk-n small.tk-pg { display: block; font-size: 12px; font-weight: 700; color: #777; letter-spacing: 0; margin-top: 4px; }
   @media (prefers-reduced-motion: reduce) { .tile-new { animation: none; outline: 4px solid #c9a227; } }
 </style>
 </head>
@@ -204,7 +205,7 @@
   </div>
   <!-- طلبات الطاولات من المنيو: الكاشير يستلمها ثم «تم التقديم» -->
   <section id="orders-wrap" class="col col-orders hidden">
-    <div class="col-hd"><h2>طلبات الطاولات <span id="ord-count" class="col-count"></span></h2><span class="col-note"><i class="ph-bold ph-fork-knife"></i> من المنيو</span></div>
+    <div class="col-hd"><h2><span id="ord-title">طلبات الطاولات</span> <span id="ord-count" class="col-count"></span></h2><span id="ord-note" class="col-note"><i class="ph-bold ph-fork-knife"></i> من المنيو</span></div>
     <div id="ord-grid" class="tk-list ord-grid"></div>
     <p id="ord-empty" class="col-empty hidden">ما فيه طلبات. أول ما يطلب الزبون من المنيو يطلع طلبه هنا برقم طاولته.</p>
   </section>
@@ -225,7 +226,8 @@
 <!-- رقم الفاتورة -->
 <div id="inv-modal" class="fixed inset-0 z-50 bg-black/50 hidden items-center justify-center p-5">
   <form id="inv-form" class="bg-white rounded-[28px] p-7 w-full max-w-sm space-y-4">
-    <h3 class="text-lg font-black">🧾 رقم الفاتورة للبيجر <span id="inv-num" class="text-[#c9a227]"></span></h3>
+    <h3 id="inv-title" class="text-lg font-black">🧾 رقم الفاتورة للبيجر <span id="inv-num" class="text-[#c9a227]"></span></h3>
+    <p id="inv-hint" class="hidden text-sm font-bold opacity-80">بعد ما يدفع العميل: اكتب رقم فاتورته، فيدخل الطلب التجهيز ويصير رقم الفاتورة هو رقمه.</p>
     <input id="inv-input" type="text" inputmode="numeric" autocomplete="off" dir="ltr" maxlength="20" placeholder="1045" class="w-full text-center text-3xl font-black tracking-widest bg-[#f5f2eb] border-2 border-[#233d2c]/15 rounded-2xl py-4 outline-none focus:border-[#233d2c]">
     <p id="inv-err" class="hidden text-sm font-bold text-rose-700"></p>
     <div class="flex gap-2">
@@ -409,10 +411,14 @@
   $('eta-cancel').onclick = closeEta;
 
   // ─── رقم الفاتورة ───
-  let invId = null;
-  function openInvoice(id) {
-    const t = tickets.find(x => x.id === id); if (!t) return;
-    invId = id; $('inv-num').textContent = t.number; $('inv-input').value = t.invoice_no || '';
+  let invId = null, invOrder = false;
+  // forOrder: طلب من المنيو ينتظر الدفع (الفاتورة تدخله التجهيز)
+  function openInvoice(id, forOrder = false) {
+    const t = forOrder ? orders.find(x => x.id === id) : tickets.find(x => x.id === id); if (!t) return;
+    invId = id; invOrder = forOrder;
+    $('inv-title').innerHTML = forOrder ? `🧾 رقم الفاتورة للطلب <span class="text-[#c9a227]" dir="ltr">${esc(t.code || '')}</span>` : `🧾 رقم الفاتورة للبيجر <span class="text-[#c9a227]">${t.number}</span>`;
+    $('inv-hint').classList.toggle('hidden', !forOrder);
+    $('inv-input').value = forOrder ? '' : (t.invoice_no || '');
     $('inv-err').classList.add('hidden'); $('inv-modal').classList.replace('hidden', 'flex');
     setTimeout(() => $('inv-input').focus(), 50);
   }
@@ -423,6 +429,13 @@
     const invoice = normDigits($('inv-input').value.trim());
     $('inv-save').disabled = true;
     try {
+      if (invOrder) {
+        if (!invoice) throw new Error('اكتب رقم الفاتورة');
+        await call('order-pay', { id: invId, invoice });
+        orders = orders.filter(o => o.id !== invId);
+        toast(`🧾 الفاتورة ${invoice}: الطلب دخل التجهيز، والعميل يشوفها في جواله`);
+        closeInvoice(); await load(); return;
+      }
       const r = await call('pager-invoice', { id: invId, invoice });
       tickets = tickets.map(t => t.id === r.ticket.id ? { ...t, invoice_no: r.ticket.invoice_no } : t);
       toast(invoice ? `🧾 الفاتورة ${invoice} ← بيجر ${r.ticket.number}` : 'انشال رقم الفاتورة');
@@ -459,16 +472,31 @@
   let orders = [], orderMode = null, oBusy = new Set(), freshOrders = new Set();
   function renderOrders(term) {
     const wrap = $('orders-wrap');
-    const on = orderMode === 'table' || orders.length > 0;
+    const on = !!orderMode || orders.length > 0;
     wrap.classList.toggle('hidden', !on);
     if (!on) return;
-    const list = orders.filter(o => ['new', 'accepted'].includes(o.status) && (!term || String(o.table_no || '') === term));
+    const self = orderMode === 'self';
+    $('ord-title').textContent = self ? 'بانتظار الدفع' : 'طلبات الطاولات';
+    $('ord-note').innerHTML = self ? '<i class="ph-bold ph-receipt"></i> العميل يوريك الرمز ويدفع، اكتب الفاتورة' : '<i class="ph-bold ph-fork-knife"></i> من المنيو';
+    $('ord-empty').textContent = self ? 'ما فيه طلبات تنتظر الدفع. الطلب يوصل هنا بعد دقيقتين من إرساله (وقت التعديل).' : 'ما فيه طلبات. أول ما يطلب الزبون من المنيو يطلع طلبه هنا برقم طاولته.';
+    const list = orders.filter(o => ['new', 'accepted'].includes(o.status) && (!term || String(o.table_no || '') === term || String(o.code || '').toUpperCase() === term));
     $('ord-count').textContent = list.length || '';
     $('ord-empty').classList.toggle('hidden', list.length > 0);
     const mins = (iso) => Math.max(0, Math.floor((Date.now() - Date.parse(iso)) / 60000));
     const timer = (iso) => { const m = mins(iso); return `<span class="tk-time${m >= 15 ? ' late' : m >= 8 ? ' warn' : ''}"><i class="ph-bold ph-timer"></i> ${m < 1 ? 'الآن' : `${m} د`}</span>`; };
     $('ord-grid').innerHTML = list.map(o => {
       const acc = o.status === 'accepted', b = oBusy.has(o.id);
+      // خدمة ذاتية: ينتظر الدفع. الرمز كبير، والزر الرئيسي «اكتب الفاتورة»
+      if (o.mode === 'self') return `<article class="tk${freshOrders.has(o.id) ? ' tile-new' : ''}"><div class="tk-in">
+        <div class="tk-info">
+          <div class="tk-hd"><span class="tk-tbl"><small>رمز الطلب</small><b dir="ltr">${esc(o.code || '')}</b></span>${timer(o.grace_until || o.created_at)}</div>
+          ${orderBlock(o, true)}
+        </div>
+        <div class="tk-act">
+          <button class="tk-main" data-opay="${o.id}" ${b ? 'disabled' : ''}><i class="ph-bold ph-receipt"></i> دفع؟ اكتب الفاتورة</button>
+          <div class="tk-sub one"><button class="tk-btn del" data-odel="${o.id}" title="حذف الطلب" aria-label="حذف الطلب"><i class="ph-bold ph-trash"></i><span>حذف</span></button></div>
+        </div>
+      </div></article>`;
       return `<article class="tk${acc ? ' tk-acc' : ''}${freshOrders.has(o.id) ? ' tile-new' : ''}"><div class="tk-in">
         <div class="tk-info">
           <div class="tk-hd"><span class="tk-tbl"><small>طاولة</small><b dir="ltr">${esc(o.table_no || '؟')}</b></span>${timer(o.created_at)}${acc ? '<span class="tk-tag"><i class="ph-bold ph-check"></i> استلمته</span>' : ''}</div>
@@ -499,13 +527,16 @@
     if (a) setOrder(+a.dataset.oacc, 'accepted', 'استلمت طلب طاولة #، والزبون يشوفها في جواله');
     if (sv) setOrder(+sv.dataset.oserve, 'served', '✓ طلب طاولة # انقدّم');
     if (bk) setOrder(+bk.dataset.oback, 'new');
+    const pay = e.target.closest('[data-opay]'); if (pay) return openInvoice(+pay.dataset.opay, true);
     if (dl) {
       const o = orders.find(x => x.id === +dl.dataset.odel); if (!o) return;
-      const ok = await DMDialog.confirm({ title: `حذف طلب طاولة ${o.table_no || ''}؟`, message: 'استخدمه لو الطلب بالغلط أو الزبون مو موجود. يطلع للزبون إن الطلب انلغى.', confirmText: 'حذف', cancelText: 'تراجع' });
-      if (ok) setOrder(o.id, 'cancelled', 'انحذف طلب طاولة #');
+      const ok = await DMDialog.confirm({ title: o.mode === 'self' ? `حذف طلب ${o.code || ''}؟` : `حذف طلب طاولة ${o.table_no || ''}؟`, message: 'استخدمه لو الطلب بالغلط أو الزبون مو موجود. يطلع للزبون إن الطلب انلغى.', confirmText: 'حذف', cancelText: 'تراجع' });
+      if (ok) setOrder(o.id, 'cancelled', o.mode === 'self' ? `انحذف الطلب ${o.code || ''}` : 'انحذف طلب طاولة #');
     }
   });
 
+  // طلب من المنيو ومدفوع: رقمه الكبير رقم الفاتورة (هو اللي يوريك إياه وقت الاستلام)، ورقم البيجر صغير
+  const bigNo = (t) => t.order && t.invoice_no ? `<span dir="ltr">${esc(t.invoice_no)}</span><small class="tk-pg">بيجر ${t.number}</small>` : t.number;
   function render() {
     renderOrders(normDigits($('search').value.trim()).toUpperCase());
     const term = normDigits($('search').value.trim());
@@ -534,7 +565,7 @@
     $('wait-grid').innerHTML = waiting.map(t => `
       <article class="tk${freshIds.has(t.id) ? ' tile-new' : ''}"><div class="tk-in">
         <div class="tk-info">
-          <div class="tk-hd"><span class="tk-n">${t.number}</span>${timer(t.created_at, 10, 15)}${t.has_push ? '<i class="ph-bold ph-device-mobile tk-push" title="الإشعارات مفعّلة"></i>' : ''}</div>
+          <div class="tk-hd"><span class="tk-n">${bigNo(t)}</span>${timer(t.created_at, 10, 15)}${t.has_push ? '<i class="ph-bold ph-device-mobile tk-push" title="الإشعارات مفعّلة"></i>' : ''}</div>
           ${details(t, false)}
         </div>
         <div class="tk-act">
@@ -549,7 +580,7 @@
     $('ready-grid').innerHTML = ready.map(t => `
       <article class="tk tk-ready"><div class="tk-in">
         <div class="tk-info">
-          <div class="tk-hd"><span class="tk-n">${t.number}</span>${timer(t.ready_at || t.created_at, 4, 8)}</div>
+          <div class="tk-hd"><span class="tk-n">${bigNo(t)}</span>${timer(t.ready_at || t.created_at, 4, 8)}</div>
           <div class="tk-ring">${ringLabel(t)}</div>
           ${details(t, true)}
         </div>

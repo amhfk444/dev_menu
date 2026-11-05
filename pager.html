@@ -452,7 +452,7 @@
     <p id="w-demo" class="hidden text-[13px] font-black text-[#15271b] bg-[#c9a227]/25 border border-[#c9a227]/50 rounded-2xl py-3 px-3 text-center">هذي تجربة: خلال ثواني يرن جوالك 🔔 وإذا أضفت بطاقة النداء، يوصلك منها إشعار "طلبك جاهز" حتى لو طلعت من الصفحة</p>
     <div id="w-orb" class="orb">
       <div class="orb-in">
-        <small>رقم طلبك</small>
+        <small id="w-num-label">رقم طلبك</small>
         <div id="w-number" class="orb-num">—</div>
         <button type="button" id="w-invoice" class="hidden text-[12.5px] font-black bg-white/15 rounded-lg py-1 px-3">🧾 <span dir="ltr"></span> <i class="ph-bold ph-pencil-simple text-xs opacity-70"></i></button>
       </div>
@@ -635,7 +635,7 @@
     <h2 id="t-ready" class="text-[28px] font-black text-center"></h2>
     <div class="orb ready">
       <div class="orb-in">
-        <small>رقم طلبك</small>
+        <small id="r-num-label">رقم طلبك</small>
         <div id="r-number" class="orb-num">—</div>
         <p id="r-invoice" class="hidden text-[12.5px] font-black">🧾 <span dir="ltr"></span></p>
       </div>
@@ -1483,9 +1483,13 @@
     const st = r.ticket.status;
     renderLoyalty(r.loyalty, st, token);
     curNumber = r.ticket.number;
-    $('w-number').textContent = r.ticket.number; $('r-number').textContent = r.ticket.number;
     const inv = r.ticket.invoice_no || ''; curInvoice = inv;
-    ['w-invoice', 'r-invoice'].forEach(id => { $(id).classList.toggle('hidden', !inv); $(id).querySelector('span').textContent = inv; });
+    // طلب من المنيو ودفعه: رقم الفاتورة هو رقمه (يوريه الموظف وقت الاستلام)
+    const byInv = !!(menuOrder && inv);
+    $('w-number').textContent = byInv ? inv : r.ticket.number; $('r-number').textContent = byInv ? inv : r.ticket.number;
+    $('w-num-label').textContent = $('r-num-label').textContent = byInv ? 'رقم فاتورتك' : 'رقم طلبك';
+    $('w-number').style.fontSize = $('r-number').style.fontSize = byInv && inv.length > 3 ? `${Math.max(34, 96 - (inv.length - 3) * 14)}px` : '';
+    ['w-invoice', 'r-invoice'].forEach(id => { $(id).classList.toggle('hidden', !inv || byInv); $(id).querySelector('span').textContent = inv; });
     $('w-tell').classList.toggle('hidden', !!inv);
     if (!invEditing) $('inv-form').classList.add('hidden');   // الفاتورة تنكتب قبل أخذ الرقم، وهنا تعديل بس
     renderCar(r, st);
@@ -1661,10 +1665,10 @@
     box.classList.toggle('hidden', !(o && st === 'waiting'));
     if (!o) return;
     const where = o.dine === 'out' ? `<i class="ph-bold ph-bag"></i> سفري${o.phone ? ` · <span dir="ltr">${esc(o.phone)}</span>` : ''}` : `<i class="ph-bold ph-chair"></i> محلي${o.table_no ? ` · طاولة <b dir="ltr">${esc(o.table_no)}</b>` : ''}`;
-    box.innerHTML = `<div class="mo-hd"><b>طلبك وصل للكاشير</b><span>${where}</span></div>
+    box.innerHTML = `<div class="mo-hd"><b>${o.paid ? 'تم الدفع، وطلبك يتجهز' : 'طلبك وصل للكاشير'}</b><span>${where}</span></div>
       <ul>${(o.items || []).map(i => `<li><b dir="ltr">${i.qty}×</b><span>${esc(i.name)}${i.size ? ` <small>(${esc(i.size)})</small>` : ''}${i.note ? `<em>${esc(i.note)}</em>` : ''}</span></li>`).join('')}</ul>
       ${o.note ? `<p class="text-[12px] font-bold opacity-70 mt-1.5">ملاحظات: ${esc(o.note)}</p>` : ''}
-      <div class="mo-ft"><span>تدفعه عند الكاشير</span><b>${fmtPrice(o.total)}</b></div>`;
+      <div class="mo-ft"><span>${o.paid ? 'مدفوع ✓ · استلمه برقم فاتورتك' : 'تدفعه عند الكاشير'}</span><b>${fmtPrice(o.total)}</b></div>`;
   }
   // ─── لعبة الانتظار: طابق البطاقات (8 أزواج) ───
   const MM_ICONS = ['ph-coffee', 'ph-hamburger', 'ph-pizza', 'ph-ice-cream', 'ph-cookie', 'ph-orange-slice', 'ph-carrot', 'ph-fish'];

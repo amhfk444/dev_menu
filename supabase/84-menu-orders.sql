@@ -40,3 +40,9 @@ notify pgrst, 'reload schema';
 -- السفري: رقم جوال الزبون (إجباري)، يطلع للكاشير عشان يتواصل معه لو احتاج
 alter table public.menu_orders add column if not exists phone text;
 notify pgrst, 'reload schema';
+
+-- الخدمة الذاتية: الطلب يوصل الكاشير بعد دقيقتين (وقت التعديل)، ويدفع العميل عند الكاشير برمز الطلب،
+-- والكاشير يكتب رقم الفاتورة فيدخل التجهيز (يطلع له رقم بيجر داخلي يرن عليه)
+alter table public.menu_orders add column if not exists code text;
+alter table public.menu_orders add column if not exists paid_at timestamptz;
+notify pgrst, 'reload schema';

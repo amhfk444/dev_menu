@@ -62,7 +62,7 @@ async function hasCoupons(storeId) {
 }
 
 // الأسعار والعروض والكوبونات: api/_lib/order.js (نفس الحساب لطلب واتساب والطلب من المنيو)
-const { menuPromos, loadCoupon, priceCart, orderMode, buildOrder, saveOrder, publicOrder } = require('./_lib/order');
+const { menuPromos, loadCoupon, priceCart, orderMode, buildOrder, saveOrder, publicOrder, graceUntil, unpaid, expireUnpaid } = require('./_lib/order');
 const { poke } = require('./_lib/live');
 
 // زر "قائمة الانتظار": الإضافة مفعّلة + القائمة مفتوحة + صاحب المتجر مختار يظهر الزر
@@ -364,11 +364,25 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const b = readBody(req);
     const store = await findStore(b.slug);
     const mode = await orderMode(store.id);
-    if (mode !== 'table') throw new ApiError(409, 'الطلب من المنيو متوقف الحين، اطلب من الكاشير', 'ORDERS_OFF');
-    const o = await saveOrder(await buildOrder(store, b, 'table'));
+    // الخدمة الذاتية: الطلب يوصل الكاشير بعد دقيقتين (وقت التعديل)، ويدخل التجهيز بعد الدفع
+    if (!mode || (b.mode && b.mode !== mode)) throw new ApiError(409, 'الطلب من المنيو متوقف الحين، اطلب من الكاشير', 'ORDERS_OFF');
+    const o = await saveOrder(await buildOrder(store, b, mode));
     await poke([topic('pager', store.id)]);   // شاشة الكاشير
     console.log('MENU_ORDER', store.id, o.id, o.table_no);
     return { token: o.token, order: publicOrder(o), live: topic('mo', o.token) };
+  }
+
+  // الخدمة الذاتية: العميل يلغي طلبه (أو يعدّله = يلغيه ويرجع الأصناف للسلة) خلال الدقيقتين بس
+  if (action === 'order-cancel' && req.method === 'POST') {
+    const b = readBody(req);
+    const store = await findStore(b.slug);
+    const t = String(b.t || '');
+    if (!/^[A-Za-z0-9_-]{10,64}$/.test(t)) throw new ApiError(404, 'الطلب غير موجود', 'NOT_FOUND');
+    const o = (await rest(`menu_orders?client_id=eq.${store.id}&token=eq.${q(t)}&select=*`))[0];
+    if (!o) throw new ApiError(404, 'الطلب غير موجود', 'NOT_FOUND');
+    if (!unpaid(o) || Date.now() > graceUntil(o) + 5000) throw new ApiError(409, 'خلص وقت التعديل ووصل طلبك للكاشير. كلّمه لو تبي تغيّر شي', 'TOO_LATE');
+    await rest(`menu_orders?id=eq.${o.id}`, { method: 'PATCH', body: { status: 'cancelled', closed_at: new Date().toISOString() } });
+    return { ok: true, items: o.items };
   }
 
   // حالة طلب الزبون (يطلع له في المنيو: وصل، الكاشير استلمه، انقدّم)
@@ -377,8 +391,13 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const tokens = String(req.query.t || '').split(',').filter(t => /^[A-Za-z0-9_-]{10,64}$/.test(t)).slice(0, 5);
     if (!tokens.length) return { orders: [] };
     res.setHeader('Cache-Control', 'no-store');
+    await expireUnpaid(store.id);
     const rows = await rest(`menu_orders?client_id=eq.${store.id}&token=in.(${tokens.map(t => q(t)).join(',')})&select=*`).catch(() => []);
-    return { orders: rows.map(o => ({ token: o.token, ...publicOrder(o), live: ['new', 'accepted'].includes(o.status) ? topic('mo', o.token) : null })) };
+    // انفدع: رقم البيجر الداخلي اللي يرن عليه (صفحة الانتظار)
+    const tids = rows.map(o => o.pager_ticket_id).filter(Boolean);
+    const tks = tids.length ? await rest(`pager_tickets?id=in.(${tids.join(',')})&client_id=eq.${store.id}&select=id,token`).catch(() => []) : [];
+    const tokOf = new Map(tks.map(x => [x.id, x.token]));
+    return { orders: rows.map(o => ({ token: o.token, ...publicOrder(o), pager_token: tokOf.get(o.pager_ticket_id) || null, live: ['new', 'accepted'].includes(o.status) ? topic('mo', o.token) : null })) };
   }
 
   if (action === 'track' && req.method === 'POST') {
