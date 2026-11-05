@@ -1644,6 +1644,8 @@
   // طلب من المنيو واستلمه: يرجع للمنيو تلقائياً بعد ثواني (يقدر يقيّم قبلها، وأي لمسة توقف الرجوع)
   let backTimer = null;
   function doneFromMenu() {
+    // خلص الطلب: نوافذ التنبيه وبطاقة النداء ما لها داعي
+    ['perm', 'pc-ask'].forEach(id => $(id).classList.replace('flex', 'hidden'));
     let from = !!menuOrder; try { from = from || sessionStorage.getItem(FROM_MENU) === '1'; sessionStorage.removeItem(FROM_MENU); } catch {}
     const a = $('menu-back');
     a.classList.toggle('hidden', !from); $('new-btn').classList.toggle('hidden', from);
