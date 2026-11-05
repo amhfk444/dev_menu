@@ -669,6 +669,7 @@
       <p class="text-sm font-black">تابعنا</p>
       <div id="d-social-list" class="flex flex-wrap justify-center gap-2"></div>
     </div>
+    <a id="menu-back" class="hidden btn btn-brand"><i class="ph-bold ph-fork-knife"></i> <span>ارجع للمنيو</span></a>
     <button id="new-btn" class="btn btn-ghost"><i class="ph-bold ph-ticket"></i> خذ رقم جديد</button>
   </section>
 </main>
@@ -1472,7 +1473,7 @@
       pollTimer = setTimeout(poll, 5000); return;   // انقطاع مؤقت: نعيد المحاولة
     }
     if (!PREVIEW && loadToken() !== token) return;   // تغيّر الرقم وهو ينتظر الرد (ضغط "استلمت" أو أخذ رقم جديد): الرد قديم
-    if (askChat && typeof r.chat === 'boolean') { chatFor = token; chatOn = r.chat; upsell = r.upsell || []; curLabel = r.currency || 'ر.س'; game = r.game || null; gameOn = r.game_on !== false; quizOn = r.quiz === true; quizMode(); menuOrder = r.order || null; }
+    if (askChat && typeof r.chat === 'boolean') { chatFor = token; chatOn = r.chat; upsell = r.upsell || []; curLabel = r.currency || 'ر.س'; game = r.game || null; gameOn = r.game_on !== false; quizOn = r.quiz === true; quizMode(); menuOrder = r.order || null; if (menuOrder) try { sessionStorage.setItem(FROM_MENU, '1'); } catch {} }
     if (askQ) lastQ = Date.now();
     staffEta = r.staff_eta && typeof r.staff_eta === 'object' ? r.staff_eta : null;
     if (r.queue) renderQueue(r.queue, r.ticket.number); else if (lastQueue) renderQueue(lastQueue, r.ticket.number);
@@ -1522,7 +1523,7 @@
       stopRinging(); saveToken('');
       $('d-title').textContent = st === 'cancelled' ? 'تم إلغاء الرقم' : st === 'expired' ? 'انتهت صلاحية الرقم' : 'بالعافية!';
       $('d-sub').textContent = st === 'done' ? 'نتشرف بزيارتك مرة ثانية.' : 'تقدر تاخذ رقم جديد.';
-      watchTicket(''); show('done'); lastStatus = st; return;
+      watchTicket(''); show('done'); doneFromMenu(); lastStatus = st; return;
     }
     lastStatus = st;
     if (PREVIEW) return;
@@ -1639,6 +1640,20 @@
   };
   // ─── طلبه من المنيو (الخدمة الذاتية) ───
   let menuOrder = null;
+  const FROM_MENU = `dm_from_menu_${slug}`;
+  // طلب من المنيو واستلمه: يرجع للمنيو تلقائياً بعد ثواني (يقدر يقيّم قبلها، وأي لمسة توقف الرجوع)
+  let backTimer = null;
+  function doneFromMenu() {
+    let from = !!menuOrder; try { from = from || sessionStorage.getItem(FROM_MENU) === '1'; sessionStorage.removeItem(FROM_MENU); } catch {}
+    const a = $('menu-back');
+    a.classList.toggle('hidden', !from); $('new-btn').classList.toggle('hidden', from);
+    if (!from || PREVIEW) return;
+    a.href = DM.storePage('menu', slug);
+    let n = 8; const tick = () => { a.querySelector('span').textContent = n > 0 ? `ارجع للمنيو (${n})` : 'ارجع للمنيو'; if (n-- <= 0) location.href = a.href; else backTimer = setTimeout(tick, 1000); };
+    clearTimeout(backTimer); tick();
+    const stop = (e) => { if (e.target.closest('#menu-back')) return; clearTimeout(backTimer); a.querySelector('span').textContent = 'ارجع للمنيو'; $('v-done').removeEventListener('pointerdown', stop); };
+    $('v-done').addEventListener('pointerdown', stop);
+  }
   function renderMenuOrder(st) {
     const o = menuOrder, box = $('w-order');
     box.classList.toggle('hidden', !(o && st === 'waiting'));
@@ -1792,7 +1807,7 @@
   $('test-btn').onclick = () => { unlockAudio(); ringOnce(); };
   // "استلمت طلبي": التقييم (النجوم وقوقل ماب) يطلع على طول، لأن الزبون يقفل الصفحة بعد ما يستلم.
   // الرقم يظل عند الكاشير لين يضغط "استلم" (وهو اللي يعطي ختم الولاء)
-  $('got-btn').onclick = () => { clearTimeout(pollTimer); ack(); offerRating(loadToken()); dismissed = true; stopRinging(); $('d-title').textContent = 'بالعافية!'; $('d-sub').textContent = 'نتشرف بزيارتك مرة ثانية.'; saveToken(''); show('done'); };
+  $('got-btn').onclick = () => { clearTimeout(pollTimer); ack(); offerRating(loadToken()); dismissed = true; stopRinging(); $('d-title').textContent = 'بالعافية!'; $('d-sub').textContent = 'نتشرف بزيارتك مرة ثانية.'; saveToken(''); show('done'); doneFromMenu(); };
 
   // ─── حسابات المحل في التواصل: تطلع في شاشة "بالعافية" تحت التقييم ───
   const SOCIAL = [['instagram', 'انستقرام', 'ph-instagram-logo'], ['tiktok', 'تيك توك', 'ph-tiktok-logo'], ['snapchat', 'سناب شات', 'ph-snapchat-logo'], ['website', 'موقعنا', 'ph-globe']];
