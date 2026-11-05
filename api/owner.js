@@ -656,7 +656,8 @@ async function main(req) {
     const mos = await rest(`menu_orders?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&select=*&order=id.asc&limit=300`).catch(() => []);
     const byTicket = new Map(mos.filter(o => o.pager_ticket_id).map(o => [o.pager_ticket_id, publicOrder(o)]));
     const orders = mos.filter(o => !o.pager_ticket_id && o.mode === 'table' && ['new', 'accepted'].includes(o.status)).map(publicOrder);
-    return { order_mode: orderMode, orders, currency: CURRENCIES[store.currency] || CURRENCIES.SAR, tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub, order: byTicket.get(t.id) || null, reward: t.loyalty_card_id ? rewardsBy[t.loyalty_card_id] || null : null })), slug: store.client_slug, name: store.name, business_type: store.business_type, max_rings: PAGER_MAX_RINGS, live: topic('pager', store.id), loyalty: lx.loyalty_enabled === true, pager: hasPager, loyalty_entitled: PLANS.has(store, 'loyalty') };
+    // build: نسخة الموقع المنشورة، شاشة الكاشير تحدّث نفسها لو تغيّرت (تبقى مفتوحة أيام)
+    return { build: (process.env.VERCEL_GIT_COMMIT_SHA || '').slice(0, 12) || null, order_mode: orderMode, orders, currency: CURRENCIES[store.currency] || CURRENCIES.SAR, tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub, order: byTicket.get(t.id) || null, reward: t.loyalty_card_id ? rewardsBy[t.loyalty_card_id] || null : null })), slug: store.client_slug, name: store.name, business_type: store.business_type, max_rings: PAGER_MAX_RINGS, live: topic('pager', store.id), loyalty: lx.loyalty_enabled === true, pager: hasPager, loyalty_entitled: PLANS.has(store, 'loyalty') };
   }
 
   // ─── إحصائيات البيجر: وقت الانتظار، الإنجاز، أوقات الذروة، والتقييم (آخر 30 يوم) ───

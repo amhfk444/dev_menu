@@ -672,6 +672,11 @@
       $('join-btn').classList.toggle('hidden', !r.loyalty);
       // شاشة الزبون: أكواد الخدمات (ومعها الختم للي عنده الولاء)
       $('kiosk-btn').classList.toggle('hidden', !r.loyalty && r.pager === false);
+      // انتشرت نسخة جديدة من الموقع والشاشة مفتوحة من قبل: نحدّثها لحالها (لو ما فيه نافذة مفتوحة)
+      if (r.build && !EMBED) {
+        if (load.build && load.build !== r.build && ![...document.querySelectorAll('[id$="-modal"]')].some(m => !m.classList.contains('hidden'))) return location.reload();
+        load.build = load.build || r.build;
+      }
       const pager = r.pager !== false;
       orderMode = r.order_mode || null;
       orders = (r.orders || []).map(o => oBusy.has(o.id) ? (orders.find(x => x.id === o.id) || o) : o);
