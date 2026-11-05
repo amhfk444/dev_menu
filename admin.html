@@ -2103,13 +2103,13 @@
       </div>
     </div>
     <!-- معاينة صفحة الانتظار: جوال ثابت يشوف فيه صاحب المحل اللي يطلع للزبون، ويتحدث مع كل إعداد -->
-    <div id="pg-phone-wrap" data-needs="pager" data-free-hide class="hidden xl:block xl:sticky xl:top-24 space-y-2">
+    <div id="pg-phone-wrap" data-needs="pager|menu" data-free-hide class="hidden xl:block xl:sticky xl:top-24 space-y-2">
       <div class="flex items-center justify-between gap-2 px-1">
-        <p class="text-xs font-bold text-ink"><i class="ph-bold ph-device-mobile"></i> كما يراها الزبون وهو ينتظر</p>
+        <p id="pg-phone-title" class="text-xs font-bold text-ink"><i class="ph-bold ph-device-mobile"></i> كما يراها الزبون وهو ينتظر</p>
         <button type="button" onclick="reloadPagerPhone()" class="text-[11px] font-bold text-ink underline"><i class="ph-bold ph-arrow-clockwise"></i> تحديث</button>
       </div>
       <div class="ly-phone pg-phone"><div class="ly-phone-screen pg-phone-screen"><span class="ly-island"></span><iframe id="pg-phone" title="معاينة صفحة الانتظار" loading="lazy"></iframe></div></div>
-      <p class="text-[11px] text-ink text-center leading-relaxed">رقم تجريبي للمعاينة فقط، ولا يُسجَّل عندك.</p>
+      <p id="pg-phone-note" class="text-[11px] text-ink text-center leading-relaxed">رقم تجريبي للمعاينة فقط، ولا يُسجَّل عندك.</p>
     </div>
   </div>
         </div>
@@ -5524,10 +5524,31 @@
     else { document.getElementById('info-pager-car').checked = !on; showToast('تعذر حفظ الإعداد', true); }
   }
   // معاينة صفحة الانتظار في الجوال (شاشة كبيرة بس)
+  // الجوال يعرض المنيو عند إعدادات الطلب (واتساب، الطلب للكاشير)، وصفحة الانتظار عند إعدادات البيجر
+  let phoneView = 'pager';
   function reloadPagerPhone() {
     const f = document.getElementById('pg-phone'); if (!f || !client || !window.matchMedia('(min-width: 1280px)').matches) return;
-    f.src = `pager.html?client=${encodeURIComponent(client.client_slug)}&preview=1&v=${Date.now()}`;
+    if (featureLocked('pager')) phoneView = 'menu';
+    else if (featureLocked('menu')) phoneView = 'pager';
+    const menu = phoneView === 'menu';
+    f.src = `${menu ? 'menu' : 'pager'}.html?client=${encodeURIComponent(client.client_slug)}&preview=1&v=${Date.now()}`;
+    document.getElementById('pg-phone-title').innerHTML = `<i class="ph-bold ph-device-mobile"></i> ${menu ? 'كما يراه الزبون في المنيو' : 'كما يراها الزبون وهو ينتظر'}`;
+    document.getElementById('pg-phone-note').textContent = menu
+      ? (client.menu_order_mode ? 'جرّب تضيف صنف وتفتح الطلب. في المعاينة الطلب ما ينرسل للكاشير.' : 'المنيو كما يظهر للزبون الحين.')
+      : 'رقم تجريبي للمعاينة فقط، ولا يُسجَّل عندك.';
   }
+  function setPhoneView(v) { if (v !== phoneView) { phoneView = v; reloadPagerPhone(); } }
+  // أقرب قسم لنص الشاشة يحدد وش يعرض الجوال
+  (() => {
+    let t = null;
+    addEventListener('scroll', () => { clearTimeout(t); t = setTimeout(() => {
+      const box = document.getElementById('mo-box'), pg = document.getElementById('pg-preview');
+      if (!box || !pg || !box.offsetParent || !document.getElementById('pg-phone').getAttribute('src')) return;
+      // وصل لقسم البيجر (عنوانه فوق نص الشاشة) = صفحة الانتظار، وإعدادات الطلب ظاهرة = المنيو
+      if (pg.getBoundingClientRect().top < innerHeight * 0.55) setPhoneView('pager');
+      else if (box.getBoundingClientRect().bottom > 0) setPhoneView('menu');
+    }, 250); }, { passive: true });
+  })();
   // ─── الطلب من المنيو إلى الكاشير: إيقاف / طاولات / خدمة ذاتية مع البيجر ───
   function renderOrderMode() {
     const m = client.menu_order_mode || '';
@@ -5546,7 +5567,7 @@
     const prev = client.menu_order_mode || '';
     const m = r.value || null;
     if (await updateClient({ menu_order_mode: m })) {
-      renderOrderMode(); applyFeatureLocks();
+      renderOrderMode(); applyFeatureLocks(); phoneView = 'menu'; reloadPagerPhone();
       showToast(!m ? 'تم إيقاف الطلب من المنيو' : m === 'table' ? 'صار العميل يطلب من المنيو برقم طاولته' : 'صار العميل يطلب من المنيو وياخذ رقم بيجر');
     } else { client.menu_order_mode = prev; renderOrderMode(); showToast('تعذر حفظ الإعداد', true); }
   }

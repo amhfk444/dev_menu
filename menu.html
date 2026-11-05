@@ -675,6 +675,7 @@
 
   // إحصائيات مجهولة: مرة واحدة لكل زيارة (بدون أي بيانات شخصية)
   function trackOnce(key, kind, productId = null, source = null) {
+    if (urlParams.get('preview') === '1') return;   // معاينة لوحة التحكم ما تنحسب زيارة
     try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, '1'); } catch {}
     DM.post('/api/public?action=track', { client_id: project.id, kind, product_id: productId, source })
       .catch(e => console.warn('track', e.message));
@@ -1594,6 +1595,8 @@
   function directErr(msg) { const m = document.getElementById('directMsg'); m.textContent = msg; m.classList.remove('hidden'); }
   async function sendDirect() {
     const dm = directMode();
+    // معاينة لوحة التحكم: نوري صاحب المحل الخطوات بدون ما يوصل طلب للكاشير
+    if (urlParams.get('preview') === '1') return directErr(T('هذي معاينة: الطلب ما ينرسل للكاشير', 'Preview only: the order is not sent'));
     const table = document.getElementById('tableInput').value.trim().replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15));
     if (dm === 'table' && !table) { directErr(T('اكتب رقم طاولتك عشان يوصلك الطلب', 'Enter your table number')); return document.getElementById('tableInput').focus(); }
     const btn = document.getElementById('cartSend'); btn.disabled = true;
