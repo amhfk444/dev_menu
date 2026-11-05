@@ -1442,17 +1442,19 @@
       const p = productById(c.id); if (!p) return '';
       const u = unitPrice(p, c.size) || 0;
       return `
-        <li class="flex items-start gap-3 bg-white/5 border border-white/10 rounded-2xl p-2.5">
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-bold text-white leading-snug line-clamp-2">${esc(lineName(p, c))}</p>
-            <p class="text-[11px] text-gray-400 mt-0.5">${esc(money(round2(u * c.qty)))}</p>
-            ${directMode() ? `<input data-note="${i}" value="${esc(c.note || '')}" maxlength="100" autocomplete="off" placeholder="${esc(T('ملاحظة (اختياري): بدون بصل، سكر خفيف', 'Note (optional): no onions, less sugar'))}" class="mt-2 w-full bg-white/5 border border-white/15 rounded-lg px-2.5 py-2 text-[13px] text-amber-100 placeholder-gray-500 focus:outline-none focus:border-white/40" style="font-size:16px">` : ''}
+        <li class="bg-white/5 border border-white/10 rounded-2xl p-2.5">
+          <div class="flex items-center gap-3">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-bold text-white leading-snug line-clamp-2">${esc(lineName(p, c))}</p>
+              <p class="text-[11px] text-gray-400 mt-0.5">${esc(money(round2(u * c.qty)))}</p>
+            </div>
+            <div class="flex items-center bg-white/10 border border-white/15 rounded-xl shrink-0" dir="ltr">
+              <button type="button" onclick="setQty(${i}, ${c.qty - 1})" aria-label="-" class="w-9 h-9 text-white font-black">${c.qty === 1 ? '<i class="fa-solid fa-trash text-[11px] text-red-300"></i>' : '−'}</button>
+              <span class="w-6 text-center text-sm font-black text-white">${c.qty}</span>
+              <button type="button" onclick="setQty(${i}, ${c.qty + 1})" aria-label="+" class="w-9 h-9 text-white font-black">+</button>
+            </div>
           </div>
-          <div class="flex items-center bg-white/10 border border-white/15 rounded-xl shrink-0" dir="ltr">
-            <button type="button" onclick="setQty(${i}, ${c.qty - 1})" aria-label="-" class="w-9 h-9 text-white font-black">${c.qty === 1 ? '<i class="fa-solid fa-trash text-[11px] text-red-300"></i>' : '−'}</button>
-            <span class="w-6 text-center text-sm font-black text-white">${c.qty}</span>
-            <button type="button" onclick="setQty(${i}, ${c.qty + 1})" aria-label="+" class="w-9 h-9 text-white font-black">+</button>
-          </div>
+          ${directMode() ? `<input data-note="${i}" value="${esc(c.note || '')}" maxlength="100" autocomplete="off" placeholder="${esc(T('ملاحظة على هذا الصنف (اختياري)', 'Note for this item (optional)'))}" class="mt-2 w-full bg-white/5 border border-white/15 rounded-lg px-2.5 py-2 text-amber-100 placeholder-gray-500 focus:outline-none focus:border-white/40" style="font-size:16px">` : ''}
         </li>`;
     }).join('');
     renderCouponTotals();
