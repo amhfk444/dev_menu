@@ -1632,6 +1632,13 @@
   // ─── الطلب للكاشير (بدون واتساب) ───
   // الطاولات: رقم الطاولة إجباري. الخدمة الذاتية: محلي أو سفري، والطاولة اختيارية للمحلي، ويطلع له رقم بيجر
   let dine = 'in', tableEdit = false;
+  // بطاقات النداء اللي أضافها من صفحة البيجر (الكوكي على devmenu.digital كله، أو التخزين المحلي)
+  function savedPagerCards() {
+    const out = new Set();
+    for (const m of document.cookie.matchAll(/(?:^|; )dm_pc_[A-Za-z0-9]+=([A-Za-z0-9_-]{10,64})/g)) out.add(m[1]);
+    try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (/^dm_pc_|^dm_pcard_/.test(k)) { const v = localStorage.getItem(k); if (/^[A-Za-z0-9_-]{10,64}$/.test(v || '')) out.add(v); } } } catch {}
+    return [...out].slice(0, 4);
+  }
   // المحل يجهّز قبل الدفع (now / arrive): الجوال إجباري
   const earlyPrep = () => directMode() === 'self' && ['now', 'arrive'].includes(project && project.order_prep);
   // رقم الطاولة من QR الطاولة (?table=12): ينحفظ للجلسة عشان يبقى لو تنقّل في المنيو
@@ -1688,7 +1695,9 @@
     const body = { mode: dm, items: cart.map(c => ({ id: c.id, qty: c.qty, size: c.size, note: c.note })), note: '', table: dm === 'self' && dine === 'out' ? '' : table, dine: dm === 'self' ? dine : undefined, phone: out ? phone : undefined, coupon: coupon ? coupon.coupon.code : undefined };
     try {
       try { if (table) sessionStorage.setItem(tableKey(), table); } catch {}
-      const r = await DM.post('/api/public?action=order', { slug: project.client_slug, dev: devId(), lang: currentLang, ...body });
+      // بطاقة النداء وبطاقة الولاء المحفوظة في جواله: تنربط برقمه لما يبدأ طلبه (يوصله الإشعار من المحفظة)
+      const cards = dm === 'self' ? { pc: savedPagerCards(), lt: await DM.loyaltyToken(project.client_slug).catch(() => '') || undefined } : {};
+      const r = await DM.post('/api/public?action=order', { slug: project.client_slug, dev: devId(), lang: currentLang, ...body, ...cards });
       cart.forEach(c => DM.post('/api/public?action=track', { client_id: project.id, kind: 'order', product_id: c.id }).catch(() => {}));
       myOrders = [{ token: r.token, ...r.order }, ...myOrders.filter(o => o.token !== r.token)].slice(0, 5);
       saveOrders(); watchOrder(r.live); clearTimeout(refreshOrders.t); refreshOrders.t = setTimeout(refreshOrders, 4000);

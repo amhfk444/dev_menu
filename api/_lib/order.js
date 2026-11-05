@@ -210,7 +210,9 @@ async function buildOrder(store, b, mode) {
     coupon, row: {
       client_id: store.id, token: require('crypto').randomBytes(18).toString('base64url'), mode, dine, table_no, ...(phone ? { phone } : {}), ...(pay_first ? { pay_first } : {}),
       items: priced.lines, note: cleanNote(b.note, 300), total: priced.total, discount: priced.discount, coupon_code: coupon ? coupon.code : null,
-      device: dev, lang: b.lang === 'en' ? 'en' : 'ar'
+      device: dev, lang: b.lang === 'en' ? 'en' : 'ar',
+      // بطاقات المحفظة المحفوظة في جواله (تنربط برقمه لما يبدأ الطلب)
+      ...(mode === 'self' ? { cards: { pc: (Array.isArray(b.pc) ? b.pc : []).map(String).filter(t => DEV_RE.test(t)).slice(0, 4), lt: DEV_RE.test(String(b.lt || '')) ? String(b.lt) : null } } : {})
     }
   };
 }
@@ -251,7 +253,7 @@ async function autoStart(storeId, prepIn) {
   const prep = prepIn || (await orderPrep(storeId)).prep;
   if (prep === 'after_pay') return 0;
   const ready = new Date(Date.now() - GRACE_MS).toISOString();
-  const rows = await rest(`menu_orders?client_id=eq.${Number(storeId)}&mode=eq.self&status=eq.new&pager_ticket_id=is.null&started_at=is.null&pay_first=is.false&created_at=lte.${q(ready)}&created_at=gte.${q(dayStart())}${prep === 'arrive' ? '&arriving_at=not.is.null' : ''}&select=id,token,lang&limit=20`).catch(() => []);
+  const rows = await rest(`menu_orders?client_id=eq.${Number(storeId)}&mode=eq.self&status=eq.new&pager_ticket_id=is.null&started_at=is.null&pay_first=is.false&created_at=lte.${q(ready)}&created_at=gte.${q(dayStart())}${prep === 'arrive' ? '&arriving_at=not.is.null' : ''}&select=id,token,lang,cards&limit=20`).catch(() => []);
   let n = 0;
   for (const o of rows) {
     // نحجزه أول (شاشتين ممكن يسألون بنفس اللحظة): اللي ينجح بس ياخذ الرقم
@@ -262,6 +264,7 @@ async function autoStart(storeId, prepIn) {
       const res = await rpc('server_pager_take', { p_client_id: Number(storeId), p_token: token });
       const t = (await rest(`pager_tickets?token=eq.${q(res.token)}&client_id=eq.${Number(storeId)}`, { method: 'PATCH', prefer: 'return=representation', body: o.lang === 'en' ? { lang: 'en' } : { lang: 'ar' } }))[0];
       await rest(`menu_orders?id=eq.${o.id}`, { method: 'PATCH', body: { pager_ticket_id: t.id, status: 'accepted', accepted_at: new Date().toISOString() } });
+      await require('../pager').linkOrderCards(storeId, res.token, o.cards).catch(e => console.error('ORDER_CARDS', e.message));
       n++;
     } catch (e) {
       console.error('ORDER_AUTOSTART', storeId, o.id, e.message);

@@ -61,3 +61,7 @@ alter table public.menu_orders add column if not exists no_show boolean not null
 alter table public.menu_orders add column if not exists pay_first boolean not null default false;
 create index if not exists menu_orders_phone_idx on public.menu_orders (client_id, phone) where phone is not null;
 notify pgrst, 'reload schema';
+
+-- بطاقة النداء وبطاقة الولاء المحفوظة في جوال العميل: تنربط برقمه لما يبدأ طلبه (عشان يوصله الإشعار من المحفظة)
+alter table public.menu_orders add column if not exists cards jsonb;
+notify pgrst, 'reload schema';

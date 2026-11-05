@@ -1218,6 +1218,7 @@ async function main(req) {
     // الطلب ما انلغى بنفس اللحظة (سباق مع الإلغاء التلقائي): نربطه بس لو لسا جديد
     const done = await rest(`menu_orders?id=eq.${o.id}&status=eq.new&pager_ticket_id=is.null`, { method: 'PATCH', prefer: 'return=representation', body: { pager_ticket_id: t.id, status: 'accepted', accepted_at: now, paid_at: now } });
     if (!done.length) { await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { status: 'cancelled', closed_at: now } }); throw new ApiError(409, 'الطلب تغيّر، حدّث الشاشة', 'CHANGED'); }
+    await require('./pager').linkOrderCards(sid, res.token, o.cards).catch(e => console.error('ORDER_CARDS', e.message));
     await poke([topic('pager', sid), topic('mo', o.token)]);
     return { ok: true, ticket: { id: t.id, number: t.number, invoice_no: invoice } };
   }
