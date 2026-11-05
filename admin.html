@@ -638,13 +638,10 @@
             <div id="sizes-list" class="space-y-1.5"></div>
             <p id="sizes-hint" class="hidden text-[11px] text-ink">مع الأحجام يتحدد السعر من كل حجم، ويظهر في المنيو "من" أقل سعر.</p>
           </div>
-          <!-- إضافات الطبق: مجموعات (إجبارية أو اختيارية) وكل خيار بسعره -->
+          <!-- إضافات الطبق: قائمة مباشرة (يكتبها أو يختارها من المنيو)، واختيارات إجبارية لحالها (مثل نوع الخبز) -->
           <div class="bg-brand/5 rounded-xl border border-brand/15 p-2.5 space-y-2">
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-[11px] font-bold text-ink"><i class="ph-bold ph-list-plus text-emerald-600"></i> الإضافات <span class="text-ink font-normal">(اختياري)</span></span>
-              <button type="button" id="exg-add-btn" onclick="addExGroup()" class="text-[11px] font-bold bg-brand/10 border border-brand/45 hover:bg-brand/10 text-ink px-2.5 py-1 rounded-lg transition disabled:opacity-40"><i class="ph-bold ph-plus text-[10px]"></i> مجموعة إضافات</button>
-            </div>
-            <p class="text-[11px] text-ink leading-relaxed">الاختيارية مثل «الصوصات»: يختار العميل منها ما يشاء. والإجبارية مثل «نوع الخبز»: يختار واحداً منها لزاماً. السعر 0 يعني مجاناً.</p>
+            <span class="text-[11px] font-bold text-ink"><i class="ph-bold ph-list-plus text-emerald-600"></i> الإضافات <span class="text-ink font-normal">(اختياري)</span></span>
+            <p class="text-[11px] text-ink leading-relaxed">مثل الصوصات والمخلل: يختار العميل منها ما يشاء. اكتب الاسم والسعر، أو اخترها من المنيو. السعر 0 يعني مجاناً.</p>
             <div id="extras-list" class="space-y-2"></div>
             <button type="button" id="extras-copy-btn" onclick="openExtrasCopy()" class="hidden text-[11px] font-bold text-ink underline"><i class="ph-bold ph-copy"></i> انسخ هذي الإضافات لأطباق ثانية</button>
           </div>
@@ -7131,30 +7128,36 @@
 
   // ─── إضافات الطبق ───
   let formExtras = [];
+  // الإضافات الاختيارية (أول مجموعة غير إجبارية) تطلع قائمة مباشرة بدون اسم مجموعة. والإجبارية (مثل نوع الخبز) كل وحدة باسمها
+  const mainExtras = () => formExtras.find(g => !g.required);
+  function exOptRows(g, gi) {
+    return (g.options || []).map((o, oi) => `<div class="flex items-center gap-1.5">
+          ${o.pid ? `<span class="flex-1 min-w-0 text-xs font-bold text-ink truncate py-2"><i class="ph-bold ph-link text-emerald-600" title="مربوط بصنف في المنيو"></i> ${esc(exLinkedName(o))}</span>
+          <span class="text-xs font-bold text-ink w-20 text-center" dir="ltr">${esc(money(exLinkedPrice(o)))}</span>` : `<input type="text" maxlength="40" value="${esc(o.name || '')}" oninput="formExtras[${gi}].options[${oi}].name=this.value" placeholder="${g.required ? (['عادي', 'بريوش', 'أسمر'][oi] || 'الخيار') : (['صوص جبن', 'مخلل', 'جبن إضافي'][oi] || 'الإضافة')}" class="input-pro !py-1.5 text-xs flex-1 min-w-0">
+          <input type="number" min="0" step="any" value="${esc(o.price ?? '')}" oninput="formExtras[${gi}].options[${oi}].price=this.value" placeholder="0" dir="ltr" class="input-pro !py-1.5 text-xs w-20" aria-label="السعر">`}
+          <button type="button" onclick="formExtras[${gi}].options.splice(${oi}, 1); renderExtras()" aria-label="حذف" class="shrink-0 w-8 h-8 rounded-lg text-red-600 hover:bg-red-500/10"><i class="ph-bold ph-x"></i></button>
+        </div>`).join('') + `<div class="flex flex-wrap gap-x-3"><button type="button" onclick="addExOpt(${gi})" class="text-[11px] font-bold text-brand hover:underline py-1"><i class="ph-bold ph-plus"></i> ${g.required ? 'خيار' : 'إضافة'}</button>
+        <button type="button" onclick="pickExFromMenu(${gi})" class="text-[11px] font-bold text-brand hover:underline py-1"><i class="ph-bold ph-list-checks"></i> اختر من المنيو</button></div>`;
+  }
   function renderExtras() {
-    const ph = ['الصوصات', 'نوع الخبز', 'إضافات'];
-    document.getElementById('extras-list').innerHTML = formExtras.map((g, gi) => `
+    if (!mainExtras()) formExtras.unshift({ name: 'الإضافات', required: false, options: [] });
+    const main = mainExtras(), mi = formExtras.indexOf(main);
+    const others = formExtras.map((g, gi) => ({ g, gi })).filter(x => x.g !== main);
+    document.getElementById('extras-list').innerHTML = `<div class="space-y-1.5">${exOptRows(main, mi)}</div>` + others.map(({ g, gi }) => `
       <div class="bg-white rounded-lg border border-brand/15 p-2 space-y-1.5">
         <div class="flex items-center gap-1.5">
-          <input type="text" maxlength="40" value="${esc(g.name || '')}" oninput="formExtras[${gi}].name=this.value" placeholder="${ph[gi] || 'اسم المجموعة'}" aria-label="اسم المجموعة" class="input-pro !py-1.5 text-xs flex-1 min-w-0 font-bold">
-          <button type="button" onclick="formExtras.splice(${gi}, 1); renderExtras()" aria-label="حذف المجموعة" class="shrink-0 w-8 h-8 rounded-lg bg-red-500/10 text-red-600 border border-red-500/20"><i class="ph-bold ph-trash"></i></button>
+          <span class="shrink-0 text-[10.5px] font-black px-2 py-1 rounded-md ${g.required ? 'bg-amber-100 text-amber-900' : 'bg-brand/10 text-ink'}">${g.required ? 'إجباري' : 'اختياري'}</span>
+          <input type="text" maxlength="40" value="${esc(g.name || '')}" oninput="formExtras[${gi}].name=this.value" placeholder="${g.required ? 'مثل: نوع الخبز' : 'اسم المجموعة'}" aria-label="اسم الاختيار" class="input-pro !py-1.5 text-xs flex-1 min-w-0 font-bold">
+          <button type="button" onclick="formExtras.splice(${gi}, 1); renderExtras()" aria-label="حذف" class="shrink-0 w-8 h-8 rounded-lg bg-red-500/10 text-red-600 border border-red-500/20"><i class="ph-bold ph-trash"></i></button>
         </div>
-        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-ink">
-          <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" ${g.required ? 'checked' : ''} onchange="formExtras[${gi}].required=this.checked" class="accent-green-600"> إجبارية (يختار واحد منها)</label>
-
-        </div>
-        ${(g.options || []).map((o, oi) => `<div class="flex items-center gap-1.5 ps-2">
-          ${o.pid ? `<span class="flex-1 min-w-0 text-xs font-bold text-ink truncate py-2"><i class="ph-bold ph-link text-emerald-600" title="مربوط بصنف في المنيو"></i> ${esc(exLinkedName(o))}</span>
-          <span class="text-xs font-bold text-ink w-20 text-center" dir="ltr">${esc(money(exLinkedPrice(o)))}</span>` : `<input type="text" maxlength="40" value="${esc(o.name || '')}" oninput="formExtras[${gi}].options[${oi}].name=this.value" placeholder="${['صوص جبن', 'مخلل', 'بريوش'][oi] || 'الخيار'}" class="input-pro !py-1.5 text-xs flex-1 min-w-0">
-          <input type="number" min="0" step="any" value="${esc(o.price ?? '')}" oninput="formExtras[${gi}].options[${oi}].price=this.value" placeholder="0" dir="ltr" class="input-pro !py-1.5 text-xs w-20" aria-label="السعر">`}
-          <button type="button" onclick="formExtras[${gi}].options.splice(${oi}, 1); renderExtras()" aria-label="حذف الخيار" class="shrink-0 w-8 h-8 rounded-lg text-red-600 hover:bg-red-500/10"><i class="ph-bold ph-x"></i></button>
-        </div>`).join('')}
-        <div class="flex flex-wrap gap-x-3 ps-2"><button type="button" onclick="addExOpt(${gi})" class="text-[11px] font-bold text-brand hover:underline"><i class="ph-bold ph-plus"></i> خيار</button>
-        <button type="button" onclick="pickExFromMenu(${gi})" class="text-[11px] font-bold text-brand hover:underline"><i class="ph-bold ph-list-checks"></i> اختر من المنيو</button></div>
-      </div>`).join('');
-    document.getElementById('exg-add-btn').disabled = formExtras.length >= 6;
-    document.getElementById('extras-copy-btn').classList.toggle('hidden', !(editingProductId && formExtras.length));
+        ${g.required ? '<p class="text-[10.5px] text-ink">يختار العميل واحداً منها قبل أن يضيف الطبق.</p>' : ''}
+        ${exOptRows(g, gi)}
+      </div>`).join('') + `<button type="button" onclick="addReqGroup()" ${formExtras.length >= 6 ? 'disabled' : ''} class="w-full text-[11px] font-bold bg-white border border-dashed border-brand/40 text-ink rounded-lg py-2 disabled:opacity-40"><i class="ph-bold ph-plus"></i> اختيار إجباري (مثل نوع الخبز أو درجة الطهي)</button>`;
+    const has = formExtras.some(g => (g.options || []).length);
+    document.getElementById('extras-copy-btn').classList.toggle('hidden', !(editingProductId && has));
   }
+  function addReqGroup() { if (formExtras.length >= 6) return; formExtras.push({ name: '', required: true, options: [{ name: '', price: '' }, { name: '', price: '' }] }); renderExtras(); const ins = document.querySelectorAll('#extras-list input[aria-label="اسم الاختيار"]'); if (ins.length) ins[ins.length - 1].focus(); }
+
   // خيار مربوط بصنف في المنيو: الاسم والسعر الحالي من الصنف
   const exLinked = (o) => loadedProducts.find(x => x.id === o.pid);
   const exLinkedName = (o) => (exLinked(o) || o).name;
@@ -7170,7 +7173,7 @@
     const box = document.createElement('div');
     box.className = 'fixed inset-0 z-[80] bg-black/50 flex items-center justify-center p-4';
     box.innerHTML = `<div class="bg-white rounded-2xl w-full max-w-md max-h-[80vh] flex flex-col">
-      <div class="p-4 border-b border-ink/10"><b class="text-sm text-ink">اختر إضافات «${esc(g.name || 'المجموعة')}» من المنيو</b><p class="text-[11px] text-ink mt-1 leading-relaxed">الاسم والسعر يجون من الصنف نفسه: لو غيّرت سعره في المنيو يتغير هنا، ولو صار غير متوفر يختفي من الإضافات. تقدر تخفي قسم الإضافات من المنيو لو ما تبيه يظهر كأطباق.</p></div>
+      <div class="p-4 border-b border-ink/10"><b class="text-sm text-ink">${g.required ? `اختر خيارات «${esc(g.name || 'الاختيار')}» من المنيو` : 'اختر الإضافات من المنيو'}</b><p class="text-[11px] text-ink mt-1 leading-relaxed">الاسم والسعر يجون من الصنف نفسه: لو غيّرت سعره في المنيو يتغير هنا، ولو صار غير متوفر يختفي من الإضافات. تقدر تخفي قسم الإضافات من المنيو لو ما تبيه يظهر كأطباق.</p></div>
       <div class="p-3 overflow-y-auto space-y-3">${cats.map(c => `<div><p class="text-[11px] font-black text-ink/70 mb-1">${esc(catName(c))}</p>${list.filter(x => x.category === c).map(o => `<label class="flex items-center gap-2 p-2 rounded-lg hover:bg-brand/5 cursor-pointer text-xs"><input type="checkbox" value="${o.id}" ${picked.has(o.id) ? 'checked' : ''} class="accent-green-600"><span class="flex-1 font-bold text-ink">${esc(o.name)}</span><span class="text-[11px] text-ink" dir="ltr">${esc(money(exLinkedPrice({ pid: o.id })))}</span></label>`).join('')}</div>`).join('') || '<p class="text-xs text-ink p-2">ما فيه أصناف في المنيو.</p>'}</div>
       <div class="p-3 border-t border-ink/10 flex gap-2"><button type="button" data-x="go" class="flex-1 bg-brand text-cream font-bold rounded-xl py-2.5 text-sm">تم</button><button type="button" data-x="no" class="flex-1 border border-ink/15 font-bold rounded-xl py-2.5 text-sm">إلغاء</button></div></div>`;
     document.body.appendChild(box);
@@ -7186,16 +7189,15 @@
     });
   }
   function addExGroup() { if (formExtras.length >= 6) return; formExtras.push({ name: '', required: false, options: [{ name: '', price: '' }] }); renderExtras(); const ins = document.querySelectorAll('#extras-list input[type="text"]'); if (ins.length) ins[ins.length - 2 >= 0 ? ins.length - 2 : 0].focus(); }
-  function addExOpt(gi) { const g = formExtras[gi]; if (!g || g.options.length >= 15) return showToast('الخيارات حدها 15', true); g.options.push({ name: '', price: '' }); renderExtras(); }
+  function addExOpt(gi) { const g = formExtras[gi]; if (!g || g.options.length >= 15) return showToast('الإضافات حدها 15', true); g.options.push({ name: '', price: '' }); renderExtras(); const r = document.querySelectorAll('#extras-list input[type="text"]'); const target = [...r].find(x => x.getAttribute('oninput') === `formExtras[${gi}].options[${g.options.length - 1}].name=this.value`); if (target) target.focus(); }
   // تتحقق قبل الحفظ، وترجع null لو فيه خطأ (يطلع للمستخدم)
   function cleanFormExtras() {
     const out = [];
     for (const g of formExtras) {
-      const name = String(g.name || '').trim();
+      const name = String(g.name || '').trim() || (!g.required && g === mainExtras() ? 'الإضافات' : '');
       const options = (g.options || []).map(o => o.pid ? { name: exLinkedName(o), price: exLinkedPrice(o), pid: o.pid } : { name: String(o.name || '').trim(), price: o.price === '' || o.price == null ? 0 : parseFloat(o.price) }).filter(o => o.name);
-      if (!name && !options.length) continue;
-      if (!name) { showToast('اكتب اسم كل مجموعة إضافات، مثل: الصوصات', true); return null; }
-      if (!options.length) { showToast(`أضف خيار واحد على الأقل في «${name}»`, true); return null; }
+      if (!options.length) { if (g === mainExtras() || !name) continue; showToast(`أضف خيار واحد على الأقل في «${name}»`, true); return null; }
+      if (!name) { showToast('اكتب اسم الاختيار الإجباري، مثل: نوع الخبز', true); return null; }
       const bad = options.find(o => isNaN(o.price) || o.price < 0); if (bad) { showToast(`اكتب سعراً صحيحاً لـ «${bad.name}»`, true); return null; }
       out.push({ name, required: !!g.required, options });
     }
