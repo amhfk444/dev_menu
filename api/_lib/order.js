@@ -163,6 +163,13 @@ function cleanTable(v) {
   return t || null;
 }
 const DEV_RE = /^[A-Za-z0-9_-]{10,64}$/;
+// جوال الزبون (السفري): سعودي 05xxxxxxxx (يقبل 9665… و+966… والأرقام العربية)
+function cleanPhone(v) {
+  let d = String(v ?? '').replace(/[\u0660-\u0669\u06F0-\u06F9]/g, c => String(c.charCodeAt(0) & 15)).replace(/\D/g, '');
+  if (d.startsWith('00966')) d = d.slice(5); else if (d.startsWith('966')) d = d.slice(3);
+  if (d.startsWith('5')) d = '0' + d;
+  return /^05\d{8}$/.test(d) ? d : null;
+}
 // يجهز الطلب قبل الحفظ: الأسعار من القاعدة، والكوبون (اختياري)، وحد الطلبات المفتوحة من نفس الجوال
 async function buildOrder(store, b, mode) {
   const dev = DEV_RE.test(String(b.dev || '')) ? String(b.dev) : null;
@@ -176,9 +183,11 @@ async function buildOrder(store, b, mode) {
   const dine = mode === 'self' ? (b.dine === 'out' ? 'out' : 'in') : 'in';
   const table_no = dine === 'in' ? cleanTable(b.table) : null;
   if (mode === 'table' && !table_no) throw new ApiError(400, 'اكتب رقم طاولتك', 'NEED_TABLE');
+  const phone = dine === 'out' ? cleanPhone(b.phone) : null;
+  if (dine === 'out' && !phone) throw new ApiError(400, 'اكتب رقم جوالك للطلب السفري، مثل 0512345678', 'NEED_PHONE');
   return {
     coupon, row: {
-      client_id: store.id, token: require('crypto').randomBytes(18).toString('base64url'), mode, dine, table_no,
+      client_id: store.id, token: require('crypto').randomBytes(18).toString('base64url'), mode, dine, table_no, ...(phone ? { phone } : {}),
       items: priced.lines, note: cleanNote(b.note, 300), total: priced.total, discount: priced.discount, coupon_code: coupon ? coupon.code : null,
       device: dev, lang: b.lang === 'en' ? 'en' : 'ar'
     }
@@ -191,7 +200,7 @@ async function saveOrder(built) {
   return o;
 }
 // الطلب كما يطلع للكاشير وللزبون
-const publicOrder = (o) => o && ({ id: o.id, mode: o.mode, dine: o.dine, table_no: o.table_no, items: o.items || [], note: o.note, total: Number(o.total) || 0,
+const publicOrder = (o) => o && ({ id: o.id, mode: o.mode, dine: o.dine, table_no: o.table_no, phone: o.phone || null, items: o.items || [], note: o.note, total: Number(o.total) || 0,
   discount: Number(o.discount) || 0, coupon_code: o.coupon_code || null, status: o.status, created_at: o.created_at, accepted_at: o.accepted_at || null, closed_at: o.closed_at || null });
 
 module.exports = { menuPromos, promoCovers, autoPrice, loadCoupon, priceCart, priceOrder, cleanNote, round2, orderMode, cleanTable, buildOrder, saveOrder, publicOrder };

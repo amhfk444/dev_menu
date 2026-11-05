@@ -149,6 +149,8 @@
   .tk-order.menu { background: #f3f6f3; border: 1.5px solid #c9d6cc; border-radius: 12px; padding: 8px 10px; }
   .tk-where { display: inline-flex; align-items: center; gap: 5px; font-size: 14px; font-weight: 800; padding: 4px 10px; border-radius: 8px; background: #1a1a1a; color: #fff; }
   .tk-where.out { background: #a07c10; }
+  .tk-wheres { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; } .tk-order.menu .tk-order-hd { flex-wrap: wrap; }
+  .tk-phone { background: #fff; color: #1a1a1a; box-shadow: inset 0 0 0 1.5px #1a1a1a; text-decoration: none; }
   .tk-onote { margin-top: 6px; font-size: 14px; font-weight: 700; color: #a1121f; }
   .tk-sub.one { grid-template-columns: 1fr; }
   @media (prefers-reduced-motion: reduce) { .tile-new { animation: none; outline: 4px solid #c9a227; } }
@@ -448,9 +450,9 @@
 
   // ─── طلب من المنيو: الأصناف بكمياتها وملاحظاتها والمجموع ───
   const fmtM = (n) => `${Number.isInteger(n) ? n : Number(n).toFixed(2)} ${deskCur}`;
-  const whereTag = (o) => o.dine === 'out' ? '<span class="tk-where out"><i class="ph-bold ph-bag"></i> سفري</span>' : `<span class="tk-where"><i class="ph-bold ph-chair"></i> محلي${o.table_no ? ` · طاولة <b dir="ltr">${esc(o.table_no)}</b>` : ''}</span>`;
+  const whereTag = (o) => o.dine === 'out' ? `<span class="tk-where out"><i class="ph-bold ph-bag"></i> سفري</span>${o.phone ? ` <a class="tk-where tk-phone" href="tel:${esc(o.phone)}" dir="ltr"><i class="ph-bold ph-phone"></i> ${esc(o.phone)}</a>` : ''}` : `<span class="tk-where"><i class="ph-bold ph-chair"></i> محلي${o.table_no ? ` · طاولة <b dir="ltr">${esc(o.table_no)}</b>` : ''}</span>`;
   const orderBlock = (o, withWhere) => !o ? '' : `<div class="tk-order menu">
-      <div class="tk-order-hd"><small>طلب من المنيو · ${fmtM(Number(o.total) || 0)}${o.coupon_code ? ` (بعد كوبون ${esc(o.coupon_code)})` : ''}</small>${withWhere ? whereTag(o) : ''}</div>
+      <div class="tk-order-hd"><small>طلب من المنيو · ${fmtM(Number(o.total) || 0)}${o.coupon_code ? ` (بعد كوبون ${esc(o.coupon_code)})` : ''}</small>${withWhere ? `<span class="tk-wheres">${whereTag(o)}</span>` : ''}</div>
       <ul>${(o.items || []).map(x => `<li><span class="q">${x.qty || 1}</span><span class="nm"><b>${esc(x.name)}</b>${x.size ? ` <span>${esc(x.size)}</span>` : ''}${x.note ? `<em>${esc(x.note)}</em>` : ''}</span></li>`).join('')}</ul>
       ${o.note ? `<p class="tk-onote">ملاحظة: ${esc(o.note)}</p>` : ''}
     </div>`;

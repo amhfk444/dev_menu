@@ -36,3 +36,7 @@ create index if not exists menu_orders_ticket_idx on public.menu_orders (pager_t
 alter table public.menu_orders enable row level security;
 revoke all on table public.menu_orders from anon, authenticated;
 notify pgrst, 'reload schema';
+
+-- السفري: رقم جوال الزبون (إجباري)، يطلع للكاشير عشان يتواصل معه لو احتاج
+alter table public.menu_orders add column if not exists phone text;
+notify pgrst, 'reload schema';

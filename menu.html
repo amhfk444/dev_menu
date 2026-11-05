@@ -434,6 +434,11 @@
           <label for="tableInput" id="tableLabel" class="text-[11px] font-bold text-gray-400 block mb-1.5">رقم الطاولة</label>
           <input id="tableInput" type="text" inputmode="numeric" maxlength="6" autocomplete="off" dir="ltr" placeholder="12" class="w-full text-center text-2xl font-black bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-white/40">
         </div>
+        <!-- السفري: رقم الجوال إجباري ويطلع للكاشير -->
+        <div id="phoneBox" class="hidden">
+          <label for="phoneInput" id="phoneLabel" class="text-[11px] font-bold text-gray-400 block mb-1.5">رقم جوالك</label>
+          <input id="phoneInput" type="tel" inputmode="tel" autocomplete="tel" maxlength="14" dir="ltr" placeholder="05xxxxxxxx" class="w-full text-center text-xl font-black bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-white/40" style="font-size:20px">
+        </div>
         <p id="directMsg" class="hidden text-[12px] font-bold text-red-300"></p>
       </div>
       <button type="button" id="cartSend" onclick="sendCart()" class="w-full bg-[#25d366] hover:bg-[#1ebe5b] text-black font-black text-sm py-3.5 rounded-2xl flex items-center justify-center gap-2 transition">
@@ -1652,6 +1657,11 @@
     document.getElementById('tableFixedLabel').textContent = T('طاولتك', 'Your table');
     document.getElementById('tableChange').textContent = T('تغيير', 'Change');
     document.getElementById('tableBox').classList.toggle('hidden', fixed || (self && dine === 'out'));
+    const out = self && dine === 'out';
+    document.getElementById('phoneBox').classList.toggle('hidden', !out);
+    document.getElementById('phoneLabel').textContent = T('رقم جوالك (للطلب السفري)', 'Your mobile (for takeaway)');
+    const pi = document.getElementById('phoneInput');
+    if (out && !pi.value) { try { pi.value = localStorage.getItem('dm_phone') || ''; } catch {} }
     document.getElementById('tableLabel').textContent = self ? T('رقم الطاولة (اختياري)', 'Table number (optional)') : T('رقم الطاولة', 'Table number');
     const ti = document.getElementById('tableInput');
     // رقم الطاولة من رابط QR الطاولة (?table=) أو آخر مرة
@@ -1667,13 +1677,17 @@
     if (urlParams.get('preview') === '1') return directErr(T('هذي معاينة: الطلب ما ينرسل للكاشير', 'Preview only: the order is not sent'));
     const table = document.getElementById('tableInput').value.trim().replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15));
     if (dm === 'table' && !table) { directErr(T('اكتب رقم طاولتك عشان يوصلك الطلب', 'Enter your table number')); return document.getElementById('tableInput').focus(); }
+    const out = dm === 'self' && dine === 'out';
+    const phone = document.getElementById('phoneInput').value.trim().replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15)).replace(/\D/g, '');
+    if (out && !/^(05\d{8}|5\d{8}|9665\d{8})$/.test(phone)) { directErr(T('اكتب رقم جوالك عشان يوصلك طلبك السفري، مثل 0512345678', 'Enter your mobile number, e.g. 0512345678')); return document.getElementById('phoneInput').focus(); }
+    if (out) try { localStorage.setItem('dm_phone', phone); } catch {}
     const btn = document.getElementById('cartSend'); btn.disabled = true;
     const body = { items: cart.map(c => ({ id: c.id, qty: c.qty, size: c.size, note: c.note })), note: '', table: dm === 'self' && dine === 'out' ? '' : table, coupon: coupon ? coupon.coupon.code : undefined };
     try {
       try { if (table) sessionStorage.setItem(tableKey(), table); } catch {}
       if (dm === 'self') {
         const lt = await DM.loyaltyToken(project.client_slug).catch(() => '');
-        const r = await DM.post('/api/pager?action=take', { slug: project.client_slug, dev: devId(), lt: lt || undefined, order: { ...body, dine } });
+        const r = await DM.post('/api/pager?action=take', { slug: project.client_slug, dev: devId(), lt: lt || undefined, order: { ...body, dine, phone: out ? phone : undefined } });
         cart.forEach(c => DM.post('/api/public?action=track', { client_id: project.id, kind: 'order', product_id: c.id }).catch(() => {}));
         try { localStorage.setItem(`dm_pager_${String(project.client_slug).toLowerCase()}`, r.token); } catch {}
         cart = []; resetCoupon(); saveCart();

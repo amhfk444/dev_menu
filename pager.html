@@ -1660,7 +1660,7 @@
     const o = menuOrder, box = $('w-order');
     box.classList.toggle('hidden', !(o && st === 'waiting'));
     if (!o) return;
-    const where = o.dine === 'out' ? '<i class="ph-bold ph-bag"></i> سفري' : `<i class="ph-bold ph-chair"></i> محلي${o.table_no ? ` · طاولة <b dir="ltr">${esc(o.table_no)}</b>` : ''}`;
+    const where = o.dine === 'out' ? `<i class="ph-bold ph-bag"></i> سفري${o.phone ? ` · <span dir="ltr">${esc(o.phone)}</span>` : ''}` : `<i class="ph-bold ph-chair"></i> محلي${o.table_no ? ` · طاولة <b dir="ltr">${esc(o.table_no)}</b>` : ''}`;
     box.innerHTML = `<div class="mo-hd"><b>طلبك وصل للكاشير</b><span>${where}</span></div>
       <ul>${(o.items || []).map(i => `<li><b dir="ltr">${i.qty}×</b><span>${esc(i.name)}${i.size ? ` <small>(${esc(i.size)})</small>` : ''}${i.note ? `<em>${esc(i.note)}</em>` : ''}</span></li>`).join('')}</ul>
       ${o.note ? `<p class="text-[12px] font-bold opacity-70 mt-1.5">ملاحظات: ${esc(o.note)}</p>` : ''}
