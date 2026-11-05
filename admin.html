@@ -7135,11 +7135,13 @@
     const ph = ['الصوصات', 'نوع الخبز', 'إضافات'];
     document.getElementById('extras-list').innerHTML = formExtras.map((g, gi) => `
       <div class="bg-white rounded-lg border border-brand/15 p-2 space-y-1.5">
-        <div class="flex flex-wrap items-center gap-1.5">
-          <input type="text" maxlength="40" value="${esc(g.name || '')}" oninput="formExtras[${gi}].name=this.value" placeholder="${ph[gi] || 'اسم المجموعة'}" class="input-pro !py-1.5 text-xs flex-1 min-w-[120px] font-bold">
-          <label class="text-[11px] font-bold text-ink flex items-center gap-1 cursor-pointer"><input type="checkbox" ${g.required ? 'checked' : ''} onchange="formExtras[${gi}].required=this.checked" class="accent-green-600"> إجبارية</label>
-          <label class="text-[11px] font-bold text-ink flex items-center gap-1">حتى <input type="number" min="1" max="15" value="${esc(g.max || 1)}" oninput="formExtras[${gi}].max=this.value" dir="ltr" class="input-pro !py-1 text-xs !w-14"></label>
+        <div class="flex items-center gap-1.5">
+          <input type="text" maxlength="40" value="${esc(g.name || '')}" oninput="formExtras[${gi}].name=this.value" placeholder="${ph[gi] || 'اسم المجموعة'}" aria-label="اسم المجموعة" class="input-pro !py-1.5 text-xs flex-1 min-w-0 font-bold">
           <button type="button" onclick="formExtras.splice(${gi}, 1); renderExtras()" aria-label="حذف المجموعة" class="shrink-0 w-8 h-8 rounded-lg bg-red-500/10 text-red-600 border border-red-500/20"><i class="ph-bold ph-trash"></i></button>
+        </div>
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-ink">
+          <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" ${g.required ? 'checked' : ''} onchange="formExtras[${gi}].required=this.checked" class="accent-green-600"> إجبارية (لازم يختار)</label>
+          <label class="flex items-center gap-1">يختار حتى <input type="number" min="1" max="15" value="${esc(g.max || 1)}" oninput="formExtras[${gi}].max=this.value" dir="ltr" class="input-pro !py-0.5 text-xs !w-12 text-center"></label>
         </div>
         ${(g.options || []).map((o, oi) => `<div class="flex items-center gap-1.5 ps-2">
           <input type="text" maxlength="40" value="${esc(o.name || '')}" oninput="formExtras[${gi}].options[${oi}].name=this.value" placeholder="${['صوص جبن', 'مخلل', 'بريوش'][oi] || 'الخيار'}" class="input-pro !py-1.5 text-xs flex-1 min-w-0">
