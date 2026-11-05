@@ -36,7 +36,7 @@ function passBody({ store, settings, card, url, restoreUrl, lat, lng, notice, st
     description: L(`بطاقة الولاء: ${store.name || ''}`).slice(0, 120),
     colorPreset: 'green',
     // العدد فوق (يبان حتى والبطاقة بين البطاقات)، والأختام نفسها في الصورة العريضة
-    headerFields: [{ label: L('الأختام'), value: `${s} / ${n}`, changeMessage: L('صار عندك %@ ختم') }],
+    headerFields: [{ label: L('الأختام'), value: `${s} / ${n}`, changeMessage: L('✅ انضاف ختمك، صار عندك %@') }],
     // المكافأة وحامل البطاقة بس (عدد الأختام فوق، والأختام نفسها في الصورة)
     secondaryFields: [{ label: L(s >= n ? 'مكافأتك جاهزة' : 'المكافأة'), value: (card.lang === 'en' && settings.reward_en) || settings.reward }, ...(card.name ? [{ label: L('صاحب البطاقة'), value: String(card.name).slice(0, 40) }] : [])],
     backFields: [
