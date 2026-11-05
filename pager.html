@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <script src="/js/i18n.js?v=7" data-dict="pager"></script>
 <link rel="stylesheet" href="/css/base.css">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/icon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
@@ -1184,6 +1184,14 @@
   $('cv-close').onclick = () => { $('cv-sheet').hidden = true; if (['ask-sheet', 'mn-sheet', 'it-sheet'].every(x => $(x).hidden)) document.documentElement.classList.remove('ask-lock'); };
   const sheetOpen = (id) => { $(id).hidden = false; document.documentElement.classList.add('ask-lock'); };
   const sheetClose = (id) => { $(id).hidden = true; $(id).classList.remove('kb'); $(id).style.cssText = ''; const pn = $(id).querySelector('.ask-panel'); if (pn) { pn.style.height = ''; pn.style.maxHeight = ''; } if (['ask-sheet', 'mn-sheet', 'it-sheet'].every(x => $(x).hidden)) document.documentElement.classList.remove('ask-lock'); };
+  // النافذة مفتوحة (المساعد، أضف لطلبك): الصفحة اللي وراها تثبت تماماً (overflow ما يكفي في الآيفون، الصفحة تتحرك مع الكيبورد وتهز النافذة)
+  let lockedY = null;
+  function lockPage(on) {
+    const b = document.body;
+    if (on && lockedY === null) { lockedY = window.scrollY; Object.assign(b.style, { position: 'fixed', top: `-${lockedY}px`, left: '0', right: '0', width: '100%' }); }
+    else if (!on && lockedY !== null) { Object.assign(b.style, { position: '', top: '', left: '', right: '', width: '' }); window.scrollTo(0, lockedY); lockedY = null; }
+  }
+  new MutationObserver(() => lockPage(document.documentElement.classList.contains('ask-lock'))).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
   // الكيبورد في الجوال: النافذة تاخذ الجزء الظاهر من الشاشة وتبقى فوق الكيبورد، ومحتواها يتمرر بدل ما ينضغط
   let fitRaf = 0;
   function fitSheets() {
@@ -1194,8 +1202,11 @@
       const kb = window.innerHeight - vv.height > 120;
       ['ask-sheet', 'mn-sheet', 'it-sheet'].forEach(id => {
         const sh = $(id); if (sh.hidden) return;
-        sh.style.height = `${Math.round(vv.height)}px`; sh.style.bottom = 'auto';
-        sh.style.transform = `translateY(${Math.round(vv.offsetTop)}px)`;
+        // نكتب بس لو تغيّر (كل كتابة مكررة تهز النافذة في الآيفون)
+        const H = `${Math.round(vv.height)}px`, T = `${Math.round(vv.offsetTop)}px`;
+        if (sh.style.height !== H) sh.style.height = H;
+        if (sh.style.top !== T) sh.style.top = T;
+        sh.style.bottom = 'auto';
         sh.classList.toggle('kb', kb);
         const panel = sh.querySelector('.ask-panel');
         if (id === 'it-sheet') panel.style.maxHeight = `${Math.round(vv.height * (kb ? 1 : .88))}px`;
