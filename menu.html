@@ -1394,12 +1394,12 @@
     return { count, total: round2(total) };
   }
 
-  function menuToast(msg) {
+  function menuToast(msg, ms = 1600) {
     const t = document.getElementById('menuToast');
     document.getElementById('menuToastText').textContent = msg;
     t.classList.remove('opacity-0', '-translate-y-3');
     clearTimeout(menuToast.t);
-    menuToast.t = setTimeout(() => t.classList.add('opacity-0', '-translate-y-3'), 1600);
+    menuToast.t = setTimeout(() => t.classList.add('opacity-0', '-translate-y-3'), ms);
   }
 
   function addToCart(id, qty, size = null, note = null) {
@@ -1685,14 +1685,14 @@
     try {
       const r = await DM.get(`/api/public?action=order-status&slug=${encodeURIComponent(project.client_slug)}&t=${saved.map(o => o.token).join(',')}`);
       const before = new Map(myOrders.map(o => [o.token, o.status]));
-      // اللي خلص من أكثر من دقيقة ما نحتاج نسأل عنه مرة ثانية
-      myOrders = r.orders.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
-        .filter(o => ['new', 'accepted'].includes(o.status) || Date.now() - Date.parse(o.closed_at || o.created_at) < 60000);
+      const all = r.orders.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
+      // تغيّرت الحالة: تنبيه صغير + اهتزاز
+      const changed = all.find(o => before.has(o.token) && before.get(o.token) !== o.status);
+      if (changed) { menuToast(ST[changed.status][currentLang === 'ar' ? 0 : 1], ['served', 'cancelled'].includes(changed.status) ? 4000 : 1600); try { navigator.vibrate && navigator.vibrate(200); } catch {} }
+      // اللي خلص (تم أو انلغى) يطلع من المنيو على طول، والمنيو يرجع طبيعي
+      myOrders = all.filter(o => ['new', 'accepted'].includes(o.status));
       saveOrders();
       myOrders.forEach(o => watchOrder(o.live));
-      // تغيّرت الحالة: تنبيه صغير + اهتزاز
-      const changed = myOrders.find(o => before.has(o.token) && before.get(o.token) !== o.status);
-      if (changed) { menuToast(ST[changed.status][currentLang === 'ar' ? 0 : 1]); try { navigator.vibrate && navigator.vibrate(200); } catch {} }
     } catch {}
     renderOrders();
     clearTimeout(refreshOrders.t);
@@ -1703,10 +1703,7 @@
   const who = (o) => `${T('طلب', 'Order')} <b dir="ltr">${esc(o.code || '')}</b>${o.table_no ? ` · ${T('طاولة', 'Table')} <span dir="ltr">${esc(o.table_no)}</span>` : ''}`;
   function renderOrders() {
     const bar = document.getElementById('moBar');
-    // الطلب اللي خلص أو انلغى: يطلع دقيقة بس عشان يشوفه، وبعدها يختفي من المنيو
-    const live = myOrders.filter(o => ['new', 'accepted'].includes(o.status) || Date.now() - Date.parse(o.closed_at || o.created_at) < 60000);
-    clearTimeout(renderOrders.t);
-    if (live.some(o => !['new', 'accepted'].includes(o.status))) renderOrders.t = setTimeout(renderOrders, 61000);
+    const live = myOrders.filter(o => ['new', 'accepted'].includes(o.status));
     const top = live[0];
     bar.classList.toggle('hidden', !top); bar.classList.toggle('flex', !!top);
     const L = currentLang === 'ar' ? 0 : 1;
