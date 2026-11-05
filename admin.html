@@ -636,6 +636,27 @@
             <input type="checkbox" id="mo-on" class="w-4 h-4 mt-0.5 accent-green-600 cursor-pointer" onchange="saveOrderMode(this)">
             <span class="text-xs"><b class="text-ink">تفعيل الطلب من المنيو</b><span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يُرسل العميل طلبه فيظهر عند الكاشير برمز الطلب (مثل A12)، وبرقم الطاولة إذا مسح رمز طاولته. يضغط الكاشير «استلمته» ثم «سلّمته»، ويرى العميل حالة طلبه في المنيو.</span></span>
           </label>
+          <!-- طرق الاستلام والتوصيل والطلب المسبق -->
+          <div id="mo-opts" class="hidden bg-white rounded-lg border border-brand/15 p-3 space-y-2.5">
+            <b class="text-xs text-ink"><i class="ph-bold ph-truck text-emerald-600"></i> طرق الاستلام</b>
+            <div class="flex flex-wrap gap-x-4 gap-y-1.5 text-xs font-bold text-ink">
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" id="mo-o-dine" class="accent-green-600"> محلي (داخل المحل)</label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" id="mo-o-pickup" class="accent-green-600"> استلام (سفري)</label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" id="mo-o-delivery" onchange="renderOrderOpts(true)" class="accent-green-600"> توصيل</label>
+            </div>
+            <div id="mo-o-delbox" class="hidden grid sm:grid-cols-2 gap-2">
+              <label class="text-[11px] font-bold text-ink">رسوم التوصيل (0 = مجاني)<input id="mo-o-fee" type="number" min="0" step="any" dir="ltr" placeholder="0" class="input-pro text-xs mt-1"></label>
+              <label class="text-[11px] font-bold text-ink">نطاق التوصيل (اختياري)<input id="mo-o-area" type="text" maxlength="120" placeholder="مثال: داخل الرياض فقط" class="input-pro text-xs mt-1"></label>
+              <p class="sm:col-span-2 text-[11px] text-ink leading-relaxed">يُدخل العميل رقم جواله وعنوانه، ويستطيع إرسال موقعه، فتظهر لك مع الطلب مع زر الاتصال ورابط الخريطة.</p>
+            </div>
+            <label class="flex items-start gap-2 cursor-pointer text-xs"><input type="checkbox" id="mo-o-schedule" class="accent-green-600 mt-0.5">
+              <span><b class="text-ink">الطلب المسبق</b><span class="block text-[11px] text-ink leading-relaxed">يختار العميل «في أقرب وقت» أو يحدد يوماً ووقتاً خلال شهر، مثل كيكة لبكرة أو ورد لمناسبة، ويظهر لك الموعد بوضوح مع الطلب.</span></span></label>
+            <button type="button" onclick="saveOrderOpts(this)" class="bg-brand text-cream font-bold px-3 py-2 rounded-lg text-[12px]"><i class="ph-bold ph-floppy-disk"></i> حفظ طرق الاستلام</button>
+            <div class="border-t border-brand/10 pt-2.5 flex flex-wrap items-center justify-between gap-2">
+              <span class="text-[11px] text-ink leading-relaxed flex-1 min-w-[200px]"><b><i class="ph-bold ph-bell-ringing"></i> إشعار الطلبات على هذا الجهاز</b><br>يصلك تنبيه مع كل طلب جديد ولو كانت اللوحة مغلقة. على الآيفون أضف لوحة التحكم إلى الشاشة الرئيسية أولاً.</span>
+              <button type="button" id="mo-push-btn" onclick="enableOrderPush(this)" class="bg-brand/10 border border-brand/40 text-ink font-bold px-3 py-2 rounded-lg text-[12px]"><i class="ph-bold ph-bell-ringing"></i> فعّل الإشعار</button>
+            </div>
+          </div>
           <div id="mo-status" class="text-[11px]"></div>
           <!-- QR لكل طاولة: رقم الطاولة داخل الرمز، فالعميل ما يكتبه -->
           <div id="mo-tables" class="hidden bg-white rounded-lg border border-brand/15 p-3 space-y-2">
@@ -2817,8 +2838,8 @@
   // يتحدث لحظياً، وصاحب المحل يقرأ ويحذف بنفسه (المقروءة تنحذف بعد يوم)
   let notifs = [], notifOpen = false;
   // أيقونة ولون كل نوع: رد، فرع، تنبيه، تذكير، معلومة، أو إشعار من الإدارة
-  const NOTIF_ICON = { reply: 'ph-chat-circle-text', branch: 'ph-git-branch', admin: 'ph-megaphone', alert: 'ph-warning', reminder: 'ph-clock', info: 'ph-info' };
-  const NOTIF_TONE = { alert: 'bg-red-500/10 text-red-700', reminder: 'bg-amber-500/15 text-amber-800', info: 'bg-sky-500/10 text-sky-800' };
+  const NOTIF_ICON = { order: 'ph-receipt', reply: 'ph-chat-circle-text', branch: 'ph-git-branch', admin: 'ph-megaphone', alert: 'ph-warning', reminder: 'ph-clock', info: 'ph-info' };
+  const NOTIF_TONE = { order: 'bg-emerald-500/15 text-emerald-800', alert: 'bg-red-500/10 text-red-700', reminder: 'bg-amber-500/15 text-amber-800', info: 'bg-sky-500/10 text-sky-800' };
   async function loadNotifs() {
     try {
       // ما يحتاج تحديث الصفحة: يجي الإشعار لحظياً، وهذا احتياط كل دقيقة
@@ -2866,6 +2887,7 @@
       api('notifications-read', { id }).catch(() => {});
     }
     if (n.link && n.link.startsWith('#')) { toggleNotifs(false); location.hash = n.link.slice(1); }
+    else if (n.link && /pager-desk\.html$/.test(n.link)) { toggleNotifs(false); window.open('pager-desk.html' + location.search, '_blank', 'noopener'); }
   }
   async function readAllNotifs() {
     notifs = notifs.map(n => ({ ...n, read_at: n.read_at || new Date().toISOString() })); renderNotifs();
@@ -5599,6 +5621,8 @@
     document.getElementById('mo-on').checked = m;
     const desk = 'pager-desk.html' + location.search;
     document.getElementById('mo-tables').classList.toggle('hidden', !m);
+    document.getElementById('mo-opts').classList.toggle('hidden', !m);
+    if (m) renderOrderOpts();
     document.getElementById('mo-status').innerHTML = !m ? '' : `<div class="flex flex-wrap items-center justify-between gap-2 bg-green-500/10 border border-green-500/25 rounded-lg px-3 py-2">
         <span class="text-green-800"><i class="ph-bold ph-check-circle"></i> الطلبات تصل لشاشة الكاشير${client.whatsapp_orders ? '، بدل واتساب' : ''}</span>
         <a href="${desk}" target="_blank" rel="noopener" class="bg-brand text-cream font-bold px-2.5 py-1 rounded-md text-[11px]"><i class="ph-bold ph-cash-register"></i> افتح شاشة الكاشير</a>
@@ -5641,6 +5665,45 @@
       win.document.close();
     } catch (e) { console.error(e); win.close(); showToast('تعذر تجهيز رموز الطاولات', true); }
     finally { btn.disabled = false; }
+  }
+  // ─── طرق الاستلام والتوصيل والطلب المسبق ───
+  function renderOrderOpts(onlyDelivery) {
+    const o = client.menu_order_opts || {};
+    if (!onlyDelivery) {
+      document.getElementById('mo-o-dine').checked = o.dine !== false;
+      document.getElementById('mo-o-pickup').checked = o.pickup !== false;
+      document.getElementById('mo-o-delivery').checked = o.delivery === true;
+      document.getElementById('mo-o-fee').value = o.fee || '';
+      document.getElementById('mo-o-area').value = o.area || '';
+      document.getElementById('mo-o-schedule').checked = o.schedule === true;
+      const btn = document.getElementById('mo-push-btn');
+      if ('Notification' in window && Notification.permission === 'granted' && localStorage.getItem('dm_owner_push') === String(client.id)) { btn.innerHTML = '<i class="ph-bold ph-check"></i> الإشعار مفعّل'; btn.disabled = true; }
+    }
+    document.getElementById('mo-o-delbox').classList.toggle('hidden', !document.getElementById('mo-o-delivery').checked);
+  }
+  async function saveOrderOpts(btn) {
+    const opts = { dine: document.getElementById('mo-o-dine').checked, pickup: document.getElementById('mo-o-pickup').checked, delivery: document.getElementById('mo-o-delivery').checked,
+      fee: parseFloat(document.getElementById('mo-o-fee').value) || 0, area: document.getElementById('mo-o-area').value.trim(), schedule: document.getElementById('mo-o-schedule').checked };
+    if (!opts.dine && !opts.pickup && !opts.delivery) return showToast('اختر طريقة استلام وحدة على الأقل', true);
+    btn.disabled = true;
+    if (await updateClient({ menu_order_opts: opts })) { showToast('تم حفظ طرق الاستلام'); phoneView = 'menu'; reloadPagerPhone(); }
+    else showToast('تعذر الحفظ', true);
+    btn.disabled = false;
+  }
+  // إشعار الطلبات الجديدة على جهاز صاحب المتجر
+  async function enableOrderPush(btn) {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return showToast('جهازك ما يدعم الإشعارات من المتصفح. على الآيفون: أضف لوحة التحكم للشاشة الرئيسية وافتحها منها', true);
+    btn.disabled = true;
+    try {
+      if (Notification.permission !== 'granted' && (await Notification.requestPermission()) !== 'granted') throw new Error('ما وافقت على الإشعارات، فعّلها من إعدادات المتصفح');
+      const { key } = await api('push-key');
+      const b64 = (k) => { const p = '='.repeat((4 - k.length % 4) % 4), raw = atob((k + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(raw, c => c.charCodeAt(0)); };
+      const reg = await navigator.serviceWorker.register('/sw.js'); await navigator.serviceWorker.ready;
+      const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(key) });
+      await api('owner-push', { sub: sub.toJSON() });
+      try { localStorage.setItem('dm_owner_push', String(client.id)); } catch {}
+      btn.innerHTML = '<i class="ph-bold ph-check"></i> الإشعار مفعّل'; showToast('تمام، يوصلك تنبيه مع كل طلب جديد');
+    } catch (e) { btn.disabled = false; showToast(e.message || 'تعذر تفعيل الإشعار', true); }
   }
   async function saveOrderMode(box) {
     const prev = client.menu_order_mode || null;

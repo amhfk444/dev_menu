@@ -185,6 +185,20 @@ async function priceOrder(store, rawItems, coupon = null) {
 }
 
 
+// خيارات الطلب من المنيو (صاحب المتجر يختار): محلي / استلام / توصيل (رسومه ونطاقه) / الطلب المسبق
+function orderOpts(raw) {
+  const o = raw && typeof raw === 'object' ? raw : {};
+  const out = { dine: o.dine !== false, pickup: o.pickup !== false, delivery: o.delivery === true,
+    fee: Math.max(0, Math.min(1000, Math.round((Number(o.fee) || 0) * 100) / 100)),
+    area: String(o.area || '').replace(/[<>]/g, '').trim().slice(0, 120),
+    schedule: o.schedule === true };
+  if (!out.dine && !out.pickup && !out.delivery) out.pickup = true;
+  return out;
+}
+async function orderSettings(storeId) {
+  const r = (await rest(`clients?id=eq.${Number(storeId)}&select=menu_order_opts`).catch(() => []))[0] || {};
+  return orderOpts(r.menu_order_opts);
+}
 // الطلب من المنيو مفعّل؟ (صاحب المحل مشغّله + المنيو في باقته). 'table' أو null
 async function orderMode(storeId) {
   const { storeFeatures } = require('./core');
@@ -201,6 +215,13 @@ function cleanTable(v) {
   return t || null;
 }
 const DEV_RE = /^[A-Za-z0-9_-]{10,64}$/;
+// جوال العميل: سعودي 05xxxxxxxx (يقبل 9665… و+966… والأرقام العربية)
+function cleanPhone(v) {
+  let d = String(v ?? '').replace(/[\u0660-\u0669\u06F0-\u06F9]/g, c => String(c.charCodeAt(0) & 15)).replace(/\D/g, '');
+  if (d.startsWith('00966')) d = d.slice(5); else if (d.startsWith('966')) d = d.slice(3);
+  if (d.startsWith('5')) d = '0' + d;
+  return /^05\d{8}$/.test(d) ? d : null;
+}
 const dayStart = () => new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10) + 'T00:00:00+03:00';
 // يجهز الطلب قبل الحفظ: الأسعار من القاعدة، والكوبون (اختياري)، وحد الطلبات المفتوحة من نفس الجوال
 async function buildOrder(store, b) {
@@ -210,13 +231,37 @@ async function buildOrder(store, b) {
     const open = await rest(`menu_orders?client_id=eq.${store.id}&device=eq.${q(dev)}&status=in.(new,accepted)&created_at=gte.${q(since)}&select=id&limit=4`).catch(() => []);
     if (open.length >= 3) throw new ApiError(429, 'عندك طلبات ما خلصت للحين. انتظر لين تجهز أو كلّم الكاشير', 'TOO_MANY_OPEN');
   }
+  const opts = await orderSettings(store.id);
+  // طريقة الاستلام: لازم تكون من اللي مختارها صاحب المتجر
+  const dine = ['in', 'out', 'delivery'].includes(b.dine) ? b.dine : (opts.dine ? 'in' : opts.pickup ? 'out' : 'delivery');
+  if ((dine === 'in' && !opts.dine) || (dine === 'out' && !opts.pickup) || (dine === 'delivery' && !opts.delivery)) throw new ApiError(400, 'طريقة الاستلام هذي مو متاحة في هالمتجر', 'BAD_DINE');
+  // التوصيل: الجوال والعنوان إجباريين، والموقع اختياري (رابط خرائط)
+  let phone = null, address = null, location = null;
+  if (dine === 'delivery') {
+    phone = cleanPhone(b.phone);
+    if (!phone) throw new ApiError(400, 'اكتب رقم جوالك عشان يتواصل معك المندوب، مثل 0512345678', 'NEED_PHONE');
+    address = String(b.address || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 200);
+    if (address.length < 5) throw new ApiError(400, 'اكتب عنوان التوصيل (الحي والشارع)', 'NEED_ADDRESS');
+    const loc = String(b.location || '').trim();
+    if (/^-?\d{1,2}\.\d{3,},-?\d{1,3}\.\d{3,}$/.test(loc)) location = loc;
+  } else if (b.phone) phone = cleanPhone(b.phone);
+  // الطلب المسبق: موعد بعد الحين وقبل 30 يوم
+  let scheduled_at = null;
+  if (b.when) {
+    if (!opts.schedule) throw new ApiError(400, 'الطلب المسبق مو متاح في هالمتجر', 'NO_SCHEDULE');
+    const t = Date.parse(b.when);
+    if (!Number.isFinite(t) || t < Date.now() + 10 * 60e3 || t > Date.now() + 30 * 864e5) throw new ApiError(400, 'اختر موعد بعد ربع ساعة على الأقل، وخلال شهر', 'BAD_WHEN');
+    scheduled_at = new Date(t).toISOString();
+  }
   const coupon = b.coupon ? await loadCoupon(store.id, b.coupon) : null;
   const priced = await priceOrder(store, b.items, coupon);
+  const fee = dine === 'delivery' ? opts.fee : 0;
   return {
     coupon, row: {
       client_id: store.id, token: require('crypto').randomBytes(18).toString('base64url'), mode: 'table',
-      dine: b.dine === 'out' ? 'out' : 'in', table_no: b.dine === 'out' ? null : cleanTable(b.table),
-      items: priced.lines, note: cleanNote(b.note, 300), total: priced.total, discount: priced.discount, coupon_code: coupon ? coupon.code : null,
+      dine, table_no: dine === 'in' ? cleanTable(b.table) : null,
+      ...(phone ? { phone } : {}), ...(address ? { address } : {}), ...(location ? { location } : {}), delivery_fee: fee, ...(scheduled_at ? { scheduled_at } : {}),
+      items: priced.lines, note: cleanNote(b.note, 300), total: Math.round((priced.total + fee) * 100) / 100, discount: priced.discount, coupon_code: coupon ? coupon.code : null,
       device: dev, lang: b.lang === 'en' ? 'en' : 'ar',
       // السفري: بطاقة النداء وبطاقة الولاء المحفوظة في جواله (تنربط برقم البيجر لما يستلمه الكاشير)
       ...(b.dine === 'out' ? { cards: { pc: (Array.isArray(b.pc) ? b.pc : []).map(String).filter(t => DEV_RE.test(t)).slice(0, 4), lt: DEV_RE.test(String(b.lt || '')) ? String(b.lt) : null } } : {})
@@ -236,7 +281,8 @@ async function saveOrder(built) {
   return o;
 }
 // الطلب كما يطلع للكاشير وللعميل
-const publicOrder = (o) => o && ({ id: o.id, code: o.code || null, pager: !!o.pager_ticket_id, dine: o.dine === 'out' ? 'out' : 'in', table_no: o.table_no, items: o.items || [], note: o.note, total: Number(o.total) || 0,
+const publicOrder = (o) => o && ({ id: o.id, code: o.code || null, pager: !!o.pager_ticket_id, dine: ['out', 'delivery'].includes(o.dine) ? o.dine : 'in', table_no: o.table_no,
+  phone: o.phone || null, address: o.address || null, location: o.location || null, delivery_fee: Number(o.delivery_fee) || 0, scheduled_at: o.scheduled_at || null, items: o.items || [], note: o.note, total: Number(o.total) || 0,
   discount: Number(o.discount) || 0, coupon_code: o.coupon_code || null, status: o.status, created_at: o.created_at, accepted_at: o.accepted_at || null, closed_at: o.closed_at || null });
 
 // طلب سفري استلمه الكاشير: رقم بيجر للعميل (يرن لما يجهز)، وتنربط بطاقاته. المحل لازم عنده البيجر
@@ -254,4 +300,21 @@ async function givePager(storeId, o) {
   return t;
 }
 
-module.exports = { resolveExtraLinks, pickExtras, givePager, menuPromos, promoCovers, autoPrice, loadCoupon, priceCart, priceOrder, cleanNote, round2, orderMode, cleanTable, buildOrder, saveOrder, publicOrder, dayStart };
+// طلب جديد: إشعار في جرس لوحة التحكم وعلى جوال صاحب المتجر (الأسر المنتجة ومحلات الورود ما يفتحون شاشة الكاشير طول اليوم)
+async function notifyNewOrder(store, o) {
+  const { notifyOwner } = require('./owner-notify');
+  const { sendPush } = require('./push');
+  const how = o.dine === 'delivery' ? 'توصيل' : o.dine === 'out' ? 'استلام' : (o.table_no ? `طاولة ${o.table_no}` : 'محلي');
+  const when = o.scheduled_at ? ` · ${new Date(o.scheduled_at).toLocaleString('ar-SA-u-nu-latn', { timeZone: 'Asia/Riyadh', weekday: 'long', hour: 'numeric', minute: '2-digit' })}` : '';
+  const title = `طلب جديد ${o.code || ''} (${how})`;
+  const body = `${(o.items || []).map(i => `${i.qty}× ${i.name}`).join('، ').slice(0, 140)}${when}`;
+  const desk = `${(process.env.SITE_URL || 'https://www.devmenu.digital').replace(/\/+$/, '')}/pager-desk.html`;
+  await notifyOwner(store.id, { kind: 'order', title, body, link: desk }).catch(() => {});
+  const devices = await rest(`owner_push?client_id=eq.${store.id}&select=id,sub`).catch(() => []);
+  for (const d of devices) {
+    const r = await sendPush(d.sub, { title: `🛎️ ${title}`, body, url: desk, tag: `order-${o.id}` }).catch(() => null);
+    if (r === 'gone') await rest(`owner_push?id=eq.${d.id}`, { method: 'DELETE' }).catch(() => {});
+  }
+}
+
+module.exports = { orderOpts, orderSettings, notifyNewOrder, cleanPhone, resolveExtraLinks, pickExtras, givePager, menuPromos, promoCovers, autoPrice, loadCoupon, priceCart, priceOrder, cleanNote, round2, orderMode, cleanTable, buildOrder, saveOrder, publicOrder, dayStart };

@@ -830,6 +830,9 @@ async function main(req) {
     return { member: { ...rest_, ...walletState(wallet_serial, wallet_error, wallet_platform), restore_url }, events, messages, feedback };
   }
 
+  // مفتاح إشعارات الجوال (لوحة التحكم تشترك فيه عشان يوصل صاحب المتجر «طلب جديد»)
+  if (action === 'push-key' && req.method === 'GET') return { key: pushPublicKey() };
+
   if (req.method !== 'POST') throw new ApiError(404, 'هذا الطلب غير معروف، حدّث الصفحة وحاول مرة ثانية', 'UNKNOWN');
   const { store, admin, here } = await context(req);
   const sid = store.id;
@@ -1393,6 +1396,10 @@ async function main(req) {
       const m = b.menu_order_mode ? 'table' : null;
       if (m && !PLANS.has(store, 'menu')) throw new ApiError(403, 'الطلب من المنيو يحتاج المنيو في باقتك', 'ADDON_OFF');
       p.menu_order_mode = m;
+    }
+    if (has('menu_order_opts')) {
+      if (!PLANS.has(store, 'menu')) throw new ApiError(403, 'الطلب من المنيو يحتاج المنيو في باقتك', 'ADDON_OFF');
+      p.menu_order_opts = require('./_lib/order').orderOpts(b.menu_order_opts);
     }
     if (has('pager_upsell')) {
       // الاقتراحات من أصناف المنيو: تحتاج المنيو والبيجر

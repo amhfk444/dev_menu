@@ -15,7 +15,7 @@ create table if not exists public.menu_orders (
   token text not null unique,
   mode text not null default 'table',
   code text,
-  dine text check (dine is null or dine in ('in', 'out')),
+  dine text check (dine is null or dine in ('in', 'out', 'delivery')),
   table_no text,
   items jsonb not null,
   note text,
@@ -31,6 +31,16 @@ create table if not exists public.menu_orders (
 );
 alter table public.menu_orders add column if not exists code text;
 alter table public.menu_orders add column if not exists dine text;
+alter table public.menu_orders drop constraint if exists menu_orders_dine_check;
+alter table public.menu_orders add constraint menu_orders_dine_check check (dine is null or dine in ('in', 'out', 'delivery'));
+-- التوصيل والطلب المسبق (الأسر المنتجة ومحلات الورود): العنوان والموقع والجوال ورسوم التوصيل، وموعد الطلب
+alter table public.menu_orders add column if not exists phone text;
+alter table public.menu_orders add column if not exists address text;
+alter table public.menu_orders add column if not exists location text;
+alter table public.menu_orders add column if not exists delivery_fee numeric(10, 2) not null default 0;
+alter table public.menu_orders add column if not exists scheduled_at timestamptz;
+-- خيارات صاحب المتجر: محلي / استلام / توصيل (ورسومه ونطاقه) / الطلب المسبق
+alter table public.clients add column if not exists menu_order_opts jsonb;
 -- السفري: لما يستلمه الكاشير ياخذ العميل رقم بيجر (يرن لما يجهز)، وتنربط بطاقة النداء اللي في جواله (cards)
 alter table public.menu_orders add column if not exists pager_ticket_id bigint references public.pager_tickets(id) on delete set null;
 alter table public.menu_orders add column if not exists cards jsonb;

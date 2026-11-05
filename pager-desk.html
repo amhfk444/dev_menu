@@ -151,6 +151,8 @@
   .tk-sub.one { grid-template-columns: 1fr; }
   .tk-order .nm i.ex { display: block; font-style: normal; font-size: 14.5px; font-weight: 800; color: #1f5c3a; }
   .tk-hd { flex-wrap: wrap; }
+  .tk-dine.del { background: #1f5c3a; } .tk-when { display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 700; padding: 8px 12px; border-radius: 10px; background: #fde3e1; color: #7a1018; } .tk-when b { font-weight: 800; }
+  .tk-addr { font-size: 15px; font-weight: 700; color: #1a1a1a; background: #f3f6f3; border-radius: 10px; padding: 8px 12px; line-height: 1.5; } .tk-addr-act { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; } .tk-addr-act a { display: inline-flex; align-items: center; gap: 5px; min-height: 38px; padding: 0 12px; border-radius: 9px; background: #fff; box-shadow: inset 0 0 0 1.5px #1a1a1a; color: #1a1a1a; font-size: 14px; font-weight: 800; text-decoration: none; }
   .tk-dine { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 800; padding: 8px 12px; border-radius: 10px; background: #1a1a1a; color: #fff; } .tk-dine.out { background: #c9a227; color: #1a1a1a; } .tk-dine i { font-size: 20px; }
 
   @media (max-width: 520px) { #ord-note { display: none; } .col-hd h2 { white-space: nowrap; } }
@@ -489,7 +491,14 @@
     }).join('');
   }
   // محلي أو سفري: سطر واضح تحت الرقم (السفري ذهبي)
-  const dineLine = (o) => `<div class="tk-dine${o.dine === 'out' ? ' out' : ''}"><i class="ph-bold ${o.dine === 'out' ? 'ph-bag' : 'ph-chair'}"></i> ${o.dine === 'out' ? 'سفري' : 'محلي'}${o.dine !== 'out' && o.table_no ? ` · طاولة <b dir="ltr">${esc(o.table_no)}</b>` : ''}</div>`;
+  const whenFmt = (iso) => new Date(iso).toLocaleString('ar-SA-u-nu-latn-ca-gregory', { weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Riyadh' });
+  const dineLine = (o) => {
+    const when = o.scheduled_at ? `<div class="tk-when"><i class="ph-bold ph-calendar-check"></i> موعد الطلب: <b>${esc(whenFmt(o.scheduled_at))}</b></div>` : '';
+    if (o.dine === 'delivery') return when + `<div class="tk-dine del"><i class="ph-bold ph-truck"></i> توصيل${o.delivery_fee ? ` · رسوم ${fmtM(Number(o.delivery_fee))}` : ''}</div>
+      <div class="tk-addr">${esc(o.address || '')}
+        <div class="tk-addr-act">${o.phone ? `<a href="tel:${esc(o.phone)}" dir="ltr"><i class="ph-bold ph-phone"></i> ${esc(o.phone)}</a>` : ''}${o.location ? `<a href="https://maps.google.com/?q=${encodeURIComponent(o.location)}" target="_blank" rel="noopener"><i class="ph-bold ph-map-pin"></i> الموقع</a>` : ''}</div></div>`;
+    return when + `<div class="tk-dine${o.dine === 'out' ? ' out' : ''}"><i class="ph-bold ${o.dine === 'out' ? 'ph-bag' : 'ph-chair'}"></i> ${o.dine === 'out' ? 'استلام' : 'محلي'}${o.dine === 'in' && o.table_no ? ` · طاولة <b dir="ltr">${esc(o.table_no)}</b>` : ''}${o.phone ? ` · <a href="tel:${esc(o.phone)}" dir="ltr" style="color:inherit">${esc(o.phone)}</a>` : ''}</div>`;
+  };
   const orderName = (o) => o.table_no ? `طاولة ${o.table_no}` : (o.code || '');
   async function setOrder(id, status, msg) {
     oBusy.add(id); render();

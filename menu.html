@@ -434,9 +434,10 @@
       </div>
       <!-- الطلب للكاشير: محلي أو سفري، ورقم الطاولة اختياري للمحلي (من QR الطاولة أو يكتبه) -->
       <div id="cartDirect" class="hidden space-y-2.5 border-t border-white/10 pt-3">
-        <div id="dineBox" class="grid grid-cols-2 gap-2" role="radiogroup">
+        <div id="dineBox" class="grid gap-2" role="radiogroup">
           <button type="button" data-dine="in" class="dine-btn" role="radio"><span id="dineInText">محلي</span></button>
-          <button type="button" data-dine="out" class="dine-btn" role="radio"><span id="dineOutText">سفري</span></button>
+          <button type="button" data-dine="out" class="dine-btn" role="radio"><span id="dineOutText">استلام</span></button>
+          <button type="button" data-dine="delivery" class="dine-btn" role="radio"><span id="dineDelText">توصيل</span></button>
         </div>
         <!-- جاي من QR الطاولة: الرقم ثابت، وما يحتاج يكتبه -->
         <div id="tableFixed" class="hidden items-center justify-between gap-3 bg-white/5 border border-white/15 rounded-xl px-4 py-3">
@@ -446,6 +447,24 @@
         <div id="tableBox">
           <label for="tableInput" id="tableLabel" class="text-[11px] font-bold text-gray-400 block mb-1.5">رقم الطاولة</label>
           <input id="tableInput" type="text" inputmode="numeric" maxlength="6" autocomplete="off" dir="ltr" placeholder="12" class="w-full text-center text-2xl font-black bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-white/40">
+        </div>
+        <!-- التوصيل: الجوال والعنوان، والموقع اختياري -->
+        <div id="delBox" class="hidden space-y-2">
+          <p id="delInfo" class="text-[12px] font-bold text-gray-300"></p>
+          <input id="delPhone" type="tel" inputmode="tel" autocomplete="tel" maxlength="14" dir="ltr" placeholder="05xxxxxxxx" aria-label="رقم الجوال" class="w-full text-center text-lg font-black bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-white/40" style="font-size:18px">
+          <textarea id="delAddress" rows="2" maxlength="200" autocomplete="street-address" aria-label="عنوان التوصيل" class="w-full bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-white/40 resize-none" style="font-size:16px"></textarea>
+          <button type="button" id="delLocBtn" class="w-full rounded-xl bg-white/10 border border-white/15 text-white font-bold text-[13px] py-2.5"></button>
+        </div>
+        <!-- الطلب المسبق: أقرب وقت أو موعد -->
+        <div id="whenBox" class="hidden space-y-2">
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" data-when="asap" class="dine-btn !min-h-[44px] !text-[13px]"><span id="whenAsapText">أقرب وقت</span></button>
+            <button type="button" data-when="later" class="dine-btn !min-h-[44px] !text-[13px]"><span id="whenLaterText">حدد موعد</span></button>
+          </div>
+          <div id="whenPick" class="hidden grid grid-cols-2 gap-2">
+            <select id="whenDay" aria-label="اليوم" class="bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-white focus:outline-none" style="font-size:16px"></select>
+            <input id="whenTime" type="time" aria-label="الوقت" class="bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-white focus:outline-none" style="font-size:16px; color-scheme: dark">
+          </div>
         </div>
         <p id="directMsg" class="hidden text-[12px] font-bold text-red-300"></p>
       </div>
@@ -1545,7 +1564,7 @@
       document.getElementById('discountLabel').textContent = `${T('الخصم', 'Discount')} (${coupon.coupon.code})`;
       document.getElementById('discountValue').textContent = `− ${money(coupon.discount)}`;
     }
-    document.getElementById('cartTotal').textContent = money(coupon ? coupon.total : cartTotals().total);
+    document.getElementById('cartTotal').textContent = money((coupon ? coupon.total : cartTotals().total) + deliveryFee());
     document.getElementById('couponBtn').textContent = coupon ? T('إزالة', 'Remove') : T('تطبيق', 'Apply');
   }
   function couponMsg(text, ok) {
@@ -1703,7 +1722,9 @@
 
   // ─── الطلب للكاشير (بدون واتساب) ───
   // العميل يرسل طلبه ويطلع له رمز (A12) يعرّف فيه نفسه للكاشير. رقم الطاولة اختياري: من QR الطاولة (?table=12) أو يكتبه
-  let tableEdit = false, dine = 'in';
+  let tableEdit = false, dine = 'in', delLoc = null, whenMode = 'asap';
+  const orderOpts = () => Object.assign({ dine: true, pickup: true, delivery: false, fee: 0, area: '', schedule: false }, (project && project.order_opts) || {});
+  const deliveryFee = () => directMode() && dine === 'delivery' ? Number(orderOpts().fee) || 0 : 0;
   // بطاقات النداء اللي أضافها من صفحة البيجر (الكوكي على devmenu.digital كله، أو التخزين المحلي)
   function savedPagerCards() {
     const out = new Set();
@@ -1728,10 +1749,40 @@
     // الطلب للكاشير: الملاحظة على كل صنف لحاله (تحت اسمه)، بدل ملاحظة عامة
     document.getElementById('cartNoteBox').classList.toggle('hidden', !!dm);
     if (!dm) return;
-    document.querySelectorAll('[data-dine]').forEach(b => { b.classList.toggle('on', b.dataset.dine === dine); b.setAttribute('aria-checked', b.dataset.dine === dine); });
+    // طرق الاستلام اللي مختارها صاحب المتجر
+    const oo = orderOpts(), allowed = [oo.dine && 'in', oo.pickup && 'out', oo.delivery && 'delivery'].filter(Boolean);
+    if (!allowed.includes(dine)) dine = (qrTable && allowed.includes('in')) ? 'in' : allowed[0];
+    document.querySelectorAll('[data-dine]').forEach(b => { const ok = allowed.includes(b.dataset.dine); b.classList.toggle('hidden', !ok); b.classList.toggle('on', b.dataset.dine === dine); b.setAttribute('aria-checked', b.dataset.dine === dine); });
+    const db = document.getElementById('dineBox');
+    db.classList.toggle('hidden', allowed.length < 2); db.style.gridTemplateColumns = `repeat(${allowed.length}, 1fr)`;
     document.getElementById('dineInText').textContent = T('محلي', 'Dine in');
-    document.getElementById('dineOutText').textContent = T('سفري', 'Takeaway');
-    const out = dine === 'out';
+    document.getElementById('dineOutText').textContent = T('استلام', 'Pickup');
+    document.getElementById('dineDelText').textContent = T('توصيل', 'Delivery');
+    const out = dine !== 'in';
+    // التوصيل
+    const del = dine === 'delivery';
+    document.getElementById('delBox').classList.toggle('hidden', !del);
+    if (del) {
+      document.getElementById('delInfo').textContent = [oo.fee ? T(`رسوم التوصيل ${money(oo.fee)}`, `Delivery fee ${money(oo.fee)}`) : T('التوصيل مجاني', 'Free delivery'), oo.area].filter(Boolean).join(' · ');
+      const ph = document.getElementById('delPhone'), ad = document.getElementById('delAddress');
+      ph.placeholder = T('رقم جوالك 05xxxxxxxx', 'Mobile 05xxxxxxxx'); ad.placeholder = T('عنوان التوصيل: الحي، الشارع، رقم البيت', 'Address: district, street, house no.');
+      try { if (!ph.value) ph.value = localStorage.getItem('dm_phone') || ''; if (!ad.value) ad.value = localStorage.getItem(`dm_addr_${project.id}`) || ''; } catch {}
+      document.getElementById('delLocBtn').innerHTML = delLoc ? `<i class="fa-solid fa-location-dot"></i> ${T('تم إرفاق موقعك', 'Location attached')}` : `<i class="fa-solid fa-location-dot"></i> ${T('أرسل موقعي (اختياري)', 'Send my location (optional)')}`;
+    }
+    // الطلب المسبق
+    document.getElementById('whenBox').classList.toggle('hidden', !oo.schedule);
+    if (oo.schedule) {
+      document.getElementById('whenAsapText').textContent = T('في أقرب وقت', 'As soon as possible');
+      document.getElementById('whenLaterText').textContent = T('حدد موعد', 'Schedule');
+      document.querySelectorAll('[data-when]').forEach(b => b.classList.toggle('on', b.dataset.when === whenMode));
+      document.getElementById('whenPick').classList.toggle('hidden', whenMode !== 'later');
+      const sel = document.getElementById('whenDay');
+      if (!sel.options.length) {
+        const fmt = new Intl.DateTimeFormat(currentLang === 'ar' ? 'ar-SA-u-nu-latn-ca-gregory' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Riyadh' });
+        for (let i = 0; i < 14; i++) { const d = new Date(Date.now() + i * 864e5); const v = new Date(d.getTime() + 3 * 3600e3).toISOString().slice(0, 10);
+          sel.add(new Option(i === 0 ? T('اليوم', 'Today') : i === 1 ? T('بكرة', 'Tomorrow') + ' · ' + fmt.format(d) : fmt.format(d), v)); }
+      }
+    }
     const ti = document.getElementById('tableInput');
     const fixed = !out && !tableEdit && !!qrTable;
     if (fixed) ti.value = qrTable;
@@ -1744,19 +1795,43 @@
     document.getElementById('tableLabel').textContent = T('رقم الطاولة (اختياري)', 'Table number (optional)');
     document.getElementById('directMsg').classList.add('hidden');
   }
-  document.getElementById('dineBox').addEventListener('click', (e) => { const b = e.target.closest('[data-dine]'); if (b) { dine = b.dataset.dine; renderDirect(); } });
+  document.getElementById('dineBox').addEventListener('click', (e) => { const b = e.target.closest('[data-dine]'); if (b) { dine = b.dataset.dine; renderDirect(); renderCouponTotals(); } });
+  document.getElementById('whenBox').addEventListener('click', (e) => { const b = e.target.closest('[data-when]'); if (b) { whenMode = b.dataset.when; renderDirect(); } });
+  document.getElementById('delLocBtn').addEventListener('click', () => {
+    if (!('geolocation' in navigator)) return directErr(T('جهازك ما يدعم تحديد الموقع، اكتب العنوان بالتفصيل', 'Location not supported, write the address'));
+    const b = document.getElementById('delLocBtn'); b.disabled = true; b.textContent = T('نحدد موقعك…', 'Locating…');
+    navigator.geolocation.getCurrentPosition((p) => { delLoc = `${p.coords.latitude.toFixed(6)},${p.coords.longitude.toFixed(6)}`; b.disabled = false; renderDirect(); },
+      () => { b.disabled = false; renderDirect(); directErr(T('ما قدرنا ناخذ موقعك، اكتب العنوان بالتفصيل', "Couldn't get your location, write the address")); }, { enableHighAccuracy: true, timeout: 12000 });
+  });
   document.getElementById('tableChange').addEventListener('click', () => { tableEdit = true; renderDirect(); const t = document.getElementById('tableInput'); t.focus(); t.select(); });
   function directErr(msg) { const m = document.getElementById('directMsg'); m.textContent = msg; m.classList.remove('hidden'); }
   async function sendDirect() {
     // معاينة لوحة التحكم: نوري صاحب المحل الخطوات بدون ما يوصل طلب للكاشير
     if (urlParams.get('preview') === '1') return directErr(T('هذي معاينة: الطلب ما ينرسل للكاشير', 'Preview only: the order is not sent'));
     const table = document.getElementById('tableInput').value.trim().replace(/[٠-٩۰-۹]/g, d => String(d.charCodeAt(0) & 15));
+    // التوصيل والموعد
+    const extra = {};
+    if (dine === 'delivery') {
+      const phone = document.getElementById('delPhone').value.trim().replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15)).replace(/\D/g, '');
+      const address = document.getElementById('delAddress').value.trim();
+      if (!/^(05\d{8}|5\d{8}|9665\d{8})$/.test(phone)) { directErr(T('اكتب رقم جوالك، مثل 0512345678', 'Enter your mobile, e.g. 0512345678')); return document.getElementById('delPhone').focus(); }
+      if (address.length < 5) { directErr(T('اكتب عنوان التوصيل (الحي والشارع)', 'Enter the delivery address')); return document.getElementById('delAddress').focus(); }
+      try { localStorage.setItem('dm_phone', phone); localStorage.setItem(`dm_addr_${project.id}`, address); } catch {}
+      Object.assign(extra, { phone, address, location: delLoc || undefined });
+    }
+    if (orderOpts().schedule && whenMode === 'later') {
+      const day = document.getElementById('whenDay').value, time = document.getElementById('whenTime').value;
+      if (!day || !time) { directErr(T('اختر اليوم والوقت', 'Pick the day and time')); return; }
+      const at = Date.parse(`${day}T${time}:00+03:00`);
+      if (!(at > Date.now() + 10 * 60e3)) { directErr(T('اختر وقت بعد ربع ساعة على الأقل', 'Pick a time at least 15 minutes from now')); return; }
+      extra.when = new Date(at).toISOString();
+    }
     const btn = document.getElementById('cartSend'); btn.disabled = true;
     try {
       try { if (table) sessionStorage.setItem(tableKey(), table); } catch {}
       // السفري: بطاقة النداء وبطاقة الولاء اللي في جواله تنربط برقم البيجر لما يستلمه الكاشير
       const cards = dine === 'out' ? { pc: savedPagerCards(), lt: await DM.loyaltyToken(project.client_slug).catch(() => '') || undefined } : {};
-      const r = await DM.post('/api/public?action=order', { slug: project.client_slug, dev: devId(), lang: currentLang, dine, table: dine === 'out' ? '' : table, ...cards,
+      const r = await DM.post('/api/public?action=order', { slug: project.client_slug, dev: devId(), lang: currentLang, dine, table: dine === 'in' ? table : '', ...extra, ...cards,
         items: cart.map(c => ({ id: c.id, qty: c.qty, size: c.size, note: c.note, extras: c.extras })), coupon: coupon ? coupon.coupon.code : undefined });
       cart.forEach(c => DM.post('/api/public?action=track', { client_id: project.id, kind: 'order', product_id: c.id }).catch(() => {}));
       myOrders = [{ token: r.token, ...r.order }, ...myOrders.filter(o => o.token !== r.token)].slice(0, 5);
@@ -1806,7 +1881,8 @@
     if (myOrders.some(o => ['new', 'accepted'].includes(o.status))) refreshOrders.t = setTimeout(refreshOrders, 8000);
   }
   const ST = { new: ['وصل طلبك للكاشير', 'Sent to the cashier'], accepted: ['الكاشير استلم طلبك، وجاري تحضيره', 'The cashier has it, being prepared'], served: ['تم تسليم طلبك، بالعافية', 'Done, enjoy'], cancelled: ['انلغى الطلب، كلّم الكاشير', 'Cancelled, ask the cashier'] };
-  const who = (o) => `${T('طلب', 'Order')} <b dir="ltr">${esc(o.code || '')}</b> · ${o.dine === 'out' ? T('سفري', 'Takeaway') : T('محلي', 'Dine in')}${o.table_no ? ` · ${T('طاولة', 'Table')} <span dir="ltr">${esc(o.table_no)}</span>` : ''}`;
+  const whenText = (iso) => new Date(iso).toLocaleString(currentLang === 'ar' ? 'ar-SA-u-nu-latn-ca-gregory' : 'en-GB', { weekday: 'long', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Riyadh' });
+  const who = (o) => `${T('طلب', 'Order')} <b dir="ltr">${esc(o.code || '')}</b> · ${o.dine === 'delivery' ? T('توصيل', 'Delivery') : o.dine === 'out' ? T('استلام', 'Pickup') : T('محلي', 'Dine in')}${o.table_no ? ` · ${T('طاولة', 'Table')} <span dir="ltr">${esc(o.table_no)}</span>` : ''}${o.scheduled_at ? ` · ${esc(whenText(o.scheduled_at))}` : ''}`;
   function renderOrders() {
     const bar = document.getElementById('moBar');
     const live = myOrders.filter(o => ['new', 'accepted'].includes(o.status));

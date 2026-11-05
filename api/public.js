@@ -10,7 +10,7 @@
 // =====================================================================
 const crypto = require('crypto');
 const PLANS = require('./_lib/plans');
-const { handler, rest, rpc, q, ApiError, readBody, int, findPublicStore, CURRENCIES, storeHasFeature, storeFeatures, storesFeatures } = require('./_lib/core');
+const { handler, rest, rpc, q, ApiError, readBody, int, findPublicStore, CURRENCIES, storeHasFeature, storeFeatures, storesFeatures, later } = require('./_lib/core');
 const { topic } = require('./_lib/live');
 
 const STORE_FIELDS = 'id,name,client_slug,logo_url,bg_image_url,bg_video_url,promo_message,website_url,tiktok_url,instagram_url,whatsapp_number,snapchat_url,opening_hours,location_url,whatsapp_orders,business_type,show_calories,menu_layout,delivery_apps,theme,accent_color,order_numbers,custom_links';
@@ -122,7 +122,8 @@ async function menuPayload(slug) {
   const menu_chat = store.menu_chat === true && feats.chat;
   // الإضافات المربوطة بأصناف المنيو تاخذ اسمها وسعرها الحالي منها
   await require('./_lib/order').resolveExtraLinks(store.id, products);
-  return { store: { ...store, name, menu_chat, waitlist_open, has_coupons, occasion, promos, order_mode }, categories: categories.sort(bySort), products: products.sort(bySort), feats };
+  const order_opts = order_mode ? await require('./_lib/order').orderSettings(store.id) : null;
+  return { store: { ...store, name, menu_chat, waitlist_open, has_coupons, occasion, promos, order_mode, order_opts }, categories: categories.sort(bySort), products: products.sort(bySort), feats };
 }
 // ردود جاهزة للأسئلة البسيطة. أي شي غيرها يروح للمساعد
 const AR = (t) => /[؀-ۿ]/.test(t);
@@ -367,7 +368,8 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (!(await orderMode(store.id))) throw new ApiError(409, 'الطلب من المنيو متوقف الحين، اطلب من الكاشير', 'ORDERS_OFF');
     const o = await saveOrder(await buildOrder(store, b));
     await poke([topic('pager', store.id)]);   // شاشة الكاشير
-    console.log('MENU_ORDER', store.id, o.id, o.code, o.table_no);
+    later(require('./_lib/order').notifyNewOrder(store, o));   // جرس اللوحة وجوال صاحب المتجر
+    console.log('MENU_ORDER', store.id, o.id, o.code, o.dine, o.table_no);
     return { token: o.token, order: publicOrder(o), live: topic('mo', o.token) };
   }
 
