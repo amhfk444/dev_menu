@@ -653,9 +653,12 @@ async function main(req) {
     }
     // طلبات المنيو المفتوحة اليوم (وصلت / استلمها الكاشير)
     const { publicOrder } = require('./_lib/order');
-    const orders = (await rest(`menu_orders?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&status=in.(new,accepted)&select=*&order=id.asc&limit=300`).catch(() => [])).map(publicOrder);
+    const mos = await rest(`menu_orders?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&select=*&order=id.asc&limit=300`).catch(() => []);
+    // السفري اللي صار له رقم بيجر: يطلع تحت رقمه في أعمدة البيجر، والباقي في «طلبات المنيو»
+    const byTicket = new Map(mos.filter(o => o.pager_ticket_id).map(o => [o.pager_ticket_id, publicOrder(o)]));
+    const orders = mos.filter(o => !o.pager_ticket_id && ['new', 'accepted'].includes(o.status)).map(publicOrder);
     // build: نسخة الموقع المنشورة، شاشة الكاشير تحدّث نفسها لو تغيّرت (تبقى مفتوحة أيام)
-    return { build: (process.env.VERCEL_GIT_COMMIT_SHA || '').slice(0, 12) || null, order_mode: orderMode, orders, currency: CURRENCIES[store.currency] || CURRENCIES.SAR, tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub, reward: t.loyalty_card_id ? rewardsBy[t.loyalty_card_id] || null : null })), slug: store.client_slug, name: store.name, business_type: store.business_type, max_rings: PAGER_MAX_RINGS, live: topic('pager', store.id), loyalty: lx.loyalty_enabled === true, pager: hasPager, loyalty_entitled: PLANS.has(store, 'loyalty') };
+    return { build: (process.env.VERCEL_GIT_COMMIT_SHA || '').slice(0, 12) || null, order_mode: orderMode, orders, currency: CURRENCIES[store.currency] || CURRENCIES.SAR, tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub, order: byTicket.get(t.id) || null, reward: t.loyalty_card_id ? rewardsBy[t.loyalty_card_id] || null : null })), slug: store.client_slug, name: store.name, business_type: store.business_type, max_rings: PAGER_MAX_RINGS, live: topic('pager', store.id), loyalty: lx.loyalty_enabled === true, pager: hasPager, loyalty_entitled: PLANS.has(store, 'loyalty') };
   }
 
   // ─── إحصائيات البيجر: وقت الانتظار، الإنجاز، أوقات الذروة، والتقييم (آخر 30 يوم) ───
@@ -1173,10 +1176,16 @@ async function main(req) {
     if (!['new', 'accepted', 'served', 'cancelled'].includes(status)) throw new ApiError(400, 'حالة غير صحيحة');
     const now = new Date().toISOString();
     const patch = { status, ...(status === 'accepted' ? { accepted_at: now, closed_at: null } : status === 'new' ? { accepted_at: null, closed_at: null } : { closed_at: now }) };
-    const rows = await rest(`menu_orders?id=eq.${id}&client_id=eq.${sid}`, { method: 'PATCH', body: patch, prefer: 'return=representation' });
+    const rows = await rest(`menu_orders?id=eq.${id}&client_id=eq.${sid}&pager_ticket_id=is.null`, { method: 'PATCH', body: patch, prefer: 'return=representation' });
     if (!rows.length) throw new ApiError(404, 'الطلب غير موجود');
+    // سفري واستلمه الكاشير: العميل ياخذ رقم بيجر في جواله (يرن لما يجهز، ومعه بطاقة النداء)
+    let ticket = null;
+    if (status === 'accepted' && rows[0].dine === 'out' && PLANS.has(store, 'pager')) {
+      ticket = await require('./_lib/order').givePager(sid, rows[0]).catch(e => { console.error('ORDER_PAGER', sid, e.message); return null; });
+      if (ticket) rows[0].pager_ticket_id = ticket.id;
+    }
     await poke([topic('pager', sid), topic('mo', rows[0].token)]);
-    return { order: require('./_lib/order').publicOrder(rows[0]) };
+    return { order: require('./_lib/order').publicOrder(rows[0]), ticket: ticket ? { id: ticket.id, number: ticket.number } : null };
   }
 
   // ─── الخدمة الذاتية: العميل دفع، والكاشير يكتب رقم الفاتورة ← يدخل التجهيز برقم بيجر داخلي يرن عليه ───
@@ -1195,6 +1204,8 @@ async function main(req) {
     const rows = await rest(`pager_tickets?id=eq.${id}&client_id=eq.${sid}`, { method: 'PATCH', body: patch, prefer: 'return=representation' });
     if (!rows.length) throw new ApiError(404, 'الرقم غير موجود');
     const t = rows[0];
+    // طلب سفري من المنيو مربوط بالرقم: استلم = تم، حذف = انلغى
+    if (status === 'done' || status === 'cancelled') await rest(`menu_orders?pager_ticket_id=eq.${t.id}&client_id=eq.${sid}`, { method: 'PATCH', body: { status: status === 'done' ? 'served' : 'cancelled', closed_at: now } }).catch(() => {});
     if (status === 'ready' && !t.push_sub) console.log('PAGER_READY_NO_SUB', sid, t.id);
     // بطاقة النداء وبطاقة الولاء يتحدثون بالخلفية: الكاشير ياخذ الرد على طول، والإشعار يوصل خلال ثواني
     // تحديث البطاقة يبدأ قبل رنّة المتصفح (WalletWallet ياخذ ثواني، فما ينتظر الرنّة)

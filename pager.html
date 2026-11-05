@@ -660,6 +660,7 @@
       <p class="text-sm font-black">تابعنا</p>
       <div id="d-social-list" class="flex flex-wrap justify-center gap-2"></div>
     </div>
+    <a id="menu-back" class="hidden btn btn-brand"><i class="ph-bold ph-fork-knife"></i> <span>ارجع للمنيو</span></a>
     <button id="new-btn" class="btn btn-ghost"><i class="ph-bold ph-ticket"></i> خذ رقم جديد</button>
   </section>
 </main>
@@ -1463,7 +1464,7 @@
       pollTimer = setTimeout(poll, 5000); return;   // انقطاع مؤقت: نعيد المحاولة
     }
     if (!PREVIEW && loadToken() !== token) return;   // تغيّر الرقم وهو ينتظر الرد (ضغط "استلمت" أو أخذ رقم جديد): الرد قديم
-    if (askChat && typeof r.chat === 'boolean') { chatFor = token; chatOn = r.chat; upsell = r.upsell || []; curLabel = r.currency || 'ر.س'; game = r.game || null; gameOn = r.game_on !== false; quizOn = r.quiz === true; quizMode(); }
+    if (askChat && typeof r.chat === 'boolean') { chatFor = token; chatOn = r.chat; upsell = r.upsell || []; curLabel = r.currency || 'ر.س'; game = r.game || null; gameOn = r.game_on !== false; quizOn = r.quiz === true; quizMode(); if (r.from_menu) try { sessionStorage.setItem(FROM_MENU, '1'); } catch {} }
     if (askQ) lastQ = Date.now();
     staffEta = r.staff_eta && typeof r.staff_eta === 'object' ? r.staff_eta : null;
     if (r.queue) renderQueue(r.queue, r.ticket.number); else if (lastQueue) renderQueue(lastQueue, r.ticket.number);
@@ -1627,8 +1628,22 @@
       unavailable(e.code === 'FULL' ? 'وصلنا الحد اليومي للأرقام' : 'تعذر أخذ رقم', 'اسأل الموظف.');
     } finally { btn.disabled = false; btn.innerHTML = '<i class="ph-bold ph-ticket"></i> خذ رقمي وفعّل التنبيه'; }
   };
-  // خلص الطلب: نوافذ التنبيه وبطاقة النداء ما لها داعي
-  function closePrompts() { ['perm', 'pc-ask'].forEach(id => $(id).classList.replace('flex', 'hidden')); }
+  // خلص الطلب: نوافذ التنبيه وبطاقة النداء ما لها داعي.
+  // وطلب سفري من المنيو: يرجع للمنيو تلقائياً بعد ثواني (يقدر يقيّم قبلها، وأي لمسة توقف الرجوع)
+  const FROM_MENU = `dm_from_menu_${slug}`;
+  let backTimer = null;
+  function closePrompts() {
+    ['perm', 'pc-ask'].forEach(id => $(id).classList.replace('flex', 'hidden'));
+    let from = false; try { from = sessionStorage.getItem(FROM_MENU) === '1'; sessionStorage.removeItem(FROM_MENU); } catch {}
+    const a = $('menu-back');
+    a.classList.toggle('hidden', !from); $('new-btn').classList.toggle('hidden', from);
+    if (!from || PREVIEW) return;
+    a.href = DM.storePage('menu', slug);
+    let n = 8; const tick = () => { a.querySelector('span').textContent = n > 0 ? `ارجع للمنيو (${n})` : 'ارجع للمنيو'; if (n-- <= 0) location.href = a.href; else backTimer = setTimeout(tick, 1000); };
+    clearTimeout(backTimer); tick();
+    const stop = (e) => { if (e.target.closest('#menu-back')) return; clearTimeout(backTimer); a.querySelector('span').textContent = 'ارجع للمنيو'; $('v-done').removeEventListener('pointerdown', stop); };
+    $('v-done').addEventListener('pointerdown', stop);
+  }
   // ─── لعبة الانتظار: طابق البطاقات (8 أزواج) ───
   const MM_ICONS = ['ph-coffee', 'ph-hamburger', 'ph-pizza', 'ph-ice-cream', 'ph-cookie', 'ph-orange-slice', 'ph-carrot', 'ph-fish'];
   const mm = { cards: [], open: [], moves: 0, matched: 0, lock: false };

@@ -1626,6 +1626,18 @@
   // ─── الطلب للكاشير (بدون واتساب) ───
   // العميل يرسل طلبه ويطلع له رمز (A12) يعرّف فيه نفسه للكاشير. رقم الطاولة اختياري: من QR الطاولة (?table=12) أو يكتبه
   let tableEdit = false, dine = 'in';
+  // بطاقات النداء اللي أضافها من صفحة البيجر (الكوكي على devmenu.digital كله، أو التخزين المحلي)
+  function savedPagerCards() {
+    const out = new Set();
+    for (const m of document.cookie.matchAll(/(?:^|; )dm_pc_[A-Za-z0-9]+=([A-Za-z0-9_-]{10,64})/g)) out.add(m[1]);
+    try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (/^dm_pc_|^dm_pcard_/.test(k)) { const v = localStorage.getItem(k); if (/^[A-Za-z0-9_-]{10,64}$/.test(v || '')) out.add(v); } } } catch {}
+    return [...out].slice(0, 4);
+  }
+  // السفري استلمه الكاشير: صفحة البيجر برقمه (يرن لما يجهز، وفيها بطاقة النداء)
+  function goWaiting(o) {
+    try { localStorage.setItem(`dm_pager_${String(project.client_slug).toLowerCase()}`, o.pager_token); } catch {}
+    location.href = DM.storePage('pager', project.client_slug);
+  }
   const qrTable = (() => {
     const v = String(urlParams.get('table') || '').trim().replace(/[٠-٩۰-۹]/g, d => String(d.charCodeAt(0) & 15)).toUpperCase();
     return /^[A-Z0-9-]{1,6}$/.test(v) ? v : '';
@@ -1664,7 +1676,9 @@
     const btn = document.getElementById('cartSend'); btn.disabled = true;
     try {
       try { if (table) sessionStorage.setItem(tableKey(), table); } catch {}
-      const r = await DM.post('/api/public?action=order', { slug: project.client_slug, dev: devId(), lang: currentLang, dine, table: dine === 'out' ? '' : table,
+      // السفري: بطاقة النداء وبطاقة الولاء اللي في جواله تنربط برقم البيجر لما يستلمه الكاشير
+      const cards = dine === 'out' ? { pc: savedPagerCards(), lt: await DM.loyaltyToken(project.client_slug).catch(() => '') || undefined } : {};
+      const r = await DM.post('/api/public?action=order', { slug: project.client_slug, dev: devId(), lang: currentLang, dine, table: dine === 'out' ? '' : table, ...cards,
         items: cart.map(c => ({ id: c.id, qty: c.qty, size: c.size, note: c.note })), coupon: coupon ? coupon.coupon.code : undefined });
       cart.forEach(c => DM.post('/api/public?action=track', { client_id: project.id, kind: 'order', product_id: c.id }).catch(() => {}));
       myOrders = [{ token: r.token, ...r.order }, ...myOrders.filter(o => o.token !== r.token)].slice(0, 5);
@@ -1698,6 +1712,9 @@
       const before = new Map(myOrders.map(o => [o.token, o.status]));
       const all = r.orders.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
       // تغيّرت الحالة: تنبيه صغير + اهتزاز
+      // سفري وصار له رقم بيجر: على طول لصفحة الانتظار
+      const paged = all.find(o => o.pager_token && o.status === 'accepted' && before.has(o.token));
+      if (paged) { myOrders = all.filter(o => o.token !== paged.token && ['new', 'accepted'].includes(o.status)); saveOrders(); return goWaiting(paged); }
       const changed = all.find(o => before.has(o.token) && before.get(o.token) !== o.status);
       if (changed) { menuToast(ST[changed.status][currentLang === 'ar' ? 0 : 1], ['served', 'cancelled'].includes(changed.status) ? 4000 : 1600); try { navigator.vibrate && navigator.vibrate(200); } catch {} }
       // اللي خلص (تم أو انلغى) يطلع من المنيو على طول، والمنيو يرجع طبيعي
@@ -1736,7 +1753,9 @@
         <div class="flex items-center justify-between border-t border-white/10 pt-2"><span class="text-[12px] text-gray-300 font-bold">${T('المجموع (تدفعه عند الكاشير)', 'Total (pay at the counter)')}</span><b class="text-white">${esc(money(o.total))}</b></div>
       </div>`).join('') : `<p class="text-sm text-gray-400 text-center">${T('ما عندك طلبات', 'No orders yet')}</p>`;
   }
-  function openOrders() { renderOrders(); document.getElementById('moModal').classList.remove('opacity-0', 'pointer-events-none'); }
+  function openOrders() {
+    const p = myOrders.find(o => o.pager_token && o.status === 'accepted'); if (p) return goWaiting(p);
+    renderOrders(); document.getElementById('moModal').classList.remove('opacity-0', 'pointer-events-none'); }
   function closeOrders() { document.getElementById('moModal').classList.add('opacity-0', 'pointer-events-none'); }
   document.getElementById('moModal').addEventListener('click', (e) => { if (e.target.id === 'moModal') closeOrders(); });
 

@@ -376,7 +376,11 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (!tokens.length) return { orders: [] };
     res.setHeader('Cache-Control', 'no-store');
     const rows = await rest(`menu_orders?client_id=eq.${store.id}&token=in.(${tokens.map(t => q(t)).join(',')})&select=*`).catch(() => []);
-    return { orders: rows.map(o => ({ token: o.token, ...publicOrder(o), live: ['new', 'accepted'].includes(o.status) ? topic('mo', o.token) : null })) };
+    // السفري اللي استلمه الكاشير: رقم البيجر حقه (صفحة الانتظار)
+    const tids = rows.map(o => o.pager_ticket_id).filter(Boolean);
+    const tks = tids.length ? await rest(`pager_tickets?id=in.(${tids.join(',')})&client_id=eq.${store.id}&select=id,token`).catch(() => []) : [];
+    const tokOf = new Map(tks.map(x => [x.id, x.token]));
+    return { orders: rows.map(o => ({ token: o.token, ...publicOrder(o), pager_token: tokOf.get(o.pager_ticket_id) || null, live: ['new', 'accepted'].includes(o.status) ? topic('mo', o.token) : null })) };
   }
 
   if (action === 'track' && req.method === 'POST') {

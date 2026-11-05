@@ -149,6 +149,8 @@
   .tk-order.menu { background: #f3f6f3; border: 1.5px solid #c9d6cc; border-radius: 12px; padding: 8px 10px; }
   .tk-onote { margin-top: 6px; font-size: 14px; font-weight: 700; color: #a1121f; }
   .tk-sub.one { grid-template-columns: 1fr; }
+  .tk-hd { flex-wrap: wrap; }
+  .tk-dine { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 800; padding: 8px 12px; border-radius: 10px; background: #1a1a1a; color: #fff; } .tk-dine.out { background: #c9a227; color: #1a1a1a; } .tk-dine i { font-size: 20px; }
 
   @media (max-width: 520px) { #ord-note { display: none; } .col-hd h2 { white-space: nowrap; } }
   @media (prefers-reduced-motion: reduce) { .tile-new { animation: none; outline: 4px solid #c9a227; } }
@@ -470,7 +472,8 @@
       const acc = o.status === 'accepted', b = oBusy.has(o.id);
       return `<article class="tk${acc ? ' tk-acc' : ''}${freshOrders.has(o.id) ? ' tile-new' : ''}"><div class="tk-in">
         <div class="tk-info">
-          <div class="tk-hd"><span class="tk-tbl"><small>${o.table_no ? 'طاولة' : 'رمز الطلب'}</small><b dir="ltr">${esc(o.table_no || o.code || '؟')}</b></span>${timer(o.created_at)}${o.table_no && o.code ? `<span class="tk-tag">${esc(o.code)}</span>` : ''}<span class="tk-tag ${o.dine === 'out' ? 'gold' : ''}"><i class="ph-bold ${o.dine === 'out' ? 'ph-bag' : 'ph-chair'}"></i> ${o.dine === 'out' ? 'سفري' : 'محلي'}</span>${acc ? '<span class="tk-tag"><i class="ph-bold ph-check"></i> استلمته</span>' : ''}</div>
+          <div class="tk-hd"><span class="tk-tbl"><small>${o.table_no ? 'طاولة' : 'رمز الطلب'}</small><b dir="ltr">${esc(o.table_no || o.code || '؟')}</b></span>${timer(o.created_at)}${o.table_no && o.code ? `<span class="tk-tag">${esc(o.code)}</span>` : ''}${acc ? '<span class="tk-tag"><i class="ph-bold ph-check"></i> استلمته</span>' : ''}</div>
+          ${dineLine(o)}
           ${orderBlock(o)}
         </div>
         <div class="tk-act">
@@ -484,19 +487,22 @@
       </div></article>`;
     }).join('');
   }
+  // محلي أو سفري: سطر واضح تحت الرقم (السفري ذهبي)
+  const dineLine = (o) => `<div class="tk-dine${o.dine === 'out' ? ' out' : ''}"><i class="ph-bold ${o.dine === 'out' ? 'ph-bag' : 'ph-chair'}"></i> ${o.dine === 'out' ? 'سفري' : 'محلي'}${o.dine !== 'out' && o.table_no ? ` · طاولة <b dir="ltr">${esc(o.table_no)}</b>` : ''}</div>`;
   const orderName = (o) => o.table_no ? `طاولة ${o.table_no}` : (o.code || '');
   async function setOrder(id, status, msg) {
     oBusy.add(id); render();
     try {
       const r = await call('order-update', { id, status });
       orders = orders.map(o => o.id === id ? { ...o, ...r.order } : o);
+      if (r.ticket) { orders = orders.filter(o => o.id !== id); load(); }   // سفري: صار رقم بيجر في أعمدة البيجر
       if (msg) toast(msg.replace('#', orderName(r.order)));
     } catch (e) { toast(e.message || 'صار خلل وما اكتمل الطلب، حاول مرة ثانية'); }
     oBusy.delete(id); render();
   }
   document.addEventListener('click', async (e) => {
     const a = e.target.closest('[data-oacc]'), sv = e.target.closest('[data-oserve]'), bk = e.target.closest('[data-oback]'), dl = e.target.closest('[data-odel]');
-    if (a) setOrder(+a.dataset.oacc, 'accepted', 'استلمت طلب #، والعميل يشوفها في جواله');
+    if (a) { const o = orders.find(x => x.id === +a.dataset.oacc); setOrder(+a.dataset.oacc, 'accepted', o && o.dine === 'out' ? 'استلمت طلب #، وراح للعميل رقم بيجر في جواله' : 'استلمت طلب #، والعميل يشوفها في جواله'); }
     if (sv) setOrder(+sv.dataset.oserve, 'served', '✓ طلب # تم');
     if (bk) setOrder(+bk.dataset.oback, 'new');
     if (dl) {
@@ -529,7 +535,8 @@
       const head = `<div class="tk-order-hd"><small>أضافه الزبون${total ? ` · ${fmtMoney(total)}` : ''}</small>${unseen ? `<button class="tk-seen" data-seen="${t.id}"><i class="ph-bold ph-check"></i> شفتها</button>` : '<span class="tk-seen-ok"><i class="ph-bold ph-check-circle"></i> تم</span>'}</div>`;
       const items = a.length ? `<div class="tk-order${unseen ? ' new' : ''}">${head}<ul>${a.map(x => `<li><span class="q">${x.qty || 1}</span><span class="nm"><b>${esc(x.name)}</b>${x.size ? ` <span>${esc(x.size)}</span>` : ''}${x.note ? `<em>${esc(x.note)}</em>` : ''}</span></li>`).join('')}</ul></div>` : '';
       const rw = t.reward ? `<button class="tk-reward rw-pulse" data-reward="${t.id}"><i class="ph-bold ph-gift"></i> عنده مكافأة</button>` : '';
-      return (c.length ? `<div class="tk-tags">${c.join('')}</div>` : '') + items + rw;
+      // طلب سفري من المنيو: أصنافه تحت رقمه
+      return (c.length ? `<div class="tk-tags">${c.join('')}</div>` : '') + (t.order ? dineLine(t.order) + orderBlock(t.order) : '') + items + rw;
     };
     $('wait-grid').innerHTML = waiting.map(t => `
       <article class="tk${freshIds.has(t.id) ? ' tile-new' : ''}"><div class="tk-in">

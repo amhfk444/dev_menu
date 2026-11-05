@@ -275,6 +275,8 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     // إضافات صفحة الانتظار: الصفحة تسأل عنها مرة وحدة لكل رقم (c=1)، مو مع كل تحديث كل 3 ثواني
     const live = ['waiting', 'ready'].includes(t.status) && !stale;
     const extras = req.query.c === '1' ? (live ? await waitExtras(store.id, t) : { chat: false, upsell: [], game: null, game_on: true }) : {};
+    // جاي من طلب سفري في المنيو: بعد ما يستلم يرجع للمنيو
+    if (req.query.c === '1') extras.from_menu = !!(await rest(`menu_orders?pager_ticket_id=eq.${t.id}&client_id=eq.${store.id}&select=id&limit=1`).catch(() => [])).length;
     // الطابور الحي: كم طلب قدامه، والوقت الباقي تقريباً (الصفحة تسأل كل 15 ثانية تقريباً بـ q=1)
     let queue;
     if (req.query.q === '1' && t.status === 'waiting' && !stale) {
@@ -507,3 +509,23 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
   throw new ApiError(404, 'هذا الطلب غير معروف، حدّث الصفحة وحاول مرة ثانية', 'UNKNOWN');
 });
 
+
+// طلب سفري من المنيو صار له رقم (الكاشير استلمه): نربط بطاقة النداء وبطاقة الولاء اللي في جوال العميل،
+// مثل «خذ رقمي» بالضبط، عشان يوصله «طلبك جاهز» من المحفظة وهو في تطبيق ثاني
+async function linkOrderCards(storeId, ticketToken, cards) {
+  if (!cards || (!cards.lt && !(cards.pc || []).length)) return;
+  const row = (await rest(`clients?id=eq.${Number(storeId)}&select=id,name,client_slug,logo_url,business_type,accent_color,parent_id`).catch(() => []))[0];
+  if (!row) return;
+  row.display_name = row.name;
+  if (row.parent_id) { const root = (await rest(`clients?id=eq.${Number(row.parent_id)}&select=name`).catch(() => []))[0]; if (root && root.name) row.display_name = root.name; }
+  if (cards.lt && TOKEN_RE.test(cards.lt)) {
+    const home = await loyaltyHome(row.id);
+    const card = (await rest(`loyalty_cards?token=eq.${q(cards.lt)}&client_id=eq.${home}&select=id`).catch(() => []))[0];
+    if (card) await rest(`pager_tickets?token=eq.${q(ticketToken)}&client_id=eq.${row.id}`, { method: 'PATCH', body: { loyalty_card_id: card.id } }).catch(() => {});
+  }
+  for (const pc of (cards.pc || []).filter(t => TOKEN_RE.test(t)).slice(0, 4)) {
+    const r = await linkPagerCard(row, ticketToken, pc).catch(e => { console.error('ORDER_CARD', e.message); return null; });
+    if (r) break;
+  }
+}
+module.exports.linkOrderCards = linkOrderCards;

@@ -31,6 +31,10 @@ create table if not exists public.menu_orders (
 );
 alter table public.menu_orders add column if not exists code text;
 alter table public.menu_orders add column if not exists dine text;
+-- السفري: لما يستلمه الكاشير ياخذ العميل رقم بيجر (يرن لما يجهز)، وتنربط بطاقة النداء اللي في جواله (cards)
+alter table public.menu_orders add column if not exists pager_ticket_id bigint references public.pager_tickets(id) on delete set null;
+alter table public.menu_orders add column if not exists cards jsonb;
+create index if not exists menu_orders_ticket_idx on public.menu_orders (pager_ticket_id) where pager_ticket_id is not null;
 create index if not exists menu_orders_client_idx on public.menu_orders (client_id, created_at desc);
 alter table public.menu_orders enable row level security;
 revoke all on table public.menu_orders from anon, authenticated;

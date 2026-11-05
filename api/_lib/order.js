@@ -178,7 +178,9 @@ async function buildOrder(store, b) {
       client_id: store.id, token: require('crypto').randomBytes(18).toString('base64url'), mode: 'table',
       dine: b.dine === 'out' ? 'out' : 'in', table_no: b.dine === 'out' ? null : cleanTable(b.table),
       items: priced.lines, note: cleanNote(b.note, 300), total: priced.total, discount: priced.discount, coupon_code: coupon ? coupon.code : null,
-      device: dev, lang: b.lang === 'en' ? 'en' : 'ar'
+      device: dev, lang: b.lang === 'en' ? 'en' : 'ar',
+      // السفري: بطاقة النداء وبطاقة الولاء المحفوظة في جواله (تنربط برقم البيجر لما يستلمه الكاشير)
+      ...(b.dine === 'out' ? { cards: { pc: (Array.isArray(b.pc) ? b.pc : []).map(String).filter(t => DEV_RE.test(t)).slice(0, 4), lt: DEV_RE.test(String(b.lt || '')) ? String(b.lt) : null } } : {})
     }
   };
 }
@@ -195,7 +197,22 @@ async function saveOrder(built) {
   return o;
 }
 // الطلب كما يطلع للكاشير وللعميل
-const publicOrder = (o) => o && ({ id: o.id, code: o.code || null, dine: o.dine === 'out' ? 'out' : 'in', table_no: o.table_no, items: o.items || [], note: o.note, total: Number(o.total) || 0,
+const publicOrder = (o) => o && ({ id: o.id, code: o.code || null, pager: !!o.pager_ticket_id, dine: o.dine === 'out' ? 'out' : 'in', table_no: o.table_no, items: o.items || [], note: o.note, total: Number(o.total) || 0,
   discount: Number(o.discount) || 0, coupon_code: o.coupon_code || null, status: o.status, created_at: o.created_at, accepted_at: o.accepted_at || null, closed_at: o.closed_at || null });
 
-module.exports = { menuPromos, promoCovers, autoPrice, loadCoupon, priceCart, priceOrder, cleanNote, round2, orderMode, cleanTable, buildOrder, saveOrder, publicOrder, dayStart };
+// طلب سفري استلمه الكاشير: رقم بيجر للعميل (يرن لما يجهز)، وتنربط بطاقاته. المحل لازم عنده البيجر
+async function givePager(storeId, o) {
+  const { rpc } = require('./core');
+  const sid = Number(storeId);
+  if (o.dine !== 'out' || o.pager_ticket_id) return null;
+  const token = require('crypto').randomBytes(18).toString('base64url');
+  const res = await rpc('server_pager_take', { p_client_id: sid, p_token: token });
+  const t = (await rest(`pager_tickets?token=eq.${q(res.token)}&client_id=eq.${sid}`, { method: 'PATCH', prefer: 'return=representation', body: { lang: o.lang === 'en' ? 'en' : 'ar' } }))[0];
+  // لو استلمه كاشيرين بنفس اللحظة: واحد بس ينربط، والثاني ينلغى رقمه
+  const linked = await rest(`menu_orders?id=eq.${o.id}&pager_ticket_id=is.null`, { method: 'PATCH', prefer: 'return=representation', body: { pager_ticket_id: t.id } });
+  if (!linked.length) { await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { status: 'cancelled', closed_at: new Date().toISOString() } }); return null; }
+  await require('../pager').linkOrderCards(sid, t.token, o.cards).catch(e => console.error('ORDER_CARDS', e.message));
+  return t;
+}
+
+module.exports = { givePager, menuPromos, promoCovers, autoPrice, loadCoupon, priceCart, priceOrder, cleanNote, round2, orderMode, cleanTable, buildOrder, saveOrder, publicOrder, dayStart };
