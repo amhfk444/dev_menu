@@ -1608,5 +1608,6 @@
   "يطلع للزبون في: مكان صورة الخلفية، يتحرك. لو رفعته يطلع بدل الصورة.": "Customers see: a moving background instead of the image.",
   "يطلع للزبون في: المنيو وصفحة الروابط، والمساعد الذكي يجاوب منها لو سألوه متى تفتحون.": "Customers see: your menu and links page; the assistant uses it when asked about opening hours.",
   "يطلع للزبون في: زر \"موقعنا\" في المنيو، و\"زورونا\" في صفحة الروابط. ولو ما حطيت رابط تقييم، زر التقييم في البيجر يفتحه.": "Customers see: the \"Location\" button in your menu and \"Visit us\" on your links page. Without a review link, the pager review button opens it.",
-  "مثال:": "Example:"
+  "مثال:": "Example:",
+  "القائمة": "Catalog"
 }

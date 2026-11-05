@@ -19,6 +19,7 @@
 <link rel="stylesheet" href="/css/fonts.css">
 <link rel="stylesheet" href="/css/icons.css">
 <script src="js/api.js"></script>
+<script src="/js/sectors.js"></script>
 <script src="js/theme.js"></script>
 <script src="js/occasions.js"></script>
 
@@ -175,7 +176,7 @@
     // ينعرض لكل فرع في "فروعنا"، ويبقى هنا اللي يشمل الكل (بطاقة الولاء، الحسابات، التوصيل، الروابط)
     // 1) المنيو و 2) قائمة الانتظار
     const sv = multi ? { loyalty: (p.services || {}).loyalty } : (p.services || { menu: true });
-    if (sv.menu) out.push(linkBtn({ href: DM.storePage('menu', p.client_slug), label: 'عرض المنيو', sub: 'تصفّح الأصناف والأسعار', icon: 'ph-bold ph-fork-knife', primary: true, external: false }));
+    if (sv.menu) out.push(linkBtn({ href: DM.storePage('menu', p.client_slug), label: DMSectors.localize('عرض المنيو', p), sub: 'تصفّح الأصناف والأسعار', icon: DMSectors.isFood(p) ? 'ph-bold ph-fork-knife' : 'ph-bold ph-list', primary: true, external: false }));
     if (sv.pager) out.push(linkBtn({ href: DM.storePage('pager', p.client_slug), label: 'البيجر', sub: 'احصل على رقم انتظار وننبهك عند جاهزية طلبك', icon: 'ph-bold ph-bell', primary: true, external: false }));
     if (sv.loyalty) out.push(linkBtn({ href: DM.storePage('loyalty', p.client_slug), label: 'بطاقة الولاء', sub: 'اجمع الأختام واحصل على مكافأتك', icon: 'ph-bold ph-seal-check', external: false }));
     if (!multi && p.waitlist_open === true) out.push(linkBtn({ href: DM.storePage('waitlist', p.client_slug), label: 'انضم لقائمة الانتظار', sub: 'سجّل اسمك وننبهك عند حلول دورك', icon: 'ph-bold ph-hourglass-medium', external: false }));
@@ -228,7 +229,7 @@
       const btns = [
         br.phone ? `<a href="tel:${esc(br.phone)}" class="br-btn"><i class="ph-bold ph-phone"></i> اتصل واطلب</a>`
           : br.whatsapp ? `<a href="https://wa.me/${esc(br.whatsapp)}" target="_blank" rel="noopener" class="br-btn"><i class="ph-bold ph-whatsapp-logo"></i> اطلب واتساب</a>` : '',
-        br.menu ? `<a href="${esc(DM.storePage('menu', br.slug))}" class="br-btn"><i class="ph-bold ph-fork-knife"></i> المنيو</a>` : '',
+        br.menu ? `<a href="${esc(DM.storePage('menu', br.slug))}" class="br-btn"><i class="ph-bold ${DMSectors.isFood(p) ? 'ph-fork-knife' : 'ph-list'}"></i> ${DMSectors.localize('المنيو', p)}</a>` : '',
         loc ? `<a href="${esc(loc)}" target="_blank" rel="noopener" class="br-btn"><i class="ph-bold ph-map-pin"></i> الموقع</a>` : ''
       ].join('');
       return `<div class="branch"><span class="branch-name"><i class="ph-bold ph-storefront"></i> ${esc(br.name)}</span>${btns ? `<span class="branch-btns">${btns}</span>` : ''}</div>`;

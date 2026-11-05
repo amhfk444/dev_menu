@@ -251,5 +251,21 @@
   "لا تشمل بطاقة النداء في المحفظة والرسائل وصفحة الروابط. ولتجربة كل المميزات مجاناً لمدة {n} يوماً اختر باقة مدفوعة.": "Doesn't include the wallet pager card, messages or the links page. To try every feature free for {n} days, pick a paid plan.",
   "{n} رقم شهرياً لفرع واحد": "{n} numbers a month for one branch",
   "لا يلزمك الدفع الآن. الفرع الإضافي: رسوم": "No payment needed now. Extra branch:",
-  "بالشهر + سعر مميزاته.": "/month + its features."
+  "بالشهر + سعر مميزاته.": "/month + its features.",
+  "لكل نشاط": "For every business",
+  "ليس للمطاعم فقط.": "Not just for restaurants.",
+  "يناسب كل منشأة تخدم عملاء.": "It fits every business that serves customers.",
+  "قائمة أسعارك أو منتجاتك في رابط واحد ورمز QR، يتصفحها العميل ويطلب منها مباشرة، دون متجر إلكتروني ودون تطبيق. وتظهر المصطلحات حسب نشاطك: «منتج» و«القائمة» بدلاً من «طبق» و«المنيو».": "Your prices or products in one link and QR code. Customers browse and order directly, with no online store and no app. Wording follows your business: \"item\" and \"catalog\" instead of \"dish\" and \"menu\".",
+  "المطاعم والمقاهي": "Restaurants and cafés",
+  "منيو بالصور، وطلبات تصل إلى شاشة الكاشير، وتنبيه العميل على جواله عند جاهزية طلبه.": "A photo menu, orders that reach the cashier screen, and a phone alert when the order is ready.",
+  "الصالونات ومراكز التجميل": "Salons and beauty centers",
+  "قائمة الخدمات وأسعارها، وقائمة انتظار تنبّه العميل عند حلول دوره، وبطاقة ولاء تعيده إليك.": "Your services and prices, a waitlist that alerts customers when it's their turn, and a loyalty card that brings them back.",
+  "مغاسل السيارات": "Car washes",
+  "باقات الغسيل وأسعارها، ويصل التنبيه إلى جوال العميل عند جاهزية سيارته، فينتظر براحته.": "Wash packages and prices, and a phone alert when the car is ready, so customers wait in comfort.",
+  "محلات الورود والهدايا": "Flower and gift shops",
+  "كتالوج منتجاتك بالصور والأسعار، ويصلك الطلب مرتباً للاستلام من المحل أو عبر واتساب.": "A photo catalog with prices, and tidy orders for in-store pickup or via WhatsApp.",
+  "الأسر المنتجة": "Home businesses",
+  "قائمة منتجاتك في رابط واحد تضعه في حسابك على إنستقرام، بدلاً من الرد على كل عميل بالأسعار.": "All your products in one link for your Instagram bio, instead of replying to every customer with prices.",
+  "العيادات والمغاسل ومراكز الخدمة": "Clinics, laundries and service centers",
+  "قائمة الخدمات والأسعار، وتنظيم الانتظار، وتنبيه العميل عند حلول دوره أو جاهزية طلبه.": "Services and prices, an organized waitlist, and an alert when it's the customer's turn or the order is ready."
 }

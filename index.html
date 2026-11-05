@@ -97,6 +97,11 @@
   .prod li i { color: #047857; margin-top: 4px; font-size: 13px; }
   .prod .from { margin-top: auto; padding-top: 14px; border-top: 1px dashed var(--line); font-size: 13px; font-weight: 600; color: var(--muted); }
   .prod .from b { font-size: 20px; color: var(--ink); }
+  /* يناسب كل نشاط */
+  .biz { background: #fff; border-radius: 12px; box-shadow: var(--shadow-card); padding: 20px; display: flex; gap: 14px; align-items: flex-start; }
+  .biz-ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 21px; flex-shrink: 0; background: #f2efe8; color: var(--ink); }
+  .biz h3 { font-size: 16.5px; font-weight: 700; margin-bottom: 4px; }
+  .biz p { font-size: 13.5px; line-height: 1.75; color: var(--muted); }
 
   /* كيف يعمل */
   .step-row { display: flex; gap: 16px; align-items: flex-start; padding: 18px 0; border-bottom: 1px solid var(--line); }
@@ -343,6 +348,25 @@
         </ul>
         <p class="from"><b dir="ltr" data-price="waitlist">&#x20C1; 29</b> بالشهر</p>
       </article>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ يناسب كل نشاط ═══════════ -->
+<section id="sectors" class="pb-16 md:pb-24">
+  <div class="wrap">
+    <div class="max-w-2xl mb-8 reveal">
+      <p class="pill mb-3"><i class="ph-bold ph-storefront"></i> لكل نشاط</p>
+      <h2 class="h2">ليس للمطاعم فقط. <em>يناسب كل منشأة تخدم عملاء.</em></h2>
+      <p class="sub mt-4">قائمة أسعارك أو منتجاتك في رابط واحد ورمز QR، يتصفحها العميل ويطلب منها مباشرة، دون متجر إلكتروني ودون تطبيق. وتظهر المصطلحات حسب نشاطك: «منتج» و«القائمة» بدلاً من «طبق» و«المنيو».</p>
+    </div>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <article class="biz reveal"><span class="biz-ic"><i class="ph-bold ph-coffee"></i></span><div><h3>المطاعم والمقاهي</h3><p>منيو بالصور، وطلبات تصل إلى شاشة الكاشير، وتنبيه العميل على جواله عند جاهزية طلبه.</p></div></article>
+      <article class="biz reveal"><span class="biz-ic"><i class="ph-bold ph-scissors"></i></span><div><h3>الصالونات ومراكز التجميل</h3><p>قائمة الخدمات وأسعارها، وقائمة انتظار تنبّه العميل عند حلول دوره، وبطاقة ولاء تعيده إليك.</p></div></article>
+      <article class="biz reveal"><span class="biz-ic"><i class="ph-bold ph-car"></i></span><div><h3>مغاسل السيارات</h3><p>باقات الغسيل وأسعارها، ويصل التنبيه إلى جوال العميل عند جاهزية سيارته، فينتظر براحته.</p></div></article>
+      <article class="biz reveal"><span class="biz-ic"><i class="ph-bold ph-flower-tulip"></i></span><div><h3>محلات الورود والهدايا</h3><p>كتالوج منتجاتك بالصور والأسعار، ويصلك الطلب مرتباً للاستلام من المحل أو عبر واتساب.</p></div></article>
+      <article class="biz reveal"><span class="biz-ic"><i class="ph-bold ph-basket"></i></span><div><h3>الأسر المنتجة</h3><p>قائمة منتجاتك في رابط واحد تضعه في حسابك على إنستقرام، بدلاً من الرد على كل عميل بالأسعار.</p></div></article>
+      <article class="biz reveal"><span class="biz-ic"><i class="ph-bold ph-first-aid"></i></span><div><h3>العيادات والمغاسل ومراكز الخدمة</h3><p>قائمة الخدمات والأسعار، وتنظيم الانتظار، وتنبيه العميل عند حلول دوره أو جاهزية طلبه.</p></div></article>
     </div>
   </div>
 </section>
