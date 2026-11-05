@@ -386,6 +386,7 @@
       <button data-nav="messages" data-needs="pager|loyalty" data-free-hide class="nav-item"><i class="ph-bold ph-paper-plane-tilt"></i> الرسائل</button>
       <p class="px-3 pt-4 pb-1 text-[11px] text-ink font-semibold">خدماتك</p>
       <button data-nav="menu" class="nav-item"><i class="ph-bold ph-fork-knife"></i> المنيو <span id="nav-count" class="mr-auto text-[11px] px-2 py-0.5 rounded-full">0</span></button>
+      <button data-nav="pagerset" data-free-hide class="nav-item"><i class="ph-bold ph-bell-simple-ringing"></i> البيجر</button>
       <a href="pager-desk.html" data-feature="pager" onclick="return openPagerDesk(this)" class="nav-item"><i class="ph-bold ph-bell"></i> <span id="nav-desk-label">شاشة البيجر</span></a>
       <button data-nav="waitlist" class="nav-item"><i class="ph-bold ph-hourglass-medium"></i> قائمة الانتظار <span id="nav-waitlist" class="mr-auto hidden text-[11px] bg-amber-400 text-black px-2 py-0.5 rounded-full font-black">0</span></button>
       <button data-nav="loyalty" class="nav-item"><i class="ph-bold ph-seal-check"></i> بطاقة الولاء</button>
@@ -602,6 +603,185 @@
     <button onclick="switchTab('coupons')" id="tab-coupons" class="tab-btn px-5 py-2.5 rounded-xl border text-[14px] font-medium transition flex items-center gap-2">
       <i class="ph-bold ph-ticket"></i> الخصومات
     </button>
+    <button onclick="switchTab('msettings')" id="tab-msettings" class="tab-btn px-5 py-2.5 rounded-xl border text-[14px] font-medium transition flex items-center gap-2">
+      <i class="ph-bold ph-gear-six"></i> الإعدادات
+    </button>
+  </div>
+
+  <!-- إعدادات المنيو: طرق الطلب، المساعد، السعرات، العملة، الإعلان، المناسبات. وجوال المعاينة جنبها -->
+  <div id="section-msettings" class="hidden">
+    <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_auto] gap-6 items-start">
+      <div class="space-y-6 min-w-0">
+        <div class="pro-card p-5 space-y-3">
+          <h4 class="text-sm font-bold text-ink flex items-center gap-1.5"><i class="ph-bold ph-receipt text-emerald-600"></i> طرق الطلب</h4>
+        <div data-needs="menu" id="wa-orders-box" class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2.5">
+          <label id="wa-orders-label" class="flex items-start gap-2.5 cursor-pointer">
+            <input type="checkbox" id="info-wa-orders" onchange="saveWaOrders(this)" class="w-4 h-4 mt-0.5 accent-green-500 cursor-pointer disabled:cursor-not-allowed">
+            <span class="text-xs">
+              <b class="text-ink"><i class="ph-bold ph-whatsapp-logo text-green-600"></i> استقبال الطلبات عبر واتساب</b>
+              <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يظهر زر "اطلب عبر واتساب" في تفاصيل كل طبق، ويصل الطلب مباشرة إلى واتساب المنشأة.</span>
+            </span>
+          </label>
+          <div id="wa-orders-status" class="text-[11px]"></div>
+        </div>
+        <!-- الطلب من المنيو: يوصل لشاشة الكاشير (يتحفظ على طول) -->
+        <div data-needs="menu" id="mo-box" class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2.5">
+          <div>
+            <b class="text-xs text-ink"><i class="ph-bold ph-receipt"></i> الطلب من المنيو إلى شاشة الكاشير</b>
+            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يختار العميل الأصناف وكمياتها وملاحظاته من جواله، ويصل الطلب مباشرة إلى شاشة الكاشير دون الحاجة إلى واتساب. لا يُطلب من العميل اسمه ولا رقم جواله.</span>
+          </div>
+          <label class="flex items-start gap-2.5 cursor-pointer bg-white rounded-lg border border-brand/15 p-2.5">
+            <input type="checkbox" id="mo-on" class="w-4 h-4 mt-0.5 accent-green-600 cursor-pointer" onchange="saveOrderMode(this)">
+            <span class="text-xs"><b class="text-ink">تفعيل الطلب من المنيو</b><span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يُرسل العميل طلبه فيظهر عند الكاشير برمز الطلب (مثل A12)، وبرقم الطاولة إذا مسح رمز طاولته. يضغط الكاشير «استلمته» ثم «سلّمته»، ويرى العميل حالة طلبه في المنيو.</span></span>
+          </label>
+          <div id="mo-status" class="text-[11px]"></div>
+          <!-- QR لكل طاولة: رقم الطاولة داخل الرمز، فالعميل ما يكتبه -->
+          <div id="mo-tables" class="hidden bg-white rounded-lg border border-brand/15 p-3 space-y-2">
+            <b class="text-xs text-ink"><i class="ph-bold ph-qr-code"></i> رموز QR للطاولات</b>
+            <span class="block text-[11px] text-ink leading-relaxed">لكل طاولة رمز خاص بها يتضمن رقمها، فيمسحه العميل ويطلب دون أن يكتب رقم الطاولة. تُطبع على ورق A4، ست بطاقات في كل صفحة.</span>
+            <div class="flex flex-wrap items-end gap-2">
+              <label class="text-[11px] font-bold text-ink">من طاولة<input id="mo-t-from" type="number" min="1" max="999" value="1" inputmode="numeric" class="input-pro text-xs !w-20 block mt-1" dir="ltr"></label>
+              <label class="text-[11px] font-bold text-ink">إلى طاولة<input id="mo-t-to" type="number" min="1" max="999" value="10" inputmode="numeric" class="input-pro text-xs !w-20 block mt-1" dir="ltr"></label>
+              <button type="button" id="mo-t-btn" onclick="printTableQrs(this)" class="bg-brand text-cream font-bold px-3 py-2 rounded-lg text-[12px]"><i class="ph-bold ph-printer"></i> اطبع رموز الطاولات</button>
+            </div>
+          </div>
+        </div>
+        </div>
+        <div class="pro-card p-5 space-y-3">
+      <!-- إعدادات المنيو: تنحفظ مباشرة -->
+      <section data-needs="menu" class="space-y-3">
+        <h5 class="text-xs font-bold text-ink border-b border-ink/10 pb-1.5">إعدادات المنيو <span class="font-normal text-ink">(تنحفظ تلقائياً)</span></h5>
+        <label class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
+          <input type="checkbox" id="info-menu-chat" onchange="toggleMenuChat(this.checked)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
+          <span class="text-xs">
+            <b class="text-ink"><i class="ph-bold ph-sparkle text-amber-600"></i> المساعد الذكي في المنيو <span class="text-[11px] font-bold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded">تجريبي</span></b>
+            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">زر "اسأل المساعد" في المنيو: يجاوب زبونك عن الأسعار والسعرات والمكونات، ويقترح عليه حسب ذوقه وميزانيته، ويعرف أوقات عملك. يجاوب من منيو محلك بس، وأي سؤال ثاني يعتذر عنه.</span>
+            <span id="chat-usage" class="block text-[11px] font-bold text-ink mt-1.5"></span>
+          </span>
+        </label>
+        <label class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
+          <input type="checkbox" id="info-show-calories" onchange="toggleCalories(this.checked)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
+          <span class="text-xs">
+            <b class="text-ink"><i class="ph-bold ph-flame text-amber-600"></i> عرض السعرات الحرارية في المنيو</b>
+            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">عند الإيقاف: يختفي حقل السعرات من نموذج الأطباق، ولا تظهر السعرات للزبائن. السعرات المحفوظة تبقى ولا تنحذف.</span>
+          </span>
+        </label>
+        <div class="bg-brand/5 p-3 rounded-xl border border-brand/15">
+          <label for="info-currency" class="text-xs font-bold text-ink block mb-1.5"><i class="ph-bold ph-coins text-amber-600"></i> عملة المنيو</label>
+          <select id="info-currency" onchange="changeCurrency(this.value)" class="input-pro text-xs cursor-pointer"></select>
+          <span class="block text-[11px] text-ink mt-1 leading-relaxed">تظهر بجانب كل الأسعار في المنيو وفي رسائل طلبات واتساب. تغيير العملة ما يغيّر أرقام الأسعار نفسها.</span>
+        </div>
+      </section>
+        </div>
+    <div data-needs="menu" class="pro-card p-5 space-y-3">
+      <h4 class="text-xs font-bold text-ink flex items-center gap-1.5">
+        <i class="ph-bold ph-megaphone text-amber-700"></i> الرسائل الترويجية والعروض (تظهر أعلى المنيو للعملاء)
+      </h4>
+      <div id="promo-status" class="flex items-center gap-2 text-[11px]"></div>
+      <div class="flex flex-col sm:flex-row gap-2">
+        <div class="relative flex-1">
+          <input type="text" id="promo-message-input" maxlength="120" placeholder="مثال: خصم 20% على كل شي اليوم!" class="input-pro text-xs pl-14">
+          <span id="promo-counter" class="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-ink font-mono" dir="ltr">0/120</span>
+        </div>
+        <div class="flex gap-2 shrink-0">
+          <button type="button" id="promo-save-btn" onclick="updatePromoMessage()" class="flex-1 sm:flex-none bg-brand text-cream hover:bg-brand-dark px-5 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+            <i class="ph-bold ph-floppy-disk text-[11px]"></i> حفظ ونشر
+          </button>
+          <button type="button" id="promo-delete-btn" onclick="deletePromoMessage()" class="flex-1 sm:flex-none bg-red-500/10 hover:bg-red-500/20 text-red-600 border border-red-500/20 px-4 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+            <i class="ph-bold ph-trash text-[11px]"></i> حذف الإعلان
+          </button>
+        </div>
+      </div>
+    </div>
+        <!-- المناسبات والزينة -->
+        <div data-needs="menu" class="pro-card p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-brand/20 pb-2">
+            <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-magic-wand text-amber-600"></i> المناسبات والزينة</h3>
+            <span class="text-[11px] text-ink">زينة وتهنئة تظهر في المنيو تلقائياً خلال تواريخ المناسبة</span>
+          </div>
+          <div>
+            <p class="text-[11px] font-bold text-ink mb-2">أضف مناسبة</p>
+            <div id="occ-presets" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+          </div>
+          <div id="occ-list" class="space-y-2"></div>
+          <div id="occ-editor" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-4 bg-brand/5 border border-brand/15 rounded-2xl p-3.5">
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <p id="occ-editor-title" class="text-xs font-black text-ink"></p>
+                <button type="button" onclick="closeOccasionEditor()" class="text-[11px] font-bold text-ink hover:text-ink">إغلاق <i class="ph-bold ph-x"></i></button>
+              </div>
+              <div>
+                <label class="text-xs font-semibold text-ink block mb-1">اسم المناسبة *</label>
+                <input type="text" id="occ-title" maxlength="40" oninput="occDraft().title=this.value; renderOccasionList()" class="input-pro text-xs">
+              </div>
+              <div>
+                <label class="text-xs font-semibold text-ink block mb-1">نص التهنئة <span class="text-ink">(اختياري)</span></label>
+                <input type="text" id="occ-greeting" maxlength="60" oninput="occDraft().greeting=this.value; renderOccasionPreview()" class="input-pro text-xs">
+              </div>
+              <div class="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label class="text-xs font-semibold text-ink block mb-1">من</label>
+                  <input type="date" id="occ-start" onchange="occDraft().starts_on=this.value; renderOccasionList()" class="input-pro text-xs" dir="ltr">
+                </div>
+                <div>
+                  <label class="text-xs font-semibold text-ink block mb-1">إلى</label>
+                  <input type="date" id="occ-end" onchange="occDraft().ends_on=this.value; renderOccasionList()" class="input-pro text-xs" dir="ltr">
+                </div>
+              </div>
+              <button type="button" onclick="startOccasionToday()" class="text-[11px] font-bold bg-brand/10 border border-brand/45 hover:bg-brand/10 text-ink px-2.5 py-1.5 rounded-lg"><i class="ph-bold ph-lightning text-amber-600"></i> ابدأ من اليوم</button>
+              <div id="occ-branches-wrap" class="hidden bg-emerald-500/5 border border-emerald-600/20 rounded-xl p-2.5">
+                <p class="text-[11px] font-bold text-ink mb-1"><i class="ph-bold ph-copy text-emerald-700"></i> انسخها لفروع ثانية عند الحفظ</p>
+                <div id="occ-branches" class="flex flex-wrap gap-1.5"></div>
+                <p class="text-[11px] text-ink mt-1">تنسخ بنفس الإعدادات والملصقات، وبعدها تعدّلها في كل فرع لحاله. النسخ مرة ثانية يستبدل النسخة السابقة.</p>
+              </div>
+              <p id="occ-date-hint" class="hidden text-[11px] text-amber-800 bg-amber-500/10 border border-amber-500/25 rounded-lg px-2.5 py-1.5"><i class="ph-bold ph-info"></i> التاريخ مقترح حسب تقويم أم القرى، وممكن يختلف يوم حسب رؤية الهلال. عدّله إذا لزم.</p>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="text-[11px] font-bold text-ink">الملصقات <span class="text-ink font-normal">(حتى 6: من مكتبتنا أو ارفع ملصقك، ونشيل خلفيته تلقائياً)</span></p>
+                  <label id="occ-upload-btn" class="shrink-0 cursor-pointer text-[11px] font-bold bg-white border border-brand/20 hover:bg-brand/10 text-ink px-2.5 py-1.5 rounded-lg transition">
+                    <i class="ph-bold ph-upload-simple text-[10px]"></i> رفع ملصق
+                    <input type="file" id="occ-sticker-file" accept="image/png,image/webp,image/gif,image/jpeg" class="hidden" onchange="uploadSticker(this)">
+                  </label>
+                </div>
+                <!-- إزالة الخلفية: قبل / بعد -->
+                <div id="bg-panel" class="hidden bg-white border border-brand/20 rounded-2xl p-3 space-y-2.5">
+                  <p id="bg-status" class="text-[11px] font-bold text-ink flex items-center gap-2"></p>
+                  <div id="bg-progress" class="hidden h-1.5 bg-brand/10 rounded-full overflow-hidden"><div id="bg-progress-bar" class="h-full bg-brand transition-all" style="width:0%"></div></div>
+                  <div id="bg-compare" class="hidden grid grid-cols-2 gap-2">
+                    <figure class="space-y-1"><div class="bg-checker rounded-xl h-28 flex items-center justify-center p-2"><img id="bg-before" alt="" class="max-h-full max-w-full object-contain"></div><figcaption class="text-[11px] text-center text-ink">الأصلية</figcaption></figure>
+                    <figure class="space-y-1"><div class="bg-checker rounded-xl h-28 flex items-center justify-center p-2 ring-2 ring-brand"><img id="bg-after" alt="" class="max-h-full max-w-full object-contain"></div><figcaption class="text-[11px] text-center text-ink font-bold">بدون خلفية</figcaption></figure>
+                  </div>
+                  <div id="bg-actions" class="hidden grid grid-cols-2 gap-2">
+                    <button type="button" data-bg="cut" class="bg-brand text-cream hover:bg-brand-dark font-bold py-2 rounded-xl text-[11px]">استخدم بدون خلفية</button>
+                    <button type="button" data-bg="orig" class="bg-brand/10 hover:bg-brand/15 text-ink font-bold py-2 rounded-xl text-[11px] border border-brand/25">استخدم الأصلية</button>
+                  </div>
+                  <button type="button" data-bg="cancel" class="w-full text-[11px] font-bold text-ink hover:text-ink">إلغاء</button>
+                </div>
+                <div id="occ-stickers" class="space-y-2"></div>
+                <div class="space-y-1.5"><p class="text-[11px] font-bold text-ink">من مكتبتنا</p><div id="occ-library" class="grid grid-cols-5 gap-1.5"></div></div>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <p class="text-[11px] font-bold text-ink">معاينة</p>
+              <div id="occ-preview" class="relative overflow-hidden rounded-2xl border border-brand/20 h-72" style="background:var(--bg)">
+                <div id="occ-preview-header" class="relative text-center pt-10 space-y-2">
+                  <img id="occ-preview-logo" src="images/logo.jpeg?v=2" alt="" class="relative z-[1] w-20 h-20 mx-auto rounded-full object-cover border-2" style="border-color:var(--line)">
+                  <p id="occ-preview-name" class="relative z-[1] text-sm font-black" style="color:var(--fg)"></p>
+                  <div id="occ-preview-greet" class="hidden relative z-[1]"></div>
+                </div>
+                <div class="absolute inset-x-4 bottom-4 space-y-2">
+                  <div class="h-9 rounded-xl" style="background:var(--surface);border:1px solid var(--surface-line)"></div>
+                  <div class="h-9 rounded-xl" style="background:var(--surface);border:1px solid var(--surface-line)"></div>
+                </div>
+              </div>
+              <button type="button" onclick="renderOccasionPreview()" class="w-full text-[11px] font-bold text-ink hover:text-ink"><i class="ph-bold ph-arrow-clockwise"></i> إعادة تشغيل الحركة</button>
+            </div>
+          </div>
+          <button onclick="saveOccasions()" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition">حفظ المناسبات</button>
+        </div>
+      </div>
+      <div id="menu-phone-slot" class="hidden xl:block xl:sticky xl:top-24"></div>
+    </div>
   </div>
 
   <!-- قسم المنتجات -->
@@ -817,7 +997,7 @@
   <div id="section-coupons" class="space-y-4 hidden">
     <div id="coupons-wa-warning" class="hidden rounded-2xl p-3.5 border bg-amber-500/10 border-amber-500/30 text-[11px] font-bold text-amber-800 flex flex-wrap items-center justify-between gap-2">
       <span><i class="ph-bold ph-info"></i> الكوبونات بكود تشتغل مع سلة الطلب، ففعّل "الطلب من المنيو" أو "استقبال الطلبات عبر واتساب". الخصم التلقائي يظهر في المنيو حتى بدونها.</span>
-      <button type="button" onclick="location.hash='settings'" class="bg-brand text-cream px-3 py-1.5 rounded-lg text-[11px] font-black">فتح الإعدادات</button>
+      <button type="button" onclick="openMenuSettings('mo-box')" class="bg-brand text-cream px-3 py-1.5 rounded-lg text-[11px] font-black">فتح إعدادات الطلب</button>
     </div>
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
       <form id="coupon-form" class="pro-card p-5 space-y-3.5 lg:col-span-5">
@@ -1673,6 +1853,147 @@
           </div>
         </div>
 
+      <section data-page="pagerset" class="hidden">
+        <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_auto] gap-6 items-start">
+          <div class="pro-card p-5 space-y-3 min-w-0">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <p class="text-[11px] text-ink leading-relaxed flex-1 min-w-[200px]">كل إعدادات البيجر مرتبة حسب رحلة العميل، وكل إعداد يوضح وين يطلع له.</p>
+              <a href="pager-desk.html" onclick="this.href='pager-desk.html'+location.search" target="_blank" rel="noopener" class="bg-brand text-cream font-bold px-3 py-2 rounded-lg text-[12px]"><i class="ph-bold ph-cash-register"></i> افتح شاشة الكاشير</a>
+            </div>
+      <!-- البيجر: مرتبة حسب رحلة الزبون، وكل إعداد عليه حالته ووين يطلع للزبون -->
+      <section data-needs="pager" data-free-hide class="space-y-3">
+        <div class="flex items-center justify-between gap-2 border-b border-ink/10 pb-1.5">
+          <h5 class="text-xs font-bold text-ink">البيجر</h5>
+          <a id="pg-preview" target="_blank" rel="noopener" class="text-[11px] font-bold text-ink underline"><i class="ph-bold ph-arrow-square-out"></i> شوف كيف يطلع للزبون</a>
+        </div>
+
+        <p class="text-[11px] font-black text-ink/70">قبل ما ياخذ رقم</p>
+        <!-- بطاقة النداء: تختفي لو الولاء شغّال ويختم مع البيجر (النداء يوصل من بطاقة الولاء) -->
+        <div id="info-pager-card" class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-3">
+          <div class="flex flex-wrap items-start justify-between gap-2">
+            <span class="text-xs">
+              <b class="text-ink"><i class="ph-bold ph-map-pin text-amber-600"></i> موقع المحل</b>
+              <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يطلع للزبون في: شاشة القفل، لما يقرب من محلك تطلع له بطاقة النداء.</span>
+            </span>
+            <span id="pg-st-pin"></span>
+          </div>
+          <button type="button" id="info-pin-btn" onclick="setStorePin()" class="bg-brand text-cream hover:bg-brand-dark px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-sm"><i class="ph-bold ph-crosshair"></i> حدد الموقع وأنت داخل المحل</button>
+          <div>
+            <label for="info-near" class="text-xs font-semibold text-ink block mb-1">رسالة شاشة القفل <span id="info-near-count" class="text-ink font-normal">0/80</span></label>
+            <div class="flex gap-2">
+              <input type="text" id="info-near" maxlength="80" class="input-pro text-xs flex-1" oninput="document.getElementById('info-near-count').textContent = this.value.length + '/80'">
+              <button type="button" onclick="saveNearText()" class="bg-brand text-cream hover:bg-brand-dark px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-sm"><i class="ph-bold ph-floppy-disk"></i> احفظ</button>
+            </div>
+            <p class="text-[11px] text-ink mt-1 leading-relaxed">لو تركتها فاضية تطلع الرسالة الرمادية اللي في الخانة.</p>
+          </div>
+        </div>
+
+        <p class="text-[11px] font-black text-ink/70 pt-1">وهو ينتظر طلبه</p>
+        <label class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
+          <input type="checkbox" id="info-pager-car" onchange="togglePagerCar(this.checked)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
+          <span class="text-xs flex-1">
+            <b class="text-ink"><i class="ph-bold ph-car text-amber-600"></i> تسليم الطلب للسيارة</b>
+            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يطلع للزبون في: صفحة رقمه، يختار لون سيارته ونوعها. وتطلع للموظف تحت الرقم في شاشة الكاشير.</span>
+          </span>
+          <span id="pg-st-car"></span>
+        </label>
+        <label class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
+          <input type="checkbox" id="info-kiosk-call" onchange="toggleKioskCall(this.checked)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
+          <span class="text-xs flex-1">
+            <b class="text-ink"><i class="ph-bold ph-device-tablet text-amber-600"></i> الأرقام الجاهزة على شاشة الزبون</b>
+            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يطلع للزبون في: شاشة التابلت عندك، رقمه كبير لما يجهز طلبه.</span>
+          </span>
+          <span id="pg-st-kiosk"></span>
+        </label>
+
+        <label data-needs="menu" class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
+          <input type="checkbox" id="info-pager-upsell" onchange="togglePagerUpsell(this.checked)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
+          <span class="text-xs flex-1">
+            <b class="text-ink"><i class="ph-bold ph-plus-circle text-amber-600"></i> أضف لطلبك</b>
+            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يظهر للزبون في صفحة رقمه أثناء الانتظار زر «تبي تزيد على طلبك؟» يفتح المنيو، فيختار الحجم والعدد ويكتب ملاحظة، ثم يعرض على الكاشير شاشة واضحة بالأصناف والمجموع ليضيفها في نظام المبيعات. ولا يحتاج ذلك جهازاً إضافياً، وإن كانت شاشة الكاشير مفتوحة تظهر الإضافة تحت الرقم أيضاً.</span>
+          </span>
+          <span id="pg-st-upsell"></span>
+        </label>
+        <label data-needs="chat" class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
+          <input type="checkbox" id="info-pager-chat" onchange="togglePagerFlag('pager_chat', this)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
+          <span class="text-xs flex-1">
+            <b class="text-ink"><i class="ph-bold ph-chat-circle-dots text-amber-600"></i> المساعد الذكي في صفحة الانتظار</b>
+            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يظهر للزبون في صفحة رقمه زر «اسأل عن طلبك»: يجيبه عن موعد جاهزية طلبه وعدد الطلبات قبله وعن أصناف المنيو، ويعتمد الوقت الذي يحدده الكاشير. يُحتسب من رصيد المساعد الذكي.</span>
+          </span>
+          <span id="pg-st-chat"></span>
+        </label>
+        <label class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
+          <input type="checkbox" id="info-pager-game" onchange="togglePagerFlag('pager_game', this)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
+          <span class="text-xs flex-1">
+            <b class="text-ink"><i class="ph-bold ph-squares-four text-amber-600"></i> لعبة الانتظار</b>
+            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يظهر للزبون في صفحة رقمه: لعبة «خمّن الطبق» من صور أطباقك (خمس صور مقرّبة يختار اسمها، ويستطيع إضافة الطبق لطلبه)، وإن كانت الأطباق ذات الصور أقل من ستة تظهر لعبة مطابقة البطاقات.</span>
+          </span>
+          <span id="pg-st-gameon"></span>
+        </label>
+        <div id="info-game-box" class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2.5">
+          <div class="flex flex-wrap items-start justify-between gap-2">
+            <span class="text-xs">
+              <b class="text-ink"><i class="ph-bold ph-trophy text-amber-600"></i> جائزة لعبة الانتظار</b>
+              <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يظهر للزبون في صفحة رقمه: من يحقق شرط اللعبة (عدد الإجابات الصحيحة في «خمّن الطبق»، أو عدد الحركات في المطابقة) يحصل على الجائزة بعد إدخال رقم فاتورته، ويظهر بجانب رقمه في شاشة الكاشير «فاز باللعبة» مع رقم الفاتورة. ولا تُمنح الجائزة لنفس الفاتورة مرتين، ولا لنفس الجوال أكثر من مرة في اليوم. اترك الخانة فارغة لإيقاف الجائزة.</span>
+            </span>
+            <span id="pg-st-game"></span>
+          </div>
+          <input type="text" id="info-game-reward" maxlength="80" placeholder="مثال: كوكيز مجانية مع طلبك" class="input-pro text-xs">
+          <div class="flex flex-wrap items-center gap-2">
+            <label for="info-quiz-need" class="text-xs font-semibold text-ink">خمّن الطبق: الإجابات الصحيحة للفوز</label>
+            <select id="info-quiz-need" class="input-pro text-xs !w-auto">
+              <option value="3">3 من 5</option><option value="4">4 من 5</option><option value="5">5 من 5</option>
+            </select>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <label for="info-game-moves" class="text-xs font-semibold text-ink">لعبة المطابقة: أقصى عدد حركات</label>
+            <select id="info-game-moves" class="input-pro text-xs !w-auto">
+              <option value="14">14 (صعبة)</option><option value="16">16</option><option value="18">18</option><option value="20">20 (متوسطة)</option><option value="24">24</option><option value="28">28 (سهلة)</option>
+            </select>
+            <button type="button" onclick="saveGameReward()" class="bg-brand text-cream hover:bg-brand-dark px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-sm"><i class="ph-bold ph-floppy-disk"></i> احفظ</button>
+          </div>
+        </div>
+
+        <p class="text-[11px] font-black text-ink/70 pt-1">بعد ما يستلم طلبه</p>
+        <div class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2.5">
+          <div class="flex flex-wrap items-start justify-between gap-2">
+            <span class="text-xs">
+              <b class="text-ink"><i class="ph-bold ph-star text-amber-600"></i> تقييمك في قوقل ماب</b>
+              <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يطلع للزبون في: شاشة "بالعافية"، زر "قيّمنا على قوقل ماب". تلقى الرابط في Google Business ← "اطلب تقييمات".</span>
+            </span>
+            <span id="pg-st-review"></span>
+          </div>
+          <div class="flex gap-2">
+            <input type="url" id="info-review" placeholder="https://g.page/r/.../review" class="input-pro text-xs flex-1" dir="ltr">
+            <button type="button" onclick="saveReviewLink()" class="bg-brand text-cream hover:bg-brand-dark px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-sm"><i class="ph-bold ph-floppy-disk"></i> احفظ</button>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-start justify-between gap-2 bg-brand/5 p-3 rounded-xl border border-brand/15">
+          <span class="text-xs flex-1">
+            <b class="text-ink"><i class="ph-bold ph-share-network text-amber-600"></i> حساباتك في التواصل</b>
+            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يطلع للزبون في: شاشة "بالعافية" تحت التقييم، "تابعنا" بانستقرام وتيك توك وسناب وموقعك.</span>
+            <button type="button" onclick="location.hash='settings'; setTimeout(() => document.getElementById('social-card').scrollIntoView({ behavior: 'smooth', block: 'center' }), 150)" class="mt-2 text-[11px] font-bold text-ink underline">عدّل حساباتك (هوية المنشأة)</button>
+          </span>
+          <span id="pg-st-social"></span>
+        </div>
+      </section>
+
+          </div>
+          <div id="pager-phone-slot" class="hidden xl:block xl:sticky xl:top-24"></div>
+        </div>
+      </section>
+
+      <div id="phone-park" class="hidden">
+    <!-- معاينة صفحة الانتظار: جوال ثابت يشوف فيه صاحب المحل اللي يطلع للزبون، ويتحدث مع كل إعداد -->
+    <div id="pg-phone-wrap" data-needs="pager|menu" data-free-hide class="hidden xl:block xl:sticky xl:top-24 space-y-2">
+      <div class="flex items-center justify-between gap-2 px-1">
+        <p id="pg-phone-title" class="text-xs font-bold text-ink"><i class="ph-bold ph-device-mobile"></i> كما يراها الزبون وهو ينتظر</p>
+        <button type="button" onclick="reloadPagerPhone()" class="text-[11px] font-bold text-ink underline"><i class="ph-bold ph-arrow-clockwise"></i> تحديث</button>
+      </div>
+      <div class="ly-phone pg-phone"><div class="ly-phone-screen pg-phone-screen"><span class="ly-island"></span><iframe id="pg-phone" title="معاينة صفحة الانتظار" loading="lazy"></iframe></div></div>
+      <p id="pg-phone-note" class="text-[11px] text-ink text-center leading-relaxed">رقم تجريبي للمعاينة فقط، ولا يُسجَّل عندك.</p>
+    </div>
+      </div>
       <section data-page="settings" class="hidden space-y-6">
         <!-- رابط المتجر المختصر -->
         <div class="pro-card p-5 space-y-3">
@@ -1801,93 +2122,7 @@
             <a id="appearance-links-preview" href="#" target="_blank" rel="noopener" class="sm:w-44 text-center bg-brand/10 hover:bg-brand/15 text-ink font-bold py-2.5 rounded-xl text-xs border border-brand/25 transition"><i class="ph-bold ph-link-simple text-[11px]"></i> معاينة صفحة الروابط</a>
           </div>
         </div>
-        <!-- المناسبات والزينة -->
-        <div data-needs="menu" class="pro-card p-5 space-y-4">
-          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-brand/20 pb-2">
-            <h3 class="text-xs font-bold text-ink flex items-center gap-2"><i class="ph-bold ph-magic-wand text-amber-600"></i> المناسبات والزينة</h3>
-            <span class="text-[11px] text-ink">زينة وتهنئة تظهر في المنيو تلقائياً خلال تواريخ المناسبة</span>
-          </div>
-          <div>
-            <p class="text-[11px] font-bold text-ink mb-2">أضف مناسبة</p>
-            <div id="occ-presets" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
-          </div>
-          <div id="occ-list" class="space-y-2"></div>
-          <div id="occ-editor" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-4 bg-brand/5 border border-brand/15 rounded-2xl p-3.5">
-            <div class="space-y-3">
-              <div class="flex items-center justify-between">
-                <p id="occ-editor-title" class="text-xs font-black text-ink"></p>
-                <button type="button" onclick="closeOccasionEditor()" class="text-[11px] font-bold text-ink hover:text-ink">إغلاق <i class="ph-bold ph-x"></i></button>
-              </div>
-              <div>
-                <label class="text-xs font-semibold text-ink block mb-1">اسم المناسبة *</label>
-                <input type="text" id="occ-title" maxlength="40" oninput="occDraft().title=this.value; renderOccasionList()" class="input-pro text-xs">
-              </div>
-              <div>
-                <label class="text-xs font-semibold text-ink block mb-1">نص التهنئة <span class="text-ink">(اختياري)</span></label>
-                <input type="text" id="occ-greeting" maxlength="60" oninput="occDraft().greeting=this.value; renderOccasionPreview()" class="input-pro text-xs">
-              </div>
-              <div class="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label class="text-xs font-semibold text-ink block mb-1">من</label>
-                  <input type="date" id="occ-start" onchange="occDraft().starts_on=this.value; renderOccasionList()" class="input-pro text-xs" dir="ltr">
-                </div>
-                <div>
-                  <label class="text-xs font-semibold text-ink block mb-1">إلى</label>
-                  <input type="date" id="occ-end" onchange="occDraft().ends_on=this.value; renderOccasionList()" class="input-pro text-xs" dir="ltr">
-                </div>
-              </div>
-              <button type="button" onclick="startOccasionToday()" class="text-[11px] font-bold bg-brand/10 border border-brand/45 hover:bg-brand/10 text-ink px-2.5 py-1.5 rounded-lg"><i class="ph-bold ph-lightning text-amber-600"></i> ابدأ من اليوم</button>
-              <div id="occ-branches-wrap" class="hidden bg-emerald-500/5 border border-emerald-600/20 rounded-xl p-2.5">
-                <p class="text-[11px] font-bold text-ink mb-1"><i class="ph-bold ph-copy text-emerald-700"></i> انسخها لفروع ثانية عند الحفظ</p>
-                <div id="occ-branches" class="flex flex-wrap gap-1.5"></div>
-                <p class="text-[11px] text-ink mt-1">تنسخ بنفس الإعدادات والملصقات، وبعدها تعدّلها في كل فرع لحاله. النسخ مرة ثانية يستبدل النسخة السابقة.</p>
-              </div>
-              <p id="occ-date-hint" class="hidden text-[11px] text-amber-800 bg-amber-500/10 border border-amber-500/25 rounded-lg px-2.5 py-1.5"><i class="ph-bold ph-info"></i> التاريخ مقترح حسب تقويم أم القرى، وممكن يختلف يوم حسب رؤية الهلال. عدّله إذا لزم.</p>
-              <div class="space-y-2">
-                <div class="flex items-center justify-between gap-2">
-                  <p class="text-[11px] font-bold text-ink">الملصقات <span class="text-ink font-normal">(حتى 6: من مكتبتنا أو ارفع ملصقك، ونشيل خلفيته تلقائياً)</span></p>
-                  <label id="occ-upload-btn" class="shrink-0 cursor-pointer text-[11px] font-bold bg-white border border-brand/20 hover:bg-brand/10 text-ink px-2.5 py-1.5 rounded-lg transition">
-                    <i class="ph-bold ph-upload-simple text-[10px]"></i> رفع ملصق
-                    <input type="file" id="occ-sticker-file" accept="image/png,image/webp,image/gif,image/jpeg" class="hidden" onchange="uploadSticker(this)">
-                  </label>
-                </div>
-                <!-- إزالة الخلفية: قبل / بعد -->
-                <div id="bg-panel" class="hidden bg-white border border-brand/20 rounded-2xl p-3 space-y-2.5">
-                  <p id="bg-status" class="text-[11px] font-bold text-ink flex items-center gap-2"></p>
-                  <div id="bg-progress" class="hidden h-1.5 bg-brand/10 rounded-full overflow-hidden"><div id="bg-progress-bar" class="h-full bg-brand transition-all" style="width:0%"></div></div>
-                  <div id="bg-compare" class="hidden grid grid-cols-2 gap-2">
-                    <figure class="space-y-1"><div class="bg-checker rounded-xl h-28 flex items-center justify-center p-2"><img id="bg-before" alt="" class="max-h-full max-w-full object-contain"></div><figcaption class="text-[11px] text-center text-ink">الأصلية</figcaption></figure>
-                    <figure class="space-y-1"><div class="bg-checker rounded-xl h-28 flex items-center justify-center p-2 ring-2 ring-brand"><img id="bg-after" alt="" class="max-h-full max-w-full object-contain"></div><figcaption class="text-[11px] text-center text-ink font-bold">بدون خلفية</figcaption></figure>
-                  </div>
-                  <div id="bg-actions" class="hidden grid grid-cols-2 gap-2">
-                    <button type="button" data-bg="cut" class="bg-brand text-cream hover:bg-brand-dark font-bold py-2 rounded-xl text-[11px]">استخدم بدون خلفية</button>
-                    <button type="button" data-bg="orig" class="bg-brand/10 hover:bg-brand/15 text-ink font-bold py-2 rounded-xl text-[11px] border border-brand/25">استخدم الأصلية</button>
-                  </div>
-                  <button type="button" data-bg="cancel" class="w-full text-[11px] font-bold text-ink hover:text-ink">إلغاء</button>
-                </div>
-                <div id="occ-stickers" class="space-y-2"></div>
-                <div class="space-y-1.5"><p class="text-[11px] font-bold text-ink">من مكتبتنا</p><div id="occ-library" class="grid grid-cols-5 gap-1.5"></div></div>
-              </div>
-            </div>
-            <div class="space-y-2">
-              <p class="text-[11px] font-bold text-ink">معاينة</p>
-              <div id="occ-preview" class="relative overflow-hidden rounded-2xl border border-brand/20 h-72" style="background:var(--bg)">
-                <div id="occ-preview-header" class="relative text-center pt-10 space-y-2">
-                  <img id="occ-preview-logo" src="images/logo.jpeg?v=2" alt="" class="relative z-[1] w-20 h-20 mx-auto rounded-full object-cover border-2" style="border-color:var(--line)">
-                  <p id="occ-preview-name" class="relative z-[1] text-sm font-black" style="color:var(--fg)"></p>
-                  <div id="occ-preview-greet" class="hidden relative z-[1]"></div>
-                </div>
-                <div class="absolute inset-x-4 bottom-4 space-y-2">
-                  <div class="h-9 rounded-xl" style="background:var(--surface);border:1px solid var(--surface-line)"></div>
-                  <div class="h-9 rounded-xl" style="background:var(--surface);border:1px solid var(--surface-line)"></div>
-                </div>
-              </div>
-              <button type="button" onclick="renderOccasionPreview()" class="w-full text-[11px] font-bold text-ink hover:text-ink"><i class="ph-bold ph-arrow-clockwise"></i> إعادة تشغيل الحركة</button>
-            </div>
-          </div>
-          <button onclick="saveOccasions()" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-xs transition">حفظ المناسبات</button>
-        </div>
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+        <div class="grid grid-cols-1 gap-6 items-start">
     <!-- معلومات المنشأة -->
     <div class="pro-card p-5 space-y-5">
       <h4 class="text-sm font-bold text-ink flex items-center gap-1.5">
@@ -1909,216 +2144,10 @@
             <p class="text-[11px] text-ink leading-relaxed mt-1">يطلع للزبون في: زر "موقعنا" في المنيو، و"زورونا" في صفحة الروابط. ولو ما حطيت رابط تقييم، زر التقييم في البيجر يفتحه.</p>
           </div>
         </div>
-        <div data-needs="menu" id="wa-orders-box" class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2.5">
-          <label id="wa-orders-label" class="flex items-start gap-2.5 cursor-pointer">
-            <input type="checkbox" id="info-wa-orders" class="w-4 h-4 mt-0.5 accent-green-500 cursor-pointer disabled:cursor-not-allowed">
-            <span class="text-xs">
-              <b class="text-ink"><i class="ph-bold ph-whatsapp-logo text-green-600"></i> استقبال الطلبات عبر واتساب</b>
-              <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يظهر زر "اطلب عبر واتساب" في تفاصيل كل طبق، ويصل الطلب مباشرة إلى واتساب المنشأة.</span>
-            </span>
-          </label>
-          <div id="wa-orders-status" class="text-[11px]"></div>
-        </div>
-        <!-- الطلب من المنيو: يوصل لشاشة الكاشير (يتحفظ على طول) -->
-        <div data-needs="menu" id="mo-box" class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2.5">
-          <div>
-            <b class="text-xs text-ink"><i class="ph-bold ph-receipt"></i> الطلب من المنيو إلى شاشة الكاشير</b>
-            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يختار العميل الأصناف وكمياتها وملاحظاته من جواله، ويصل الطلب مباشرة إلى شاشة الكاشير دون الحاجة إلى واتساب. لا يُطلب من العميل اسمه ولا رقم جواله.</span>
-          </div>
-          <label class="flex items-start gap-2.5 cursor-pointer bg-white rounded-lg border border-brand/15 p-2.5">
-            <input type="checkbox" id="mo-on" class="w-4 h-4 mt-0.5 accent-green-600 cursor-pointer" onchange="saveOrderMode(this)">
-            <span class="text-xs"><b class="text-ink">تفعيل الطلب من المنيو</b><span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يُرسل العميل طلبه فيظهر عند الكاشير برمز الطلب (مثل A12)، وبرقم الطاولة إذا مسح رمز طاولته. يضغط الكاشير «استلمته» ثم «سلّمته»، ويرى العميل حالة طلبه في المنيو.</span></span>
-          </label>
-          <div id="mo-status" class="text-[11px]"></div>
-          <!-- QR لكل طاولة: رقم الطاولة داخل الرمز، فالعميل ما يكتبه -->
-          <div id="mo-tables" class="hidden bg-white rounded-lg border border-brand/15 p-3 space-y-2">
-            <b class="text-xs text-ink"><i class="ph-bold ph-qr-code"></i> رموز QR للطاولات</b>
-            <span class="block text-[11px] text-ink leading-relaxed">لكل طاولة رمز خاص بها يتضمن رقمها، فيمسحه العميل ويطلب دون أن يكتب رقم الطاولة. تُطبع على ورق A4، ست بطاقات في كل صفحة.</span>
-            <div class="flex flex-wrap items-end gap-2">
-              <label class="text-[11px] font-bold text-ink">من طاولة<input id="mo-t-from" type="number" min="1" max="999" value="1" inputmode="numeric" class="input-pro text-xs !w-20 block mt-1" dir="ltr"></label>
-              <label class="text-[11px] font-bold text-ink">إلى طاولة<input id="mo-t-to" type="number" min="1" max="999" value="10" inputmode="numeric" class="input-pro text-xs !w-20 block mt-1" dir="ltr"></label>
-              <button type="button" id="mo-t-btn" onclick="printTableQrs(this)" class="bg-brand text-cream font-bold px-3 py-2 rounded-lg text-[12px]"><i class="ph-bold ph-printer"></i> اطبع رموز الطاولات</button>
-            </div>
-          </div>
-        </div>
         <button onclick="updateRestaurantInfo()" class="w-full bg-brand text-cream hover:bg-brand-dark font-bold py-2.5 rounded-xl text-sm transition shadow-md"><i class="ph-bold ph-floppy-disk"></i> حفظ بيانات المحل</button>
       </section>
 
-      <!-- البيجر: مرتبة حسب رحلة الزبون، وكل إعداد عليه حالته ووين يطلع للزبون -->
-      <section data-needs="pager" data-free-hide class="space-y-3">
-        <div class="flex items-center justify-between gap-2 border-b border-ink/10 pb-1.5">
-          <h5 class="text-xs font-bold text-ink">البيجر</h5>
-          <a id="pg-preview" target="_blank" rel="noopener" class="text-[11px] font-bold text-ink underline"><i class="ph-bold ph-arrow-square-out"></i> شوف كيف يطلع للزبون</a>
-        </div>
-
-        <p class="text-[11px] font-black text-ink/70">قبل ما ياخذ رقم</p>
-        <!-- بطاقة النداء: تختفي لو الولاء شغّال ويختم مع البيجر (النداء يوصل من بطاقة الولاء) -->
-        <div id="info-pager-card" class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-3">
-          <div class="flex flex-wrap items-start justify-between gap-2">
-            <span class="text-xs">
-              <b class="text-ink"><i class="ph-bold ph-map-pin text-amber-600"></i> موقع المحل</b>
-              <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يطلع للزبون في: شاشة القفل، لما يقرب من محلك تطلع له بطاقة النداء.</span>
-            </span>
-            <span id="pg-st-pin"></span>
-          </div>
-          <button type="button" id="info-pin-btn" onclick="setStorePin()" class="bg-brand text-cream hover:bg-brand-dark px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-sm"><i class="ph-bold ph-crosshair"></i> حدد الموقع وأنت داخل المحل</button>
-          <div>
-            <label for="info-near" class="text-xs font-semibold text-ink block mb-1">رسالة شاشة القفل <span id="info-near-count" class="text-ink font-normal">0/80</span></label>
-            <div class="flex gap-2">
-              <input type="text" id="info-near" maxlength="80" class="input-pro text-xs flex-1" oninput="document.getElementById('info-near-count').textContent = this.value.length + '/80'">
-              <button type="button" onclick="saveNearText()" class="bg-brand text-cream hover:bg-brand-dark px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-sm"><i class="ph-bold ph-floppy-disk"></i> احفظ</button>
-            </div>
-            <p class="text-[11px] text-ink mt-1 leading-relaxed">لو تركتها فاضية تطلع الرسالة الرمادية اللي في الخانة.</p>
-          </div>
-        </div>
-
-        <p class="text-[11px] font-black text-ink/70 pt-1">وهو ينتظر طلبه</p>
-        <label class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
-          <input type="checkbox" id="info-pager-car" onchange="togglePagerCar(this.checked)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
-          <span class="text-xs flex-1">
-            <b class="text-ink"><i class="ph-bold ph-car text-amber-600"></i> تسليم الطلب للسيارة</b>
-            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يطلع للزبون في: صفحة رقمه، يختار لون سيارته ونوعها. وتطلع للموظف تحت الرقم في شاشة الكاشير.</span>
-          </span>
-          <span id="pg-st-car"></span>
-        </label>
-        <label class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
-          <input type="checkbox" id="info-kiosk-call" onchange="toggleKioskCall(this.checked)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
-          <span class="text-xs flex-1">
-            <b class="text-ink"><i class="ph-bold ph-device-tablet text-amber-600"></i> الأرقام الجاهزة على شاشة الزبون</b>
-            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يطلع للزبون في: شاشة التابلت عندك، رقمه كبير لما يجهز طلبه.</span>
-          </span>
-          <span id="pg-st-kiosk"></span>
-        </label>
-
-        <label data-needs="menu" class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
-          <input type="checkbox" id="info-pager-upsell" onchange="togglePagerUpsell(this.checked)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
-          <span class="text-xs flex-1">
-            <b class="text-ink"><i class="ph-bold ph-plus-circle text-amber-600"></i> أضف لطلبك</b>
-            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يظهر للزبون في صفحة رقمه أثناء الانتظار زر «تبي تزيد على طلبك؟» يفتح المنيو، فيختار الحجم والعدد ويكتب ملاحظة، ثم يعرض على الكاشير شاشة واضحة بالأصناف والمجموع ليضيفها في نظام المبيعات. ولا يحتاج ذلك جهازاً إضافياً، وإن كانت شاشة الكاشير مفتوحة تظهر الإضافة تحت الرقم أيضاً.</span>
-          </span>
-          <span id="pg-st-upsell"></span>
-        </label>
-        <label data-needs="chat" class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
-          <input type="checkbox" id="info-pager-chat" onchange="togglePagerFlag('pager_chat', this)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
-          <span class="text-xs flex-1">
-            <b class="text-ink"><i class="ph-bold ph-chat-circle-dots text-amber-600"></i> المساعد الذكي في صفحة الانتظار</b>
-            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يظهر للزبون في صفحة رقمه زر «اسأل عن طلبك»: يجيبه عن موعد جاهزية طلبه وعدد الطلبات قبله وعن أصناف المنيو، ويعتمد الوقت الذي يحدده الكاشير. يُحتسب من رصيد المساعد الذكي.</span>
-          </span>
-          <span id="pg-st-chat"></span>
-        </label>
-        <label class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
-          <input type="checkbox" id="info-pager-game" onchange="togglePagerFlag('pager_game', this)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
-          <span class="text-xs flex-1">
-            <b class="text-ink"><i class="ph-bold ph-squares-four text-amber-600"></i> لعبة الانتظار</b>
-            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يظهر للزبون في صفحة رقمه: لعبة «خمّن الطبق» من صور أطباقك (خمس صور مقرّبة يختار اسمها، ويستطيع إضافة الطبق لطلبه)، وإن كانت الأطباق ذات الصور أقل من ستة تظهر لعبة مطابقة البطاقات.</span>
-          </span>
-          <span id="pg-st-gameon"></span>
-        </label>
-        <div id="info-game-box" class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2.5">
-          <div class="flex flex-wrap items-start justify-between gap-2">
-            <span class="text-xs">
-              <b class="text-ink"><i class="ph-bold ph-trophy text-amber-600"></i> جائزة لعبة الانتظار</b>
-              <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يظهر للزبون في صفحة رقمه: من يحقق شرط اللعبة (عدد الإجابات الصحيحة في «خمّن الطبق»، أو عدد الحركات في المطابقة) يحصل على الجائزة بعد إدخال رقم فاتورته، ويظهر بجانب رقمه في شاشة الكاشير «فاز باللعبة» مع رقم الفاتورة. ولا تُمنح الجائزة لنفس الفاتورة مرتين، ولا لنفس الجوال أكثر من مرة في اليوم. اترك الخانة فارغة لإيقاف الجائزة.</span>
-            </span>
-            <span id="pg-st-game"></span>
-          </div>
-          <input type="text" id="info-game-reward" maxlength="80" placeholder="مثال: كوكيز مجانية مع طلبك" class="input-pro text-xs">
-          <div class="flex flex-wrap items-center gap-2">
-            <label for="info-quiz-need" class="text-xs font-semibold text-ink">خمّن الطبق: الإجابات الصحيحة للفوز</label>
-            <select id="info-quiz-need" class="input-pro text-xs !w-auto">
-              <option value="3">3 من 5</option><option value="4">4 من 5</option><option value="5">5 من 5</option>
-            </select>
-          </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <label for="info-game-moves" class="text-xs font-semibold text-ink">لعبة المطابقة: أقصى عدد حركات</label>
-            <select id="info-game-moves" class="input-pro text-xs !w-auto">
-              <option value="14">14 (صعبة)</option><option value="16">16</option><option value="18">18</option><option value="20">20 (متوسطة)</option><option value="24">24</option><option value="28">28 (سهلة)</option>
-            </select>
-            <button type="button" onclick="saveGameReward()" class="bg-brand text-cream hover:bg-brand-dark px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-sm"><i class="ph-bold ph-floppy-disk"></i> احفظ</button>
-          </div>
-        </div>
-
-        <p class="text-[11px] font-black text-ink/70 pt-1">بعد ما يستلم طلبه</p>
-        <div class="bg-brand/5 p-3 rounded-xl border border-brand/15 space-y-2.5">
-          <div class="flex flex-wrap items-start justify-between gap-2">
-            <span class="text-xs">
-              <b class="text-ink"><i class="ph-bold ph-star text-amber-600"></i> تقييمك في قوقل ماب</b>
-              <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يطلع للزبون في: شاشة "بالعافية"، زر "قيّمنا على قوقل ماب". تلقى الرابط في Google Business ← "اطلب تقييمات".</span>
-            </span>
-            <span id="pg-st-review"></span>
-          </div>
-          <div class="flex gap-2">
-            <input type="url" id="info-review" placeholder="https://g.page/r/.../review" class="input-pro text-xs flex-1" dir="ltr">
-            <button type="button" onclick="saveReviewLink()" class="bg-brand text-cream hover:bg-brand-dark px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-sm"><i class="ph-bold ph-floppy-disk"></i> احفظ</button>
-          </div>
-        </div>
-        <div class="flex flex-wrap items-start justify-between gap-2 bg-brand/5 p-3 rounded-xl border border-brand/15">
-          <span class="text-xs flex-1">
-            <b class="text-ink"><i class="ph-bold ph-share-network text-amber-600"></i> حساباتك في التواصل</b>
-            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يطلع للزبون في: شاشة "بالعافية" تحت التقييم، "تابعنا" بانستقرام وتيك توك وسناب وموقعك.</span>
-            <button type="button" onclick="document.getElementById('social-card').scrollIntoView({ behavior: 'smooth', block: 'center' })" class="mt-2 text-[11px] font-bold text-ink underline">عدّل حساباتك</button>
-          </span>
-          <span id="pg-st-social"></span>
-        </div>
-      </section>
-
-      <!-- إعدادات المنيو: تنحفظ مباشرة -->
-      <section data-needs="menu" class="space-y-3">
-        <h5 class="text-xs font-bold text-ink border-b border-ink/10 pb-1.5">إعدادات المنيو <span class="font-normal text-ink">(تنحفظ تلقائياً)</span></h5>
-        <label class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
-          <input type="checkbox" id="info-menu-chat" onchange="toggleMenuChat(this.checked)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
-          <span class="text-xs">
-            <b class="text-ink"><i class="ph-bold ph-sparkle text-amber-600"></i> المساعد الذكي في المنيو <span class="text-[11px] font-bold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded">تجريبي</span></b>
-            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">زر "اسأل المساعد" في المنيو: يجاوب زبونك عن الأسعار والسعرات والمكونات، ويقترح عليه حسب ذوقه وميزانيته، ويعرف أوقات عملك. يجاوب من منيو محلك بس، وأي سؤال ثاني يعتذر عنه.</span>
-            <span id="chat-usage" class="block text-[11px] font-bold text-ink mt-1.5"></span>
-          </span>
-        </label>
-        <label class="flex items-start gap-2.5 bg-brand/5 p-3 rounded-xl border border-brand/15 cursor-pointer">
-          <input type="checkbox" id="info-show-calories" onchange="toggleCalories(this.checked)" class="w-4 h-4 mt-0.5 accent-[#384f3d] cursor-pointer">
-          <span class="text-xs">
-            <b class="text-ink"><i class="ph-bold ph-flame text-amber-600"></i> عرض السعرات الحرارية في المنيو</b>
-            <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">عند الإيقاف: يختفي حقل السعرات من نموذج الأطباق، ولا تظهر السعرات للزبائن. السعرات المحفوظة تبقى ولا تنحذف.</span>
-          </span>
-        </label>
-        <div class="bg-brand/5 p-3 rounded-xl border border-brand/15">
-          <label for="info-currency" class="text-xs font-bold text-ink block mb-1.5"><i class="ph-bold ph-coins text-amber-600"></i> عملة المنيو</label>
-          <select id="info-currency" onchange="changeCurrency(this.value)" class="input-pro text-xs cursor-pointer"></select>
-          <span class="block text-[11px] text-ink mt-1 leading-relaxed">تظهر بجانب كل الأسعار في المنيو وفي رسائل طلبات واتساب. تغيير العملة ما يغيّر أرقام الأسعار نفسها.</span>
-        </div>
-      </section>
     </div>
-    <!-- العروض والرسائل الترويجية -->
-  <div class="space-y-6 self-stretch">
-    <div data-needs="menu" class="pro-card p-5 space-y-3">
-      <h4 class="text-xs font-bold text-ink flex items-center gap-1.5">
-        <i class="ph-bold ph-megaphone text-amber-700"></i> الرسائل الترويجية والعروض (تظهر أعلى المنيو للعملاء)
-      </h4>
-      <div id="promo-status" class="flex items-center gap-2 text-[11px]"></div>
-      <div class="flex flex-col sm:flex-row gap-2">
-        <div class="relative flex-1">
-          <input type="text" id="promo-message-input" maxlength="120" placeholder="مثال: خصم 20% على كل شي اليوم!" class="input-pro text-xs pl-14">
-          <span id="promo-counter" class="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-ink font-mono" dir="ltr">0/120</span>
-        </div>
-        <div class="flex gap-2 shrink-0">
-          <button type="button" id="promo-save-btn" onclick="updatePromoMessage()" class="flex-1 sm:flex-none bg-brand text-cream hover:bg-brand-dark px-5 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
-            <i class="ph-bold ph-floppy-disk text-[11px]"></i> حفظ ونشر
-          </button>
-          <button type="button" id="promo-delete-btn" onclick="deletePromoMessage()" class="flex-1 sm:flex-none bg-red-500/10 hover:bg-red-500/20 text-red-600 border border-red-500/20 px-4 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
-            <i class="ph-bold ph-trash text-[11px]"></i> حذف الإعلان
-          </button>
-        </div>
-      </div>
-    </div>
-    <!-- معاينة صفحة الانتظار: جوال ثابت يشوف فيه صاحب المحل اللي يطلع للزبون، ويتحدث مع كل إعداد -->
-    <div id="pg-phone-wrap" data-needs="pager|menu" data-free-hide class="hidden xl:block xl:sticky xl:top-24 space-y-2">
-      <div class="flex items-center justify-between gap-2 px-1">
-        <p id="pg-phone-title" class="text-xs font-bold text-ink"><i class="ph-bold ph-device-mobile"></i> كما يراها الزبون وهو ينتظر</p>
-        <button type="button" onclick="reloadPagerPhone()" class="text-[11px] font-bold text-ink underline"><i class="ph-bold ph-arrow-clockwise"></i> تحديث</button>
-      </div>
-      <div class="ly-phone pg-phone"><div class="ly-phone-screen pg-phone-screen"><span class="ly-island"></span><iframe id="pg-phone" title="معاينة صفحة الانتظار" loading="lazy"></iframe></div></div>
-      <p id="pg-phone-note" class="text-[11px] text-ink text-center leading-relaxed">رقم تجريبي للمعاينة فقط، ولا يُسجَّل عندك.</p>
-    </div>
-  </div>
         </div>
     <!-- روابط التواصل الاجتماعي (مو في البيجر المجاني) -->
     <div id="social-card" data-free-hide class="pro-card p-5 space-y-3">
@@ -2203,6 +2232,7 @@
   <div id="more-sheet" class="lg:hidden fixed inset-0 z-40 hidden items-end bg-ink/40 backdrop-blur-sm" onclick="if (event.target === this) toggleMore(false)">
     <div class="w-full bg-cream rounded-t-3xl p-4 pb-8 grid grid-cols-3 gap-2" style="padding-bottom: calc(2rem + env(safe-area-inset-bottom))" onclick="if (event.target.closest('[data-nav]')) toggleMore(false)">
       <button data-nav="customers" data-needs="loyalty" class="more-item"><i class="ph-bold ph-users-three"></i><span>العملاء</span></button>
+      <button data-nav="pagerset" data-free-hide class="more-item"><i class="ph-bold ph-bell-simple-ringing"></i><span>البيجر</span></button>
       <button data-nav="waitlist" class="more-item"><i class="ph-bold ph-hourglass-medium"></i><span>قائمة الانتظار</span></button>
       <button data-nav="branches" class="more-item"><i class="ph-bold ph-git-branch"></i><span>الفروع</span></button>
       <button data-nav="settings" class="more-item"><i class="ph-bold ph-palette"></i><span>هوية المنشأة</span></button>
@@ -2323,11 +2353,24 @@
   }
 
   function switchTab(tab) {
-    ['products', 'categories', 'coupons'].forEach(t => {
+    ['products', 'categories', 'coupons', 'msettings'].forEach(t => {
       document.getElementById(`section-${t}`).classList.toggle('hidden', tab !== t);
       document.getElementById(`tab-${t}`).classList.toggle('active', tab === t);
     });
     if (tab === 'coupons') openCouponsTab();
+    if (tab === 'msettings') placePhone('menu');
+  }
+  // جوال المعاينة: عنصر واحد ينتقل لصفحة البيجر (صفحة الانتظار) أو لإعدادات المنيو (المنيو)
+  function placePhone(view) {
+    const wrap = document.getElementById('pg-phone-wrap'), slot = document.getElementById(view === 'menu' ? 'menu-phone-slot' : 'pager-phone-slot');
+    if (!wrap || !slot) return;
+    if (wrap.parentElement !== slot) slot.appendChild(wrap);
+    phoneView = view; reloadPagerPhone();
+  }
+  // يفتح تبويب إعدادات المنيو (من أزرار في أماكن ثانية)
+  function openMenuSettings(scrollTo) {
+    if (location.hash !== '#menu') location.hash = 'menu'; else showPage('menu');
+    setTimeout(() => { switchTab('msettings'); if (scrollTo) { const el = document.getElementById(scrollTo); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } }, 80);
   }
 
   // ─── التنقل بين الصفحات ───
@@ -2340,11 +2383,12 @@
     messages:  ['الرسائل', 'أرسل عروضك وأخبارك لجوالات عملائك'],
     branches:  ['الفروع', 'فروعك ومميزات كل فرع وروابط الكاشير'],
     account:   ['الاشتراك', 'باقتك وتجديدها وطلباتك للإدارة'],
-    settings:  ['هوية المنشأة', 'الاسم والشعار والخلفية ومعلومات التواصل']
+    pagerset:  ['البيجر', 'إعدادات البيجر وصفحة الانتظار عند العميل'],
+    settings:  ['هوية المنشأة', 'الرابط والاسم والشعار والمظهر ومعلومات التواصل']
   };
   // المميزات اللي مو ضمن باقة المشترك: الصفحة تعرض "أضفها لباقتك" بدل محتواها
   // الرسائل: من بطاقة الولاء، أو من بطاقة النداء (إضافة على البيجر)
-  const PAGE_FEATURE = { menu: 'menu', waitlist: 'waitlist', loyalty: 'loyalty', customers: 'loyalty', messages: () => DMPlans.has(client, 'loyalty') || DMPlans.has(client, 'pager') ? null : 'pager' };
+  const PAGE_FEATURE = { menu: 'menu', pagerset: 'pager', waitlist: 'waitlist', loyalty: 'loyalty', customers: 'loyalty', messages: () => DMPlans.has(client, 'loyalty') || DMPlans.has(client, 'pager') ? null : 'pager' };
   // الخدمات اللي مو ضمن باقته (في التجربة أو الاشتراك) تختفي من اللوحة كلها
   const featureLocked = (key) => !!client && ['active', 'trial'].includes(client.subscription_status) && !DMPlans.has(client, key);
   let lockedKey = null;
@@ -2536,7 +2580,8 @@
     if (page === 'pager' && !locked) page = 'dashboard';
     if (locked) showLocked(key);
     document.querySelectorAll('[data-page]').forEach(sec => sec.classList.toggle('hidden', locked ? sec.dataset.page !== 'locked' : sec.dataset.page !== page));
-    if (page === 'settings' && !locked) { const f = document.getElementById('pg-phone'); if (f && !f.getAttribute('src')) setTimeout(reloadPagerPhone, 200); }
+    if (page === 'pagerset' && !locked) setTimeout(() => placePhone('pager'), 50);
+    if (page === 'menu' && !locked && !document.getElementById('section-msettings').classList.contains('hidden')) setTimeout(() => placePhone('menu'), 50);
     if (locked) {
       document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('nav-active', b.dataset.nav === page));
       document.getElementById('page-title').textContent = DMPlans.FEATURES[key].name;
@@ -3741,24 +3786,25 @@
          <p class="text-[11px] text-ink mt-1.5">اضغط "اختبر الرقم": إذا فتحت محادثة في واتساب فالرقم شغال. وإذا ظهرت رسالة إن الرقم غير صالح، صحّحه في روابط التواصل.</p>`
       : `<div class="flex flex-wrap items-center justify-between gap-2 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
            <span class="text-amber-800"><i class="ph-bold ph-info"></i> لتفعيل الطلبات، أضف رقم واتساب المنشأة واحفظه أولاً.</span>
-           <button type="button" onclick="document.getElementById('social-whatsapp').focus(); document.getElementById('social-whatsapp').scrollIntoView({behavior:'smooth', block:'center'})"
+           <button type="button" onclick="location.hash='settings'; setTimeout(() => { const w = document.getElementById('social-whatsapp'); w.scrollIntoView({behavior:'smooth', block:'center'}); w.focus({ preventScroll: true }); }, 150)"
                    class="bg-brand/10 hover:bg-brand/15 text-ink font-bold px-2.5 py-1 rounded-md text-[11px] border border-brand/25 transition">إضافة الرقم</button>
          </div>`;
   }
 
+  // ─── الطلب عبر واتساب: يتحفظ على طول ───
+  async function saveWaOrders(box) {
+    if (box.checked && !isValidWa(client.whatsapp_number)) { box.checked = false; renderWaOrderState(); return showToast('أضف رقم واتساب صحيح في هوية المنشأة ← حساباتك في التواصل أولاً', true); }
+    if (await updateClient({ whatsapp_orders: box.checked })) { showToast(box.checked ? 'صارت الطلبات توصل واتساب المحل' : 'تم إيقاف الطلب عبر واتساب'); renderOrderMode(); }
+    else { box.checked = !box.checked; showToast('تعذر حفظ الإعداد', true); }
+  }
   // ─── معلومات المنشأة ───
   async function updateRestaurantInfo() {
     const hours = document.getElementById('info-hours').value.trim();
     const loc = document.getElementById('info-location').value.trim();
-    const waOrders = document.getElementById('info-wa-orders').checked;
     if (loc && !safeUrl(loc)) return showToast('رابط الموقع غير صحيح، يجب أن يبدأ بـ https://', true);
     const review = document.getElementById('info-review').value.trim();
     if (review && !/^https:\/\/(g\.page|search\.google\.com|www\.google\.com|maps\.app\.goo\.gl|goo\.gl|maps\.google\.com|g\.co)\//i.test(review)) return showToast('رابط التقييم لازم يكون من قوقل، مثل g.page/r/.../review', true);
-    if (waOrders && !isValidWa(client.whatsapp_number)) {
-      renderWaOrderState();
-      return showToast('أضف رقم واتساب صحيح في روابط التواصل واحفظه أولاً', true);
-    }
-    if (await updateClient({ opening_hours: hours, location_url: loc, whatsapp_orders: waOrders, google_review_url: review })) showToast('تم حفظ معلومات المنشأة');
+    if (await updateClient({ opening_hours: hours, location_url: loc, google_review_url: review })) showToast('تم حفظ معلومات المنشأة');
     else showToast('تعذر حفظ معلومات المنشأة', true);
   }
 
@@ -5545,17 +5591,6 @@
       : 'رقم تجريبي للمعاينة فقط، ولا يُسجَّل عندك.';
   }
   function setPhoneView(v) { if (v !== phoneView) { phoneView = v; reloadPagerPhone(); } }
-  // أقرب قسم لنص الشاشة يحدد وش يعرض الجوال
-  (() => {
-    let t = null;
-    addEventListener('scroll', () => { clearTimeout(t); t = setTimeout(() => {
-      const box = document.getElementById('mo-box'), pg = document.getElementById('pg-preview');
-      if (!box || !pg || !box.offsetParent || !document.getElementById('pg-phone').getAttribute('src')) return;
-      // وصل لقسم البيجر (عنوانه فوق نص الشاشة) = صفحة الانتظار، وإعدادات الطلب ظاهرة = المنيو
-      if (pg.getBoundingClientRect().top < innerHeight * 0.55) setPhoneView('pager');
-      else if (box.getBoundingClientRect().bottom > 0) setPhoneView('menu');
-    }, 250); }, { passive: true });
-  })();
   // ─── الطلب من المنيو إلى الكاشير ───
   function renderOrderMode() {
     const m = !!client.menu_order_mode;
