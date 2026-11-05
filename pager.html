@@ -363,6 +363,13 @@
   .star { color: rgba(255,255,255,.3); }
   .mm-front { color: #233d2c; }
   .hidden { display: none !important; }
+  .mo { background: #fff; color: #15271b; border-radius: 18px; padding: 12px 14px; text-align: right; }
+  .mo-hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 800; }
+  .mo-hd span { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; background: #f1ede2; font-size: 12px; }
+  .mo ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
+  .mo li { display: flex; gap: 8px; font-size: 14px; font-weight: 700; } .mo li b { min-width: 26px; } .mo li span { flex: 1; min-width: 0; } .mo li small { font-weight: 600; opacity: .7; }
+  .mo li em { display: block; font-style: normal; font-size: 12px; font-weight: 700; color: #8a5a00; }
+  .mo-ft { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(21,39,27,.18); font-size: 13px; font-weight: 800; }
 </style>
 <link rel="stylesheet" href="/css/tw/pager.css">
 </head>
@@ -472,6 +479,8 @@
       <li class="now"><i class="ph-bold ph-cooking-pot"></i><span id="d-wait"></span></li>
       <li><i class="ph-bold ph-bell"></i>جاهز</li>
     </ul>
+    <!-- طلبه من المنيو (الخدمة الذاتية): الأصناف والمجموع، والدفع عند الكاشير -->
+    <section id="w-order" class="mo hidden" aria-label="طلبك"></section>
     <div id="w-acts" class="w-acts">
     <!-- المساعد الذكي: يعرف رقمه وكم طلب قدامه، ويجاوب من المنيو (للمحل المشترك في المساعد) -->
     <button type="button" id="w-ask" class="ask hidden">
@@ -1463,7 +1472,7 @@
       pollTimer = setTimeout(poll, 5000); return;   // انقطاع مؤقت: نعيد المحاولة
     }
     if (!PREVIEW && loadToken() !== token) return;   // تغيّر الرقم وهو ينتظر الرد (ضغط "استلمت" أو أخذ رقم جديد): الرد قديم
-    if (askChat && typeof r.chat === 'boolean') { chatFor = token; chatOn = r.chat; upsell = r.upsell || []; curLabel = r.currency || 'ر.س'; game = r.game || null; gameOn = r.game_on !== false; quizOn = r.quiz === true; quizMode(); }
+    if (askChat && typeof r.chat === 'boolean') { chatFor = token; chatOn = r.chat; upsell = r.upsell || []; curLabel = r.currency || 'ر.س'; game = r.game || null; gameOn = r.game_on !== false; quizOn = r.quiz === true; quizMode(); menuOrder = r.order || null; }
     if (askQ) lastQ = Date.now();
     staffEta = r.staff_eta && typeof r.staff_eta === 'object' ? r.staff_eta : null;
     if (r.queue) renderQueue(r.queue, r.ticket.number); else if (lastQueue) renderQueue(lastQueue, r.ticket.number);
@@ -1496,6 +1505,7 @@
     $('w-ask').classList.toggle('hidden', !(chatOn && chatFor === token && st === 'waiting'));
     $('w-queue').classList.toggle('hidden', !(st === 'waiting' && queueShown));
     renderUpsell(st === 'waiting' && chatFor === token);
+    renderMenuOrder(st);
     renderGame();
     // زرين جنب بعض لو الاثنين ظاهرين
     $('w-acts').classList.toggle('two', !$('w-ask').classList.contains('hidden') && !$('w-upsell').classList.contains('hidden'));
@@ -1627,6 +1637,18 @@
       unavailable(e.code === 'FULL' ? 'وصلنا الحد اليومي للأرقام' : 'تعذر أخذ رقم', 'اسأل الموظف.');
     } finally { btn.disabled = false; btn.innerHTML = '<i class="ph-bold ph-ticket"></i> خذ رقمي وفعّل التنبيه'; }
   };
+  // ─── طلبه من المنيو (الخدمة الذاتية) ───
+  let menuOrder = null;
+  function renderMenuOrder(st) {
+    const o = menuOrder, box = $('w-order');
+    box.classList.toggle('hidden', !(o && st === 'waiting'));
+    if (!o) return;
+    const where = o.dine === 'out' ? '<i class="ph-bold ph-bag"></i> سفري' : `<i class="ph-bold ph-chair"></i> محلي${o.table_no ? ` · طاولة <b dir="ltr">${esc(o.table_no)}</b>` : ''}`;
+    box.innerHTML = `<div class="mo-hd"><b>طلبك وصل للكاشير</b><span>${where}</span></div>
+      <ul>${(o.items || []).map(i => `<li><b dir="ltr">${i.qty}×</b><span>${esc(i.name)}${i.size ? ` <small>(${esc(i.size)})</small>` : ''}${i.note ? `<em>${esc(i.note)}</em>` : ''}</span></li>`).join('')}</ul>
+      ${o.note ? `<p class="text-[12px] font-bold opacity-70 mt-1.5">ملاحظات: ${esc(o.note)}</p>` : ''}
+      <div class="mo-ft"><span>تدفعه عند الكاشير</span><b>${fmtPrice(o.total)}</b></div>`;
+  }
   // ─── لعبة الانتظار: طابق البطاقات (8 أزواج) ───
   const MM_ICONS = ['ph-coffee', 'ph-hamburger', 'ph-pizza', 'ph-ice-cream', 'ph-cookie', 'ph-orange-slice', 'ph-carrot', 'ph-fish'];
   const mm = { cards: [], open: [], moves: 0, matched: 0, lock: false };

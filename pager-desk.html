@@ -140,6 +140,16 @@
   }
   @supports not (container-type: inline-size) { @media (max-width: 599px) { .tk-in { flex-direction: column; } .tk-act { width: 100%; } } }
   .tk.tile-new { animation: tileNew 1s ease-in-out 4; }
+  .col-orders { background: #e6ece7; }
+  @media (min-width: 900px) { .ord-grid { grid-template-columns: 1fr 1fr; } }
+  .tk-tbl { display: flex; flex-direction: column; line-height: 1; font-weight: 800; color: #1a1a1a; min-width: 64px; }
+  .tk-tbl small { font-size: 13px; font-weight: 700; color: #666; margin-bottom: 4px; } .tk-tbl b { font-size: 44px; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+  .tk-acc { box-shadow: inset 4px 0 0 #384f3d, 0 1px 0 rgba(0,0,0,.06), 0 0 0 1px rgba(0,0,0,.05); }
+  .tk-order.menu { background: #f3f6f3; border: 1.5px solid #c9d6cc; border-radius: 12px; padding: 8px 10px; }
+  .tk-where { display: inline-flex; align-items: center; gap: 5px; font-size: 14px; font-weight: 800; padding: 4px 10px; border-radius: 8px; background: #1a1a1a; color: #fff; }
+  .tk-where.out { background: #a07c10; }
+  .tk-onote { margin-top: 6px; font-size: 14px; font-weight: 700; color: #a1121f; }
+  .tk-sub.one { grid-template-columns: 1fr; }
   @media (prefers-reduced-motion: reduce) { .tile-new { animation: none; outline: 4px solid #c9a227; } }
 </style>
 </head>
@@ -185,10 +195,16 @@
   </section>
 
   <!-- لوحة الأرقام: «قيد التجهيز» يمين و«جاهز» يسار (الآيباد بالعرض)، وفوقها البحث -->
-  <div class="relative" data-pager>
+  <div class="relative" id="search-wrap">
     <i class="ph-bold ph-magnifying-glass absolute start-4 top-1/2 -translate-y-1/2 opacity-40"></i>
       <input id="search" type="text" inputmode="numeric" autocomplete="off" placeholder="ابحث برقم الفاتورة أو رقم البيجر…" class="w-full bg-[#fdfdfd] border border-[#8a8a8a] hover:border-[#616161] rounded-lg py-3 ps-11 pe-4 text-base font-semibold focus:outline focus:outline-2 focus:outline-[#005bd3] focus:outline-offset-1">
   </div>
+  <!-- طلبات الطاولات من المنيو: الكاشير يستلمها ثم «تم التقديم» -->
+  <section id="orders-wrap" class="col col-orders hidden">
+    <div class="col-hd"><h2>طلبات الطاولات <span id="ord-count" class="col-count"></span></h2><span class="col-note"><i class="ph-bold ph-fork-knife"></i> من المنيو</span></div>
+    <div id="ord-grid" class="tk-list ord-grid"></div>
+    <p id="ord-empty" class="col-empty hidden">ما فيه طلبات. أول ما يطلب الزبون من المنيو يطلع طلبه هنا برقم طاولته.</p>
+  </section>
   <div class="board" data-pager>
     <section class="col col-wait">
       <div class="col-hd"><h2><span id="t-dwait">بالانتظار</span> <span id="wait-count" class="col-count"></span></h2><span class="col-note"><i class="ph-bold ph-arrows-clockwise"></i> يتحدث تلقائياً</span></div>
@@ -429,9 +445,68 @@
     try { const r = await call('pager-ring', {}); if (r.rang) load(); } catch {}
   }
 
+  // ─── طلب من المنيو: الأصناف بكمياتها وملاحظاتها والمجموع ───
+  const fmtM = (n) => `${Number.isInteger(n) ? n : Number(n).toFixed(2)} ${deskCur}`;
+  const whereTag = (o) => o.dine === 'out' ? '<span class="tk-where out"><i class="ph-bold ph-bag"></i> سفري</span>' : `<span class="tk-where"><i class="ph-bold ph-chair"></i> محلي${o.table_no ? ` · طاولة <b dir="ltr">${esc(o.table_no)}</b>` : ''}</span>`;
+  const orderBlock = (o, withWhere) => !o ? '' : `<div class="tk-order menu">
+      <div class="tk-order-hd"><small>طلب من المنيو · ${fmtM(Number(o.total) || 0)}${o.coupon_code ? ` (بعد كوبون ${esc(o.coupon_code)})` : ''}</small>${withWhere ? whereTag(o) : ''}</div>
+      <ul>${(o.items || []).map(x => `<li><span class="q">${x.qty || 1}</span><span class="nm"><b>${esc(x.name)}</b>${x.size ? ` <span>${esc(x.size)}</span>` : ''}${x.note ? `<em>${esc(x.note)}</em>` : ''}</span></li>`).join('')}</ul>
+      ${o.note ? `<p class="tk-onote">ملاحظة: ${esc(o.note)}</p>` : ''}
+    </div>`;
+  let orders = [], orderMode = null, oBusy = new Set(), freshOrders = new Set();
+  function renderOrders(term) {
+    const wrap = $('orders-wrap');
+    const on = orderMode === 'table' || orders.length > 0;
+    wrap.classList.toggle('hidden', !on);
+    if (!on) return;
+    const list = orders.filter(o => ['new', 'accepted'].includes(o.status) && (!term || String(o.table_no || '') === term));
+    $('ord-count').textContent = list.length || '';
+    $('ord-empty').classList.toggle('hidden', list.length > 0);
+    const mins = (iso) => Math.max(0, Math.floor((Date.now() - Date.parse(iso)) / 60000));
+    const timer = (iso) => { const m = mins(iso); return `<span class="tk-time${m >= 15 ? ' late' : m >= 8 ? ' warn' : ''}"><i class="ph-bold ph-timer"></i> ${m < 1 ? 'الآن' : `${m} د`}</span>`; };
+    $('ord-grid').innerHTML = list.map(o => {
+      const acc = o.status === 'accepted', b = oBusy.has(o.id);
+      return `<article class="tk${acc ? ' tk-acc' : ''}${freshOrders.has(o.id) ? ' tile-new' : ''}"><div class="tk-in">
+        <div class="tk-info">
+          <div class="tk-hd"><span class="tk-tbl"><small>طاولة</small><b dir="ltr">${esc(o.table_no || '؟')}</b></span>${timer(o.created_at)}${acc ? '<span class="tk-tag"><i class="ph-bold ph-check"></i> استلمته</span>' : ''}</div>
+          ${orderBlock(o, false)}
+        </div>
+        <div class="tk-act">
+          ${acc ? `<button class="tk-main done" data-oserve="${o.id}" ${b ? 'disabled' : ''}><i class="ph-bold ph-check-circle"></i> تم التقديم</button>`
+                : `<button class="tk-main" data-oacc="${o.id}" ${b ? 'disabled' : ''}><i class="ph-bold ph-hand-tap"></i> استلمته</button>`}
+          <div class="tk-sub ${acc ? 'two' : 'one'}">
+            ${acc ? `<button class="tk-btn" data-oback="${o.id}"><i class="ph-bold ph-arrow-counter-clockwise"></i><span>رجّعه</span></button>` : ''}
+            <button class="tk-btn del" data-odel="${o.id}" title="حذف الطلب" aria-label="حذف الطلب"><i class="ph-bold ph-trash"></i>${acc ? '' : '<span>حذف</span>'}</button>
+          </div>
+        </div>
+      </div></article>`;
+    }).join('');
+  }
+  async function setOrder(id, status, msg) {
+    oBusy.add(id); render();
+    try {
+      const r = await call('order-update', { id, status });
+      orders = orders.map(o => o.id === id ? { ...o, ...r.order } : o);
+      if (msg) toast(msg.replace('#', r.order.table_no || ''));
+    } catch (e) { toast(e.message || 'صار خلل وما اكتمل الطلب، حاول مرة ثانية'); }
+    oBusy.delete(id); render();
+  }
+  document.addEventListener('click', async (e) => {
+    const a = e.target.closest('[data-oacc]'), sv = e.target.closest('[data-oserve]'), bk = e.target.closest('[data-oback]'), dl = e.target.closest('[data-odel]');
+    if (a) setOrder(+a.dataset.oacc, 'accepted', 'استلمت طلب طاولة #، والزبون يشوفها في جواله');
+    if (sv) setOrder(+sv.dataset.oserve, 'served', '✓ طلب طاولة # انقدّم');
+    if (bk) setOrder(+bk.dataset.oback, 'new');
+    if (dl) {
+      const o = orders.find(x => x.id === +dl.dataset.odel); if (!o) return;
+      const ok = await DMDialog.confirm({ title: `حذف طلب طاولة ${o.table_no || ''}؟`, message: 'استخدمه لو الطلب بالغلط أو الزبون مو موجود. يطلع للزبون إن الطلب انلغى.', confirmText: 'حذف', cancelText: 'تراجع' });
+      if (ok) setOrder(o.id, 'cancelled', 'انحذف طلب طاولة #');
+    }
+  });
+
   function render() {
+    renderOrders(normDigits($('search').value.trim()).toUpperCase());
     const term = normDigits($('search').value.trim());
-    const match = (t) => !term || String(t.number) === term || String(t.invoice_no || '').includes(term);
+    const match = (t) => !term || String(t.number) === term || String(t.invoice_no || '').includes(term) || (t.order && String(t.order.table_no || '') === term.toUpperCase());
     const waiting = tickets.filter(t => t.status === 'waiting' && match(t));
     const ready = tickets.filter(t => t.status === 'ready' && match(t));
     $('wait-count').textContent = waiting.length || '';
@@ -451,7 +526,7 @@
       const head = `<div class="tk-order-hd"><small>أضافه الزبون${total ? ` · ${fmtMoney(total)}` : ''}</small>${unseen ? `<button class="tk-seen" data-seen="${t.id}"><i class="ph-bold ph-check"></i> شفتها</button>` : '<span class="tk-seen-ok"><i class="ph-bold ph-check-circle"></i> تم</span>'}</div>`;
       const items = a.length ? `<div class="tk-order${unseen ? ' new' : ''}">${head}<ul>${a.map(x => `<li><span class="q">${x.qty || 1}</span><span class="nm"><b>${esc(x.name)}</b>${x.size ? ` <span>${esc(x.size)}</span>` : ''}${x.note ? `<em>${esc(x.note)}</em>` : ''}</span></li>`).join('')}</ul></div>` : '';
       const rw = t.reward ? `<button class="tk-reward rw-pulse" data-reward="${t.id}"><i class="ph-bold ph-gift"></i> عنده مكافأة</button>` : '';
-      return (c.length ? `<div class="tk-tags">${c.join('')}</div>` : '') + items + rw;
+      return (c.length ? `<div class="tk-tags">${c.join('')}</div>` : '') + orderBlock(t.order, true) + items + rw;
     };
     $('wait-grid').innerHTML = waiting.map(t => `
       <article class="tk${freshIds.has(t.id) ? ' tile-new' : ''}"><div class="tk-in">
@@ -554,7 +629,15 @@
       if (fresh.length) { fresh.forEach(id => freshIds.add(id)); chime(); setTimeout(() => { fresh.forEach(id => freshIds.delete(id)); }, 4500); }
     }
     seenIds = new Set(tickets.map(t => t.id));
+    // طلب طاولة جديد: نفس الصوت والوميض
+    const newO = orders.filter(o => o.status === 'new').map(o => o.id);
+    if (seenOrders) {
+      const fresh = newO.filter(id => !seenOrders.has(id));
+      if (fresh.length) { fresh.forEach(id => freshOrders.add(id)); chime(); setTimeout(() => fresh.forEach(id => freshOrders.delete(id)), 4500); }
+    }
+    seenOrders = new Set(orders.map(o => o.id));
   }
+  let seenOrders = null;
   function renderSound() { $('sound-btn').innerHTML = `${soundOn ? IC.on : IC.off} ${soundOn ? 'الصوت' : 'بدون صوت'}`; }
   $('sound-btn').onclick = () => { soundOn = !soundOn; try { localStorage.setItem('dm_desk_sound', soundOn ? 'on' : 'off'); } catch {} unlockAudio(); renderSound(); if (soundOn) chime(); };
 
@@ -587,12 +670,17 @@
       // شاشة الزبون: أكواد الخدمات (ومعها الختم للي عنده الولاء)
       $('kiosk-btn').classList.toggle('hidden', !r.loyalty && r.pager === false);
       const pager = r.pager !== false;
+      orderMode = r.order_mode || null;
+      orders = (r.orders || []).map(o => oBusy.has(o.id) ? (orders.find(x => x.id === o.id) || o) : o);
+      const hasOrders = orderMode === 'table' || orders.length > 0;
+      $('search-wrap').classList.toggle('hidden', !pager && !hasOrders);
+      if (!pager && hasOrders) { $('desk-title').textContent = 'شاشة الطلبات'; $('desk-sub').textContent = 'اضغط «استلمته» لما تشوف الطلب، و«تم التقديم» لما يوصل للطاولة'; $('search').placeholder = 'ابحث برقم الطاولة…'; }
       $('qr-btn').classList.toggle('hidden', !pager);
       $('stats-btn').classList.toggle('hidden', !pager);
       document.querySelectorAll('[data-pager]').forEach(el => el.classList.toggle('hidden', !pager));
-      $('loyalty-desk').classList.toggle('hidden', pager || !r.loyalty);
-      if (!pager) $('desk-title').textContent = 'شاشة الكاشير';
-      if (!pager) $('desk-sub').textContent = r.loyalty ? 'بعد ما يدفع الزبون امسح بطاقته وانختم له' : 'شغّل بطاقة الولاء من لوحة التحكم';
+      $('loyalty-desk').classList.toggle('hidden', pager || hasOrders || !r.loyalty);
+      if (!pager && !hasOrders) $('desk-title').textContent = 'شاشة الكاشير';
+      if (!pager && !hasOrders) $('desk-sub').textContent = r.loyalty ? 'بعد ما يدفع الزبون امسح بطاقته وانختم له' : 'شغّل بطاقة الولاء من لوحة التحكم';
       // جاي من أزرار الرئيسية في لوحة التحكم (?open=scan|stamp|join): نفتح الأداة مرة وحدة
       const open = { scan: 'scan-btn', stamp: 'stamp-btn', join: 'join-btn' }[P.get('open')];
       if (open && r.loyalty && !load.opened) { load.opened = true; $(open).click(); if (EMBED) watchEmbed(); }

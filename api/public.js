@@ -61,95 +61,9 @@ async function hasCoupons(storeId) {
   catch { return false; }
 }
 
-const liveNow = (c) => {
-  const now = Date.now();
-  return (!c.starts_at || Date.parse(c.starts_at) <= now) && (!c.ends_at || Date.parse(c.ends_at) >= now)
-    && (c.max_uses == null || c.uses < c.max_uses);
-};
-const PROMO_FIELDS = 'code,type,value,scope,category_keys,product_ids,min_order,starts_at,ends_at,max_uses,uses,auto_apply';
-
-// العروض الظاهرة في المنيو: الخصم التلقائي + الكوبونات اللي صاحب المتجر اختار يعرضها
-async function menuPromos(storeId) {
-  try {
-    const rows = await rest(`coupons?client_id=eq.${storeId}&is_active=is.true&show_in_menu=is.true&select=${PROMO_FIELDS}&order=id.asc`);
-    return rows.filter(liveNow).map(c => ({
-      auto: c.auto_apply === true, code: c.auto_apply ? null : c.code, type: c.type, value: Number(c.value),
-      scope: c.scope, category_keys: c.category_keys || [], product_ids: (c.product_ids || []).map(Number),
-      min_order: c.min_order == null ? null : Number(c.min_order), ends_at: c.ends_at
-    }));
-  } catch { return []; }
-}
-
-// هل العرض يشمل الطبق؟ (المنتج ممكن يكون مربوط بمفتاح القسم أو اسمه)
-function promoCovers(promo, product, catKeyOf) {
-  if (promo.scope === 'all') return true;
-  if ((promo.product_ids || []).map(Number).includes(Number(product.id))) return true;
-  return (promo.category_keys || []).includes(catKeyOf(product.category));
-}
-// سعر الوحدة بعد أفضل خصم تلقائي
-function autoPrice(unit, product, autos, catKeyOf) {
-  let best = unit;
-  autos.forEach(a => {
-    if (!promoCovers(a, product, catKeyOf)) return;
-    const after = a.type === 'percent' ? unit * (1 - a.value / 100) : Math.max(0, unit - a.value);
-    if (after < best) best = after;
-  });
-  return round2(best);
-}
-
-// يجيب الكوبون ويتأكد إنه صالح الحين (فعّال، ضمن التاريخ، وما خلص عدده)
-async function loadCoupon(storeId, rawCode) {
-  const code = String(rawCode || '').trim().toUpperCase();
-  if (!/^[A-Z0-9-]{3,20}$/.test(code)) throw new ApiError(400, 'رمز الكوبون غير صحيح', 'BAD_COUPON');
-  const c = (await rest(`coupons?client_id=eq.${storeId}&code=eq.${q(code)}&select=*&limit=1`))[0];
-  if (!c || !c.is_active || c.auto_apply === true) throw new ApiError(404, 'رمز الكوبون غير صحيح', 'BAD_COUPON');
-  const now = Date.now();
-  if (c.starts_at && Date.parse(c.starts_at) > now) throw new ApiError(400, 'الكوبون ما بدأ للحين', 'COUPON_NOT_STARTED');
-  if (c.ends_at && Date.parse(c.ends_at) < now) throw new ApiError(400, 'انتهت صلاحية الكوبون', 'COUPON_EXPIRED');
-  if (c.max_uses != null && c.uses >= c.max_uses) throw new ApiError(400, 'انتهى عدد استخدامات الكوبون', 'COUPON_USED_UP');
-  return c;
-}
-
-// الخصم يُحسب هنا بأسعار قاعدة البيانات، مو بالأسعار اللي يرسلها المتصفح
-async function priceCart(store, coupon, rawItems) {
-  if (!Array.isArray(rawItems) || !rawItems.length || rawItems.length > 100) throw new ApiError(400, 'السلة فاضية');
-  const items = rawItems.map(i => ({ id: int(i && i.id), qty: int(i && i.qty), size: i && i.size != null ? String(i.size) : null }))
-    .filter(i => Number.isInteger(i.id) && Number.isInteger(i.qty) && i.qty > 0 && i.qty <= 99);
-  if (!items.length) throw new ApiError(400, 'السلة فاضية');
-  const ids = [...new Set(items.map(i => i.id))];
-  const [products, categories, promos] = await Promise.all([
-    rest(`products?client_id=eq.${store.id}&id=in.(${ids.join(',')})&is_hidden=is.false&select=id,price,category,sizes,is_available`),
-    rest(`categories?client_id=eq.${store.id}&select=key,name`),
-    menuPromos(store.id)
-  ]);
-  const byId = new Map(products.map(p => [p.id, p]));
-  const nameToKey = new Map(categories.map(c => [c.name, c.key]));
-  const catKeyOf = (cat) => nameToKey.get(cat) || cat;
-  const autos = promos.filter(x => x.auto);
-  let subtotal = 0, eligible = 0;
-  for (const i of items) {
-    const p = byId.get(i.id);
-    if (!p || p.is_available === false) continue;
-    const sizes = Array.isArray(p.sizes) ? p.sizes : [];
-    let unit = Number(p.price);
-    if (sizes.length) {
-      const z = sizes.find(s => s.name === i.size);
-      if (!z) continue;
-      unit = Number(z.price);
-    }
-    // الخصم التلقائي أولاً، ثم الكوبون على السعر بعد الخصم
-    const line = autoPrice(unit, p, autos, catKeyOf) * i.qty;
-    subtotal += line;
-    if (promoCovers(coupon, p, catKeyOf)) eligible += line;
-  }
-  subtotal = round2(subtotal); eligible = round2(eligible);
-  if (coupon.min_order != null && subtotal < Number(coupon.min_order)) {
-    throw new ApiError(400, `الكوبون يحتاج طلب بقيمة ${money(coupon.min_order, store.currency)} أو أكثر`, 'COUPON_MIN_ORDER');
-  }
-  if (eligible <= 0) throw new ApiError(400, 'الكوبون ما يشمل الأصناف اللي في طلبك', 'COUPON_NOT_ELIGIBLE');
-  const discount = round2(coupon.type === 'percent' ? eligible * Number(coupon.value) / 100 : Math.min(Number(coupon.value), eligible));
-  return { subtotal, eligible, discount, total: round2(subtotal - discount) };
-}
+// الأسعار والعروض والكوبونات: api/_lib/order.js (نفس الحساب لطلب واتساب والطلب من المنيو)
+const { menuPromos, loadCoupon, priceCart, orderMode, buildOrder, saveOrder, publicOrder } = require('./_lib/order');
+const { poke } = require('./_lib/live');
 
 // زر "قائمة الانتظار": الإضافة مفعّلة + القائمة مفتوحة + صاحب المتجر مختار يظهر الزر
 async function waitlistOpen(storeId) {
@@ -192,7 +106,7 @@ async function menuPayload(slug) {
     for (const k of ['pager', 'waitlist', 'loyalty']) if (feats[k]) throw new ApiError(404, 'المنيو غير متاح', `GO:${k}`);
     throw new ApiError(404, 'المنيو غير متاح حالياً', 'NOT_AVAILABLE');
   }
-  const [categories, products, waitlist_open, has_coupons, occasion, promos, name] = await Promise.all([
+  const [categories, products, waitlist_open, has_coupons, occasion, promos, name, order_mode] = await Promise.all([
     rest(`categories?client_id=eq.${store.id}&select=id,key,name,name_en,sort_order,group_name`),
     // المنتجات المخفية ما توصل للزبون أصلاً
     rest(`products?client_id=eq.${store.id}&is_hidden=is.false&select=${PRODUCT_FIELDS}`),
@@ -200,12 +114,13 @@ async function menuPayload(slug) {
     hasCoupons(store.id),
     activeOccasion(store.id),
     menuPromos(store.id),
-    brandName(store.id, store.name)
+    brandName(store.id, store.name),
+    orderMode(store.id)   // الطلب من المنيو للكاشير: 'table' أو 'self' أو null (واتساب)
   ]);
   // زر المساعد: مشغّل من صاحب المحل + ضمن باقته + باقي له رصيد هالشهر
   // الزر يبقى ظاهر حتى لو خلص الرصيد: المساعد يرد رد لطيف بدل ما يختفي أو يذكر حدود
   const menu_chat = store.menu_chat === true && feats.chat;
-  return { store: { ...store, name, menu_chat, waitlist_open, has_coupons, occasion, promos }, categories: categories.sort(bySort), products: products.sort(bySort), feats };
+  return { store: { ...store, name, menu_chat, waitlist_open, has_coupons, occasion, promos, order_mode }, categories: categories.sort(bySort), products: products.sort(bySort), feats };
 }
 // ردود جاهزة للأسئلة البسيطة. أي شي غيرها يروح للمساعد
 const AR = (t) => /[؀-ۿ]/.test(t);
@@ -441,6 +356,29 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       await rpc('redeem_coupon', { p_coupon_id: coupon.id });
     } catch {}
     return { ok: true };
+  }
+
+  // ─── الطلب من المنيو (خدمة الطاولات): الزبون يكتب رقم طاولته، والطلب يوصل لشاشة الكاشير ───
+  // (الخدمة الذاتية تاخذ رقم بيجر مع الطلب: /api/pager?action=take مع order)
+  if (action === 'order' && req.method === 'POST') {
+    const b = readBody(req);
+    const store = await findStore(b.slug);
+    const mode = await orderMode(store.id);
+    if (mode !== 'table') throw new ApiError(409, 'الطلب من المنيو متوقف الحين، اطلب من الكاشير', 'ORDERS_OFF');
+    const o = await saveOrder(await buildOrder(store, b, 'table'));
+    await poke([topic('pager', store.id)]);   // شاشة الكاشير
+    console.log('MENU_ORDER', store.id, o.id, o.table_no);
+    return { token: o.token, order: publicOrder(o), live: topic('mo', o.token) };
+  }
+
+  // حالة طلب الزبون (يطلع له في المنيو: وصل، الكاشير استلمه، انقدّم)
+  if (action === 'order-status' && req.method === 'GET') {
+    const store = await findStore(req.query.slug);
+    const tokens = String(req.query.t || '').split(',').filter(t => /^[A-Za-z0-9_-]{10,64}$/.test(t)).slice(0, 5);
+    if (!tokens.length) return { orders: [] };
+    res.setHeader('Cache-Control', 'no-store');
+    const rows = await rest(`menu_orders?client_id=eq.${store.id}&token=in.(${tokens.map(t => q(t)).join(',')})&select=*`).catch(() => []);
+    return { orders: rows.map(o => ({ token: o.token, ...publicOrder(o) })) };
   }
 
   if (action === 'track' && req.method === 'POST') {

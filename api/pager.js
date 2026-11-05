@@ -215,6 +215,13 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     // المجانية: 200 رقم بالشهر. الزبون ما يشوف إن فيه حد، بس يطلب من الموظف
     if (store.free && (await monthTickets(store.id, PLANS.FREE.pager)) >= PLANS.FREE.pager) throw new ApiError(409, 'البيجر متوقف مؤقتاً، تفضّل عند الكاشير وبيبلغك أول ما يجهز طلبك.', 'FREE_FULL');
     const invoice = cleanInvoice(b.invoice);
+    // طلب من المنيو (الخدمة الذاتية): نتحقق من الأصناف والأسعار قبل ما ناخذ الرقم
+    const O = b.order ? require('./_lib/order') : null;
+    let built = null;
+    if (O) {
+      if ((await O.orderMode(store.id)) !== 'self') throw new ApiError(409, 'الطلب من المنيو متوقف الحين، اطلب من الكاشير', 'ORDERS_OFF');
+      built = await O.buildOrder(store, { ...b.order, dev: b.dev, lang: reqLang(req) }, 'self');
+    }
     if (invoice && (await rest(`pager_tickets?client_id=eq.${store.id}&invoice_no=eq.${q(invoice)}&created_at=gte.${q(riyadhDayStart())}&status=in.(waiting,ready)&select=number&limit=1`)).length) throw new ApiError(409, 'هذي الفاتورة مسجلة على رقم ثاني، تأكد من الرقم', 'DUPLICATE');
     const token = crypto.randomBytes(18).toString('base64url');
     try {
@@ -230,6 +237,11 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       }
       // عنده بطاقة نداء من زيارة سابقة: نربطها بالرقم الجديد وتتحدث برقمه
       // card_ok: false = البطاقة المحفوظة في جواله ما عادت شغالة، والصفحة تعرض عليه يضيف وحدة جديدة
+      if (built) {
+        const tk = (await rest(`pager_tickets?token=eq.${q(res.token)}&client_id=eq.${store.id}&select=id`))[0];
+        const o = await O.saveOrder({ ...built, row: { ...built.row, pager_ticket_id: tk && tk.id } });
+        console.log('MENU_ORDER', store.id, o.id, 'pager', res.number);
+      }
       const linked = TOKEN_RE.test(String(b.pc || '')) ? await linkPagerCard(store, res.token, b.pc).catch(e => { console.error('PAGER_CARD', e.message); return null; }) : undefined;
       await poke(topic('pager', store.id));
       return { token: res.token, number: res.number, ...(linked === null ? { card_ok: false } : {}), store: { name: store.display_name || store.name, logo_url: store.logo_url, accent_color: store.accent_color || null } };
@@ -257,7 +269,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const store = await loadStore(req.query.slug);
     const token = String(req.query.t || '');
     if (!TOKEN_RE.test(token)) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
-    const sel = `pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&select=number,status,created_at,ready_at`;
+    const sel = `pager_tickets?token=eq.${q(token)}&client_id=eq.${store.id}&select=id,number,status,created_at,ready_at`;
     const t = (await rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url,wallet_serial,wallet_error,car,addons,game_won,eta_at`).catch(() => rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url,wallet_serial,wallet_error,car,addons,game_won`)).catch(() => rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url,wallet_serial,wallet_error,car`)).catch(() => rest(`${sel},invoice_no,loyalty_card_id,loyalty_stamped,wallet_url,wallet_serial,wallet_error`)).catch(() => rest(`${sel},invoice_no`)).catch(() => rest(sel)))[0];
     if (!t) throw new ApiError(404, 'الرقم غير موجود', 'NOT_FOUND');
     if (DEMO.has(store.client_slug) && t.status === 'waiting' && Date.now() - Date.parse(t.created_at) > (t.wallet_url ? DEMO_AFTER_CARD : DEMO_AFTER)) {
@@ -275,6 +287,11 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     // إضافات صفحة الانتظار: الصفحة تسأل عنها مرة وحدة لكل رقم (c=1)، مو مع كل تحديث كل 3 ثواني
     const live = ['waiting', 'ready'].includes(t.status) && !stale;
     const extras = req.query.c === '1' ? (live ? await waitExtras(store.id, t) : { chat: false, upsell: [], game: null, game_on: true }) : {};
+    // طلبه من المنيو (الخدمة الذاتية): يطلع له في صفحة الانتظار
+    if (req.query.c === '1') {
+      const mo = (await rest(`menu_orders?pager_ticket_id=eq.${t.id}&client_id=eq.${store.id}&select=*&limit=1`).catch(() => []))[0];
+      extras.order = mo ? require('./_lib/order').publicOrder(mo) : null;
+    }
     // الطابور الحي: كم طلب قدامه، والوقت الباقي تقريباً (الصفحة تسأل كل 15 ثانية تقريباً بـ q=1)
     let queue;
     if (req.query.q === '1' && t.status === 'waiting' && !stale) {

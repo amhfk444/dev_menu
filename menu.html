@@ -196,6 +196,13 @@
   body.tone-light .text-red-300, body.tone-light .hover\:text-red-300:hover { color: #dc2626; }
   body.tone-light .text-green-300 { color: #15803d; }
   body.tone-light #promo-banner, body.tone-light #waitlist-btn { box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.25); border: 1px solid var(--line); }
+  .dine-btn { display:flex; align-items:center; justify-content:center; gap:8px; min-height:52px; border-radius:16px; font-weight:900; font-size:15px; color:#fff; background:rgba(255,255,255,.06); border:1.5px solid rgba(255,255,255,.18); }
+  .dine-btn.on { background:#fff; color:#111; border-color:#fff; }
+  #moBar { background:#fff; color:#111; }
+  #moBar.st-accepted { background:#fff7dc; } #moBar.st-served { background:#e7f6ec; }
+  .mo-steps { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+  .mo-steps span { font-size:11px; font-weight:800; text-align:center; padding:6px 4px; border-radius:10px; background:rgba(255,255,255,.06); color:rgba(255,255,255,.55); }
+  .mo-steps span.on { background:#fff; color:#111; }
 </style>
 <link rel="stylesheet" href="/css/tw/menu.css">
 </head>
@@ -334,6 +341,10 @@
       <div id="modalSizes" class="hidden flex-wrap gap-2"></div>
       <div id="modalCoffee" class="hidden space-y-3"></div>
       <div id="modalMeta" class="flex flex-wrap gap-1.5"></div>
+      <div id="modalNoteBox" class="hidden pt-1">
+        <label for="mNote" id="mNoteLabel" class="text-[11px] font-bold text-gray-400 block mb-1.5">ملاحظة على هذا الصنف (اختياري)</label>
+        <input id="mNote" type="text" maxlength="100" autocomplete="off" placeholder="مثال: بدون بصل، سكر خفيف" class="w-full bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-white/40" style="font-size:16px">
+      </div>
       <div id="modalOrderBox" class="hidden items-center gap-2 pt-1">
         <div class="flex items-center bg-white/10 border border-white/20 rounded-2xl shrink-0" dir="ltr">
           <button type="button" id="mQtyMinus" aria-label="-" class="w-11 h-11 text-white text-lg font-black">−</button>
@@ -412,11 +423,35 @@
         <span id="cartTotalLabel" class="text-sm font-bold text-gray-300">المجموع</span>
         <span id="cartTotal" class="text-lg font-black text-white"></span>
       </div>
+      <!-- الطلب للكاشير: رقم الطاولة، أو محلي/سفري في الخدمة الذاتية -->
+      <div id="cartDirect" class="hidden space-y-2.5 border-t border-white/10 pt-3">
+        <div id="dineBox" class="hidden grid grid-cols-2 gap-2" role="radiogroup">
+          <button type="button" data-dine="in" class="dine-btn"><span id="dineInText">محلي</span></button>
+          <button type="button" data-dine="out" class="dine-btn"><span id="dineOutText">سفري</span></button>
+        </div>
+        <div id="tableBox">
+          <label for="tableInput" id="tableLabel" class="text-[11px] font-bold text-gray-400 block mb-1.5">رقم الطاولة</label>
+          <input id="tableInput" type="text" inputmode="numeric" maxlength="6" autocomplete="off" dir="ltr" placeholder="12" class="w-full text-center text-2xl font-black bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-white/40">
+        </div>
+        <p id="directMsg" class="hidden text-[12px] font-bold text-red-300"></p>
+      </div>
       <button type="button" id="cartSend" onclick="sendCart()" class="w-full bg-[#25d366] hover:bg-[#1ebe5b] text-black font-black text-sm py-3.5 rounded-2xl flex items-center justify-center gap-2 transition">
         <i class="fa-brands fa-whatsapp text-lg"></i> <span id="cartSendText">إرسال الطلب عبر واتساب</span>
       </button>
       <button type="button" id="cartClear" onclick="clearCart()" class="w-full text-[11px] font-bold text-gray-500 hover:text-red-300 transition">تفريغ الطلب</button>
     </div>
+  </div>
+</div>
+
+<!-- طلبات الطاولة: الحالة تتحدث (وصل للكاشير، استلمه، انقدّم) -->
+<button id="moBar" type="button" onclick="openOrders()" class="hidden fixed top-3 inset-x-3 z-40 max-w-md mx-auto rounded-2xl shadow-2xl px-4 py-3 items-center gap-3 text-right"></button>
+<div id="moModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-xl opacity-0 pointer-events-none transition-all duration-300">
+  <div class="modal-panel border border-white/20 w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl overflow-y-auto overscroll-contain max-h-[92vh] shadow-2xl text-right" style="padding-bottom: env(safe-area-inset-bottom)">
+    <div class="sticky top-0 modal-head backdrop-blur px-5 pt-5 pb-3 flex items-center justify-between border-b border-white/10">
+      <h3 id="moTitle" class="font-black text-lg text-white">طلباتك</h3>
+      <button type="button" onclick="closeOrders()" aria-label="إغلاق" class="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div id="moList" class="p-5 space-y-3"></div>
   </div>
 </div>
 
@@ -960,6 +995,7 @@
     if (first) renderMenu(allProducts, false); else handleSearch();
     renderCartBar();
     renderCalorieNote();
+    if (first && directMode() === 'table') refreshOrders();   // طلباته السابقة على الطاولة وحالتها
     if (!first && coupon && cart.length) applyCoupon(true);
     // نفس اللغة اللي اختارها الزائر في باقي صفحات DEV MENU
     let saved = ''; try { saved = localStorage.getItem('dm_lang'); } catch {}
@@ -1289,6 +1325,11 @@
     const canOrder = orderingOn() && p.is_available !== false;
     box.classList.toggle('hidden', !canOrder);
     box.classList.toggle('flex', canOrder);
+    const noteOn = canOrder && !!directMode();
+    document.getElementById('modalNoteBox').classList.toggle('hidden', !noteOn);
+    document.getElementById('mNote').value = '';
+    document.getElementById('mNoteLabel').textContent = T('ملاحظة على هذا الصنف (اختياري)', 'Note for this item (optional)');
+    document.getElementById('mNote').placeholder = T('مثال: بدون بصل، سكر خفيف', 'e.g. no onions, less sugar');
     modalQty = 1;
     renderModalSizes(p);
     updateModalAdd(p);
@@ -1325,13 +1366,16 @@
   let coupon = null; // نتيجة فحص الكوبون من الخادم: { coupon, subtotal, discount, total }
   const cartKey = () => `cart:${project.id}`;
   const waNumber = () => String((project && project.whatsapp_number) || '').replace(/\D/g, '');
+  // الطلب للكاشير من المنيو (صاحب المحل مشغّله): 'table' طاولات، 'self' خدمة ذاتية مع رقم بيجر. وإلا واتساب
+  const directMode = () => (project && ['table', 'self'].includes(project.order_mode)) ? project.order_mode : null;
   const orderingOn = () => {
+    if (directMode()) return true;
     const wa = waNumber();
     const valid = wa.startsWith('966') ? /^9665\d{8}$/.test(wa) : /^[1-9]\d{10,14}$/.test(wa);
     return !!(project && project.whatsapp_orders && valid);
   };
   const cartQty = (id) => cart.filter(c => String(c.id) === String(id)).reduce((n, c) => n + c.qty, 0);
-  const sameLine = (c, id, size) => String(c.id) === String(id) && (c.size || null) === (size || null);
+  const sameLine = (c, id, size, note) => String(c.id) === String(id) && (c.size || null) === (size || null) && (c.note || null) === (note || null);
   const lineName = (p, c) => productName(p) + (c.size ? ` (${sizeName(sizesOf(p).find(z => z.name === c.size) || { name: c.size })})` : '');
   const productById = (id) => allProducts.find(x => String(x.id) === String(id));
   const round2 = (n) => Math.round(n * 100) / 100;
@@ -1344,7 +1388,7 @@
       if (!p || p.is_available === false || !(c.qty > 0)) return false;
       // الحجم لازم يكون موجود للطبق اللي له أحجام، وفاضي للطبق اللي ما له
       return sizesOf(p).length ? unitPrice(p, c.size) !== null : !c.size;
-    }).map(c => ({ id: c.id, size: c.size || null, qty: c.qty }));
+    }).map(c => ({ id: c.id, size: c.size || null, qty: c.qty, note: c.note || null }));
   }
   function saveCart() {
     try { sessionStorage.setItem(cartKey(), JSON.stringify(cart)); } catch {}
@@ -1367,21 +1411,22 @@
     menuToast.t = setTimeout(() => t.classList.add('opacity-0', '-translate-y-3'), 1600);
   }
 
-  function addToCart(id, qty, size = null) {
+  function addToCart(id, qty, size = null, note = null) {
+    note = directMode() ? (String(note || '').trim().slice(0, 100) || null) : null;
     const p = productById(id);
     if (!p || p.is_available === false || !orderingOn()) return;
     if (sizesOf(p).length && unitPrice(p, size) === null) return openModal(id);
     if (!sizesOf(p).length) size = null;
-    const item = cart.find(c => sameLine(c, p.id, size));
-    if (item) item.qty = Math.min(99, item.qty + qty);
-    else cart.push({ id: p.id, size, qty: Math.min(99, qty) });
+    const item = cart.find(c => sameLine(c, p.id, size, note));
+    if (item) item.qty = Math.min(directMode() ? 20 : 99, item.qty + qty);
+    else cart.push({ id: p.id, size, qty: Math.min(directMode() ? 20 : 99, qty), note });
     saveCart();
     const n = lineName(p, { size });
     menuToast(T(`أُضيف للطلب: ${n}`, `Added: ${n}`));
   }
   function setQty(i, qty) {
     if (!cart[i]) return;
-    if (qty <= 0) cart.splice(i, 1); else cart[i].qty = Math.min(99, qty);
+    if (qty <= 0) cart.splice(i, 1); else cart[i].qty = Math.min(directMode() ? 20 : 99, qty);
     saveCart();
     renderCartItems();
     if (!cart.length) closeCart();
@@ -1408,6 +1453,7 @@
         <li class="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl p-2.5">
           <div class="flex-1 min-w-0">
             <p class="text-sm font-bold text-white leading-snug line-clamp-2">${esc(lineName(p, c))}</p>
+            ${c.note ? `<p class="text-[11px] font-bold text-amber-200 mt-0.5">${esc(c.note)}</p>` : ''}
             <p class="text-[11px] text-gray-400 mt-0.5">${esc(money(round2(u * c.qty)))}</p>
           </div>
           <div class="flex items-center bg-white/10 border border-white/15 rounded-xl shrink-0" dir="ltr">
@@ -1468,11 +1514,14 @@
 
   function openCart() {
     if (!cart.length) return;
-    document.getElementById('cartTitle').innerHTML = `<i class="fa-brands fa-whatsapp text-[#25d366]"></i> ${T('طلبك', 'Your order')}`;
+    const dm = directMode();
+    document.getElementById('cartTitle').innerHTML = `<i class="${dm ? 'fa-solid fa-list' : 'fa-brands fa-whatsapp text-[#25d366]'}"></i> ${T('طلبك', 'Your order')}`;
     document.getElementById('cartNoteLabel').textContent = T('ملاحظات على الطلب (اختياري)', 'Order notes (optional)');
     document.getElementById('cartNote').placeholder = T('مثال: بدون بصل، سكر خفيف...', 'e.g. no onions, less sugar...');
     document.getElementById('cartTotalLabel').textContent = T('المجموع', 'Total');
-    document.getElementById('cartSendText').textContent = T('إرسال الطلب عبر واتساب', 'Send order via WhatsApp');
+    document.getElementById('cartSendText').textContent = dm ? T('أرسل الطلب للكاشير', 'Send order to the cashier') : T('إرسال الطلب عبر واتساب', 'Send order via WhatsApp');
+    document.querySelector('#cartSend i').className = dm ? 'fa-solid fa-arrow-up text-lg' : 'fa-brands fa-whatsapp text-lg';
+    renderDirect();
     document.getElementById('cartClear').textContent = T('تفريغ الطلب', 'Clear order');
     document.getElementById('couponBox').classList.toggle('hidden', project.has_coupons !== true);
     document.getElementById('couponLabel').textContent = T('كوبون خصم', 'Discount coupon');
@@ -1485,6 +1534,7 @@
   // رسالة واحدة فيها كل الأصناف والكميات والمجموع
   function sendCart() {
     if (!cart.length || !orderingOn()) return;
+    if (directMode()) return sendDirect();
     const ar = currentLang === 'ar';
     const cur = DM.currencyText(project && project.currency, currentLang);
     const lines = cart.map(c => {
@@ -1519,6 +1569,104 @@
     closeCart();
   }
 
+  // ─── الطلب للكاشير (بدون واتساب) ───
+  // الطاولات: رقم الطاولة إجباري. الخدمة الذاتية: محلي أو سفري، والطاولة اختيارية للمحلي، ويطلع له رقم بيجر
+  let dine = 'in';
+  const devId = () => { try { let d = localStorage.getItem('dm_dev'); if (!d) { d = Array.from(crypto.getRandomValues(new Uint8Array(18)), b => 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'[b & 63]).join(''); localStorage.setItem('dm_dev', d); } return d; } catch { return ''; } };
+  const tableKey = () => `dm_table_${project.id}`;
+  function renderDirect() {
+    const dm = directMode();
+    document.getElementById('cartDirect').classList.toggle('hidden', !dm);
+    if (!dm) return;
+    const self = dm === 'self';
+    document.getElementById('dineBox').classList.toggle('hidden', !self);
+    document.querySelectorAll('[data-dine]').forEach(b => { b.classList.toggle('on', b.dataset.dine === dine); b.setAttribute('aria-checked', b.dataset.dine === dine); });
+    document.getElementById('dineInText').textContent = T('محلي', 'Dine in');
+    document.getElementById('dineOutText').textContent = T('سفري', 'Takeaway');
+    document.getElementById('tableBox').classList.toggle('hidden', self && dine === 'out');
+    document.getElementById('tableLabel').textContent = self ? T('رقم الطاولة (اختياري)', 'Table number (optional)') : T('رقم الطاولة', 'Table number');
+    const ti = document.getElementById('tableInput');
+    // رقم الطاولة من رابط QR الطاولة (?table=) أو آخر مرة
+    if (!ti.value) { try { ti.value = urlParams.get('table') || sessionStorage.getItem(tableKey()) || ''; } catch {} }
+    document.getElementById('directMsg').classList.add('hidden');
+  }
+  document.getElementById('dineBox').addEventListener('click', (e) => { const b = e.target.closest('[data-dine]'); if (b) { dine = b.dataset.dine; renderDirect(); } });
+  function directErr(msg) { const m = document.getElementById('directMsg'); m.textContent = msg; m.classList.remove('hidden'); }
+  async function sendDirect() {
+    const dm = directMode();
+    const table = document.getElementById('tableInput').value.trim().replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15));
+    if (dm === 'table' && !table) { directErr(T('اكتب رقم طاولتك عشان يوصلك الطلب', 'Enter your table number')); return document.getElementById('tableInput').focus(); }
+    const btn = document.getElementById('cartSend'); btn.disabled = true;
+    const body = { items: cart.map(c => ({ id: c.id, qty: c.qty, size: c.size, note: c.note })), note: document.getElementById('cartNote').value.trim(), table: dm === 'self' && dine === 'out' ? '' : table, coupon: coupon ? coupon.coupon.code : undefined };
+    try {
+      try { if (table) sessionStorage.setItem(tableKey(), table); } catch {}
+      if (dm === 'self') {
+        const lt = await DM.loyaltyToken(project.client_slug).catch(() => '');
+        const r = await DM.post('/api/pager?action=take', { slug: project.client_slug, dev: devId(), lt: lt || undefined, order: { ...body, dine } });
+        cart.forEach(c => DM.post('/api/public?action=track', { client_id: project.id, kind: 'order', product_id: c.id }).catch(() => {}));
+        try { localStorage.setItem(`dm_pager_${String(project.client_slug).toLowerCase()}`, r.token); } catch {}
+        cart = []; resetCoupon(); saveCart();
+        location.href = DM.storePage('pager', project.client_slug);
+        return;
+      }
+      const r = await DM.post('/api/public?action=order', { slug: project.client_slug, dev: devId(), lang: currentLang, ...body });
+      cart.forEach(c => DM.post('/api/public?action=track', { client_id: project.id, kind: 'order', product_id: c.id }).catch(() => {}));
+      myOrders = [{ token: r.token, ...r.order }, ...myOrders.filter(o => o.token !== r.token)].slice(0, 5);
+      saveOrders(); watchOrder(r.live);
+      cart = []; resetCoupon(); document.getElementById('cartNote').value = ''; saveCart(); closeCart();
+      renderOrders(); openOrders();
+    } catch (e) {
+      directErr(e.status === 0 ? T('تعذر الاتصال، حاول مرة ثانية', 'Connection failed, try again') : (currentLang === 'ar' ? (e.message || 'ما انرسل الطلب، حاول مرة ثانية') : 'The order was not sent, please try again'));
+    } finally { btn.disabled = false; }
+  }
+
+  // ─── طلباتي (الطاولات): تتحفظ في الجوال، والحالة تتحدث لحظياً ───
+  let myOrders = [];
+  const ordersKey = () => `dm_mo_${project.id}`;
+  function saveOrders() { try { localStorage.setItem(ordersKey(), JSON.stringify(myOrders.map(o => ({ token: o.token, at: o.created_at })))); } catch {} }
+  function watchOrder(topic) { if (topic && !watchOrder.on.has(topic)) { watchOrder.on.add(topic); DM.live(topic, () => refreshOrders()); } }
+  watchOrder.on = new Set();
+  async function refreshOrders() {
+    let saved = []; try { saved = JSON.parse(localStorage.getItem(ordersKey()) || '[]'); } catch {}
+    saved = saved.filter(o => o && o.token && Date.now() - Date.parse(o.at || 0) < 12 * 3600e3);
+    if (!saved.length) { myOrders = []; return renderOrders(); }
+    try {
+      const r = await DM.get(`/api/public?action=order-status&slug=${encodeURIComponent(project.client_slug)}&t=${saved.map(o => o.token).join(',')}`);
+      myOrders = r.orders.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
+      saveOrders();
+    } catch {}
+    renderOrders();
+    clearTimeout(refreshOrders.t);
+    if (myOrders.some(o => ['new', 'accepted'].includes(o.status))) refreshOrders.t = setTimeout(refreshOrders, 15000);
+  }
+  const ST = { new: ['وصل طلبك للكاشير', 'Sent to the cashier'], accepted: ['الكاشير استلم طلبك، وجاري تحضيره', 'The cashier has it, being prepared'], served: ['تم تقديم طلبك، بالعافية', 'Served, enjoy'], cancelled: ['انلغى الطلب، كلّم الكاشير', 'Cancelled, ask the cashier'] };
+  function renderOrders() {
+    const bar = document.getElementById('moBar');
+    const live = myOrders.filter(o => o.status !== 'cancelled' && (o.status !== 'served' || Date.now() - Date.parse(o.created_at) < 40 * 60000));
+    const top = live[0];
+    bar.classList.toggle('hidden', !top); bar.classList.toggle('flex', !!top);
+    if (top) {
+      const L = currentLang === 'ar' ? 0 : 1;
+      bar.className = `${bar.className.replace(/\bst-\w+/g, '').trim()} st-${top.status}`;
+      bar.innerHTML = `<i class="fa-solid ${top.status === 'served' ? 'fa-utensils text-green-700' : top.status === 'accepted' ? 'fa-fire text-amber-700' : 'fa-clock'} text-xl"></i>
+        <span class="flex-1 min-w-0"><b class="block text-sm font-black">${ST[top.status][L]}</b><small class="block text-[11px] font-bold opacity-70">${top.table_no ? `${T('طاولة', 'Table')} <span dir="ltr">${esc(top.table_no)}</span> · ` : ''}${esc(money(top.total))}${live.length > 1 ? ` · ${T(`${live.length} طلبات`, `${live.length} orders`)}` : ''}</small></span>
+        <span class="text-[11px] font-black underline">${T('التفاصيل', 'Details')}</span>`;
+    }
+    document.getElementById('moTitle').textContent = T('طلباتك', 'Your orders');
+    const step = (o) => { const i = { new: 0, accepted: 1, served: 2 }[o.status] ?? -1; return `<div class="mo-steps">${[['وصل', 'Sent'], ['يتحضّر', 'Preparing'], ['انقدّم', 'Served']].map((x, k) => `<span class="${k <= i ? 'on' : ''}">${x[currentLang === 'ar' ? 0 : 1]}</span>`).join('')}</div>`; };
+    document.getElementById('moList').innerHTML = myOrders.length ? myOrders.map(o => `
+      <div class="bg-white/5 border border-white/10 rounded-2xl p-3.5 space-y-2.5">
+        <div class="flex items-center justify-between gap-2"><b class="text-white text-sm font-black">${o.table_no ? `${T('طاولة', 'Table')} <span dir="ltr">${esc(o.table_no)}</span>` : T('طلبك', 'Your order')}</b><span class="text-[11px] font-bold text-gray-400">${new Date(o.created_at).toLocaleTimeString(currentLang === 'ar' ? 'ar-SA-u-nu-latn' : 'en-GB', { hour: '2-digit', minute: '2-digit' })}</span></div>
+        ${o.status === 'cancelled' ? `<p class="text-[12px] font-black text-red-300">${ST.cancelled[currentLang === 'ar' ? 0 : 1]}</p>` : step(o)}
+        <ul class="space-y-1">${(o.items || []).map(i => `<li class="text-[13px] text-white"><b>${i.qty}×</b> ${esc(i.name)}${i.size ? ` <span class="text-gray-400">(${esc(i.size)})</span>` : ''}${i.note ? `<span class="block text-[11px] text-amber-200 font-bold">${esc(i.note)}</span>` : ''}</li>`).join('')}</ul>
+        ${o.note ? `<p class="text-[11px] text-gray-300">${T('ملاحظات', 'Notes')}: ${esc(o.note)}</p>` : ''}
+        <div class="flex items-center justify-between border-t border-white/10 pt-2"><span class="text-[12px] text-gray-300 font-bold">${T('المجموع (تدفعه عند الكاشير)', 'Total (pay at the counter)')}</span><b class="text-white">${esc(money(o.total))}</b></div>
+      </div>`).join('') : `<p class="text-sm text-gray-400 text-center">${T('ما عندك طلبات', 'No orders yet')}</p>`;
+  }
+  function openOrders() { renderOrders(); document.getElementById('moModal').classList.remove('opacity-0', 'pointer-events-none'); }
+  function closeOrders() { document.getElementById('moModal').classList.add('opacity-0', 'pointer-events-none'); }
+  document.getElementById('moModal').addEventListener('click', (e) => { if (e.target.id === 'moModal') closeOrders(); });
+
   // أزرار الكمية في نافذة الطبق
   function updateModalAdd(p) {
     const u = unitPrice(p, modalSize) ?? minPrice(p);
@@ -1534,10 +1682,10 @@
   });
   document.getElementById('mQtyPlus').addEventListener('click', () => {
     const p = productById(currentModalProduct); if (!p) return;
-    modalQty = Math.min(99, modalQty + 1); updateModalAdd(p);
+    modalQty = Math.min(directMode() ? 20 : 99, modalQty + 1); updateModalAdd(p);
   });
   document.getElementById('mAddBtn').addEventListener('click', () => {
-    addToCart(currentModalProduct, modalQty, modalSize);
+    addToCart(currentModalProduct, modalQty, modalSize, document.getElementById('mNote').value);
     closeModal();
   });
   document.getElementById('cartModal').addEventListener('click', (e) => { if (e.target.id === 'cartModal') closeCart(); });
