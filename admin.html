@@ -143,6 +143,8 @@
   .ly-chip { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: rgba(201,162,39,.16); color: #6b520a; }
   @media (min-width: 1024px) { .ly-phone-screen { height: 600px; } }
   .pg-phone { max-width: 330px; }
+  /* مكان جوال المعاينة (صفحة البيجر وإعدادات المنيو): عرض ثابت، والإطار 390 مصغّر لـ 304، فما ينقص ويقص الصفحة */
+  @media (min-width: 1280px) { #menu-phone-slot, #pager-phone-slot { width: 330px; } #menu-phone-slot .pg-phone, #pager-phone-slot .pg-phone { width: 330px; } }
   .pg-phone-screen { height: 640px !important; overflow: hidden; background: #1b2a20; }
   .pg-phone-screen iframe { position: absolute; top: 0; right: 0; width: 390px; height: 822px; border: 0; transform: scale(.7795); transform-origin: top right; }
   @media (max-width: 1023px) { .ly-phone { max-width: 290px; } }
