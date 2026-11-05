@@ -341,10 +341,6 @@
       <div id="modalSizes" class="hidden flex-wrap gap-2"></div>
       <div id="modalCoffee" class="hidden space-y-3"></div>
       <div id="modalMeta" class="flex flex-wrap gap-1.5"></div>
-      <div id="modalNoteBox" class="hidden pt-1">
-        <label for="mNote" id="mNoteLabel" class="text-[11px] font-bold text-gray-400 block mb-1.5">ملاحظة على هذا الصنف (اختياري)</label>
-        <input id="mNote" type="text" maxlength="100" autocomplete="off" placeholder="مثال: بدون بصل، سكر خفيف" class="w-full bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-white/40" style="font-size:16px">
-      </div>
       <div id="modalOrderBox" class="hidden items-center gap-2 pt-1">
         <div class="flex items-center bg-white/10 border border-white/20 rounded-2xl shrink-0" dir="ltr">
           <button type="button" id="mQtyMinus" aria-label="-" class="w-11 h-11 text-white text-lg font-black">−</button>
@@ -401,7 +397,7 @@
     </div>
     <div class="p-5 space-y-4">
       <ul id="cartItems" class="space-y-2.5"></ul>
-      <div>
+      <div id="cartNoteBox">
         <label id="cartNoteLabel" for="cartNote" class="text-[11px] font-bold text-gray-400 block mb-1.5">ملاحظات على الطلب (اختياري)</label>
         <textarea id="cartNote" rows="2" maxlength="300" placeholder="مثال: بدون بصل، سكر خفيف..." class="w-full bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-white/40 resize-none" style="font-size:16px"></textarea>
       </div>
@@ -1326,11 +1322,6 @@
     const canOrder = orderingOn() && p.is_available !== false;
     box.classList.toggle('hidden', !canOrder);
     box.classList.toggle('flex', canOrder);
-    const noteOn = canOrder && !!directMode();
-    document.getElementById('modalNoteBox').classList.toggle('hidden', !noteOn);
-    document.getElementById('mNote').value = '';
-    document.getElementById('mNoteLabel').textContent = T('ملاحظة على هذا الصنف (اختياري)', 'Note for this item (optional)');
-    document.getElementById('mNote').placeholder = T('مثال: بدون بصل، سكر خفيف', 'e.g. no onions, less sugar');
     modalQty = 1;
     renderModalSizes(p);
     updateModalAdd(p);
@@ -1451,11 +1442,11 @@
       const p = productById(c.id); if (!p) return '';
       const u = unitPrice(p, c.size) || 0;
       return `
-        <li class="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl p-2.5">
+        <li class="flex items-start gap-3 bg-white/5 border border-white/10 rounded-2xl p-2.5">
           <div class="flex-1 min-w-0">
             <p class="text-sm font-bold text-white leading-snug line-clamp-2">${esc(lineName(p, c))}</p>
-            ${c.note ? `<p class="text-[11px] font-bold text-amber-200 mt-0.5">${esc(c.note)}</p>` : ''}
             <p class="text-[11px] text-gray-400 mt-0.5">${esc(money(round2(u * c.qty)))}</p>
+            ${directMode() ? `<input data-note="${i}" value="${esc(c.note || '')}" maxlength="100" autocomplete="off" placeholder="${esc(T('ملاحظة (اختياري): بدون بصل، سكر خفيف', 'Note (optional): no onions, less sugar'))}" class="mt-2 w-full bg-white/5 border border-white/15 rounded-lg px-2.5 py-2 text-[13px] text-amber-100 placeholder-gray-500 focus:outline-none focus:border-white/40" style="font-size:16px">` : ''}
           </div>
           <div class="flex items-center bg-white/10 border border-white/15 rounded-xl shrink-0" dir="ltr">
             <button type="button" onclick="setQty(${i}, ${c.qty - 1})" aria-label="-" class="w-9 h-9 text-white font-black">${c.qty === 1 ? '<i class="fa-solid fa-trash text-[11px] text-red-300"></i>' : '−'}</button>
@@ -1467,6 +1458,12 @@
     renderCouponTotals();
   }
 
+  // ملاحظة الصنف تنحفظ وهو يكتب (بدون إعادة رسم السلة عشان ما يطلع الكيبورد)
+  document.getElementById('cartItems').addEventListener('input', (e) => {
+    const el = e.target.closest('[data-note]'); if (!el || !cart[+el.dataset.note]) return;
+    cart[+el.dataset.note].note = el.value.slice(0, 100) || null;
+    try { sessionStorage.setItem(cartKey(), JSON.stringify(cart)); } catch {}
+  });
   // ─── كوبون الخصم (الخادم يتحقق منه ويحسب الخصم بأسعار قاعدة البيانات) ───
   function renderCouponTotals() {
     const row = document.getElementById('discountRow');
@@ -1578,6 +1575,8 @@
   function renderDirect() {
     const dm = directMode();
     document.getElementById('cartDirect').classList.toggle('hidden', !dm);
+    // الطلب للكاشير: الملاحظة على كل صنف لحاله (تحت اسمه)، بدل ملاحظة عامة
+    document.getElementById('cartNoteBox').classList.toggle('hidden', !!dm);
     if (!dm) return;
     const self = dm === 'self';
     document.getElementById('dineBox').classList.toggle('hidden', !self);
@@ -1600,7 +1599,7 @@
     const table = document.getElementById('tableInput').value.trim().replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15));
     if (dm === 'table' && !table) { directErr(T('اكتب رقم طاولتك عشان يوصلك الطلب', 'Enter your table number')); return document.getElementById('tableInput').focus(); }
     const btn = document.getElementById('cartSend'); btn.disabled = true;
-    const body = { items: cart.map(c => ({ id: c.id, qty: c.qty, size: c.size, note: c.note })), note: document.getElementById('cartNote').value.trim(), table: dm === 'self' && dine === 'out' ? '' : table, coupon: coupon ? coupon.coupon.code : undefined };
+    const body = { items: cart.map(c => ({ id: c.id, qty: c.qty, size: c.size, note: c.note })), note: '', table: dm === 'self' && dine === 'out' ? '' : table, coupon: coupon ? coupon.coupon.code : undefined };
     try {
       try { if (table) sessionStorage.setItem(tableKey(), table); } catch {}
       if (dm === 'self') {
@@ -1693,7 +1692,7 @@
     modalQty = Math.min(directMode() ? 20 : 99, modalQty + 1); updateModalAdd(p);
   });
   document.getElementById('mAddBtn').addEventListener('click', () => {
-    addToCart(currentModalProduct, modalQty, modalSize, document.getElementById('mNote').value);
+    addToCart(currentModalProduct, modalQty, modalSize);
     closeModal();
   });
   document.getElementById('cartModal').addEventListener('click', (e) => { if (e.target.id === 'cartModal') closeCart(); });
