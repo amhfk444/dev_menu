@@ -200,8 +200,9 @@
   #moBar { background:#fff; color:#111; }
   #moBar.st-accepted { background:#fff7dc; } #moBar.st-served { background:#e7f6ec; }
   .mo-steps { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
-  .mo-steps span { font-size:11px; font-weight:800; text-align:center; padding:6px 4px; border-radius:10px; background:rgba(255,255,255,.06); color:rgba(255,255,255,.55); }
-  .mo-steps span.on { background:#fff; color:#111; }
+  /* خطوات الطلب بألوان الثيم (الفاتح والداكن) */
+  .mo-steps span { font-size:11.5px; font-weight:800; text-align:center; padding:7px 4px; border-radius:10px; background:var(--chip); color:var(--fg2); border:1px solid var(--line); }
+  body .mo-steps span.on { background:var(--accent); color:var(--accent-fg); border-color:var(--accent); }
   /* أزرار محلي/استلام/توصيل والموعد: بألوان الثيم (الفاتح والداكن) */
   .dine-btn { display:flex; align-items:center; justify-content:center; min-height:52px; border-radius:16px; font-weight:900; font-size:15px; color:var(--fg); background:var(--chip); border:1.5px solid var(--line); }
   body .dine-btn.on { background:var(--accent); color:var(--accent-fg); border-color:var(--accent); }
@@ -1613,7 +1614,7 @@
     document.getElementById('cartNoteLabel').textContent = T('ملاحظات على الطلب (اختياري)', 'Order notes (optional)');
     document.getElementById('cartNote').placeholder = T('مثال: بدون بصل، سكر خفيف...', 'e.g. no onions, less sugar...');
     document.getElementById('cartTotalLabel').textContent = T('المجموع', 'Total');
-    document.getElementById('cartSendText').textContent = dm ? T('أرسل الطلب للكاشير', 'Send order to the cashier') : T('إرسال الطلب عبر واتساب', 'Send order via WhatsApp');
+    document.getElementById('cartSendText').textContent = dm ? (foodPlace() ? T('أرسل الطلب للكاشير', 'Send order to the cashier') : T('أرسل الطلب', 'Send order')) : T('إرسال الطلب عبر واتساب', 'Send order via WhatsApp');
     document.querySelector('#cartSend i').className = dm ? 'fa-solid fa-arrow-up text-lg' : 'fa-brands fa-whatsapp text-lg';
     renderDirect();
     document.getElementById('cartClear').textContent = T('تفريغ الطلب', 'Clear order');
@@ -1884,7 +1885,11 @@
     // احتياطي لو التحديث اللحظي انقطع: كل 8 ثواني طول ما فيه طلب مفتوح
     if (myOrders.some(o => ['new', 'accepted'].includes(o.status))) refreshOrders.t = setTimeout(refreshOrders, 8000);
   }
-  const ST = { new: ['وصل طلبك للكاشير', 'Sent to the cashier'], accepted: ['الكاشير استلم طلبك، وجاري تحضيره', 'The cashier has it, being prepared'], served: ['تم تسليم طلبك، بالعافية', 'Done, enjoy'], cancelled: ['انلغى الطلب، كلّم الكاشير', 'Cancelled, ask the cashier'] };
+  // المطاعم والمقاهي «الكاشير»، والمتاجر والأسر المنتجة ومحلات الورود «المتجر» (ما فيه كاشير)
+  const foodPlace = () => DMSectors.isFood(project);
+  const STF = { new: ['وصل طلبك للكاشير', 'Sent to the cashier'], accepted: ['الكاشير استلم طلبك، وجاري تحضيره', 'The cashier has it, being prepared'], served: ['تم تسليم طلبك، بالعافية', 'Done, enjoy'], cancelled: ['انلغى الطلب، كلّم الكاشير', 'Cancelled, ask the cashier'] };
+  const STS = { new: ['وصل طلبك للمتجر', 'Sent to the store'], accepted: ['المتجر استلم طلبك، وجاري تجهيزه', 'The store has it, being prepared'], served: ['تم تسليم طلبك، شكراً لك', 'Delivered, thank you'], cancelled: ['انلغى الطلب، تواصل مع المتجر', 'Cancelled, contact the store'] };
+  const ST = new Proxy({}, { get: (_, k) => (foodPlace() ? STF : STS)[k] });
   const whenText = (iso) => new Date(iso).toLocaleString(currentLang === 'ar' ? 'ar-SA-u-nu-latn-ca-gregory' : 'en-GB', { weekday: 'long', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Riyadh' });
   const who = (o) => `${T('طلب', 'Order')} <b dir="ltr">${esc(o.code || '')}</b> · ${o.dine === 'delivery' ? T('توصيل', 'Delivery') : o.dine === 'out' ? T('استلام', 'Pickup') : T('محلي', 'Dine in')}${o.table_no ? ` · ${T('طاولة', 'Table')} <span dir="ltr">${esc(o.table_no)}</span>` : ''}${o.scheduled_at ? ` · ${esc(whenText(o.scheduled_at))}` : ''}`;
   function renderOrders() {
@@ -1900,15 +1905,15 @@
         <span class="text-[11px] font-black underline">${T('التفاصيل', 'Details')}</span>`;
     }
     document.getElementById('moTitle').textContent = T('طلباتك', 'Your orders');
-    const step = (o) => { const i = { new: 0, accepted: 1, served: 2 }[o.status] ?? -1; return `<div class="mo-steps">${[['وصل', 'Sent'], ['يتحضّر', 'Preparing'], ['تم', 'Done']].map((x, k) => `<span class="${k <= i ? 'on' : ''}">${x[L]}</span>`).join('')}</div>`; };
+    const step = (o) => { const i = { new: 0, accepted: 1, served: 2 }[o.status] ?? -1; return `<div class="mo-steps">${[['وصل', 'Sent'], ['يتجهز', 'Preparing'], o.dine === 'delivery' ? ['تم التوصيل', 'Delivered'] : ['تم', 'Done']].map((x, k) => `<span class="${k <= i ? 'on' : ''}">${x[L]}</span>`).join('')}</div>`; };
     if (!live.length) closeOrders();
     document.getElementById('moList').innerHTML = live.length ? live.map(o => `
       <div class="bg-white/5 border border-white/10 rounded-2xl p-3.5 space-y-2.5">
         <div class="flex items-center justify-between gap-2"><span class="text-white text-sm font-black">${who(o)}</span><span class="text-[11px] font-bold text-gray-400">${new Date(o.created_at).toLocaleTimeString(currentLang === 'ar' ? 'ar-SA-u-nu-latn' : 'en-GB', { hour: '2-digit', minute: '2-digit' })}</span></div>
         ${o.status === 'cancelled' ? `<p class="text-[12px] font-black text-red-300">${ST.cancelled[L]}</p>` : step(o)}
-        ${o.status === 'new' && !o.table_no ? `<p class="text-[12px] font-bold text-gray-300">${T(`لو سألك الكاشير، قل له رمز طلبك ${o.code}`, `If the cashier asks, your order code is ${o.code}`)}</p>` : ''}
+        ${o.status === 'new' && !o.table_no && o.dine !== 'delivery' ? `<p class="text-[12px] font-bold text-gray-300">${foodPlace() ? T(`لو سألك الكاشير، قل له رمز طلبك ${o.code}`, `If the cashier asks, your order code is ${o.code}`) : T(`وقت الاستلام قل رمز طلبك ${o.code}`, `At pickup, give your order code ${o.code}`)}</p>` : ''}
         <ul class="space-y-1">${(o.items || []).map(i => `<li class="text-[13px] text-white"><b>${i.qty}×</b> ${esc(i.name)}${i.size ? ` <span class="text-gray-400">(${esc(i.size)})</span>` : ''}${(i.extras || []).length ? `<span class="block text-[11.5px] text-gray-300 font-bold">+ ${i.extras.map(e => esc(e.name)).join('، ')}</span>` : ''}${i.note ? `<span class="block text-[11px] text-amber-200 font-bold">${esc(i.note)}</span>` : ''}</li>`).join('')}</ul>
-        <div class="flex items-center justify-between border-t border-white/10 pt-2"><span class="text-[12px] text-gray-300 font-bold">${T('المجموع (تدفعه عند الكاشير)', 'Total (pay at the counter)')}</span><b class="text-white">${esc(money(o.total))}</b></div>
+        <div class="flex items-center justify-between border-t border-white/10 pt-2"><span class="text-[12px] text-gray-300 font-bold">${(o.dine === 'delivery' ? T('المجموع شامل التوصيل (تدفعه عند الاستلام)', 'Total incl. delivery (pay on delivery)') : o.dine === 'out' || !foodPlace() ? T('المجموع (تدفعه عند الاستلام)', 'Total (pay at pickup)') : T('المجموع (تدفعه عند الكاشير)', 'Total (pay at the counter)'))}</span><b class="text-white">${esc(money(o.total))}</b></div>
       </div>`).join('') : `<p class="text-sm text-gray-400 text-center">${T('ما عندك طلبات', 'No orders yet')}</p>`;
   }
   function openOrders() {
