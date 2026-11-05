@@ -255,6 +255,19 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       ticket: { number: 23, status: 'waiting', ready_at: null, invoice_no: null }, live: '', loyalty: { enabled: false } };
   }
 
+  // بطاقة الولاء ما انربطت وقت أخذ الرقم (مثلاً الرقم جا من طلب المنيو، أو سجّل البطاقة وهو ينتظر):
+  // صفحة الانتظار ترسل بطاقته وتنربط بالرقم قبل الاستلام، فينختم له لما يضغط الكاشير «استلم»
+  if (action === 'loyalty-link' && req.method === 'POST') {
+    const store = await loadStore(b.slug);
+    if (!TOKEN_RE.test(String(b.t || '')) || !TOKEN_RE.test(String(b.lt || ''))) throw new ApiError(400, 'بيانات ناقصة');
+    const t = (await rest(`pager_tickets?token=eq.${q(b.t)}&client_id=eq.${store.id}&select=id,status,loyalty_card_id`))[0];
+    if (!t || t.loyalty_card_id || t.status === 'done' || t.status === 'cancelled') return { linked: !!(t && t.loyalty_card_id) };
+    const card = (await rest(`loyalty_cards?token=eq.${q(b.lt)}&client_id=eq.${await loyaltyHome(store.id)}&select=id`).catch(() => []))[0];
+    if (!card) return { linked: false };
+    await rest(`pager_tickets?id=eq.${t.id}&loyalty_card_id=is.null`, { method: 'PATCH', body: { loyalty_card_id: card.id } });
+    return { linked: true };
+  }
+
   if (action === 'status' && req.method === 'GET') {
     const store = await loadStore(req.query.slug);
     const token = String(req.query.t || '');

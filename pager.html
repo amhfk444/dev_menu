@@ -1448,6 +1448,7 @@
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('ask-sheet').hidden) closeAsk(); });
 
   let lastPoll = 0;
+  let lyLinkTried = '';
   async function poll() {
     clearTimeout(pollTimer); lastPoll = Date.now();
     const token = PREVIEW ? 'preview' : loadToken();
@@ -1475,6 +1476,11 @@
     watchTicket(r.live);
     const st = r.ticket.status;
     renderLoyalty(r.loyalty, st, token);
+    // عنده بطاقة ولاء في هالجوال والرقم مو مربوط فيها (جا من طلب المنيو مثلاً): نربطها عشان ينختم له عند الاستلام
+    if (!PREVIEW && r.loyalty && r.loyalty.enabled && !r.loyalty.linked && (st === 'waiting' || st === 'ready') && lyLinkTried !== token) {
+      lyLinkTried = token;
+      DM.loyaltyToken(slug).then(lt => lt && DM.post('/api/pager?action=loyalty-link', { slug, t: token, lt })).then(x => { if (x && x.linked) poll(); }).catch(() => {});
+    }
     curNumber = r.ticket.number;
     const inv = r.ticket.invoice_no || ''; curInvoice = inv;
     $('w-number').textContent = r.ticket.number; $('r-number').textContent = r.ticket.number;
