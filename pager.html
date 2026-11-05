@@ -660,7 +660,7 @@
       <p class="text-sm font-black">تابعنا</p>
       <div id="d-social-list" class="flex flex-wrap justify-center gap-2"></div>
     </div>
-    <a id="menu-back" class="hidden btn btn-brand"><i class="ph-bold ph-list"></i> <span>ارجع للقائمة</span></a>
+    <a id="menu-back" class="hidden btn btn-brand"><i class="ph-bold ph-fork-knife"></i> <span>ارجع للمنيو</span></a>
     <button id="new-btn" class="btn btn-ghost"><i class="ph-bold ph-ticket"></i> خذ رقم جديد</button>
   </section>
 </main>
@@ -1641,9 +1641,12 @@
     a.classList.toggle('hidden', !from); $('new-btn').classList.toggle('hidden', from);
     if (!from || PREVIEW) return;
     a.href = DM.storePage('menu', slug);
-    let n = 8; const tick = () => { a.querySelector('span').textContent = n > 0 ? `ارجع للقائمة (${n})` : 'ارجع للقائمة'; if (n-- <= 0) location.href = a.href; else backTimer = setTimeout(tick, 1000); };
+    // المطاعم والمقاهي «ارجع للمنيو»، وباقي الأنشطة (متاجر، ورود، أسر منتجة) «ارجع للقائمة»
+    const food = DMSectors.isFood(storeInfo), lbl = food ? 'ارجع للمنيو' : 'ارجع للقائمة';
+    a.querySelector('i').className = 'ph-bold ' + (food ? 'ph-fork-knife' : 'ph-list');
+    let n = 8; const tick = () => { a.querySelector('span').textContent = n > 0 ? `${lbl} (${n})` : lbl; if (n-- <= 0) location.href = a.href; else backTimer = setTimeout(tick, 1000); };
     clearTimeout(backTimer); tick();
-    const stop = (e) => { if (e.target.closest('#menu-back')) return; clearTimeout(backTimer); a.querySelector('span').textContent = 'ارجع للقائمة'; $('v-done').removeEventListener('pointerdown', stop); };
+    const stop = (e) => { if (e.target.closest('#menu-back')) return; clearTimeout(backTimer); a.querySelector('span').textContent = lbl; $('v-done').removeEventListener('pointerdown', stop); };
     $('v-done').addEventListener('pointerdown', stop);
   }
   // ─── لعبة الانتظار: طابق البطاقات (8 أزواج) ───
