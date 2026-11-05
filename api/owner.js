@@ -122,6 +122,8 @@ function cleanExtras(list) {
       if (!validPrice(price)) throw new ApiError(400, `اكتب سعراً صحيحاً لـ "${on}"`);
       const item = { name: on, price: round2(price) };
       const en = str(o.name_en, 40, 'اسم الإضافة بالإنجليزي'); if (en) item.name_en = en;
+      // مربوط بصنف في المنيو (قسم الإضافات): الاسم والسعر والتوفر منه وقت العرض والطلب
+      const pid = int(o.pid); if (Number.isInteger(pid) && pid > 0) item.pid = pid;
       return item;
     });
     const required = g.required === true;

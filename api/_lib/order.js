@@ -57,6 +57,26 @@ async function loadCoupon(storeId, rawCode) {
 }
 
 // الخصم يُحسب هنا بأسعار قاعدة البيانات، مو بالأسعار اللي يرسلها المتصفح
+// إضافات مربوطة بأصناف المنيو (قسم الإضافات): نحدّث اسمها وسعرها من الصنف، ونشيل اللي خلص.
+// تشتغل على قائمة أطباق (للمنيو وحساب الطلب)، والصنف المربوط ممكن يكون مخفي من المنيو
+async function resolveExtraLinks(storeId, products) {
+  const pids = new Set();
+  for (const p of products) for (const g of (Array.isArray(p.extras) ? p.extras : [])) for (const o of (g.options || [])) if (Number.isInteger(o.pid)) pids.add(o.pid);
+  if (!pids.size) return products;
+  const rows = await rest(`products?client_id=eq.${Number(storeId)}&id=in.(${[...pids].join(',')})&select=id,name,name_en,price,sizes,is_available`).catch(() => []);
+  const byId = new Map(rows.map(r => [r.id, r]));
+  for (const p of products) {
+    if (!Array.isArray(p.extras)) continue;
+    p.extras = p.extras.map(g => ({ ...g, options: (g.options || []).flatMap(o => {
+      if (!Number.isInteger(o.pid)) return [o];
+      const r = byId.get(o.pid);
+      if (!r || r.is_available === false) return [];   // انحذف أو خلص: ما يطلع
+      const price = Array.isArray(r.sizes) && r.sizes.length ? Math.min(...r.sizes.map(z => Number(z.price) || 0)) : Number(r.price) || 0;
+      return [{ ...o, name: r.name, ...(r.name_en ? { name_en: r.name_en } : {}), price: round2(price) }];
+    }) })).filter(g => g.options.length);
+  }
+  return products;
+}
 // إضافات الطبق اللي اختارها العميل: [{ g: اسم المجموعة, o: اسم الخيار }] ← { list: [{ group, name, price }], sum }
 // نتأكد إنها موجودة في الطبق، وإن الإجبارية مختارة، وما يتعدى حد كل مجموعة. strict = نرمي خطأ (الطلب)، وإلا نتجاهل (فحص الكوبون)
 function pickExtras(p, sel, strict) {
@@ -83,6 +103,7 @@ async function priceCart(store, coupon, rawItems) {
     rest(`categories?client_id=eq.${store.id}&select=key,name`),
     menuPromos(store.id)
   ]);
+  await resolveExtraLinks(store.id, products);
   const byId = new Map(products.map(p => [p.id, p]));
   const nameToKey = new Map(categories.map(c => [c.name, c.key]));
   const catKeyOf = (cat) => nameToKey.get(cat) || cat;
@@ -128,6 +149,7 @@ async function priceOrder(store, rawItems, coupon = null) {
     rest(`categories?client_id=eq.${store.id}&select=key,name`),
     menuPromos(store.id)
   ]);
+  await resolveExtraLinks(store.id, products);
   const byId = new Map(products.map(p => [p.id, p]));
   const nameToKey = new Map(categories.map(c => [c.name, c.key]));
   const catKeyOf = (cat) => nameToKey.get(cat) || cat;
@@ -231,4 +253,4 @@ async function givePager(storeId, o) {
   return t;
 }
 
-module.exports = { pickExtras, givePager, menuPromos, promoCovers, autoPrice, loadCoupon, priceCart, priceOrder, cleanNote, round2, orderMode, cleanTable, buildOrder, saveOrder, publicOrder, dayStart };
+module.exports = { resolveExtraLinks, pickExtras, givePager, menuPromos, promoCovers, autoPrice, loadCoupon, priceCart, priceOrder, cleanNote, round2, orderMode, cleanTable, buildOrder, saveOrder, publicOrder, dayStart };

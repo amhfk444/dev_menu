@@ -120,6 +120,8 @@ async function menuPayload(slug) {
   // زر المساعد: مشغّل من صاحب المحل + ضمن باقته + باقي له رصيد هالشهر
   // الزر يبقى ظاهر حتى لو خلص الرصيد: المساعد يرد رد لطيف بدل ما يختفي أو يذكر حدود
   const menu_chat = store.menu_chat === true && feats.chat;
+  // الإضافات المربوطة بأصناف المنيو تاخذ اسمها وسعرها الحالي منها
+  await require('./_lib/order').resolveExtraLinks(store.id, products);
   return { store: { ...store, name, menu_chat, waitlist_open, has_coupons, occasion, promos, order_mode }, categories: categories.sort(bySort), products: products.sort(bySort), feats };
 }
 // ردود جاهزة للأسئلة البسيطة. أي شي غيرها يروح للمساعد
