@@ -62,7 +62,7 @@ async function hasCoupons(storeId) {
 }
 
 // الأسعار والعروض والكوبونات: api/_lib/order.js (نفس الحساب لطلب واتساب والطلب من المنيو)
-const { menuPromos, loadCoupon, priceCart, orderMode, orderPrep, autoStart, buildOrder, saveOrder, publicOrder, graceUntil, unpaid, expireUnpaid } = require('./_lib/order');
+const { menuPromos, loadCoupon, priceCart, orderMode, orderPrep, buildOrder, saveOrder, publicOrder, unpaid, expireUnpaid } = require('./_lib/order');
 const { poke } = require('./_lib/live');
 
 // زر "قائمة الانتظار": الإضافة مفعّلة + القائمة مفتوحة + صاحب المتجر مختار يظهر الزر
@@ -365,7 +365,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     const b = readBody(req);
     const store = await findStore(b.slug);
     const mode = await orderMode(store.id);
-    // الخدمة الذاتية: الطلب يوصل الكاشير بعد دقيقتين (وقت التعديل)، ويدخل التجهيز بعد الدفع
+    // الخدمة الذاتية: الطلب يوصل الكاشير على طول، ويبدأ تجهيزه لما يدخله الكاشير في نظامه
     if (!mode || (b.mode && b.mode !== mode)) throw new ApiError(409, 'الطلب من المنيو متوقف الحين، اطلب من الكاشير', 'ORDERS_OFF');
     const { prep } = mode === 'self' ? await orderPrep(store.id) : { prep: null };
     const o = await saveOrder(await buildOrder(store, { ...b, _prep: prep }, mode));
@@ -382,24 +382,11 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (!/^[A-Za-z0-9_-]{10,64}$/.test(t)) throw new ApiError(404, 'الطلب غير موجود', 'NOT_FOUND');
     const o = (await rest(`menu_orders?client_id=eq.${store.id}&token=eq.${q(t)}&select=*`))[0];
     if (!o) throw new ApiError(404, 'الطلب غير موجود', 'NOT_FOUND');
-    if (!unpaid(o) || Date.now() > graceUntil(o) + 5000) throw new ApiError(409, 'خلص وقت التعديل ووصل طلبك للكاشير. كلّمه لو تبي تغيّر شي', 'TOO_LATE');
-    await rest(`menu_orders?id=eq.${o.id}`, { method: 'PATCH', body: { status: 'cancelled', closed_at: new Date().toISOString() } });
+    // يقدر يعدّل لين الكاشير يدخل الطلب في نظامه
+    const done = unpaid(o) ? await rest(`menu_orders?id=eq.${o.id}&status=eq.new&pager_ticket_id=is.null&started_at=is.null`, { method: 'PATCH', prefer: 'return=representation', body: { status: 'cancelled', closed_at: new Date().toISOString() } }) : [];
+    if (!done.length) throw new ApiError(409, 'الكاشير بدأ طلبك. كلّمه لو تبي تغيّر شي', 'TOO_LATE');
+    await poke([topic('pager', store.id)]);
     return { ok: true, items: o.items };
-  }
-
-  // «أنا في الطريق» (أو قرب من المحل): يبدأ تجهيز طلبه (لو المحل مختار «لما يقول العميل إنه جاي»)
-  if (action === 'order-arriving' && req.method === 'POST') {
-    const b = readBody(req);
-    const store = await findStore(b.slug);
-    const t = String(b.t || '');
-    if (!/^[A-Za-z0-9_-]{10,64}$/.test(t)) throw new ApiError(404, 'الطلب غير موجود', 'NOT_FOUND');
-    const { prep } = await orderPrep(store.id);
-    if (prep !== 'arrive') throw new ApiError(409, 'طلبك يبدأ تجهيزه بعد الدفع عند الكاشير', 'NOT_ARRIVE');
-    const rows = await rest(`menu_orders?client_id=eq.${store.id}&token=eq.${q(t)}&mode=eq.self&status=eq.new&pager_ticket_id=is.null&arriving_at=is.null`, { method: 'PATCH', prefer: 'return=representation', body: { arriving_at: new Date().toISOString() } });
-    if (!rows.length) throw new ApiError(409, 'طلبك بدأ تجهيزه أو انتهى', 'NOT_OPEN');
-    if (rows[0].pay_first) return { ok: true, pay_first: true };
-    await autoStart(store.id, prep);
-    return { ok: true };
   }
 
   // حالة طلب الزبون (يطلع له في المنيو: وصل، الكاشير استلمه، انقدّم)
@@ -409,14 +396,13 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (!tokens.length) return { orders: [] };
     res.setHeader('Cache-Control', 'no-store');
     await expireUnpaid(store.id);
-    const { prep, spot } = await orderPrep(store.id);
-    await autoStart(store.id, prep);
+    const { prep } = await orderPrep(store.id);
     const rows = await rest(`menu_orders?client_id=eq.${store.id}&token=in.(${tokens.map(t => q(t)).join(',')})&select=*`).catch(() => []);
     // انفدع: رقم البيجر الداخلي اللي يرن عليه (صفحة الانتظار)
     const tids = rows.map(o => o.pager_ticket_id).filter(Boolean);
     const tks = tids.length ? await rest(`pager_tickets?id=in.(${tids.join(',')})&client_id=eq.${store.id}&select=id,token`).catch(() => []) : [];
     const tokOf = new Map(tks.map(x => [x.id, x.token]));
-    return { prep, spot: prep === 'arrive' ? spot : null, orders: rows.map(o => ({ token: o.token, ...publicOrder(o), pager_token: tokOf.get(o.pager_ticket_id) || null, live: ['new', 'accepted'].includes(o.status) ? topic('mo', o.token) : null })) };
+    return { prep, orders: rows.map(o => ({ token: o.token, ...publicOrder(o), pager_token: tokOf.get(o.pager_ticket_id) || null, live: ['new', 'accepted'].includes(o.status) ? topic('mo', o.token) : null })) };
   }
 
   if (action === 'track' && req.method === 'POST') {

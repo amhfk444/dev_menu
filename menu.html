@@ -1640,7 +1640,7 @@
     return [...out].slice(0, 4);
   }
   // المحل يجهّز قبل الدفع (now / arrive): الجوال إجباري
-  const earlyPrep = () => directMode() === 'self' && ['now', 'arrive'].includes(project && project.order_prep);
+  const earlyPrep = () => directMode() === 'self' && (project && project.order_prep) === 'now';
   // رقم الطاولة من QR الطاولة (?table=12): ينحفظ للجلسة عشان يبقى لو تنقّل في المنيو
   const qrTable = (() => {
     const v = String(urlParams.get('table') || '').trim().replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15)).toUpperCase();
@@ -1723,14 +1723,13 @@
   watchOrder.on = new Set();
   // رجع للمنيو من تطبيق ثاني: نحدّث حالة طلباته على طول
   document.addEventListener('visibilitychange', () => { if (!document.hidden && project && directMode()) refreshOrders(); });
-  // ما بدأ تجهيزه: دقيقتين التعديل، وبعدها حسب المحل: ينتظر الدفع / يبدأ الحين / ينتظر «أنا في الطريق»
-  let prepMode = null, shopSpot = null;
+  // ما بدأ تجهيزه: عند الكاشير، ويعدّل أو يلغي لين الكاشير يدخله في نظامه
+  // المحل «يدفع أول» (أو جواله عليه «ما جا» مرتين): يروح للكاشير ويدفع برمز طلبه. وإلا الكاشير يبدأه ويدفع وقت الاستلام
+  let prepMode = null;
   const curPrep = () => prepMode || (project && project.order_prep) || 'after_pay';
   const isUnpaid = (o) => o.mode === 'self' && o.status === 'new' && !o.started;
-  const inGrace = (o) => isUnpaid(o) && o.grace_until && Date.now() < Date.parse(o.grace_until);
-  const waitingPay = (o) => isUnpaid(o) && !inGrace(o) && (curPrep() === 'after_pay' || o.pay_first);
-  const waitingArrive = (o) => isUnpaid(o) && !inGrace(o) && !o.pay_first && curPrep() === 'arrive' && !o.arriving;
-  const startingNow = (o) => isUnpaid(o) && !inGrace(o) && !waitingPay(o) && !waitingArrive(o);
+  const waitingPay = (o) => isUnpaid(o) && (curPrep() === 'after_pay' || o.pay_first);
+  const waitingCashier = (o) => isUnpaid(o) && !waitingPay(o);
   // انفدع: يروح لصفحة الانتظار (هناك يرن جواله لما يجهز)
   function goWaiting(o) {
     try { localStorage.setItem(`dm_pager_${String(project.client_slug).toLowerCase()}`, o.pager_token); } catch {}
@@ -1742,7 +1741,7 @@
     if (!saved.length) { myOrders = []; return renderOrders(); }
     try {
       const r = await DM.get(`/api/public?action=order-status&slug=${encodeURIComponent(project.client_slug)}&t=${saved.map(o => o.token).join(',')}`);
-      prepMode = r.prep || prepMode; shopSpot = r.spot || null;
+      prepMode = r.prep || prepMode;
       const before = new Map(myOrders.map(o => [o.token, o]));
       myOrders = r.orders.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
       // اللي خلص من أكثر من دقيقة ما نحتاج نسأل عنه مرة ثانية
@@ -1763,15 +1762,12 @@
   }
   const ST = { new: ['وصل طلبك للكاشير', 'Sent to the cashier'], accepted: ['الكاشير استلم طلبك، وجاري تحضيره', 'The cashier has it, being prepared'], served: ['تم تقديم طلبك، بالعافية', 'Served, enjoy'], cancelled: ['انلغى الطلب', 'Order cancelled'] };
   function statusText(o) {
-    if (inGrace(o)) return T('يوصل للكاشير بعد شوي، تقدر تعدّله الحين', 'Reaches the cashier shortly, you can still edit it');
     if (waitingPay(o)) return T(`تفضّل للكاشير وادفع، رمز طلبك ${o.code}`, `Pay at the counter, your order code is ${o.code}`);
-    if (waitingArrive(o)) return T('قلنا لما تكون في الطريق ونبدأ طلبك', "Tell us when you're on the way and we'll start");
-    if (startingNow(o)) return T('نبدأ تجهيز طلبك الحين', 'Starting your order now');
+    if (waitingCashier(o)) return T('وصل طلبك للكاشير، ويبدأ تجهيزه أول ما يدخله', 'Sent to the cashier, preparation starts once they enter it');
     if (o.mode === 'self' && o.status === 'accepted') return o.paid ? T('تم الدفع، وطلبك يتجهز', 'Paid, your order is being prepared') : T('طلبك يتجهز، تدفع وقت الاستلام', 'Being prepared, pay at pickup');
     return ST[o.status][currentLang === 'ar' ? 0 : 1];
   }
-  const mmss = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
-  // تعديل الطلب (خلال الدقيقتين): نلغيه ونرجع أصنافه للسلة
+  // تعديل الطلب (لين يدخله الكاشير): نلغيه ونرجع أصنافه للسلة
   async function editOrder(token, edit) {
     const o = myOrders.find(x => x.token === token); if (!o) return;
     if (!edit && !confirm(T('تلغي طلبك؟', 'Cancel your order?'))) return;
@@ -1784,39 +1780,21 @@
       } else { closeOrders(); renderOrders(); menuToast(T('انلغى طلبك', 'Order cancelled')); }
     } catch (e) { menuToast(currentLang === 'ar' ? (e.message || 'ما قدرنا نلغيه') : 'Too late to change it'); refreshOrders(); }
   }
-  // «أنا في الطريق»: يبدأ تجهيز طلبه
-  async function imComing(token) {
-    try { const r = await DM.post('/api/public?action=order-arriving', { slug: project.client_slug, t: token }); menuToast(r.pay_first ? T('ادفع عند الكاشير ويبدأ طلبك', 'Pay at the counter to start') : T('أبشر، بدأنا طلبك', 'Great, we started your order')); }
-    catch (e) { menuToast(currentLang === 'ar' ? (e.message || 'ما قدرنا نبدأه') : 'Could not start it'); }
-    refreshOrders();
-  }
-  // تلقائي لما يقرب (600 متر) من موقع المحل، طول ما الصفحة مفتوحة
-  let comingWatch = null;
-  function autoComing(token, btn) {
-    if (!shopSpot || comingWatch !== null) return;
-    btn.disabled = true; btn.textContent = T('نتابع موقعك، خلك فاتح الصفحة…', 'Watching your location, keep this page open…');
-    const dist = (a, b) => { const R = 6371e3, r = Math.PI / 180, dLa = (b.lat - a.lat) * r, dLo = (b.lng - a.lng) * r; const x = Math.sin(dLa / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLo / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(x)); };
-    comingWatch = navigator.geolocation.watchPosition((p) => {
-      if (dist({ lat: p.coords.latitude, lng: p.coords.longitude }, shopSpot) <= 600) { navigator.geolocation.clearWatch(comingWatch); comingWatch = null; imComing(token); }
-    }, () => { comingWatch = null; btn.disabled = false; menuToast(T('ما قدرنا ناخذ موقعك، اضغط «أنا في الطريق»', "Couldn't get your location, tap «I'm on my way»")); }, { enableHighAccuracy: true, maximumAge: 15000 });
-  }
   function renderOrders() {
     const bar = document.getElementById('moBar');
     // الطلب اللي انقدّم أو انلغى: يطلع دقيقة بس عشان يشوفه، وبعدها يختفي من المنيو
     const live = myOrders.filter(o => ['new', 'accepted'].includes(o.status) || Date.now() - Date.parse(o.closed_at || o.created_at) < 60000);
     clearTimeout(renderOrders.t);
-    // عدّاد وقت التعديل يتحدث كل ثانية، والمنتهي يختفي بعد دقيقة
-    if (live.some(inGrace)) renderOrders.t = setTimeout(() => { if (live.some(o => inGrace(o) && Date.now() >= Date.parse(o.grace_until) - 1000)) refreshOrders(); else renderOrders(); }, 1000);
-    else if (live.some(o => !['new', 'accepted'].includes(o.status))) renderOrders.t = setTimeout(renderOrders, 61000);
+    // المنتهي يختفي بعد دقيقة
+    if (live.some(o => !['new', 'accepted'].includes(o.status))) renderOrders.t = setTimeout(renderOrders, 61000);
     const top = live[0];
     bar.classList.toggle('hidden', !top); bar.classList.toggle('flex', !!top);
     const L = currentLang === 'ar' ? 0 : 1;
     if (top) {
-      const st = inGrace(top) ? 'grace' : waitingPay(top) || waitingArrive(top) ? 'pay' : top.status;
+      const st = waitingPay(top) ? 'pay' : waitingCashier(top) ? 'grace' : top.status;
       bar.className = `${bar.className.replace(/\bst-\w+/g, '').trim()} st-${st}`;
       const icon = st === 'served' ? 'fa-utensils text-green-700' : st === 'accepted' ? 'fa-fire text-amber-700' : st === 'pay' ? 'fa-ticket' : 'fa-clock';
-      const sub = inGrace(top) ? `${T('تقدر تعدّله خلال', 'Edit within')} <b dir="ltr">${mmss(Date.parse(top.grace_until) - Date.now())}</b>`
-        : waitingPay(top) ? `${T('رمز طلبك', 'Order code')} <b dir="ltr" class="text-base">${esc(top.code || '')}</b> · ${esc(money(top.total))}`
+      const sub = isUnpaid(top) ? `${T('رمز طلبك', 'Order code')} <b dir="ltr" class="text-base">${esc(top.code || '')}</b> · ${esc(money(top.total))}`
         : `${top.table_no ? `${T('طاولة', 'Table')} <span dir="ltr">${esc(top.table_no)}</span> · ` : ''}${esc(money(top.total))}`;
       bar.innerHTML = `<i class="fa-solid ${icon} text-xl"></i>
         <span class="flex-1 min-w-0"><b class="block text-sm font-black">${esc(waitingPay(top) ? T('تفضّل للكاشير وادفع', 'Pay at the counter') : statusText(top))}</b><small class="block text-[11px] font-bold opacity-70">${sub}${live.length > 1 ? ` · ${T(`${live.length} طلبات`, `${live.length} orders`)}` : ''}</small></span>
@@ -1825,30 +1803,20 @@
     document.getElementById('moTitle').textContent = T('طلباتك', 'Your orders');
     const step = (o) => {
       const self = o.mode === 'self';
-      const mid = waitingArrive(o) ? ['في الطريق', 'On the way'] : curPrep() === 'after_pay' || o.pay_first ? ['ادفع', 'Pay'] : ['يبدأ', 'Starting'];
+      const mid = waitingPay(o) ? ['ادفع', 'Pay'] : ['عند الكاشير', 'At the counter'];
       const names = self ? [['أرسلته', 'Sent'], mid, ['يتجهز', 'Preparing']] : [['وصل', 'Sent'], ['يتحضّر', 'Preparing'], ['انقدّم', 'Served']];
-      const i = self ? (inGrace(o) ? 0 : isUnpaid(o) ? 1 : o.status === 'cancelled' ? -1 : 2) : ({ new: 0, accepted: 1, served: 2 }[o.status] ?? -1);
+      const i = self ? (isUnpaid(o) ? 1 : o.status === 'cancelled' ? -1 : 2) : ({ new: 0, accepted: 1, served: 2 }[o.status] ?? -1);
       return `<div class="mo-steps">${names.map((x, k) => `<span class="${k <= i ? 'on' : ''}">${x[L]}</span>`).join('')}</div>`;
     };
     const selfBox = (o) => {
-      if (inGrace(o)) {
-        const left = Date.parse(o.grace_until) - Date.now(), pct = Math.max(0, Math.min(100, left / 1200));
-        return `<div class="space-y-2"><p class="text-[12px] font-bold text-gray-300">${T('يوصل طلبك للكاشير بعد ما يخلص الوقت. تبي تغيّر شي؟', 'Your order reaches the cashier when the time runs out. Want to change anything?')}</p>
-          <div class="h-2 rounded-full bg-white/10 overflow-hidden"><div class="h-full bg-white rounded-full" style="width:${pct}%"></div></div>
-          <div class="grid grid-cols-2 gap-2"><button type="button" onclick="editOrder('${o.token}', true)" class="rounded-xl bg-white text-black font-black text-sm py-2.5">${T('عدّل الطلب', 'Edit')} <span dir="ltr">${mmss(left)}</span></button>
-          <button type="button" onclick="editOrder('${o.token}', false)" class="rounded-xl bg-white/10 border border-white/15 text-red-200 font-black text-sm py-2.5">${T('ألغِ الطلب', 'Cancel')}</button></div></div>`;
-      }
-      if (waitingPay(o)) return `<div class="text-center bg-white rounded-2xl p-4 text-black space-y-1">
-          <p class="text-[12px] font-black opacity-70">${T('ورّ الكاشير هذا الرمز وادفع', 'Show this code at the counter and pay')}</p>
+      // ما بدأ: الرمز، ويقدر يعدّل أو يلغي لين يدخله الكاشير
+      if (isUnpaid(o)) return `<div class="text-center bg-white rounded-2xl p-4 text-black space-y-1">
+          <p class="text-[12px] font-black opacity-70">${waitingPay(o) ? T('ورّ الكاشير هذا الرمز وادفع', 'Show this code at the counter and pay') : T('رمز طلبك', 'Your order code')}</p>
           <p class="text-5xl font-black" dir="ltr">${esc(o.code || '')}</p>
-          <p class="text-[11px] font-bold opacity-70">${T('بعد الدفع يوصلك إشعار لما يجهز طلبك، وتستلمه برقم الفاتورة', "After paying you'll be notified when it's ready, and pick it up with your invoice number")}</p>
-          <p class="text-[11px] font-bold opacity-70">${T('طلبك محفوظ عند الكاشير لين تدفع، خذ راحتك', 'Your order is saved at the counter until you pay')}</p>
-        </div>`;
-      if (waitingArrive(o)) return `<div class="space-y-2">
-          <button type="button" onclick="imComing('${o.token}')" class="w-full rounded-xl bg-white text-black font-black text-base py-3.5">${T('أنا في الطريق، ابدأوا طلبي', "I'm on my way, start my order")}</button>
-          ${shopSpot && 'geolocation' in navigator ? `<button type="button" onclick="autoComing('${o.token}', this)" class="w-full rounded-xl bg-white/10 border border-white/15 text-white font-bold text-[13px] py-2.5">${T('ابدأوه تلقائياً لما أقرب (يستخدم موقعي)', 'Start it automatically when I get close (uses my location)')}</button>` : ''}
-          <p class="text-[11px] font-bold text-gray-400 text-center">${T('أو تعال للكاشير الحين ورّه رمز طلبك', 'Or come to the counter now and show your code')} <b dir="ltr" class="text-white">${esc(o.code || '')}</b></p></div>`;
-      if (startingNow(o)) return `<p class="text-[12px] font-bold text-gray-300 text-center"><i class="fa-solid fa-spinner fa-spin"></i> ${T('نبدأ تجهيز طلبك الحين…', 'Starting your order…')}</p>`;
+          <p class="text-[11px] font-bold opacity-70">${waitingPay(o) ? T('بعد الدفع يبدأ تجهيز طلبك ويرن جوالك لما يجهز، وتستلمه برقم الفاتورة', "After paying, your order starts and your phone rings when it's ready") : T('أول ما يدخله الكاشير يبدأ تجهيزه ويوصلك رقمك، ويرن جوالك لما يجهز. تدفع وقت الاستلام', "Once the cashier enters it, it starts and your phone rings when ready. Pay at pickup")}</p>
+        </div>
+        <div class="grid grid-cols-2 gap-2"><button type="button" onclick="editOrder('${o.token}', true)" class="rounded-xl bg-white/10 border border-white/15 text-white font-black text-sm py-2.5">${T('عدّل الطلب', 'Edit')}</button>
+          <button type="button" onclick="editOrder('${o.token}', false)" class="rounded-xl bg-white/10 border border-white/15 text-red-200 font-black text-sm py-2.5">${T('ألغِ الطلب', 'Cancel')}</button></div>`;
       if (o.started && o.pager_token && o.status === 'accepted') return `<button type="button" onclick="goWaiting(myOrders.find(x => x.token === '${o.token}'))" class="w-full rounded-xl bg-white text-black font-black text-sm py-3">${T('افتح صفحة الانتظار', 'Open the waiting page')}</button>`;
       return '';
     };

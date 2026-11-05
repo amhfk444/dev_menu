@@ -1925,7 +1925,7 @@
             </label>
             <label class="flex items-start gap-2.5 cursor-pointer bg-white rounded-lg border border-brand/15 p-2.5">
               <input type="radio" name="mo-mode" value="table" class="mt-0.5 accent-green-600" onchange="saveOrderMode(this)">
-              <span class="text-xs"><b class="text-ink">خدمة على الطاولة</b><span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يُدخل العميل رقم طاولته ثم يرسل طلبه، فيظهر عند الكاشير برقم الطاولة. يضغط الكاشير «استلمته» ثم «تم التقديم»، ويرى العميل حالة طلبه في المنيو.</span></span>
+              <span class="text-xs"><b class="text-ink">خدمة على الطاولة</b><span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يُدخل العميل رقم طاولته ثم يرسل طلبه، فيظهر عند الكاشير برقم الطاولة. يضغط الكاشير «استلمته» ثم «قدّمته»، ويرى العميل حالة طلبه في المنيو.</span></span>
             </label>
             <label id="mo-self-label" class="flex items-start gap-2.5 cursor-pointer bg-white rounded-lg border border-brand/15 p-2.5">
               <input type="radio" name="mo-mode" value="self" id="mo-self" class="mt-0.5 accent-green-600 disabled:cursor-not-allowed" onchange="saveOrderMode(this)">
@@ -1936,11 +1936,10 @@
           <div id="mo-prep" class="hidden bg-white rounded-lg border border-brand/15 p-3 space-y-2">
             <b class="text-xs text-ink"><i class="ph-bold ph-cooking-pot"></i> متى يبدأ تجهيز الطلب؟</b>
             <label class="flex items-start gap-2.5 cursor-pointer"><input type="radio" name="mo-prep" value="after_pay" class="mt-0.5 accent-green-600" onchange="saveOrderPrep(this)">
-              <span class="text-xs"><b class="text-ink">بعد الدفع (مضمون)</b><span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يُبرز العميل رمز طلبه للكاشير ويدفع، ثم يُدخل الكاشير رقم الفاتورة فيبدأ التجهيز. مناسب للعميل الموجود داخل المحل.</span></span></label>
+              <span class="text-xs"><b class="text-ink">يدفع أولاً (مضمون)</b><span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يصل الطلب إلى الكاشير فور إرساله، ويُبرز العميل رمز طلبه ويدفع، ثم يُدخل الكاشير رقم الفاتورة فيبدأ التجهيز.</span></span></label>
             <label class="flex items-start gap-2.5 cursor-pointer"><input type="radio" name="mo-prep" value="now" class="mt-0.5 accent-green-600" onchange="saveOrderPrep(this)">
-              <span class="text-xs"><b class="text-ink">فور الطلب، والدفع عند الاستلام</b><span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يبدأ التجهيز بعد انتهاء دقيقتي التعديل، فيصل العميل ويجد طلبه جاهزاً، ويدفع عند الاستلام. يُشترط رقم الجوال، ويُسمح بطلب مفتوح واحد لكل رقم.</span></span></label>
-            <label class="flex items-start gap-2.5 cursor-pointer"><input type="radio" name="mo-prep" value="arrive" class="mt-0.5 accent-green-600" onchange="saveOrderPrep(this)">
-              <span class="text-xs"><b class="text-ink">عند اقتراب العميل، والدفع عند الاستلام</b><span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يبدأ التجهيز عندما يضغط العميل «أنا في الطريق»، أو تلقائياً عند اقترابه من المحل إذا كان موقع المحل محدداً في إعدادات البيجر. يُشترط رقم الجوال.</span></span></label>
+              <span class="text-xs"><b class="text-ink">يدفع عند الاستلام</b><span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يصل الطلب إلى الكاشير فور إرساله ولو كان العميل خارج المحل، فيُدخله الكاشير في نظامه ويضغط «أدخلته» ليبدأ التجهيز، ويدفع العميل عند الاستلام. يُشترط رقم الجوال، ويُسمح بطلب مفتوح واحد لكل رقم.</span></span></label>
+            <p class="text-[11px] text-ink leading-relaxed">يستطيع العميل تعديل طلبه أو إلغاءه إلى أن يبدأ الكاشير بإدخاله.</p>
             <p class="text-[11px] text-ink leading-relaxed bg-brand/5 rounded-lg p-2"><i class="ph-bold ph-shield-check"></i> حماية: إذا لم يحضر العميل لاستلام طلبه يضغط الكاشير «ما جا»، والرقم الذي يتكرر منه ذلك مرتين تنتظر طلباته الدفع قبل التجهيز.</p>
             <p id="mo-prep-stats" class="text-[11px] font-bold text-ink"></p>
           </div>
@@ -5582,7 +5581,7 @@
     const desk = 'pager-desk.html' + location.search;
     document.getElementById('mo-tables').classList.toggle('hidden', !m);
     document.getElementById('mo-prep').classList.toggle('hidden', m !== 'self');
-    document.querySelectorAll('input[name="mo-prep"]').forEach(r => { r.checked = r.value === (client.menu_prep || 'after_pay'); });
+    document.querySelectorAll('input[name="mo-prep"]').forEach(r => { r.checked = r.value === (client.menu_prep === 'arrive' ? 'now' : client.menu_prep || 'after_pay'); });
     if (m === 'self' && !renderOrderMode.stats) {
       renderOrderMode.stats = true;
       api('orders-noshow', undefined).then(r => { const el = document.getElementById('mo-prep-stats'); if (r && r.early) el.textContent = `آخر 30 يوماً: ${r.early} طلباً بدأ تجهيزها قبل الدفع، ولم يُستلم منها ${r.no_show}.`; }).catch(() => {});
@@ -5632,7 +5631,7 @@
   }
   async function saveOrderPrep(r) {
     const prev = client.menu_prep || 'after_pay';
-    if (await updateClient({ menu_prep: r.value })) showToast({ after_pay: 'التجهيز يبدأ بعد الدفع', now: 'التجهيز يبدأ أول ما يطلب العميل', arrive: 'التجهيز يبدأ لما يقول العميل إنه جاي' }[r.value]);
+    if (await updateClient({ menu_prep: r.value })) showToast({ after_pay: 'العميل يدفع أول، وبعدها يبدأ التجهيز', now: 'الكاشير يبدأ الطلب، والعميل يدفع وقت الاستلام' }[r.value]);
     else { client.menu_prep = prev; renderOrderMode(); showToast('تعذر حفظ الإعداد', true); }
   }
   async function saveOrderMode(r) {

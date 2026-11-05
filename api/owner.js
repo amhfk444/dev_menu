@@ -114,7 +114,7 @@ function phoneNumber(v) {
 }
 
 // رابط الكاشير: مفتاح الفرع يفتح شاشة البيجر وشاشة الختم بس (بدون حساب المالك)
-const DESK_ACTIONS = ['pager', 'order-update', 'order-pay', 'pager-update', 'pager-invoice', 'pager-ring', 'pager-eta', 'pager-addons-seen', 'loyalty-stamp-code', 'loyalty-scan', 'loyalty-redeem', 'loyalty-transfer', 'kiosk'];
+const DESK_ACTIONS = ['pager', 'order-update', 'order-pay', 'order-start', 'pager-update', 'pager-invoice', 'pager-ring', 'pager-eta', 'pager-addons-seen', 'loyalty-stamp-code', 'loyalty-scan', 'loyalty-redeem', 'loyalty-transfer', 'kiosk'];
 const DESK_KEY_RE = /^[A-Za-z0-9_-]{24,64}$/;
 // الولاء وحدة للمحل بكل فروعه: أي طلب ولاء من فرع يشتغل على بيانات المحل الرئيسي وإعداداته
 // (ما عدا موقع الختم: لكل فرع موقعه). here = الفرع اللي جاي منه الطلب
@@ -637,9 +637,7 @@ async function main(req) {
     // الطلب من المنيو: طلبات الطاولات (المنيو بس) أو مع رقم البيجر (الخدمة الذاتية)، كلها في نفس الشاشة
     const orderMode = await require('./_lib/order').orderMode(store.id);
     if (!hasPager && !PLANS.has(store, 'loyalty') && !orderMode) throw new ApiError(403, 'البيجر مو ضمن باقتك، أضفه من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
-    // الخدمة الذاتية مع التجهيز قبل الدفع: نبدأ الطلبات اللي حان وقتها قبل ما نجيب الأرقام
     const { prep } = orderMode === 'self' ? await require('./_lib/order').orderPrep(store.id) : { prep: null };
-    if (prep && prep !== 'after_pay') await require('./_lib/order').autoStart(store.id, prep);
     const base = `pager_tickets?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&order=number.asc&select=id,number,status,created_at,ready_at,closed_at,push_sub`;
     // أعمدة التكرار من 21-pager-repeat.sql — لو ما انضافت نكمل بدونها
     const tickets = !hasPager ? [] : await rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id,car,addons,game_won,eta_at`).catch(() => rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id,car,addons,game_won`)).catch(() => rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id,car`)).catch(() => rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id`)).catch(() => rest(`${base},ring_count,acked_at,invoice_no`)).catch(() => rest(`${base},ring_count,acked_at`)).catch(() => rest(base));
@@ -655,13 +653,13 @@ async function main(req) {
       for (const c of cards) { const r = await readyRewards(lhome, c, st); if (r.length) rewardsBy[c.id] = { card_id: c.id, name: c.name || `عضو #${c.member_no}`, rewards: r }; }
     }
     // طلبات المنيو اليوم: المفتوحة (طاولات)، واللي مربوطة بأرقام البيجر
-    const { publicOrder, expireUnpaid, graceUntil } = require('./_lib/order');
+    const { publicOrder, expireUnpaid } = require('./_lib/order');
     await expireUnpaid(store.id);
     const mos = await rest(`menu_orders?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&select=*&order=id.asc&limit=300`).catch(() => []);
     const byTicket = new Map(mos.filter(o => o.pager_ticket_id).map(o => [o.pager_ticket_id, publicOrder(o)]));
     // طلبات الطاولات المفتوحة، وطلبات الخدمة الذاتية اللي خلصت دقيقتين التعديل وتنتظر الدفع
     const orders = mos.filter(o => !o.pager_ticket_id && ((o.mode === 'table' && ['new', 'accepted'].includes(o.status))
-      || (o.mode === 'self' && o.status === 'new' && Date.now() >= graceUntil(o)))).map(publicOrder);
+      || (o.mode === 'self' && o.status === 'new'))).map(publicOrder);
     // build: نسخة الموقع المنشورة، شاشة الكاشير تحدّث نفسها لو تغيّرت (تبقى مفتوحة أيام)
     return { build: (process.env.VERCEL_GIT_COMMIT_SHA || '').slice(0, 12) || null, order_mode: orderMode, order_prep: prep, orders, currency: CURRENCIES[store.currency] || CURRENCIES.SAR, tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub, order: byTicket.get(t.id) || null, reward: t.loyalty_card_id ? rewardsBy[t.loyalty_card_id] || null : null })), slug: store.client_slug, name: store.name, business_type: store.business_type, max_rings: PAGER_MAX_RINGS, live: topic('pager', store.id), loyalty: lx.loyalty_enabled === true, pager: hasPager, loyalty_entitled: PLANS.has(store, 'loyalty') };
   }
@@ -1198,28 +1196,27 @@ async function main(req) {
   }
 
   // ─── الخدمة الذاتية: العميل دفع، والكاشير يكتب رقم الفاتورة ← يدخل التجهيز برقم بيجر داخلي يرن عليه ───
-  if (action === 'order-pay') {
+  // order-pay: دفع ← الكاشير يكتب الفاتورة ويدخل الطلب التجهيز (المحل «يدفع أول»، أو أي عميل دفع على طول)
+  // order-start: «أدخلته» ← الكاشير أدخله في نظامه، والعميل يدفع وقت الاستلام (المحل «يدفع وقت الاستلام»)
+  if (action === 'order-pay' || action === 'order-start') {
     if (!PLANS.has(store, 'menu') || !PLANS.has(store, 'pager')) throw new ApiError(403, 'الخدمة الذاتية تحتاج المنيو والبيجر في باقتك', 'ADDON_OFF');
+    const OL = require('./_lib/order');
     const id = int(b.id);
-    const invoice = String(b.invoice ?? '').trim().replace(/\s+/g, '').replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15));
-    if (!/^[A-Za-z0-9#\-_/]{1,20}$/.test(invoice)) throw new ApiError(400, 'اكتب رقم الفاتورة: أرقام وحروف إنجليزية فقط (حتى 20)');
     const o = (await rest(`menu_orders?id=eq.${id}&client_id=eq.${sid}&select=*`))[0];
     if (!o || o.mode !== 'self') throw new ApiError(404, 'الطلب غير موجود');
-    if (o.pager_ticket_id) throw new ApiError(409, 'الطلب مدفوع من قبل', 'PAID');
-    if (o.status !== 'new') throw new ApiError(409, 'الطلب انلغى، اطلب من العميل يطلب من جديد', 'CANCELLED');
-    const dup = await rest(`pager_tickets?client_id=eq.${sid}&invoice_no=eq.${q(invoice)}&created_at=gte.${q(riyadhDayStart())}&status=in.(waiting,ready)&select=number&limit=1`);
-    if (dup.length) throw new ApiError(409, `الفاتورة ${invoice} مربوطة بطلب ثاني`, 'DUPLICATE');
-    const token = require('crypto').randomBytes(18).toString('base64url');
-    let res;
-    try { res = await rpc('server_pager_take', { p_client_id: sid, p_token: token }); }
-    catch (e) { if (String(e.dbMessage || e.message).includes('PAGER_FULL')) throw new ApiError(409, 'وصلتم الحد اليومي للأرقام', 'FULL'); throw e; }
-    const t = (await rest(`pager_tickets?token=eq.${q(res.token)}&client_id=eq.${sid}`, { method: 'PATCH', prefer: 'return=representation', body: { invoice_no: invoice, ...(o.lang === 'en' ? { lang: 'en' } : {}) } }))[0];
-    const now = new Date().toISOString();
-    // الطلب ما انلغى بنفس اللحظة (سباق مع الإلغاء التلقائي): نربطه بس لو لسا جديد
-    const done = await rest(`menu_orders?id=eq.${o.id}&status=eq.new&pager_ticket_id=is.null`, { method: 'PATCH', prefer: 'return=representation', body: { pager_ticket_id: t.id, status: 'accepted', accepted_at: now, paid_at: now } });
-    if (!done.length) { await rest(`pager_tickets?id=eq.${t.id}`, { method: 'PATCH', body: { status: 'cancelled', closed_at: now } }); throw new ApiError(409, 'الطلب تغيّر، حدّث الشاشة', 'CHANGED'); }
-    await require('./pager').linkOrderCards(sid, res.token, o.cards).catch(e => console.error('ORDER_CARDS', e.message));
-    await poke([topic('pager', sid), topic('mo', o.token)]);
+    if (o.pager_ticket_id) throw new ApiError(409, 'الطلب بدأ من قبل', 'STARTED');
+    if (o.status !== 'new') throw new ApiError(409, 'العميل ألغى الطلب', 'CANCELLED');
+    let invoice = null;
+    if (action === 'order-pay') {
+      invoice = String(b.invoice ?? '').trim().replace(/\s+/g, '').replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15));
+      if (!/^[A-Za-z0-9#\-_/]{1,20}$/.test(invoice)) throw new ApiError(400, 'اكتب رقم الفاتورة: أرقام وحروف إنجليزية فقط (حتى 20)');
+      const dup = await rest(`pager_tickets?client_id=eq.${sid}&invoice_no=eq.${q(invoice)}&created_at=gte.${q(riyadhDayStart())}&status=in.(waiting,ready)&select=number&limit=1`);
+      if (dup.length) throw new ApiError(409, `الفاتورة ${invoice} مربوطة بطلب ثاني`, 'DUPLICATE');
+    } else {
+      // «أدخلته» بدون دفع: بس لو المحل مختار الدفع وقت الاستلام، والجوال ما عليه «ما جا» مرتين
+      if ((await OL.orderPrep(sid)).prep !== 'now' || o.pay_first) throw new ApiError(409, 'هذا الطلب يدفع أول: اكتب رقم الفاتورة بعد ما يدفع', 'PAY_FIRST');
+    }
+    const t = await OL.startOrder(sid, o, invoice);
     return { ok: true, ticket: { id: t.id, number: t.number, invoice_no: invoice } };
   }
 
@@ -1397,7 +1394,7 @@ async function main(req) {
       p.menu_order_mode = m;
     }
     if (has('menu_prep')) {
-      const v = ['after_pay', 'now', 'arrive'].includes(b.menu_prep) ? b.menu_prep : 'after_pay';
+      const v = b.menu_prep === 'now' ? 'now' : 'after_pay';   // يدفع وقت الاستلام / يدفع أول
       if (v !== 'after_pay' && (!PLANS.has(store, 'menu') || !PLANS.has(store, 'pager'))) throw new ApiError(403, 'تحتاج المنيو والبيجر في باقتك', 'ADDON_OFF');
       p.menu_prep = v;
     }

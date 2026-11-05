@@ -205,7 +205,7 @@
     <i class="ph-bold ph-magnifying-glass absolute start-4 top-1/2 -translate-y-1/2 opacity-40"></i>
       <input id="search" type="text" inputmode="numeric" autocomplete="off" placeholder="ابحث برقم الفاتورة أو رقم البيجر…" class="w-full bg-[#fdfdfd] border border-[#8a8a8a] hover:border-[#616161] rounded-lg py-3 ps-11 pe-4 text-base font-semibold focus:outline focus:outline-2 focus:outline-[#005bd3] focus:outline-offset-1">
   </div>
-  <!-- طلبات الطاولات من المنيو: الكاشير يستلمها ثم «تم التقديم» -->
+  <!-- طلبات الطاولات من المنيو: الكاشير يستلمها ثم «قدّمته» -->
   <section id="orders-wrap" class="col col-orders hidden">
     <div class="col-hd"><h2><span id="ord-title">طلبات الطاولات</span> <span id="ord-count" class="col-count"></span></h2><span id="ord-note" class="col-note"><i class="ph-bold ph-fork-knife"></i> من المنيو</span></div>
     <div id="ord-grid" class="tk-list ord-grid"></div>
@@ -474,16 +474,17 @@
       <ul>${(o.items || []).map(x => `<li><span class="q">${x.qty || 1}</span><span class="nm"><b>${esc(x.name)}</b>${x.size ? ` <span>${esc(x.size)}</span>` : ''}${x.note ? `<em>${esc(x.note)}</em>` : ''}</span></li>`).join('')}</ul>
       ${o.note ? `<p class="tk-onote">ملاحظة: ${esc(o.note)}</p>` : ''}
     </div>`;
-  let orders = [], orderMode = null, oBusy = new Set(), freshOrders = new Set();
+  let orders = [], orderMode = null, orderPrep = null, oBusy = new Set(), freshOrders = new Set();
   function renderOrders(term) {
     const wrap = $('orders-wrap');
     const on = !!orderMode || orders.length > 0;
     wrap.classList.toggle('hidden', !on);
     if (!on) return;
     const self = orderMode === 'self';
-    $('ord-title').textContent = self ? 'بانتظار الدفع' : 'طلبات الطاولات';
-    $('ord-note').innerHTML = self ? '<i class="ph-bold ph-receipt"></i> العميل يوريك الرمز ويدفع، اكتب الفاتورة' : '<i class="ph-bold ph-fork-knife"></i> من المنيو';
-    $('ord-empty').textContent = self ? 'ما فيه طلبات تنتظر الدفع. الطلب يوصل هنا بعد دقيقتين من إرساله (وقت التعديل).' : 'ما فيه طلبات. أول ما يطلب الزبون من المنيو يطلع طلبه هنا برقم طاولته.';
+    const payLater = orderPrep === 'now';
+    $('ord-title').textContent = self ? 'طلبات جديدة من المنيو' : 'طلبات الطاولات';
+    $('ord-note').innerHTML = self ? `<i class="ph-bold ph-cash-register"></i> ${payLater ? 'أدخله في نظامك واضغط «أدخلته»' : 'بعد ما يدفع اكتب رقم الفاتورة'}` : '<i class="ph-bold ph-fork-knife"></i> من المنيو';
+    $('ord-empty').textContent = self ? 'ما فيه طلبات جديدة. أول ما يطلب العميل من المنيو يطلع طلبه هنا برمز مثل A12.' : 'ما فيه طلبات. أول ما يطلب الزبون من المنيو يطلع طلبه هنا برقم طاولته.';
     // المتأخر (ما دفع من ربع ساعة): يبقى، بس ينزل تحت باهت عشان الجدد فوق
     const list = orders.filter(o => ['new', 'accepted'].includes(o.status) && (!term || String(o.table_no || '') === term || String(o.code || '').toUpperCase() === term))
       .sort((a, b) => (a.late ? 1 : 0) - (b.late ? 1 : 0));
@@ -493,15 +494,18 @@
     const timer = (iso) => { const m = mins(iso); return `<span class="tk-time${m >= 15 ? ' late' : m >= 8 ? ' warn' : ''}"><i class="ph-bold ph-timer"></i> ${m < 1 ? 'الآن' : `${m} د`}</span>`; };
     $('ord-grid').innerHTML = list.map(o => {
       const acc = o.status === 'accepted', b = oBusy.has(o.id);
-      // خدمة ذاتية: ينتظر الدفع. الرمز كبير، والزر الرئيسي «اكتب الفاتورة»
+      // طلب من المنيو: الرمز كبير. «أدخلته» (يدفع وقت الاستلام) أو «اكتب الفاتورة» (يدفع أول / جواله عليه «ما جا»)
+      const startable = orderPrep === 'now' && !o.pay_first;
       if (o.mode === 'self') return `<article class="tk${freshOrders.has(o.id) ? ' tile-new' : ''}${o.late ? ' tk-late' : ''}"><div class="tk-in">
         <div class="tk-info">
           <div class="tk-hd"><span class="tk-tbl"><small>رمز الطلب</small><b dir="ltr">${esc(o.code || '')}</b></span>${timer(o.grace_until || o.created_at)}${o.late ? '<span class="tk-tag">متأخر، ممكن يجي بعدين</span>' : ''}</div>
           ${orderBlock(o, true)}
         </div>
         <div class="tk-act">
-          <button class="tk-main" data-opay="${o.id}" ${b ? 'disabled' : ''}><i class="ph-bold ph-receipt"></i> دفع؟ اكتب الفاتورة</button>
-          <div class="tk-sub one"><button class="tk-btn del" data-odel="${o.id}" title="حذف الطلب" aria-label="حذف الطلب"><i class="ph-bold ph-trash"></i><span>حذف</span></button></div>
+          ${startable ? `<button class="tk-main" data-ostart="${o.id}" ${b ? 'disabled' : ''}>${b ? '<i class="ph-bold ph-spinner-gap ph-spin"></i>' : '<i class="ph-bold ph-check-circle"></i> أدخلته، ابدأ التجهيز'}</button>`
+                      : `<button class="tk-main" data-opay="${o.id}" ${b ? 'disabled' : ''}><i class="ph-bold ph-receipt"></i> دفع؟ اكتب الفاتورة</button>`}
+          ${o.pay_first ? '<p class="tk-ring" style="color:#a1121f">جواله عليه طلبات ما انستلمت: يدفع أول</p>' : ''}
+          <div class="tk-sub ${startable ? 'two' : 'one'}">${startable ? `<button class="tk-btn" data-opay="${o.id}"><i class="ph-bold ph-receipt"></i><span>دفع الحين؟</span></button>` : ''}<button class="tk-btn del" data-odel="${o.id}" title="حذف الطلب" aria-label="حذف الطلب"><i class="ph-bold ph-trash"></i>${startable ? '' : '<span>حذف</span>'}</button></div>
         </div>
       </div></article>`;
       return `<article class="tk${acc ? ' tk-acc' : ''}${freshOrders.has(o.id) ? ' tile-new' : ''}"><div class="tk-in">
@@ -510,7 +514,7 @@
           ${orderBlock(o, false)}
         </div>
         <div class="tk-act">
-          ${acc ? `<button class="tk-main done" data-oserve="${o.id}" ${b ? 'disabled' : ''}><i class="ph-bold ph-check-circle"></i> تم التقديم</button>`
+          ${acc ? `<button class="tk-main done" data-oserve="${o.id}" ${b ? 'disabled' : ''}><i class="ph-bold ph-check-circle"></i> قدّمته</button>`
                 : `<button class="tk-main" data-oacc="${o.id}" ${b ? 'disabled' : ''}><i class="ph-bold ph-hand-tap"></i> استلمته</button>`}
           <div class="tk-sub ${acc ? 'two' : 'one'}">
             ${acc ? `<button class="tk-btn" data-oback="${o.id}"><i class="ph-bold ph-arrow-counter-clockwise"></i><span>رجّعه</span></button>` : ''}
@@ -535,6 +539,13 @@
     if (sv) setOrder(+sv.dataset.oserve, 'served', '✓ طلب طاولة # انقدّم');
     if (bk) setOrder(+bk.dataset.oback, 'new');
     const pay = e.target.closest('[data-opay]'); if (pay) return openInvoice(+pay.dataset.opay, true);
+    const st = e.target.closest('[data-ostart]');
+    if (st) {
+      const id = +st.dataset.ostart; oBusy.add(id); render();
+      try { await call('order-start', { id }); orders = orders.filter(o => o.id !== id); toast('بدأ التجهيز، ووصل العميل رقمه في جواله'); await load(); }
+      catch (err) { toast(err.message || 'ما بدأ الطلب، حاول مرة ثانية'); }
+      oBusy.delete(id); render(); return;
+    }
     if (dl) {
       const o = orders.find(x => x.id === +dl.dataset.odel); if (!o) return;
       const ok = await DMDialog.confirm({ title: o.mode === 'self' ? `حذف طلب ${o.code || ''}؟` : `حذف طلب طاولة ${o.table_no || ''}؟`, message: 'استخدمه لو الطلب بالغلط أو الزبون مو موجود. يطلع للزبون إن الطلب انلغى.', confirmText: 'حذف', cancelText: 'تراجع' });
@@ -731,11 +742,11 @@
         load.build = load.build || r.build;
       }
       const pager = r.pager !== false;
-      orderMode = r.order_mode || null;
+      orderMode = r.order_mode || null; orderPrep = r.order_prep || null;
       orders = (r.orders || []).map(o => oBusy.has(o.id) ? (orders.find(x => x.id === o.id) || o) : o);
       const hasOrders = orderMode === 'table' || orders.length > 0;
       $('search-wrap').classList.toggle('hidden', !pager && !hasOrders);
-      if (!pager && hasOrders) { $('desk-title').textContent = 'شاشة الطلبات'; $('desk-sub').textContent = 'اضغط «استلمته» لما تشوف الطلب، و«تم التقديم» لما يوصل للطاولة'; $('search').placeholder = 'ابحث برقم الطاولة…'; }
+      if (!pager && hasOrders) { $('desk-title').textContent = 'شاشة الطلبات'; $('desk-sub').textContent = 'اضغط «استلمته» لما تشوف الطلب، و«قدّمته» لما يوصل للطاولة'; $('search').placeholder = 'ابحث برقم الطاولة…'; }
       $('qr-btn').classList.toggle('hidden', !pager);
       $('stats-btn').classList.toggle('hidden', !pager);
       document.querySelectorAll('[data-pager]').forEach(el => el.classList.toggle('hidden', !pager));
