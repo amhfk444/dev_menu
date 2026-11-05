@@ -828,6 +828,8 @@
     applyMenu(menuData, true);
     trackOnce(`v:${project.id}`, 'view', null, visitSource);
     startLiveUpdates(menuData.live);
+    // المنيو يجي من المخزن المؤقت عشان يفتح بسرعة: نتأكد على طول إنه آخر نسخة (لو صاحب المحل عدّل للتو، يتحدث خلال ثانية)
+    setTimeout(() => checkForUpdates(true), 400);
   }
 
   // يعرض بيانات المنيو. first = أول تحميل، وغيره = تحديث تلقائي (نحافظ على السلة والبحث والتمرير)
