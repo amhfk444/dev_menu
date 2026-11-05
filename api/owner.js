@@ -1180,8 +1180,10 @@ async function main(req) {
     if (!features.length) throw new ApiError(400, 'اختر ميزة وحدة على الأقل');
     const mainId = store.parent_id || sid;   // اشتراك الفروع تابع للمتجر الرئيسي
     // في التجربة: الخدمات الجديدة تشتغل على طول (والمشترك يتعدل بعد الدفع من لوحة المشتركين)
-    const cur = (await rest(`clients?id=eq.${mainId}&select=subscription_status`))[0] || {};
-    const live = cur.subscription_status === 'trial' ? { plan_features: features, waitlist_enabled: features.includes('waitlist') } : {};
+    const cur = (await rest(`clients?id=eq.${mainId}&select=subscription_status,plan_features`))[0] || {};
+    // بطاقة الولاء: لو انضافت للباقة تشتغل على طول (صاحب المحل يقدر يطفيها بعدين)
+    const loyaltyOn = features.includes('loyalty') && !(cur.plan_features || []).includes('loyalty') ? { loyalty_enabled: true } : {};
+    const live = cur.subscription_status === 'trial' ? { plan_features: features, waitlist_enabled: features.includes('waitlist'), ...loyaltyOn } : {};
     const main = (await rest(`clients?id=eq.${mainId}`, {
       method: 'PATCH', body: { ...live, requested_plan: plan, requested_features: features, plan_requested_at: new Date().toISOString() }, prefer: 'return=representation'
     }))[0];

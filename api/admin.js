@@ -145,7 +145,7 @@ module.exports = handler(['GET', 'POST'], async (req) => {
     if (!features.length) throw new ApiError(400, 'اختر ميزة وحدة على الأقل');
     await rpc('server_activate', { p_client_id: id, p_period: b.period });
     // الباقة والمميزات المفعّلة، ونشيل طلب الاشتراك المعلّق
-    await rest(`clients?id=eq.${id}`, { method: 'PATCH', body: { subscription_plan: b.period, plan_features: features, waitlist_enabled: features.includes('waitlist'), requested_plan: null, requested_features: null, plan_requested_at: null } })
+    await rest(`clients?id=eq.${id}`, { method: 'PATCH', body: { subscription_plan: b.period, plan_features: features, waitlist_enabled: features.includes('waitlist'), ...(features.includes('loyalty') && !(cur.plan_features || []).includes('loyalty') ? { loyalty_enabled: true } : {}), requested_plan: null, requested_features: null, plan_requested_at: null } })
       .catch(e => console.error('PLAN_SAVE', e.message));
     await followParentFeatures(id, features);
     await syncBranchSubscriptions(id);
@@ -289,7 +289,9 @@ module.exports = handler(['GET', 'POST'], async (req) => {
       }
       return { ...out, invoice, due: due > 0 ? due : 0, renew: now ? now.renew : null };
     }
-    const out = await patch({ plan_features: features, waitlist_enabled: features.includes('waitlist'), ...plan });
+    // بطاقة الولاء: لو انضافت للباقة تشتغل على طول
+    const prev = ((await rest(`clients?id=eq.${id}&select=plan_features`))[0] || {}).plan_features || [];
+    const out = await patch({ plan_features: features, waitlist_enabled: features.includes('waitlist'), ...(features.includes('loyalty') && !prev.includes('loyalty') ? { loyalty_enabled: true } : {}), ...plan });
     if (!out.client.parent_id) await followParentFeatures(id, features);
     return out;
   }
