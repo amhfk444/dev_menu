@@ -1529,6 +1529,38 @@
     document.getElementById('cartModal').classList.remove('opacity-0', 'pointer-events-none');
   }
   function closeCart() { document.getElementById('cartModal').classList.add('opacity-0', 'pointer-events-none'); }
+  // الكيبورد في نافذة الطلب (ملاحظة الصنف، رقم الطاولة): النافذة تاخذ المساحة الظاهرة بالضبط وتثبت،
+  // والخانة اللي يكتب فيها تبقى ظاهرة، والصفحة اللي وراها ما تتحرك (نفس طريقة المساعد)
+  let cartFit = 0;
+  const cartOpen = () => !document.getElementById('cartModal').classList.contains('opacity-0');
+  function fitCart() {
+    if (cartFit) return;
+    cartFit = requestAnimationFrame(() => {
+      cartFit = 0;
+      const m = document.getElementById('cartModal'), panel = m.querySelector('.modal-panel'), vv = window.visualViewport;
+      const kb = !!vv && cartOpen() && window.innerHeight - vv.height > 120;
+      if (!kb) { m.style.height = m.style.bottom = m.style.transform = m.style.transition = panel.style.maxHeight = ''; return; }
+      m.style.transition = 'opacity .3s';   // بدون حركة للمكان والطول: النافذة تلحق الكيبورد فوراً بدل ما تهتز
+      m.style.bottom = 'auto'; m.style.height = `${Math.round(vv.height)}px`;
+      m.style.transform = `translateY(${Math.round(vv.offsetTop)}px)`;
+      panel.style.maxHeight = `${Math.round(vv.height) - 6}px`;
+      const a = document.activeElement;
+      if (a && panel.contains(a) && /INPUT|TEXTAREA/.test(a.tagName)) {
+        const r = a.getBoundingClientRect(), pr = panel.getBoundingClientRect();
+        if (r.bottom > pr.bottom - 12 || r.top < pr.top + 70) panel.scrollTop += r.top - pr.top - pr.height / 2 + r.height / 2;
+      }
+    });
+  }
+  if (window.visualViewport) { visualViewport.addEventListener('resize', fitCart); visualViewport.addEventListener('scroll', fitCart); }
+  document.getElementById('cartModal').addEventListener('focusin', () => [60, 250, 500].forEach(t => setTimeout(fitCart, t)));
+  document.getElementById('cartModal').addEventListener('focusout', () => setTimeout(fitCart, 150));
+  // وهو فاتح الطلب: السحب برّا قائمة الطلب ما يحرّك المنيو اللي وراه
+  document.addEventListener('touchmove', (e) => {
+    if (!cartOpen()) return;
+    const panel = e.target.closest('#cartModal .modal-panel');
+    if (panel && panel.scrollHeight > panel.clientHeight + 1) return;
+    e.preventDefault();
+  }, { passive: false });
   function clearCart() { cart = []; resetCoupon(); saveCart(); closeCart(); }
 
   // رسالة واحدة فيها كل الأصناف والكميات والمجموع
