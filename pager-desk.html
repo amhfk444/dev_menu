@@ -153,6 +153,7 @@
   .tk-phone { background: #fff; color: #1a1a1a; box-shadow: inset 0 0 0 1.5px #1a1a1a; text-decoration: none; }
   .tk-onote { margin-top: 6px; font-size: 14px; font-weight: 700; color: #a1121f; }
   .tk-sub.one { grid-template-columns: 1fr; }
+  .tk-late { opacity: .6; } .tk-late .tk-main { background: #5f6f62; }
   @media (max-width: 520px) { #ord-note { display: none; } .col-hd h2 { white-space: nowrap; } }
   .tk-n small.tk-pg { display: block; font-size: 12px; font-weight: 700; color: #777; letter-spacing: 0; margin-top: 4px; }
   @media (prefers-reduced-motion: reduce) { .tile-new { animation: none; outline: 4px solid #c9a227; } }
@@ -480,7 +481,9 @@
     $('ord-title').textContent = self ? 'بانتظار الدفع' : 'طلبات الطاولات';
     $('ord-note').innerHTML = self ? '<i class="ph-bold ph-receipt"></i> العميل يوريك الرمز ويدفع، اكتب الفاتورة' : '<i class="ph-bold ph-fork-knife"></i> من المنيو';
     $('ord-empty').textContent = self ? 'ما فيه طلبات تنتظر الدفع. الطلب يوصل هنا بعد دقيقتين من إرساله (وقت التعديل).' : 'ما فيه طلبات. أول ما يطلب الزبون من المنيو يطلع طلبه هنا برقم طاولته.';
-    const list = orders.filter(o => ['new', 'accepted'].includes(o.status) && (!term || String(o.table_no || '') === term || String(o.code || '').toUpperCase() === term));
+    // المتأخر (ما دفع من ربع ساعة): يبقى، بس ينزل تحت باهت عشان الجدد فوق
+    const list = orders.filter(o => ['new', 'accepted'].includes(o.status) && (!term || String(o.table_no || '') === term || String(o.code || '').toUpperCase() === term))
+      .sort((a, b) => (a.late ? 1 : 0) - (b.late ? 1 : 0));
     $('ord-count').textContent = list.length || '';
     $('ord-empty').classList.toggle('hidden', list.length > 0);
     const mins = (iso) => Math.max(0, Math.floor((Date.now() - Date.parse(iso)) / 60000));
@@ -488,9 +491,9 @@
     $('ord-grid').innerHTML = list.map(o => {
       const acc = o.status === 'accepted', b = oBusy.has(o.id);
       // خدمة ذاتية: ينتظر الدفع. الرمز كبير، والزر الرئيسي «اكتب الفاتورة»
-      if (o.mode === 'self') return `<article class="tk${freshOrders.has(o.id) ? ' tile-new' : ''}"><div class="tk-in">
+      if (o.mode === 'self') return `<article class="tk${freshOrders.has(o.id) ? ' tile-new' : ''}${o.late ? ' tk-late' : ''}"><div class="tk-in">
         <div class="tk-info">
-          <div class="tk-hd"><span class="tk-tbl"><small>رمز الطلب</small><b dir="ltr">${esc(o.code || '')}</b></span>${timer(o.grace_until || o.created_at)}</div>
+          <div class="tk-hd"><span class="tk-tbl"><small>رمز الطلب</small><b dir="ltr">${esc(o.code || '')}</b></span>${timer(o.grace_until || o.created_at)}${o.late ? '<span class="tk-tag">متأخر، ممكن يجي بعدين</span>' : ''}</div>
           ${orderBlock(o, true)}
         </div>
         <div class="tk-act">

@@ -193,15 +193,17 @@ async function buildOrder(store, b, mode) {
     }
   };
 }
-// الخدمة الذاتية: دقيقتين يعدّل فيها أو يلغي (الكاشير ما يشوفه)، وبعدها 15 دقيقة يدفع فيها عند الكاشير وإلا ينلغي
-const GRACE_MS = 2 * 60e3, PAY_MS = 15 * 60e3;
+// الخدمة الذاتية: دقيقتين يعدّل فيها أو يلغي (الكاشير ما يشوفه)، وبعدها ينتظر الدفع لين آخر اليوم
+// (ما ينلغي بعد وقت: ما ينسوى شي قبل الدفع، فالمحل ما يخسر، والعميل اللي يتأخر يلقى طلبه)
+// بعد LATE_MS يطلع للكاشير «متأخر» تحت، عشان الجدد يبقون فوق
+const GRACE_MS = 2 * 60e3, LATE_MS = 15 * 60e3;
+const dayStart = () => new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10) + 'T00:00:00+03:00';
 const graceUntil = (o) => Date.parse(o.created_at) + GRACE_MS;
 const unpaid = (o) => o.mode === 'self' && o.status === 'new' && !o.pager_ticket_id;
-const expired = (o) => unpaid(o) && Date.now() > graceUntil(o) + PAY_MS;
-// اللي ما انفدع في وقته: ينلغي (نسويها وقت القراءة، بدون مهام مجدولة)
+const expired = (o) => unpaid(o) && Date.parse(o.created_at) < Date.parse(dayStart());
+// اللي ما انفدع من يوم سابق: ينقفل (نسويها وقت القراءة، بدون مهام مجدولة)
 async function expireUnpaid(storeId) {
-  const before = new Date(Date.now() - GRACE_MS - PAY_MS).toISOString();
-  await rest(`menu_orders?client_id=eq.${Number(storeId)}&mode=eq.self&status=eq.new&pager_ticket_id=is.null&created_at=lt.${q(before)}`, { method: 'PATCH', body: { status: 'cancelled', closed_at: new Date().toISOString() } }).catch(() => {});
+  await rest(`menu_orders?client_id=eq.${Number(storeId)}&mode=eq.self&status=eq.new&pager_ticket_id=is.null&created_at=lt.${q(dayStart())}`, { method: 'PATCH', body: { status: 'cancelled', closed_at: new Date().toISOString() } }).catch(() => {});
 }
 // رمز الطلب اللي يوريه العميل للكاشير: A + رقم طلبات اليوم (بتوقيت الرياض)
 async function nextCode(storeId) {
@@ -218,7 +220,7 @@ async function saveOrder(built) {
 }
 // الطلب كما يطلع للكاشير وللزبون
 const publicOrder = (o) => o && ({ id: o.id, mode: o.mode, code: o.code || null, paid: !!o.pager_ticket_id, grace_until: o.mode === 'self' ? new Date(graceUntil(o)).toISOString() : null,
-  pay_until: unpaid(o) ? new Date(graceUntil(o) + PAY_MS).toISOString() : null, dine: o.dine, table_no: o.table_no, phone: o.phone || null, items: o.items || [], note: o.note, total: Number(o.total) || 0,
+  late: unpaid(o) && Date.now() > graceUntil(o) + LATE_MS, dine: o.dine, table_no: o.table_no, phone: o.phone || null, items: o.items || [], note: o.note, total: Number(o.total) || 0,
   discount: Number(o.discount) || 0, coupon_code: o.coupon_code || null, status: o.status, created_at: o.created_at, accepted_at: o.accepted_at || null, closed_at: o.closed_at || null });
 
-module.exports = { GRACE_MS, PAY_MS, graceUntil, unpaid, expired, expireUnpaid, menuPromos, promoCovers, autoPrice, loadCoupon, priceCart, priceOrder, cleanNote, round2, orderMode, cleanTable, buildOrder, saveOrder, publicOrder };
+module.exports = { GRACE_MS, LATE_MS, graceUntil, unpaid, expired, expireUnpaid, menuPromos, promoCovers, autoPrice, loadCoupon, priceCart, priceOrder, cleanNote, round2, orderMode, cleanTable, buildOrder, saveOrder, publicOrder };
