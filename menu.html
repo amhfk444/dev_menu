@@ -1373,15 +1373,14 @@
     box.classList.toggle('hidden', !gs.length);
     box.innerHTML = gs.map((g, gi) => {
       const picked = modalExtras.filter(x => x.g === g.name).length;
-      const rule = g.required ? (g.max > 1 ? T(`إجباري · اختر حتى ${g.max}`, `Required · up to ${g.max}`) : T('إجباري · اختر واحد', 'Required · pick one'))
-        : (g.max > 1 ? T(`اختياري · حتى ${g.max}`, `Optional · up to ${g.max}`) : T('اختياري', 'Optional'));
+      const rule = g.required ? T('إجباري · اختر واحد', 'Required · pick one') : T('اختياري', 'Optional');
       return `<div data-exg="${gi}" class="ex-group">
         <div class="flex items-center justify-between gap-2 mb-1.5"><b class="text-sm font-black text-white">${esc((currentLang !== 'ar' && g.name_en) || g.name)}</b><span class="ex-rule ${g.required && !picked ? 'need' : ''} text-[10.5px] font-bold px-2 py-0.5 rounded-full">${rule}</span></div>
         <div class="grid gap-1.5">${g.options.map((o, oi) => {
           const sel = modalExtras.some(x => x.g === g.name && x.o === o.name);
           const price = Number(o.price) || 0;
           return `<button type="button" ${on ? '' : 'disabled'} data-exo="${gi}:${oi}" class="ex-opt ${sel ? 'on' : ''} flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-[13px] font-bold">
-            <span class="flex items-center gap-2"><span class="ex-box ${g.max === 1 ? 'radio' : ''}"></span>${esc((currentLang !== 'ar' && o.name_en) || o.name)}</span>
+            <span class="flex items-center gap-2"><span class="ex-box ${g.required ? 'radio' : ''}"></span>${esc((currentLang !== 'ar' && o.name_en) || o.name)}</span>
             <span class="opacity-80">${price ? `+${esc(money(price))}` : T('مجاناً', 'Free')}</span></button>`;
         }).join('')}</div></div>`;
     }).join('');
@@ -1393,8 +1392,8 @@
     const g = extrasOf(p)[gi], o = g && g.options[oi]; if (!o) return;
     const has = modalExtras.some(x => x.g === g.name && x.o === o.name);
     if (has) modalExtras = modalExtras.filter(x => !(x.g === g.name && x.o === o.name));
-    else if (g.max === 1) modalExtras = [...modalExtras.filter(x => x.g !== g.name), { g: g.name, o: o.name }];
-    else if (modalExtras.filter(x => x.g === g.name).length >= g.max) return menuToast(T(`${g.name}: تقدر تختار ${g.max} بس`, `${g.name}: up to ${g.max}`));
+    // الإجبارية اختيار واحد (يتبدل)، والاختيارية يختار منها اللي يبي
+    else if (g.required) modalExtras = [...modalExtras.filter(x => x.g !== g.name), { g: g.name, o: o.name }];
     else modalExtras.push({ g: g.name, o: o.name });
     renderModalExtras(p); updateModalAdd(p);
   });

@@ -127,7 +127,8 @@ function cleanExtras(list) {
       return item;
     });
     const required = g.required === true;
-    const max = Math.min(options.length, Math.max(1, int(g.max) || (required ? 1 : options.length)));
+    // الإجبارية = يختار واحد (مثل نوع الخبز)، والاختيارية بدون حد (كل ما زاد استفاد المحل)
+    const max = required ? 1 : options.length;
     const out = { name, required, max, options };
     const en = str(g.name_en, 40, 'اسم المجموعة بالإنجليزي'); if (en) out.name_en = en;
     return out;

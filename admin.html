@@ -644,7 +644,7 @@
               <span class="text-[11px] font-bold text-ink"><i class="ph-bold ph-list-plus text-emerald-600"></i> الإضافات <span class="text-ink font-normal">(اختياري)</span></span>
               <button type="button" id="exg-add-btn" onclick="addExGroup()" class="text-[11px] font-bold bg-brand/10 border border-brand/45 hover:bg-brand/10 text-ink px-2.5 py-1 rounded-lg transition disabled:opacity-40"><i class="ph-bold ph-plus text-[10px]"></i> مجموعة إضافات</button>
             </div>
-            <p class="text-[11px] text-ink leading-relaxed">مثل «الصوصات» اختيارية حتى 2، أو «نوع الخبز» إجبارية يختار العميل واحداً منها. السعر 0 يعني مجاناً.</p>
+            <p class="text-[11px] text-ink leading-relaxed">الاختيارية مثل «الصوصات»: يختار العميل منها ما يشاء. والإجبارية مثل «نوع الخبز»: يختار واحداً منها لزاماً. السعر 0 يعني مجاناً.</p>
             <div id="extras-list" class="space-y-2"></div>
             <button type="button" id="extras-copy-btn" onclick="openExtrasCopy()" class="hidden text-[11px] font-bold text-ink underline"><i class="ph-bold ph-copy"></i> انسخ هذي الإضافات لأطباق ثانية</button>
           </div>
@@ -7140,8 +7140,8 @@
           <button type="button" onclick="formExtras.splice(${gi}, 1); renderExtras()" aria-label="حذف المجموعة" class="shrink-0 w-8 h-8 rounded-lg bg-red-500/10 text-red-600 border border-red-500/20"><i class="ph-bold ph-trash"></i></button>
         </div>
         <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-ink">
-          <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" ${g.required ? 'checked' : ''} onchange="formExtras[${gi}].required=this.checked" class="accent-green-600"> إجبارية (لازم يختار)</label>
-          <label class="flex items-center gap-1">يختار حتى <input type="number" min="1" max="15" value="${esc(g.max || 1)}" oninput="formExtras[${gi}].max=this.value" dir="ltr" class="input-pro !py-0.5 text-xs !w-12 text-center"></label>
+          <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" ${g.required ? 'checked' : ''} onchange="formExtras[${gi}].required=this.checked" class="accent-green-600"> إجبارية (يختار واحد منها)</label>
+
         </div>
         ${(g.options || []).map((o, oi) => `<div class="flex items-center gap-1.5 ps-2">
           ${o.pid ? `<span class="flex-1 min-w-0 text-xs font-bold text-ink truncate py-2"><i class="ph-bold ph-link text-emerald-600" title="مربوط بصنف في المنيو"></i> ${esc(exLinkedName(o))}</span>
@@ -7185,7 +7185,7 @@
       box.remove(); renderExtras();
     });
   }
-  function addExGroup() { if (formExtras.length >= 6) return; formExtras.push({ name: '', required: false, max: 1, options: [{ name: '', price: '' }] }); renderExtras(); const ins = document.querySelectorAll('#extras-list input[type="text"]'); if (ins.length) ins[ins.length - 2 >= 0 ? ins.length - 2 : 0].focus(); }
+  function addExGroup() { if (formExtras.length >= 6) return; formExtras.push({ name: '', required: false, options: [{ name: '', price: '' }] }); renderExtras(); const ins = document.querySelectorAll('#extras-list input[type="text"]'); if (ins.length) ins[ins.length - 2 >= 0 ? ins.length - 2 : 0].focus(); }
   function addExOpt(gi) { const g = formExtras[gi]; if (!g || g.options.length >= 15) return showToast('الخيارات حدها 15', true); g.options.push({ name: '', price: '' }); renderExtras(); }
   // تتحقق قبل الحفظ، وترجع null لو فيه خطأ (يطلع للمستخدم)
   function cleanFormExtras() {
@@ -7197,7 +7197,7 @@
       if (!name) { showToast('اكتب اسم كل مجموعة إضافات، مثل: الصوصات', true); return null; }
       if (!options.length) { showToast(`أضف خيار واحد على الأقل في «${name}»`, true); return null; }
       const bad = options.find(o => isNaN(o.price) || o.price < 0); if (bad) { showToast(`اكتب سعراً صحيحاً لـ «${bad.name}»`, true); return null; }
-      out.push({ name, required: !!g.required, max: Math.max(1, Math.min(options.length, parseInt(g.max, 10) || 1)), options });
+      out.push({ name, required: !!g.required, options });
     }
     return out;
   }

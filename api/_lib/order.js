@@ -86,7 +86,8 @@ function pickExtras(p, sel, strict) {
   for (const g of groups) {
     const chosen = [...new Set(want.filter(x => x.g === g.name).map(x => x.o))]
       .map(o => (g.options || []).find(op => op.name === o)).filter(Boolean);
-    if (chosen.length > (g.max || 1)) { if (strict) throw new ApiError(400, `«${p.name}»: ${g.name} حدها ${g.max}`, 'EXTRAS_MAX'); chosen.length = g.max || 1; }
+    // الإجبارية اختيار واحد، والاختيارية بدون حد
+    if (g.required && chosen.length > 1) { if (strict) throw new ApiError(400, `«${p.name}»: اختر واحد بس من ${g.name}`, 'EXTRAS_MAX'); chosen.length = 1; }
     if (g.required && !chosen.length && strict) throw new ApiError(400, `«${p.name}»: اختر ${g.name}`, 'EXTRAS_REQUIRED');
     chosen.forEach(op => list.push({ group: g.name, name: op.name, price: round2(Number(op.price) || 0) }));
   }
