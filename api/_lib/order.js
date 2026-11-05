@@ -192,6 +192,6 @@ async function saveOrder(built) {
 }
 // الطلب كما يطلع للكاشير وللزبون
 const publicOrder = (o) => o && ({ id: o.id, mode: o.mode, dine: o.dine, table_no: o.table_no, items: o.items || [], note: o.note, total: Number(o.total) || 0,
-  discount: Number(o.discount) || 0, coupon_code: o.coupon_code || null, status: o.status, created_at: o.created_at, accepted_at: o.accepted_at || null });
+  discount: Number(o.discount) || 0, coupon_code: o.coupon_code || null, status: o.status, created_at: o.created_at, accepted_at: o.accepted_at || null, closed_at: o.closed_at || null });
 
 module.exports = { menuPromos, promoCovers, autoPrice, loadCoupon, priceCart, priceOrder, cleanNote, round2, orderMode, cleanTable, buildOrder, saveOrder, publicOrder };

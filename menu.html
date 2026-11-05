@@ -1645,6 +1645,8 @@
       const r = await DM.get(`/api/public?action=order-status&slug=${encodeURIComponent(project.client_slug)}&t=${saved.map(o => o.token).join(',')}`);
       const before = new Map(myOrders.map(o => [o.token, o.status]));
       myOrders = r.orders.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
+      // اللي خلص من أكثر من دقيقة ما نحتاج نسأل عنه مرة ثانية
+      myOrders = myOrders.filter(o => ['new', 'accepted'].includes(o.status) || Date.now() - Date.parse(o.closed_at || o.created_at) < 60000);
       saveOrders();
       // التحديث اللحظي لكل طلب مفتوح (حتى بعد ما يحدّث الصفحة)
       myOrders.forEach(o => watchOrder(o.live));
@@ -1660,7 +1662,10 @@
   const ST = { new: ['وصل طلبك للكاشير', 'Sent to the cashier'], accepted: ['الكاشير استلم طلبك، وجاري تحضيره', 'The cashier has it, being prepared'], served: ['تم تقديم طلبك، بالعافية', 'Served, enjoy'], cancelled: ['انلغى الطلب، كلّم الكاشير', 'Cancelled, ask the cashier'] };
   function renderOrders() {
     const bar = document.getElementById('moBar');
-    const live = myOrders.filter(o => o.status !== 'cancelled' && (o.status !== 'served' || Date.now() - Date.parse(o.created_at) < 40 * 60000));
+    // الطلب اللي انقدّم أو انلغى: يطلع دقيقة بس عشان يشوفه، وبعدها يختفي من المنيو
+    const live = myOrders.filter(o => ['new', 'accepted'].includes(o.status) || Date.now() - Date.parse(o.closed_at || o.created_at) < 60000);
+    clearTimeout(renderOrders.t);
+    if (live.some(o => !['new', 'accepted'].includes(o.status))) renderOrders.t = setTimeout(renderOrders, 61000);
     const top = live[0];
     bar.classList.toggle('hidden', !top); bar.classList.toggle('flex', !!top);
     if (top) {
@@ -1672,7 +1677,8 @@
     }
     document.getElementById('moTitle').textContent = T('طلباتك', 'Your orders');
     const step = (o) => { const i = { new: 0, accepted: 1, served: 2 }[o.status] ?? -1; return `<div class="mo-steps">${[['وصل', 'Sent'], ['يتحضّر', 'Preparing'], ['انقدّم', 'Served']].map((x, k) => `<span class="${k <= i ? 'on' : ''}">${x[currentLang === 'ar' ? 0 : 1]}</span>`).join('')}</div>`; };
-    document.getElementById('moList').innerHTML = myOrders.length ? myOrders.map(o => `
+    if (!live.length) closeOrders();
+    document.getElementById('moList').innerHTML = live.length ? live.map(o => `
       <div class="bg-white/5 border border-white/10 rounded-2xl p-3.5 space-y-2.5">
         <div class="flex items-center justify-between gap-2"><b class="text-white text-sm font-black">${o.table_no ? `${T('طاولة', 'Table')} <span dir="ltr">${esc(o.table_no)}</span>` : T('طلبك', 'Your order')}</b><span class="text-[11px] font-bold text-gray-400">${new Date(o.created_at).toLocaleTimeString(currentLang === 'ar' ? 'ar-SA-u-nu-latn' : 'en-GB', { hour: '2-digit', minute: '2-digit' })}</span></div>
         ${o.status === 'cancelled' ? `<p class="text-[12px] font-black text-red-300">${ST.cancelled[currentLang === 'ar' ? 0 : 1]}</p>` : step(o)}
