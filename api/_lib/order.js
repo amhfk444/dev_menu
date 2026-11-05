@@ -1,7 +1,8 @@
 // =====================================================================
-// DEV MENU — أسعار الطلب: العروض التلقائية والكوبونات بأسعار قاعدة البيانات (مو اللي يرسلها المتصفح)
+// DEV MENU — أسعار الطلب والطلب من المنيو للكاشير
 //   priceCart: فحص الكوبون على السلة (طلب واتساب)
-//   priceOrder: الطلب من المنيو للكاشير: الأصناف بأسمائها وأسعارها، والكوبون اختياري
+//   priceOrder: الطلب من المنيو: الأصناف بأسمائها وأسعارها من قاعدة البيانات، والكوبون اختياري
+//   الطلب من المنيو: العميل يرسل طلبه (ورقم طاولته لو عنده)، ويوصل لشاشة الكاشير برمز مثل A12
 // =====================================================================
 const { rest, q, ApiError, int, CURRENCIES } = require('./core');
 const round2 = (n) => Math.round(n * 100) / 100;
@@ -145,47 +146,25 @@ async function priceOrder(store, rawItems, coupon = null) {
 }
 
 
-// طريقة الطلب من المنيو حسب إعداد المحل وباقته: 'table' تحتاج المنيو، و'self' تحتاج المنيو والبيجر. null = مطفي
+// الطلب من المنيو مفعّل؟ (صاحب المحل مشغّله + المنيو في باقته). 'table' أو null
 async function orderMode(storeId) {
   const { storeFeatures } = require('./core');
   const [row, f] = await Promise.all([
     rest(`clients?id=eq.${Number(storeId)}&select=menu_order_mode`).then(r => r[0] || {}).catch(() => ({})),
     storeFeatures(storeId)
   ]);
-  if (row.menu_order_mode === 'table' && f.menu) return 'table';
-  if (row.menu_order_mode === 'self' && f.menu && f.pager) return 'self';
-  return null;
-}
-// متى يبدأ تجهيز طلب الخدمة الذاتية + موقع المحل (للبدء التلقائي لما يقرب العميل)
-async function orderPrep(storeId) {
-  const r = (await rest(`clients?id=eq.${Number(storeId)}&select=menu_prep,loyalty_lat,loyalty_lng`).catch(() => []))[0] || {};
-  // now = يدفع وقت الاستلام (الكاشير يبدأ التجهيز أول ما يدخله في نظامه)، after_pay = يدفع أول. (arrive القديمة = now)
-  const prep = ['now', 'arrive'].includes(r.menu_prep) ? 'now' : 'after_pay';
-  const spot = Number.isFinite(Number(r.loyalty_lat)) && Number.isFinite(Number(r.loyalty_lng)) && r.loyalty_lat != null ? { lat: Number(r.loyalty_lat), lng: Number(r.loyalty_lng) } : null;
-  return { prep, spot };
-}
-// جوال ما جا يستلم مرتين (آخر 90 يوم): طلباته تنتظر الدفع قبل التجهيز
-async function noShows(storeId, phone) {
-  if (!phone) return 0;
-  const since = new Date(Date.now() - 90 * 864e5).toISOString();
-  return (await rest(`menu_orders?client_id=eq.${Number(storeId)}&phone=eq.${q(phone)}&no_show=is.true&created_at=gte.${q(since)}&select=id&limit=5`).catch(() => [])).length;
+  return row.menu_order_mode && f.menu ? 'table' : null;
 }
 // رقم الطاولة: أرقام وحروف (الأرقام العربية تتحول)، حتى 6
 function cleanTable(v) {
-  const t = String(v ?? '').trim().replace(/\s+/g, '').replace(/[٠-٩۰-۹]/g, d => String(d.charCodeAt(0) & 15)).toUpperCase();
-  if (t && !/^[A-Z0-9ء-ي-]{1,6}$/.test(t)) throw new ApiError(400, 'رقم الطاولة: أرقام أو حروف قصيرة فقط', 'BAD_TABLE');
+  const t = String(v ?? '').trim().replace(/\s+/g, '').replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15)).toUpperCase();
+  if (t && !/^[A-Z0-9\u0621-\u064A-]{1,6}$/.test(t)) throw new ApiError(400, 'رقم الطاولة: أرقام أو حروف قصيرة فقط', 'BAD_TABLE');
   return t || null;
 }
 const DEV_RE = /^[A-Za-z0-9_-]{10,64}$/;
-// جوال الزبون (السفري): سعودي 05xxxxxxxx (يقبل 9665… و+966… والأرقام العربية)
-function cleanPhone(v) {
-  let d = String(v ?? '').replace(/[\u0660-\u0669\u06F0-\u06F9]/g, c => String(c.charCodeAt(0) & 15)).replace(/\D/g, '');
-  if (d.startsWith('00966')) d = d.slice(5); else if (d.startsWith('966')) d = d.slice(3);
-  if (d.startsWith('5')) d = '0' + d;
-  return /^05\d{8}$/.test(d) ? d : null;
-}
+const dayStart = () => new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10) + 'T00:00:00+03:00';
 // يجهز الطلب قبل الحفظ: الأسعار من القاعدة، والكوبون (اختياري)، وحد الطلبات المفتوحة من نفس الجوال
-async function buildOrder(store, b, mode) {
+async function buildOrder(store, b) {
   const dev = DEV_RE.test(String(b.dev || '')) ? String(b.dev) : null;
   if (dev) {
     const since = new Date(Date.now() - 3 * 3600e3).toISOString();
@@ -194,82 +173,28 @@ async function buildOrder(store, b, mode) {
   }
   const coupon = b.coupon ? await loadCoupon(store.id, b.coupon) : null;
   const priced = await priceOrder(store, b.items, coupon);
-  const dine = mode === 'self' ? (b.dine === 'out' ? 'out' : 'in') : 'in';
-  const table_no = dine === 'in' ? cleanTable(b.table) : null;
-  if (mode === 'table' && !table_no) throw new ApiError(400, 'اكتب رقم طاولتك', 'NEED_TABLE');
-  // التجهيز قبل الدفع (now / arrive): الجوال إجباري للكل، وطلب مفتوح واحد لكل جوال
-  const early = mode === 'self' && b._prep === 'now';
-  const phone = dine === 'out' || early ? cleanPhone(b.phone) : null;
-  if ((dine === 'out' || early) && !phone) throw new ApiError(400, 'اكتب رقم جوالك عشان نتواصل معك لو احتجنا، مثل 0512345678', 'NEED_PHONE');
-  let pay_first = false;
-  if (early) {
-    const open = await rest(`menu_orders?client_id=eq.${store.id}&phone=eq.${q(phone)}&status=in.(new,accepted)&created_at=gte.${q(dayStart())}&select=id&limit=1`).catch(() => []);
-    if (open.length) throw new ApiError(409, 'عندك طلب مفتوح على هالجوال. استلمه أول، أو كلّم الكاشير', 'OPEN_ORDER');
-    pay_first = (await noShows(store.id, phone)) >= 2;
-  }
   return {
     coupon, row: {
-      client_id: store.id, token: require('crypto').randomBytes(18).toString('base64url'), mode, dine, table_no, ...(phone ? { phone } : {}), ...(pay_first ? { pay_first } : {}),
+      client_id: store.id, token: require('crypto').randomBytes(18).toString('base64url'), mode: 'table', table_no: cleanTable(b.table),
       items: priced.lines, note: cleanNote(b.note, 300), total: priced.total, discount: priced.discount, coupon_code: coupon ? coupon.code : null,
-      device: dev, lang: b.lang === 'en' ? 'en' : 'ar',
-      // بطاقات المحفظة المحفوظة في جواله (تنربط برقمه لما يبدأ الطلب)
-      ...(mode === 'self' ? { cards: { pc: (Array.isArray(b.pc) ? b.pc : []).map(String).filter(t => DEV_RE.test(t)).slice(0, 4), lt: DEV_RE.test(String(b.lt || '')) ? String(b.lt) : null } } : {})
+      device: dev, lang: b.lang === 'en' ? 'en' : 'ar'
     }
   };
 }
-// الخدمة الذاتية: الطلب يوصل الكاشير على طول، والعميل يعدّل أو يلغي لين الكاشير يدخله في نظامه («أدخلته»)
-// ما ينلغي بعد وقت: يبقى لين آخر اليوم. بعد LATE_MS يطلع للكاشير «متأخر» تحت، عشان الجدد يبقون فوق
-const GRACE_MS = 0, LATE_MS = 15 * 60e3;
-const dayStart = () => new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10) + 'T00:00:00+03:00';
-const graceUntil = (o) => Date.parse(o.created_at) + GRACE_MS;
-const unpaid = (o) => o.mode === 'self' && o.status === 'new' && !o.pager_ticket_id;
-const expired = (o) => unpaid(o) && Date.parse(o.created_at) < Date.parse(dayStart());
-// اللي ما انفدع من يوم سابق: ينقفل (نسويها وقت القراءة، بدون مهام مجدولة)
-async function expireUnpaid(storeId) {
-  await rest(`menu_orders?client_id=eq.${Number(storeId)}&mode=eq.self&status=eq.new&pager_ticket_id=is.null&created_at=lt.${q(dayStart())}`, { method: 'PATCH', body: { status: 'cancelled', closed_at: new Date().toISOString() } }).catch(() => {});
-}
 // رمز الطلب اللي يوريه العميل للكاشير: A + رقم طلبات اليوم (بتوقيت الرياض)
 async function nextCode(storeId) {
-  const day = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10) + 'T00:00:00+03:00';
-  const n = (await rest(`menu_orders?client_id=eq.${Number(storeId)}&mode=eq.self&created_at=gte.${q(day)}&select=id`).catch(() => [])).length;
+  const n = (await rest(`menu_orders?client_id=eq.${Number(storeId)}&created_at=gte.${q(dayStart())}&select=id`).catch(() => [])).length;
   return `A${n + 1}`;
 }
 async function saveOrder(built) {
   const { rpc } = require('./core');
-  if (built.row.mode === 'self' && !built.row.pager_ticket_id) built.row.code = await nextCode(built.row.client_id);
+  built.row.code = await nextCode(built.row.client_id);
   const o = (await rest('menu_orders', { method: 'POST', prefer: 'return=representation', body: built.row }))[0];
   if (built.coupon) await rpc('redeem_coupon', { p_coupon_id: built.coupon.id }).catch(() => {});
   return o;
 }
-// الطلب كما يطلع للكاشير وللزبون
-const publicOrder = (o) => o && ({ id: o.id, mode: o.mode, code: o.code || null, paid: !!o.paid_at, started: !!o.pager_ticket_id, pay_first: o.pay_first === true, arriving: !!o.arriving_at, grace_until: null,
-  late: unpaid(o) && Date.now() > graceUntil(o) + LATE_MS, dine: o.dine, table_no: o.table_no, phone: o.phone || null, items: o.items || [], note: o.note, total: Number(o.total) || 0,
+// الطلب كما يطلع للكاشير وللعميل
+const publicOrder = (o) => o && ({ id: o.id, code: o.code || null, table_no: o.table_no, items: o.items || [], note: o.note, total: Number(o.total) || 0,
   discount: Number(o.discount) || 0, coupon_code: o.coupon_code || null, status: o.status, created_at: o.created_at, accepted_at: o.accepted_at || null, closed_at: o.closed_at || null });
 
-// الكاشير أدخل الطلب في نظامه (وقد يكون دفع: invoice): يبدأ التجهيز برقم بيجر داخلي يرن على العميل،
-// وتنربط بطاقاته (النداء والولاء). يرجع التذكرة، أو يرمي خطأ لو الطلب تغيّر (العميل ألغاه بنفس اللحظة)
-async function startOrder(storeId, o, invoice) {
-  const { rpc } = require('./core');
-  const sid = Number(storeId), now = new Date().toISOString();
-  // نحجزه أول: لو العميل ألغاه أو كاشير ثاني بدأه، ما ناخذ رقم
-  const claim = await rest(`menu_orders?id=eq.${o.id}&client_id=eq.${sid}&status=eq.new&pager_ticket_id=is.null&started_at=is.null`, { method: 'PATCH', prefer: 'return=representation', body: { started_at: now } });
-  if (!claim.length) throw new ApiError(409, 'الطلب تغيّر (العميل عدّله أو ألغاه)، حدّث الشاشة', 'CHANGED');
-  let t;
-  try {
-    const token = require('crypto').randomBytes(18).toString('base64url');
-    let res;
-    try { res = await rpc('server_pager_take', { p_client_id: sid, p_token: token }); }
-    catch (e) { if (String(e.dbMessage || e.message).includes('PAGER_FULL')) throw new ApiError(409, 'وصلتم الحد اليومي للأرقام', 'FULL'); throw e; }
-    t = (await rest(`pager_tickets?token=eq.${q(res.token)}&client_id=eq.${sid}`, { method: 'PATCH', prefer: 'return=representation', body: { lang: o.lang === 'en' ? 'en' : 'ar', ...(invoice ? { invoice_no: invoice } : {}) } }))[0];
-    await rest(`menu_orders?id=eq.${o.id}`, { method: 'PATCH', body: { pager_ticket_id: t.id, status: 'accepted', accepted_at: now, ...(invoice ? { paid_at: now } : {}) } });
-  } catch (e) {
-    await rest(`menu_orders?id=eq.${o.id}`, { method: 'PATCH', body: { started_at: null } }).catch(() => {});
-    throw e;
-  }
-  await require('../pager').linkOrderCards(sid, t.token, o.cards).catch(e => console.error('ORDER_CARDS', e.message));
-  const { poke, topic } = require('./live');
-  await poke([topic('pager', sid), topic('mo', o.token)]);
-  return t;
-}
-
-module.exports = { startOrder, orderPrep, noShows, dayStart, GRACE_MS, LATE_MS, graceUntil, unpaid, expired, expireUnpaid, menuPromos, promoCovers, autoPrice, loadCoupon, priceCart, priceOrder, cleanNote, round2, orderMode, cleanTable, buildOrder, saveOrder, publicOrder };
+module.exports = { menuPromos, promoCovers, autoPrice, loadCoupon, priceCart, priceOrder, cleanNote, round2, orderMode, cleanTable, buildOrder, saveOrder, publicOrder, dayStart };

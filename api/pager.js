@@ -215,13 +215,6 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     // المجانية: 200 رقم بالشهر. الزبون ما يشوف إن فيه حد، بس يطلب من الموظف
     if (store.free && (await monthTickets(store.id, PLANS.FREE.pager)) >= PLANS.FREE.pager) throw new ApiError(409, 'البيجر متوقف مؤقتاً، تفضّل عند الكاشير وبيبلغك أول ما يجهز طلبك.', 'FREE_FULL');
     const invoice = cleanInvoice(b.invoice);
-    // طلب من المنيو (الخدمة الذاتية): نتحقق من الأصناف والأسعار قبل ما ناخذ الرقم
-    const O = b.order ? require('./_lib/order') : null;
-    let built = null;
-    if (O) {
-      if ((await O.orderMode(store.id)) !== 'self') throw new ApiError(409, 'الطلب من المنيو متوقف الحين، اطلب من الكاشير', 'ORDERS_OFF');
-      built = await O.buildOrder(store, { ...b.order, dev: b.dev, lang: reqLang(req) }, 'self');
-    }
     if (invoice && (await rest(`pager_tickets?client_id=eq.${store.id}&invoice_no=eq.${q(invoice)}&created_at=gte.${q(riyadhDayStart())}&status=in.(waiting,ready)&select=number&limit=1`)).length) throw new ApiError(409, 'هذي الفاتورة مسجلة على رقم ثاني، تأكد من الرقم', 'DUPLICATE');
     const token = crypto.randomBytes(18).toString('base64url');
     try {
@@ -237,11 +230,6 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
       }
       // عنده بطاقة نداء من زيارة سابقة: نربطها بالرقم الجديد وتتحدث برقمه
       // card_ok: false = البطاقة المحفوظة في جواله ما عادت شغالة، والصفحة تعرض عليه يضيف وحدة جديدة
-      if (built) {
-        const tk = (await rest(`pager_tickets?token=eq.${q(res.token)}&client_id=eq.${store.id}&select=id`))[0];
-        const o = await O.saveOrder({ ...built, row: { ...built.row, pager_ticket_id: tk && tk.id } });
-        console.log('MENU_ORDER', store.id, o.id, 'pager', res.number);
-      }
       const linked = TOKEN_RE.test(String(b.pc || '')) ? await linkPagerCard(store, res.token, b.pc).catch(e => { console.error('PAGER_CARD', e.message); return null; }) : undefined;
       await poke(topic('pager', store.id));
       return { token: res.token, number: res.number, ...(linked === null ? { card_ok: false } : {}), store: { name: store.display_name || store.name, logo_url: store.logo_url, accent_color: store.accent_color || null } };
@@ -287,11 +275,6 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     // إضافات صفحة الانتظار: الصفحة تسأل عنها مرة وحدة لكل رقم (c=1)، مو مع كل تحديث كل 3 ثواني
     const live = ['waiting', 'ready'].includes(t.status) && !stale;
     const extras = req.query.c === '1' ? (live ? await waitExtras(store.id, t) : { chat: false, upsell: [], game: null, game_on: true }) : {};
-    // طلبه من المنيو (الخدمة الذاتية): يطلع له في صفحة الانتظار
-    if (req.query.c === '1') {
-      const mo = (await rest(`menu_orders?pager_ticket_id=eq.${t.id}&client_id=eq.${store.id}&select=*&limit=1`).catch(() => []))[0];
-      extras.order = mo ? require('./_lib/order').publicOrder(mo) : null;
-    }
     // الطابور الحي: كم طلب قدامه، والوقت الباقي تقريباً (الصفحة تسأل كل 15 ثانية تقريباً بـ q=1)
     let queue;
     if (req.query.q === '1' && t.status === 'waiting' && !stale) {
@@ -524,22 +507,3 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
   throw new ApiError(404, 'هذا الطلب غير معروف، حدّث الصفحة وحاول مرة ثانية', 'UNKNOWN');
 });
 
-// طلب من المنيو صار له رقم (بدأ تجهيزه أو انفدع): نربط بطاقة النداء وبطاقة الولاء اللي في جوال العميل،
-// مثل «خذ رقمي» بالضبط، عشان يوصله «طلبك جاهز» من المحفظة وهو في تطبيق ثاني
-async function linkOrderCards(storeId, ticketToken, cards) {
-  if (!cards || (!cards.lt && !(cards.pc || []).length)) return;
-  const row = (await rest(`clients?id=eq.${Number(storeId)}&select=id,name,client_slug,logo_url,business_type,accent_color,parent_id`).catch(() => []))[0];
-  if (!row) return;
-  row.display_name = row.name;
-  if (row.parent_id) { const root = (await rest(`clients?id=eq.${Number(row.parent_id)}&select=name`).catch(() => []))[0]; if (root && root.name) row.display_name = root.name; }
-  if (cards.lt && TOKEN_RE.test(cards.lt)) {
-    const home = await loyaltyHome(row.id);
-    const card = (await rest(`loyalty_cards?token=eq.${q(cards.lt)}&client_id=eq.${home}&select=id`).catch(() => []))[0];
-    if (card) await rest(`pager_tickets?token=eq.${q(ticketToken)}&client_id=eq.${row.id}`, { method: 'PATCH', body: { loyalty_card_id: card.id } }).catch(() => {});
-  }
-  for (const pc of (cards.pc || []).filter(t => TOKEN_RE.test(t)).slice(0, 4)) {
-    const r = await linkPagerCard(row, ticketToken, pc).catch(e => { console.error('ORDER_CARD', e.message); return null; });
-    if (r) break;
-  }
-}
-module.exports.linkOrderCards = linkOrderCards;

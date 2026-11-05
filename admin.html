@@ -1918,31 +1918,10 @@
             <b class="text-xs text-ink"><i class="ph-bold ph-receipt"></i> الطلب من المنيو إلى شاشة الكاشير</b>
             <span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يختار العميل الأصناف وكمياتها وملاحظاته من جواله، ويصل الطلب مباشرة إلى شاشة الكاشير دون الحاجة إلى واتساب. لا يُطلب من العميل اسمه ولا رقم جواله.</span>
           </div>
-          <div class="grid gap-2" id="mo-opts">
-            <label class="flex items-start gap-2.5 cursor-pointer bg-white rounded-lg border border-brand/15 p-2.5">
-              <input type="radio" name="mo-mode" value="" class="mt-0.5 accent-green-600" onchange="saveOrderMode(this)">
-              <span class="text-xs"><b class="text-ink">إيقاف</b><span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يتصفح العميل المنيو فقط، أو يطلب عبر واتساب إن كان مفعّلاً.</span></span>
-            </label>
-            <label class="flex items-start gap-2.5 cursor-pointer bg-white rounded-lg border border-brand/15 p-2.5">
-              <input type="radio" name="mo-mode" value="table" class="mt-0.5 accent-green-600" onchange="saveOrderMode(this)">
-              <span class="text-xs"><b class="text-ink">خدمة على الطاولة</b><span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يُدخل العميل رقم طاولته ثم يرسل طلبه، فيظهر عند الكاشير برقم الطاولة. يضغط الكاشير «استلمته» ثم «قدّمته»، ويرى العميل حالة طلبه في المنيو.</span></span>
-            </label>
-            <label id="mo-self-label" class="flex items-start gap-2.5 cursor-pointer bg-white rounded-lg border border-brand/15 p-2.5">
-              <input type="radio" name="mo-mode" value="self" id="mo-self" class="mt-0.5 accent-green-600 disabled:cursor-not-allowed" onchange="saveOrderMode(this)">
-              <span class="text-xs"><b class="text-ink">خدمة ذاتية مع البيجر</b><span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يختار العميل «محلي» أو «سفري»، ورقم الطاولة اختياري للطلب المحلي. يحصل العميل على رقم بيجر مع طلبه، وعند ضغط الكاشير «جاهز» يرن جواله.</span><span id="mo-self-note" class="hidden block text-[11px] font-bold text-amber-800 mt-1"><i class="ph-bold ph-lock"></i> تحتاج إلى البيجر في باقتك</span></span>
-            </label>
-          </div>
-          <!-- الخدمة الذاتية: متى يبدأ التجهيز -->
-          <div id="mo-prep" class="hidden bg-white rounded-lg border border-brand/15 p-3 space-y-2">
-            <b class="text-xs text-ink"><i class="ph-bold ph-cooking-pot"></i> متى يبدأ تجهيز الطلب؟</b>
-            <label class="flex items-start gap-2.5 cursor-pointer"><input type="radio" name="mo-prep" value="after_pay" class="mt-0.5 accent-green-600" onchange="saveOrderPrep(this)">
-              <span class="text-xs"><b class="text-ink">يدفع أولاً (مضمون)</b><span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يصل الطلب إلى الكاشير فور إرساله، ويُبرز العميل رمز طلبه ويدفع، ثم يُدخل الكاشير رقم الفاتورة فيبدأ التجهيز.</span></span></label>
-            <label class="flex items-start gap-2.5 cursor-pointer"><input type="radio" name="mo-prep" value="now" class="mt-0.5 accent-green-600" onchange="saveOrderPrep(this)">
-              <span class="text-xs"><b class="text-ink">يدفع عند الاستلام</b><span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يصل الطلب إلى الكاشير فور إرساله ولو كان العميل خارج المحل، فيُدخله الكاشير في نظامه ويضغط «أدخلته» ليبدأ التجهيز، ويدفع العميل عند الاستلام. يُشترط رقم الجوال، ويُسمح بطلب مفتوح واحد لكل رقم.</span></span></label>
-            <p class="text-[11px] text-ink leading-relaxed">يستطيع العميل تعديل طلبه أو إلغاءه إلى أن يبدأ الكاشير بإدخاله.</p>
-            <p class="text-[11px] text-ink leading-relaxed bg-brand/5 rounded-lg p-2"><i class="ph-bold ph-shield-check"></i> حماية: إذا لم يحضر العميل لاستلام طلبه يضغط الكاشير «ما جا»، والرقم الذي يتكرر منه ذلك مرتين تنتظر طلباته الدفع قبل التجهيز.</p>
-            <p id="mo-prep-stats" class="text-[11px] font-bold text-ink"></p>
-          </div>
+          <label class="flex items-start gap-2.5 cursor-pointer bg-white rounded-lg border border-brand/15 p-2.5">
+            <input type="checkbox" id="mo-on" class="w-4 h-4 mt-0.5 accent-green-600 cursor-pointer" onchange="saveOrderMode(this)">
+            <span class="text-xs"><b class="text-ink">تفعيل الطلب من المنيو</b><span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يُرسل العميل طلبه فيظهر عند الكاشير برمز الطلب (مثل A12)، وبرقم الطاولة إذا مسح رمز طاولته. يضغط الكاشير «استلمته» ثم «سلّمته»، ويرى العميل حالة طلبه في المنيو.</span></span>
+          </label>
           <div id="mo-status" class="text-[11px]"></div>
           <!-- QR لكل طاولة: رقم الطاولة داخل الرمز، فالعميل ما يكتبه -->
           <div id="mo-tables" class="hidden bg-white rounded-lg border border-brand/15 p-3 space-y-2">
@@ -5570,24 +5549,14 @@
       else if (box.getBoundingClientRect().bottom > 0) setPhoneView('menu');
     }, 250); }, { passive: true });
   })();
-  // ─── الطلب من المنيو إلى الكاشير: إيقاف / طاولات / خدمة ذاتية مع البيجر ───
+  // ─── الطلب من المنيو إلى الكاشير ───
   function renderOrderMode() {
-    const m = client.menu_order_mode || '';
-    document.querySelectorAll('input[name="mo-mode"]').forEach(r => { r.checked = r.value === m; });
-    const selfLocked = featureLocked('pager');
-    document.getElementById('mo-self').disabled = selfLocked && m !== 'self';
-    document.getElementById('mo-self-label').classList.toggle('opacity-60', selfLocked);
-    document.getElementById('mo-self-note').classList.toggle('hidden', !selfLocked);
+    const m = !!client.menu_order_mode;
+    document.getElementById('mo-on').checked = m;
     const desk = 'pager-desk.html' + location.search;
     document.getElementById('mo-tables').classList.toggle('hidden', !m);
-    document.getElementById('mo-prep').classList.toggle('hidden', m !== 'self');
-    document.querySelectorAll('input[name="mo-prep"]').forEach(r => { r.checked = r.value === (client.menu_prep === 'arrive' ? 'now' : client.menu_prep || 'after_pay'); });
-    if (m === 'self' && !renderOrderMode.stats) {
-      renderOrderMode.stats = true;
-      api('orders-noshow', undefined).then(r => { const el = document.getElementById('mo-prep-stats'); if (r && r.early) el.textContent = `آخر 30 يوماً: ${r.early} طلباً بدأ تجهيزها قبل الدفع، ولم يُستلم منها ${r.no_show}.`; }).catch(() => {});
-    }
     document.getElementById('mo-status').innerHTML = !m ? '' : `<div class="flex flex-wrap items-center justify-between gap-2 bg-green-500/10 border border-green-500/25 rounded-lg px-3 py-2">
-        <span class="text-green-800"><i class="ph-bold ph-check-circle"></i> ${m === 'table' ? 'الطلبات تصل لشاشة الكاشير برقم الطاولة' : 'الطلبات تصل لشاشة الكاشير مع رقم البيجر'}${client.whatsapp_orders ? '، بدل واتساب' : ''}</span>
+        <span class="text-green-800"><i class="ph-bold ph-check-circle"></i> الطلبات تصل لشاشة الكاشير${client.whatsapp_orders ? '، بدل واتساب' : ''}</span>
         <a href="${desk}" target="_blank" rel="noopener" class="bg-brand text-cream font-bold px-2.5 py-1 rounded-md text-[11px]"><i class="ph-bold ph-cash-register"></i> افتح شاشة الكاشير</a>
       </div>`;
   }
@@ -5606,7 +5575,7 @@
       let logo = null;
       const lu = safeUrl(client.logo_url);
       if (lu) try { const im = await loadImage(lu); const c = document.createElement('canvas'); c.width = c.height = 160; const x = c.getContext('2d'); const k = Math.max(160 / im.width, 160 / im.height); x.drawImage(im, 80 - im.width * k / 2, 80 - im.height * k / 2, im.width * k, im.height * k); logo = c.toDataURL('image/png'); } catch {}
-      const self = client.menu_order_mode === 'self';
+      const self = false;
       const cards = [];
       for (let n = from; n <= to; n++) {
         cards.push(`<div class="card"><div class="top">${logo ? `<img class="logo" src="${logo}" alt="">` : ''}<p class="name">${esc(client.name || '')}</p></div>
@@ -5629,19 +5598,15 @@
     } catch (e) { console.error(e); win.close(); showToast('تعذر تجهيز رموز الطاولات', true); }
     finally { btn.disabled = false; }
   }
-  async function saveOrderPrep(r) {
-    const prev = client.menu_prep || 'after_pay';
-    if (await updateClient({ menu_prep: r.value })) showToast({ after_pay: 'العميل يدفع أول، وبعدها يبدأ التجهيز', now: 'الكاشير يبدأ الطلب، والعميل يدفع وقت الاستلام' }[r.value]);
-    else { client.menu_prep = prev; renderOrderMode(); showToast('تعذر حفظ الإعداد', true); }
-  }
-  async function saveOrderMode(r) {
-    const prev = client.menu_order_mode || '';
-    const m = r.value || null;
+  async function saveOrderMode(box) {
+    const prev = client.menu_order_mode || null;
+    const m = box.checked ? 'table' : null;
     if (await updateClient({ menu_order_mode: m })) {
       renderOrderMode(); applyFeatureLocks(); phoneView = 'menu'; reloadPagerPhone();
-      showToast(!m ? 'تم إيقاف الطلب من المنيو' : m === 'table' ? 'صار العميل يطلب من المنيو برقم طاولته' : 'صار العميل يطلب من المنيو وياخذ رقم بيجر');
+      showToast(m ? 'صار العميل يطلب من المنيو ويوصل طلبه للكاشير' : 'تم إيقاف الطلب من المنيو');
     } else { client.menu_order_mode = prev; renderOrderMode(); showToast('تعذر حفظ الإعداد', true); }
   }
+
   async function togglePagerUpsell(on) {
     if (await updateClient({ pager_upsell: on })) { renderPagerStatus(); showToast(on ? 'الزبون يقدر يضيف لطلبه وهو ينتظر' : 'تم إيقاف «أضف لطلبك»'); }
     else { document.getElementById('info-pager-upsell').checked = !on; showToast('تعذر حفظ الإعداد', true); }

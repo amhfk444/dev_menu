@@ -363,13 +363,6 @@
   .star { color: rgba(255,255,255,.3); }
   .mm-front { color: #233d2c; }
   .hidden { display: none !important; }
-  .mo { background: #fff; color: #15271b; border-radius: 18px; padding: 12px 14px; text-align: right; }
-  .mo-hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 800; }
-  .mo-hd span { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; background: #f1ede2; font-size: 12px; }
-  .mo ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
-  .mo li { display: flex; gap: 8px; font-size: 14px; font-weight: 700; } .mo li b { min-width: 26px; } .mo li span { flex: 1; min-width: 0; } .mo li small { font-weight: 600; opacity: .7; }
-  .mo li em { display: block; font-style: normal; font-size: 12px; font-weight: 700; color: #8a5a00; }
-  .mo-ft { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(21,39,27,.18); font-size: 13px; font-weight: 800; }
 </style>
 <link rel="stylesheet" href="/css/tw/pager.css">
 </head>
@@ -452,7 +445,7 @@
     <p id="w-demo" class="hidden text-[13px] font-black text-[#15271b] bg-[#c9a227]/25 border border-[#c9a227]/50 rounded-2xl py-3 px-3 text-center">هذي تجربة: خلال ثواني يرن جوالك 🔔 وإذا أضفت بطاقة النداء، يوصلك منها إشعار "طلبك جاهز" حتى لو طلعت من الصفحة</p>
     <div id="w-orb" class="orb">
       <div class="orb-in">
-        <small id="w-num-label">رقم طلبك</small>
+        <small>رقم طلبك</small>
         <div id="w-number" class="orb-num">—</div>
         <button type="button" id="w-invoice" class="hidden text-[12.5px] font-black bg-white/15 rounded-lg py-1 px-3">🧾 <span dir="ltr"></span> <i class="ph-bold ph-pencil-simple text-xs opacity-70"></i></button>
       </div>
@@ -479,8 +472,6 @@
       <li class="now"><i class="ph-bold ph-cooking-pot"></i><span id="d-wait"></span></li>
       <li><i class="ph-bold ph-bell"></i>جاهز</li>
     </ul>
-    <!-- طلبه من المنيو (الخدمة الذاتية): الأصناف والمجموع، والدفع عند الكاشير -->
-    <section id="w-order" class="mo hidden" aria-label="طلبك"></section>
     <div id="w-acts" class="w-acts">
     <!-- المساعد الذكي: يعرف رقمه وكم طلب قدامه، ويجاوب من المنيو (للمحل المشترك في المساعد) -->
     <button type="button" id="w-ask" class="ask hidden">
@@ -635,7 +626,7 @@
     <h2 id="t-ready" class="text-[28px] font-black text-center"></h2>
     <div class="orb ready">
       <div class="orb-in">
-        <small id="r-num-label">رقم طلبك</small>
+        <small>رقم طلبك</small>
         <div id="r-number" class="orb-num">—</div>
         <p id="r-invoice" class="hidden text-[12.5px] font-black">🧾 <span dir="ltr"></span></p>
       </div>
@@ -669,7 +660,6 @@
       <p class="text-sm font-black">تابعنا</p>
       <div id="d-social-list" class="flex flex-wrap justify-center gap-2"></div>
     </div>
-    <a id="menu-back" class="hidden btn btn-brand"><i class="ph-bold ph-fork-knife"></i> <span>ارجع للمنيو</span></a>
     <button id="new-btn" class="btn btn-ghost"><i class="ph-bold ph-ticket"></i> خذ رقم جديد</button>
   </section>
 </main>
@@ -1473,11 +1463,10 @@
       pollTimer = setTimeout(poll, 5000); return;   // انقطاع مؤقت: نعيد المحاولة
     }
     if (!PREVIEW && loadToken() !== token) return;   // تغيّر الرقم وهو ينتظر الرد (ضغط "استلمت" أو أخذ رقم جديد): الرد قديم
-    if (askChat && typeof r.chat === 'boolean') { chatFor = token; chatOn = r.chat; upsell = r.upsell || []; curLabel = r.currency || 'ر.س'; game = r.game || null; gameOn = r.game_on !== false; quizOn = r.quiz === true; quizMode(); menuOrder = r.order || null; if (menuOrder) try { sessionStorage.setItem(FROM_MENU, '1'); } catch {} }
+    if (askChat && typeof r.chat === 'boolean') { chatFor = token; chatOn = r.chat; upsell = r.upsell || []; curLabel = r.currency || 'ر.س'; game = r.game || null; gameOn = r.game_on !== false; quizOn = r.quiz === true; quizMode(); }
     if (askQ) lastQ = Date.now();
     staffEta = r.staff_eta && typeof r.staff_eta === 'object' ? r.staff_eta : null;
-    const myNo = menuOrder ? 'أنت' : r.ticket.number;   // طلب المنيو: رقمه رقم الفاتورة، فما نطلع رقم البيجر الداخلي
-    if (r.queue) renderQueue(r.queue, myNo); else if (lastQueue) renderQueue(lastQueue, myNo);
+    if (r.queue) renderQueue(r.queue, r.ticket.number); else if (lastQueue) renderQueue(lastQueue, r.ticket.number);
     addedNow = r.addons || []; gameWon = r.game_won === true;
     setStore(r.store);
     watchTicket(r.live);
@@ -1485,14 +1474,8 @@
     renderLoyalty(r.loyalty, st, token);
     curNumber = r.ticket.number;
     const inv = r.ticket.invoice_no || ''; curInvoice = inv;
-    // طلب من المنيو ودفعه: رقم الفاتورة هو رقمه (يوريه الموظف وقت الاستلام)
-    // بدأ قبل الدفع (ما فيه فاتورة للحين): رمز طلبه من المنيو (A12) هو رقمه
-    const byInv = !!(menuOrder && inv), byCode = !byInv && !!(menuOrder && menuOrder.code);
-    const big = byInv ? inv : byCode ? menuOrder.code : String(r.ticket.number);
-    $('w-number').textContent = big; $('r-number').textContent = big;
-    $('w-num-label').textContent = $('r-num-label').textContent = byInv ? 'رقم فاتورتك' : byCode ? 'رمز طلبك' : 'رقم طلبك';
-    $('w-number').style.fontSize = $('r-number').style.fontSize = (byInv || byCode) && big.length > 3 ? `${Math.max(34, 96 - (big.length - 3) * 14)}px` : '';
-    ['w-invoice', 'r-invoice'].forEach(id => { $(id).classList.toggle('hidden', !inv || byInv); $(id).querySelector('span').textContent = inv; });
+    $('w-number').textContent = r.ticket.number; $('r-number').textContent = r.ticket.number;
+    ['w-invoice', 'r-invoice'].forEach(id => { $(id).classList.toggle('hidden', !inv); $(id).querySelector('span').textContent = inv; });
     $('w-tell').classList.toggle('hidden', !!inv);
     if (!invEditing) $('inv-form').classList.add('hidden');   // الفاتورة تنكتب قبل أخذ الرقم، وهنا تعديل بس
     renderCar(r, st);
@@ -1513,7 +1496,6 @@
     $('w-ask').classList.toggle('hidden', !(chatOn && chatFor === token && st === 'waiting'));
     $('w-queue').classList.toggle('hidden', !(st === 'waiting' && queueShown));
     renderUpsell(st === 'waiting' && chatFor === token);
-    renderMenuOrder(st);
     renderGame();
     // زرين جنب بعض لو الاثنين ظاهرين
     $('w-acts').classList.toggle('two', !$('w-ask').classList.contains('hidden') && !$('w-upsell').classList.contains('hidden'));
@@ -1530,7 +1512,7 @@
       stopRinging(); saveToken('');
       $('d-title').textContent = st === 'cancelled' ? 'تم إلغاء الرقم' : st === 'expired' ? 'انتهت صلاحية الرقم' : 'بالعافية!';
       $('d-sub').textContent = st === 'done' ? 'نتشرف بزيارتك مرة ثانية.' : 'تقدر تاخذ رقم جديد.';
-      watchTicket(''); show('done'); doneFromMenu(); lastStatus = st; return;
+      watchTicket(''); show('done'); closePrompts(); lastStatus = st; return;
     }
     lastStatus = st;
     if (PREVIEW) return;
@@ -1645,34 +1627,8 @@
       unavailable(e.code === 'FULL' ? 'وصلنا الحد اليومي للأرقام' : 'تعذر أخذ رقم', 'اسأل الموظف.');
     } finally { btn.disabled = false; btn.innerHTML = '<i class="ph-bold ph-ticket"></i> خذ رقمي وفعّل التنبيه'; }
   };
-  // ─── طلبه من المنيو (الخدمة الذاتية) ───
-  let menuOrder = null;
-  const FROM_MENU = `dm_from_menu_${slug}`;
-  // طلب من المنيو واستلمه: يرجع للمنيو تلقائياً بعد ثواني (يقدر يقيّم قبلها، وأي لمسة توقف الرجوع)
-  let backTimer = null;
-  function doneFromMenu() {
-    // خلص الطلب: نوافذ التنبيه وبطاقة النداء ما لها داعي
-    ['perm', 'pc-ask'].forEach(id => $(id).classList.replace('flex', 'hidden'));
-    let from = !!menuOrder; try { from = from || sessionStorage.getItem(FROM_MENU) === '1'; sessionStorage.removeItem(FROM_MENU); } catch {}
-    const a = $('menu-back');
-    a.classList.toggle('hidden', !from); $('new-btn').classList.toggle('hidden', from);
-    if (!from || PREVIEW) return;
-    a.href = DM.storePage('menu', slug);
-    let n = 8; const tick = () => { a.querySelector('span').textContent = n > 0 ? `ارجع للمنيو (${n})` : 'ارجع للمنيو'; if (n-- <= 0) location.href = a.href; else backTimer = setTimeout(tick, 1000); };
-    clearTimeout(backTimer); tick();
-    const stop = (e) => { if (e.target.closest('#menu-back')) return; clearTimeout(backTimer); a.querySelector('span').textContent = 'ارجع للمنيو'; $('v-done').removeEventListener('pointerdown', stop); };
-    $('v-done').addEventListener('pointerdown', stop);
-  }
-  function renderMenuOrder(st) {
-    const o = menuOrder, box = $('w-order');
-    box.classList.toggle('hidden', !(o && st === 'waiting'));
-    if (!o) return;
-    const where = o.dine === 'out' ? `<i class="ph-bold ph-bag"></i> سفري${o.phone ? ` · <span dir="ltr">${esc(o.phone)}</span>` : ''}` : `<i class="ph-bold ph-chair"></i> محلي${o.table_no ? ` · طاولة <b dir="ltr">${esc(o.table_no)}</b>` : ''}`;
-    box.innerHTML = `<div class="mo-hd"><b>${o.paid ? 'تم الدفع، وطلبك يتجهز' : o.started ? 'طلبك يتجهز' : 'طلبك وصل للكاشير'}</b><span>${where}</span></div>
-      <ul>${(o.items || []).map(i => `<li><b dir="ltr">${i.qty}×</b><span>${esc(i.name)}${i.size ? ` <small>(${esc(i.size)})</small>` : ''}${i.note ? `<em>${esc(i.note)}</em>` : ''}</span></li>`).join('')}</ul>
-      ${o.note ? `<p class="text-[12px] font-bold opacity-70 mt-1.5">ملاحظات: ${esc(o.note)}</p>` : ''}
-      <div class="mo-ft"><span>${o.paid ? 'مدفوع ✓ · استلمه برقم فاتورتك' : o.started ? 'تدفعه وقت الاستلام · ورّ الكاشير رمزك' : 'تدفعه عند الكاشير'}</span><b>${fmtPrice(o.total)}</b></div>`;
-  }
+  // خلص الطلب: نوافذ التنبيه وبطاقة النداء ما لها داعي
+  function closePrompts() { ['perm', 'pc-ask'].forEach(id => $(id).classList.replace('flex', 'hidden')); }
   // ─── لعبة الانتظار: طابق البطاقات (8 أزواج) ───
   const MM_ICONS = ['ph-coffee', 'ph-hamburger', 'ph-pizza', 'ph-ice-cream', 'ph-cookie', 'ph-orange-slice', 'ph-carrot', 'ph-fish'];
   const mm = { cards: [], open: [], moves: 0, matched: 0, lock: false };
@@ -1816,7 +1772,7 @@
   $('test-btn').onclick = () => { unlockAudio(); ringOnce(); };
   // "استلمت طلبي": التقييم (النجوم وقوقل ماب) يطلع على طول، لأن الزبون يقفل الصفحة بعد ما يستلم.
   // الرقم يظل عند الكاشير لين يضغط "استلم" (وهو اللي يعطي ختم الولاء)
-  $('got-btn').onclick = () => { clearTimeout(pollTimer); ack(); offerRating(loadToken()); dismissed = true; stopRinging(); $('d-title').textContent = 'بالعافية!'; $('d-sub').textContent = 'نتشرف بزيارتك مرة ثانية.'; saveToken(''); show('done'); doneFromMenu(); };
+  $('got-btn').onclick = () => { clearTimeout(pollTimer); ack(); offerRating(loadToken()); dismissed = true; stopRinging(); $('d-title').textContent = 'بالعافية!'; $('d-sub').textContent = 'نتشرف بزيارتك مرة ثانية.'; saveToken(''); show('done'); closePrompts(); };
 
   // ─── حسابات المحل في التواصل: تطلع في شاشة "بالعافية" تحت التقييم ───
   const SOCIAL = [['instagram', 'انستقرام', 'ph-instagram-logo'], ['tiktok', 'تيك توك', 'ph-tiktok-logo'], ['snapchat', 'سناب شات', 'ph-snapchat-logo'], ['website', 'موقعنا', 'ph-globe']];
