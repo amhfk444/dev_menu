@@ -461,7 +461,7 @@
         <!-- الطلب المسبق: أقرب وقت أو موعد -->
         <div id="whenBox" class="hidden space-y-2">
           <div class="grid grid-cols-2 gap-2">
-            <button type="button" data-when="asap" class="dine-btn !min-h-[44px] !text-[13px]"><span id="whenAsapText">أقرب وقت</span></button>
+            <button type="button" data-when="asap" class="dine-btn !min-h-[44px] !text-[13px]"><span id="whenAsapText">جهّزوه الحين</span></button>
             <button type="button" data-when="later" class="dine-btn !min-h-[44px] !text-[13px]"><span id="whenLaterText">حدد موعد</span></button>
           </div>
           <div id="whenPick" class="hidden grid grid-cols-2 gap-2">
@@ -1777,7 +1777,7 @@
     // الطلب المسبق
     document.getElementById('whenBox').classList.toggle('hidden', !oo.schedule);
     if (oo.schedule) {
-      document.getElementById('whenAsapText').textContent = T('في أقرب وقت', 'As soon as possible');
+      document.getElementById('whenAsapText').textContent = T('جهّزوه الحين', 'Prepare it now');
       document.getElementById('whenLaterText').textContent = T('حدد موعد', 'Schedule');
       document.querySelectorAll('[data-when]').forEach(b => b.classList.toggle('on', b.dataset.when === whenMode));
       document.getElementById('whenPick').classList.toggle('hidden', whenMode !== 'later');
