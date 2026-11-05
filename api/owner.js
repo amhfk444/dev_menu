@@ -735,7 +735,7 @@ async function main(req) {
     const orderMode = await require('./_lib/order').orderMode(store.id);
     if (!hasPager && !PLANS.has(store, 'loyalty') && !orderMode) throw new ApiError(403, 'البيجر مو ضمن باقتك، أضفه من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
     // أرقام اليوم، والأرقام اللي للحين مفتوحة من أمس (بعد منتصف الليل ما تختفي قبل لا يستلمها العميل)
-    const day0 = riyadhDayStart(), open0 = new Date(Date.now() - 36 * 3600e3).toISOString();
+    const day0 = riyadhDayStart(), open0 = new Date(Date.now() - 18 * 3600e3).toISOString();   // نفس مدة صلاحية الرقم عند الزبون (18 ساعة)
     const base = `pager_tickets?client_id=eq.${store.id}&or=${encodeURIComponent(`(created_at.gte."${day0}",and(status.in.(waiting,ready),created_at.gte."${open0}"))`)}&order=created_at.asc,number.asc&select=id,number,status,created_at,ready_at,closed_at,push_sub`;
     // أعمدة التكرار من 21-pager-repeat.sql — لو ما انضافت نكمل بدونها
     const tickets = !hasPager ? [] : await rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id,car,addons,game_won,eta_at`).catch(() => rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id,car,addons,game_won`)).catch(() => rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id,car`)).catch(() => rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id`)).catch(() => rest(`${base},ring_count,acked_at,invoice_no`)).catch(() => rest(`${base},ring_count,acked_at`)).catch(() => rest(base));
