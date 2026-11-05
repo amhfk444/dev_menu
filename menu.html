@@ -1616,7 +1616,7 @@
       const r = await DM.post('/api/public?action=order', { slug: project.client_slug, dev: devId(), lang: currentLang, ...body });
       cart.forEach(c => DM.post('/api/public?action=track', { client_id: project.id, kind: 'order', product_id: c.id }).catch(() => {}));
       myOrders = [{ token: r.token, ...r.order }, ...myOrders.filter(o => o.token !== r.token)].slice(0, 5);
-      saveOrders(); watchOrder(r.live);
+      saveOrders(); watchOrder(r.live); clearTimeout(refreshOrders.t); refreshOrders.t = setTimeout(refreshOrders, 8000);
       cart = []; resetCoupon(); document.getElementById('cartNote').value = ''; saveCart(); closeCart();
       renderOrders(); openOrders();
     } catch (e) {
@@ -1635,18 +1635,27 @@
   function saveOrders() { try { localStorage.setItem(ordersKey(), JSON.stringify(myOrders.map(o => ({ token: o.token, at: o.created_at })))); } catch {} }
   function watchOrder(topic) { if (topic && !watchOrder.on.has(topic)) { watchOrder.on.add(topic); DM.live(topic, () => refreshOrders()); } }
   watchOrder.on = new Set();
+  // رجع للمنيو من تطبيق ثاني: نحدّث حالة طلباته على طول
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && project && directMode() === 'table') refreshOrders(); });
   async function refreshOrders() {
     let saved = []; try { saved = JSON.parse(localStorage.getItem(ordersKey()) || '[]'); } catch {}
     saved = saved.filter(o => o && o.token && Date.now() - Date.parse(o.at || 0) < 12 * 3600e3);
     if (!saved.length) { myOrders = []; return renderOrders(); }
     try {
       const r = await DM.get(`/api/public?action=order-status&slug=${encodeURIComponent(project.client_slug)}&t=${saved.map(o => o.token).join(',')}`);
+      const before = new Map(myOrders.map(o => [o.token, o.status]));
       myOrders = r.orders.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
       saveOrders();
+      // التحديث اللحظي لكل طلب مفتوح (حتى بعد ما يحدّث الصفحة)
+      myOrders.forEach(o => watchOrder(o.live));
+      // تغيّرت الحالة: تنبيه صغير + اهتزاز
+      const changed = myOrders.find(o => before.has(o.token) && before.get(o.token) !== o.status);
+      if (changed) { menuToast(ST[changed.status][currentLang === 'ar' ? 0 : 1]); try { navigator.vibrate && navigator.vibrate(200); } catch {} }
     } catch {}
     renderOrders();
     clearTimeout(refreshOrders.t);
-    if (myOrders.some(o => ['new', 'accepted'].includes(o.status))) refreshOrders.t = setTimeout(refreshOrders, 15000);
+    // احتياطي لو التحديث اللحظي انقطع: كل 8 ثواني طول ما فيه طلب مفتوح
+    if (myOrders.some(o => ['new', 'accepted'].includes(o.status))) refreshOrders.t = setTimeout(refreshOrders, 8000);
   }
   const ST = { new: ['وصل طلبك للكاشير', 'Sent to the cashier'], accepted: ['الكاشير استلم طلبك، وجاري تحضيره', 'The cashier has it, being prepared'], served: ['تم تقديم طلبك، بالعافية', 'Served, enjoy'], cancelled: ['انلغى الطلب، كلّم الكاشير', 'Cancelled, ask the cashier'] };
   function renderOrders() {

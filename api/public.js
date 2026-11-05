@@ -378,7 +378,7 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (!tokens.length) return { orders: [] };
     res.setHeader('Cache-Control', 'no-store');
     const rows = await rest(`menu_orders?client_id=eq.${store.id}&token=in.(${tokens.map(t => q(t)).join(',')})&select=*`).catch(() => []);
-    return { orders: rows.map(o => ({ token: o.token, ...publicOrder(o) })) };
+    return { orders: rows.map(o => ({ token: o.token, ...publicOrder(o), live: ['new', 'accepted'].includes(o.status) ? topic('mo', o.token) : null })) };
   }
 
   if (action === 'track' && req.method === 'POST') {
