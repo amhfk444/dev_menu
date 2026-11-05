@@ -605,7 +605,7 @@
     <button onclick="switchTab('coupons')" id="tab-coupons" class="tab-btn px-5 py-2.5 rounded-xl border text-[14px] font-medium transition flex items-center gap-2">
       <i class="ph-bold ph-ticket"></i> الخصومات
     </button>
-    <button onclick="switchTab('sales')" id="tab-sales" class="tab-btn px-5 py-2.5 rounded-xl border text-[14px] font-medium transition flex items-center gap-2">
+    <button onclick="switchTab('sales')" id="tab-sales" class="hidden tab-btn px-5 py-2.5 rounded-xl border text-[14px] font-medium transition flex items-center gap-2">
       <i class="ph-bold ph-chart-bar"></i> المبيعات
     </button>
     <button onclick="switchTab('msettings')" id="tab-msettings" class="tab-btn px-5 py-2.5 rounded-xl border text-[14px] font-medium transition flex items-center gap-2">
@@ -5639,6 +5639,9 @@
   function renderOrderMode() {
     const m = !!client.menu_order_mode;
     document.getElementById('mo-on').checked = m;
+    // تبويب المبيعات يظهر بس لما الطلب من المنيو مفعّل
+    document.getElementById('tab-sales').classList.toggle('hidden', !m);
+    if (!m && !document.getElementById('section-sales').classList.contains('hidden')) switchTab('products');
     const desk = 'pager-desk.html' + location.search;
     document.getElementById('mo-tables').classList.toggle('hidden', !m);
     document.getElementById('mo-opts').classList.toggle('hidden', !m);
