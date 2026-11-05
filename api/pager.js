@@ -145,17 +145,19 @@ const sizeName = (z) => String((z && (z.name || z.label)) || '').trim();
 async function upsellItems(storeId) {
   const since = new Date(Date.now() - 30 * 864e5).toISOString();
   const [rows, past] = await Promise.all([
-    rest(`products?client_id=eq.${storeId}&is_hidden=is.false&is_available=is.true&select=id,name,name_en,price,image_url,is_bestseller,sizes&limit=400`).catch(() => []),
+    rest(`products?client_id=eq.${storeId}&is_hidden=is.false&is_available=is.true&select=id,name,name_en,price,image_url,is_bestseller,sizes,extras&limit=400`).catch(() => []),
     // اللي يضيفونه الزبائن أكثر وهم ينتظرون (آخر 30 يوم) يطلع أول
     rest(`pager_tickets?client_id=eq.${storeId}&addons=not.is.null&created_at=gte.${q(since)}&select=addons&order=id.desc&limit=400`).catch(() => [])
   ]);
   const added = {};
   for (const t of past) for (const a of (Array.isArray(t.addons) ? t.addons : [])) added[a.id] = (added[a.id] || 0) + (a.qty || 1);
-  const ok = rows.filter(p => Number(p.price) > 0 || (Array.isArray(p.sizes) && p.sizes.length));
+  const ok = rows.filter(p => (Number(p.price) > 0 || (Array.isArray(p.sizes) && p.sizes.length)) && !needsChoice(p));
   const score = (p) => -(added[p.id] || 0) * 10 + (p.image_url ? 0 : 2) + (p.is_bestseller ? 0 : 1);
   return ok.sort((a, b) => score(a) - score(b) || Number(a.price) - Number(b.price)).slice(0, 4)
     .map(menuItem);
 }
+// طبق فيه إضافات إجبارية (لازم يختار، مثل نوع الخبز)
+const needsChoice = (p) => (Array.isArray(p.extras) ? p.extras : []).some(g => g && g.required);
 const menuItem = (p) => ({ id: p.id, name: p.name, name_en: p.name_en || null, price: Number(p.price) || 0, image_url: p.image_url || null,
   ...(p.category !== undefined ? { category: p.category } : {}), ...(p.description ? { description: String(p.description).slice(0, 140) } : {}),
   sizes: (Array.isArray(p.sizes) ? p.sizes : []).map(z => ({ name: sizeName(z), price: Number(z.price) || 0 })).filter(z => z.name) });
@@ -400,10 +402,11 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     if (x.pager_upsell !== true || !(await storeHasFeature(store.id, 'menu'))) throw new ApiError(403, 'الإضافة غير متاحة الحين', 'UPSELL_OFF');
     const [cats, prods] = await Promise.all([
       rest(`categories?client_id=eq.${store.id}&select=key,name,sort_order&order=sort_order.asc`).catch(() => []),
-      rest(`products?client_id=eq.${store.id}&is_hidden=is.false&is_available=is.true&select=id,name,name_en,price,image_url,category,description,sizes,sort_order&order=sort_order.asc&limit=600`).catch(() => [])
+      rest(`products?client_id=eq.${store.id}&is_hidden=is.false&is_available=is.true&select=id,name,name_en,price,image_url,category,description,sizes,extras,sort_order&order=sort_order.asc&limit=600`).catch(() => [])
     ]);
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=120');
-    const items = prods.filter(p => Number(p.price) > 0 || (Array.isArray(p.sizes) && p.sizes.length)).map(menuItem);
+    // الأطباق اللي فيها اختيار إجباري (مثل نوع الخبز) تنطلب من المنيو أو الكاشير: هنا ما فيه مكان لاختيار الإضافات
+    const items = prods.filter(p => (Number(p.price) > 0 || (Array.isArray(p.sizes) && p.sizes.length)) && !needsChoice(p)).map(menuItem);
     const used = new Set(items.map(p => p.category));
     return { categories: cats.filter(c => used.has(c.key)).map(c => ({ key: c.key, name: c.name })), products: items };
   }
@@ -430,8 +433,9 @@ module.exports = handler(['GET', 'POST'], async (req, res) => {
     }
     const qty = Math.min(10, Math.max(1, Math.round(Number(b.qty) || 1)));
     if (list.length >= 10 || list.reduce((n, a) => n + (a.qty || 1), 0) + qty > 20) throw new ApiError(409, 'وصلت حد الإضافات من هنا، كمّل من الكاشير', 'ADDON_MAX');
-    const p = (await rest(`products?id=eq.${Number(b.id) || 0}&client_id=eq.${store.id}&is_hidden=is.false&is_available=is.true&select=id,name,price,sizes`))[0];
+    const p = (await rest(`products?id=eq.${Number(b.id) || 0}&client_id=eq.${store.id}&is_hidden=is.false&is_available=is.true&select=id,name,price,sizes,extras`))[0];
     if (!p) throw new ApiError(404, 'الصنف غير متوفر الحين', 'NO_ITEM');
+    if (needsChoice(p)) throw new ApiError(409, 'هذا الصنف فيه اختيارات، اطلبه من الكاشير', 'NEEDS_CHOICE');
     const sizes = (Array.isArray(p.sizes) ? p.sizes : []).filter(z => sizeName(z));
     let size = null, price = Number(p.price) || 0;
     if (sizes.length) {

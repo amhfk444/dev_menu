@@ -206,6 +206,14 @@
   /* سفاري: شريط الأقسام (فيه تغبيش ويتمرر) أحياناً ما يرسم الأقسام لما يتحرك. طبقة مستقلة تحل الرسم */
   #fast-filter-bar { transform: translateZ(0); -webkit-backdrop-filter: blur(16px); } #group-bar { transform: translateZ(0); }
   #fast-filter-bar .cat-pill { transform: translateZ(0); }
+  .ex-opt { width: 100%; text-align: start; background: var(--chip); border: 1px solid var(--line); color: var(--fg); transition: background .15s, border-color .15s; }
+  .ex-opt.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .ex-box { width: 18px; height: 18px; border-radius: 5px; border: 2px solid currentColor; opacity: .6; flex-shrink: 0; display: inline-grid; place-items: center; }
+  .ex-box.radio { border-radius: 50%; }
+  .ex-opt.on .ex-box { opacity: 1; background: var(--accent); border-color: var(--accent); box-shadow: inset 0 0 0 3px var(--modal); }
+  .ex-rule { background: var(--chip); color: var(--fg); opacity: .85; } .ex-rule.need { background: #f59e0b; color: #111; opacity: 1; }
+  @keyframes exShake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+  .ex-group.shake { animation: exShake .4s; }
 </style>
 <link rel="stylesheet" href="/css/tw/menu.css">
 </head>
@@ -342,6 +350,8 @@
       <div id="modalDetails" class="space-y-1.5 text-xs text-gray-300 leading-relaxed"></div>
       <p id="modalPrice" class="text-lg font-black price"></p>
       <div id="modalSizes" class="hidden flex-wrap gap-2"></div>
+      <!-- إضافات الطبق: مجموعات (إجبارية أو اختيارية) وكل خيار بسعره -->
+      <div id="modalExtras" class="hidden space-y-3"></div>
       <div id="modalCoffee" class="hidden space-y-3"></div>
       <div id="modalMeta" class="flex flex-wrap gap-1.5"></div>
       <div id="modalOrderBox" class="hidden items-center gap-2 pt-1">
@@ -590,6 +600,16 @@
   function unitPrice(p, size) { const b = basePrice(p, size); return b == null ? null : discounted(p, b); }
   const minBase = (p) => { const zs = sizesOf(p); return zs.length ? Math.min(...zs.map(z => Number(z.price))) : Number(p.price); };
   const minPrice = (p) => { const zs = sizesOf(p); return zs.length ? Math.min(...zs.map(z => discounted(p, Number(z.price)))) : discounted(p, Number(p.price)); };
+  // ─── إضافات الطبق: [{ g: اسم المجموعة, o: اسم الخيار }] — الخصم التلقائي على الطبق بس، والإضافات فوقه (نفس حسبة الخادم) ───
+  const extrasOf = (p) => (p && Array.isArray(p.extras) ? p.extras : []).filter(g => g && Array.isArray(g.options) && g.options.length);
+  const hasRequired = (p) => extrasOf(p).some(g => g.required);
+  const exOpt = (p, x) => { const g = extrasOf(p).find(g => g.name === x.g); return g && g.options.find(o => o.name === x.o); };
+  const exSum = (p, list) => Math.round((list || []).reduce((n, x) => { const o = exOpt(p, x); return n + (o ? Number(o.price) || 0 : 0); }, 0) * 100) / 100;
+  const exKey = (list) => (list || []).map(x => `${x.g}::${x.o}`).sort().join('|');
+  const exName = (p, x) => { const g = extrasOf(p).find(g => g.name === x.g); const o = exOpt(p, x); return (currentLang !== 'ar' && o && o.name_en) || x.o; };
+  const exText = (p, list) => (list || []).map(x => exName(p, x)).join(currentLang === 'ar' ? '، ' : ', ');
+  // سعر الوحدة مع الإضافات
+  const linePrice = (p, c) => { const u = unitPrice(p, c.size); return u == null ? null : Math.round((u + exSum(p, c.extras)) * 100) / 100; };
   // سعر معروض: القديم مشطوب + الجديد
   const priceHtml = (base, now) => now < base ? `<span class="old-price">${esc(money(base))}</span>${esc(money(now))}` : esc(money(now));
 
@@ -1278,7 +1298,8 @@
     const add = e.target.closest('[data-add]');
     if (add) {
       e.stopPropagation();
-      if (sizesOf(productById(add.dataset.add)).length) openModal(add.dataset.add);
+      const ap = productById(add.dataset.add);
+      if (sizesOf(ap).length || extrasOf(ap).length) openModal(add.dataset.add);
       else addToCart(add.dataset.add, 1);
       return;
     }
@@ -1301,6 +1322,7 @@
     document.getElementById('modalTitle').closest('.p-5').classList.toggle('pt-14', !img);
     document.getElementById('modalTitle').textContent = productName(p);
     modalSize = sizesOf(p).length ? sizesOf(p)[0].name : null;
+    modalExtras = [];
 
     // التفاصيل بالترتيب: الوصف ← معلومات إضافية ← ملاحظة
     const Lx = currentLang === 'ar' ? 0 : 1;
@@ -1336,6 +1358,7 @@
     box.classList.toggle('flex', canOrder);
     modalQty = 1;
     renderModalSizes(p);
+    renderModalExtras(p);
     updateModalAdd(p);
 
     currentModalProduct = p.id;
@@ -1343,7 +1366,38 @@
     document.getElementById('productModal').classList.remove('opacity-0', 'pointer-events-none');
   }
 
-  let currentModalProduct = null, modalQty = 1, modalSize = null;
+  let currentModalProduct = null, modalQty = 1, modalSize = null, modalExtras = [];
+  function renderModalExtras(p) {
+    const box = document.getElementById('modalExtras');
+    const gs = extrasOf(p), on = orderingOn() && p.is_available !== false;
+    box.classList.toggle('hidden', !gs.length);
+    box.innerHTML = gs.map((g, gi) => {
+      const picked = modalExtras.filter(x => x.g === g.name).length;
+      const rule = g.required ? (g.max > 1 ? T(`إجباري · اختر حتى ${g.max}`, `Required · up to ${g.max}`) : T('إجباري · اختر واحد', 'Required · pick one'))
+        : (g.max > 1 ? T(`اختياري · حتى ${g.max}`, `Optional · up to ${g.max}`) : T('اختياري', 'Optional'));
+      return `<div data-exg="${gi}" class="ex-group">
+        <div class="flex items-center justify-between gap-2 mb-1.5"><b class="text-sm font-black text-white">${esc((currentLang !== 'ar' && g.name_en) || g.name)}</b><span class="ex-rule ${g.required && !picked ? 'need' : ''} text-[10.5px] font-bold px-2 py-0.5 rounded-full">${rule}</span></div>
+        <div class="grid gap-1.5">${g.options.map((o, oi) => {
+          const sel = modalExtras.some(x => x.g === g.name && x.o === o.name);
+          const price = Number(o.price) || 0;
+          return `<button type="button" ${on ? '' : 'disabled'} data-exo="${gi}:${oi}" class="ex-opt ${sel ? 'on' : ''} flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-[13px] font-bold">
+            <span class="flex items-center gap-2"><span class="ex-box ${g.max === 1 ? 'radio' : ''}"></span>${esc((currentLang !== 'ar' && o.name_en) || o.name)}</span>
+            <span class="opacity-80">${price ? `+${esc(money(price))}` : T('مجاناً', 'Free')}</span></button>`;
+        }).join('')}</div></div>`;
+    }).join('');
+  }
+  document.getElementById('modalExtras').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-exo]'); if (!b) return;
+    const p = productById(currentModalProduct); if (!p) return;
+    const [gi, oi] = b.dataset.exo.split(':').map(Number);
+    const g = extrasOf(p)[gi], o = g && g.options[oi]; if (!o) return;
+    const has = modalExtras.some(x => x.g === g.name && x.o === o.name);
+    if (has) modalExtras = modalExtras.filter(x => !(x.g === g.name && x.o === o.name));
+    else if (g.max === 1) modalExtras = [...modalExtras.filter(x => x.g !== g.name), { g: g.name, o: o.name }];
+    else if (modalExtras.filter(x => x.g === g.name).length >= g.max) return menuToast(T(`${g.name}: تقدر تختار ${g.max} بس`, `${g.name}: up to ${g.max}`));
+    else modalExtras.push({ g: g.name, o: o.name });
+    renderModalExtras(p); updateModalAdd(p);
+  });
 
   function renderModalSizes(p) {
     const box = document.getElementById('modalSizes');
@@ -1379,7 +1433,7 @@
     return !!(project && project.whatsapp_orders && valid);
   };
   const cartQty = (id) => cart.filter(c => String(c.id) === String(id)).reduce((n, c) => n + c.qty, 0);
-  const sameLine = (c, id, size, note) => String(c.id) === String(id) && (c.size || null) === (size || null) && (c.note || null) === (note || null);
+  const sameLine = (c, id, size, note, extras) => String(c.id) === String(id) && (c.size || null) === (size || null) && (c.note || null) === (note || null) && exKey(c.extras) === exKey(extras);
   const lineName = (p, c) => productName(p) + (c.size ? ` (${sizeName(sizesOf(p).find(z => z.name === c.size) || { name: c.size })})` : '');
   const productById = (id) => allProducts.find(x => String(x.id) === String(id));
   const round2 = (n) => Math.round(n * 100) / 100;
@@ -1391,8 +1445,11 @@
       const p = productById(c.id);
       if (!p || p.is_available === false || !(c.qty > 0)) return false;
       // الحجم لازم يكون موجود للطبق اللي له أحجام، وفاضي للطبق اللي ما له
-      return sizesOf(p).length ? unitPrice(p, c.size) !== null : !c.size;
-    }).map(c => ({ id: c.id, size: c.size || null, qty: c.qty, note: c.note || null }));
+      if (!(sizesOf(p).length ? unitPrice(p, c.size) !== null : !c.size)) return false;
+      // الإضافات: نشيل اللي انحذف، وإذا الإجباري ناقص ينشال السطر (يرجع يختاره)
+      c.extras = (Array.isArray(c.extras) ? c.extras : []).filter(x => exOpt(p, x));
+      return extrasOf(p).every(g => !g.required || c.extras.some(x => x.g === g.name));
+    }).map(c => ({ id: c.id, size: c.size || null, qty: c.qty, note: c.note || null, extras: c.extras.length ? c.extras : undefined }));
   }
   function saveCart() {
     try { sessionStorage.setItem(cartKey(), JSON.stringify(cart)); } catch {}
@@ -1403,7 +1460,7 @@
   }
   function cartTotals() {
     let count = 0, total = 0;
-    cart.forEach(c => { const p = productById(c.id); const u = p && unitPrice(p, c.size); if (u != null) { count += c.qty; total += u * c.qty; } });
+    cart.forEach(c => { const p = productById(c.id); const u = p && linePrice(p, c); if (u != null) { count += c.qty; total += u * c.qty; } });
     return { count, total: round2(total) };
   }
 
@@ -1415,15 +1472,17 @@
     menuToast.t = setTimeout(() => t.classList.add('opacity-0', '-translate-y-3'), ms);
   }
 
-  function addToCart(id, qty, size = null, note = null) {
+  function addToCart(id, qty, size = null, note = null, extras = []) {
     note = directMode() ? (String(note || '').trim().slice(0, 100) || null) : null;
     const p = productById(id);
     if (!p || p.is_available === false || !orderingOn()) return;
     if (sizesOf(p).length && unitPrice(p, size) === null) return openModal(id);
+    extras = (extras || []).filter(x => exOpt(p, x));
+    if (extrasOf(p).some(g => g.required && !extras.some(x => x.g === g.name))) return openModal(id);
     if (!sizesOf(p).length) size = null;
-    const item = cart.find(c => sameLine(c, p.id, size, note));
+    const item = cart.find(c => sameLine(c, p.id, size, note, extras));
     if (item) item.qty = Math.min(directMode() ? 20 : 99, item.qty + qty);
-    else cart.push({ id: p.id, size, qty: Math.min(directMode() ? 20 : 99, qty), note });
+    else cart.push({ id: p.id, size, qty: Math.min(directMode() ? 20 : 99, qty), note, ...(extras.length ? { extras: extras.map(x => ({ g: x.g, o: x.o })) } : {}) });
     saveCart();
     const n = lineName(p, { size });
     menuToast(T(`أُضيف للطلب: ${n}`, `Added: ${n}`));
@@ -1452,12 +1511,13 @@
   function renderCartItems() {
     document.getElementById('cartItems').innerHTML = cart.map((c, i) => {
       const p = productById(c.id); if (!p) return '';
-      const u = unitPrice(p, c.size) || 0;
+      const u = linePrice(p, c) || 0;
       return `
         <li class="bg-white/5 border border-white/10 rounded-2xl p-2.5">
           <div class="flex items-center gap-3">
             <div class="flex-1 min-w-0">
               <p class="text-sm font-bold text-white leading-snug line-clamp-2">${esc(lineName(p, c))}</p>
+              ${c.extras && c.extras.length ? `<p class="text-[11.5px] font-bold text-gray-300 mt-0.5">+ ${esc(exText(p, c.extras))}</p>` : ''}
               <p class="text-[11px] text-gray-400 mt-0.5">${esc(money(round2(u * c.qty)))}</p>
             </div>
             <div class="flex items-center bg-white/10 border border-white/15 rounded-xl shrink-0" dir="ltr">
@@ -1510,7 +1570,7 @@
     btn.disabled = true;
     try {
       coupon = await DM.post('/api/public?action=coupon', {
-        slug: project.client_slug, code, items: cart.map(c => ({ id: c.id, size: c.size, qty: c.qty }))
+        slug: project.client_slug, code, items: cart.map(c => ({ id: c.id, size: c.size, qty: c.qty, extras: c.extras }))
       });
       couponMsg(T(`تم تطبيق الكوبون، وفّرت ${money(coupon.discount)}`, `Coupon applied — you save ${money(coupon.discount)}`), true);
     } catch (e) {
@@ -1611,12 +1671,13 @@
     const cur = DM.currencyText(project && project.currency, currentLang);
     const lines = cart.map(c => {
       const p = productById(c.id); if (!p) return '';
-      const u = unitPrice(p, c.size); if (u == null) return '';
+      const u = linePrice(p, c); if (u == null) return '';
       const sub = round2(u * c.qty);
-      return ar ? `• ${c.qty} × ${p.name}${c.size ? ` (${c.size})` : ''} — ${sub} ${cur}` : `• ${c.qty} × ${lineName(p, c)} — ${sub} ${cur}`;
+      const ex = c.extras && c.extras.length ? (ar ? ` + ${c.extras.map(x => x.o).join('، ')}` : ` + ${exText(p, c.extras)}`) : '';
+      return ar ? `• ${c.qty} × ${p.name}${c.size ? ` (${c.size})` : ''}${ex} — ${sub} ${cur}` : `• ${c.qty} × ${lineName(p, c)}${ex} — ${sub} ${cur}`;
     }).filter(Boolean);
     const { total } = cartTotals();
-    const baseTotal = round2(cart.reduce((n, c) => { const p = productById(c.id); const b = p && basePrice(p, c.size); return b == null ? n : n + b * c.qty; }, 0));
+    const baseTotal = round2(cart.reduce((n, c) => { const p = productById(c.id); const b = p && basePrice(p, c.size); return b == null ? n : n + (b + exSum(p, c.extras)) * c.qty; }, 0));
     const autoSaved = round2(baseTotal - total);
     const dealLine = autoSaved > 0 ? [ar ? `خصم العروض: ${autoSaved} ${cur} (الأسعار أعلاه بعد الخصم)` : `Deals: −${autoSaved} ${cur} (prices above are discounted)`] : [];
     // مع الكوبون: المجموع قبل الخصم + الخصم + المطلوب دفعه (أرقام الخادم)
@@ -1697,7 +1758,7 @@
       // السفري: بطاقة النداء وبطاقة الولاء اللي في جواله تنربط برقم البيجر لما يستلمه الكاشير
       const cards = dine === 'out' ? { pc: savedPagerCards(), lt: await DM.loyaltyToken(project.client_slug).catch(() => '') || undefined } : {};
       const r = await DM.post('/api/public?action=order', { slug: project.client_slug, dev: devId(), lang: currentLang, dine, table: dine === 'out' ? '' : table, ...cards,
-        items: cart.map(c => ({ id: c.id, qty: c.qty, size: c.size, note: c.note })), coupon: coupon ? coupon.coupon.code : undefined });
+        items: cart.map(c => ({ id: c.id, qty: c.qty, size: c.size, note: c.note, extras: c.extras })), coupon: coupon ? coupon.coupon.code : undefined });
       cart.forEach(c => DM.post('/api/public?action=track', { client_id: project.id, kind: 'order', product_id: c.id }).catch(() => {}));
       myOrders = [{ token: r.token, ...r.order }, ...myOrders.filter(o => o.token !== r.token)].slice(0, 5);
       saveOrders(); watchOrder(r.live); clearTimeout(refreshOrders.t); refreshOrders.t = setTimeout(refreshOrders, 8000);
@@ -1767,7 +1828,7 @@
         <div class="flex items-center justify-between gap-2"><span class="text-white text-sm font-black">${who(o)}</span><span class="text-[11px] font-bold text-gray-400">${new Date(o.created_at).toLocaleTimeString(currentLang === 'ar' ? 'ar-SA-u-nu-latn' : 'en-GB', { hour: '2-digit', minute: '2-digit' })}</span></div>
         ${o.status === 'cancelled' ? `<p class="text-[12px] font-black text-red-300">${ST.cancelled[L]}</p>` : step(o)}
         ${o.status === 'new' && !o.table_no ? `<p class="text-[12px] font-bold text-gray-300">${T(`لو سألك الكاشير، قل له رمز طلبك ${o.code}`, `If the cashier asks, your order code is ${o.code}`)}</p>` : ''}
-        <ul class="space-y-1">${(o.items || []).map(i => `<li class="text-[13px] text-white"><b>${i.qty}×</b> ${esc(i.name)}${i.size ? ` <span class="text-gray-400">(${esc(i.size)})</span>` : ''}${i.note ? `<span class="block text-[11px] text-amber-200 font-bold">${esc(i.note)}</span>` : ''}</li>`).join('')}</ul>
+        <ul class="space-y-1">${(o.items || []).map(i => `<li class="text-[13px] text-white"><b>${i.qty}×</b> ${esc(i.name)}${i.size ? ` <span class="text-gray-400">(${esc(i.size)})</span>` : ''}${(i.extras || []).length ? `<span class="block text-[11.5px] text-gray-300 font-bold">+ ${i.extras.map(e => esc(e.name)).join('، ')}</span>` : ''}${i.note ? `<span class="block text-[11px] text-amber-200 font-bold">${esc(i.note)}</span>` : ''}</li>`).join('')}</ul>
         <div class="flex items-center justify-between border-t border-white/10 pt-2"><span class="text-[12px] text-gray-300 font-bold">${T('المجموع (تدفعه عند الكاشير)', 'Total (pay at the counter)')}</span><b class="text-white">${esc(money(o.total))}</b></div>
       </div>`).join('') : `<p class="text-sm text-gray-400 text-center">${T('ما عندك طلبات', 'No orders yet')}</p>`;
   }
@@ -1779,8 +1840,9 @@
 
   // أزرار الكمية في نافذة الطبق
   function updateModalAdd(p) {
-    const u = unitPrice(p, modalSize) ?? minPrice(p);
-    const b = basePrice(p, modalSize) ?? minBase(p);
+    const ex = exSum(p, modalExtras);
+    const u = (unitPrice(p, modalSize) ?? minPrice(p)) + ex;
+    const b = (basePrice(p, modalSize) ?? minBase(p)) + ex;
     document.getElementById('modalPrice').innerHTML = priceHtml(b, u);
     document.getElementById('mQty').textContent = modalQty;
     document.getElementById('mAddText').textContent =
@@ -1795,7 +1857,15 @@
     modalQty = Math.min(directMode() ? 20 : 99, modalQty + 1); updateModalAdd(p);
   });
   document.getElementById('mAddBtn').addEventListener('click', () => {
-    addToCart(currentModalProduct, modalQty, modalSize);
+    const p = productById(currentModalProduct); if (!p) return;
+    // الإجباري لازم يختاره: نوريه وين
+    const miss = extrasOf(p).findIndex(g => g.required && !modalExtras.some(x => x.g === g.name));
+    if (miss >= 0) {
+      const el = document.querySelector(`[data-exg="${miss}"]`);
+      if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
+      return menuToast(T(`اختر ${extrasOf(p)[miss].name}`, `Choose ${extrasOf(p)[miss].name_en || extrasOf(p)[miss].name}`));
+    }
+    addToCart(currentModalProduct, modalQty, modalSize, null, modalExtras);
     closeModal();
   });
   // الضغطة على خانة الكتابة تحرّك النافذة فوق، فنفس الضغطة ممكن تقع على الخلفية: نتجاهلها شوي

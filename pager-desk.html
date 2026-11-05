@@ -149,6 +149,7 @@
   .tk-order.menu { background: #f3f6f3; border: 1.5px solid #c9d6cc; border-radius: 12px; padding: 8px 10px; }
   .tk-onote { margin-top: 6px; font-size: 14px; font-weight: 700; color: #a1121f; }
   .tk-sub.one { grid-template-columns: 1fr; }
+  .tk-order .nm i.ex { display: block; font-style: normal; font-size: 14.5px; font-weight: 800; color: #1f5c3a; }
   .tk-hd { flex-wrap: wrap; }
   .tk-dine { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 800; padding: 8px 12px; border-radius: 10px; background: #1a1a1a; color: #fff; } .tk-dine.out { background: #c9a227; color: #1a1a1a; } .tk-dine i { font-size: 20px; }
 
@@ -454,7 +455,7 @@
   const fmtM = (n) => `${Number.isInteger(n) ? n : Number(n).toFixed(2)} ${deskCur}`;
   const orderBlock = (o) => `<div class="tk-order menu">
       <div class="tk-order-hd"><small>طلب من المنيو · ${fmtM(Number(o.total) || 0)}${o.coupon_code ? ` (بعد كوبون ${esc(o.coupon_code)})` : ''}</small></div>
-      <ul>${(o.items || []).map(x => `<li><span class="q">${x.qty || 1}</span><span class="nm"><b>${esc(x.name)}</b>${x.size ? ` <span>${esc(x.size)}</span>` : ''}${x.note ? `<em>${esc(x.note)}</em>` : ''}</span></li>`).join('')}</ul>
+      <ul>${(o.items || []).map(x => `<li><span class="q">${x.qty || 1}</span><span class="nm"><b>${esc(x.name)}</b>${x.size ? ` <span>${esc(x.size)}</span>` : ''}${(x.extras || []).length ? `<i class="ex">+ ${x.extras.map(e => esc(e.name)).join('، ')}</i>` : ''}${x.note ? `<em>${esc(x.note)}</em>` : ''}</span></li>`).join('')}</ul>
       ${o.note ? `<p class="tk-onote">ملاحظة: ${esc(o.note)}</p>` : ''}
     </div>`;
   let orders = [], orderMode = null, oBusy = new Set(), freshOrders = new Set();

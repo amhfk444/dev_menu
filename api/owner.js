@@ -97,6 +97,40 @@ function cleanSizes(list) {
     return item;
   });
 }
+// إضافات الطبق: مجموعات (حدها 6)، كل مجموعة فيها خيارات (حدها 15) بأسعار (0 = مجاني)
+// required = لازم يختار وحدة على الأقل، max = أقصى عدد يختاره من المجموعة
+function cleanExtras(list) {
+  if (list === undefined || list === null) return [];
+  if (!Array.isArray(list) || list.length > 6) throw new ApiError(400, 'الإضافات حدها 6 مجموعات');
+  const groups = new Set();
+  return list.map((g) => {
+    if (!g || typeof g !== 'object') throw new ApiError(400, 'مجموعة إضافات غير صحيحة');
+    const name = str(g.name, 40, 'اسم المجموعة');
+    if (!name) throw new ApiError(400, 'اكتب اسم كل مجموعة إضافات (مثل: الصوصات)');
+    if (groups.has(name)) throw new ApiError(400, `المجموعة "${name}" مكررة`);
+    groups.add(name);
+    const opts = Array.isArray(g.options) ? g.options : [];
+    if (!opts.length) throw new ApiError(400, `أضف خيار واحد على الأقل في "${name}"`);
+    if (opts.length > 15) throw new ApiError(400, `"${name}": الخيارات حدها 15`);
+    const seen = new Set();
+    const options = opts.map((o) => {
+      const on = str(o && o.name, 40, 'اسم الإضافة');
+      if (!on) throw new ApiError(400, `اكتب اسم كل خيار في "${name}"`);
+      if (seen.has(on)) throw new ApiError(400, `"${on}" مكرر في "${name}"`);
+      seen.add(on);
+      const price = Number(o.price || 0);
+      if (!validPrice(price)) throw new ApiError(400, `اكتب سعراً صحيحاً لـ "${on}"`);
+      const item = { name: on, price: round2(price) };
+      const en = str(o.name_en, 40, 'اسم الإضافة بالإنجليزي'); if (en) item.name_en = en;
+      return item;
+    });
+    const required = g.required === true;
+    const max = Math.min(options.length, Math.max(1, int(g.max) || (required ? 1 : options.length)));
+    const out = { name, required, max, options };
+    const en = str(g.name_en, 40, 'اسم المجموعة بالإنجليزي'); if (en) out.name_en = en;
+    return out;
+  });
+}
 
 // تاريخ YYYY-MM-DD بتوقيت الرياض: بداية اليوم أو نهايته
 function riyadhDate(v, endOfDay, field) {
@@ -119,7 +153,7 @@ const DESK_KEY_RE = /^[A-Za-z0-9_-]{24,64}$/;
 // الولاء وحدة للمحل بكل فروعه: أي طلب ولاء من فرع يشتغل على بيانات المحل الرئيسي وإعداداته
 // (ما عدا موقع الختم: لكل فرع موقعه). here = الفرع اللي جاي منه الطلب
 // عمليات المنيو (الأطباق والأقسام والكوبونات والمناسبات): لمشتركي المنيو بس
-const MENU_ONLY = ['category-add', 'category-group', 'category-rename', 'category-delete', 'reorder', 'menu-from-photo', 'products-import',
+const MENU_ONLY = ['extras-copy', 'category-add', 'category-group', 'category-rename', 'category-delete', 'reorder', 'menu-from-photo', 'products-import',
   'product-save', 'product-image', 'product-toggle', 'product-delete', 'coupon-save', 'coupon-toggle', 'coupon-delete', 'occasions-save'];
 async function context(req, opts) {
   const ctx = await storeContext(req, opts);
@@ -186,7 +220,7 @@ const nextOrderIn = async (clientId, category) => {
   return Math.max(0, ...same.map(x => x.sort_order || 0)) + 1;
 };
 // حقول الطبق المشتركة بين الفروع (السعر والإخفاء والتوفر والتمييز والترتيب لكل فرع لحاله)
-const SHARED_PRODUCT_FIELDS = ['name', 'name_en', 'description', 'description_en', 'extra_info', 'note', 'image_url', 'calories', 'allergens', 'coffee'];
+const SHARED_PRODUCT_FIELDS = ['name', 'name_en', 'description', 'description_en', 'extra_info', 'note', 'image_url', 'calories', 'allergens', 'coffee', 'extras'];
 
 // هوية الضيف: البريد و/أو آخر 9 أرقام من الجوال (0501234567 و +966501234567 نفس الشخص)
 const guestKeysOf = (e) => {
@@ -1744,6 +1778,17 @@ async function main(req) {
     return { added: out.length, categories: newCats, skipped: skipped.slice(0, 20), skipped_count: skipped.length };
   }
 
+  // ─── نسخ إضافات طبق لأطباق ثانية (يكتب إضافات البرجر مرة، وينسخها لكل البرجرات) ───
+  if (action === 'extras-copy') {
+    const from = int(b.from);
+    const to = [...new Set((Array.isArray(b.to) ? b.to : []).map(int))].filter(x => Number.isInteger(x) && x !== from).slice(0, 300);
+    if (!to.length) throw new ApiError(400, 'اختر الأطباق اللي تنسخ لها');
+    const src = (await rest(`products?id=eq.${from}&client_id=eq.${sid}&select=extras`))[0];
+    if (!src) throw new ApiError(404, 'الطبق غير موجود');
+    const rows = await rest(`products?id=in.(${to.join(',')})&client_id=eq.${sid}`, { method: 'PATCH', body: { extras: src.extras || null }, prefer: 'return=representation' });
+    return { copied: rows.length, ids: rows.map(r => r.id) };
+  }
+
   if (action === 'product-save') {
     const id = b.id == null ? null : int(b.id);
     const name = str(b.name, 100, 'اسم الطبق');
@@ -1773,6 +1818,7 @@ async function main(req) {
     };
     // السعرات تتحدث فقط إذا كان المتجر مفعّلها (حتى ما تنمسح القيم المحفوظة)
     if (sendCalories) payload.calories = calories;
+    if (b.extras !== undefined) { const ex = cleanExtras(b.extras); payload.extras = ex.length ? ex : null; }
     if (COFFEE_TYPES.includes(store.business_type)) payload.coffee = cleanCoffee(b.coffee);
     if (b.image_url !== undefined) {
       if (b.image_url && !ownsMediaUrl(b.image_url, sid)) throw new ApiError(400, 'الصورة غير تابعة لمتجرك');
@@ -1871,7 +1917,7 @@ async function main(req) {
 const MENU_ACTIONS = new Set([
   'update-store', 'occasions-save', 'branch-rename', 'coupon-save', 'coupon-toggle', 'coupon-delete', 'update-slug',
   'category-add', 'category-group', 'category-rename', 'category-delete', 'reorder',
-  'product-save', 'product-toggle', 'product-delete', 'products-import', 'waitlist-settings'
+  'product-save', 'product-toggle', 'product-delete', 'products-import', 'waitlist-settings', 'extras-copy'
 ]);
 
 module.exports = handler(['GET', 'POST'], async (req) => {

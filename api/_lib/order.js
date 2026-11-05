@@ -57,14 +57,29 @@ async function loadCoupon(storeId, rawCode) {
 }
 
 // الخصم يُحسب هنا بأسعار قاعدة البيانات، مو بالأسعار اللي يرسلها المتصفح
+// إضافات الطبق اللي اختارها العميل: [{ g: اسم المجموعة, o: اسم الخيار }] ← { list: [{ group, name, price }], sum }
+// نتأكد إنها موجودة في الطبق، وإن الإجبارية مختارة، وما يتعدى حد كل مجموعة. strict = نرمي خطأ (الطلب)، وإلا نتجاهل (فحص الكوبون)
+function pickExtras(p, sel, strict) {
+  const groups = Array.isArray(p.extras) ? p.extras : [];
+  const want = (Array.isArray(sel) ? sel : []).slice(0, 60).map(x => ({ g: String((x && x.g) || ''), o: String((x && x.o) || '') }));
+  const list = [];
+  for (const g of groups) {
+    const chosen = [...new Set(want.filter(x => x.g === g.name).map(x => x.o))]
+      .map(o => (g.options || []).find(op => op.name === o)).filter(Boolean);
+    if (chosen.length > (g.max || 1)) { if (strict) throw new ApiError(400, `«${p.name}»: ${g.name} حدها ${g.max}`, 'EXTRAS_MAX'); chosen.length = g.max || 1; }
+    if (g.required && !chosen.length && strict) throw new ApiError(400, `«${p.name}»: اختر ${g.name}`, 'EXTRAS_REQUIRED');
+    chosen.forEach(op => list.push({ group: g.name, name: op.name, price: round2(Number(op.price) || 0) }));
+  }
+  return { list, sum: round2(list.reduce((n, x) => n + x.price, 0)) };
+}
 async function priceCart(store, coupon, rawItems) {
   if (!Array.isArray(rawItems) || !rawItems.length || rawItems.length > 100) throw new ApiError(400, 'السلة فاضية');
-  const items = rawItems.map(i => ({ id: int(i && i.id), qty: int(i && i.qty), size: i && i.size != null ? String(i.size) : null }))
+  const items = rawItems.map(i => ({ id: int(i && i.id), qty: int(i && i.qty), size: i && i.size != null ? String(i.size) : null, extras: i && i.extras }))
     .filter(i => Number.isInteger(i.id) && Number.isInteger(i.qty) && i.qty > 0 && i.qty <= 99);
   if (!items.length) throw new ApiError(400, 'السلة فاضية');
   const ids = [...new Set(items.map(i => i.id))];
   const [products, categories, promos] = await Promise.all([
-    rest(`products?client_id=eq.${store.id}&id=in.(${ids.join(',')})&is_hidden=is.false&select=id,price,category,sizes,is_available`),
+    rest(`products?client_id=eq.${store.id}&id=in.(${ids.join(',')})&is_hidden=is.false&select=id,name,price,category,sizes,extras,is_available`),
     rest(`categories?client_id=eq.${store.id}&select=key,name`),
     menuPromos(store.id)
   ]);
@@ -83,8 +98,8 @@ async function priceCart(store, coupon, rawItems) {
       if (!z) continue;
       unit = Number(z.price);
     }
-    // الخصم التلقائي أولاً، ثم الكوبون على السعر بعد الخصم
-    const line = autoPrice(unit, p, autos, catKeyOf) * i.qty;
+    // الخصم التلقائي أولاً (على سعر الطبق)، وبعده الإضافات، ثم الكوبون
+    const line = (autoPrice(unit, p, autos, catKeyOf) + pickExtras(p, i.extras, false).sum) * i.qty;
     subtotal += line;
     if (promoCovers(coupon, p, catKeyOf)) eligible += line;
   }
@@ -103,13 +118,13 @@ const cleanNote = (v, n) => String(v ?? '').replace(/[<>]/g, '').replace(/\s+/g,
 async function priceOrder(store, rawItems, coupon = null) {
   if (!Array.isArray(rawItems) || !rawItems.length) throw new ApiError(400, 'طلبك فاضي، اختر صنف على الأقل', 'EMPTY');
   if (rawItems.length > 30) throw new ApiError(400, 'الطلب فيه أصناف كثيرة، اطلبها على دفعتين', 'TOO_MANY');
-  const items = rawItems.map(i => ({ id: int(i && i.id), qty: int(i && i.qty), size: i && i.size != null ? String(i.size).slice(0, 60) : null, note: cleanNote(i && i.note, 100) }))
+  const items = rawItems.map(i => ({ id: int(i && i.id), qty: int(i && i.qty), size: i && i.size != null ? String(i.size).slice(0, 60) : null, note: cleanNote(i && i.note, 100), extras: i && i.extras }))
     .filter(i => Number.isInteger(i.id) && Number.isInteger(i.qty) && i.qty > 0 && i.qty <= 20);
   if (!items.length) throw new ApiError(400, 'طلبك فاضي، اختر صنف على الأقل', 'EMPTY');
   if (items.reduce((n, i) => n + i.qty, 0) > 60) throw new ApiError(400, 'الكمية كبيرة، كلّم الكاشير مباشرة', 'TOO_MANY');
   const ids = [...new Set(items.map(i => i.id))];
   const [products, categories, promos] = await Promise.all([
-    rest(`products?client_id=eq.${store.id}&id=in.(${ids.join(',')})&is_hidden=is.false&select=id,name,price,category,sizes,is_available`),
+    rest(`products?client_id=eq.${store.id}&id=in.(${ids.join(',')})&is_hidden=is.false&select=id,name,price,category,sizes,extras,is_available`),
     rest(`categories?client_id=eq.${store.id}&select=key,name`),
     menuPromos(store.id)
   ]);
@@ -129,8 +144,9 @@ async function priceOrder(store, rawItems, coupon = null) {
       if (!z) { gone.push(p.name); continue; }
       unit = Number(z.price) || 0; size = String(z.name || z.label).trim();
     }
-    const price = autoPrice(unit, p, autos, catKeyOf);
-    lines.push({ id: p.id, name: p.name, qty: i.qty, size, note: i.note, price });
+    const ex = pickExtras(p, i.extras, true);
+    const price = round2(autoPrice(unit, p, autos, catKeyOf) + ex.sum);
+    lines.push({ id: p.id, name: p.name, qty: i.qty, size, note: i.note, price, ...(ex.list.length ? { extras: ex.list } : {}) });
     subtotal += price * i.qty;
     if (coupon && promoCovers(coupon, p, catKeyOf)) eligible += price * i.qty;
   }
@@ -215,4 +231,4 @@ async function givePager(storeId, o) {
   return t;
 }
 
-module.exports = { givePager, menuPromos, promoCovers, autoPrice, loadCoupon, priceCart, priceOrder, cleanNote, round2, orderMode, cleanTable, buildOrder, saveOrder, publicOrder, dayStart };
+module.exports = { pickExtras, givePager, menuPromos, promoCovers, autoPrice, loadCoupon, priceCart, priceOrder, cleanNote, round2, orderMode, cleanTable, buildOrder, saveOrder, publicOrder, dayStart };

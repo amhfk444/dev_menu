@@ -638,6 +638,16 @@
             <div id="sizes-list" class="space-y-1.5"></div>
             <p id="sizes-hint" class="hidden text-[11px] text-ink">مع الأحجام يتحدد السعر من كل حجم، ويظهر في المنيو "من" أقل سعر.</p>
           </div>
+          <!-- إضافات الطبق: مجموعات (إجبارية أو اختيارية) وكل خيار بسعره -->
+          <div class="bg-brand/5 rounded-xl border border-brand/15 p-2.5 space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[11px] font-bold text-ink"><i class="ph-bold ph-list-plus text-emerald-600"></i> الإضافات <span class="text-ink font-normal">(اختياري)</span></span>
+              <button type="button" id="exg-add-btn" onclick="addExGroup()" class="text-[11px] font-bold bg-brand/10 border border-brand/45 hover:bg-brand/10 text-ink px-2.5 py-1 rounded-lg transition disabled:opacity-40"><i class="ph-bold ph-plus text-[10px]"></i> مجموعة إضافات</button>
+            </div>
+            <p class="text-[11px] text-ink leading-relaxed">مثل «الصوصات» اختيارية حتى 2، أو «نوع الخبز» إجبارية يختار العميل واحداً منها. السعر 0 يعني مجاناً.</p>
+            <div id="extras-list" class="space-y-2"></div>
+            <button type="button" id="extras-copy-btn" onclick="openExtrasCopy()" class="hidden text-[11px] font-bold text-ink underline"><i class="ph-bold ph-copy"></i> انسخ هذي الإضافات لأطباق ثانية</button>
+          </div>
           <p class="f-sec"><i class="ph-bold ph-image"></i> الصورة</p>
           <div>
             <label for="prod-image-file" class="img-drop">
@@ -7018,7 +7028,7 @@
               ${meta ? `<span class="dish-meta block">${meta}</span>` : ''}
             </span>
             <span class="dish-leader" aria-hidden="true"></span>
-            <span class="dish-price">${sizesText(p) ? esc(sizesText(p)) : esc(money(p.price))}</span>
+            <span class="dish-price">${sizesText(p) ? esc(sizesText(p)) : esc(money(p.price))}</span>${(Array.isArray(p.extras) && p.extras.length) ? `<span class="text-[10.5px] font-bold text-ink/70 ms-1"><i class="ph-bold ph-list-plus"></i> ${p.extras.length} ${p.extras.length === 1 ? 'مجموعة إضافات' : 'مجموعات إضافات'}</span>` : ''}
           </button>
           <button type="button" role="switch" aria-checked="${isAvailable}" aria-label="متوفر: ${esc(p.name)}" class="avail" onclick="toggleField(${id}, 'is_available', ${isAvailable})">
             <span class="avail-track"></span><span class="avail-label">${isAvailable ? 'متوفر' : 'نفدت'}</span>
@@ -7118,6 +7128,73 @@
     const inputs = document.querySelectorAll('#sizes-list input[type="text"]:not([dir])');
     if (inputs.length) inputs[inputs.length - 1].focus();
   }
+
+  // ─── إضافات الطبق ───
+  let formExtras = [];
+  function renderExtras() {
+    const ph = ['الصوصات', 'نوع الخبز', 'إضافات'];
+    document.getElementById('extras-list').innerHTML = formExtras.map((g, gi) => `
+      <div class="bg-white rounded-lg border border-brand/15 p-2 space-y-1.5">
+        <div class="flex flex-wrap items-center gap-1.5">
+          <input type="text" maxlength="40" value="${esc(g.name || '')}" oninput="formExtras[${gi}].name=this.value" placeholder="${ph[gi] || 'اسم المجموعة'}" class="input-pro !py-1.5 text-xs flex-1 min-w-[120px] font-bold">
+          <label class="text-[11px] font-bold text-ink flex items-center gap-1 cursor-pointer"><input type="checkbox" ${g.required ? 'checked' : ''} onchange="formExtras[${gi}].required=this.checked" class="accent-green-600"> إجبارية</label>
+          <label class="text-[11px] font-bold text-ink flex items-center gap-1">حتى <input type="number" min="1" max="15" value="${esc(g.max || 1)}" oninput="formExtras[${gi}].max=this.value" dir="ltr" class="input-pro !py-1 text-xs !w-14"></label>
+          <button type="button" onclick="formExtras.splice(${gi}, 1); renderExtras()" aria-label="حذف المجموعة" class="shrink-0 w-8 h-8 rounded-lg bg-red-500/10 text-red-600 border border-red-500/20"><i class="ph-bold ph-trash"></i></button>
+        </div>
+        ${(g.options || []).map((o, oi) => `<div class="flex items-center gap-1.5 ps-2">
+          <input type="text" maxlength="40" value="${esc(o.name || '')}" oninput="formExtras[${gi}].options[${oi}].name=this.value" placeholder="${['صوص جبن', 'مخلل', 'بريوش'][oi] || 'الخيار'}" class="input-pro !py-1.5 text-xs flex-1 min-w-0">
+          <input type="number" min="0" step="any" value="${esc(o.price ?? '')}" oninput="formExtras[${gi}].options[${oi}].price=this.value" placeholder="0" dir="ltr" class="input-pro !py-1.5 text-xs w-20" aria-label="السعر">
+          <button type="button" onclick="formExtras[${gi}].options.splice(${oi}, 1); renderExtras()" aria-label="حذف الخيار" class="shrink-0 w-8 h-8 rounded-lg text-red-600 hover:bg-red-500/10"><i class="ph-bold ph-x"></i></button>
+        </div>`).join('')}
+        <button type="button" onclick="addExOpt(${gi})" class="text-[11px] font-bold text-brand hover:underline ps-2"><i class="ph-bold ph-plus"></i> خيار</button>
+      </div>`).join('');
+    document.getElementById('exg-add-btn').disabled = formExtras.length >= 6;
+    document.getElementById('extras-copy-btn').classList.toggle('hidden', !(editingProductId && formExtras.length));
+  }
+  function addExGroup() { if (formExtras.length >= 6) return; formExtras.push({ name: '', required: false, max: 1, options: [{ name: '', price: '' }] }); renderExtras(); const ins = document.querySelectorAll('#extras-list input[type="text"]'); if (ins.length) ins[ins.length - 2 >= 0 ? ins.length - 2 : 0].focus(); }
+  function addExOpt(gi) { const g = formExtras[gi]; if (!g || g.options.length >= 15) return showToast('الخيارات حدها 15', true); g.options.push({ name: '', price: '' }); renderExtras(); }
+  // تتحقق قبل الحفظ، وترجع null لو فيه خطأ (يطلع للمستخدم)
+  function cleanFormExtras() {
+    const out = [];
+    for (const g of formExtras) {
+      const name = String(g.name || '').trim();
+      const options = (g.options || []).map(o => ({ name: String(o.name || '').trim(), price: o.price === '' || o.price == null ? 0 : parseFloat(o.price) })).filter(o => o.name);
+      if (!name && !options.length) continue;
+      if (!name) { showToast('اكتب اسم كل مجموعة إضافات، مثل: الصوصات', true); return null; }
+      if (!options.length) { showToast(`أضف خيار واحد على الأقل في «${name}»`, true); return null; }
+      const bad = options.find(o => isNaN(o.price) || o.price < 0); if (bad) { showToast(`اكتب سعراً صحيحاً لـ «${bad.name}»`, true); return null; }
+      out.push({ name, required: !!g.required, max: Math.max(1, Math.min(options.length, parseInt(g.max, 10) || 1)), options });
+    }
+    return out;
+  }
+  // نسخ الإضافات لأطباق ثانية (اللي في نفس القسم أول)
+  function openExtrasCopy() {
+    const me = loadedProducts.find(x => x.id === editingProductId); if (!me) return;
+    const others = loadedProducts.filter(x => x.id !== me.id).sort((a, b) => (a.category === me.category ? 0 : 1) - (b.category === me.category ? 0 : 1));
+    const catName = (k) => (loadedCategories.find(c => c.key === k || c.name === k) || {}).name || k;
+    const box = document.createElement('div');
+    box.className = 'fixed inset-0 z-[80] bg-black/50 flex items-center justify-center p-4';
+    box.innerHTML = `<div class="bg-white rounded-2xl w-full max-w-md max-h-[80vh] flex flex-col">
+      <div class="p-4 border-b border-ink/10"><b class="text-sm text-ink">انسخ إضافات «${esc(me.name)}» إلى:</b><p class="text-[11px] text-ink mt-1">تنحفظ الإضافات الحالية في الطبق أولاً، والأطباق المختارة تنستبدل إضافاتها بهذي.</p></div>
+      <div class="p-3 overflow-y-auto space-y-1">${others.map(o => `<label class="flex items-center gap-2 p-2 rounded-lg hover:bg-brand/5 cursor-pointer text-xs"><input type="checkbox" value="${o.id}" ${o.category === me.category ? 'checked' : ''} class="accent-green-600"><span class="flex-1 font-bold text-ink">${esc(o.name)}</span><span class="text-[10.5px] text-ink/70">${esc(catName(o.category))}</span></label>`).join('') || '<p class="text-xs text-ink p-2">ما فيه أطباق ثانية.</p>'}</div>
+      <div class="p-3 border-t border-ink/10 flex gap-2"><button type="button" data-x="go" class="flex-1 bg-brand text-cream font-bold rounded-xl py-2.5 text-sm">انسخ</button><button type="button" data-x="no" class="flex-1 border border-ink/15 font-bold rounded-xl py-2.5 text-sm">إلغاء</button></div></div>`;
+    document.body.appendChild(box);
+    box.addEventListener('click', async (e) => {
+      if (e.target === box || e.target.closest('[data-x="no"]')) return box.remove();
+      if (!e.target.closest('[data-x="go"]')) return;
+      const to = [...box.querySelectorAll('input:checked')].map(i => Number(i.value));
+      if (!to.length) return showToast('اختر الأطباق اللي تنسخ لها', true);
+      const extras = cleanFormExtras(); if (extras === null) return;
+      try {
+        await api('product-save', { ...productPayloadForExtras(me), extras, id: me.id });
+        const r = await api('extras-copy', { from: me.id, to });
+        box.remove(); showToast(`انسخت الإضافات لـ ${r.copied} ${r.copied === 1 ? 'طبق' : 'أطباق'}`); refreshAll();
+      } catch (err) { showToast(err.message || 'تعذر النسخ', true); }
+    });
+  }
+  // حفظ الإضافات بس (قبل النسخ) بنفس بيانات الطبق المحفوظة
+  const productPayloadForExtras = (p) => ({ name: p.name, category: p.category, price: p.price, sizes: p.sizes || [], description: p.description || '', is_bestseller: !!p.is_bestseller,
+    extra_info: p.extra_info || '', note: p.note || '', name_en: p.name_en || null, description_en: p.description_en || null, allergens: p.allergens || null });
 
   // ─── كوبونات الخصم ───
   let coupons = null, editingCouponId = null;
@@ -7291,6 +7368,8 @@
     document.getElementById('prod-price').value = p.price ?? '';
     formSizes = (Array.isArray(p.sizes) ? p.sizes : []).map(z => ({ ...z }));
     renderSizes();
+    formExtras = (Array.isArray(p.extras) ? p.extras : []).map(g => ({ ...g, options: (g.options || []).map(o => ({ ...o })) }));
+    renderExtras();
     document.getElementById('prod-desc').value = p.description || '';
     document.getElementById('prod-extra').value = p.extra_info || '';
     document.getElementById('prod-note').value = p.note || '';
@@ -7334,6 +7413,8 @@
     setCoffee(null);
     formSizes = [];
     renderSizes();
+    formExtras = [];
+    renderExtras();
     document.getElementById('image-hint').textContent = '';
     document.getElementById('img-ratio-warn').classList.add('hidden');
     document.getElementById('form-title').textContent = 'إضافة طبق أو منتج جديد';
@@ -7365,6 +7446,7 @@
       if (bad) return showToast(`اكتب سعراً صحيحاً للحجم "${bad.name}"`, true);
     } else if (isNaN(price) || price < 0) return showToast('اكتب سعراً صحيحاً', true);
     if (showCalories() && calories !== null && (isNaN(calories) || calories < 0 || calories > 10000)) return showToast('اكتب عدد سعرات صحيح', true);
+    const extras = cleanFormExtras(); if (extras === null) return;
 
     const btn = document.getElementById('submit-btn');
     btn.disabled = true;
@@ -7375,7 +7457,8 @@
         note: document.getElementById('prod-note').value.trim(),
         name_en: document.getElementById('prod-name-en').value.trim() || null,
         description_en: document.getElementById('prod-desc-en').value.trim() || null,
-        allergens: getAllergens() || null
+        allergens: getAllergens() || null,
+        extras
       };
       if (allowsCoffee()) payload.coffee = getCoffee();
       if (showCalories()) payload.calories = calories;
@@ -7392,7 +7475,7 @@
       if (!editingProductId) payload.also_branch_ids = [...document.querySelectorAll('#also-branches-list input:checked')].map(x => Number(x.value));
       let res;
       try { res = await api('product-save', { ...payload, id: editingProductId }); }
-      catch (e) { console.error(e); return showToast('تعذر حفظ الطبق', true); }
+      catch (e) { console.error(e); return showToast(lastApiError || 'تعذر حفظ الطبق', true); }
 
       const n = (res && res.copied_to || []).length, synced = (res && res.synced) || 0;
       const where = (k) => k === 1 ? 'فرع ثاني' : `${k} فروع`;
