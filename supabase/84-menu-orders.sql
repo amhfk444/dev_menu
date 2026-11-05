@@ -46,3 +46,18 @@ notify pgrst, 'reload schema';
 alter table public.menu_orders add column if not exists code text;
 alter table public.menu_orders add column if not exists paid_at timestamptz;
 notify pgrst, 'reload schema';
+
+-- متى يبدأ تجهيز طلب الخدمة الذاتية (صاحب المحل يختار):
+--   after_pay = بعد ما يدفع عند الكاشير (مضمون)، now = أول ما يوصل الكاشير (يدفع وقت الاستلام)،
+--   arrive = لما يقول العميل «أنا في الطريق» أو يقرب من المحل
+alter table public.clients add column if not exists menu_prep text not null default 'after_pay';
+alter table public.clients drop constraint if exists clients_menu_prep_check;
+alter table public.clients add constraint clients_menu_prep_check check (menu_prep in ('after_pay', 'now', 'arrive'));
+-- started_at: بدأ التجهيز (قبل الدفع أو بعده)، arriving_at: العميل قال إنه جاي، no_show: ما جا يستلم،
+-- pay_first: جواله عليه طلبات ما انستلمت، فطلبه ينتظر الدفع
+alter table public.menu_orders add column if not exists started_at timestamptz;
+alter table public.menu_orders add column if not exists arriving_at timestamptz;
+alter table public.menu_orders add column if not exists no_show boolean not null default false;
+alter table public.menu_orders add column if not exists pay_first boolean not null default false;
+create index if not exists menu_orders_phone_idx on public.menu_orders (client_id, phone) where phone is not null;
+notify pgrst, 'reload schema';

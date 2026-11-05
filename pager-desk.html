@@ -413,7 +413,7 @@
   $('eta-cancel').onclick = closeEta;
 
   // ─── رقم الفاتورة ───
-  let invId = null, invOrder = false;
+  let invId = null, invOrder = false, doneAfterInv = null;
   // forOrder: طلب من المنيو ينتظر الدفع (الفاتورة تدخله التجهيز)
   function openInvoice(id, forOrder = false) {
     const t = forOrder ? orders.find(x => x.id === id) : tickets.find(x => x.id === id); if (!t) return;
@@ -424,7 +424,7 @@
     $('inv-err').classList.add('hidden'); $('inv-modal').classList.replace('hidden', 'flex');
     setTimeout(() => $('inv-input').focus(), 50);
   }
-  const closeInvoice = () => { invId = null; $('inv-modal').classList.replace('flex', 'hidden'); };
+  const closeInvoice = () => { invId = null; doneAfterInv = null; $('inv-modal').classList.replace('flex', 'hidden'); };
   $('inv-cancel').onclick = closeInvoice;
   $('inv-form').onsubmit = async (e) => {
     e.preventDefault();
@@ -438,10 +438,13 @@
         toast(`🧾 الفاتورة ${invoice}: الطلب دخل التجهيز، والعميل يشوفها في جواله`);
         closeInvoice(); await load(); return;
       }
+      if (doneAfterInv === invId && !invoice) throw new Error('اكتب رقم الفاتورة بعد ما يدفع');
       const r = await call('pager-invoice', { id: invId, invoice });
-      tickets = tickets.map(t => t.id === r.ticket.id ? { ...t, invoice_no: r.ticket.invoice_no } : t);
+      tickets = tickets.map(t => t.id === r.ticket.id ? { ...t, invoice_no: r.ticket.invoice_no, order: t.order ? { ...t.order, paid: !!invoice } : t.order } : t);
       toast(invoice ? `🧾 الفاتورة ${invoice} ← بيجر ${r.ticket.number}` : 'انشال رقم الفاتورة');
+      const thenDone = doneAfterInv === invId ? invId : null;
       closeInvoice(); render();
+      if (thenDone) setStatus(thenDone, 'done', `✓ ${invoice} ${T.deskDone}`);
     } catch (err) { $('inv-err').textContent = err.message || 'صار خلل وما اكتمل الطلب، حاول مرة ثانية'; $('inv-err').classList.remove('hidden'); }
     $('inv-save').disabled = false;
   };
@@ -540,7 +543,9 @@
   });
 
   // طلب من المنيو ومدفوع: رقمه الكبير رقم الفاتورة (هو اللي يوريك إياه وقت الاستلام)، ورقم البيجر صغير
-  const bigNo = (t) => t.order && t.invoice_no ? `<span dir="ltr">${esc(t.invoice_no)}</span><small class="tk-pg">بيجر ${t.number}</small>` : t.number;
+  // بدأ قبل الدفع: رمز طلبه (A12) لين يدفع ويصير رقمه رقم الفاتورة
+  const bigNo = (t) => t.order && (t.invoice_no || t.order.code) ? `<span dir="ltr">${esc(t.invoice_no || t.order.code)}</span><small class="tk-pg">بيجر ${t.number}</small>` : t.number;
+  const unpaidOrder = (t) => !!(t.order && !t.order.paid && !t.invoice_no);
   function render() {
     renderOrders(normDigits($('search').value.trim()).toUpperCase());
     const term = normDigits($('search').value.trim());
@@ -558,6 +563,7 @@
       const c = [];
       if (t.invoice_no && ready) c.push(`<span class="tk-tag"><i class="ph-bold ph-receipt"></i> ${esc(t.invoice_no)}</span>`);
       const car = t.car; if (car && (car.color || car.model)) c.push(`<span class="tk-tag"><i class="ph-bold ph-car"></i> ${esc([car.model, car.color].filter(Boolean).join(' '))}${car.plate ? ` <b dir="ltr">${esc(car.plate)}</b>` : ''}</span>`);
+      if (unpaidOrder(t)) c.push('<span class="tk-tag gold"><i class="ph-bold ph-wallet"></i> ما دفع، يدفع وقت الاستلام</span>');
       if (t.game_won) c.push(`<span class="tk-tag gold"><i class="ph-bold ph-trophy"></i> فاز باللعبة${t.invoice_no ? ` · فاتورة <b dir="ltr">${esc(t.invoice_no)}</b>` : ''}</span>`);
       const a = Array.isArray(t.addons) ? t.addons : [];
       const total = a.reduce((k, x) => k + (Number(x.price) || 0) * (x.qty || 1), 0), unseen = a.some(x => !x.seen);
@@ -589,19 +595,20 @@
           ${details(t, true)}
         </div>
         <div class="tk-act">
-          <button class="tk-main done" data-done="${t.id}"><i class="ph-bold ph-check-circle"></i> ${T.deskDone}</button>
-          <div class="tk-sub two">
+          <button class="tk-main done" data-done="${t.id}"><i class="ph-bold ph-check-circle"></i> ${unpaidOrder(t) ? 'دفع واستلم' : T.deskDone}</button>
+          <div class="tk-sub${unpaidOrder(t) ? '' : ' two'}">
             <button class="tk-btn" data-undo="${t.id}"><i class="ph-bold ph-arrow-counter-clockwise"></i><span>رجّعه</span></button>
+            ${unpaidOrder(t) ? `<button class="tk-btn" data-noshow="${t.id}"><i class="ph-bold ph-user-minus"></i><span>ما جا</span></button>` : ''}
             <button class="tk-btn del" data-del="${t.id}" title="حذف الرقم" aria-label="حذف الرقم"><i class="ph-bold ph-trash"></i></button>
           </div>
         </div>
       </div></article>`).join('');
   }
 
-  async function setStatus(id, status, msg) {
+  async function setStatus(id, status, msg, extra) {
     busy.add(id); render();
     try {
-      const r = await call('pager-update', { id, status });
+      const r = await call('pager-update', { id, status, ...(extra || {}) });
       tickets = tickets.map(t => t.id === id ? { ...t, ...r.ticket } : t);
       if (msg) toast(msg.replace('#', r.ticket.number) + (status === 'ready' && r.push === 'sent' ? ' 📲 وانرسل له إشعار' : ''));
     } catch (e) { toast(e.message || 'صار خلل وما اكتمل الطلب، حاول مرة ثانية'); }
@@ -616,7 +623,18 @@
     const et = e.target.closest('[data-eta]'); if (et) return openEta(+et.dataset.eta);
     const sn = e.target.closest('[data-seen]'); if (sn) return markSeen(+sn.dataset.seen, sn);
     if (r) setStatus(+r.dataset.ready, 'ready', '🔔 جوال رقم # يرن الحين');
-    if (d) setStatus(+d.dataset.done, 'done', `✓ رقم # ${T.deskDone}`);
+    if (d) {
+      // طلب ما انفدع: يكتب الفاتورة أول (إثبات الدفع)، وبعدها يتسلّم
+      const tk = tickets.find(x => x.id === +d.dataset.done);
+      if (tk && unpaidOrder(tk)) { doneAfterInv = tk.id; return openInvoice(tk.id); }
+      setStatus(+d.dataset.done, 'done', `✓ رقم # ${T.deskDone}`);
+    }
+    const ns = e.target.closest('[data-noshow]');
+    if (ns) {
+      const tk = tickets.find(x => x.id === +ns.dataset.noshow); if (!tk) return;
+      DMDialog.confirm({ title: `${tk.order && tk.order.code || tk.number} ما جا يستلم؟`, message: 'ينلغى الطلب وينحسب على جوال العميل. لو تكرر منه مرتين، طلباته الجاية تنتظر الدفع قبل التجهيز.', confirmText: 'ما جا', cancelText: 'تراجع' })
+        .then(ok => { if (ok) setStatus(tk.id, 'cancelled', 'انلغى الطلب، وانحسب على جوال العميل', { no_show: true }); });
+    }
     if (u) setStatus(+u.dataset.undo, 'waiting', 'رقم # رجع للانتظار');
     const del = e.target.closest('[data-del]');
     if (del) deleteTicket(+del.dataset.del);

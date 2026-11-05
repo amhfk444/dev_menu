@@ -156,6 +156,19 @@ async function orderMode(storeId) {
   if (row.menu_order_mode === 'self' && f.menu && f.pager) return 'self';
   return null;
 }
+// متى يبدأ تجهيز طلب الخدمة الذاتية + موقع المحل (للبدء التلقائي لما يقرب العميل)
+async function orderPrep(storeId) {
+  const r = (await rest(`clients?id=eq.${Number(storeId)}&select=menu_prep,loyalty_lat,loyalty_lng`).catch(() => []))[0] || {};
+  const prep = ['now', 'arrive'].includes(r.menu_prep) ? r.menu_prep : 'after_pay';
+  const spot = Number.isFinite(Number(r.loyalty_lat)) && Number.isFinite(Number(r.loyalty_lng)) && r.loyalty_lat != null ? { lat: Number(r.loyalty_lat), lng: Number(r.loyalty_lng) } : null;
+  return { prep, spot };
+}
+// جوال ما جا يستلم مرتين (آخر 90 يوم): طلباته تنتظر الدفع قبل التجهيز
+async function noShows(storeId, phone) {
+  if (!phone) return 0;
+  const since = new Date(Date.now() - 90 * 864e5).toISOString();
+  return (await rest(`menu_orders?client_id=eq.${Number(storeId)}&phone=eq.${q(phone)}&no_show=is.true&created_at=gte.${q(since)}&select=id&limit=5`).catch(() => [])).length;
+}
 // رقم الطاولة: أرقام وحروف (الأرقام العربية تتحول)، حتى 6
 function cleanTable(v) {
   const t = String(v ?? '').trim().replace(/\s+/g, '').replace(/[٠-٩۰-۹]/g, d => String(d.charCodeAt(0) & 15)).toUpperCase();
@@ -183,11 +196,19 @@ async function buildOrder(store, b, mode) {
   const dine = mode === 'self' ? (b.dine === 'out' ? 'out' : 'in') : 'in';
   const table_no = dine === 'in' ? cleanTable(b.table) : null;
   if (mode === 'table' && !table_no) throw new ApiError(400, 'اكتب رقم طاولتك', 'NEED_TABLE');
-  const phone = dine === 'out' ? cleanPhone(b.phone) : null;
-  if (dine === 'out' && !phone) throw new ApiError(400, 'اكتب رقم جوالك للطلب السفري، مثل 0512345678', 'NEED_PHONE');
+  // التجهيز قبل الدفع (now / arrive): الجوال إجباري للكل، وطلب مفتوح واحد لكل جوال
+  const early = mode === 'self' && (b._prep === 'now' || b._prep === 'arrive');
+  const phone = dine === 'out' || early ? cleanPhone(b.phone) : null;
+  if ((dine === 'out' || early) && !phone) throw new ApiError(400, 'اكتب رقم جوالك عشان نتواصل معك لو احتجنا، مثل 0512345678', 'NEED_PHONE');
+  let pay_first = false;
+  if (early) {
+    const open = await rest(`menu_orders?client_id=eq.${store.id}&phone=eq.${q(phone)}&status=in.(new,accepted)&created_at=gte.${q(dayStart())}&select=id&limit=1`).catch(() => []);
+    if (open.length) throw new ApiError(409, 'عندك طلب مفتوح على هالجوال. استلمه أول، أو كلّم الكاشير', 'OPEN_ORDER');
+    pay_first = (await noShows(store.id, phone)) >= 2;
+  }
   return {
     coupon, row: {
-      client_id: store.id, token: require('crypto').randomBytes(18).toString('base64url'), mode, dine, table_no, ...(phone ? { phone } : {}),
+      client_id: store.id, token: require('crypto').randomBytes(18).toString('base64url'), mode, dine, table_no, ...(phone ? { phone } : {}), ...(pay_first ? { pay_first } : {}),
       items: priced.lines, note: cleanNote(b.note, 300), total: priced.total, discount: priced.discount, coupon_code: coupon ? coupon.code : null,
       device: dev, lang: b.lang === 'en' ? 'en' : 'ar'
     }
@@ -219,8 +240,36 @@ async function saveOrder(built) {
   return o;
 }
 // الطلب كما يطلع للكاشير وللزبون
-const publicOrder = (o) => o && ({ id: o.id, mode: o.mode, code: o.code || null, paid: !!o.pager_ticket_id, grace_until: o.mode === 'self' ? new Date(graceUntil(o)).toISOString() : null,
+const publicOrder = (o) => o && ({ id: o.id, mode: o.mode, code: o.code || null, paid: !!o.paid_at, started: !!o.pager_ticket_id, pay_first: o.pay_first === true, arriving: !!o.arriving_at, grace_until: o.mode === 'self' ? new Date(graceUntil(o)).toISOString() : null,
   late: unpaid(o) && Date.now() > graceUntil(o) + LATE_MS, dine: o.dine, table_no: o.table_no, phone: o.phone || null, items: o.items || [], note: o.note, total: Number(o.total) || 0,
   discount: Number(o.discount) || 0, coupon_code: o.coupon_code || null, status: o.status, created_at: o.created_at, accepted_at: o.accepted_at || null, closed_at: o.closed_at || null });
 
-module.exports = { GRACE_MS, LATE_MS, graceUntil, unpaid, expired, expireUnpaid, menuPromos, promoCovers, autoPrice, loadCoupon, priceCart, priceOrder, cleanNote, round2, orderMode, cleanTable, buildOrder, saveOrder, publicOrder };
+// يبدأ تجهيز طلبات الخدمة الذاتية قبل الدفع (حسب إعداد المحل): بعد دقيقتين التعديل،
+// وفي «arrive» لما يقول العميل إنه جاي. ياخذ رقم بيجر داخلي يرن عليه. نسويها وقت القراءة (شاشة الكاشير وجوال العميل يسألون كل ثواني)
+async function autoStart(storeId, prepIn) {
+  const { rpc } = require('./core');
+  const prep = prepIn || (await orderPrep(storeId)).prep;
+  if (prep === 'after_pay') return 0;
+  const ready = new Date(Date.now() - GRACE_MS).toISOString();
+  const rows = await rest(`menu_orders?client_id=eq.${Number(storeId)}&mode=eq.self&status=eq.new&pager_ticket_id=is.null&started_at=is.null&pay_first=is.false&created_at=lte.${q(ready)}&created_at=gte.${q(dayStart())}${prep === 'arrive' ? '&arriving_at=not.is.null' : ''}&select=id,token,lang&limit=20`).catch(() => []);
+  let n = 0;
+  for (const o of rows) {
+    // نحجزه أول (شاشتين ممكن يسألون بنفس اللحظة): اللي ينجح بس ياخذ الرقم
+    const claim = await rest(`menu_orders?id=eq.${o.id}&started_at=is.null&status=eq.new`, { method: 'PATCH', prefer: 'return=representation', body: { started_at: new Date().toISOString() } }).catch(() => []);
+    if (!claim.length) continue;
+    try {
+      const token = require('crypto').randomBytes(18).toString('base64url');
+      const res = await rpc('server_pager_take', { p_client_id: Number(storeId), p_token: token });
+      const t = (await rest(`pager_tickets?token=eq.${q(res.token)}&client_id=eq.${Number(storeId)}`, { method: 'PATCH', prefer: 'return=representation', body: o.lang === 'en' ? { lang: 'en' } : { lang: 'ar' } }))[0];
+      await rest(`menu_orders?id=eq.${o.id}`, { method: 'PATCH', body: { pager_ticket_id: t.id, status: 'accepted', accepted_at: new Date().toISOString() } });
+      n++;
+    } catch (e) {
+      console.error('ORDER_AUTOSTART', storeId, o.id, e.message);
+      await rest(`menu_orders?id=eq.${o.id}`, { method: 'PATCH', body: { started_at: null } }).catch(() => {});
+    }
+  }
+  if (n) { const { poke, topic } = require('./live'); await poke([topic('pager', Number(storeId)), ...rows.map(o => topic('mo', o.token))]); }
+  return n;
+}
+
+module.exports = { autoStart, orderPrep, noShows, dayStart, GRACE_MS, LATE_MS, graceUntil, unpaid, expired, expireUnpaid, menuPromos, promoCovers, autoPrice, loadCoupon, priceCart, priceOrder, cleanNote, round2, orderMode, cleanTable, buildOrder, saveOrder, publicOrder };

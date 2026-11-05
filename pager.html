@@ -1476,7 +1476,7 @@
     if (askChat && typeof r.chat === 'boolean') { chatFor = token; chatOn = r.chat; upsell = r.upsell || []; curLabel = r.currency || 'ر.س'; game = r.game || null; gameOn = r.game_on !== false; quizOn = r.quiz === true; quizMode(); menuOrder = r.order || null; if (menuOrder) try { sessionStorage.setItem(FROM_MENU, '1'); } catch {} }
     if (askQ) lastQ = Date.now();
     staffEta = r.staff_eta && typeof r.staff_eta === 'object' ? r.staff_eta : null;
-    const myNo = menuOrder && r.ticket.invoice_no ? 'أنت' : r.ticket.number;   // طلب المنيو: رقمه رقم الفاتورة، فما نطلع رقم البيجر الداخلي
+    const myNo = menuOrder ? 'أنت' : r.ticket.number;   // طلب المنيو: رقمه رقم الفاتورة، فما نطلع رقم البيجر الداخلي
     if (r.queue) renderQueue(r.queue, myNo); else if (lastQueue) renderQueue(lastQueue, myNo);
     addedNow = r.addons || []; gameWon = r.game_won === true;
     setStore(r.store);
@@ -1486,10 +1486,12 @@
     curNumber = r.ticket.number;
     const inv = r.ticket.invoice_no || ''; curInvoice = inv;
     // طلب من المنيو ودفعه: رقم الفاتورة هو رقمه (يوريه الموظف وقت الاستلام)
-    const byInv = !!(menuOrder && inv);
-    $('w-number').textContent = byInv ? inv : r.ticket.number; $('r-number').textContent = byInv ? inv : r.ticket.number;
-    $('w-num-label').textContent = $('r-num-label').textContent = byInv ? 'رقم فاتورتك' : 'رقم طلبك';
-    $('w-number').style.fontSize = $('r-number').style.fontSize = byInv && inv.length > 3 ? `${Math.max(34, 96 - (inv.length - 3) * 14)}px` : '';
+    // بدأ قبل الدفع (ما فيه فاتورة للحين): رمز طلبه من المنيو (A12) هو رقمه
+    const byInv = !!(menuOrder && inv), byCode = !byInv && !!(menuOrder && menuOrder.code);
+    const big = byInv ? inv : byCode ? menuOrder.code : String(r.ticket.number);
+    $('w-number').textContent = big; $('r-number').textContent = big;
+    $('w-num-label').textContent = $('r-num-label').textContent = byInv ? 'رقم فاتورتك' : byCode ? 'رمز طلبك' : 'رقم طلبك';
+    $('w-number').style.fontSize = $('r-number').style.fontSize = (byInv || byCode) && big.length > 3 ? `${Math.max(34, 96 - (big.length - 3) * 14)}px` : '';
     ['w-invoice', 'r-invoice'].forEach(id => { $(id).classList.toggle('hidden', !inv || byInv); $(id).querySelector('span').textContent = inv; });
     $('w-tell').classList.toggle('hidden', !!inv);
     if (!invEditing) $('inv-form').classList.add('hidden');   // الفاتورة تنكتب قبل أخذ الرقم، وهنا تعديل بس
@@ -1666,10 +1668,10 @@
     box.classList.toggle('hidden', !(o && st === 'waiting'));
     if (!o) return;
     const where = o.dine === 'out' ? `<i class="ph-bold ph-bag"></i> سفري${o.phone ? ` · <span dir="ltr">${esc(o.phone)}</span>` : ''}` : `<i class="ph-bold ph-chair"></i> محلي${o.table_no ? ` · طاولة <b dir="ltr">${esc(o.table_no)}</b>` : ''}`;
-    box.innerHTML = `<div class="mo-hd"><b>${o.paid ? 'تم الدفع، وطلبك يتجهز' : 'طلبك وصل للكاشير'}</b><span>${where}</span></div>
+    box.innerHTML = `<div class="mo-hd"><b>${o.paid ? 'تم الدفع، وطلبك يتجهز' : o.started ? 'طلبك يتجهز' : 'طلبك وصل للكاشير'}</b><span>${where}</span></div>
       <ul>${(o.items || []).map(i => `<li><b dir="ltr">${i.qty}×</b><span>${esc(i.name)}${i.size ? ` <small>(${esc(i.size)})</small>` : ''}${i.note ? `<em>${esc(i.note)}</em>` : ''}</span></li>`).join('')}</ul>
       ${o.note ? `<p class="text-[12px] font-bold opacity-70 mt-1.5">ملاحظات: ${esc(o.note)}</p>` : ''}
-      <div class="mo-ft"><span>${o.paid ? 'مدفوع ✓ · استلمه برقم فاتورتك' : 'تدفعه عند الكاشير'}</span><b>${fmtPrice(o.total)}</b></div>`;
+      <div class="mo-ft"><span>${o.paid ? 'مدفوع ✓ · استلمه برقم فاتورتك' : o.started ? 'تدفعه وقت الاستلام · ورّ الكاشير رمزك' : 'تدفعه عند الكاشير'}</span><b>${fmtPrice(o.total)}</b></div>`;
   }
   // ─── لعبة الانتظار: طابق البطاقات (8 أزواج) ───
   const MM_ICONS = ['ph-coffee', 'ph-hamburger', 'ph-pizza', 'ph-ice-cream', 'ph-cookie', 'ph-orange-slice', 'ph-carrot', 'ph-fish'];

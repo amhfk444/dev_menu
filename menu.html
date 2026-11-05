@@ -1632,6 +1632,8 @@
   // ─── الطلب للكاشير (بدون واتساب) ───
   // الطاولات: رقم الطاولة إجباري. الخدمة الذاتية: محلي أو سفري، والطاولة اختيارية للمحلي، ويطلع له رقم بيجر
   let dine = 'in', tableEdit = false;
+  // المحل يجهّز قبل الدفع (now / arrive): الجوال إجباري
+  const earlyPrep = () => directMode() === 'self' && ['now', 'arrive'].includes(project && project.order_prep);
   // رقم الطاولة من QR الطاولة (?table=12): ينحفظ للجلسة عشان يبقى لو تنقّل في المنيو
   const qrTable = (() => {
     const v = String(urlParams.get('table') || '').trim().replace(/[\u0660-\u0669\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) & 15)).toUpperCase();
@@ -1658,9 +1660,9 @@
     document.getElementById('tableFixedLabel').textContent = T('طاولتك', 'Your table');
     document.getElementById('tableChange').textContent = T('تغيير', 'Change');
     document.getElementById('tableBox').classList.toggle('hidden', fixed || (self && dine === 'out'));
-    const out = self && dine === 'out';
+    const out = self && (dine === 'out' || earlyPrep());
     document.getElementById('phoneBox').classList.toggle('hidden', !out);
-    document.getElementById('phoneLabel').textContent = T('رقم جوالك (للطلب السفري)', 'Your mobile (for takeaway)');
+    document.getElementById('phoneLabel').textContent = earlyPrep() ? T('رقم جوالك (نتواصل معك لو احتجنا)', 'Your mobile (in case we need to reach you)') : T('رقم جوالك (للطلب السفري)', 'Your mobile (for takeaway)');
     const pi = document.getElementById('phoneInput');
     if (out && !pi.value) { try { pi.value = localStorage.getItem('dm_phone') || ''; } catch {} }
     document.getElementById('tableLabel').textContent = self ? T('رقم الطاولة (اختياري)', 'Table number (optional)') : T('رقم الطاولة', 'Table number');
@@ -1678,12 +1680,12 @@
     if (urlParams.get('preview') === '1') return directErr(T('هذي معاينة: الطلب ما ينرسل للكاشير', 'Preview only: the order is not sent'));
     const table = document.getElementById('tableInput').value.trim().replace(/[٠-٩۰-۹]/g, d => String(d.charCodeAt(0) & 15));
     if (dm === 'table' && !table) { directErr(T('اكتب رقم طاولتك عشان يوصلك الطلب', 'Enter your table number')); return document.getElementById('tableInput').focus(); }
-    const out = dm === 'self' && dine === 'out';
+    const out = dm === 'self' && (dine === 'out' || earlyPrep());
     const phone = document.getElementById('phoneInput').value.trim().replace(/[٠-٩۰-۹]/g, d => String(d.charCodeAt(0) & 15)).replace(/\D/g, '');
-    if (out && !/^(05\d{8}|5\d{8}|9665\d{8})$/.test(phone)) { directErr(T('اكتب رقم جوالك عشان يوصلك طلبك السفري، مثل 0512345678', 'Enter your mobile number, e.g. 0512345678')); return document.getElementById('phoneInput').focus(); }
+    if (out && !/^(05\d{8}|5\d{8}|9665\d{8})$/.test(phone)) { directErr(T('اكتب رقم جوالك، مثل 0512345678', 'Enter your mobile number, e.g. 0512345678')); return document.getElementById('phoneInput').focus(); }
     if (out) try { localStorage.setItem('dm_phone', phone); } catch {}
     const btn = document.getElementById('cartSend'); btn.disabled = true;
-    const body = { mode: dm, items: cart.map(c => ({ id: c.id, qty: c.qty, size: c.size, note: c.note })), note: '', table: out ? '' : table, dine: dm === 'self' ? dine : undefined, phone: out ? phone : undefined, coupon: coupon ? coupon.coupon.code : undefined };
+    const body = { mode: dm, items: cart.map(c => ({ id: c.id, qty: c.qty, size: c.size, note: c.note })), note: '', table: dm === 'self' && dine === 'out' ? '' : table, dine: dm === 'self' ? dine : undefined, phone: out ? phone : undefined, coupon: coupon ? coupon.coupon.code : undefined };
     try {
       try { if (table) sessionStorage.setItem(tableKey(), table); } catch {}
       const r = await DM.post('/api/public?action=order', { slug: project.client_slug, dev: devId(), lang: currentLang, ...body });
@@ -1712,9 +1714,14 @@
   watchOrder.on = new Set();
   // رجع للمنيو من تطبيق ثاني: نحدّث حالة طلباته على طول
   document.addEventListener('visibilitychange', () => { if (!document.hidden && project && directMode()) refreshOrders(); });
-  const isUnpaid = (o) => o.mode === 'self' && o.status === 'new' && !o.paid;
+  // ما بدأ تجهيزه: دقيقتين التعديل، وبعدها حسب المحل: ينتظر الدفع / يبدأ الحين / ينتظر «أنا في الطريق»
+  let prepMode = null, shopSpot = null;
+  const curPrep = () => prepMode || (project && project.order_prep) || 'after_pay';
+  const isUnpaid = (o) => o.mode === 'self' && o.status === 'new' && !o.started;
   const inGrace = (o) => isUnpaid(o) && o.grace_until && Date.now() < Date.parse(o.grace_until);
-  const waitingPay = (o) => isUnpaid(o) && !inGrace(o);
+  const waitingPay = (o) => isUnpaid(o) && !inGrace(o) && (curPrep() === 'after_pay' || o.pay_first);
+  const waitingArrive = (o) => isUnpaid(o) && !inGrace(o) && !o.pay_first && curPrep() === 'arrive' && !o.arriving;
+  const startingNow = (o) => isUnpaid(o) && !inGrace(o) && !waitingPay(o) && !waitingArrive(o);
   // انفدع: يروح لصفحة الانتظار (هناك يرن جواله لما يجهز)
   function goWaiting(o) {
     try { localStorage.setItem(`dm_pager_${String(project.client_slug).toLowerCase()}`, o.pager_token); } catch {}
@@ -1726,6 +1733,7 @@
     if (!saved.length) { myOrders = []; return renderOrders(); }
     try {
       const r = await DM.get(`/api/public?action=order-status&slug=${encodeURIComponent(project.client_slug)}&t=${saved.map(o => o.token).join(',')}`);
+      prepMode = r.prep || prepMode; shopSpot = r.spot || null;
       const before = new Map(myOrders.map(o => [o.token, o]));
       myOrders = r.orders.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
       // اللي خلص من أكثر من دقيقة ما نحتاج نسأل عنه مرة ثانية
@@ -1733,8 +1741,8 @@
       saveOrders();
       myOrders.forEach(o => watchOrder(o.live));
       // دفع الحين (كان ينتظر الدفع وهو فاتح المنيو): على طول لصفحة الانتظار
-      const paidNow = myOrders.find(o => o.paid && o.pager_token && before.has(o.token) && !before.get(o.token).paid);
-      if (paidNow) return goWaiting(paidNow);
+      const startedNow = myOrders.find(o => o.started && o.pager_token && o.status === 'accepted' && before.has(o.token) && !before.get(o.token).started);
+      if (startedNow) return goWaiting(startedNow);
       // تغيّرت الحالة: تنبيه صغير + اهتزاز
       const changed = myOrders.find(o => before.has(o.token) && before.get(o.token).status !== o.status);
       if (changed) { menuToast(statusText(changed)); try { navigator.vibrate && navigator.vibrate(200); } catch {} }
@@ -1748,7 +1756,9 @@
   function statusText(o) {
     if (inGrace(o)) return T('يوصل للكاشير بعد شوي، تقدر تعدّله الحين', 'Reaches the cashier shortly, you can still edit it');
     if (waitingPay(o)) return T(`تفضّل للكاشير وادفع، رمز طلبك ${o.code}`, `Pay at the counter, your order code is ${o.code}`);
-    if (o.mode === 'self' && o.status === 'accepted') return T('تم الدفع، وطلبك يتجهز', 'Paid, your order is being prepared');
+    if (waitingArrive(o)) return T('قلنا لما تكون في الطريق ونبدأ طلبك', "Tell us when you're on the way and we'll start");
+    if (startingNow(o)) return T('نبدأ تجهيز طلبك الحين', 'Starting your order now');
+    if (o.mode === 'self' && o.status === 'accepted') return o.paid ? T('تم الدفع، وطلبك يتجهز', 'Paid, your order is being prepared') : T('طلبك يتجهز، تدفع وقت الاستلام', 'Being prepared, pay at pickup');
     return ST[o.status][currentLang === 'ar' ? 0 : 1];
   }
   const mmss = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
@@ -1765,6 +1775,22 @@
       } else { closeOrders(); renderOrders(); menuToast(T('انلغى طلبك', 'Order cancelled')); }
     } catch (e) { menuToast(currentLang === 'ar' ? (e.message || 'ما قدرنا نلغيه') : 'Too late to change it'); refreshOrders(); }
   }
+  // «أنا في الطريق»: يبدأ تجهيز طلبه
+  async function imComing(token) {
+    try { const r = await DM.post('/api/public?action=order-arriving', { slug: project.client_slug, t: token }); menuToast(r.pay_first ? T('ادفع عند الكاشير ويبدأ طلبك', 'Pay at the counter to start') : T('أبشر، بدأنا طلبك', 'Great, we started your order')); }
+    catch (e) { menuToast(currentLang === 'ar' ? (e.message || 'ما قدرنا نبدأه') : 'Could not start it'); }
+    refreshOrders();
+  }
+  // تلقائي لما يقرب (600 متر) من موقع المحل، طول ما الصفحة مفتوحة
+  let comingWatch = null;
+  function autoComing(token, btn) {
+    if (!shopSpot || comingWatch !== null) return;
+    btn.disabled = true; btn.textContent = T('نتابع موقعك، خلك فاتح الصفحة…', 'Watching your location, keep this page open…');
+    const dist = (a, b) => { const R = 6371e3, r = Math.PI / 180, dLa = (b.lat - a.lat) * r, dLo = (b.lng - a.lng) * r; const x = Math.sin(dLa / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLo / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(x)); };
+    comingWatch = navigator.geolocation.watchPosition((p) => {
+      if (dist({ lat: p.coords.latitude, lng: p.coords.longitude }, shopSpot) <= 600) { navigator.geolocation.clearWatch(comingWatch); comingWatch = null; imComing(token); }
+    }, () => { comingWatch = null; btn.disabled = false; menuToast(T('ما قدرنا ناخذ موقعك، اضغط «أنا في الطريق»', "Couldn't get your location, tap «I'm on my way»")); }, { enableHighAccuracy: true, maximumAge: 15000 });
+  }
   function renderOrders() {
     const bar = document.getElementById('moBar');
     // الطلب اللي انقدّم أو انلغى: يطلع دقيقة بس عشان يشوفه، وبعدها يختفي من المنيو
@@ -1777,7 +1803,7 @@
     bar.classList.toggle('hidden', !top); bar.classList.toggle('flex', !!top);
     const L = currentLang === 'ar' ? 0 : 1;
     if (top) {
-      const st = inGrace(top) ? 'grace' : waitingPay(top) ? 'pay' : top.status;
+      const st = inGrace(top) ? 'grace' : waitingPay(top) || waitingArrive(top) ? 'pay' : top.status;
       bar.className = `${bar.className.replace(/\bst-\w+/g, '').trim()} st-${st}`;
       const icon = st === 'served' ? 'fa-utensils text-green-700' : st === 'accepted' ? 'fa-fire text-amber-700' : st === 'pay' ? 'fa-ticket' : 'fa-clock';
       const sub = inGrace(top) ? `${T('تقدر تعدّله خلال', 'Edit within')} <b dir="ltr">${mmss(Date.parse(top.grace_until) - Date.now())}</b>`
@@ -1785,13 +1811,14 @@
         : `${top.table_no ? `${T('طاولة', 'Table')} <span dir="ltr">${esc(top.table_no)}</span> · ` : ''}${esc(money(top.total))}`;
       bar.innerHTML = `<i class="fa-solid ${icon} text-xl"></i>
         <span class="flex-1 min-w-0"><b class="block text-sm font-black">${esc(waitingPay(top) ? T('تفضّل للكاشير وادفع', 'Pay at the counter') : statusText(top))}</b><small class="block text-[11px] font-bold opacity-70">${sub}${live.length > 1 ? ` · ${T(`${live.length} طلبات`, `${live.length} orders`)}` : ''}</small></span>
-        <span class="text-[11px] font-black underline">${top.paid && top.pager_token && top.status === 'accepted' ? T('صفحة الانتظار', 'Track') : T('التفاصيل', 'Details')}</span>`;
+        <span class="text-[11px] font-black underline">${top.started && top.pager_token && top.status === 'accepted' ? T('صفحة الانتظار', 'Track') : T('التفاصيل', 'Details')}</span>`;
     }
     document.getElementById('moTitle').textContent = T('طلباتك', 'Your orders');
     const step = (o) => {
       const self = o.mode === 'self';
-      const names = self ? [['أرسلته', 'Sent'], ['ادفع', 'Pay'], ['يتجهز', 'Preparing']] : [['وصل', 'Sent'], ['يتحضّر', 'Preparing'], ['انقدّم', 'Served']];
-      const i = self ? (inGrace(o) ? 0 : waitingPay(o) ? 1 : o.status === 'cancelled' ? -1 : 2) : ({ new: 0, accepted: 1, served: 2 }[o.status] ?? -1);
+      const mid = waitingArrive(o) ? ['في الطريق', 'On the way'] : curPrep() === 'after_pay' || o.pay_first ? ['ادفع', 'Pay'] : ['يبدأ', 'Starting'];
+      const names = self ? [['أرسلته', 'Sent'], mid, ['يتجهز', 'Preparing']] : [['وصل', 'Sent'], ['يتحضّر', 'Preparing'], ['انقدّم', 'Served']];
+      const i = self ? (inGrace(o) ? 0 : isUnpaid(o) ? 1 : o.status === 'cancelled' ? -1 : 2) : ({ new: 0, accepted: 1, served: 2 }[o.status] ?? -1);
       return `<div class="mo-steps">${names.map((x, k) => `<span class="${k <= i ? 'on' : ''}">${x[L]}</span>`).join('')}</div>`;
     };
     const selfBox = (o) => {
@@ -1808,7 +1835,12 @@
           <p class="text-[11px] font-bold opacity-70">${T('بعد الدفع يوصلك إشعار لما يجهز طلبك، وتستلمه برقم الفاتورة', "After paying you'll be notified when it's ready, and pick it up with your invoice number")}</p>
           <p class="text-[11px] font-bold opacity-70">${T('طلبك محفوظ عند الكاشير لين تدفع، خذ راحتك', 'Your order is saved at the counter until you pay')}</p>
         </div>`;
-      if (o.paid && o.pager_token && o.status === 'accepted') return `<button type="button" onclick="goWaiting(myOrders.find(x => x.token === '${o.token}'))" class="w-full rounded-xl bg-white text-black font-black text-sm py-3">${T('افتح صفحة الانتظار', 'Open the waiting page')}</button>`;
+      if (waitingArrive(o)) return `<div class="space-y-2">
+          <button type="button" onclick="imComing('${o.token}')" class="w-full rounded-xl bg-white text-black font-black text-base py-3.5">${T('أنا في الطريق، ابدأوا طلبي', "I'm on my way, start my order")}</button>
+          ${shopSpot && 'geolocation' in navigator ? `<button type="button" onclick="autoComing('${o.token}', this)" class="w-full rounded-xl bg-white/10 border border-white/15 text-white font-bold text-[13px] py-2.5">${T('ابدأوه تلقائياً لما أقرب (يستخدم موقعي)', 'Start it automatically when I get close (uses my location)')}</button>` : ''}
+          <p class="text-[11px] font-bold text-gray-400 text-center">${T('أو تعال للكاشير الحين ورّه رمز طلبك', 'Or come to the counter now and show your code')} <b dir="ltr" class="text-white">${esc(o.code || '')}</b></p></div>`;
+      if (startingNow(o)) return `<p class="text-[12px] font-bold text-gray-300 text-center"><i class="fa-solid fa-spinner fa-spin"></i> ${T('نبدأ تجهيز طلبك الحين…', 'Starting your order…')}</p>`;
+      if (o.started && o.pager_token && o.status === 'accepted') return `<button type="button" onclick="goWaiting(myOrders.find(x => x.token === '${o.token}'))" class="w-full rounded-xl bg-white text-black font-black text-sm py-3">${T('افتح صفحة الانتظار', 'Open the waiting page')}</button>`;
       return '';
     };
     if (!live.length) closeOrders();
@@ -1818,12 +1850,12 @@
         ${o.status === 'cancelled' ? `<p class="text-[12px] font-black text-red-300">${o.mode === 'self' && !o.paid ? T('انلغى الطلب. تقدر تطلب من جديد', 'Order cancelled. You can order again') : T('انلغى الطلب، كلّم الكاشير', 'Cancelled, ask the cashier')}</p>` : step(o)}
         ${o.status === 'cancelled' ? '' : o.mode === 'self' ? selfBox(o) : ''}
         <ul class="space-y-1">${(o.items || []).map(i => `<li class="text-[13px] text-white"><b>${i.qty}×</b> ${esc(i.name)}${i.size ? ` <span class="text-gray-400">(${esc(i.size)})</span>` : ''}${i.note ? `<span class="block text-[11px] text-amber-200 font-bold">${esc(i.note)}</span>` : ''}</li>`).join('')}</ul>
-        <div class="flex items-center justify-between border-t border-white/10 pt-2"><span class="text-[12px] text-gray-300 font-bold">${o.paid ? T('المجموع (مدفوع)', 'Total (paid)') : T('المجموع (تدفعه عند الكاشير)', 'Total (pay at the counter)')}</span><b class="text-white">${esc(money(o.total))}</b></div>
+        <div class="flex items-center justify-between border-t border-white/10 pt-2"><span class="text-[12px] text-gray-300 font-bold">${o.paid ? T('المجموع (مدفوع)', 'Total (paid)') : o.started ? T('المجموع (تدفعه وقت الاستلام)', 'Total (pay at pickup)') : T('المجموع (تدفعه عند الكاشير)', 'Total (pay at the counter)')}</span><b class="text-white">${esc(money(o.total))}</b></div>
       </div>`).join('') : `<p class="text-sm text-gray-400 text-center">${T('ما عندك طلبات', 'No orders yet')}</p>`;
   }
   function openOrders() {
     const top = myOrders.find(o => ['new', 'accepted'].includes(o.status));
-    if (top && top.paid && top.pager_token && top.status === 'accepted') return goWaiting(top);
+    if (top && top.started && top.pager_token && top.status === 'accepted') return goWaiting(top);
     renderOrders(); document.getElementById('moModal').classList.remove('opacity-0', 'pointer-events-none');
   }
   function closeOrders() { document.getElementById('moModal').classList.add('opacity-0', 'pointer-events-none'); }

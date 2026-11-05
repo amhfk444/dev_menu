@@ -1932,6 +1932,18 @@
               <span class="text-xs"><b class="text-ink">خدمة ذاتية مع البيجر</b><span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يختار العميل «محلي» أو «سفري»، ورقم الطاولة اختياري للطلب المحلي. يحصل العميل على رقم بيجر مع طلبه، وعند ضغط الكاشير «جاهز» يرن جواله.</span><span id="mo-self-note" class="hidden block text-[11px] font-bold text-amber-800 mt-1"><i class="ph-bold ph-lock"></i> تحتاج إلى البيجر في باقتك</span></span>
             </label>
           </div>
+          <!-- الخدمة الذاتية: متى يبدأ التجهيز -->
+          <div id="mo-prep" class="hidden bg-white rounded-lg border border-brand/15 p-3 space-y-2">
+            <b class="text-xs text-ink"><i class="ph-bold ph-cooking-pot"></i> متى يبدأ تجهيز الطلب؟</b>
+            <label class="flex items-start gap-2.5 cursor-pointer"><input type="radio" name="mo-prep" value="after_pay" class="mt-0.5 accent-green-600" onchange="saveOrderPrep(this)">
+              <span class="text-xs"><b class="text-ink">بعد الدفع (مضمون)</b><span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يُبرز العميل رمز طلبه للكاشير ويدفع، ثم يُدخل الكاشير رقم الفاتورة فيبدأ التجهيز. مناسب للعميل الموجود داخل المحل.</span></span></label>
+            <label class="flex items-start gap-2.5 cursor-pointer"><input type="radio" name="mo-prep" value="now" class="mt-0.5 accent-green-600" onchange="saveOrderPrep(this)">
+              <span class="text-xs"><b class="text-ink">فور الطلب، والدفع عند الاستلام</b><span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يبدأ التجهيز بعد انتهاء دقيقتي التعديل، فيصل العميل ويجد طلبه جاهزاً، ويدفع عند الاستلام. يُشترط رقم الجوال، ويُسمح بطلب مفتوح واحد لكل رقم.</span></span></label>
+            <label class="flex items-start gap-2.5 cursor-pointer"><input type="radio" name="mo-prep" value="arrive" class="mt-0.5 accent-green-600" onchange="saveOrderPrep(this)">
+              <span class="text-xs"><b class="text-ink">عند اقتراب العميل، والدفع عند الاستلام</b><span class="block text-[11px] text-ink mt-0.5 leading-relaxed">يبدأ التجهيز عندما يضغط العميل «أنا في الطريق»، أو تلقائياً عند اقترابه من المحل إذا كان موقع المحل محدداً في إعدادات البيجر. يُشترط رقم الجوال.</span></span></label>
+            <p class="text-[11px] text-ink leading-relaxed bg-brand/5 rounded-lg p-2"><i class="ph-bold ph-shield-check"></i> حماية: إذا لم يحضر العميل لاستلام طلبه يضغط الكاشير «ما جا»، والرقم الذي يتكرر منه ذلك مرتين تنتظر طلباته الدفع قبل التجهيز.</p>
+            <p id="mo-prep-stats" class="text-[11px] font-bold text-ink"></p>
+          </div>
           <div id="mo-status" class="text-[11px]"></div>
           <!-- QR لكل طاولة: رقم الطاولة داخل الرمز، فالعميل ما يكتبه -->
           <div id="mo-tables" class="hidden bg-white rounded-lg border border-brand/15 p-3 space-y-2">
@@ -5569,6 +5581,12 @@
     document.getElementById('mo-self-note').classList.toggle('hidden', !selfLocked);
     const desk = 'pager-desk.html' + location.search;
     document.getElementById('mo-tables').classList.toggle('hidden', !m);
+    document.getElementById('mo-prep').classList.toggle('hidden', m !== 'self');
+    document.querySelectorAll('input[name="mo-prep"]').forEach(r => { r.checked = r.value === (client.menu_prep || 'after_pay'); });
+    if (m === 'self' && !renderOrderMode.stats) {
+      renderOrderMode.stats = true;
+      api('orders-noshow', undefined).then(r => { const el = document.getElementById('mo-prep-stats'); if (r && r.early) el.textContent = `آخر 30 يوماً: ${r.early} طلباً بدأ تجهيزها قبل الدفع، ولم يُستلم منها ${r.no_show}.`; }).catch(() => {});
+    }
     document.getElementById('mo-status').innerHTML = !m ? '' : `<div class="flex flex-wrap items-center justify-between gap-2 bg-green-500/10 border border-green-500/25 rounded-lg px-3 py-2">
         <span class="text-green-800"><i class="ph-bold ph-check-circle"></i> ${m === 'table' ? 'الطلبات تصل لشاشة الكاشير برقم الطاولة' : 'الطلبات تصل لشاشة الكاشير مع رقم البيجر'}${client.whatsapp_orders ? '، بدل واتساب' : ''}</span>
         <a href="${desk}" target="_blank" rel="noopener" class="bg-brand text-cream font-bold px-2.5 py-1 rounded-md text-[11px]"><i class="ph-bold ph-cash-register"></i> افتح شاشة الكاشير</a>
@@ -5611,6 +5629,11 @@
       win.document.close();
     } catch (e) { console.error(e); win.close(); showToast('تعذر تجهيز رموز الطاولات', true); }
     finally { btn.disabled = false; }
+  }
+  async function saveOrderPrep(r) {
+    const prev = client.menu_prep || 'after_pay';
+    if (await updateClient({ menu_prep: r.value })) showToast({ after_pay: 'التجهيز يبدأ بعد الدفع', now: 'التجهيز يبدأ أول ما يطلب العميل', arrive: 'التجهيز يبدأ لما يقول العميل إنه جاي' }[r.value]);
+    else { client.menu_prep = prev; renderOrderMode(); showToast('تعذر حفظ الإعداد', true); }
   }
   async function saveOrderMode(r) {
     const prev = client.menu_order_mode || '';

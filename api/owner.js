@@ -637,6 +637,9 @@ async function main(req) {
     // الطلب من المنيو: طلبات الطاولات (المنيو بس) أو مع رقم البيجر (الخدمة الذاتية)، كلها في نفس الشاشة
     const orderMode = await require('./_lib/order').orderMode(store.id);
     if (!hasPager && !PLANS.has(store, 'loyalty') && !orderMode) throw new ApiError(403, 'البيجر مو ضمن باقتك، أضفه من "اشتراكك" في لوحة التحكم', 'ADDON_OFF');
+    // الخدمة الذاتية مع التجهيز قبل الدفع: نبدأ الطلبات اللي حان وقتها قبل ما نجيب الأرقام
+    const { prep } = orderMode === 'self' ? await require('./_lib/order').orderPrep(store.id) : { prep: null };
+    if (prep && prep !== 'after_pay') await require('./_lib/order').autoStart(store.id, prep);
     const base = `pager_tickets?client_id=eq.${store.id}&created_at=gte.${q(riyadhDayStart())}&order=number.asc&select=id,number,status,created_at,ready_at,closed_at,push_sub`;
     // أعمدة التكرار من 21-pager-repeat.sql — لو ما انضافت نكمل بدونها
     const tickets = !hasPager ? [] : await rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id,car,addons,game_won,eta_at`).catch(() => rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id,car,addons,game_won`)).catch(() => rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id,car`)).catch(() => rest(`${base},ring_count,acked_at,invoice_no,loyalty_card_id`)).catch(() => rest(`${base},ring_count,acked_at,invoice_no`)).catch(() => rest(`${base},ring_count,acked_at`)).catch(() => rest(base));
@@ -660,7 +663,17 @@ async function main(req) {
     const orders = mos.filter(o => !o.pager_ticket_id && ((o.mode === 'table' && ['new', 'accepted'].includes(o.status))
       || (o.mode === 'self' && o.status === 'new' && Date.now() >= graceUntil(o)))).map(publicOrder);
     // build: نسخة الموقع المنشورة، شاشة الكاشير تحدّث نفسها لو تغيّرت (تبقى مفتوحة أيام)
-    return { build: (process.env.VERCEL_GIT_COMMIT_SHA || '').slice(0, 12) || null, order_mode: orderMode, orders, currency: CURRENCIES[store.currency] || CURRENCIES.SAR, tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub, order: byTicket.get(t.id) || null, reward: t.loyalty_card_id ? rewardsBy[t.loyalty_card_id] || null : null })), slug: store.client_slug, name: store.name, business_type: store.business_type, max_rings: PAGER_MAX_RINGS, live: topic('pager', store.id), loyalty: lx.loyalty_enabled === true, pager: hasPager, loyalty_entitled: PLANS.has(store, 'loyalty') };
+    return { build: (process.env.VERCEL_GIT_COMMIT_SHA || '').slice(0, 12) || null, order_mode: orderMode, order_prep: prep, orders, currency: CURRENCIES[store.currency] || CURRENCIES.SAR, tickets: tickets.map(({ push_sub, ...t }) => ({ ...t, has_push: !!push_sub, order: byTicket.get(t.id) || null, reward: t.loyalty_card_id ? rewardsBy[t.loyalty_card_id] || null : null })), slug: store.client_slug, name: store.name, business_type: store.business_type, max_rings: PAGER_MAX_RINGS, live: topic('pager', store.id), loyalty: lx.loyalty_enabled === true, pager: hasPager, loyalty_entitled: PLANS.has(store, 'loyalty') };
+  }
+
+  // ─── الطلب من المنيو: كم طلب ما انستلم آخر 30 يوم (يساعد صاحب المحل يقرر متى يبدأ التجهيز) ───
+  if (action === 'orders-noshow' && req.method === 'GET') {
+    const { store } = await context(req);
+    if (!PLANS.has(store, 'menu')) throw new ApiError(403, 'المنيو مو ضمن باقتك', 'ADDON_OFF');
+    const since = new Date(Date.now() - 30 * 864e5).toISOString();
+    const rows = await rest(`menu_orders?client_id=eq.${store.id}&mode=eq.self&created_at=gte.${q(since)}&select=no_show,status,started_at,paid_at&limit=5000`).catch(() => []);
+    const early = rows.filter(r => r.started_at);
+    return { early: early.length, no_show: rows.filter(r => r.no_show).length, unpaid_started: early.filter(r => !r.paid_at && r.status !== 'cancelled').length };
   }
 
   // ─── إحصائيات البيجر: وقت الانتظار، الإنجاز، أوقات الذروة، والتقييم (آخر 30 يوم) ───
@@ -1226,7 +1239,8 @@ async function main(req) {
     const t = rows[0];
     // طلب المنيو المربوط بالرقم يمشي معه: يتجهز أو جاهز = مدفوع ومستلم، استلم = انتهى، حذف = انلغى
     const moStatus = { waiting: 'accepted', ready: 'accepted', done: 'served', cancelled: 'cancelled' }[status];   // مربوط برقم = مدفوع
-    later(rest(`menu_orders?pager_ticket_id=eq.${t.id}&client_id=eq.${sid}`, { method: 'PATCH', body: { status: moStatus, ...(status === 'done' || status === 'cancelled' ? { closed_at: now } : {}) } }).catch(() => {}));
+    // «ما جا»: ينحسب على جواله (مرتين = طلباته الجاية تنتظر الدفع)
+    await rest(`menu_orders?pager_ticket_id=eq.${t.id}&client_id=eq.${sid}`, { method: 'PATCH', body: { status: moStatus, ...(status === 'done' || status === 'cancelled' ? { closed_at: now } : {}), ...(status === 'cancelled' && b.no_show === true ? { no_show: true } : {}) } }).catch(() => {});
     if (status === 'ready' && !t.push_sub) console.log('PAGER_READY_NO_SUB', sid, t.id);
     // بطاقة النداء وبطاقة الولاء يتحدثون بالخلفية: الكاشير ياخذ الرد على طول، والإشعار يوصل خلال ثواني
     // تحديث البطاقة يبدأ قبل رنّة المتصفح (WalletWallet ياخذ ثواني، فما ينتظر الرنّة)
@@ -1296,6 +1310,8 @@ async function main(req) {
     const rows = await rest(`pager_tickets?id=eq.${id}&client_id=eq.${sid}`, { method: 'PATCH', body: { invoice_no: invoice || null }, prefer: 'return=representation' });
     if (!rows.length) throw new ApiError(404, 'الرقم غير موجود');
     const t = rows[0];
+    // طلب من المنيو بدأ قبل الدفع: الفاتورة = دفع
+    if (invoice) await rest(`menu_orders?pager_ticket_id=eq.${t.id}&client_id=eq.${sid}&paid_at=is.null`, { method: 'PATCH', body: { paid_at: new Date().toISOString() } }).catch(() => {});
     // رقم الفاتورة في بطاقة النداء (بصمت)
     if (t.wallet_serial && ['waiting', 'ready'].includes(t.status)) later(wallet.updatePagerPass(t.wallet_serial, { ...wallet.pagerStep({ store, number: t.number, step: t.status, lang: t.lang, invoice: t.invoice_no }), silent: true }));
     await poke([topic('pager', sid), topic('ticket', t.token)]);
@@ -1378,6 +1394,11 @@ async function main(req) {
       if (m && !PLANS.has(store, 'menu')) throw new ApiError(403, 'الطلب من المنيو يحتاج المنيو في باقتك', 'ADDON_OFF');
       if (m === 'self' && !PLANS.has(store, 'pager')) throw new ApiError(403, 'الخدمة الذاتية تحتاج البيجر في باقتك: الزبون ياخذ رقم ويرن جواله لما يجهز طلبه', 'ADDON_OFF');
       p.menu_order_mode = m;
+    }
+    if (has('menu_prep')) {
+      const v = ['after_pay', 'now', 'arrive'].includes(b.menu_prep) ? b.menu_prep : 'after_pay';
+      if (v !== 'after_pay' && (!PLANS.has(store, 'menu') || !PLANS.has(store, 'pager'))) throw new ApiError(403, 'تحتاج المنيو والبيجر في باقتك', 'ADDON_OFF');
+      p.menu_prep = v;
     }
     if (has('pager_upsell')) {
       // الاقتراحات من أصناف المنيو: تحتاج المنيو والبيجر
