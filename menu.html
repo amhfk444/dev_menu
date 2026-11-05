@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl" class="scroll-smooth">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/icon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
@@ -1534,7 +1534,7 @@
     document.getElementById('cartModal').classList.remove('opacity-0', 'pointer-events-none');
     lockPage(true);
   }
-  function closeCart() { document.getElementById('cartModal').classList.add('opacity-0', 'pointer-events-none'); lockPage(false); fitCart(); }
+  function closeCart() { document.getElementById('cartModal').classList.add('opacity-0', 'pointer-events-none'); lockPage(false); cartTyping = false; fitCart(); }
   // الصفحة اللي ورا نافذة الطلب تثبت مكانها (سفاري ما يقدر يمرّرها لما يطلع الكيبورد، فما تهتز النافذة)
   let lockedY = null;
   function lockPage(on) {
@@ -1549,33 +1549,44 @@
   }
   // الكيبورد في نافذة الطلب (ملاحظة الصنف، رقم الطاولة): النافذة تاخذ المساحة الظاهرة بالضبط وتثبت،
   // والخانة اللي يكتب فيها تبقى ظاهرة، والصفحة اللي وراها ما تتحرك (نفس طريقة المساعد)
-  let cartFit = 0;
+  // الكتابة في نافذة الطلب (ملاحظة الصنف، رقم الطاولة): أول ما يضغط الخانة، النافذة تطلع فوق الشاشة والخانة قريبة من فوق،
+  // فالكيبورد ما يغطيها وسفاري ما يحتاج يحرّك الصفحة (الحركة هي اللي تخلي الشاشة تهتز وتبان كأنها زوم)
+  let cartFit = 0, cartTyping = false;
   const cartOpen = () => !document.getElementById('cartModal').classList.contains('opacity-0');
   function fitCart() {
     if (cartFit) return;
     cartFit = requestAnimationFrame(() => {
       cartFit = 0;
       const m = document.getElementById('cartModal'), panel = m.querySelector('.modal-panel'), vv = window.visualViewport;
-      const kb = !!vv && cartOpen() && window.innerHeight - vv.height > 120;
-      if (!kb) { m.style.top = m.style.height = m.style.bottom = m.style.transition = panel.style.maxHeight = ''; return; }
-      // بالضبط فوق الكيبورد: بدون حركة، والقيم تتغير بس لو تغيّرت فعلاً (عشان ما ترجف)
-      const top = `${Math.round(vv.offsetTop)}px`, h = `${Math.round(vv.height)}px`;
-      m.style.transition = 'opacity .3s'; m.style.bottom = 'auto';
-      if (m.style.top !== top) m.style.top = top;
-      if (m.style.height !== h) m.style.height = h;
-      const mh = `${Math.round(vv.height) - 6}px`; if (panel.style.maxHeight !== mh) panel.style.maxHeight = mh;
+      if (!cartTyping || !cartOpen()) { m.style.top = m.style.height = m.style.bottom = m.style.transition = m.style.alignItems = panel.style.maxHeight = panel.style.borderRadius = ''; return; }
+      const h = vv ? vv.height : window.innerHeight, top = vv ? vv.offsetTop : 0;
+      m.style.transition = 'opacity .3s'; m.style.alignItems = 'flex-start'; m.style.bottom = 'auto';
+      const T_ = `${Math.round(top)}px`, H = `${Math.round(h)}px`, MH = `${Math.round(h)}px`;
+      if (m.style.top !== T_) m.style.top = T_;
+      if (m.style.height !== H) m.style.height = H;
+      if (panel.style.maxHeight !== MH) panel.style.maxHeight = MH;
+      panel.style.borderRadius = '0 0 24px 24px';
     });
   }
-  // الخانة اللي ضغطها تنزل لمكان ظاهر داخل النافذة (مرة وحدة بعد ما يطلع الكيبورد)
+  // الخانة تطلع قريبة من فوق النافذة (مرة وحدة، وقت الضغط)
   function showField() {
     const a = document.activeElement, panel = document.querySelector('#cartModal .modal-panel');
     if (!a || !panel.contains(a) || !/INPUT|TEXTAREA/.test(a.tagName)) return;
     const r = a.getBoundingClientRect(), pr = panel.getBoundingClientRect();
-    if (r.bottom > pr.bottom - 12 || r.top < pr.top + 70) panel.scrollTop += r.top - pr.top - pr.height / 2 + r.height / 2;
+    panel.scrollTop += r.top - pr.top - 90;
   }
   if (window.visualViewport) { visualViewport.addEventListener('resize', fitCart); visualViewport.addEventListener('scroll', fitCart); }
-  document.getElementById('cartModal').addEventListener('focusin', () => { [60, 250, 500].forEach(t => setTimeout(fitCart, t)); setTimeout(showField, 450); });
-  document.getElementById('cartModal').addEventListener('focusout', () => setTimeout(fitCart, 150));
+  document.getElementById('cartModal').addEventListener('focusin', (e) => {
+    if (!/INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    cartTyping = true; clearTimeout(fitCart.off);
+    // قبل ما يطلع الكيبورد: النافذة فوق والخانة قريبة من فوق
+    const m = document.getElementById('cartModal'), panel = m.querySelector('.modal-panel');
+    m.style.transition = 'opacity .3s'; m.style.alignItems = 'flex-start'; m.style.top = '0px'; m.style.bottom = 'auto'; m.style.height = `${window.innerHeight}px`;
+    panel.style.maxHeight = `${Math.round(window.innerHeight * 0.55)}px`; panel.style.borderRadius = '0 0 24px 24px';
+    showField();
+    [80, 300, 600].forEach(t => setTimeout(fitCart, t));
+  });
+  document.getElementById('cartModal').addEventListener('focusout', () => { fitCart.off = setTimeout(() => { const a = document.activeElement; if (!a || !document.getElementById('cartModal').contains(a) || !/INPUT|TEXTAREA/.test(a.tagName)) { cartTyping = false; fitCart(); } }, 150); });
   // وهو فاتح الطلب: السحب برّا قائمة الطلب ما يحرّك المنيو اللي وراه
   document.addEventListener('touchmove', (e) => {
     if (!cartOpen()) return;
