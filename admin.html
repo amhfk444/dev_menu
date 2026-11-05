@@ -652,10 +652,6 @@
             <label class="flex items-start gap-2 cursor-pointer text-xs"><input type="checkbox" id="mo-o-schedule" class="accent-green-600 mt-0.5">
               <span><b class="text-ink">الطلب المسبق</b><span class="block text-[11px] text-ink leading-relaxed">يختار العميل «في أقرب وقت» أو يحدد يوماً ووقتاً خلال شهر، مثل كيكة لبكرة أو ورد لمناسبة، ويظهر لك الموعد بوضوح مع الطلب.</span></span></label>
             <button type="button" onclick="saveOrderOpts(this)" class="bg-brand text-cream font-bold px-3 py-2 rounded-lg text-[12px]"><i class="ph-bold ph-floppy-disk"></i> حفظ طرق الاستلام</button>
-            <div class="border-t border-brand/10 pt-2.5 flex flex-wrap items-center justify-between gap-2">
-              <span class="text-[11px] text-ink leading-relaxed flex-1 min-w-[200px]"><b><i class="ph-bold ph-bell-ringing"></i> إشعار الطلبات على هذا الجهاز</b><br>يصلك تنبيه مع كل طلب جديد ولو كانت اللوحة مغلقة. على الآيفون أضف لوحة التحكم إلى الشاشة الرئيسية أولاً.</span>
-              <button type="button" id="mo-push-btn" onclick="enableOrderPush(this)" class="bg-brand/10 border border-brand/40 text-ink font-bold px-3 py-2 rounded-lg text-[12px]"><i class="ph-bold ph-bell-ringing"></i> فعّل الإشعار</button>
-            </div>
           </div>
           <div id="mo-status" class="text-[11px]"></div>
           <!-- QR لكل طاولة: رقم الطاولة داخل الرمز، فالعميل ما يكتبه -->
@@ -5676,8 +5672,6 @@
       document.getElementById('mo-o-fee').value = o.fee || '';
       document.getElementById('mo-o-area').value = o.area || '';
       document.getElementById('mo-o-schedule').checked = o.schedule === true;
-      const btn = document.getElementById('mo-push-btn');
-      if ('Notification' in window && Notification.permission === 'granted' && localStorage.getItem('dm_owner_push') === String(client.id)) { btn.innerHTML = '<i class="ph-bold ph-check"></i> الإشعار مفعّل'; btn.disabled = true; }
     }
     document.getElementById('mo-o-delbox').classList.toggle('hidden', !document.getElementById('mo-o-delivery').checked);
   }
@@ -5690,21 +5684,7 @@
     else showToast('تعذر الحفظ', true);
     btn.disabled = false;
   }
-  // إشعار الطلبات الجديدة على جهاز صاحب المتجر
-  async function enableOrderPush(btn) {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return showToast('جهازك ما يدعم الإشعارات من المتصفح. على الآيفون: أضف لوحة التحكم للشاشة الرئيسية وافتحها منها', true);
-    btn.disabled = true;
-    try {
-      if (Notification.permission !== 'granted' && (await Notification.requestPermission()) !== 'granted') throw new Error('ما وافقت على الإشعارات، فعّلها من إعدادات المتصفح');
-      const { key } = await api('push-key');
-      const b64 = (k) => { const p = '='.repeat((4 - k.length % 4) % 4), raw = atob((k + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(raw, c => c.charCodeAt(0)); };
-      const reg = await navigator.serviceWorker.register('/sw.js'); await navigator.serviceWorker.ready;
-      const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(key) });
-      await api('owner-push', { sub: sub.toJSON() });
-      try { localStorage.setItem('dm_owner_push', String(client.id)); } catch {}
-      btn.innerHTML = '<i class="ph-bold ph-check"></i> الإشعار مفعّل'; showToast('تمام، يوصلك تنبيه مع كل طلب جديد');
-    } catch (e) { btn.disabled = false; showToast(e.message || 'تعذر تفعيل الإشعار', true); }
-  }
+
   async function saveOrderMode(box) {
     const prev = client.menu_order_mode || null;
     const m = box.checked ? 'table' : null;
