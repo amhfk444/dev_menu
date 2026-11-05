@@ -203,6 +203,9 @@
   .mo-steps span.on { background:#fff; color:#111; }
   .dine-btn { display:flex; align-items:center; justify-content:center; min-height:52px; border-radius:16px; font-weight:900; font-size:15px; color:#fff; background:rgba(255,255,255,.06); border:1.5px solid rgba(255,255,255,.18); }
   .dine-btn.on { background:#fff; color:#111; border-color:#fff; }
+  /* سفاري: شريط الأقسام (فيه تغبيش ويتمرر) أحياناً ما يرسم الأقسام لما يتحرك. طبقة مستقلة تحل الرسم */
+  #fast-filter-bar, #group-bar { transform: translateZ(0); -webkit-backdrop-filter: blur(16px); }
+  #fast-filter-bar .cat-pill { transform: translateZ(0); }
 </style>
 <link rel="stylesheet" href="/css/tw/menu.css">
 </head>
@@ -1262,7 +1265,9 @@
       document.querySelectorAll('.cat-pill').forEach(b => {
         const on = b.dataset.cat === id;
         b.classList.toggle('active', on);
-        if (on) b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        // نحرّك شريط الأقسام بس (scrollIntoView في سفاري يحرّك الصفحة كلها وأحياناً ما يرسم الأقسام)
+        if (on) { const bar = b.parentElement, br = bar.getBoundingClientRect(), r = b.getBoundingClientRect();
+          if (r.left < br.left + 8 || r.right > br.right - 8) bar.scrollTo({ left: bar.scrollLeft + (r.left + r.width / 2) - (br.left + br.width / 2), behavior: 'smooth' }); }
       });
     });
   }, { passive: true });
