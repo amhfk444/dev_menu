@@ -973,6 +973,8 @@
     storeInfo = s;
     if (s.business_type) T = DMSectors.terms(s);
     applyTerms();
+    // مصطلحات النشاط («خمّن المنتج» بدل «خمّن الطبق» لغير المطاعم والمقاهي)
+    if (!setStore.words && s.business_type) { setStore.words = true; DMSectors.localizeDom(document.body, s, true); }
     $('store-name').textContent = s.name || '';
     if (s.logo_url) { $('logo').src = s.logo_url; $('logo').classList.remove('hidden'); }
     // هوية المحل: شعاره واسمه، والصفحة كلها بألوان شعاره (أو اللون اللي اختاره لو الشعار بدون ألوان)

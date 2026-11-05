@@ -12,6 +12,7 @@
 <!-- FontAwesome (و Tailwind مبني مسبقاً آخر الـ head، نفس ترتيب Tailwind CDN اللي كان ينضاف بعد الأنماط) -->
 <link rel="stylesheet" href="/css/fa-menu.css">
 <script src="js/api.js"></script>
+<script src="/js/sectors.js"></script>
 <script src="js/theme.js"></script>
 <script src="js/occasions.js"></script>
 
@@ -868,6 +869,8 @@
       return showUnavailable('تعذر تحميل المنيو', 'تحقق من اتصالك بالإنترنت ثم أعد تحميل الصفحة.');
     }
     applyMenu(menuData, true);
+    // مصطلحات النشاط: غير المطاعم والمقاهي «منتج» بدل «طبق»
+    DMSectors.localizeDom(document.body, project, true);
     trackOnce(`v:${project.id}`, 'view', null, visitSource);
     startLiveUpdates(menuData.live);
     // المنيو يجي من المخزن المؤقت عشان يفتح بسرعة: نتأكد على طول إنه آخر نسخة (لو صاحب المحل عدّل للتو، يتحدث خلال ثانية)

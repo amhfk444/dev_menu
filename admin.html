@@ -2566,6 +2566,7 @@
     box.innerHTML = cards.join('');
     box.classList.toggle('hidden', !cards.length);
   }
+  function localizeDash() {}
   function applyFeatureLocks() {
     // مشترك الولاء بدون البيجر: نفس الشاشة اسمها "شاشة الكاشير" (مسح البطاقات وكود الختم)
     const deskLabel = document.getElementById('nav-desk-label');
@@ -2731,6 +2732,8 @@
 
     client = data.store;
     currentClientId = client.id;
+    // مصطلحات النشاط: غير المطاعم والمقاهي «منتج» بدل «طبق» في كل اللوحة (ومع أي شي ينضاف بعدين)
+    if (!localizeDash.on && !DMSectors.isFood(client)) { localizeDash.on = true; DMSectors.localizeDom(document.body, client, true); }
     loadedCategories = (data.categories || []).sort(bySort);
     loadedProducts = (data.products || []).sort(bySort);
     branches = data.branches || [];

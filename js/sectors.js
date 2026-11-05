@@ -45,7 +45,34 @@
     if (store.business_type === 'other' && store.business_label) return store.business_label;
     return (SECTORS[store.business_type] || SECTORS.restaurant).name;
   };
-  const api = { SECTORS, MAIN, OTHERS, KEYS: Object.keys(SECTORS), label, terms, TERMS };
+  // ─── مصطلحات الأصناف: المطاعم والمقاهي والمخابز «طبق/أطباق»، وباقي الأنشطة «منتج/منتجات» ───
+  const isFood = (store) => !!(SECTORS[(store && store.business_type) || 'restaurant'] || SECTORS.restaurant).food;
+  // يستبدل «طبق» بكل أشكالها (الطبق، أطباقك، للطبق...) بدون ما يلمس كلمات ثانية مثل «طبقة» و«تطبيق»
+  const DISH_RE = /(^|[^\u0621-\u064A])(وال|بال|لل|فال|كال|ال|و|ب|ل|ف)?(أطباق|طبق)(كم|ها|ك)?(?=[^\u0621-\u064A]|$)/g;
+  const DISH_EN = /\b(dish)(es)?\b/gi;
+  function localize(text, store) {
+    if (!text || isFood(store)) return text;
+    return String(text).replace(DISH_RE, (m, a, pre, stem, suf) => `${a}${pre || ''}${stem === 'أطباق' ? 'منتجات' : 'منتج'}${suf || ''}`)
+      .replace(DISH_EN, (m, d, es) => (d[0] === 'D' ? 'Item' : 'item') + (es ? 's' : ''));
+  }
+  // يطبّق المصطلحات على صفحة كاملة (النصوص والـ placeholder والعناوين)، ويتابع اللي ينضاف بعدين
+  function localizeDom(root, store, watch) {
+    if (isFood(store) || !root) return;
+    const fix = (node) => {
+      if (node.nodeType === 3) { const t = localize(node.nodeValue, store); if (t !== node.nodeValue) node.nodeValue = t; return; }
+      if (node.nodeType !== 1 || /^(SCRIPT|STYLE|TEXTAREA)$/.test(node.tagName)) return;
+      for (const at of ['placeholder', 'title', 'aria-label']) { const v = node.getAttribute(at); if (v) { const t = localize(v, store); if (t !== v) node.setAttribute(at, t); } }
+      for (const c of node.childNodes) fix(c);
+    };
+    fix(root);
+    if (watch && typeof MutationObserver !== 'undefined') new MutationObserver(ms => ms.forEach(m => {
+      if (m.type === 'characterData') fix(m.target);
+      else if (m.type === 'attributes') { const v = m.target.getAttribute(m.attributeName); if (v) { const t = localize(v, store); if (t !== v) m.target.setAttribute(m.attributeName, t); } }
+      else m.addedNodes.forEach(fix);
+    })).observe(root, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['placeholder', 'title', 'aria-label'] });
+  }
+
+  const api = { SECTORS, MAIN, OTHERS, KEYS: Object.keys(SECTORS), label, terms, TERMS, isFood, localize, localizeDom };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.DMSectors = api;
 })(typeof window !== 'undefined' ? window : globalThis);
