@@ -1827,7 +1827,7 @@
         ${o.status === 'cancelled' ? `<p class="text-[12px] font-black text-red-300">${o.mode === 'self' && !o.paid ? T('انلغى الطلب. تقدر تطلب من جديد', 'Order cancelled. You can order again') : T('انلغى الطلب، كلّم الكاشير', 'Cancelled, ask the cashier')}</p>` : step(o)}
         ${o.status === 'cancelled' ? '' : o.mode === 'self' ? selfBox(o) : ''}
         <ul class="space-y-1">${(o.items || []).map(i => `<li class="text-[13px] text-white"><b>${i.qty}×</b> ${esc(i.name)}${i.size ? ` <span class="text-gray-400">(${esc(i.size)})</span>` : ''}${i.note ? `<span class="block text-[11px] text-amber-200 font-bold">${esc(i.note)}</span>` : ''}</li>`).join('')}</ul>
-        <div class="flex items-center justify-between border-t border-white/10 pt-2"><span class="text-[12px] text-gray-300 font-bold">${o.paid ? T('المجموع (مدفوع)', 'Total (paid)') : o.started ? T('المجموع (تدفعه وقت الاستلام)', 'Total (pay at pickup)') : T('المجموع (تدفعه عند الكاشير)', 'Total (pay at the counter)')}</span><b class="text-white">${esc(money(o.total))}</b></div>
+        <div class="flex items-center justify-between border-t border-white/10 pt-2"><span class="text-[12px] text-gray-300 font-bold">${o.paid ? T('المجموع (مدفوع)', 'Total (paid)') : o.started || waitingCashier(o) ? T('المجموع (تدفعه وقت الاستلام)', 'Total (pay at pickup)') : T('المجموع (تدفعه عند الكاشير)', 'Total (pay at the counter)')}</span><b class="text-white">${esc(money(o.total))}</b></div>
       </div>`).join('') : `<p class="text-sm text-gray-400 text-center">${T('ما عندك طلبات', 'No orders yet')}</p>`;
   }
   function openOrders() {
