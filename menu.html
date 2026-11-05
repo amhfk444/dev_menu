@@ -1551,7 +1551,7 @@
   // والخانة اللي يكتب فيها تبقى ظاهرة، والصفحة اللي وراها ما تتحرك (نفس طريقة المساعد)
   // الكتابة في نافذة الطلب (ملاحظة الصنف، رقم الطاولة): أول ما يضغط الخانة، النافذة تطلع فوق الشاشة والخانة قريبة من فوق،
   // فالكيبورد ما يغطيها وسفاري ما يحتاج يحرّك الصفحة (الحركة هي اللي تخلي الشاشة تهتز وتبان كأنها زوم)
-  let cartFit = 0, cartTyping = false;
+  let cartFit = 0, cartTyping = false, cartFocusAt = 0;
   const cartOpen = () => !document.getElementById('cartModal').classList.contains('opacity-0');
   function fitCart() {
     if (cartFit) return;
@@ -1578,7 +1578,7 @@
   if (window.visualViewport) { visualViewport.addEventListener('resize', fitCart); visualViewport.addEventListener('scroll', fitCart); }
   document.getElementById('cartModal').addEventListener('focusin', (e) => {
     if (!/INPUT|TEXTAREA/.test(e.target.tagName)) return;
-    cartTyping = true; clearTimeout(fitCart.off);
+    cartTyping = true; clearTimeout(fitCart.off); cartFocusAt = Date.now();
     // قبل ما يطلع الكيبورد: النافذة فوق والخانة قريبة من فوق
     const m = document.getElementById('cartModal'), panel = m.querySelector('.modal-panel');
     m.style.transition = 'opacity .3s'; m.style.alignItems = 'flex-start'; m.style.top = '0px'; m.style.bottom = 'auto'; m.style.height = `${window.innerHeight}px`;
@@ -1791,7 +1791,8 @@
     addToCart(currentModalProduct, modalQty, modalSize);
     closeModal();
   });
-  document.getElementById('cartModal').addEventListener('click', (e) => { if (e.target.id === 'cartModal') closeCart(); });
+  // الضغطة على خانة الكتابة تحرّك النافذة فوق، فنفس الضغطة ممكن تقع على الخلفية: نتجاهلها شوي
+  document.getElementById('cartModal').addEventListener('click', (e) => { if (e.target.id === 'cartModal' && Date.now() - cartFocusAt > 700) closeCart(); });
 
   function closeModal() {
     document.getElementById('productModal').classList.add('opacity-0', 'pointer-events-none');
