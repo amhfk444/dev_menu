@@ -51,6 +51,8 @@ function estimate(t, ahead, stats) {
   const left = total - waited;
   if (left <= 0.5) return { low: null, high: null, overdue: true, progress: 1 };
   // أقل شي «من 5 إلى 10»: التقدير القصير يخيّب ظن الزبون لو تأخر الطلب شوي
+  const progress = Math.min(.95, waited / total);
+  if (left <= MIN_HIGH) return { low: MIN_LOW, high: MIN_HIGH, overdue: false, progress };
   const low = Math.max(MIN_LOW, Math.round(left * 0.8)), high = Math.max(MIN_HIGH, low + 3, Math.round(left * 1.25));
   return { low, high, overdue: false, progress: Math.min(.95, waited / total) };
 }
