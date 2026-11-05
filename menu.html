@@ -202,8 +202,9 @@
   .mo-steps { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
   .mo-steps span { font-size:11px; font-weight:800; text-align:center; padding:6px 4px; border-radius:10px; background:rgba(255,255,255,.06); color:rgba(255,255,255,.55); }
   .mo-steps span.on { background:#fff; color:#111; }
-  .dine-btn { display:flex; align-items:center; justify-content:center; min-height:52px; border-radius:16px; font-weight:900; font-size:15px; color:#fff; background:rgba(255,255,255,.06); border:1.5px solid rgba(255,255,255,.18); }
-  .dine-btn.on { background:#fff; color:#111; border-color:#fff; }
+  /* أزرار محلي/استلام/توصيل والموعد: بألوان الثيم (الفاتح والداكن) */
+  .dine-btn { display:flex; align-items:center; justify-content:center; min-height:52px; border-radius:16px; font-weight:900; font-size:15px; color:var(--fg); background:var(--chip); border:1.5px solid var(--line); }
+  body .dine-btn.on { background:var(--accent); color:var(--accent-fg); border-color:var(--accent); }
   /* سفاري: شريط الأقسام (فيه تغبيش ويتمرر) أحياناً ما يرسم الأقسام لما يتحرك. طبقة مستقلة تحل الرسم */
   #fast-filter-bar { transform: translateZ(0); -webkit-backdrop-filter: blur(16px); } #group-bar { transform: translateZ(0); }
   #fast-filter-bar .cat-pill { transform: translateZ(0); }
