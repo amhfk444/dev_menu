@@ -420,6 +420,7 @@
       if (params.get('s')) { params.delete('s'); history.replaceState(null, '', location.pathname + (params.toString() ? `?${params}` : '')); }
       settings = enReward(r.settings); walletOn = !!r.wallet; justJoined = !!r.is_new; happyNow = !!r.happy_now; gifts = r.gifts || [];
       afterStamp(r);
+      walletFirst();
       if (r.reason === 'PAGER_PENDING') msg('ok', 'ph-bell', 'سجّلت! ينضاف لك ختم أول ما تستلم طلبك');
       if (r.reason === 'REGISTERED') msg('ok', 'ph-check-circle', 'سجّلت! بعد ما تدفع، اعرض الكود اللي تحت للكاشير وينضاف ختمك');
       if (r.gift_error) msg('warn', 'ph-gift', r.gift_error);
@@ -447,7 +448,7 @@
         const loc = await getLocation().catch(x => { throw { message: locationError(x) }; });
         r = await DM.post('/api/loyalty?action=phone', { slug, t: loadToken(), ...profile, ...loc });
       }
-      saveToken(r.token); card = r.card; renderCard(); if (DM.rememberMe) DM.rememberMe(profile);
+      saveToken(r.token); card = r.card; renderCard(); walletFirst(); if (DM.rememberMe) DM.rememberMe(profile);
       msg('ok', 'ph-check-circle', r.merged ? 'رجعت لبطاقتك القديمة وانضافت لها أختامك' : 'تم حفظ بياناتك');
     } catch (e) {
       msg('err', 'ph-warning-circle', e.message || 'تعذر الحفظ، حاول مرة ثانية');
@@ -592,6 +593,14 @@
     $('m-close').onclick = () => { $('c-message').classList.add('hidden'); try { localStorage.setItem(MSG_KEY, String(m.id)); } catch {} };
   }
 
+  // بعد ما يسجّل أو يكمّل بياناته: زر حفظ البطاقة في المحفظة يطلع على طول تحت البطاقة
+  function walletFirst() {
+    if (!walletOn || !card || card.in_wallet) return;
+    const top = $('c-card');
+    top.after($('wallet-prompt')); $('wallet-prompt').after($('wallet-btn'));
+    $('wallet-prompt').classList.remove('hidden'); $('wallet-btn').classList.remove('hidden');
+    setTimeout(() => $('wallet-btn').scrollIntoView({ behavior: 'smooth', block: 'center' }), 350);
+  }
   // ─── المحفظة: آبل أو قوقل حسب الجوال (صفحة الإضافة تختار تلقائياً) ───
   $('wallet-btn').onclick = async () => {
     if (busy) return;
