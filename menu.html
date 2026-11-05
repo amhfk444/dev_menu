@@ -201,6 +201,8 @@
   .mo-steps { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
   .mo-steps span { font-size:11px; font-weight:800; text-align:center; padding:6px 4px; border-radius:10px; background:rgba(255,255,255,.06); color:rgba(255,255,255,.55); }
   .mo-steps span.on { background:#fff; color:#111; }
+  .dine-btn { display:flex; align-items:center; justify-content:center; min-height:52px; border-radius:16px; font-weight:900; font-size:15px; color:#fff; background:rgba(255,255,255,.06); border:1.5px solid rgba(255,255,255,.18); }
+  .dine-btn.on { background:#fff; color:#111; border-color:#fff; }
 </style>
 <link rel="stylesheet" href="/css/tw/menu.css">
 </head>
@@ -417,8 +419,12 @@
         <span id="cartTotalLabel" class="text-sm font-bold text-gray-300">المجموع</span>
         <span id="cartTotal" class="text-lg font-black text-white"></span>
       </div>
-      <!-- الطلب للكاشير: رقم الطاولة اختياري (من QR الطاولة أو يكتبه) -->
+      <!-- الطلب للكاشير: محلي أو سفري، ورقم الطاولة اختياري للمحلي (من QR الطاولة أو يكتبه) -->
       <div id="cartDirect" class="hidden space-y-2.5 border-t border-white/10 pt-3">
+        <div id="dineBox" class="grid grid-cols-2 gap-2" role="radiogroup">
+          <button type="button" data-dine="in" class="dine-btn" role="radio"><span id="dineInText">محلي</span></button>
+          <button type="button" data-dine="out" class="dine-btn" role="radio"><span id="dineOutText">سفري</span></button>
+        </div>
         <!-- جاي من QR الطاولة: الرقم ثابت، وما يحتاج يكتبه -->
         <div id="tableFixed" class="hidden items-center justify-between gap-3 bg-white/5 border border-white/15 rounded-xl px-4 py-3">
           <span class="text-white font-black"><span id="tableFixedLabel">طاولتك</span> <b id="tableFixedNo" class="text-xl" dir="ltr"></b></span>
@@ -1619,7 +1625,7 @@
 
   // ─── الطلب للكاشير (بدون واتساب) ───
   // العميل يرسل طلبه ويطلع له رمز (A12) يعرّف فيه نفسه للكاشير. رقم الطاولة اختياري: من QR الطاولة (?table=12) أو يكتبه
-  let tableEdit = false;
+  let tableEdit = false, dine = 'in';
   const qrTable = (() => {
     const v = String(urlParams.get('table') || '').trim().replace(/[٠-٩۰-۹]/g, d => String(d.charCodeAt(0) & 15)).toUpperCase();
     return /^[A-Z0-9-]{1,6}$/.test(v) ? v : '';
@@ -1632,18 +1638,23 @@
     // الطلب للكاشير: الملاحظة على كل صنف لحاله (تحت اسمه)، بدل ملاحظة عامة
     document.getElementById('cartNoteBox').classList.toggle('hidden', !!dm);
     if (!dm) return;
+    document.querySelectorAll('[data-dine]').forEach(b => { b.classList.toggle('on', b.dataset.dine === dine); b.setAttribute('aria-checked', b.dataset.dine === dine); });
+    document.getElementById('dineInText').textContent = T('محلي', 'Dine in');
+    document.getElementById('dineOutText').textContent = T('سفري', 'Takeaway');
+    const out = dine === 'out';
     const ti = document.getElementById('tableInput');
-    const fixed = !tableEdit && !!qrTable;
+    const fixed = !out && !tableEdit && !!qrTable;
     if (fixed) ti.value = qrTable;
     else if (!ti.value) { try { ti.value = sessionStorage.getItem(tableKey()) || ''; } catch {} }
     document.getElementById('tableFixed').classList.toggle('hidden', !fixed); document.getElementById('tableFixed').classList.toggle('flex', fixed);
     document.getElementById('tableFixedNo').textContent = qrTable || '';
     document.getElementById('tableFixedLabel').textContent = T('طاولتك', 'Your table');
     document.getElementById('tableChange').textContent = T('تغيير', 'Change');
-    document.getElementById('tableBox').classList.toggle('hidden', fixed);
-    document.getElementById('tableLabel').textContent = T('رقم الطاولة (لو أنت جالس)', 'Table number (if seated)');
+    document.getElementById('tableBox').classList.toggle('hidden', fixed || out);
+    document.getElementById('tableLabel').textContent = T('رقم الطاولة (اختياري)', 'Table number (optional)');
     document.getElementById('directMsg').classList.add('hidden');
   }
+  document.getElementById('dineBox').addEventListener('click', (e) => { const b = e.target.closest('[data-dine]'); if (b) { dine = b.dataset.dine; renderDirect(); } });
   document.getElementById('tableChange').addEventListener('click', () => { tableEdit = true; renderDirect(); const t = document.getElementById('tableInput'); t.focus(); t.select(); });
   function directErr(msg) { const m = document.getElementById('directMsg'); m.textContent = msg; m.classList.remove('hidden'); }
   async function sendDirect() {
@@ -1653,7 +1664,7 @@
     const btn = document.getElementById('cartSend'); btn.disabled = true;
     try {
       try { if (table) sessionStorage.setItem(tableKey(), table); } catch {}
-      const r = await DM.post('/api/public?action=order', { slug: project.client_slug, dev: devId(), lang: currentLang, table,
+      const r = await DM.post('/api/public?action=order', { slug: project.client_slug, dev: devId(), lang: currentLang, dine, table: dine === 'out' ? '' : table,
         items: cart.map(c => ({ id: c.id, qty: c.qty, size: c.size, note: c.note })), coupon: coupon ? coupon.coupon.code : undefined });
       cart.forEach(c => DM.post('/api/public?action=track', { client_id: project.id, kind: 'order', product_id: c.id }).catch(() => {}));
       myOrders = [{ token: r.token, ...r.order }, ...myOrders.filter(o => o.token !== r.token)].slice(0, 5);
@@ -1700,7 +1711,7 @@
     if (myOrders.some(o => ['new', 'accepted'].includes(o.status))) refreshOrders.t = setTimeout(refreshOrders, 8000);
   }
   const ST = { new: ['وصل طلبك للكاشير', 'Sent to the cashier'], accepted: ['الكاشير استلم طلبك، وجاري تحضيره', 'The cashier has it, being prepared'], served: ['تم تسليم طلبك، بالعافية', 'Done, enjoy'], cancelled: ['انلغى الطلب، كلّم الكاشير', 'Cancelled, ask the cashier'] };
-  const who = (o) => `${T('طلب', 'Order')} <b dir="ltr">${esc(o.code || '')}</b>${o.table_no ? ` · ${T('طاولة', 'Table')} <span dir="ltr">${esc(o.table_no)}</span>` : ''}`;
+  const who = (o) => `${T('طلب', 'Order')} <b dir="ltr">${esc(o.code || '')}</b> · ${o.dine === 'out' ? T('سفري', 'Takeaway') : T('محلي', 'Dine in')}${o.table_no ? ` · ${T('طاولة', 'Table')} <span dir="ltr">${esc(o.table_no)}</span>` : ''}`;
   function renderOrders() {
     const bar = document.getElementById('moBar');
     const live = myOrders.filter(o => ['new', 'accepted'].includes(o.status));

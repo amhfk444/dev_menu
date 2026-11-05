@@ -175,7 +175,8 @@ async function buildOrder(store, b) {
   const priced = await priceOrder(store, b.items, coupon);
   return {
     coupon, row: {
-      client_id: store.id, token: require('crypto').randomBytes(18).toString('base64url'), mode: 'table', table_no: cleanTable(b.table),
+      client_id: store.id, token: require('crypto').randomBytes(18).toString('base64url'), mode: 'table',
+      dine: b.dine === 'out' ? 'out' : 'in', table_no: b.dine === 'out' ? null : cleanTable(b.table),
       items: priced.lines, note: cleanNote(b.note, 300), total: priced.total, discount: priced.discount, coupon_code: coupon ? coupon.code : null,
       device: dev, lang: b.lang === 'en' ? 'en' : 'ar'
     }
@@ -194,7 +195,7 @@ async function saveOrder(built) {
   return o;
 }
 // الطلب كما يطلع للكاشير وللعميل
-const publicOrder = (o) => o && ({ id: o.id, code: o.code || null, table_no: o.table_no, items: o.items || [], note: o.note, total: Number(o.total) || 0,
+const publicOrder = (o) => o && ({ id: o.id, code: o.code || null, dine: o.dine === 'out' ? 'out' : 'in', table_no: o.table_no, items: o.items || [], note: o.note, total: Number(o.total) || 0,
   discount: Number(o.discount) || 0, coupon_code: o.coupon_code || null, status: o.status, created_at: o.created_at, accepted_at: o.accepted_at || null, closed_at: o.closed_at || null });
 
 module.exports = { menuPromos, promoCovers, autoPrice, loadCoupon, priceCart, priceOrder, cleanNote, round2, orderMode, cleanTable, buildOrder, saveOrder, publicOrder, dayStart };

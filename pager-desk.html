@@ -470,7 +470,7 @@
       const acc = o.status === 'accepted', b = oBusy.has(o.id);
       return `<article class="tk${acc ? ' tk-acc' : ''}${freshOrders.has(o.id) ? ' tile-new' : ''}"><div class="tk-in">
         <div class="tk-info">
-          <div class="tk-hd"><span class="tk-tbl"><small>${o.table_no ? 'طاولة' : 'رمز الطلب'}</small><b dir="ltr">${esc(o.table_no || o.code || '؟')}</b></span>${timer(o.created_at)}${o.table_no && o.code ? `<span class="tk-tag">${esc(o.code)}</span>` : ''}${acc ? '<span class="tk-tag"><i class="ph-bold ph-check"></i> استلمته</span>' : ''}</div>
+          <div class="tk-hd"><span class="tk-tbl"><small>${o.table_no ? 'طاولة' : 'رمز الطلب'}</small><b dir="ltr">${esc(o.table_no || o.code || '؟')}</b></span>${timer(o.created_at)}${o.table_no && o.code ? `<span class="tk-tag">${esc(o.code)}</span>` : ''}<span class="tk-tag ${o.dine === 'out' ? 'gold' : ''}"><i class="ph-bold ${o.dine === 'out' ? 'ph-bag' : 'ph-chair'}"></i> ${o.dine === 'out' ? 'سفري' : 'محلي'}</span>${acc ? '<span class="tk-tag"><i class="ph-bold ph-check"></i> استلمته</span>' : ''}</div>
           ${orderBlock(o)}
         </div>
         <div class="tk-act">
