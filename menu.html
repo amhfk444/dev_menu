@@ -1616,6 +1616,11 @@
       cart = []; resetCoupon(); document.getElementById('cartNote').value = ''; saveCart(); closeCart();
       renderOrders(); openOrders();
     } catch (e) {
+      // صاحب المحل غيّر طريقة الطلب: نحدّث المنيو عشان تطلع الطريقة الجديدة
+      if (e.code === 'ORDERS_OFF') return checkForUpdates(true).then(() => {
+        if (!orderingOn()) return closeCart();
+        openCart(); directErr(T('تغيّرت طريقة الطلب في المحل، راجع طلبك وأرسله مرة ثانية', 'The ordering method changed, please review and send again'));
+      });
       directErr(e.status === 0 ? T('تعذر الاتصال، حاول مرة ثانية', 'Connection failed, try again') : (currentLang === 'ar' ? (e.message || 'ما انرسل الطلب، حاول مرة ثانية') : 'The order was not sent, please try again'));
     } finally { btn.disabled = false; }
   }
