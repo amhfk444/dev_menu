@@ -7143,11 +7143,10 @@
           <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" ${g.required ? 'checked' : ''} onchange="formExtras[${gi}].required=this.checked" class="accent-green-600"> إجبارية (لازم يختار)</label>
           <label class="flex items-center gap-1">يختار حتى <input type="number" min="1" max="15" value="${esc(g.max || 1)}" oninput="formExtras[${gi}].max=this.value" dir="ltr" class="input-pro !py-0.5 text-xs !w-12 text-center"></label>
         </div>
-        ${(g.options || []).map((o, oi) => o.pid ? `<div class="flex items-center gap-1.5 ps-2">
-          <span class="flex-1 min-w-0 text-xs font-bold text-ink truncate"><i class="ph-bold ph-link text-emerald-600" title="من المنيو"></i> ${esc(exLinkedName(o))}</span>
-          <span class="text-xs font-bold text-ink" dir="ltr">${esc(money(exLinkedPrice(o)))}</span>` : `<div class="flex items-center gap-1.5 ps-2">
-          <input type="text" maxlength="40" value="${esc(o.name || '')}" oninput="formExtras[${gi}].options[${oi}].name=this.value" placeholder="${['صوص جبن', 'مخلل', 'بريوش'][oi] || 'الخيار'}" class="input-pro !py-1.5 text-xs flex-1 min-w-0">
-          <input type="number" min="0" step="any" value="${esc(o.price ?? '')}" oninput="formExtras[${gi}].options[${oi}].price=this.value" placeholder="0" dir="ltr" class="input-pro !py-1.5 text-xs w-20" aria-label="السعر">
+        ${(g.options || []).map((o, oi) => `<div class="flex items-center gap-1.5 ps-2">
+          ${o.pid ? `<span class="flex-1 min-w-0 text-xs font-bold text-ink truncate py-2"><i class="ph-bold ph-link text-emerald-600" title="مربوط بصنف في المنيو"></i> ${esc(exLinkedName(o))}</span>
+          <span class="text-xs font-bold text-ink w-20 text-center" dir="ltr">${esc(money(exLinkedPrice(o)))}</span>` : `<input type="text" maxlength="40" value="${esc(o.name || '')}" oninput="formExtras[${gi}].options[${oi}].name=this.value" placeholder="${['صوص جبن', 'مخلل', 'بريوش'][oi] || 'الخيار'}" class="input-pro !py-1.5 text-xs flex-1 min-w-0">
+          <input type="number" min="0" step="any" value="${esc(o.price ?? '')}" oninput="formExtras[${gi}].options[${oi}].price=this.value" placeholder="0" dir="ltr" class="input-pro !py-1.5 text-xs w-20" aria-label="السعر">`}
           <button type="button" onclick="formExtras[${gi}].options.splice(${oi}, 1); renderExtras()" aria-label="حذف الخيار" class="shrink-0 w-8 h-8 rounded-lg text-red-600 hover:bg-red-500/10"><i class="ph-bold ph-x"></i></button>
         </div>`).join('')}
         <div class="flex flex-wrap gap-x-3 ps-2"><button type="button" onclick="addExOpt(${gi})" class="text-[11px] font-bold text-brand hover:underline"><i class="ph-bold ph-plus"></i> خيار</button>
