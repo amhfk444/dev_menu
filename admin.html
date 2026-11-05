@@ -809,7 +809,7 @@
   <!-- قسم الكوبونات -->
   <div id="section-coupons" class="space-y-4 hidden">
     <div id="coupons-wa-warning" class="hidden rounded-2xl p-3.5 border bg-amber-500/10 border-amber-500/30 text-[11px] font-bold text-amber-800 flex flex-wrap items-center justify-between gap-2">
-      <span><i class="ph-bold ph-info"></i> الكوبونات بكود تشتغل مع سلة الطلب عبر واتساب، ففعّل "استقبال الطلبات عبر واتساب". الخصم التلقائي يظهر في المنيو حتى بدونها.</span>
+      <span><i class="ph-bold ph-info"></i> الكوبونات بكود تشتغل مع سلة الطلب، ففعّل "الطلب من المنيو" أو "استقبال الطلبات عبر واتساب". الخصم التلقائي يظهر في المنيو حتى بدونها.</span>
       <button type="button" onclick="location.hash='settings'" class="bg-brand text-cream px-3 py-1.5 rounded-lg text-[11px] font-black">فتح الإعدادات</button>
     </div>
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
@@ -7124,7 +7124,7 @@
   const riyadhDay = (ts) => ts ? new Date(Date.parse(ts) + 3 * 3600000).toISOString().slice(0, 10) : '';
 
   async function openCouponsTab() {
-    document.getElementById('coupons-wa-warning').classList.toggle('hidden', client.whatsapp_orders === true);
+    document.getElementById('coupons-wa-warning').classList.toggle('hidden', client.whatsapp_orders === true || !!client.menu_order_mode);
     renderCouponForm();
     if (coupons) return renderCoupons();
     try { coupons = (await api('coupons')).coupons || []; }
