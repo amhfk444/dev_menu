@@ -31,13 +31,13 @@ async function loadStore(slug) {
   if (!here) throw new ApiError(404, 'بطاقة الولاء غير متاحة حالياً', 'NOT_AVAILABLE');
   const home = await loyaltyHome(here.id);
   const [main, spot] = await Promise.all([
-    rest(`clients?id=eq.${home}&select=id,name,client_slug,logo_url,loyalty_enabled,loyalty_settings,loyalty_lat,loyalty_lng,loyalty_near_lines`).then(r => r[0] || {}),
+    rest(`clients?id=eq.${home}&select=id,name,client_slug,logo_url,loyalty_enabled,loyalty_settings,loyalty_lat,loyalty_lng,loyalty_near_lines,business_type`).then(r => r[0] || {}),
     home === here.id ? null : rest(`clients?id=eq.${here.id}&select=loyalty_lat,loyalty_lng`).then(r => r[0] || {})
   ]);
   if (!main.loyalty_enabled || !(await storeHasFeature(home, 'loyalty'))) throw new ApiError(404, 'بطاقة الولاء غير متاحة حالياً', 'NOT_AVAILABLE');
   const own = spot && validPoint(spot.loyalty_lat, spot.loyalty_lng);
   return { store: { id: main.id, name: main.name, client_slug: main.client_slug, logo_url: main.logo_url }, branch: here,
-           settings: normalizeLoyalty(main.loyalty_settings), lat: own ? spot.loyalty_lat : main.loyalty_lat, lng: own ? spot.loyalty_lng : main.loyalty_lng, nearLines: main.loyalty_near_lines,
+           settings: normalizeLoyalty(main.loyalty_settings, main), lat: own ? spot.loyalty_lat : main.loyalty_lat, lng: own ? spot.loyalty_lng : main.loyalty_lng, nearLines: main.loyalty_near_lines,
            homeLat: main.loyalty_lat, homeLng: main.loyalty_lng };
 }
 

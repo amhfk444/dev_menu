@@ -124,7 +124,7 @@ async function pagerBody({ store, number, step, status, notice, url, lang, invoi
   const { pagerStrip, brandColor } = require('./strip');
   const { rest, googleReviewLink } = require('./core');
   const [color, x] = await Promise.all([brandColor(store),
-    store.id ? rest(`clients?id=eq.${Number(store.id)}&select=google_review_url,location_url,loyalty_lat,loyalty_lng,pager_near_text,parent_id`).then(r => r[0] || {}).catch(() => ({})) : {}]);
+    store.id ? rest(`clients?id=eq.${Number(store.id)}&select=google_review_url,location_url,loyalty_lat,loyalty_lng,pager_near_text,parent_id,business_type`).then(r => r[0] || {}).catch(() => ({})) : {}]);
   const review = googleReviewLink(x);
   // اسم البطاقة: الفرع ياخذ اسم المحل الرئيسي (ماندولين، مو "ماندولين فرع بيش")، من أي مكان تتحدث منه
   let name = store.name;
@@ -146,7 +146,7 @@ async function pagerBody({ store, number, step, status, notice, url, lang, invoi
     sharingProhibited: true,
     ...(String(notice || '').trim() ? { notification: String(notice).slice(0, 250) } : {})   // بدون رسالة: البطاقة تحتفظ برسالتها (شوف passBody)
   };
-  const strip = await pagerStrip(color, step);
+  const strip = await pagerStrip(color, step, require('./sectors').loyal(x.business_type ? x : store).prep);
   if (strip) body.stripURL = strip;
   if (store.logo_url && /^https:\/\//.test(store.logo_url)) body.logoURL = body.iconURL = await require('./strip').smallLogo(store.logo_url);
   // موقع المحل: البطاقة تطلع على شاشة القفل لما يقرب منه، بنص صاحب المحل أو النص الافتراضي

@@ -733,7 +733,7 @@ async function main(req) {
   if (action === 'loyalty' && req.method === 'GET') {
     const { store, here } = await context(req);
     const spot = here.id === store.id ? null : (await rest(`clients?id=eq.${here.id}&select=loyalty_lat,loyalty_lng`).catch(() => []))[0];
-    const extra = (await rest(`clients?id=eq.${store.id}&select=loyalty_enabled,loyalty_settings,loyalty_lat,loyalty_lng,loyalty_ai,loyalty_near_lines`))[0] || {};
+    const extra = (await rest(`clients?id=eq.${store.id}&select=loyalty_enabled,loyalty_settings,loyalty_lat,loyalty_lng,loyalty_ai,loyalty_near_lines,business_type`))[0] || {};
     const day = 864e5, iso = (n) => q(new Date(Date.now() - n * day).toISOString());
     const [cards, stamps7, redeemed, messages, feedback, gifts] = await Promise.all([
       rest(`loyalty_cards?client_id=eq.${store.id}&select=id,member_no,name,phone,stamps,visits,rewards,last_stamp_at,created_at&order=last_stamp_at.desc.nullslast&limit=500`),
@@ -770,7 +770,7 @@ async function main(req) {
     const returning = new Set(stamps7.filter(e => byId[e.card_id] && byId[e.card_id].visits > 1).map(e => e.card_id)).size;
     const recent = stamps7.slice(0, 8).map(e => ({ id: e.card_id, at: e.created_at, name: (byId[e.card_id] || {}).name || null, no: (byId[e.card_id] || {}).member_no, stamps: (byId[e.card_id] || {}).stamps }));
     return {
-      enabled: extra.loyalty_enabled === true, settings: normalizeLoyalty(extra.loyalty_settings),
+      enabled: extra.loyalty_enabled === true, settings: normalizeLoyalty(extra.loyalty_settings, extra),
       location_set: validPoint(spot ? spot.loyalty_lat : extra.loyalty_lat, spot ? spot.loyalty_lng : extra.loyalty_lng), slug: here.client_slug,
       stats: { members: cards.length, active30: active, away30: cards.filter(c => c.last_stamp_at && Date.parse(c.last_stamp_at) < Date.now() - 30 * day).length, stamps7: stamps7.length, redeemed: redeemed.length, returning7: returning }, week, recent,
       cards: cards.slice(0, 50), messages, wallet: wallet.configured(), branches: branchStats,
@@ -856,12 +856,12 @@ async function main(req) {
 
   // ─── بطاقة الولاء: تشغيل وإعدادات ───
   if (action === 'loyalty-settings') {
-    const extra = (await rest(`clients?id=eq.${sid}&select=loyalty_settings`))[0] || {};
-    const current = normalizeLoyalty(extra.loyalty_settings);
+    const extra = (await rest(`clients?id=eq.${sid}&select=loyalty_settings,business_type`))[0] || {};
+    const current = normalizeLoyalty(extra.loyalty_settings, extra);
     const design = { ...current.design, ...((b.settings && b.settings.design) || {}) };
     if (design.stamp_image && !ownsMediaUrl(design.stamp_image, sid)) throw new ApiError(400, 'صورة الختم غير تابعة لمتجرك');
     for (const k of ['logo', 'reward_image']) if (design[k] && !ownsMediaUrl(design[k], sid)) throw new ApiError(400, 'الصورة غير تابعة لمتجرك');
-    const settings = normalizeLoyalty({ ...current, ...(b.settings || {}), design });
+    const settings = normalizeLoyalty({ ...current, ...(b.settings || {}), design }, extra);
     const body = { loyalty_settings: settings };
     // الشروط تغيّرت: رسائل الذكاء القديمة (مثلاً "باقي لك 5 من 8") تختفي، وجمل القرب تنكتب من جديد
     const rulesChanged = settings.needed !== current.needed || settings.reward !== current.reward || JSON.stringify(settings.happy) !== JSON.stringify(current.happy);

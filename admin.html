@@ -5816,6 +5816,7 @@
     sw.querySelector('.avail-label').textContent = d.enabled ? 'شغّالة' : 'متوقفة';
     document.getElementById('ly-needed').innerHTML = Array.from({ length: 9 }, (_, i) => i + 4).map(n => `<option value="${n}" ${n === st.needed ? 'selected' : ''}>${n} أختام</option>`).join('');
     document.getElementById('ly-reward').value = st.reward;
+    document.getElementById('ly-reward').placeholder = 'مثلاً: ' + DMSectors.loyal(client).reward;
     document.getElementById('ly-reward-en').value = st.reward_en || '';
     document.getElementById('ly-cooldown').value = String(st.cooldown_hours);
     sayLoyaltyBasics();
@@ -5962,7 +5963,11 @@
     const pic = (id, clear, url) => { const el = document.getElementById(id); el.classList.toggle('hidden', !url); if (url) el.src = url; document.getElementById(clear).classList.toggle('hidden', !url); };
     pic('ly-logo-pv', 'ly-logo-clear', d.logo);
     pic('ly-reward-pv', 'ly-reward-clear', d.reward_image);
-    document.getElementById('ly-icons').innerHTML = Object.entries(DMLoyaltyCard.ICONS).map(([k, cls]) => `
+    // أيقونات نشاطه أولاً: المطاعم والمقاهي أيقونات الأكل، والمتاجر والورد والصالونات أيقوناتها
+    const foodIco = ['coffee', 'fork-knife', 'hamburger', 'pizza', 'ice-cream', 'bread', 'cookie', 'cake', 'bowl-food', 'popcorn'];
+    const isF = DMSectors.isFood(client), mine = DMSectors.loyal(client).stamp;
+    const rank = (k) => k === mine ? 0 : (foodIco.includes(k) === isF ? 1 : 2);
+    document.getElementById('ly-icons').innerHTML = Object.entries(DMLoyaltyCard.ICONS).sort((a, b) => rank(a[0]) - rank(b[0])).map(([k, cls]) => `
       <button type="button" aria-label="${k}" onclick="setLyDesign({ icon: '${k}', stamp_image: null })" class="w-11 h-11 rounded-xl border grid place-items-center text-lg transition ${!d.stamp_image && d.icon === k ? 'border-brand bg-brand text-cream' : 'border-brand/20 bg-white hover:border-brand/40'}"><i class="ph-bold ${cls}"></i></button>`).join('');
     document.getElementById('ly-stamp-clear').classList.toggle('hidden', !d.stamp_image);
   }

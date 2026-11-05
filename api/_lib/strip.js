@@ -137,20 +137,21 @@ async function logoColor(store) {
   } catch { return '#233d2c'; }
 }
 
-async function pagerStrip(color, step) {
-  const key = `${color}:${step}`;
-  if (!strips.has(key)) strips.set(key, drawPagerStrip(color, step));
+// prep: أيقونة "قيد التجهيز" حسب النشاط (قدر للمطاعم، صندوق للمتاجر والورد، سيارة للمغاسل...)
+async function pagerStrip(color, step, prep = 'cooking-pot') {
+  const key = `${color}:${step}:${prep}`;
+  if (!strips.has(key)) strips.set(key, drawPagerStrip(color, step, prep));
   const out = await strips.get(key);
   if (!out) strips.delete(key);
   return out;
 }
-async function drawPagerStrip(color, step) {
+async function drawPagerStrip(color, step, prep) {
   try {
     const ink = inkFor(color), gold = '#e9c95a';
     // الخطوة الحالية: 1 قيد التجهيز، 2 جاهز، 3 استلم (كلها منجزة، والبطاقة تنتظر الزيارة الجاية)
     const ready = step === 'ready', cur = ready ? 2 : step === 'idle' ? 3 : 1;
     const cy = H / 2, xs = [W - 250, W / 2, 250];   // من اليمين: استلمنا، قيد التجهيز، جاهز
-    const icons = ['check', 'cooking-pot', 'bell-ringing'];
+    const icons = ['check', prep, 'bell-ringing'];
     let g = '';
     // الخط بين الخطوات: المنجز ممتلئ، والباقي منقط باهت
     for (let i = 0; i < 2; i++) {

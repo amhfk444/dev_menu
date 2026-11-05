@@ -38,6 +38,20 @@
     salon: TURN_T, services: TURN_T,
     other: { ...ORDER_T, wlReady: 'جاء دورك!', wlReadyLine: 'جاء دورك الآن', wlWhen: 'أول ما يجي دورك' }
   };
+  // بطاقة الولاء والبيجر حسب النشاط: أيقونة الختم الافتراضية، المكافأة الافتراضية، وأيقونة "قيد التجهيز" في بطاقة النداء
+  const FOOD_L = { stamp: 'coffee', reward: 'مشروب مجاني', prep: 'cooking-pot' };
+  const LOYAL = {
+    restaurant: FOOD_L, cafe: FOOD_L, mixed: FOOD_L, bakery: { ...FOOD_L, stamp: 'bread' },
+    clinic: { stamp: 'first-aid', reward: 'خصم على زيارتك القادمة', prep: 'hourglass' },
+    salon: { stamp: 'scissors', reward: 'خدمة مجانية', prep: 'hourglass' },
+    carwash: { stamp: 'car', reward: 'غسلة مجانية', prep: 'car' },
+    laundry: { stamp: 't-shirt', reward: 'غسيل قطعة مجاناً', prep: 't-shirt' },
+    retail: { stamp: 'shopping-bag', reward: 'هدية مجانية', prep: 'package' },
+    pharmacy: { stamp: 'pill', reward: 'هدية مجانية', prep: 'package' },
+    services: { stamp: 'star', reward: 'خدمة مجانية', prep: 'hourglass' },
+    other: { stamp: 'shopping-bag', reward: 'هدية مجانية', prep: 'package' }
+  };
+  const loyal = (store) => LOYAL[(store && store.business_type) || 'restaurant'] || FOOD_L;
   const terms = (store) => TERMS[(store && store.business_type) || 'restaurant'] || ORDER_T;
   const MAIN = ['restaurant', 'cafe', 'mixed'];
   const OTHERS = ['bakery', 'clinic', 'salon', 'carwash', 'laundry', 'retail', 'pharmacy', 'services', 'other'];
@@ -73,7 +87,7 @@
     })).observe(root, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['placeholder', 'title', 'aria-label'] });
   }
 
-  const api = { SECTORS, MAIN, OTHERS, KEYS: Object.keys(SECTORS), label, terms, TERMS, isFood, localize, localizeDom };
+  const api = { SECTORS, MAIN, OTHERS, KEYS: Object.keys(SECTORS), label, terms, TERMS, loyal, isFood, localize, localizeDom };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.DMSectors = api;
 })(typeof window !== 'undefined' ? window : globalThis);

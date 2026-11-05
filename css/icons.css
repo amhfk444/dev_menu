@@ -1,6 +1,6 @@
 /* DEV MENU — أيقونات (Phosphor, MIT). مولّد بـ tools/icons.js، لا تعدّله يدوياً */
-@font-face { font-family: "Phosphor-Bold"; src: url("/fonts/Phosphor-Bold.woff2?v=98121d13") format("woff2"); font-display: block; }
-@font-face { font-family: "Phosphor-Fill"; src: url("/fonts/Phosphor-Fill.woff2?v=2869a641") format("woff2"); font-display: block; }
+@font-face { font-family: "Phosphor-Bold"; src: url("/fonts/Phosphor-Bold.woff2?v=166a1f7a") format("woff2"); font-display: block; }
+@font-face { font-family: "Phosphor-Fill"; src: url("/fonts/Phosphor-Fill.woff2?v=e5860158") format("woff2"); font-display: block; }
 .ph-bold { font-family: "Phosphor-Bold" !important; font-style: normal; font-weight: normal; font-variant: normal; text-transform: none; line-height: 1; display: inline-block; vertical-align: -.125em; speak: never; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 .ph-bold.ph-star, .ph-bold.ph-star-half, .ph-bold.ph-circle { font-family: "Phosphor-Fill" !important; }
 .ph-address-book:before { content: "\e6f8"; }
@@ -59,6 +59,7 @@
 .ph-crown:before { content: "\e614"; }
 .ph-device-mobile:before { content: "\e1e0"; }
 .ph-device-tablet:before { content: "\e1e6"; }
+.ph-diamond:before { content: "\e1ec"; }
 .ph-door:before { content: "\e61c"; }
 .ph-dots-six-vertical:before { content: "\eae2"; }
 .ph-dots-three:before { content: "\e1fe"; }
@@ -66,6 +67,7 @@
 .ph-dots-three-outline:before { content: "\e204"; }
 .ph-dots-three-vertical:before { content: "\e208"; }
 .ph-download-simple:before { content: "\e20c"; }
+.ph-dress:before { content: "\ea7e"; }
 .ph-envelope-simple:before { content: "\e218"; }
 .ph-envelope-simple-open:before { content: "\e21a"; }
 .ph-eye:before { content: "\e220"; }
@@ -74,11 +76,14 @@
 .ph-file-arrow-down:before { content: "\e232"; }
 .ph-file-arrow-up:before { content: "\e61e"; }
 .ph-fire:before { content: "\e242"; }
+.ph-first-aid:before { content: "\e56e"; }
 .ph-first-aid-kit:before { content: "\e570"; }
 .ph-fish:before { content: "\e728"; }
 .ph-flame:before { content: "\e624"; }
 .ph-flask:before { content: "\e79e"; }
 .ph-floppy-disk:before { content: "\e248"; }
+.ph-flower:before { content: "\e75e"; }
+.ph-flower-tulip:before { content: "\eacc"; }
 .ph-fork-knife:before { content: "\e262"; }
 .ph-frame-corners:before { content: "\e626"; }
 .ph-gauge:before { content: "\e628"; }
@@ -122,6 +127,7 @@
 .ph-note:before { content: "\e348"; }
 .ph-note-pencil:before { content: "\e34c"; }
 .ph-orange-slice:before { content: "\ed36"; }
+.ph-package:before { content: "\e390"; }
 .ph-paint-brush:before { content: "\e6f0"; }
 .ph-palette:before { content: "\e6c8"; }
 .ph-paper-plane-tilt:before { content: "\e398"; }
@@ -166,6 +172,8 @@
 .ph-ticket:before { content: "\e490"; }
 .ph-tiktok-logo:before { content: "\eaf2"; }
 .ph-timer:before { content: "\e492"; }
+.ph-tooth:before { content: "\e9cc"; }
+.ph-tote:before { content: "\e494"; }
 .ph-translate:before { content: "\e4a2"; }
 .ph-trash:before { content: "\e4a6"; }
 .ph-tree:before { content: "\e6da"; }

@@ -6,16 +6,17 @@ const COOLDOWNS = [1, 2, 3, 4, 6, 12, 24];
 
 // شكل البطاقة
 const STYLES = ['gradient', 'solid', 'paper', 'dark', 'glass'];
-const ICONS = ['coffee', 'fork-knife', 'hamburger', 'pizza', 'ice-cream', 'bread', 'cookie', 'cake', 'bowl-food', 'popcorn', 'heart', 'star'];
+const ICONS = ['coffee', 'fork-knife', 'hamburger', 'pizza', 'ice-cream', 'bread', 'cookie', 'cake', 'bowl-food', 'popcorn',
+  'flower-tulip', 'flower', 'shopping-bag', 'tote', 'package', 'diamond', 'dress', 'scissors', 'sparkle', 'car', 't-shirt', 'pill', 'first-aid', 'tooth', 'heart', 'star'];
 const HEX = /^#[0-9a-f]{6}$/i;
 const okUrl = (u) => typeof u === 'string' && /^https:\/\/[^\s"'<>]{8,500}$/.test(u) ? u : null;
-function normalizeDesign(raw) {
+function normalizeDesign(raw, def = 'coffee') {
   const d = raw && typeof raw === 'object' ? raw : {};
   return {
     style: STYLES.includes(d.style) ? d.style : 'gradient',
     color: HEX.test(d.color) ? d.color.toLowerCase() : '#233d2c',
     stamp_color: HEX.test(d.stamp_color) ? d.stamp_color.toLowerCase() : '#c9a227',
-    icon: ICONS.includes(d.icon) ? d.icon : 'coffee',
+    icon: ICONS.includes(d.icon) ? d.icon : def,
     stamp_image: okUrl(d.stamp_image),
     // خلفية البطاقة: لون (حسب الشكل) أو صورة. (الفيديو انشال: المحفظة ما تشغّله، واللي اختاره قبل تبقى صورته)
     bg: (d.bg === 'image' || d.bg === 'video') && okUrl(d.bg_image) ? 'image' : 'color',
@@ -58,16 +59,18 @@ function isHappyNow(settings, now = new Date()) {
 }
 
 // إعدادات البطاقة بقيم آمنة دايماً
-function normalizeLoyalty(raw) {
+// store (اختياري): لو ما اختار صاحب المحل أيقونة أو مكافأة، ناخذ الافتراضي حسب نوع نشاطه (ورد: هدية مجانية، مغسلة: غسلة مجانية...)
+function normalizeLoyalty(raw, store) {
   const s = raw && typeof raw === 'object' ? raw : {};
+  const def = require('./sectors').loyal(store);
   const int = (v, d) => (Number.isInteger(+v) ? +v : d);
   return {
     needed: Math.min(12, Math.max(4, int(s.needed, 8))),
-    reward: String(s.reward || 'مشروب مجاني').trim().slice(0, 60) || 'مشروب مجاني',
+    reward: String(s.reward || def.reward).trim().slice(0, 60) || def.reward,
     reward_en: String(s.reward_en || '').trim().slice(0, 60) || null,   // اسم المكافأة للزبون اللي يستخدم البطاقة بالإنجليزي
     cooldown_hours: COOLDOWNS.includes(int(s.cooldown_hours, 12)) ? int(s.cooldown_hours, 12) : 12,
     radius_m: Math.min(200, Math.max(25, int(s.radius_m, 50))),
-    design: normalizeDesign(s.design),
+    design: normalizeDesign(s.design, def.stamp),
     welcome: normalizeWelcome(s.welcome),
     // رسالة تسليم المكافأة: يكتبها صاحب المحل، أو المساعد، أو بدون
     redeem_msg: normalizeWelcome(s.redeem_msg),

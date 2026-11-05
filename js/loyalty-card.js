@@ -4,7 +4,9 @@
 (function () {
   const ICONS = {
     coffee: 'ph-coffee', 'fork-knife': 'ph-fork-knife', hamburger: 'ph-hamburger', pizza: 'ph-pizza', 'ice-cream': 'ph-ice-cream',
-    bread: 'ph-bread', cookie: 'ph-cookie', cake: 'ph-cake', 'bowl-food': 'ph-bowl-food', popcorn: 'ph-popcorn', heart: 'ph-heart', star: 'ph-star'
+    bread: 'ph-bread', cookie: 'ph-cookie', cake: 'ph-cake', 'bowl-food': 'ph-bowl-food', popcorn: 'ph-popcorn',
+    'flower-tulip': 'ph-flower-tulip', flower: 'ph-flower', 'shopping-bag': 'ph-shopping-bag', tote: 'ph-tote', package: 'ph-package', diamond: 'ph-diamond', dress: 'ph-dress',
+    scissors: 'ph-scissors', sparkle: 'ph-sparkle', car: 'ph-car', 't-shirt': 'ph-t-shirt', pill: 'ph-pill', 'first-aid': 'ph-first-aid', tooth: 'ph-tooth', heart: 'ph-heart', star: 'ph-star'
   };
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   // لون نص واضح فوق أي لون
