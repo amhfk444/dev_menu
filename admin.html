@@ -5585,11 +5585,14 @@
     btn.disabled = true;
     try {
       const qr = (text) => { const tmp = document.createElement('div'); new QRCode(tmp, { text, width: 480, height: 480, colorDark: '#15271b', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M }); return tmp.querySelector('canvas').toDataURL('image/png'); };
-      const logo = safeUrl(client.logo_url);
+      // الشعار داخل الصفحة نفسها (صفحة الطباعة الجديدة ما تحمّل صور من روابط خارجية بشكل مضمون)
+      let logo = null;
+      const lu = safeUrl(client.logo_url);
+      if (lu) try { const im = await loadImage(lu); const c = document.createElement('canvas'); c.width = c.height = 160; const x = c.getContext('2d'); const k = Math.max(160 / im.width, 160 / im.height); x.drawImage(im, 80 - im.width * k / 2, 80 - im.height * k / 2, im.width * k, im.height * k); logo = c.toDataURL('image/png'); } catch {}
       const self = client.menu_order_mode === 'self';
       const cards = [];
       for (let n = from; n <= to; n++) {
-        cards.push(`<div class="card"><div class="top">${logo ? `<img class="logo" src="${esc(logo)}" alt="">` : ''}<p class="name">${esc(client.name || '')}</p></div>
+        cards.push(`<div class="card"><div class="top">${logo ? `<img class="logo" src="${logo}" alt="">` : ''}<p class="name">${esc(client.name || '')}</p></div>
           <p class="tbl">طاولة <b>${n}</b></p><img class="qr" src="${qr(DM.storeUrl(client.client_slug, 'menu', { src: 'qr', table: n }))}" alt="">
           <p class="cta">امسح واطلب من جوالك</p><p class="sub">${self ? 'تختار طلبك، ويرن جوالك لما يجهز' : 'يوصل طلبك للكاشير، ويجيك على الطاولة'}</p></div>`);
       }
