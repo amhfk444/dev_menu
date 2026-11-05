@@ -605,6 +605,9 @@
     <button onclick="switchTab('coupons')" id="tab-coupons" class="tab-btn px-5 py-2.5 rounded-xl border text-[14px] font-medium transition flex items-center gap-2">
       <i class="ph-bold ph-ticket"></i> الخصومات
     </button>
+    <button onclick="switchTab('sales')" id="tab-sales" class="tab-btn px-5 py-2.5 rounded-xl border text-[14px] font-medium transition flex items-center gap-2">
+      <i class="ph-bold ph-chart-bar"></i> المبيعات
+    </button>
     <button onclick="switchTab('msettings')" id="tab-msettings" class="tab-btn px-5 py-2.5 rounded-xl border text-[14px] font-medium transition flex items-center gap-2">
       <i class="ph-bold ph-gear-six"></i> الإعدادات
     </button>
@@ -1013,6 +1016,23 @@
   </div>
 
   <!-- قسم الكوبونات -->
+  <!-- المبيعات: أرقام طلبات القائمة الرقمية (تقرير، وليس فاتورة ضريبية) -->
+  <div id="section-sales" class="space-y-4 hidden">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="inline-flex gap-1 p-1 rounded-xl bg-brand/[0.07]" role="tablist" aria-label="الفترة">
+        <button type="button" data-srange="today" onclick="loadSales('today')" class="sr-btn px-4 py-2 rounded-lg text-[13px] font-bold">اليوم</button>
+        <button type="button" data-srange="7" onclick="loadSales('7')" class="sr-btn px-4 py-2 rounded-lg text-[13px] font-bold">آخر 7 أيام</button>
+        <button type="button" data-srange="30" onclick="loadSales('30')" class="sr-btn px-4 py-2 rounded-lg text-[13px] font-bold">آخر 30 يوم</button>
+      </div>
+      <p class="text-[12px] text-ink/70"><i class="ph-bold ph-info"></i> تقرير بطلبات المنيو فقط، وليس فاتورة ضريبية. الطلبات اللي تنطلب من الكاشير مباشرة ما تنحسب هنا.</p>
+    </div>
+    <div id="sales-off" class="hidden rounded-2xl p-3.5 border bg-amber-500/10 border-amber-500/30 text-[12px] font-bold text-amber-800 flex flex-wrap items-center justify-between gap-2">
+      <span><i class="ph-bold ph-info"></i> الطلب من المنيو مطفي، فما فيه طلبات جديدة تنحسب هنا.</span>
+      <button type="button" onclick="openMenuSettings('mo-box')" class="bg-brand text-cream px-3 py-1.5 rounded-lg text-[12px] font-black">تفعيل الطلب من المنيو</button>
+    </div>
+    <div id="sales-body"><p class="text-xs text-ink text-center py-10">جاري التحميل…</p></div>
+  </div>
+
   <div id="section-coupons" class="space-y-4 hidden">
     <div id="coupons-wa-warning" class="hidden rounded-2xl p-3.5 border bg-amber-500/10 border-amber-500/30 text-[11px] font-bold text-amber-800 flex flex-wrap items-center justify-between gap-2">
       <span><i class="ph-bold ph-info"></i> الكوبونات بكود تشتغل مع سلة الطلب، ففعّل "الطلب من المنيو" أو "استقبال الطلبات عبر واتساب". الخصم التلقائي يظهر في المنيو حتى بدونها.</span>
@@ -2372,11 +2392,12 @@
   }
 
   function switchTab(tab) {
-    ['products', 'categories', 'coupons', 'msettings'].forEach(t => {
+    ['products', 'categories', 'coupons', 'sales', 'msettings'].forEach(t => {
       document.getElementById(`section-${t}`).classList.toggle('hidden', tab !== t);
       document.getElementById(`tab-${t}`).classList.toggle('active', tab === t);
     });
     if (tab === 'coupons') openCouponsTab();
+    if (tab === 'sales') loadSales(salesRange);
     if (tab === 'msettings') placePhone('menu');
   }
   // جوال المعاينة: عنصر واحد ينتقل لصفحة البيجر (صفحة الانتظار) أو لإعدادات المنيو (المنيو)
@@ -7323,6 +7344,55 @@
   // ─── كوبونات الخصم ───
   let coupons = null, editingCouponId = null;
   const riyadhDay = (ts) => ts ? new Date(Date.parse(ts) + 3 * 3600000).toISOString().slice(0, 10) : '';
+
+  // ─── المبيعات ───
+  let salesRange = '7';
+  async function loadSales(range) {
+    salesRange = range;
+    document.querySelectorAll('.sr-btn').forEach(b => { const on = b.dataset.srange === range; b.classList.toggle('bg-brand', on); b.classList.toggle('text-cream', on); b.classList.toggle('text-ink', !on); });
+    const box = document.getElementById('sales-body');
+    let r;
+    try { r = await api(`sales&range=${range}`); }
+    catch (e) { box.innerHTML = `<p class="text-xs text-red-600 text-center py-10">${esc(e.message || 'تعذر تحميل المبيعات')}</p>`; return; }
+    if (salesRange !== range) return;
+    document.getElementById('sales-off').classList.toggle('hidden', !!r.order_mode);
+    const num = (n) => Number(n || 0).toLocaleString('en-US');
+    const tile = (label, value, sub) => `<div class="pro-card p-4"><p class="text-[12px] font-semibold text-ink/70">${label}</p><p class="text-2xl font-black text-ink mt-1" dir="ltr" style="text-align:right">${value}</p>${sub ? `<p class="text-[11px] text-ink/60 mt-1">${sub}</p>` : ''}</div>`;
+    if (!r.orders) {
+      box.innerHTML = `<div class="pro-card p-8 text-center"><i class="ph-bold ph-chart-bar text-3xl text-brand/40"></i><p class="font-bold text-ink mt-2">ما فيه طلبات من المنيو في هالفترة</p><p class="text-[12px] text-ink/60 mt-1">أول ما يطلب العملاء من المنيو تطلع أرقامهم هنا.</p></div>`;
+      return;
+    }
+    const bars = (vals, labels, fmt) => {
+      const max = Math.max(1, ...vals);
+      return `<div class="flex items-end gap-[3px] h-28" dir="ltr">${vals.map((v, i) => `<div class="flex-1 flex flex-col items-center justify-end h-full min-w-0" title="${esc(labels[i])}: ${fmt(v)}"><div class="w-full rounded-t-[4px] ${v ? 'bg-brand' : 'bg-brand/10'}" style="height:${Math.max(v ? 6 : 2, Math.round(v / max * 100))}%"></div></div>`).join('')}</div>`;
+    };
+    const dayFmt = new Intl.DateTimeFormat('ar-SA-u-nu-latn-ca-gregory', { day: 'numeric', month: 'short' });
+    const daily = r.daily.length > 1 ? `<div class="pro-card p-4"><div class="flex justify-between text-[12px] font-bold text-ink mb-3"><span>المبيعات اليومية</span><span class="text-ink/60">أعلى يوم ${money(Math.max(...r.daily.map(d => d.amount)))}</span></div>
+      ${bars(r.daily.map(d => d.amount), r.daily.map(d => dayFmt.format(new Date(d.d + 'T12:00:00Z'))), money)}
+      <div class="flex justify-between text-[10px] text-ink/50 mt-1.5" dir="ltr"><span>${dayFmt.format(new Date(r.daily[0].d + 'T12:00:00Z'))}</span><span>${dayFmt.format(new Date(r.daily[r.daily.length - 1].d + 'T12:00:00Z'))}</span></div></div>` : '';
+    const hourLbl = (h) => h === 0 ? '12 ص' : h < 12 ? `${h} ص` : h === 12 ? '12 م' : `${h - 12} م`;
+    const peakH = r.hours.indexOf(Math.max(...r.hours));
+    const DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    const peakD = r.weekdays.indexOf(Math.max(...r.weekdays));
+    const hours = `<div class="pro-card p-4"><div class="flex justify-between text-[12px] font-bold text-ink mb-3"><span>أوقات الطلب</span><span class="text-ink/60">الذروة ${hourLbl(peakH)}${salesRange === '30' ? ` · ${DAYS[peakD]}` : ''}</span></div>
+      ${bars(r.hours, r.hours.map((_, h) => hourLbl(h)), (v) => `${v} طلب`)}
+      <div class="flex justify-between text-[10px] text-ink/50 mt-1.5" dir="ltr"><span>12 ص</span><span>6 ص</span><span>12 م</span><span>6 م</span><span>11 م</span></div></div>`;
+    const row = (name, right, sub) => `<li class="flex items-center justify-between gap-3 py-2 border-b border-brand/10 last:border-0"><span class="min-w-0 truncate text-[13px] font-semibold text-ink">${esc(name)}${sub ? ` <span class="text-ink/50 font-normal">${esc(sub)}</span>` : ''}</span><span class="text-[13px] font-bold text-ink shrink-0" dir="ltr">${right}</span></li>`;
+    const top = `<div class="pro-card p-4"><p class="text-[12px] font-bold text-ink mb-1">الأكثر طلباً</p><ul>${r.top.map(p => row(p.name, `${num(p.qty)} × · ${money(p.amount)}`)).join('')}</ul></div>`;
+    const DINE = { in: 'محلي', out: 'استلام', delivery: 'توصيل' };
+    const dine = Object.entries(r.dine).filter(([, v]) => v.n);
+    const dineBox = dine.length > 1 || r.fees ? `<div class="pro-card p-4"><p class="text-[12px] font-bold text-ink mb-1">طريقة الطلب</p><ul>${dine.map(([k, v]) => row(DINE[k], `${num(v.n)} طلب · ${money(v.amount)}`)).join('')}${r.fees ? row('رسوم التوصيل', money(r.fees)) : ''}</ul></div>` : '';
+    const extras = r.extras.length ? `<div class="pro-card p-4"><p class="text-[12px] font-bold text-ink mb-1">أكثر الإضافات</p><ul>${r.extras.map(x => row(x.name, `${num(x.qty)} ×`, x.group)).join('')}</ul></div>` : '';
+    const least = r.least.length || r.unsold.length ? `<div class="pro-card p-4"><p class="text-[12px] font-bold text-ink mb-1">الأقل طلباً</p><ul>${r.least.map(p => row(p.name, `${num(p.qty)} ×`)).join('')}</ul>${r.unsold.length ? `<p class="text-[12px] font-bold text-ink mt-3 mb-1">ما انطلبت في هالفترة</p><p class="text-[12px] text-ink/70 leading-relaxed">${r.unsold.map(esc).join('، ')}</p>` : ''}</div>` : '';
+    box.innerHTML = `<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        ${tile('إجمالي المبيعات', money(r.total), r.fees ? `شامل التوصيل ${money(r.fees)}` : '')}
+        ${tile('عدد الطلبات', num(r.sold), r.cancelled ? `وانلغى ${num(r.cancelled)}` : '')}
+        ${tile('متوسط الطلب', money(r.avg), '')}
+        ${tile('تم تسليمها', num(r.served), r.open ? `${num(r.open)} للحين مفتوحة` : '')}
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">${daily}${hours}${top}${dineBox}${extras}${least}</div>`;
+    DMSectors.localizeDom(box, client);
+  }
 
   async function openCouponsTab() {
     document.getElementById('coupons-wa-warning').classList.toggle('hidden', client.whatsapp_orders === true || !!client.menu_order_mode);
