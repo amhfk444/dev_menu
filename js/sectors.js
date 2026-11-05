@@ -17,7 +17,7 @@
     other:      { name: 'نشاط آخر', icon: 'ph-dots-three-circle' }
   };
   // ─── المصطلحات والرسائل حسب المجال (البيجر وقائمة الانتظار والإشعارات) ───
-  const ORDER_T = {   // استلام طلب: مطاعم، مقاهي، مخابز، صيدليات، متاجر، مغسلة ملابس
+  const ORDER_T = {   // استلام طلب: مطاعم، مقاهي، مخابز، صيدليات، متاجر، مغسلة ملابس، ونشاط آخر (أسر منتجة، ورود، متاجر واتساب)
     ready: 'طلبك جاهز!', readyBody: 'تفضّل استلمه', waiting: 'جاري تجهيز طلبك…', ringWhen: 'لما يجهز طلبك',
     tell: 'ورّ هذا الرقم للموظف مع طلبك', got: 'استلمت طلبي', game: 'العب لين يجهز طلبك',
     deskWait: 'قيد التجهيز', deskReady: 'جاهز، بانتظار الاستلام', deskCall: 'جاهز', deskDone: 'استلم',
@@ -35,7 +35,8 @@
     carwash: { ...ORDER_T, ready: 'سيارتك جاهزة!', readyBody: 'تفضّل استلمها', waiting: 'جاري العمل على سيارتك…', ringWhen: 'لما تجهز سيارتك',
       tell: 'ورّ هذا الرقم للموظف', got: 'استلمت سيارتي', game: 'العب لين تجهز سيارتك', wlReady: 'جاء دورك!', wlReadyLine: 'جاء دورك الآن', wlWhen: 'أول ما يجي دورك' },
     clinic: { ...TURN_T, readyBody: 'تفضّل للدخول' },
-    salon: TURN_T, services: TURN_T, other: TURN_T
+    salon: TURN_T, services: TURN_T,
+    other: { ...ORDER_T, wlReady: 'جاء دورك!', wlReadyLine: 'جاء دورك الآن', wlWhen: 'أول ما يجي دورك' }
   };
   const terms = (store) => TERMS[(store && store.business_type) || 'restaurant'] || ORDER_T;
   const MAIN = ['restaurant', 'cafe', 'mixed'];
