@@ -1476,7 +1476,8 @@
     if (askChat && typeof r.chat === 'boolean') { chatFor = token; chatOn = r.chat; upsell = r.upsell || []; curLabel = r.currency || 'ر.س'; game = r.game || null; gameOn = r.game_on !== false; quizOn = r.quiz === true; quizMode(); menuOrder = r.order || null; if (menuOrder) try { sessionStorage.setItem(FROM_MENU, '1'); } catch {} }
     if (askQ) lastQ = Date.now();
     staffEta = r.staff_eta && typeof r.staff_eta === 'object' ? r.staff_eta : null;
-    if (r.queue) renderQueue(r.queue, r.ticket.number); else if (lastQueue) renderQueue(lastQueue, r.ticket.number);
+    const myNo = menuOrder && r.ticket.invoice_no ? 'أنت' : r.ticket.number;   // طلب المنيو: رقمه رقم الفاتورة، فما نطلع رقم البيجر الداخلي
+    if (r.queue) renderQueue(r.queue, myNo); else if (lastQueue) renderQueue(lastQueue, myNo);
     addedNow = r.addons || []; gameWon = r.game_won === true;
     setStore(r.store);
     watchTicket(r.live);
