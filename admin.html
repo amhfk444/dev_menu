@@ -250,7 +250,8 @@
   .cat-act.danger:hover { background: rgba(168, 67, 46, .09); }
   .cat-ghost { opacity: .35; }
   .cat-drag { box-shadow: 0 10px 24px -10px rgba(34, 54, 42, .45); border-radius: 12px; }
-  @media (max-width: 640px) { .cat-act span { display: none; } .cat-act { width: 36px; padding: 0; } }
+  /* الجوال: الاسم بسطر كامل، والأزرار تحته (قبل كانت الأزرار تاكل العرض والاسم يطلع «الـ...») */
+  @media (max-width: 640px) { .cat-act span { display: none; } .cat-act { width: 36px; padding: 0; } .cat-row { flex-wrap: wrap; row-gap: 2px; } .cat-row > .flex-1 { flex: 1 1 calc(100% - 90px); } .cat-row > .cat-arrow:first-of-type { margin-inline-start: 72px; } }
   /* اختيار الباقة */
   .plan-tile { position: relative; display: flex; flex-direction: column; justify-content: flex-start; text-align: right; padding: 14px; border-radius: 14px; border: 1.5px solid var(--line-2); background: #fff; transition: border-color .15s, box-shadow .15s; }
   .plan-tile:hover { border-color: rgba(56, 79, 61, .4); }
