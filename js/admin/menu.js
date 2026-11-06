@@ -531,7 +531,7 @@
               ${meta ? `<span class="dish-meta block">${meta}</span>` : ''}
             </span>
             <span class="dish-leader" aria-hidden="true"></span>
-            <span class="dish-price">${sizesText(p) ? esc(sizesText(p)) : esc(money(p.price))}</span>${(Array.isArray(p.extras) && p.extras.length) ? `<span class="text-[10.5px] font-bold text-ink/70 ms-1"><i class="ph-bold ph-list-plus"></i> ${p.extras.length} ${p.extras.length === 1 ? 'مجموعة إضافات' : 'مجموعات إضافات'}</span>` : ''}
+            <span class="dish-price">${sizesText(p) ? esc(sizesText(p)) : esc(money(p.price))}</span>${(Array.isArray(p.extras) && p.extras.length) ? `<span class="hidden sm:inline text-[10.5px] font-bold text-ink/70 ms-1"><i class="ph-bold ph-list-plus"></i> ${p.extras.length} ${p.extras.length === 1 ? 'مجموعة إضافات' : 'مجموعات إضافات'}</span>` : ''}
           </button>
           <button type="button" role="switch" aria-checked="${isAvailable}" aria-label="متوفر: ${esc(p.name)}" class="avail" onclick="toggleField(${id}, 'is_available', ${isAvailable})">
             <span class="avail-track"></span><span class="avail-label">${isAvailable ? 'متوفر' : 'نفدت'}</span>

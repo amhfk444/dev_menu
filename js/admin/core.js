@@ -55,6 +55,8 @@
       document.getElementById(`section-${t}`).classList.toggle('hidden', tab !== t);
       document.getElementById(`tab-${t}`).classList.toggle('active', tab === t);
     });
+    // صف التبويبات يتمرر بالجوال: التبويب المفتوح يبان
+    document.getElementById(`tab-${tab}`).scrollIntoView({ block: 'nearest', inline: 'nearest' });
     if (tab === 'coupons') openCouponsTab();
     if (tab === 'sales') loadSales(salesRange);
     if (tab === 'msettings') placePhone('menu');

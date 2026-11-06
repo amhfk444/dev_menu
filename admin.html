@@ -595,20 +595,20 @@
         <button onclick="goAddDish()" aria-label="أضف طبق" class="lg:hidden fixed bottom-24 left-4 z-30 bg-brand text-cream w-14 h-14 rounded-2xl shadow-xl flex items-center justify-center text-lg active:scale-95 transition"
                 style="margin-bottom: env(safe-area-inset-bottom)"><i class="ph-bold ph-plus"></i></button>
   <!-- التبويبات -->
-  <div class="inline-flex gap-1 p-1.5 rounded-2xl bg-brand/[0.07] max-w-full" role="tablist">
-    <button onclick="switchTab('products')" id="tab-products" class="tab-btn active px-5 py-2.5 rounded-xl border text-[14px] font-medium transition flex items-center gap-2">
+  <div class="flex w-fit gap-1 p-1.5 rounded-2xl bg-brand/[0.07] max-w-full overflow-x-auto" style="scrollbar-width:none" role="tablist">
+    <button onclick="switchTab('products')" id="tab-products" class="tab-btn active shrink-0 whitespace-nowrap px-3.5 sm:px-5 py-2.5 rounded-xl border text-[14px] font-medium transition flex items-center gap-2">
       <i class="ph-bold ph-fork-knife"></i> الأطباق
     </button>
-    <button onclick="switchTab('categories')" id="tab-categories" class="tab-btn px-5 py-2.5 rounded-xl border text-[14px] font-medium transition flex items-center gap-2">
+    <button onclick="switchTab('categories')" id="tab-categories" class="tab-btn shrink-0 whitespace-nowrap px-3.5 sm:px-5 py-2.5 rounded-xl border text-[14px] font-medium transition flex items-center gap-2">
       <i class="ph-bold ph-stack"></i> الأقسام
     </button>
-    <button onclick="switchTab('coupons')" id="tab-coupons" class="tab-btn px-5 py-2.5 rounded-xl border text-[14px] font-medium transition flex items-center gap-2">
+    <button onclick="switchTab('coupons')" id="tab-coupons" class="tab-btn shrink-0 whitespace-nowrap px-3.5 sm:px-5 py-2.5 rounded-xl border text-[14px] font-medium transition flex items-center gap-2">
       <i class="ph-bold ph-ticket"></i> الخصومات
     </button>
-    <button onclick="switchTab('sales')" id="tab-sales" class="hidden tab-btn px-5 py-2.5 rounded-xl border text-[14px] font-medium transition flex items-center gap-2">
+    <button onclick="switchTab('sales')" id="tab-sales" class="hidden tab-btn shrink-0 whitespace-nowrap px-3.5 sm:px-5 py-2.5 rounded-xl border text-[14px] font-medium transition flex items-center gap-2">
       <i class="ph-bold ph-chart-bar"></i> المبيعات
     </button>
-    <button onclick="switchTab('msettings')" id="tab-msettings" class="tab-btn px-5 py-2.5 rounded-xl border text-[14px] font-medium transition flex items-center gap-2">
+    <button onclick="switchTab('msettings')" id="tab-msettings" class="tab-btn shrink-0 whitespace-nowrap px-3.5 sm:px-5 py-2.5 rounded-xl border text-[14px] font-medium transition flex items-center gap-2">
       <i class="ph-bold ph-gear-six"></i> الإعدادات
     </button>
   </div>
