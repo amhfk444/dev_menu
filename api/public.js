@@ -93,7 +93,7 @@ async function pagerOrder(storeId, token) {
   const staff = t.status === 'waiting' && t.eta_at ? `EXPECTED READY IN (set by the cashier just now, authoritative): about ${etaOf(t, null)} minutes from now` : '';
   return [`pager number: ${t.number}`, `status: ${STATUS[t.status] || t.status}`, staff, `waiting since: ${mins(Date.now() - Date.parse(t.created_at))} minutes`,
     t.status === 'waiting' ? `orders ahead still being prepared: ${ahead}` : '',
-    est && !t.eta_at ? (est.overdue ? 'estimate: already past the usual time, it should be ready any moment' : est.low ? `estimated time left (counts the orders ahead): ${est.low} to ${est.high} minutes` : 'estimate: not enough data, do not give minutes') : '',
+    est && !t.eta_at ? (est.late ? 'estimate: MUCH longer than usual (10+ minutes past the estimate); apologize briefly and suggest asking the cashier' : est.overdue ? 'estimate: already past the usual time, it should be ready any moment' : est.low ? `estimated time left (counts the orders ahead): ${est.low} to ${est.high} minutes` : 'estimate: not enough data, do not give minutes') : '',
     typical ? `typical wait at this place (median, last 7 days): ${typical} minutes` : '', added].filter(Boolean).join('\n');
 }
 

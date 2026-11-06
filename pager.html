@@ -1144,7 +1144,8 @@
     const e = staffEta || q;
     const mins = (n) => arCount(n, 'دقيقة', 'دقيقتين', 'دقايق');
     let txt = '';
-    if (e.overdue) txt = 'طلبك على وشك يجهز، شكراً على صبرك';
+    if (e.late) txt = T.late || 'طلبك ياخذ وقت أكثر من المعتاد، تقدر تسأل الكاشير';
+    else if (e.overdue) txt = 'طلبك على وشك يجهز، شكراً على صبرك';
     else if (e.staff) txt = `حسب الكاشير: يجهز بعد ${mins(e.low)} تقريباً`;
     else if (e.low) txt = e.high <= 2 ? 'يجهز خلال دقيقتين تقريباً' : `يجهز تقريباً خلال ${e.low} إلى ${e.high} دقيقة`;
     $('q-eta').textContent = txt;

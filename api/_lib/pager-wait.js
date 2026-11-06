@@ -2,6 +2,7 @@
 const { rest, q } = require('./core');
 
 const MIN_LOW = 5, MIN_HIGH = 10;   // أقل مدى يطلع للزبون: من 5 إلى 10 دقايق
+const LATE = 10;   // تأخر عن التقدير بأكثر من 10 دقايق = نقول له يسأل الكاشير (late)
 const mins = (ms) => Math.max(0, Math.round(ms / 60000));
 
 // طلبات قبله ما زالت تتجهز (من نفس اليوم)
@@ -41,15 +42,15 @@ function estimate(t, ahead, stats) {
   const waited = (Date.now() - Date.parse(t.created_at)) / 60000;
   if (t.eta_at) {   // الكاشير حدد الوقت
     const left = (Date.parse(t.eta_at) - Date.now()) / 60000, total = Math.max(1, waited + left);
-    return { staff: true, low: Math.max(1, Math.ceil(left)), high: Math.max(1, Math.ceil(left)), overdue: left <= 0, progress: Math.min(1, waited / total) };
+    return { staff: true, low: Math.max(1, Math.ceil(left)), high: Math.max(1, Math.ceil(left)), overdue: left <= 0, late: left <= -LATE, progress: Math.min(1, waited / total) };
   }
   const { typical, gap } = stats || {};
   // ما فيه بيانات كافية للمحل: نقول من 5 إلى 10 دقايق (أقل تقدير نعرضه)
-  if (!typical && !gap) return waited < 10 ? { low: MIN_LOW, high: MIN_HIGH, overdue: false, progress: Math.min(.95, waited / MIN_HIGH) } : { low: null, high: null, overdue: true, progress: 1 };
+  if (!typical && !gap) return waited < 10 ? { low: MIN_LOW, high: MIN_HIGH, overdue: false, progress: Math.min(.95, waited / MIN_HIGH) } : { low: null, high: null, overdue: true, late: waited >= MIN_HIGH + LATE, progress: 1 };
   // ما نقول «تأخر» قبل 10 دقايق (أقل تقدير نعرضه)
   const total = Math.max(MIN_HIGH, typical || 0, gap ? (ahead + 1) * gap : 0);
   const left = total - waited;
-  if (left <= 0.5) return { low: null, high: null, overdue: true, progress: 1 };
+  if (left <= 0.5) return { low: null, high: null, overdue: true, late: left <= -LATE, progress: 1 };
   // أقل شي «من 5 إلى 10»: التقدير القصير يخيّب ظن الزبون لو تأخر الطلب شوي
   const progress = Math.min(.95, waited / total);
   if (left <= MIN_HIGH) return { low: MIN_LOW, high: MIN_HIGH, overdue: false, progress };
